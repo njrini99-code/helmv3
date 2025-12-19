@@ -1,0 +1,27 @@
+# Helm Sports Labs - Cursor Rules
+
+You are working on Helm Sports Labs, a baseball recruiting SaaS platform.
+
+## Context
+- Read CLAUDE.md in the project root for full context
+- Read relevant docs in /docs/ folder for specific features
+- Current progress: 50% complete (see docs/PROGRESS_DASHBOARD.md)
+
+## Tech Stack
+- Next.js 14 (App Router), TypeScript, Supabase, Tailwind CSS
+
+## Design System
+- Primary: green-600 (#16A34A)
+- Background: #FAF6F1
+- Cards: white, rounded-2xl, border-slate-200
+
+## Current Sprint: Sprint 1 - Core Recruiting
+1. Discover Players (grid + filters) ← START HERE
+2. Watchlist (table + status)
+3. Pipeline (drag-drop kanban)
+4. Send Message
+
+## Before Each Task
+1. Check docs/PROGRESS_DASHBOARD.md for current status
+2. Read the relevant PHASE_*.md for full specs
+3. Follow existing patterns in codebase

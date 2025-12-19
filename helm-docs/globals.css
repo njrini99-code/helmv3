@@ -1,0 +1,957 @@
+/* Helm Sports Labs - Global Styles */
+/* Version: 1.0 */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+   CSS VARIABLES
+   ============================================================================ */
+
+@layer base {
+  :root {
+    /* Primary - Kelly Green */
+    --primary-50: 240 253 244;   /* #F0FDF4 */
+    --primary-100: 220 252 231;  /* #DCFCE7 */
+    --primary-200: 187 247 208;  /* #BBF7D0 */
+    --primary-300: 134 239 172;  /* #86EFAC */
+    --primary-400: 74 222 128;   /* #4ADE80 */
+    --primary-500: 34 197 94;    /* #22C55E */
+    --primary-600: 22 163 74;    /* #16A34A - PRIMARY */
+    --primary-700: 21 128 61;    /* #15803D */
+    --primary-800: 22 101 52;    /* #166534 */
+    --primary-900: 20 83 45;     /* #14532D */
+
+    /* Backgrounds */
+    --bg-cream: 250 246 241;     /* #FAF6F1 */
+    --bg-white: 255 255 255;     /* #FFFFFF */
+
+    /* Text - Stone palette */
+    --text-dark: 28 25 23;       /* #1C1917 */
+    --text-medium: 87 83 78;     /* #57534E */
+    --text-light: 120 113 108;   /* #78716C */
+    --text-muted: 168 162 158;   /* #A8A29E */
+
+    /* Borders */
+    --border-default: 231 229 228; /* #E7E5E4 */
+    --border-light: 245 245 244;   /* #F5F5F4 */
+
+    /* Status */
+    --error: 220 38 38;          /* #DC2626 */
+    --error-light: 254 226 226;  /* #FEE2E2 */
+
+    /* Shadows */
+    --shadow-color: 0 0 0;
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-2xl: 20px;
+    --radius-full: 9999px;
+  }
+}
+
+/* ============================================================================
+   BASE STYLES
+   ============================================================================ */
+
+@layer base {
+  * {
+    @apply border-stone-200;
+  }
+
+  html {
+    @apply antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-[#FAF6F1] text-stone-900 font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Headings */
+  h1 {
+    @apply text-3xl font-bold text-stone-900 tracking-tight;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold text-stone-900 tracking-tight;
+  }
+
+  h3 {
+    @apply text-xl font-semibold text-stone-900;
+  }
+
+  h4 {
+    @apply text-lg font-semibold text-stone-900;
+  }
+
+  /* Focus styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-green-600/20 ring-offset-2;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-green-100 text-green-900;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-stone-300 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-stone-400;
+  }
+}
+
+/* ============================================================================
+   COMPONENT CLASSES
+   ============================================================================ */
+
+@layer components {
+  /* --------------------------------------------------------------------------
+     Buttons
+     -------------------------------------------------------------------------- */
+  
+  .btn {
+    @apply inline-flex items-center justify-center gap-2
+           px-5 py-2.5 rounded-lg
+           text-sm font-medium
+           transition-all duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-green-600 text-white
+           hover:bg-green-700
+           active:bg-green-800 active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-stone-700
+           border border-stone-200
+           hover:bg-stone-50 hover:border-stone-300
+           active:bg-stone-100;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-stone-600
+           hover:bg-stone-100 hover:text-stone-900
+           active:bg-stone-200;
+  }
+
+  .btn-destructive {
+    @apply btn bg-red-600 text-white
+           hover:bg-red-700
+           active:bg-red-800;
+  }
+
+  .btn-icon {
+    @apply w-9 h-9 p-0 rounded-lg
+           inline-flex items-center justify-center
+           text-stone-500
+           hover:bg-stone-100 hover:text-stone-700
+           transition-colors;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  /* --------------------------------------------------------------------------
+     Cards
+     -------------------------------------------------------------------------- */
+
+  .card {
+    @apply bg-white rounded-2xl border border-stone-200 shadow-md;
+  }
+
+  .card-interactive {
+    @apply card cursor-pointer
+           hover:shadow-lg hover:-translate-y-0.5
+           transition-all duration-200;
+  }
+
+  .card-glass {
+    @apply rounded-2xl
+           bg-white/60 backdrop-blur-xl
+           border border-white/50
+           shadow-lg;
+  }
+
+  /* --------------------------------------------------------------------------
+     Inputs
+     -------------------------------------------------------------------------- */
+
+  .input {
+    @apply w-full px-4 py-2.5
+           bg-white border border-stone-200 rounded-lg
+           text-sm text-stone-900
+           placeholder:text-stone-400
+           focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600
+           disabled:bg-stone-50 disabled:cursor-not-allowed
+           transition-colors;
+  }
+
+  .input-error {
+    @apply input border-red-500
+           focus:ring-red-500/20 focus:border-red-500;
+  }
+
+  .input-with-icon {
+    @apply input pl-10;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-stone-700 mb-1.5;
+  }
+
+  .helper-text {
+    @apply text-xs text-stone-500 mt-1;
+  }
+
+  .error-text {
+    @apply text-xs text-red-600 mt-1;
+  }
+
+  /* --------------------------------------------------------------------------
+     Select / Dropdown
+     -------------------------------------------------------------------------- */
+
+  .select {
+    @apply input pr-10 appearance-none cursor-pointer
+           bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%2378716C%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.293%207.293a1%201%200%20011.414%200L10%2010.586l3.293-3.293a1%201%200%20111.414%201.414l-4%204a1%201%200%2001-1.414%200l-4-4a1%201%200%20010-1.414z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')]
+           bg-[length:20px] bg-[right_12px_center] bg-no-repeat;
+  }
+
+  /* --------------------------------------------------------------------------
+     Badges
+     -------------------------------------------------------------------------- */
+
+  .badge {
+    @apply inline-flex items-center gap-1
+           px-2.5 py-0.5 rounded-full
+           text-xs font-medium;
+  }
+
+  .badge-default {
+    @apply badge bg-stone-100 text-stone-700;
+  }
+
+  .badge-success {
+    @apply badge bg-green-100 text-green-700;
+  }
+
+  .badge-error {
+    @apply badge bg-red-100 text-red-700;
+  }
+
+  /* --------------------------------------------------------------------------
+     Avatar
+     -------------------------------------------------------------------------- */
+
+  .avatar {
+    @apply rounded-full overflow-hidden bg-stone-100 flex-shrink-0;
+  }
+
+  .avatar-sm {
+    @apply avatar w-8 h-8;
+  }
+
+  .avatar-md {
+    @apply avatar w-10 h-10;
+  }
+
+  .avatar-lg {
+    @apply avatar w-12 h-12;
+  }
+
+  .avatar-xl {
+    @apply avatar w-16 h-16;
+  }
+
+  .avatar-fallback {
+    @apply w-full h-full flex items-center justify-center
+           bg-green-100 text-green-700
+           font-medium text-sm;
+  }
+
+  /* --------------------------------------------------------------------------
+     Stat Card
+     -------------------------------------------------------------------------- */
+
+  .stat-card {
+    @apply card p-5;
+  }
+
+  .stat-card-icon {
+    @apply w-12 h-12 rounded-xl
+           bg-green-100
+           flex items-center justify-center;
+  }
+
+  .stat-card-value {
+    @apply text-2xl font-bold text-stone-900;
+  }
+
+  .stat-card-label {
+    @apply text-xs font-medium text-stone-500;
+  }
+
+  .stat-card-trend {
+    @apply inline-flex items-center gap-0.5
+           text-xs font-medium;
+  }
+
+  .stat-card-trend-up {
+    @apply stat-card-trend text-green-600;
+  }
+
+  .stat-card-trend-down {
+    @apply stat-card-trend text-red-600;
+  }
+
+  /* --------------------------------------------------------------------------
+     Tabs
+     -------------------------------------------------------------------------- */
+
+  .tabs {
+    @apply flex gap-6 border-b border-stone-200;
+  }
+
+  .tab {
+    @apply py-3 text-sm font-medium
+           border-b-2 -mb-px
+           transition-colors cursor-pointer;
+  }
+
+  .tab-inactive {
+    @apply tab border-transparent text-stone-600
+           hover:text-stone-900;
+  }
+
+  .tab-active {
+    @apply tab border-green-600 text-green-600;
+  }
+
+  /* --------------------------------------------------------------------------
+     Modal / Dialog
+     -------------------------------------------------------------------------- */
+
+  .modal-backdrop {
+    @apply fixed inset-0 z-50
+           bg-black/50 backdrop-blur-sm;
+  }
+
+  .modal {
+    @apply fixed inset-0 z-50
+           flex items-center justify-center p-4;
+  }
+
+  .modal-content {
+    @apply relative bg-white rounded-2xl shadow-xl
+           w-full max-w-lg
+           max-h-[90vh] overflow-auto;
+  }
+
+  .modal-header {
+    @apply flex items-center justify-between
+           p-6 border-b border-stone-200;
+  }
+
+  .modal-title {
+    @apply text-lg font-semibold text-stone-900;
+  }
+
+  .modal-body {
+    @apply p-6;
+  }
+
+  .modal-footer {
+    @apply flex justify-end gap-3
+           p-6 border-t border-stone-200;
+  }
+
+  /* --------------------------------------------------------------------------
+     Sidebar
+     -------------------------------------------------------------------------- */
+
+  .sidebar {
+    @apply fixed left-0 top-0 bottom-0
+           w-64 bg-white border-r border-stone-200
+           flex flex-col z-40;
+  }
+
+  .sidebar-logo {
+    @apply p-6 border-b border-stone-200;
+  }
+
+  .sidebar-nav {
+    @apply flex-1 p-4 space-y-1 overflow-auto;
+  }
+
+  .sidebar-footer {
+    @apply p-4 border-t border-stone-200;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3
+           px-3 py-2.5 rounded-lg
+           text-sm font-medium text-stone-600
+           hover:bg-stone-100 hover:text-stone-900
+           transition-colors;
+  }
+
+  .nav-item-active {
+    @apply nav-item bg-green-50 text-green-700
+           hover:bg-green-50 hover:text-green-700;
+  }
+
+  .nav-item-icon {
+    @apply w-5 h-5 flex-shrink-0;
+  }
+
+  .nav-badge {
+    @apply ml-auto px-2 py-0.5 rounded-full
+           text-xs font-medium
+           bg-green-100 text-green-700;
+  }
+
+  /* --------------------------------------------------------------------------
+     Mode Toggle
+     -------------------------------------------------------------------------- */
+
+  .mode-toggle {
+    @apply flex p-1 bg-stone-100 rounded-lg;
+  }
+
+  .mode-toggle-option {
+    @apply flex-1 py-2 px-4 rounded-md
+           text-sm font-medium
+           transition-all cursor-pointer;
+  }
+
+  .mode-toggle-inactive {
+    @apply mode-toggle-option text-stone-600
+           hover:text-stone-900;
+  }
+
+  .mode-toggle-active {
+    @apply mode-toggle-option
+           bg-green-600 text-white shadow-sm;
+  }
+
+  /* --------------------------------------------------------------------------
+     Empty State
+     -------------------------------------------------------------------------- */
+
+  .empty-state {
+    @apply flex flex-col items-center justify-center
+           py-16 text-center;
+  }
+
+  .empty-state-icon {
+    @apply w-16 h-16 rounded-full
+           bg-stone-100
+           flex items-center justify-center
+           mb-4;
+  }
+
+  .empty-state-title {
+    @apply text-lg font-semibold text-stone-900 mb-2;
+  }
+
+  .empty-state-description {
+    @apply text-sm text-stone-600 mb-6 max-w-sm;
+  }
+
+  /* --------------------------------------------------------------------------
+     Skeleton
+     -------------------------------------------------------------------------- */
+
+  .skeleton {
+    @apply bg-stone-200 rounded animate-pulse;
+  }
+
+  .skeleton-text {
+    @apply skeleton h-4;
+  }
+
+  .skeleton-avatar {
+    @apply skeleton rounded-full;
+  }
+
+  .skeleton-card {
+    @apply skeleton rounded-2xl;
+  }
+
+  /* --------------------------------------------------------------------------
+     Toast
+     -------------------------------------------------------------------------- */
+
+  .toast {
+    @apply flex items-center gap-3
+           bg-white rounded-lg shadow-lg
+           border border-stone-200
+           px-4 py-3;
+  }
+
+  .toast-icon {
+    @apply w-8 h-8 rounded-full
+           flex items-center justify-center flex-shrink-0;
+  }
+
+  .toast-icon-success {
+    @apply toast-icon bg-green-100 text-green-600;
+  }
+
+  .toast-icon-error {
+    @apply toast-icon bg-red-100 text-red-600;
+  }
+
+  .toast-title {
+    @apply text-sm font-medium text-stone-900;
+  }
+
+  .toast-description {
+    @apply text-xs text-stone-500;
+  }
+
+  /* --------------------------------------------------------------------------
+     Player Card
+     -------------------------------------------------------------------------- */
+
+  .player-card {
+    @apply card-interactive p-4;
+  }
+
+  .player-card-header {
+    @apply flex items-start gap-3 mb-4;
+  }
+
+  .player-card-name {
+    @apply font-semibold text-stone-900 truncate;
+  }
+
+  .player-card-position {
+    @apply text-sm text-stone-600;
+  }
+
+  .player-card-location {
+    @apply text-xs text-stone-500;
+  }
+
+  .player-card-metrics {
+    @apply grid grid-cols-3 gap-2 mb-4;
+  }
+
+  .player-card-metric {
+    @apply text-center p-2 bg-stone-50 rounded-lg;
+  }
+
+  .player-card-metric-label {
+    @apply text-xs text-stone-500;
+  }
+
+  .player-card-metric-value {
+    @apply font-semibold text-stone-900;
+  }
+
+  /* --------------------------------------------------------------------------
+     Pipeline / Kanban
+     -------------------------------------------------------------------------- */
+
+  .pipeline-column {
+    @apply flex flex-col
+           bg-stone-50 rounded-xl
+           p-3 min-h-[400px];
+  }
+
+  .pipeline-column-header {
+    @apply flex items-center justify-between
+           mb-3 pb-3 border-b border-stone-200;
+  }
+
+  .pipeline-column-title {
+    @apply text-sm font-semibold text-stone-700;
+  }
+
+  .pipeline-column-count {
+    @apply px-2 py-0.5 rounded-full
+           text-xs font-medium
+           bg-stone-200 text-stone-600;
+  }
+
+  .pipeline-card {
+    @apply bg-white rounded-xl p-3 mb-2
+           border border-stone-200
+           shadow-sm
+           cursor-grab active:cursor-grabbing
+           hover:shadow-md
+           transition-shadow;
+  }
+
+  /* --------------------------------------------------------------------------
+     Calendar
+     -------------------------------------------------------------------------- */
+
+  .calendar-header {
+    @apply flex items-center justify-between mb-6;
+  }
+
+  .calendar-nav {
+    @apply flex items-center gap-2;
+  }
+
+  .calendar-title {
+    @apply text-lg font-semibold text-stone-900;
+  }
+
+  .calendar-grid {
+    @apply grid grid-cols-7 gap-px
+           bg-stone-200 rounded-xl overflow-hidden;
+  }
+
+  .calendar-day-header {
+    @apply p-3 text-center
+           text-xs font-medium text-stone-500
+           bg-stone-50;
+  }
+
+  .calendar-day {
+    @apply p-2 min-h-[100px]
+           bg-white
+           text-sm;
+  }
+
+  .calendar-day-number {
+    @apply w-7 h-7 rounded-full
+           flex items-center justify-center
+           text-sm font-medium text-stone-700;
+  }
+
+  .calendar-day-today {
+    @apply calendar-day-number
+           bg-green-600 text-white;
+  }
+
+  .calendar-event {
+    @apply px-2 py-1 rounded
+           text-xs font-medium truncate
+           bg-green-100 text-green-700
+           mt-1;
+  }
+
+  /* --------------------------------------------------------------------------
+     Video Player
+     -------------------------------------------------------------------------- */
+
+  .video-container {
+    @apply relative aspect-video
+           bg-black rounded-xl overflow-hidden;
+  }
+
+  .video-overlay {
+    @apply absolute inset-0
+           flex items-center justify-center
+           bg-black/30;
+  }
+
+  .video-play-button {
+    @apply w-16 h-16 rounded-full
+           bg-white/90
+           flex items-center justify-center
+           hover:bg-white hover:scale-105
+           transition-all;
+  }
+
+  .video-thumbnail {
+    @apply absolute inset-0 object-cover;
+  }
+
+  /* --------------------------------------------------------------------------
+     Form Layout
+     -------------------------------------------------------------------------- */
+
+  .form-group {
+    @apply space-y-4;
+  }
+
+  .form-row {
+    @apply grid gap-4;
+  }
+
+  .form-row-2 {
+    @apply form-row grid-cols-1 sm:grid-cols-2;
+  }
+
+  .form-row-3 {
+    @apply form-row grid-cols-1 sm:grid-cols-3;
+  }
+
+  .form-actions {
+    @apply flex justify-end gap-3 pt-6
+           border-t border-stone-200 mt-6;
+  }
+
+  /* --------------------------------------------------------------------------
+     Table
+     -------------------------------------------------------------------------- */
+
+  .table-container {
+    @apply overflow-x-auto;
+  }
+
+  .table {
+    @apply w-full text-sm;
+  }
+
+  .table-header {
+    @apply text-left text-xs font-medium text-stone-500
+           uppercase tracking-wide
+           px-4 py-3 bg-stone-50;
+  }
+
+  .table-cell {
+    @apply px-4 py-3 text-stone-700
+           border-b border-stone-100;
+  }
+
+  .table-row {
+    @apply hover:bg-stone-50 transition-colors;
+  }
+
+  /* --------------------------------------------------------------------------
+     Progress Bar
+     -------------------------------------------------------------------------- */
+
+  .progress {
+    @apply h-2 bg-stone-200 rounded-full overflow-hidden;
+  }
+
+  .progress-bar {
+    @apply h-full bg-green-600 rounded-full
+           transition-all duration-300;
+  }
+
+  /* --------------------------------------------------------------------------
+     Tooltip
+     -------------------------------------------------------------------------- */
+
+  .tooltip {
+    @apply absolute z-50
+           px-3 py-1.5 rounded-lg
+           bg-stone-900 text-white
+           text-xs font-medium
+           shadow-lg
+           pointer-events-none;
+  }
+
+  .tooltip-arrow {
+    @apply absolute w-2 h-2
+           bg-stone-900
+           rotate-45;
+  }
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+@layer utilities {
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Truncate multiple lines */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Hide scrollbar but allow scrolling */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Glass effect utilities */
+  .glass-sm {
+    @apply bg-white/40 backdrop-blur-md;
+  }
+
+  .glass {
+    @apply bg-white/60 backdrop-blur-xl;
+  }
+
+  .glass-lg {
+    @apply bg-white/80 backdrop-blur-2xl;
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-clip-text text-transparent
+           bg-gradient-to-r from-green-600 to-green-400;
+  }
+
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  /* Stagger delays */
+  .delay-75 {
+    animation-delay: 75ms;
+  }
+
+  .delay-150 {
+    animation-delay: 150ms;
+  }
+
+  .delay-225 {
+    animation-delay: 225ms;
+  }
+
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+
+  /* Focus ring for accessibility */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:ring-offset-2;
+  }
+
+  /* Safe area for mobile */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* ============================================================================
+   KEYFRAMES
+   ============================================================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Shimmer effect for skeletons */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgb(231 229 228) 0%,
+    rgb(245 245 244) 50%,
+    rgb(231 229 228) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 1px solid #e5e5e5;
+  }
+}

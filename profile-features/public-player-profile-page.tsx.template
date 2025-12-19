@@ -1,0 +1,156 @@
+// app/(public)/player/[id]/page.tsx
+// Public player profile - visible to coaches and anyone with the link
+
+import { createClient } from '@/lib/supabase/server';
+import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
+import { PublicPlayerProfileView } from '@/components/public/PublicPlayerProfileView';
+import { logEngagementEvent } from '@/lib/utils/engagement';
+
+interface Props {
+  params: { id: string };
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const supabase = await createClient();
+  
+  const { data: player } = await supabase
+    .from('players')
+    .select('first_name, last_name, primary_position, grad_year')
+    .eq('id', params.id)
+    .single();
+
+  if (!player) {
+    return { title: 'Player Not Found' };
+  }
+
+  return {
+    title: `${player.first_name} ${player.last_name} | ${player.primary_position} ${player.grad_year}`,
+    description: `View ${player.first_name} ${player.last_name}'s baseball recruiting profile`,
+  };
+}
+
+export default async function PublicPlayerProfilePage({ params }: Props) {
+  const supabase = await createClient();
+  
+  // Get current user (if logged in)
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // Fetch player with settings
+  const { data: player, error } = await supabase
+    .from('players')
+    .select(`
+      *,
+      settings:player_settings(*),
+      videos:player_videos(
+        id, title, video_url, thumbnail_url, video_type, 
+        duration_seconds, views, is_primary
+      ),
+      dream_schools:player_dream_schools(
+        id, rank,
+        program:college_programs(id, name, logo_url, division, state)
+      ),
+      stats:player_stats(*)
+    `)
+    .eq('id', params.id)
+    .single();
+
+  if (error || !player) {
+    notFound();
+  }
+
+  // Check if viewer is a coach
+  let viewerCoach = null;
+  if (user) {
+    const { data: coach } = await supabase
+      .from('coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+    viewerCoach = coach;
+    
+    // Log engagement event if coach is viewing
+    if (coach) {
+      await logEngagementEvent({
+        playerId: player.id,
+        coachId: coach.id,
+        type: 'profile_view',
+      });
+    }
+  }
+
+  // Get player's public calendar events if allowed
+  let upcomingEvents = null;
+  if (player.settings?.show_calendar) {
+    const { data: events } = await supabase
+      .from('events')
+      .select('*')
+      .or(`player_id.eq.${player.id},attendees.cs.{${player.id}}`)
+      .eq('is_public', true)
+      .gte('start_time', new Date().toISOString())
+      .order('start_time', { ascending: true })
+      .limit(5);
+    upcomingEvents = events;
+  }
+
+  // Apply privacy settings to filter what's shown
+  const publicProfile = applyPrivacySettings(player, player.settings);
+
+  return (
+    <PublicPlayerProfileView 
+      player={publicProfile}
+      videos={player.settings?.show_videos ? player.videos : null}
+      dreamSchools={player.settings?.show_dream_schools ? player.dream_schools : null}
+      stats={player.settings?.show_stats ? player.stats : null}
+      upcomingEvents={upcomingEvents}
+      viewerCoach={viewerCoach}
+    />
+  );
+}
+
+// Apply privacy settings to filter player data
+function applyPrivacySettings(player: any, settings: any) {
+  const s = settings || {};
+  
+  return {
+    id: player.id,
+    first_name: player.first_name,
+    last_name: s.show_full_name !== false ? player.last_name : null,
+    avatar_url: player.avatar_url,
+    bio: player.bio,
+    recruiting_activated: player.recruiting_activated,
+    
+    // Location
+    city: s.show_location !== false ? player.city : null,
+    state: s.show_location !== false ? player.state : null,
+    
+    // School
+    high_school: s.show_school !== false ? player.high_school : null,
+    club_team: s.show_school !== false ? player.club_team : null,
+    
+    // Contact
+    email: s.show_contact_email ? player.email : null,
+    phone: s.show_phone ? player.phone : null,
+    twitter_handle: s.show_social_links !== false ? player.twitter_handle : null,
+    instagram_handle: s.show_social_links !== false ? player.instagram_handle : null,
+    
+    // Physical
+    height_inches: s.show_height_weight !== false ? player.height_inches : null,
+    weight_lbs: s.show_height_weight !== false ? player.weight_lbs : null,
+    
+    // Baseball
+    primary_position: s.show_position !== false ? player.primary_position : null,
+    secondary_position: s.show_position !== false ? player.secondary_position : null,
+    bats: s.show_bats_throws !== false ? player.bats : null,
+    throws: s.show_bats_throws !== false ? player.throws : null,
+    grad_year: s.show_grad_year !== false ? player.grad_year : null,
+    
+    // Academics
+    gpa: s.show_gpa !== false ? player.gpa : null,
+    sat_score: s.show_test_scores ? player.sat_score : null,
+    act_score: s.show_test_scores ? player.act_score : null,
+    
+    // Settings for UI
+    allow_messages: s.allow_messages !== false,
+  };
+}
