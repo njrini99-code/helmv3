@@ -16,11 +16,11 @@ export default function GolfRosterPage() {
 
   useEffect(() => {
     async function loadRoster() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase as any).auth.getUser();
       if (!user) return;
 
       // Get coach's team
-      const { data: coach } = await supabase
+      const { data: coach } = await (supabase as any)
         .from('golf_coaches')
         .select('team_id')
         .eq('user_id', user.id)
@@ -30,7 +30,7 @@ export default function GolfRosterPage() {
       setTeamId(coach.team_id);
 
       // Fetch players
-      const { data: playersData } = await supabase
+      const { data: playersData } = await (supabase as any)
         .from('golf_players')
         .select('*')
         .eq('team_id', coach.team_id)

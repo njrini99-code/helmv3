@@ -25,7 +25,7 @@ export default function GolfDashboardLayout({
 
   useEffect(() => {
     async function loadUser() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase as any).auth.getUser();
 
       if (!user) {
         router.push('/golf/login');

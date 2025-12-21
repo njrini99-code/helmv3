@@ -30,14 +30,14 @@ export function useGolfTeam(teamId?: string): UseGolfTeamResult {
 
       // If no teamId provided, get from current user
       if (!targetTeamId) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await (supabase as any).auth.getUser();
         if (!user) {
           setError('Not authenticated');
           return;
         }
 
         // Check if coach
-        const { data: coach } = await supabase
+        const { data: coach } = await (supabase as any)
           .from('golf_coaches')
           .select('team_id')
           .eq('user_id', user.id)
@@ -47,7 +47,7 @@ export function useGolfTeam(teamId?: string): UseGolfTeamResult {
           targetTeamId = coach.team_id;
         } else {
           // Check if player
-          const { data: player } = await supabase
+          const { data: player } = await (supabase as any)
             .from('golf_players')
             .select('team_id')
             .eq('user_id', user.id)
@@ -65,7 +65,7 @@ export function useGolfTeam(teamId?: string): UseGolfTeamResult {
       }
 
       // Fetch team
-      const { data: teamData, error: teamError } = await supabase
+      const { data: teamData, error: teamError } = await (supabase as any)
         .from('golf_teams')
         .select('*, organization:golf_organizations(*)')
         .eq('id', targetTeamId)
@@ -75,7 +75,7 @@ export function useGolfTeam(teamId?: string): UseGolfTeamResult {
       setTeam(teamData as GolfTeam);
 
       // Fetch players
-      const { data: playersData, error: playersError } = await supabase
+      const { data: playersData, error: playersError } = await (supabase as any)
         .from('golf_players')
         .select('*')
         .eq('team_id', targetTeamId)
@@ -85,7 +85,7 @@ export function useGolfTeam(teamId?: string): UseGolfTeamResult {
       setPlayers(playersData as GolfPlayer[]);
 
       // Fetch coaches
-      const { data: coachesData, error: coachesError } = await supabase
+      const { data: coachesData, error: coachesError } = await (supabase as any)
         .from('golf_coaches')
         .select('*')
         .eq('team_id', targetTeamId);

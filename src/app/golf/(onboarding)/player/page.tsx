@@ -56,7 +56,7 @@ export default function GolfPlayerOnboarding() {
   // Check auth and player data on mount
   useEffect(() => {
     async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase as any).auth.getUser();
 
       if (!user) {
         router.push('/golf/login');
@@ -67,7 +67,7 @@ export default function GolfPlayerOnboarding() {
       setEmail(user.email || '');
 
       // Check for existing player record
-      const { data: player } = await supabase
+      const { data: player } = await (supabase as any)
         .from('golf_players')
         .select('*, team:golf_teams(name)')
         .eq('user_id', user.id)
@@ -127,7 +127,7 @@ export default function GolfPlayerOnboarding() {
 
       if (playerId) {
         // Update existing player
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
           .from('golf_players')
           .update(updateData)
           .eq('id', playerId);
@@ -135,7 +135,7 @@ export default function GolfPlayerOnboarding() {
         if (updateError) throw updateError;
       } else {
         // Create new player record
-        const { error: insertError } = await supabase
+        const { error: insertError } = await (supabase as any)
           .from('golf_players')
           .insert({
             user_id: userId,

@@ -24,7 +24,7 @@ export default function GolfSignupPage() {
 
     try {
       // Step 1: Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await (supabase as any).auth.signUp({
         email,
         password,
       });
@@ -42,7 +42,7 @@ export default function GolfSignupPage() {
       }
 
       // Step 2: Create user record for golf coach
-      const { error: userError } = await supabase.from('users').insert({
+      const { error: userError } = await (supabase as any).from('users').insert({
         id: authData.user.id,
         email,
         role: 'coach',

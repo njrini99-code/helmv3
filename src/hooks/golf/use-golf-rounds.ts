@@ -28,13 +28,13 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
 
       // If no playerId provided, get from current user
       if (!targetPlayerId) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await (supabase as any).auth.getUser();
         if (!user) {
           setError('Not authenticated');
           return;
         }
 
-        const { data: player } = await supabase
+        const { data: player } = await (supabase as any)
           .from('golf_players')
           .select('id')
           .eq('user_id', user.id)
@@ -49,7 +49,7 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
       }
 
       // Fetch rounds
-      const { data: roundsData, error: roundsError } = await supabase
+      const { data: roundsData, error: roundsError } = await (supabase as any)
         .from('golf_rounds')
         .select('*, holes:golf_holes(*)')
         .eq('player_id', targetPlayerId)

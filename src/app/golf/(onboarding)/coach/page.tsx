@@ -43,14 +43,14 @@ export default function GolfCoachOnboarding() {
 
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase as any).auth.getUser();
       if (!user) {
         router.push('/golf/login');
         return;
       }
 
       // Step 1: Create organization
-      const { data: org, error: orgError } = await supabase
+      const { data: org, error: orgError } = await (supabase as any)
         .from('golf_organizations')
         .insert({
           name: orgName,
@@ -70,7 +70,7 @@ export default function GolfCoachOnboarding() {
       }
 
       // Step 2: Create team
-      const { data: team, error: teamError } = await supabase
+      const { data: team, error: teamError } = await (supabase as any)
         .from('golf_teams')
         .insert({
           organization_id: org.id,
@@ -88,7 +88,7 @@ export default function GolfCoachOnboarding() {
       }
 
       // Step 3: Update coach record
-      const { error: coachError } = await supabase
+      const { error: coachError } = await (supabase as any)
         .from('golf_coaches')
         .update({
           team_id: team.id,

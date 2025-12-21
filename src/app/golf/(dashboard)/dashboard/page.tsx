@@ -391,11 +391,11 @@ export default function GolfDashboardPage() {
 
   useEffect(() => {
     async function loadDashboard() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase as any).auth.getUser();
       if (!user) return;
 
       // Check if coach
-      const { data: coach } = await supabase
+      const { data: coach } = await (supabase as any)
         .from('golf_coaches')
         .select('*, team:golf_teams(*), organization:golf_organizations(*)')
         .eq('user_id', user.id)
@@ -408,27 +408,27 @@ export default function GolfDashboardPage() {
         const teamId = coach.team_id;
 
         // Get roster size
-        const { count: rosterSize } = await supabase
+        const { count: rosterSize } = await (supabase as any)
           .from('golf_players')
           .select('*', { count: 'exact', head: true })
           .eq('team_id', teamId);
 
         // Get upcoming events
-        const { count: upcomingEvents } = await supabase
+        const { count: upcomingEvents } = await (supabase as any)
           .from('golf_events')
           .select('*', { count: 'exact', head: true })
           .eq('team_id', teamId)
           .gte('start_date', new Date().toISOString().split('T')[0]);
 
         // Get active qualifiers
-        const { count: activeQualifiers } = await supabase
+        const { count: activeQualifiers } = await (supabase as any)
           .from('golf_qualifiers')
           .select('*', { count: 'exact', head: true })
           .eq('team_id', teamId)
           .in('status', ['upcoming', 'in_progress']);
 
         // Get recent rounds with player names
-        const { data: recentRounds } = await supabase
+        const { data: recentRounds } = await (supabase as any)
           .from('golf_rounds')
           .select('*, player:golf_players(first_name, last_name)')
           .eq('player.team_id', teamId)
@@ -459,7 +459,7 @@ export default function GolfDashboardPage() {
       }
 
       // Check if player
-      const { data: player } = await supabase
+      const { data: player } = await (supabase as any)
         .from('golf_players')
         .select('*, team:golf_teams(*)')
         .eq('user_id', user.id)
@@ -469,7 +469,7 @@ export default function GolfDashboardPage() {
         setUserRole('player');
 
         // Get player's rounds
-        const { data: rounds } = await supabase
+        const { data: rounds } = await (supabase as any)
           .from('golf_rounds')
           .select('*')
           .eq('player_id', player.id)
