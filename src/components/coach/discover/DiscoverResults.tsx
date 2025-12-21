@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { PlayerCard, PlayerCardData } from './PlayerCard';
-import { PlayerCardGrid, PlayerCardSkeleton } from './PlayerCardGrid';
+import { PlayerCardData } from './PlayerCard';
+import { PlayerCardGrid } from './PlayerCardGrid';
 import { ViewToggle, ViewMode } from '@/components/ui/view-toggle';
 import { Button } from '@/components/ui/button';
-import { IconUsers, IconChevronLeft, IconChevronRight } from '@/components/icons';
-import { addToWatchlist, removeFromWatchlist } from '@/app/actions/watchlist';
+import { IconChevronLeft, IconChevronRight } from '@/components/icons';
+import { addToWatchlist, removeFromWatchlist } from '@/app/baseball/actions/watchlist';
 
 interface DiscoverResultsProps {
   players: any[];
@@ -30,7 +30,7 @@ export function DiscoverResults({
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [watchlistIds, setWatchlistIds] = useState<string[]>(initialWatchlistIds);
-  const [loadingIds, setLoadingIds] = useState<string[]>([]);
+  const [, setLoadingIds] = useState<string[]>([]);
 
   // Transform database players to PlayerCardData format
   const transformedPlayers: PlayerCardData[] = players.map((p) => ({
@@ -54,7 +54,7 @@ export function DiscoverResults({
       weight: p.weight_lbs,
     },
     verified: p.recruiting_activated,
-    status: watchlistIds.includes(p.id) ? 'watching' : undefined,
+    status: watchlistIds.includes(p.id) ? 'watchlist' : undefined,
   }));
 
   const handleWatchlist = async (playerId: string) => {

@@ -47,13 +47,13 @@ export function FilterPanel({ currentFilters }: FilterPanelProps) {
     params.delete('page');
 
     startTransition(() => {
-      router.push(`/dashboard/discover?${params.toString()}`);
+      router.push(`/baseball/dashboard/discover?${params.toString()}`);
     });
   };
 
   const clearAllFilters = () => {
     startTransition(() => {
-      router.push('/dashboard/discover');
+      router.push('/baseball/dashboard/discover');
     });
     setSearch('');
   };

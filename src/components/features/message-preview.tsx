@@ -2,10 +2,10 @@ import Link from 'next/link';
 import { Avatar } from '@/components/ui/avatar';
 import { formatRelativeTime, getFullName } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import type { Conversation } from '@/types/database';
+import type { ConversationWithMeta } from '@/lib/types/messages';
 
 interface MessagePreviewProps {
-  conversation: Conversation;
+  conversation: ConversationWithMeta;
 }
 
 export function MessagePreview({ conversation }: MessagePreviewProps) {
@@ -27,7 +27,7 @@ export function MessagePreview({ conversation }: MessagePreviewProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <p className={cn('text-sm truncate', hasUnread ? 'font-semibold text-slate-900' : 'font-medium text-slate-900')}>{name}</p>
-          {conversation.last_message && (
+          {conversation.last_message?.sent_at && (
             <p className="text-xs text-slate-400 flex-shrink-0 tabular-nums">{formatRelativeTime(conversation.last_message.sent_at)}</p>
           )}
         </div>

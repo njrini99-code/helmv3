@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
-import { sendMessage as sendMessageAction, markMessagesAsRead } from '@/app/actions/messages';
-import type { Conversation, Message } from '@/types/database';
+import { sendMessage as sendMessageAction, markMessagesAsRead } from '@/app/baseball/actions/messages';
+import type { Message } from '@/lib/types';
+import type { ConversationWithMeta } from '@/lib/types/messages';
 
 export function useMessages(conversationId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -70,7 +71,7 @@ export function useMessages(conversationId: string) {
 }
 
 export function useConversations() {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<ConversationWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuthStore();
   const supabase = createClient();
@@ -178,7 +179,7 @@ export function useConversations() {
       })
     );
 
-    setConversations(conversationsWithMessages as Conversation[]);
+    setConversations(conversationsWithMessages as ConversationWithMeta[]);
     setLoading(false);
   }, [user]);
 

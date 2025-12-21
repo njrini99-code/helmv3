@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { IconX, IconCheck, IconArrowRight } from '@/components/icons';
+import { IconX, IconCheck } from '@/components/icons';
 import { getFullName, formatHeight, cn } from '@/lib/utils';
-import type { Player } from '@/types/database';
+import type { Player } from '@/lib/types';
 
 interface PlayerComparisonProps {
   players: Player[];
@@ -103,7 +103,7 @@ export function PlayerComparison({
   onClose,
   className
 }: PlayerComparisonProps) {
-  const [selectedStats, setSelectedStats] = useState<Set<string>>(
+  const [selectedStats] = useState<Set<string>>(
     new Set(statComparisons.map(s => s.label))
   );
 

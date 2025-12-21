@@ -6,8 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { IconMapPin, IconUser, IconHeart, IconHeartFilled } from '@/components/icons';
-import { addToInterests, removeFromInterests } from '@/app/actions/interests';
-import type { College } from '@/types/database';
+import { addToInterests, removeFromInterests } from '@/app/baseball/actions/interests';
+import type { College } from '@/lib/types';
 
 interface CollegeCardProps {
   college: College;

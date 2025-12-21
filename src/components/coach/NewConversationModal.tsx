@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createConversation, sendMessage } from '@/app/actions/messages';
+import { createConversation, sendMessage } from '@/app/baseball/actions/messages';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { IconSearch, IconX } from '@/components/icons';
 import { useToast } from '@/components/ui/toast';
-import type { Player, Coach } from '@/types/database';
 
 interface NewConversationModalProps {
   open: boolean;

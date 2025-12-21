@@ -52,16 +52,16 @@ export function PipelineStatusDot({
   label,
   showLabel = true,
 }: {
-  stage: 'watchlist' | 'high_priority' | 'contacted' | 'offer_extended' | 'committed';
+  stage: 'watchlist' | 'high_priority' | 'offer_extended' | 'committed' | 'uninterested';
   label?: string;
   showLabel?: boolean;
 }) {
   const stageConfig: Record<string, { color: string; label: string }> = {
-    watchlist: { color: 'bg-slate-400', label: 'Watching' },
-    high_priority: { color: 'bg-blue-500', label: 'High Priority' },
-    contacted: { color: 'bg-amber-500', label: 'Contacted' },
-    offer_extended: { color: 'bg-purple-500', label: 'Offer Extended' },
+    watchlist: { color: 'bg-slate-400', label: 'Prospects' },
+    high_priority: { color: 'bg-amber-500', label: 'High Priority' },
+    offer_extended: { color: 'bg-blue-500', label: 'Offer Extended' },
     committed: { color: 'bg-green-500', label: 'Committed' },
+    uninterested: { color: 'bg-slate-300', label: 'Not Interested' },
   };
 
   const config = stageConfig[stage] ?? stageConfig.watchlist;

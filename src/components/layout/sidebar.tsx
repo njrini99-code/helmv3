@@ -24,61 +24,93 @@ import {
   IconEye,
   IconChevronLeft,
   IconHelp,
+  IconGraduationCap,
+  IconLayers,
 } from '@/components/icons';
+import { TeamSwitcher } from './team-switcher';
+import { useTeams } from '@/hooks/use-teams';
 
 // College/JUCO Coach - Recruiting Mode
 const coachRecruitingNav = [
-  { name: 'Dashboard', href: '/dashboard', icon: IconHome },
-  { name: 'Discover', href: '/dashboard/discover', icon: IconSearch },
-  { name: 'Watchlist', href: '/dashboard/watchlist', icon: IconStar },
-  { name: 'Pipeline', href: '/dashboard/pipeline', icon: IconUsers },
-  { name: 'Compare', href: '/dashboard/compare', icon: IconTarget },
-  { name: 'Camps', href: '/dashboard/camps', icon: IconCalendar },
-  { name: 'Messages', href: '/dashboard/messages', icon: IconMessage, badge: true },
+  { name: 'Dashboard', href: '/baseball/dashboard', icon: IconHome },
+  { name: 'Discover', href: '/baseball/dashboard/discover', icon: IconSearch },
+  { name: 'Watchlist', href: '/baseball/dashboard/watchlist', icon: IconStar },
+  { name: 'Pipeline', href: '/baseball/dashboard/pipeline', icon: IconUsers },
+  { name: 'Compare', href: '/baseball/dashboard/compare', icon: IconTarget },
+  { name: 'Camps', href: '/baseball/dashboard/camps', icon: IconCalendar },
+  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
 ];
 
-// HS/JUCO/Showcase Coach - Team Mode
+// HS/Showcase Coach - Team Mode
 const coachTeamNav = [
-  { name: 'Dashboard', href: '/dashboard/team', icon: IconHome },
-  { name: 'Roster', href: '/dashboard/roster', icon: IconUsers },
-  { name: 'Videos', href: '/dashboard/videos', icon: IconVideo },
-  { name: 'Dev Plans', href: '/dashboard/dev-plans', icon: IconNote },
-  { name: 'College Interest', href: '/dashboard/college-interest', icon: IconEye },
-  { name: 'Calendar', href: '/dashboard/calendar', icon: IconCalendar },
-  { name: 'Messages', href: '/dashboard/messages', icon: IconMessage, badge: true },
+  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+  { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
+  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
+  { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
+  { name: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconEye },
+  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
+  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+];
+
+// JUCO Coach - Team Mode (includes Academics)
+const jucoTeamNav = [
+  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+  { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
+  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
+  { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
+  { name: 'Academics', href: '/baseball/dashboard/academics', icon: IconGraduationCap },
+  { name: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconEye },
+  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
+  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+];
+
+// Showcase Coach - Organization Mode (manages multiple teams)
+const showcaseOrgNav = [
+  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+  { name: 'Teams', href: '/baseball/dashboard/teams', icon: IconLayers },
+  { name: 'Events', href: '/baseball/dashboard/events', icon: IconCalendar },
+  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+];
+
+// Showcase Coach - Team-specific navigation (shown when team selected)
+const showcaseTeamNav = [
+  { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
+  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
+  { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
+  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
 ];
 
 // Player - Recruiting Mode
 const playerRecruitingNav = [
-  { name: 'Dashboard', href: '/dashboard', icon: IconHome },
-  { name: 'My Profile', href: '/dashboard/profile', icon: IconUser },
-  { name: 'Colleges', href: '/dashboard/colleges', icon: IconBuilding },
-  { name: 'Journey', href: '/dashboard/journey', icon: IconTarget },
-  { name: 'Camps', href: '/dashboard/camps', icon: IconCalendar },
-  { name: 'Messages', href: '/dashboard/messages', icon: IconMessage, badge: true },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: IconChart },
+  { name: 'Dashboard', href: '/baseball/dashboard', icon: IconHome },
+  { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
+  { name: 'Colleges', href: '/baseball/dashboard/colleges', icon: IconBuilding },
+  { name: 'Journey', href: '/baseball/dashboard/journey', icon: IconTarget },
+  { name: 'Camps', href: '/baseball/dashboard/camps', icon: IconCalendar },
+  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+  { name: 'Analytics', href: '/baseball/dashboard/analytics', icon: IconChart },
 ];
 
 // Player - Team Mode
 const playerTeamNav = [
-  { name: 'Dashboard', href: '/dashboard/team', icon: IconHome },
-  { name: 'My Profile', href: '/dashboard/profile', icon: IconUser },
-  { name: 'Videos', href: '/dashboard/videos', icon: IconVideo },
-  { name: 'Dev Plan', href: '/dashboard/dev-plan', icon: IconNote },
-  { name: 'Calendar', href: '/dashboard/calendar', icon: IconCalendar },
-  { name: 'Messages', href: '/dashboard/team/messages', icon: IconMessage, badge: true },
+  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+  { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
+  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
+  { name: 'Dev Plan', href: '/baseball/dashboard/dev-plan', icon: IconNote },
+  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
+  { name: 'Messages', href: '/baseball/dashboard/team/messages', icon: IconMessage, badge: true },
 ];
 
 // Secondary navigation (coach)
 const coachSecondaryNav = [
-  { name: 'Program', href: '/dashboard/program', icon: IconBuilding },
-  { name: 'Settings', href: '/dashboard/settings', icon: IconSettings },
+  { name: 'Program', href: '/baseball/dashboard/program', icon: IconBuilding },
+  { name: 'Settings', href: '/baseball/dashboard/settings', icon: IconSettings },
   { name: 'Help', href: '/help', icon: IconHelp },
 ];
 
 // Secondary navigation (player)
 const playerSecondaryNav = [
-  { name: 'Settings', href: '/dashboard/settings', icon: IconSettings },
+  { name: 'Settings', href: '/baseball/dashboard/settings', icon: IconSettings },
   { name: 'Help', href: '/help', icon: IconHelp },
 ];
 
@@ -93,6 +125,13 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
   const pathname = usePathname();
   const router = useRouter();
   const { user, coach, player, signOut } = useAuth();
+  const { hasMultipleTeams, selectedTeam } = useTeams();
+
+  // Determine sport-specific logo based on pathname
+  const isGolf = pathname.startsWith('/golf');
+  const logoSrc = isGolf ? '/helm-golf-logo.png' : '/helm-baseball-logo.png';
+  const logoAlt = isGolf ? 'GolfHelm' : 'BaseballHelm';
+  const dashboardHref = isGolf ? '/golf/dashboard' : '/baseball/dashboard';
 
   // Determine if user should see mode toggle
   const showModeToggle =
@@ -120,9 +159,13 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
       if (coach?.coach_type === 'college') {
         return coachRecruitingNav;
       } else if (coach?.coach_type === 'juco') {
-        return currentMode === 'recruiting' ? coachRecruitingNav : coachTeamNav;
+        // JUCO has both modes, team mode includes Academics
+        return currentMode === 'recruiting' ? coachRecruitingNav : jucoTeamNav;
+      } else if (coach?.coach_type === 'showcase') {
+        // Showcase coaches see organization navigation
+        return showcaseOrgNav;
       } else {
-        // HS and Showcase coaches only have team mode
+        // HS coaches only have team mode
         return coachTeamNav;
       }
     } else if (user?.role === 'player') {
@@ -137,18 +180,28 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
     return coachRecruitingNav; // Default fallback
   };
 
+  // Get team-specific navigation for showcase coaches
+  const getTeamNavigation = () => {
+    if (coach?.coach_type === 'showcase' && selectedTeam) {
+      return showcaseTeamNav;
+    }
+    return [];
+  };
+
   const navigation = getNavigation();
+  const teamNavigation = getTeamNavigation();
   const secondaryNav = user?.role === 'coach' ? coachSecondaryNav : playerSecondaryNav;
   const displayName = coach?.full_name || (player ? `${player.first_name} ${player.last_name}` : 'User');
+  const isShowcaseCoach = coach?.coach_type === 'showcase';
   const subtitle = coach ? (coach.school_name || 'Coach') : (player ? `${player.primary_position} • ${player.grad_year}` : '');
 
   const handleModeChange = (mode: Mode) => {
     setCurrentMode(mode);
     // Redirect to appropriate dashboard based on mode
     if (mode === 'recruiting') {
-      router.push('/dashboard');
+      router.push('/baseball/dashboard');
     } else {
-      router.push('/dashboard/team');
+      router.push('/baseball/dashboard/team');
     }
   };
 
@@ -161,7 +214,7 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
 
   const handleSignOut = async () => {
     await signOut();
-    router.push('/login');
+    router.push('/baseball/login');
   };
 
   return (
@@ -175,16 +228,15 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
       {/* Logo */}
       <div className="h-16 px-4 flex items-center justify-between border-b border-slate-100">
         <Link
-          href="/dashboard"
-          className="flex items-center gap-2.5 group"
+          href={dashboardHref}
+          className="flex items-center group"
           onClick={handleNavClick}
         >
-          <div className="w-9 h-9 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm transition-all duration-200 group-hover:shadow-md group-hover:scale-105">
-            <span className="text-white font-bold text-sm">H</span>
-          </div>
-          {!collapsed && (
-            <span className="font-semibold text-slate-900 tracking-tight text-lg">Helm</span>
-          )}
+          <img
+            src={logoSrc}
+            alt={logoAlt}
+            className="h-9 w-auto transition-all duration-200 group-hover:scale-105"
+          />
         </Link>
         {onToggle && !isMobile && (
           <button
@@ -210,9 +262,14 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
           </div>
         )}
 
+        {/* Team Switcher for Showcase Coaches */}
+        {isShowcaseCoach && hasMultipleTeams && (
+          <TeamSwitcher collapsed={collapsed} />
+        )}
+
         <ul className="space-y-1">
           {navigation.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && item.href !== '/dashboard/team' && pathname.startsWith(item.href));
+            const isActive = pathname === item.href || (item.href !== '/baseball/dashboard' && item.href !== '/baseball/dashboard/team' && pathname.startsWith(item.href));
             return (
               <li key={item.name}>
                 <Link
@@ -250,6 +307,48 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
             );
           })}
         </ul>
+
+        {/* Team-specific navigation for Showcase Coaches */}
+        {isShowcaseCoach && selectedTeam && teamNavigation.length > 0 && (
+          <>
+            <div className="my-4 border-t border-slate-100" />
+            {!collapsed && (
+              <p className="px-4 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                {selectedTeam.name}
+              </p>
+            )}
+            <ul className="space-y-1">
+              {teamNavigation.map((item) => {
+                const isActive = pathname.startsWith(item.href);
+                return (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      onClick={handleNavClick}
+                      title={collapsed ? item.name : undefined}
+                      className={cn(
+                        'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                        isActive
+                          ? 'bg-green-50 text-green-700'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                        collapsed && 'justify-center px-2'
+                      )}
+                    >
+                      <item.icon
+                        size={20}
+                        className={cn(
+                          'flex-shrink-0 transition-colors',
+                          isActive ? 'text-green-600' : 'text-slate-400'
+                        )}
+                      />
+                      {!collapsed && <span className="flex-1">{item.name}</span>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
 
         {/* Divider */}
         <div className="my-4 border-t border-slate-100" />

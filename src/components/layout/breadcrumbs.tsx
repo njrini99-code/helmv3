@@ -16,7 +16,7 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
   return (
     <nav className={cn('flex items-center gap-1 text-sm', className)}>
       <Link
-        href="/dashboard"
+        href="/baseball/dashboard"
         className="p-1 text-slate-400 hover:text-slate-600 transition-colors rounded-md hover:bg-slate-100"
       >
         <IconHome size={16} />

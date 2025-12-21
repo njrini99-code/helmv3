@@ -2,20 +2,35 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
+ * Determine which sport context from the URL
+ */
+function getSportFromPath(pathname: string): 'baseball' | 'golf' | null {
+  if (pathname.startsWith('/baseball')) return 'baseball';
+  if (pathname.startsWith('/golf')) return 'golf';
+  return null;
+}
+
+/**
  * Create a Supabase client for use in Middleware
  * This refreshes the user's session and is called on every route
  */
 export async function updateSession(request: NextRequest) {
-  // Check if dev mode is enabled - check both NODE_ENV and if we're not in production
-  const isDevMode = process.env.NODE_ENV === 'development' ||
-                    process.env.NODE_ENV !== 'production' ||
-                    !process.env.VERCEL;
+  const pathname = request.nextUrl.pathname;
+  const sport = getSportFromPath(pathname);
+
+  // Check if dev mode is enabled - must be in development AND have explicit flag
+  const isDevMode = process.env.NODE_ENV === 'development' &&
+                    process.env.NEXT_PUBLIC_DEV_MODE === 'true';
 
   // Public routes that should always be accessible
-  const isPublicRoute = request.nextUrl.pathname === '/' ||
-                       request.nextUrl.pathname.startsWith('/dev') ||
-                       request.nextUrl.pathname.startsWith('/login') ||
-                       request.nextUrl.pathname.startsWith('/signup');
+  const isPublicRoute = pathname === '/' ||
+                       pathname.startsWith('/dev') ||
+                       pathname === '/baseball/login' ||
+                       pathname === '/baseball/signup' ||
+                       pathname === '/golf/login' ||
+                       pathname === '/golf/signup' ||
+                       pathname.startsWith('/baseball/player/') ||  // Public player profiles
+                       pathname.startsWith('/golf/player/');        // Public player profiles
 
   // In dev mode, allow all routes without authentication
   // Also allow public routes even in production
@@ -60,24 +75,30 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protected routes check
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||
-                     request.nextUrl.pathname.startsWith('/signup');
-  const isOnboardingRoute = request.nextUrl.pathname.startsWith('/coach') ||
-                            request.nextUrl.pathname.startsWith('/player');
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
+  // Protected routes check - sport-specific
+  const isAuthPage = pathname === '/baseball/login' ||
+                     pathname === '/baseball/signup' ||
+                     pathname === '/golf/login' ||
+                     pathname === '/golf/signup';
+  const isOnboardingRoute = pathname.startsWith('/baseball/coach') ||
+                            pathname.startsWith('/baseball/player') ||
+                            pathname.startsWith('/golf/coach') ||
+                            pathname.startsWith('/golf/player');
+  const isDashboardRoute = pathname.startsWith('/baseball/dashboard') ||
+                           pathname.startsWith('/golf/dashboard');
   const isProtectedRoute = isOnboardingRoute || isDashboardRoute;
 
   // Redirect to login if accessing protected route without auth
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('redirect', request.nextUrl.pathname);
+    // Redirect to the sport-specific login page
+    url.pathname = sport ? `/${sport}/login` : '/baseball/login';
+    url.searchParams.set('redirect', pathname);
     return NextResponse.redirect(url);
   }
 
   // Redirect authenticated users from auth pages to their onboarding or dashboard
-  if (user && isAuthPage) {
+  if (user && isAuthPage && sport) {
     // Get user role and onboarding status from database
     const { data: userData } = await supabase
       .from('users')
@@ -95,7 +116,9 @@ export async function updateSession(request: NextRequest) {
         .eq('user_id', user.id)
         .single();
 
-      url.pathname = coachData?.onboarding_completed ? '/dashboard' : '/coach';
+      url.pathname = coachData?.onboarding_completed
+        ? `/${sport}/dashboard`
+        : `/${sport}/coach`;
     } else if (userData?.role === 'player') {
       // Check if player has completed onboarding
       const { data: playerData } = await supabase
@@ -104,7 +127,9 @@ export async function updateSession(request: NextRequest) {
         .eq('user_id', user.id)
         .single();
 
-      url.pathname = playerData?.onboarding_completed ? '/dashboard' : '/player';
+      url.pathname = playerData?.onboarding_completed
+        ? `/${sport}/dashboard`
+        : `/${sport}/player`;
     } else {
       url.pathname = '/';
     }

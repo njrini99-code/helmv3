@@ -46,3 +46,4 @@ supabase/.temp
 # Temporary/bundled docs (keep docs/ but not bundles)
 helm-docs-bundle/
 helm-cli-complete.zip
+next-shadcn-dashboard-starter/

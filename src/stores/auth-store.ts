@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, Coach, Player } from '@/types/database';
+import type { User, Coach, Player } from '@/lib/types';
+import { DEV_ACCOUNTS, type DevAccountType } from '@/lib/dev-mode';
 
 interface AuthState {
   user: User | null;
@@ -29,8 +30,7 @@ export const useAuthStore = create<AuthState>()(
       setPlayer: (player) => set({ player }),
       setLoading: (loading) => set({ loading }),
       setDevUser: (devData) => {
-        const { DEV_ACCOUNTS } = require('@/lib/dev-mode');
-        const accountKey = Object.keys(DEV_ACCOUNTS).find(
+        const accountKey = (Object.keys(DEV_ACCOUNTS) as DevAccountType[]).find(
           (key) => DEV_ACCOUNTS[key].id === devData.id
         );
 
@@ -45,8 +45,8 @@ export const useAuthStore = create<AuthState>()(
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             } as User,
-            coach: 'coachProfile' in account ? (account.coachProfile as Coach) : null,
-            player: 'playerProfile' in account ? (account.playerProfile as Player) : null,
+            coach: 'coachProfile' in account ? (account.coachProfile as unknown as Coach) : null,
+            player: 'playerProfile' in account ? (account.playerProfile as unknown as Player) : null,
             isDevMode: true,
             loading: false,
           });

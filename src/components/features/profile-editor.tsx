@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Player } from '@/types/database';
+import { Player } from '@/lib/types';
 
 interface ProfileEditorProps {
   player: Player;
@@ -48,7 +48,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
       await onUpdate(formData);
       setSaveMessage('Profile updated successfully!');
       setTimeout(() => setSaveMessage(null), 3000);
-    } catch (error) {
+    } catch {
       setSaveMessage('Failed to update profile. Please try again.');
     } finally {
       setIsSaving(false);
@@ -378,7 +378,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
                 Manage your highlight videos and game footage from the Videos page in your dashboard.
               </p>
               <a
-                href="/dashboard/videos"
+                href="/baseball/dashboard/videos"
                 className="inline-block px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
               >
                 Go to Videos

@@ -14,7 +14,7 @@ import {
   IconPaperclip,
   IconSmile,
 } from '@/components/icons';
-import type { Message } from '@/types/database';
+import type { Message } from '@/lib/types';
 import type { UIMessage, ParticipantDetails } from '@/lib/types/messages';
 import { groupMessagesByDate, formatMessageTime } from '@/lib/types/messages';
 
@@ -39,7 +39,7 @@ export function ChatWindow({
 }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState('');
   const [sending, setSending] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
+  const [isTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -288,7 +288,7 @@ function MessageBubble({ message, isFromMe, showAvatar, participant }: MessageBu
             isFromMe ? 'text-green-200' : 'text-slate-400'
           )}
         >
-          <span className="text-[10px]">{formatMessageTime(message.sent_at)}</span>
+          <span className="text-[10px]">{message.sent_at ? formatMessageTime(message.sent_at) : ''}</span>
           {isFromMe && <MessageStatusIcon status={message.status} />}
         </div>
       </div>

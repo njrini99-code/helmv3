@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { usePeekPanelStore } from '@/stores/peek-panel-store';
-import type { Player } from '@/types/database';
+import type { Player } from '@/lib/types';
 import {
   IconX,
   IconMapPin,

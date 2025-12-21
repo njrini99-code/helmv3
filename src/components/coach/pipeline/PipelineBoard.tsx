@@ -5,9 +5,9 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners }
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { PipelineColumn } from './PipelineColumn';
 import { PlayerCard } from './PlayerCard';
-import { updateWatchlistStatus } from '@/app/actions/watchlist';
+import { updateWatchlistStatus } from '@/app/baseball/actions/watchlist';
 import { useToast } from '@/components/ui/toast';
-import type { Watchlist, Player, PipelineStage } from '@/types/database';
+import type { Watchlist, Player, PipelineStage } from '@/lib/types';
 
 type WatchlistWithPlayer = Watchlist & { player: Player };
 
@@ -16,14 +16,13 @@ interface PipelineBoardProps {
   onPlayerClick?: (player: Player) => void;
 }
 
-// Pipeline column configuration
+// Pipeline column configuration - ONLY 5 valid stages
 const COLUMNS = [
   { id: 'watchlist', title: 'Prospects', color: 'bg-slate-100 text-slate-700' },
-  { id: 'contacted', title: 'Contacted', color: 'bg-blue-100 text-blue-700' },
-  { id: 'high_priority', title: 'Interested', color: 'bg-amber-100 text-amber-700' },
-  { id: 'campus_visit', title: 'Campus Visit', color: 'bg-purple-100 text-purple-700' },
-  { id: 'offer_extended', title: 'Offer Extended', color: 'bg-indigo-100 text-indigo-700' },
+  { id: 'high_priority', title: 'High Priority', color: 'bg-amber-100 text-amber-700' },
+  { id: 'offer_extended', title: 'Offer Extended', color: 'bg-blue-100 text-blue-700' },
   { id: 'committed', title: 'Committed', color: 'bg-green-100 text-green-700' },
+  { id: 'uninterested', title: 'Not Interested', color: 'bg-slate-50 text-slate-600' },
 ] as const;
 
 export function PipelineBoard({ initialData, onPlayerClick }: PipelineBoardProps) {

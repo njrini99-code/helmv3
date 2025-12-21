@@ -3,12 +3,17 @@
 import { useDroppable } from '@dnd-kit/core';
 import { Badge } from '@/components/ui/badge';
 import { PipelineCard } from './pipeline-card';
-import { getPipelineStageLabel, getPipelineStageColor, cn } from '@/lib/utils';
-import type { Watchlist, PipelineStage } from '@/types/database';
+import { getPipelineStageLabel, cn } from '@/lib/utils';
+import type { Watchlist, PipelineStage, Player } from '@/lib/types';
+
+// Watchlist with joined player data
+type WatchlistItem = Watchlist & {
+  player?: Player;
+};
 
 interface PipelineColumnProps {
   stage: PipelineStage;
-  items: Watchlist[];
+  items: WatchlistItem[];
 }
 
 export function PipelineColumn({ stage, items }: PipelineColumnProps) {

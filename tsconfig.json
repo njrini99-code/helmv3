@@ -64,6 +64,7 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "next-shadcn-dashboard-starter"
   ]
 }

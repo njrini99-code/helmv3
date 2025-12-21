@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
-import type { College } from '@/types/database';
+import type { College } from '@/lib/types';
 
 interface UseCollegesOptions {
   division?: string;

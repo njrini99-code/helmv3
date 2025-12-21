@@ -7,7 +7,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Button } from '@/components/ui/button';
 import { IconPlus, IconCheck, IconCheckCheck, IconMessage, IconSearch } from '@/components/icons';
-import type { ConversationWithMeta, ConversationWithParticipant, ParticipantDetails } from '@/lib/types/messages';
+import type { ConversationWithMeta, ConversationWithParticipant } from '@/lib/types/messages';
 import { getParticipantDetails } from '@/lib/types/messages';
 
 interface ConversationListProps {
@@ -170,7 +170,7 @@ function ConversationItem({
           )}>
             {participant?.name || 'Unknown'}
           </h4>
-          {lastMessage && (
+          {lastMessage?.sent_at && (
             <span className="text-xs text-slate-400 flex-shrink-0 ml-2">
               {formatRelativeTime(lastMessage.sent_at)}
             </span>

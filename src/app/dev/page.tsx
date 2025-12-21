@@ -36,9 +36,9 @@ export default function DevModePage() {
 
     // Redirect based on role
     if (account.role === 'coach') {
-      router.push('/dashboard');
+      router.push('/baseball/dashboard');
     } else {
-      router.push('/dashboard');
+      router.push('/baseball/dashboard');
     }
   };
 

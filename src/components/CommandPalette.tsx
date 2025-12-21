@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import { createClient } from '@/lib/supabase/client';
@@ -121,14 +121,14 @@ export function CommandPalette() {
       label: 'Discover Players',
       icon: <IconUsers size={18} />,
       section: 'recent',
-      action: () => router.push('/dashboard/discover'),
+      action: () => router.push('/baseball/dashboard/discover'),
     },
     {
       id: 'recent-watchlist',
       label: 'My Watchlist',
       icon: <IconStar size={18} />,
       section: 'recent',
-      action: () => router.push('/dashboard/watchlist'),
+      action: () => router.push('/baseball/dashboard/watchlist'),
     },
     // Navigation
     {
@@ -137,7 +137,7 @@ export function CommandPalette() {
       icon: <IconHome size={18} />,
       shortcut: 'G D',
       section: 'navigation',
-      action: () => router.push('/dashboard'),
+      action: () => router.push('/baseball/dashboard'),
     },
     {
       id: 'nav-discover',
@@ -145,7 +145,7 @@ export function CommandPalette() {
       icon: <IconUsers size={18} />,
       shortcut: 'G F',
       section: 'navigation',
-      action: () => router.push('/dashboard/discover'),
+      action: () => router.push('/baseball/dashboard/discover'),
     },
     {
       id: 'nav-watchlist',
@@ -153,7 +153,7 @@ export function CommandPalette() {
       icon: <IconStar size={18} />,
       shortcut: 'G W',
       section: 'navigation',
-      action: () => router.push('/dashboard/watchlist'),
+      action: () => router.push('/baseball/dashboard/watchlist'),
     },
     {
       id: 'nav-pipeline',
@@ -161,7 +161,7 @@ export function CommandPalette() {
       icon: <IconTarget size={18} />,
       shortcut: 'G P',
       section: 'navigation',
-      action: () => router.push('/dashboard/pipeline'),
+      action: () => router.push('/baseball/dashboard/pipeline'),
     },
     {
       id: 'nav-messages',
@@ -169,7 +169,7 @@ export function CommandPalette() {
       icon: <IconMessage size={18} />,
       shortcut: 'G M',
       section: 'navigation',
-      action: () => router.push('/dashboard/messages'),
+      action: () => router.push('/baseball/dashboard/messages'),
     },
     {
       id: 'nav-calendar',
@@ -177,28 +177,28 @@ export function CommandPalette() {
       icon: <IconCalendar size={18} />,
       shortcut: 'G C',
       section: 'navigation',
-      action: () => router.push('/dashboard/calendar'),
+      action: () => router.push('/baseball/dashboard/calendar'),
     },
     {
       id: 'nav-videos',
       label: 'Video Library',
       icon: <IconVideo size={18} />,
       section: 'navigation',
-      action: () => router.push('/dashboard/videos'),
+      action: () => router.push('/baseball/dashboard/videos'),
     },
     {
       id: 'nav-analytics',
       label: 'Analytics',
       icon: <IconChart size={18} />,
       section: 'navigation',
-      action: () => router.push('/dashboard/analytics'),
+      action: () => router.push('/baseball/dashboard/analytics'),
     },
     {
       id: 'nav-program',
       label: 'Program Profile',
       icon: <IconBuilding size={18} />,
       section: 'navigation',
-      action: () => router.push('/dashboard/program'),
+      action: () => router.push('/baseball/dashboard/program'),
     },
     {
       id: 'nav-settings',
@@ -206,7 +206,7 @@ export function CommandPalette() {
       icon: <IconSettings size={18} />,
       shortcut: 'G S',
       section: 'navigation',
-      action: () => router.push('/dashboard/settings'),
+      action: () => router.push('/baseball/dashboard/settings'),
     },
     // Actions
     {
@@ -215,21 +215,21 @@ export function CommandPalette() {
       icon: <IconMessage size={18} />,
       shortcut: 'N M',
       section: 'actions',
-      action: () => router.push('/dashboard/messages?compose=true'),
+      action: () => router.push('/baseball/dashboard/messages?compose=true'),
     },
     {
       id: 'action-profile',
       label: 'Edit Profile',
       icon: <IconUser size={18} />,
       section: 'actions',
-      action: () => router.push('/dashboard/profile'),
+      action: () => router.push('/baseball/dashboard/profile'),
     },
     {
       id: 'action-logout',
       label: 'Log Out',
       icon: <IconLogOut size={18} />,
       section: 'actions',
-      action: () => router.push('/logout'),
+      action: () => router.push('/baseball/logout'),
     },
   ];
 
@@ -286,7 +286,7 @@ export function CommandPalette() {
                       <Command.Item
                         key={player.id}
                         value={`player-${player.id}`}
-                        onSelect={() => runCommand(() => router.push(`/dashboard/players/${player.id}`))}
+                        onSelect={() => runCommand(() => router.push(`/baseball/dashboard/players/${player.id}`))}
                         className="cmdk-item"
                       >
                         <div className="cmdk-item-content">

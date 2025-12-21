@@ -174,7 +174,7 @@ export function NotificationCenter({
               </div>
             ) : (
               <div>
-                {filteredNotifications.map((notification, index) => {
+                {filteredNotifications.map((notification) => {
                   const typeConfig = typeIcons[notification.type] || typeIcons['other'];
                   const config = typeConfig!; // Assert non-null since we have fallback
 

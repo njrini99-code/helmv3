@@ -3,7 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { usePeekPanelStore } from '@/stores/peek-panel-store';
-import type { Player } from '@/types/database';
+import type { Player } from '@/lib/types';
 
 interface PlayerCardProps {
   id: string;

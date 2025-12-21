@@ -3,18 +3,22 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { getFullName, getPipelineStageLabel } from '@/lib/utils';
 import { useWatchlist } from '@/hooks/use-watchlist';
-import type { Watchlist, PipelineStage } from '@/types/database';
+import type { Watchlist, PipelineStage, Player } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const stages: PipelineStage[] = ['watchlist', 'high_priority', 'offer_extended', 'committed', 'uninterested'];
 
+// Watchlist with joined player data
+type WatchlistItem = Watchlist & {
+  player?: Player;
+};
+
 interface PipelineCardProps {
-  item: Watchlist;
+  item: WatchlistItem;
   isDragging?: boolean;
 }
 

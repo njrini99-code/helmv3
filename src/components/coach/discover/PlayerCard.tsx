@@ -31,7 +31,7 @@ export interface PlayerCardData {
     weight?: number;
   };
   verified?: boolean;
-  status?: 'watching' | 'contacted' | 'interested' | 'committed';
+  status?: 'watchlist' | 'high_priority' | 'offer_extended' | 'committed' | 'uninterested';
 }
 
 interface PlayerCardProps {
@@ -365,10 +365,11 @@ function ActionButton({
 
 function getStatusVariant(status: string): 'info' | 'warning' | 'success' {
   const variants: Record<string, 'info' | 'warning' | 'success'> = {
-    watching: 'info',
-    contacted: 'warning',
-    interested: 'success',
+    watchlist: 'info',
+    high_priority: 'warning',
+    offer_extended: 'info',
     committed: 'success',
+    uninterested: 'info',
   };
   return variants[status] || 'info';
 }

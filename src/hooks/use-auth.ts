@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
-import type { Player, Coach } from '@/types/database';
+import type { Player, Coach } from '@/lib/types';
 
 export function useAuth() {
   const router = useRouter();
@@ -50,7 +50,7 @@ export function useAuth() {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
         if (event === 'SIGNED_OUT') {
           clear();
-          router.push('/login');
+          router.push('/baseball/login');
         } else if (event === 'SIGNED_IN') {
           fetchUser();
         }
@@ -63,7 +63,7 @@ export function useAuth() {
   const signOut = async () => {
     await supabase.auth.signOut();
     clear();
-    router.push('/login');
+    router.push('/baseball/login');
   };
 
   const updatePlayer = async (updates: Partial<Player>) => {

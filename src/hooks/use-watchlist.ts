@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
-import type { Watchlist, PipelineStage } from '@/types/database';
+import type { WatchlistWithPlayer, PipelineStage } from '@/lib/types';
 
 export function useWatchlist() {
-  const [watchlist, setWatchlist] = useState<Watchlist[]>([]);
+  const [watchlist, setWatchlist] = useState<WatchlistWithPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const { coach } = useAuthStore();
   const supabase = createClient();
@@ -28,7 +28,6 @@ export function useWatchlist() {
         notes,
         priority,
         tags,
-        last_contact,
         added_at,
         created_at,
         updated_at,
@@ -37,8 +36,7 @@ export function useWatchlist() {
       .eq('coach_id', coach.id)
       .order('priority', { ascending: false });
 
-    // @ts-ignore - Column exists in database but types may need refresh
-    setWatchlist(data || []);
+    setWatchlist((data || []) as WatchlistWithPlayer[]);
     setLoading(false);
   }, [coach]);
 

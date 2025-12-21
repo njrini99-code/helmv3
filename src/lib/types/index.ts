@@ -128,7 +128,7 @@ export type DiscoverPlayer = Pick<
 
 // Watchlist item with player data
 export type WatchlistWithPlayer = Watchlist & {
-  player: DiscoverPlayer;
+  player?: Player;
 };
 
 // Camp with organization and registration count
@@ -357,15 +357,6 @@ export function formatCoachName(coach: Pick<Coach, 'full_name'>): string {
 }
 
 /**
- * Format height
- */
-export function formatHeight(feet?: number | null, inches?: number | null): string {
-  if (!feet) return 'N/A';
-  const inchPart = inches ? `-${inches}"` : '"';
-  return `${feet}'${inchPart}`;
-}
-
-/**
  * Format GPA
  */
 export function formatGPA(gpa?: number | string | null): string {
@@ -421,30 +412,3 @@ export function getOrgTypeLabel(type: string): string {
   return labels[type] || type;
 }
 
-/**
- * Get pipeline stage label
- */
-export function getPipelineStageLabel(stage: PipelineStage): string {
-  const labels: Record<PipelineStage, string> = {
-    watchlist: 'Watchlist',
-    high_priority: 'High Priority',
-    offer_extended: 'Offer Extended',
-    committed: 'Committed',
-    uninterested: 'Uninterested',
-  };
-  return labels[stage] || stage;
-}
-
-/**
- * Get pipeline stage color (Tailwind classes)
- */
-export function getPipelineStageColor(stage: PipelineStage): string {
-  const colors: Record<PipelineStage, string> = {
-    watchlist: 'bg-slate-100 text-slate-700',
-    high_priority: 'bg-green-100 text-green-700',
-    offer_extended: 'bg-blue-100 text-blue-700',
-    committed: 'bg-green-600 text-white',
-    uninterested: 'bg-slate-200 text-slate-600',
-  };
-  return colors[stage] || 'bg-slate-100 text-slate-700';
-}

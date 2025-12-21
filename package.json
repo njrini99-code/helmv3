@@ -7,7 +7,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "typecheck": "tsc --noEmit",
+    "db:types": "npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/lib/types/database.ts",
+    "check": "npm run typecheck && npm run lint"
   },
   "keywords": [],
   "author": "",
@@ -43,6 +46,9 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
-    "supabase": "^2.67.1"
+    "@eslint/eslintrc": "^3.3.3",
+    "@eslint/js": "^9.39.2",
+    "supabase": "^2.67.1",
+    "typescript-eslint": "^8.50.0"
   }
 }

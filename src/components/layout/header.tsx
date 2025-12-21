@@ -66,7 +66,7 @@ export function Header({ title, subtitle, children, backHref, onMenuClick, showM
   const handleSignOut = async () => {
     setShowUserMenu(false);
     await signOut();
-    router.push('/login');
+    router.push('/baseball/login');
   };
 
   return (
@@ -179,13 +179,13 @@ export function Header({ title, subtitle, children, backHref, onMenuClick, showM
                 {/* Menu items */}
                 <div className="p-2">
                   <UserMenuItem
-                    href="/dashboard/profile"
+                    href="/baseball/dashboard/profile"
                     icon={IconUser}
                     label="Your Profile"
                     onClick={() => setShowUserMenu(false)}
                   />
                   <UserMenuItem
-                    href="/dashboard/settings"
+                    href="/baseball/dashboard/settings"
                     icon={IconSettings}
                     label="Settings"
                     onClick={() => setShowUserMenu(false)}

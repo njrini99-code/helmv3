@@ -35,10 +35,10 @@ export function useActivityFeed(limit = 10) {
 
       setLoading(true);
 
-      // Use recruit_watchlist as activity source since player_engagement_events may not exist
+      // Use watchlists as activity source since player_engagement_events may not exist
       // This shows recent watchlist additions as activity
       const { data: watchlistData, error } = await supabase
-        .from('recruit_watchlist')
+        .from('watchlists')
         .select('id, player_id, coach_id, created_at, updated_at')
         .eq('coach_id', coach.id)
         .order('updated_at', { ascending: false })
@@ -251,9 +251,9 @@ export function useEngagementChart(days = 7) {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      // Use recruit_watchlist since player_engagement_events may not exist
+      // Use watchlists since player_engagement_events may not exist
       const { data: watchlistEvents } = await supabase
-        .from('recruit_watchlist')
+        .from('watchlists')
         .select('created_at, updated_at')
         .eq('coach_id', coach.id)
         .gte('created_at', startDate.toISOString());
@@ -273,6 +273,7 @@ export function useEngagementChart(days = 7) {
 
       // Count watchlist adds by date
       (watchlistEvents || []).forEach(event => {
+        if (!event.created_at) return;
         const dateStr = new Date(event.created_at).toISOString().split('T')[0];
         if (dateStr && dataByDate[dateStr]) {
           dataByDate[dateStr].watchlistAdds++;

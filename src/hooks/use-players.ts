@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { Player } from '@/types/database';
+import type { Player } from '@/lib/types';
 
 interface UsePlayersOptions {
   gradYear?: number;

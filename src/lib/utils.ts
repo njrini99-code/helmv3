@@ -147,9 +147,7 @@ export function getGradYearLabel(year: number | null): string {
 export function getPipelineStageLabel(stage: string): string {
   const labels: Record<string, string> = {
     watchlist: 'Prospects',
-    contacted: 'Contacted',
-    high_priority: 'Interested',
-    campus_visit: 'Campus Visit',
+    high_priority: 'High Priority',
     offer_extended: 'Offer Extended',
     committed: 'Committed',
     uninterested: 'Not Interested',
@@ -160,10 +158,8 @@ export function getPipelineStageLabel(stage: string): string {
 export function getPipelineStageColor(stage: string): string {
   const colors: Record<string, string> = {
     watchlist: 'bg-slate-100',
-    contacted: 'bg-blue-50',
     high_priority: 'bg-amber-50',
-    campus_visit: 'bg-purple-50',
-    offer_extended: 'bg-indigo-50',
+    offer_extended: 'bg-blue-50',
     committed: 'bg-green-50',
     uninterested: 'bg-gray-50',
   };

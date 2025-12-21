@@ -151,8 +151,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
 
   if (!open) return null;
 
-  const selectedPlayer = players.find(p => p.id === selectedPlayerId);
-
+  
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">

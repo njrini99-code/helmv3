@@ -1,6 +1,6 @@
 'use client';
 
-import type { Message, Conversation, Coach, Player } from '@/types/database';
+import type { Message, Conversation, Coach, Player, User } from '@/lib/types';
 
 // Message status for UI display
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
@@ -20,15 +20,34 @@ export interface ParticipantDetails {
   isOnline?: boolean;
 }
 
-// Use the existing Conversation type which already has other_user, last_message, unread_count
+// Other user data from conversation query (joined data)
+export interface OtherUser {
+  id: string;
+  email?: string | null;
+  coach?: Coach | null;
+  coaches?: Coach | null;
+  player?: Player | null;
+  players?: Player | null;
+}
+
+// Last message preview
+export interface LastMessage {
+  content: string;
+  sent_at: string | null;
+  sender_id: string;
+  read?: boolean;
+}
+
+// Extended conversation with joined data (from Supabase query)
 export type ConversationWithMeta = Conversation & {
-  unread_count: number;
+  unread_count?: number;
+  other_user?: OtherUser | null;
+  last_message?: LastMessage | null;
 };
 
 // Conversation with participant details added
-export interface ConversationWithParticipant extends Omit<ConversationWithMeta, 'other_user'> {
+export interface ConversationWithParticipant extends ConversationWithMeta {
   participant: ParticipantDetails | null;
-  other_user?: Conversation['other_user'];
 }
 
 // Helper to extract participant details from conversation
@@ -81,7 +100,7 @@ export function groupMessagesByDate(messages: UIMessage[]): Map<string, UIMessag
   const groups = new Map<string, UIMessage[]>();
 
   messages.forEach(message => {
-    const date = new Date(message.sent_at);
+    const date = message.sent_at ? new Date(message.sent_at) : new Date();
     const dateKey = formatDateKey(date);
 
     if (!groups.has(dateKey)) {

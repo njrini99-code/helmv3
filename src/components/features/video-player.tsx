@@ -23,7 +23,7 @@ export function VideoPlayer({
   onError 
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [, setIsPlaying] = useState(false);
   const [hasViewed, setHasViewed] = useState(false);
   const [error, setError] = useState(false);
 

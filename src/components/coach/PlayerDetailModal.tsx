@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Player } from '@/types/database';
+import { Player } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { IconX, IconStar, IconMapPin, IconCalendar, IconMail } from '@/components/icons';
 import { getFullName } from '@/lib/utils';
-import { addToWatchlist } from '@/app/actions/watchlist';
-import { createConversation } from '@/app/actions/messages';
+import { addToWatchlist } from '@/app/baseball/actions/watchlist';
+import { createConversation } from '@/app/baseball/actions/messages';
 import { useToast } from '@/components/ui/toast';
 
 interface PlayerDetailModalProps {

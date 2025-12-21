@@ -5,11 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { IconPlus, IconCheck, IconVideo } from '@/components/icons';
-import { formatHeight, getFullName, formatVelocity } from '@/lib/utils';
+import { formatHeight, getFullName } from '@/lib/utils';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
 import { usePeekPanelStore } from '@/stores/peek-panel-store';
-import type { Player } from '@/types/database';
+import type { Player } from '@/lib/types';
 
 interface PlayerCardProps {
   player: Player;

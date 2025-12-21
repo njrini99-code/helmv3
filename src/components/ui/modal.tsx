@@ -63,7 +63,7 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
         )}
       >
         {/* Header */}
-        {(title || true) && (
+        {(title || description) && (
           <div className="flex items-start justify-between px-6 py-4 border-b border-slate-100">
             <div>
               {title && (
