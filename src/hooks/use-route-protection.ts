@@ -30,7 +30,7 @@ export function useRouteProtection(options: RouteProtectionOptions = {}) {
   const {
     allowedCoachTypes = ['college', 'high_school', 'juco', 'showcase'],
     requireRecruiting = false,
-    redirectTo = '/dashboard/team',
+    redirectTo = '/baseball/dashboard/team',
   } = options;
 
   const isLoading = authLoading;
@@ -60,7 +60,7 @@ export function useRouteProtection(options: RouteProtectionOptions = {}) {
 export function useRecruitingRouteProtection() {
   return useRouteProtection({
     allowedCoachTypes: ['college', 'juco'],
-    redirectTo: '/dashboard/team',
+    redirectTo: '/baseball/dashboard/team',
   });
 }
 
@@ -71,6 +71,6 @@ export function useRecruitingRouteProtection() {
 export function useTeamRouteProtection() {
   return useRouteProtection({
     allowedCoachTypes: ['high_school', 'showcase', 'juco'],
-    redirectTo: '/dashboard',
+    redirectTo: '/baseball/dashboard',
   });
 }

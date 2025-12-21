@@ -70,7 +70,7 @@ export async function sendMessage(conversationId: string, content: string) {
   }
 
   revalidatePath(`/dashboard/messages/${conversationId}`);
-  revalidatePath('/dashboard/messages');
+  revalidatePath('/baseball/dashboard/messages');
 
   return { success: true };
 }
@@ -145,7 +145,7 @@ export async function createConversation(participantUserIds: string[]) {
     throw new Error('Failed to add participants');
   }
 
-  revalidatePath('/dashboard/messages');
+  revalidatePath('/baseball/dashboard/messages');
 
   return { conversationId: conversation.id };
 }
@@ -173,7 +173,7 @@ export async function markMessagesAsRead(conversationId: string) {
     .neq('sender_id', user.id);
 
   revalidatePath(`/dashboard/messages/${conversationId}`);
-  revalidatePath('/dashboard/messages');
+  revalidatePath('/baseball/dashboard/messages');
 
   return { success: true };
 }

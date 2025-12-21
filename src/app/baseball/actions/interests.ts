@@ -55,8 +55,8 @@ export async function addToInterests(collegeId: string, schoolName: string, divi
     throw new Error('Failed to add to interests');
   }
 
-  revalidatePath('/dashboard/colleges');
-  revalidatePath('/dashboard/journey');
+  revalidatePath('/baseball/dashboard/colleges');
+  revalidatePath('/baseball/dashboard/journey');
 
   return { success: true };
 }
@@ -93,8 +93,8 @@ export async function removeFromInterests(collegeId: string) {
     throw new Error('Failed to remove from interests');
   }
 
-  revalidatePath('/dashboard/colleges');
-  revalidatePath('/dashboard/journey');
+  revalidatePath('/baseball/dashboard/colleges');
+  revalidatePath('/baseball/dashboard/journey');
 
   return { success: true };
 }

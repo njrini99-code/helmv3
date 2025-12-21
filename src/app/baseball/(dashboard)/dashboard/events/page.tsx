@@ -62,7 +62,7 @@ export default function EventsPage() {
   const { coach, loading: authLoading } = useAuth();
   const { isAllowed, isLoading: routeLoading } = useRouteProtection({
     allowedCoachTypes: ['showcase'],
-    redirectTo: '/dashboard',
+    redirectTo: '/baseball/dashboard',
   });
   const { teams } = useTeams();
 

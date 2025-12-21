@@ -64,9 +64,9 @@ export async function addToWatchlist(coachId: string, playerId: string) {
       metadata: { source: 'discover' },
     });
 
-  revalidatePath('/dashboard/discover');
-  revalidatePath('/dashboard/watchlist');
-  revalidatePath('/dashboard/pipeline');
+  revalidatePath('/baseball/dashboard/discover');
+  revalidatePath('/baseball/dashboard/watchlist');
+  revalidatePath('/baseball/dashboard/pipeline');
 
   return { success: true };
 }
@@ -102,9 +102,9 @@ export async function removeFromWatchlist(coachId: string, playerId: string) {
     throw new Error('Failed to remove from watchlist');
   }
 
-  revalidatePath('/dashboard/discover');
-  revalidatePath('/dashboard/watchlist');
-  revalidatePath('/dashboard/pipeline');
+  revalidatePath('/baseball/dashboard/discover');
+  revalidatePath('/baseball/dashboard/watchlist');
+  revalidatePath('/baseball/dashboard/pipeline');
 
   return { success: true };
 }
@@ -130,8 +130,8 @@ export async function updateWatchlistStatus(watchlistId: string, status: Pipelin
     throw new Error('Failed to update status');
   }
 
-  revalidatePath('/dashboard/watchlist');
-  revalidatePath('/dashboard/pipeline');
+  revalidatePath('/baseball/dashboard/watchlist');
+  revalidatePath('/baseball/dashboard/pipeline');
 
   return { success: true };
 }
@@ -157,7 +157,7 @@ export async function updateWatchlistPriority(watchlistId: string, isHighPriorit
     throw new Error('Failed to update priority');
   }
 
-  revalidatePath('/dashboard/watchlist');
+  revalidatePath('/baseball/dashboard/watchlist');
 
   return { success: true };
 }
@@ -183,7 +183,7 @@ export async function addWatchlistNote(watchlistId: string, note: string) {
     throw new Error('Failed to add note');
   }
 
-  revalidatePath('/dashboard/watchlist');
+  revalidatePath('/baseball/dashboard/watchlist');
 
   return { success: true };
 }

@@ -11,7 +11,7 @@ export default async function PrivacySettingsPage() {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  if (!user) redirect('/baseball/login');
 
   // Get player record
   const { data: player } = await supabase
@@ -21,7 +21,7 @@ export default async function PrivacySettingsPage() {
     .single();
 
   if (!player) {
-    redirect('/dashboard');
+    redirect('/baseball/dashboard');
   }
 
   // Get existing privacy settings

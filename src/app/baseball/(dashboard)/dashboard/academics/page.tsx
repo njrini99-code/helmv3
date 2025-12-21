@@ -48,7 +48,7 @@ export default function AcademicsPage() {
   // Only JUCO coaches can access this page
   const { isAllowed, isLoading: routeLoading } = useRouteProtection({
     allowedCoachTypes: ['juco'],
-    redirectTo: '/dashboard/team',
+    redirectTo: '/baseball/dashboard/team',
   });
 
   const [students, setStudents] = useState<StudentAthlete[]>([]);
@@ -169,7 +169,7 @@ export default function AcademicsPage() {
             icon={<IconGraduationCap size={24} />}
             title="No student-athletes"
             description="Add players to your roster to track their academic progress."
-            action={<Button onClick={() => window.location.href = '/dashboard/roster'}>Manage Roster</Button>}
+            action={<Button onClick={() => window.location.href = '/baseball/dashboard/roster'}>Manage Roster</Button>}
           />
         </div>
       </>

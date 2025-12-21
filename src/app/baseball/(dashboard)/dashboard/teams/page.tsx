@@ -49,7 +49,7 @@ export default function TeamsPage() {
   const { coach, loading: authLoading } = useAuth();
   const { isAllowed, isLoading: routeLoading } = useRouteProtection({
     allowedCoachTypes: ['showcase'],
-    redirectTo: '/dashboard',
+    redirectTo: '/baseball/dashboard',
   });
 
   const [teams, setTeams] = useState<Team[]>([]);

@@ -195,6 +195,6 @@ export function useSignOut() {
   return async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    window.location.href = '/login';
+    window.location.href = '/baseball/login';
   };
 }

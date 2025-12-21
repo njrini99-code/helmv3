@@ -25,7 +25,7 @@ export default function DashboardError({
         <h2 className="text-xl font-semibold text-slate-900 mb-2">Something went wrong</h2>
         <p className="text-slate-500 mb-6">{error.message || 'An unexpected error occurred.'}</p>
         <div className="flex gap-3 justify-center">
-          <Button variant="secondary" onClick={() => window.location.href = '/dashboard'}>
+          <Button variant="secondary" onClick={() => window.location.href = '/baseball/dashboard'}>
             Go to Dashboard
           </Button>
           <Button onClick={reset}>Try Again</Button>

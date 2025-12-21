@@ -36,7 +36,7 @@ export async function updatePlayerPrivacySettings(playerId: string, settings: an
     throw new Error(`Failed to update settings: ${error.message}`);
   }
 
-  revalidatePath('/dashboard/settings');
+  revalidatePath('/baseball/dashboard/settings');
   revalidatePath(`/player/${playerId}`);
 
   return { success: true };
@@ -63,7 +63,7 @@ export async function updateOrganizationProfile(organizationId: string, data: an
     throw new Error(`Failed to update organization: ${error.message}`);
   }
 
-  revalidatePath('/dashboard/program');
+  revalidatePath('/baseball/dashboard/program');
   revalidatePath(`/program/${organizationId}`);
 }
 
@@ -91,6 +91,6 @@ export async function updateOrganizationSettings(_organizationId: string, _setti
     throw new Error(`Failed to update settings: ${error.message}`);
   }
 
-  revalidatePath('/dashboard/program');
+  revalidatePath('/baseball/dashboard/program');
   revalidatePath(`/program/${organizationId}`); */
 }
