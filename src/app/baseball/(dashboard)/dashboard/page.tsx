@@ -740,9 +740,9 @@ export default function DashboardPage() {
             </div>
             <div className="p-6 space-y-3">
               {[
-                { href: '/dashboard/profile', icon: IconEdit, label: 'Complete your profile', description: 'Add stats, videos, and more' },
-                { href: '/dashboard/colleges', icon: IconUsers, label: 'Browse colleges', description: 'Discover programs that fit you' },
-                { href: '/dashboard/messages', icon: IconMessage, label: 'Check messages', description: 'Stay connected with coaches' },
+                { href: '/baseball/dashboard/profile', icon: IconEdit, label: 'Complete your profile', description: 'Add stats, videos, and more' },
+                { href: '/baseball/dashboard/colleges', icon: IconUsers, label: 'Browse colleges', description: 'Discover programs that fit you' },
+                { href: '/baseball/dashboard/messages', icon: IconMessage, label: 'Check messages', description: 'Stay connected with coaches' },
               ].map((action) => (
                 <Link key={action.href} href={action.href}>
                   <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50/80 border border-slate-100/50 hover:bg-slate-100/80 hover:border-slate-200/50 transition-all duration-200 group cursor-pointer">
