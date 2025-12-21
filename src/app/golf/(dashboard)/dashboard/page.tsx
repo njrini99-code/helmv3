@@ -444,7 +444,7 @@ export default function GolfDashboardPage() {
             activeQualifiers: activeQualifiers || 0,
             teamScoringAverage: null, // Would calculate from rounds
           },
-          recentRounds: (recentRounds || []).map(r => ({
+          recentRounds: (recentRounds || []).map((r: any) => ({
             id: r.id,
             player_name: `${r.player?.first_name || ''} ${r.player?.last_name || ''}`.trim() || 'Unknown',
             course_name: r.course_name,
@@ -480,10 +480,10 @@ export default function GolfDashboardPage() {
         // Calculate stats
         const roundsPlayed = playerRounds.length;
         const scoringAverage = roundsPlayed > 0
-          ? playerRounds.reduce((sum, r) => sum + (r.total_score || 0), 0) / roundsPlayed
+          ? playerRounds.reduce((sum: number, r: any) => sum + (r.total_score || 0), 0) / roundsPlayed
           : null;
         const bestRound = roundsPlayed > 0
-          ? Math.min(...playerRounds.map(r => r.total_score || 999))
+          ? Math.min(...playerRounds.map((r: any) => r.total_score || 999))
           : null;
 
         setPlayerData({
@@ -495,7 +495,7 @@ export default function GolfDashboardPage() {
             bestRound: bestRound === 999 ? null : bestRound,
             handicap: player.handicap,
           },
-          recentRounds: playerRounds.slice(0, 5).map(r => ({
+          recentRounds: playerRounds.slice(0, 5).map((r: any) => ({
             id: r.id,
             course_name: r.course_name,
             total_score: r.total_score || 0,

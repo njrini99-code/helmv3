@@ -61,8 +61,8 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
       // Calculate stats
       if (roundsData && roundsData.length > 0) {
         const roundsPlayed = roundsData.length;
-        const scores = roundsData.map(r => r.total_score).filter((s): s is number => s !== null);
-        const scoringAverage = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+        const scores = roundsData.map((r: any) => r.total_score).filter((s: any): s is number => s !== null);
+        const scoringAverage = scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
         const bestRound = scores.length > 0 ? Math.min(...scores) : 0;
 
         // Calculate score distribution from holes
@@ -70,7 +70,7 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
         let totalPutts = 0, fairwaysHit = 0, fairwaysTotal = 0, greensInReg = 0, greensTotal = 0;
         let par3Scores: number[] = [], par4Scores: number[] = [], par5Scores: number[] = [];
 
-        roundsData.forEach(round => {
+        roundsData.forEach((round: any) => {
           if (round.holes) {
             round.holes.forEach((hole: { score_to_par: number; par: number; score: number; putts?: number; fairway_hit?: boolean; green_in_regulation?: boolean }) => {
               // Score distribution

@@ -335,7 +335,7 @@ export function PlayerPeekPanel() {
         {player && (
           <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4">
             <Link
-              href={`/player/${player.id}`}
+              href={`/baseball/player/${player.id}`}
               onClick={closePanel}
               className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium transition-colors"
             >

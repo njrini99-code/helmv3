@@ -55,7 +55,7 @@ export function CollegeCard({
   };
 
   return (
-    <Link href={`/program/${college.id}`}>
+    <Link href={`/baseball/program/${college.id}`}>
       <Card hover className="overflow-hidden h-full">
         <CardContent className="p-5">
           <div className="flex items-start gap-4">

@@ -160,7 +160,7 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
           </span>
           {school.organization_id && (
             <Link
-              href={`/program/${school.organization_id}`}
+              href={`/baseball/program/${school.organization_id}`}
               className="text-sm text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
             >
               View Program <IconChevronRight size={14} />

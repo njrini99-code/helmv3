@@ -237,7 +237,7 @@ export default function ProgramPage() {
         title="Program Profile"
         subtitle="Customize how your program appears to recruits"
       >
-        <Link href={`/program/${organization.id}`} target="_blank">
+        <Link href={`/baseball/program/${organization.id}`} target="_blank">
           <Button variant="secondary" size="sm" className="gap-2">
             <IconGlobe size={14} />
             View Public Page
