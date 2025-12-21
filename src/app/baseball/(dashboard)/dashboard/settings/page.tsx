@@ -64,7 +64,6 @@ export default function SettingsPage() {
       setConfirmPassword('');
       showToast('Password updated successfully', 'success');
     } catch (error) {
-      console.error('Password update error:', error);
       showToast('An unexpected error occurred', 'error');
     } finally {
       setSaving(false);

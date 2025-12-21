@@ -78,7 +78,6 @@ export default function ActivateRecruitingPage() {
       router.push('/baseball/dashboard');
       router.refresh();
     } catch (err) {
-      console.error('Activation error:', err);
       setError('An error occurred. Please try again.');
       setActivating(false);
     }

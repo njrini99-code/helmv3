@@ -102,7 +102,6 @@ export default function CalendarPage() {
       .order('start_time', { ascending: true });
 
     if (error) {
-      console.error('Error fetching events:', error);
     } else {
       setEvents(data || []);
     }
@@ -121,7 +120,6 @@ export default function CalendarPage() {
       .eq('id', deleteConfirm);
 
     if (error) {
-      console.error('Error deleting event:', error);
       showToast('Failed to delete event', 'error');
     } else {
       showToast('Event deleted successfully', 'success');

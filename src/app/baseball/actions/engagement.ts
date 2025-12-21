@@ -53,7 +53,6 @@ export async function trackProfileView(playerId: string) {
     });
 
   if (error) {
-    console.error('Error tracking profile view:', error);
     return { success: false };
   }
 
@@ -90,7 +89,6 @@ export async function trackContactClick(playerId: string, contactType: 'email' |
     });
 
   if (error) {
-    console.error('Error tracking contact click:', error);
     return { success: false };
   }
 

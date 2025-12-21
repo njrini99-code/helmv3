@@ -100,7 +100,6 @@ export default function WatchlistPage() {
       .order('added_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching watchlist:', error);
       setLoading(false);
       return;
     }
@@ -133,7 +132,6 @@ export default function WatchlistPage() {
           : item
       ));
     } catch (error) {
-      console.error('Error updating status:', error);
       showToast('Failed to update status', 'error');
     }
   }
@@ -151,7 +149,6 @@ export default function WatchlistPage() {
       setWatchlist(prev => prev.filter(item => item.id !== removeConfirm));
       showToast('Player removed from watchlist', 'success');
     } catch (error) {
-      console.error('Error removing from watchlist:', error);
       showToast('Failed to remove from watchlist', 'error');
     } finally {
       setRemoving(false);
@@ -171,7 +168,6 @@ export default function WatchlistPage() {
       setEditingNote(null);
       setNoteValue('');
     } catch (error) {
-      console.error('Error saving note:', error);
       showToast('Failed to save note', 'error');
     }
   }
@@ -225,7 +221,6 @@ export default function WatchlistPage() {
 
       setSelectedPlayers(new Set());
     } catch (error) {
-      console.error('Error bulk updating status:', error);
       showToast('Failed to update some players', 'error');
     }
   }
@@ -247,7 +242,6 @@ export default function WatchlistPage() {
       setSelectedPlayers(new Set());
       showToast(`${selectedPlayers.size} player(s) removed from watchlist`, 'success');
     } catch (error) {
-      console.error('Error bulk removing:', error);
       showToast('Failed to remove some players', 'error');
     } finally {
       setRemoving(false);

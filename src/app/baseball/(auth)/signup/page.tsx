@@ -57,7 +57,6 @@ export default function SignupPage() {
       });
 
       if (userError) {
-        console.error('User insert error:', userError);
         setError(`Failed to create user profile: ${userError.message}`);
         setLoading(false);
         return;
@@ -73,7 +72,6 @@ export default function SignupPage() {
         });
 
         if (coachError) {
-          console.error('Coach insert error:', coachError);
           setError(`Failed to create coach profile: ${coachError.message}`);
           setLoading(false);
           return;
@@ -91,7 +89,6 @@ export default function SignupPage() {
         });
 
         if (playerError) {
-          console.error('Player insert error:', playerError);
           setError(`Failed to create player profile: ${playerError.message}`);
           setLoading(false);
           return;
@@ -103,7 +100,6 @@ export default function SignupPage() {
       router.push(onboardingPath);
       router.refresh();
     } catch (err) {
-      console.error('Signup error:', err);
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }

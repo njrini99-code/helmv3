@@ -103,7 +103,6 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
       await updateInterestStatus(school.id, newStatus);
       onStatusChange(school.id, newStatus);
     } catch (error) {
-      console.error('Failed to update status:', error);
     }
   };
 

@@ -87,7 +87,6 @@ function MessagesContent() {
         showToast('Conversation started', 'success');
       }
     } catch (error) {
-      console.error('Error creating conversation:', error);
       showToast('Failed to start conversation', 'error');
     }
   };

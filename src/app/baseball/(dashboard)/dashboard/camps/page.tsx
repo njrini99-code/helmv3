@@ -310,7 +310,6 @@ export default function CampsPage() {
       setCamps(prev => prev.filter(c => c.id !== deleteConfirm));
       showToast('Camp deleted successfully', 'success');
     } catch (error) {
-      console.error('Error deleting camp:', error);
       showToast('An error occurred while deleting', 'error');
     } finally {
       setDeleting(false);

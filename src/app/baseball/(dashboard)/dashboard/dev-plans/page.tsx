@@ -108,7 +108,6 @@ export default function DevPlansPage() {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching plans:', error);
     } else {
       setPlans(data || []);
     }

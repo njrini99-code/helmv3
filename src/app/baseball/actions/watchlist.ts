@@ -48,7 +48,6 @@ export async function addToWatchlist(coachId: string, playerId: string) {
     });
 
   if (error) {
-    console.error('Error adding to watchlist:', error);
     throw new Error('Failed to add to watchlist');
   }
 
@@ -98,7 +97,6 @@ export async function removeFromWatchlist(coachId: string, playerId: string) {
     .eq('player_id', playerId);
 
   if (error) {
-    console.error('Error removing from watchlist:', error);
     throw new Error('Failed to remove from watchlist');
   }
 
@@ -126,7 +124,6 @@ export async function updateWatchlistStatus(watchlistId: string, status: Pipelin
     .eq('id', watchlistId);
 
   if (error) {
-    console.error('Error updating status:', error);
     throw new Error('Failed to update status');
   }
 
@@ -153,7 +150,6 @@ export async function updateWatchlistPriority(watchlistId: string, isHighPriorit
     .eq('id', watchlistId);
 
   if (error) {
-    console.error('Error updating priority:', error);
     throw new Error('Failed to update priority');
   }
 
@@ -179,7 +175,6 @@ export async function addWatchlistNote(watchlistId: string, note: string) {
     .eq('id', watchlistId);
 
   if (error) {
-    console.error('Error adding note:', error);
     throw new Error('Failed to add note');
   }
 

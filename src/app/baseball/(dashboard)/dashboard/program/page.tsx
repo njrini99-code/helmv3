@@ -159,7 +159,6 @@ export default function ProgramPage() {
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
         showToast('Failed to upload logo', 'error');
         return;
       }
@@ -176,7 +175,6 @@ export default function ProgramPage() {
         .eq('id', organization.id);
 
       if (updateError) {
-        console.error('Update error:', updateError);
         showToast('Failed to update logo', 'error');
         return;
       }
@@ -186,7 +184,6 @@ export default function ProgramPage() {
       setOrganization(prev => prev ? { ...prev, logo_url: publicUrl } : null);
       showToast('Logo updated successfully', 'success');
     } catch (error) {
-      console.error('Logo upload error:', error);
       showToast('An error occurred while uploading', 'error');
     } finally {
       setUploadingLogo(false);

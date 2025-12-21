@@ -36,7 +36,6 @@ export async function sendMessage(conversationId: string, content: string) {
     });
 
   if (messageError) {
-    console.error('Error sending message:', messageError);
     throw new Error('Failed to send message');
   }
 
@@ -124,7 +123,6 @@ export async function createConversation(participantUserIds: string[]) {
     .single();
 
   if (convError || !conversation) {
-    console.error('Error creating conversation:', convError);
     throw new Error('Failed to create conversation');
   }
 
@@ -141,7 +139,6 @@ export async function createConversation(participantUserIds: string[]) {
     .insert(participants);
 
   if (participantsError) {
-    console.error('Error adding participants:', participantsError);
     throw new Error('Failed to add participants');
   }
 

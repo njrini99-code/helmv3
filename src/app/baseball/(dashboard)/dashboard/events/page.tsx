@@ -118,7 +118,6 @@ export default function EventsPage() {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching events:', error.message);
         setEvents([]);
       } else {
         setEvents((data || []) as Event[]);
@@ -159,7 +158,6 @@ export default function EventsPage() {
       .single();
 
     if (error) {
-      console.error('Error creating event:', error.message);
       setCreating(false);
       return;
     }
@@ -189,7 +187,6 @@ export default function EventsPage() {
     const { error } = await supabase.from('events').delete().eq('id', eventId);
 
     if (error) {
-      console.error('Error deleting event:', error.message);
       return;
     }
 

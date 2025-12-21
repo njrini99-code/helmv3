@@ -120,7 +120,6 @@ export default function RosterPage() {
       .order('joined_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching roster:', error);
     } else {
       setRoster(data || []);
     }

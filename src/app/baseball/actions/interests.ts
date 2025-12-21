@@ -51,7 +51,6 @@ export async function addToInterests(collegeId: string, schoolName: string, divi
     });
 
   if (error) {
-    console.error('Error adding to interests:', error);
     throw new Error('Failed to add to interests');
   }
 
@@ -89,7 +88,6 @@ export async function removeFromInterests(collegeId: string) {
     .eq('organization_id', collegeId);
 
   if (error) {
-    console.error('Error removing from interests:', error);
     throw new Error('Failed to remove from interests');
   }
 

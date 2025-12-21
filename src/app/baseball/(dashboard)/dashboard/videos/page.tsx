@@ -137,7 +137,6 @@ export default function VideosPage() {
       showToast('Video deleted successfully', 'success');
       fetchVideos();
     } catch (error) {
-      console.error('Error deleting video:', error);
       showToast('Failed to delete video', 'error');
     } finally {
       setDeleting(false);

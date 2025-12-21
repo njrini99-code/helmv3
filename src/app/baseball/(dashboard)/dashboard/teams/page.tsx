@@ -87,7 +87,6 @@ export default function TeamsPage() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching teams:', error.message);
         setLoading(false);
         return;
       }
@@ -158,7 +157,6 @@ export default function TeamsPage() {
       .single();
 
     if (error) {
-      console.error('Error creating team:', error.message);
       setCreating(false);
       return;
     }
@@ -204,7 +202,6 @@ export default function TeamsPage() {
       .single();
 
     if (error) {
-      console.error('Error generating invite:', error.message);
       return;
     }
 

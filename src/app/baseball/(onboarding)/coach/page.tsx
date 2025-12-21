@@ -74,7 +74,6 @@ export default function CoachOnboarding() {
         .eq('user_id', user.id);
 
       if (updateError) {
-        console.error('Update error:', updateError);
         setError(updateError.message);
         setLoading(false);
         return;
@@ -83,7 +82,6 @@ export default function CoachOnboarding() {
       router.push('/baseball/dashboard');
       router.refresh();
     } catch (err) {
-      console.error('Onboarding error:', err);
       setError('An error occurred. Please try again.');
       setLoading(false);
     }
