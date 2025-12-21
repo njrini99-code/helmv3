@@ -56,7 +56,8 @@ export default function GolfSignupPage() {
       }
 
       // Step 3: Create golf coach record
-      const { error: coachError } = await supabase.from('golf_coaches').insert({
+      // Note: golf_coaches table - using type assertion until schema is updated
+      const { error: coachError } = await (supabase as any).from('golf_coaches').insert({
         user_id: authData.user.id,
         full_name: fullName,
         onboarding_completed: false,
