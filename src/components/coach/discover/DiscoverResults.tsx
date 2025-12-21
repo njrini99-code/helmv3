@@ -104,13 +104,16 @@ export function DiscoverResults({
 
     // Initialize all states
     Object.keys(stateNames).forEach(code => {
-      data[code] = { name: stateNames[code], count: 0 };
+      const stateName = stateNames[code as keyof typeof stateNames];
+      if (stateName) {
+        data[code] = { name: stateName, count: 0 };
+      }
     });
 
     // Count players by state
     players.forEach(player => {
       if (player.state && data[player.state]) {
-        data[player.state].count++;
+        data[player.state]!.count++;
       }
     });
 

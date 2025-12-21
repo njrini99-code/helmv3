@@ -215,24 +215,39 @@ function CompareContent() {
         </Card>
 
         {/* Comparison Table */}
-        {players.length === 0 ? (
-          <EmptyState
-            icon={<IconTarget size={24} />}
-            title="No players selected"
-            description="Search and add players above to start comparing them side by side."
-            action={
-              <Button onClick={() => router.push('/baseball/dashboard/discover')}>
-                <IconUsers size={18} className="mr-2" />
-                Browse Players
-              </Button>
-            }
-          />
-        ) : players.length === 1 ? (
-          <EmptyState
-            icon={<IconUsers size={24} />}
-            title="Add more players"
-            description="Add at least one more player to start comparing."
-          />
+        {players.length < 2 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <div className="max-w-lg mx-auto">
+                <IconTarget size={40} className="mx-auto mb-4 text-slate-400" />
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                  {players.length === 0 ? 'No players selected' : 'Add one more player'}
+                </h3>
+                <p className="text-sm text-slate-600 mb-6">
+                  {players.length === 0
+                    ? 'Search and add at least 2 players above to start comparing them side by side.'
+                    : 'Add at least one more player to start comparing.'}
+                </p>
+                {players.length === 0 && (
+                  <Button onClick={() => router.push('/baseball/dashboard/discover')}>
+                    <IconUsers size={18} className="mr-2" />
+                    Browse Players
+                  </Button>
+                )}
+
+                {/* Visual Preview - Empty Comparison Slots */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 opacity-40">
+                  {[1, 2, 3, 4].map((slot) => (
+                    <div key={slot} className="border-2 border-dashed border-slate-300 rounded-xl p-6">
+                      <div className="w-16 h-16 rounded-full bg-slate-200 mx-auto mb-3" />
+                      <div className="h-3 bg-slate-200 rounded mb-2" />
+                      <div className="h-2 bg-slate-200 rounded w-2/3 mx-auto" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         ) : (
           <PlayerComparison
             players={players}

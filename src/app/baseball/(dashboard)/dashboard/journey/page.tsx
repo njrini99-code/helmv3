@@ -270,19 +270,37 @@ export default function JourneyPage() {
           <div className="lg:col-span-2 space-y-4">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Your Schools</h2>
             {displaySchools.length === 0 ? (
-              <EmptyState
-                icon={<IconTarget size={24} />}
-                title="No schools in your journey"
-                description="Start by adding schools you're interested in from the Discover Colleges page."
-                action={
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <IconTarget size={40} className="mx-auto mb-4 text-slate-400" />
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No schools in your journey</h3>
+                  <p className="text-sm text-slate-600 mb-6">
+                    Start by adding schools you're interested in from the Discover Colleges page.
+                  </p>
                   <Link href="/baseball/dashboard/colleges">
                     <Button>
                       <IconPlus size={18} className="mr-2" />
                       Discover Colleges
                     </Button>
                   </Link>
-                }
-              />
+
+                  {/* Visual Preview - Empty Journey Cards */}
+                  <div className="mt-8 space-y-3 opacity-30">
+                    {[1, 2, 3].map((slot) => (
+                      <div key={slot} className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-left">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-lg bg-slate-200" />
+                          <div className="flex-1">
+                            <div className="h-4 bg-slate-200 rounded mb-2 w-2/3" />
+                            <div className="h-3 bg-slate-200 rounded w-1/2" />
+                          </div>
+                          <div className="w-20 h-6 bg-slate-200 rounded-full" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             ) : (
               displaySchools.map(school => (
                 <SchoolCard

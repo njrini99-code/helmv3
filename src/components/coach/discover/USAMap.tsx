@@ -123,14 +123,14 @@ export function USAMap({ stateData, onStateClick, className }: USAMapProps) {
             >
               {code}
             </text>
-            {stateData[code]?.count > 0 && (
+            {stateData[code]?.count && stateData[code]!.count > 0 && (
               <text
                 x={cx}
                 y={cy + 12}
                 textAnchor="middle"
                 className="text-[10px] font-semibold fill-green-700 pointer-events-none select-none"
               >
-                {stateData[code].count}
+                {stateData[code]!.count}
               </text>
             )}
           </g>
