@@ -33,7 +33,8 @@ export default function GolfDashboardLayout({
       }
 
       // Check if user is a golf coach
-      const { data: coach } = await supabase
+      // Using type assertion until golf schema is added to Supabase types
+      const { data: coach } = await (supabase as any)
         .from('golf_coaches')
         .select('*, team:golf_teams(name)')
         .eq('user_id', user.id)
@@ -55,7 +56,7 @@ export default function GolfDashboardLayout({
       }
 
       // Check if user is a golf player
-      const { data: player } = await supabase
+      const { data: player } = await (supabase as any)
         .from('golf_players')
         .select('*, team:golf_teams(name)')
         .eq('user_id', user.id)
