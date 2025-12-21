@@ -64,7 +64,7 @@ export function useWatchlist() {
 
   const updateStage = async (playerId: string, stage: PipelineStage) => {
     if (!coach) return false;
-    const { error } = await supabase.from('watchlists').update({ pipeline_stage: stage as any }).eq('coach_id', coach.id).eq('player_id', playerId);
+    const { error } = await supabase.from('watchlists').update({ pipeline_stage: stage }).eq('coach_id', coach.id).eq('player_id', playerId);
     if (!error) fetchWatchlist();
     return !error;
   };
