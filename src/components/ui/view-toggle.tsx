@@ -1,17 +1,18 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { IconLayoutGrid, IconList } from '@/components/icons';
+import { IconLayoutGrid, IconList, IconMap } from '@/components/icons';
 
-export type ViewMode = 'grid' | 'list';
+export type ViewMode = 'grid' | 'list' | 'map';
 
 interface ViewToggleProps {
   value: ViewMode;
   onChange: (value: ViewMode) => void;
   className?: string;
+  showMap?: boolean;
 }
 
-export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
+export function ViewToggle({ value, onChange, className, showMap = true }: ViewToggleProps) {
   return (
     <div
       className={cn(
@@ -31,6 +32,14 @@ export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
         icon={IconList}
         label="List view"
       />
+      {showMap && (
+        <ToggleButton
+          active={value === 'map'}
+          onClick={() => onChange('map')}
+          icon={IconMap}
+          label="Map view"
+        />
+      )}
     </div>
   );
 }

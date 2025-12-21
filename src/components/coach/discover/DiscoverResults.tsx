@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { PlayerCardData } from './PlayerCard';
 import { PlayerCardGrid } from './PlayerCardGrid';
+import { USAMap } from './USAMap';
 import { ViewToggle, ViewMode } from '@/components/ui/view-toggle';
 import { Button } from '@/components/ui/button';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
@@ -85,6 +86,46 @@ export function DiscoverResults({
     router.push(`?${params.toString()}`);
   };
 
+  // Compute state data for map view
+  const stateData = useMemo(() => {
+    const data: Record<string, { name: string; count: number }> = {};
+    const stateNames: Record<string, string> = {
+      AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
+      CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', FL: 'Florida', GA: 'Georgia',
+      HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa',
+      KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland',
+      MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri',
+      MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
+      NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio',
+      OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina',
+      SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont',
+      VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
+    };
+
+    // Initialize all states
+    Object.keys(stateNames).forEach(code => {
+      data[code] = { name: stateNames[code], count: 0 };
+    });
+
+    // Count players by state
+    players.forEach(player => {
+      if (player.state && data[player.state]) {
+        data[player.state].count++;
+      }
+    });
+
+    return data;
+  }, [players]);
+
+  const searchParams = useSearchParams();
+
+  const handleStateClick = (stateCode: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('state', stateCode);
+    params.delete('page'); // Reset to page 1
+    router.push(`?${params.toString()}`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Results Header */}
@@ -110,17 +151,28 @@ export function DiscoverResults({
         <ViewToggle value={viewMode} onChange={setViewMode} />
       </div>
 
-      {/* Results Grid */}
-      <PlayerCardGrid
-        players={transformedPlayers}
-        variant={viewMode === 'list' ? 'compact' : 'default'}
-        columns={viewMode === 'list' ? 2 : 3}
-        onWatchlist={handleWatchlist}
-        onMessage={handleMessage}
-        watchlistIds={watchlistIds}
-        emptyTitle="No players found"
-        emptyMessage="Try adjusting your filters or search criteria to find more players."
-      />
+      {/* Map View */}
+      {viewMode === 'map' ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-8">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Player Distribution by State</h3>
+            <p className="text-sm text-slate-500">Click a state to filter players by location</p>
+          </div>
+          <USAMap stateData={stateData} onStateClick={handleStateClick} />
+        </div>
+      ) : (
+        /* Results Grid */
+        <PlayerCardGrid
+          players={transformedPlayers}
+          variant={viewMode === 'list' ? 'compact' : 'default'}
+          columns={viewMode === 'list' ? 2 : 3}
+          onWatchlist={handleWatchlist}
+          onMessage={handleMessage}
+          watchlistIds={watchlistIds}
+          emptyTitle="No players found"
+          emptyMessage="Try adjusting your filters or search criteria to find more players."
+        />
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
