@@ -258,7 +258,7 @@ export default function DashboardPage() {
                   players.slice(0, 5).map((p, index) => (
                     <Link
                       key={p.id}
-                      href={`/dashboard/players/${p.id}`}
+                      href={`/baseball/dashboard/players/${p.id}`}
                       className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/50 transition-all duration-200 group animate-fade-in"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
@@ -559,7 +559,7 @@ export default function DashboardPage() {
                 {savedSearches.map((search) => (
                   <Link
                     key={search.id}
-                    href={`/dashboard/discover?${new URLSearchParams(search.filters as Record<string, string>).toString()}`}
+                    href={`/baseball/dashboard/discover?${new URLSearchParams(search.filters as Record<string, string>).toString()}`}
                   >
                     <Badge
                       variant="secondary"

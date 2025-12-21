@@ -16,7 +16,7 @@ export function MessagePreview({ conversation }: MessagePreviewProps) {
 
   return (
     <Link
-      href={`/dashboard/messages/${conversation.id}`}
+      href={`/baseball/dashboard/messages/${conversation.id}`}
       className={cn(
         'flex items-start gap-4 p-4 transition-all duration-200 border-b border-slate-100/50',
         'hover:bg-slate-50/50',

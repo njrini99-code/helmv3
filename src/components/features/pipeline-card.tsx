@@ -64,7 +64,7 @@ export function PipelineCard({ item, isDragging = false }: PipelineCardProps) {
         />
         <div className="p-3">
           <Link
-            href={`/dashboard/players/${item.player_id}`}
+            href={`/baseball/dashboard/players/${item.player_id}`}
             className="flex items-center gap-3 group"
             onClick={(e) => {
               if (isActuallyDragging) e.preventDefault();
