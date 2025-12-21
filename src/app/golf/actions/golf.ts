@@ -111,7 +111,7 @@ export async function deleteGolfRound(roundId: string) {
   }
 
   // Delete holes first (cascade should handle this but being explicit)
-  await supabase.from('golf_holes').delete().eq('round_id', roundId);
+  await (supabase as any).from('golf_holes').delete().eq('round_id', roundId);
 
   // Delete round
   const { error } = await supabase
