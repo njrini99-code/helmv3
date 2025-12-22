@@ -20,13 +20,18 @@ export default function GolfLoginPage() {
     setLoading(true);
     setError('');
 
-    const { error } = await (supabase as any).auth.signInWithPassword({ email, password });
+    const { data, error } = await (supabase as any).auth.signInWithPassword({ email, password });
 
     if (error) {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push('/golf/dashboard');
+      // Redirect to player-golf for test accounts, golf/dashboard for coaches
+      if (email.includes('test@golfhelm.com')) {
+        router.push('/player-golf');
+      } else {
+        router.push('/golf/dashboard');
+      }
       router.refresh();
     }
   };

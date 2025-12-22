@@ -1,43 +1,50 @@
-'use client';
+import { createClient } from '@/lib/supabase/server';
+import { notFound } from 'next/navigation';
+import ShotTrackingFinal from '@/components/golf/ShotTrackingFinal';
 
-import { useState } from 'react';
-import { ShotTracking } from '@/components/golf/shot-tracking/ShotTracking';
+export default async function RoundPage({ params }: { params: { id: string } }) {
+  const supabase = await createClient();
 
-// Sample holes data - in production, this would come from API based on course_id
-const sampleHoles = [
-  { number: 1, par: 5, yardage: 520, score: null, current: true },
-  { number: 2, par: 4, yardage: 425, score: null, current: false },
-  { number: 3, par: 3, yardage: 185, score: null, current: false },
-  { number: 4, par: 4, yardage: 390, score: null, current: false },
-  { number: 5, par: 4, yardage: 410, score: null, current: false },
-  { number: 6, par: 3, yardage: 175, score: null, current: false },
-  { number: 7, par: 5, yardage: 550, score: null, current: false },
-  { number: 8, par: 4, yardage: 405, score: null, current: false },
-  { number: 9, par: 4, yardage: 380, score: null, current: false },
-  { number: 10, par: 4, yardage: 415, score: null, current: false },
-  { number: 11, par: 3, yardage: 165, score: null, current: false },
-  { number: 12, par: 5, yardage: 530, score: null, current: false },
-  { number: 13, par: 4, yardage: 400, score: null, current: false },
-  { number: 14, par: 4, yardage: 385, score: null, current: false },
-  { number: 15, par: 3, yardage: 190, score: null, current: false },
-  { number: 16, par: 5, yardage: 545, score: null, current: false },
-  { number: 17, par: 4, yardage: 420, score: null, current: false },
-  { number: 18, par: 4, yardage: 395, score: null, current: false },
-];
+  // Get the round data
+  const { data: round, error: roundError } = await supabase
+    .from('golf_rounds')
+    .select('*, golf_holes(*)')
+    .eq('id', params.id)
+    .single();
 
-export default function RoundPage({ params }: { params: { id: string } }) {
-  const [holes, setHoles] = useState(sampleHoles);
+  if (roundError || !round) {
+    notFound();
+  }
 
-  const handleHoleComplete = async (hole: any, shots: any[]) => {
-    console.log('Hole completed:', hole.number, 'Shots:', shots);
+  // Transform golf_holes data to the format expected by ShotTrackingFinal
+  const holes = round.golf_holes
+    .sort((a: any, b: any) => a.hole_number - b.hole_number)
+    .map((hole: any) => ({
+      hole_number: hole.hole_number,
+      par: hole.par,
+      yardage: hole.yardage || 0,
+    }));
 
-    // TODO: Save shots to database
-    // await saveShotsToDatabase(params.id, hole.number, shots);
-  };
+  // If no holes, create a default 18-hole course (shouldn't happen with new round creation)
+  if (holes.length === 0) {
+    for (let i = 1; i <= 18; i++) {
+      holes.push({
+        hole_number: i,
+        par: 4, // Default to par 4
+        yardage: 400, // Default yardage
+      });
+    }
+  }
 
   return (
-    <div>
-      <ShotTracking holes={holes} onHoleComplete={handleHoleComplete} />
-    </div>
+    <ShotTrackingFinal
+      roundId={params.id}
+      holes={holes}
+      startingHole={round.starting_hole || 1}
+      courseName={round.course_name}
+      teesPlayed={round.tees_played || ''}
+      courseRating={round.course_rating}
+      courseSlope={round.course_slope}
+    />
   );
 }

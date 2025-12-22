@@ -24,6 +24,24 @@ export default function GolfDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
 
+        {/* Dev Mode Banner */}
+        <Link href="/player-golf/dev">
+          <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-xl hover:bg-green-100 transition-colors cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center">
+                  <IconTarget className="text-white" size={20} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-green-900">🚀 Dev Mode Active</p>
+                  <p className="text-xs text-green-700">Click here for quick access to all golf testing features</p>
+                </div>
+              </div>
+              <IconChevronRight className="text-green-600" size={24} />
+            </div>
+          </div>
+        </Link>
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -123,21 +141,23 @@ export default function GolfDashboard() {
               <CardContent className="p-6">
                 <h3 className="text-sm font-bold text-slate-900 mb-4">Quick Actions</h3>
                 <div className="grid grid-cols-3 gap-3">
-                  <Link href="/golf/round/new">
+                  <Link href="/player-golf/round/new">
                     <button className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
                       <IconPlus size={18} />
                       Start Round
                     </button>
                   </Link>
-                  <Link href="/golf/stats">
+                  <Link href="/player-golf/rounds">
                     <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
                       <IconTarget size={18} />
-                      View Stats
+                      View Rounds
                     </button>
                   </Link>
-                  <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg font-medium transition-colors">
-                    Upload Data
-                  </button>
+                  <Link href="/player-golf/dev">
+                    <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg font-medium transition-colors">
+                      Dev Mode
+                    </button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
