@@ -1,4 +1,4 @@
-import { type NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 /**
@@ -12,6 +12,11 @@ import { updateSession } from '@/lib/supabase/middleware';
  * and handles all auth logic including role-based redirects.
  */
 export async function middleware(request: NextRequest) {
+  // DEV MODE: Bypass auth for testing
+  if (process.env.NODE_ENV === 'development') {
+    return NextResponse.next();
+  }
+
   return await updateSession(request);
 }
 

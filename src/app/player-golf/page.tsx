@@ -140,11 +140,16 @@ export default function GolfDashboard() {
             <Card>
               <CardContent className="p-6">
                 <h3 className="text-sm font-bold text-slate-900 mb-4">Quick Actions</h3>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <Link href="/player-golf/round/new">
                     <button className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
                       <IconPlus size={18} />
                       Start Round
+                    </button>
+                  </Link>
+                  <Link href="/player-golf/rounds/demo-round-123/play">
+                    <button className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                      🏌️ Start Demo Round
                     </button>
                   </Link>
                   <Link href="/player-golf/rounds">

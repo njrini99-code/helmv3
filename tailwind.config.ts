@@ -123,6 +123,8 @@ const config: Config = {
         'spin-slow': 'spin 3s linear infinite',
         'aurora': 'aurora 15s ease-in-out infinite alternate',
         'float': 'float 6s ease-in-out infinite',
+        'float-complex': 'float-complex 20s ease-in-out infinite',
+        'float-delayed': 'float-delayed 20s ease-in-out infinite',
         'glow': 'glow 2s ease-in-out infinite alternate',
         'count-up': 'count-up 2s ease-out forwards',
         'scroll-bounce': 'scroll-bounce 2s ease-in-out infinite',
