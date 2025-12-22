@@ -226,7 +226,7 @@ export default async function RoundDetailPage({
               </thead>
               <tbody>
                 {sortedHoles.map((hole) => {
-                  const holeToPar = hole.score_to_par || (hole.score - hole.par);
+                  const holeToPar = hole.score_to_par || (hole.score !== null ? hole.score - hole.par : 0);
                   const holeScoreColor = holeToPar === 0
                     ? 'text-slate-900'
                     : holeToPar < 0
