@@ -148,7 +148,7 @@ export async function saveHoleShots(roundId: string, holeNumber: number, shots: 
     .upsert({
       round_id: roundId,
       hole_number: holeNumber,
-      shots_data: shots,
+      shots_data: shots as any, // Cast to Json type for Supabase
       updated_at: new Date().toISOString(),
     });
 

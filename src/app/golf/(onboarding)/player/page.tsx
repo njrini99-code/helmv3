@@ -55,7 +55,7 @@ export default function GolfPlayerOnboarding() {
   // Check auth and player data on mount
   useEffect(() => {
     async function checkAuth() {
-      const { data: { user } } = await (supabase as any).auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
         router.push('/golf/login');
@@ -66,7 +66,7 @@ export default function GolfPlayerOnboarding() {
       setEmail(user.email || '');
 
       // Check for existing player record
-      const { data: player } = await (supabase as any)
+      const { data: player } = await supabase
         .from('golf_players')
         .select('*, team:golf_teams(name)')
         .eq('user_id', user.id)
@@ -126,7 +126,7 @@ export default function GolfPlayerOnboarding() {
 
       if (playerId) {
         // Update existing player
-        const { error: updateError } = await (supabase as any)
+        const { error: updateError } = await supabase
           .from('golf_players')
           .update(updateData)
           .eq('id', playerId);
@@ -134,7 +134,7 @@ export default function GolfPlayerOnboarding() {
         if (updateError) throw updateError;
       } else {
         // Create new player record
-        const { error: insertError } = await (supabase as any)
+        const { error: insertError } = await supabase
           .from('golf_players')
           .insert({
             user_id: userId,
@@ -200,7 +200,7 @@ export default function GolfPlayerOnboarding() {
             Go to Dashboard
           </Button>
           {error && (
-            <p className="text-sm text-red-600 mt-4">{error}</p>
+            <p className="text-sm leading-relaxed text-red-600 mt-4">{error}</p>
           )}
         </div>
       </div>
@@ -230,7 +230,7 @@ export default function GolfPlayerOnboarding() {
         <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
           {step === 'basic' && (
             <>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">
                 Basic Information
               </h2>
               <div className="space-y-4">
@@ -302,7 +302,7 @@ export default function GolfPlayerOnboarding() {
 
           {step === 'golf' && (
             <>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">
                 Golf Information
               </h2>
               <div className="space-y-4">
@@ -354,10 +354,10 @@ export default function GolfPlayerOnboarding() {
 
           {step === 'academic' && (
             <>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">
                 Academic Information
               </h2>
-              <p className="text-sm text-slate-600 mb-4">
+              <p className="text-sm leading-relaxed text-slate-600 mb-4">
                 Optional, but helps your coach with scheduling and eligibility.
               </p>
               <div className="space-y-4">
@@ -398,10 +398,10 @@ export default function GolfPlayerOnboarding() {
 
           {step === 'photo' && (
             <>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">
                 Profile Photo
               </h2>
-              <p className="text-sm text-slate-600 mb-6">
+              <p className="text-sm leading-relaxed text-slate-600 mb-6">
                 Add a profile photo so your coach and teammates can recognize you.
               </p>
               <div className="flex flex-col items-center mb-6">

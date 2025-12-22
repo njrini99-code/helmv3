@@ -1,0 +1,59 @@
+{
+  "tasks": [
+    {
+      "id": "HELM-001",
+      "title": "Premium Dark Scorecard",
+      "description": "Transform scorecard to premium dark theme with impossible-to-miss current hole",
+      "status": "completed",
+      "priority": "high",
+      "category": "feature",
+      "assignee": "claude",
+      "created": "2025-12-21",
+      "updated": "2025-12-21",
+      "completed": "2025-12-21",
+      "tags": ["ui", "scorecard", "golf"],
+      "files": [
+        "src/components/golf/ShotTrackingFinal.tsx"
+      ],
+      "commits": [
+        "f6625a5"
+      ],
+      "notes": [
+        "Dark theme with slate-900/800 gradient",
+        "Current hole: green gradient, scale-110, pulsing dot",
+        "Color-coded scores (Eagle: yellow, Birdie: red, etc.)",
+        "Performance badges showing +/- on current hole"
+      ]
+    },
+    {
+      "id": "HELM-002",
+      "title": "Fix Shot Distance Calculation Bug",
+      "description": "Fix yards/feet unit conversion bug causing incorrect distance display",
+      "status": "completed",
+      "priority": "critical",
+      "category": "bug",
+      "assignee": "claude",
+      "created": "2025-12-21",
+      "updated": "2025-12-21",
+      "completed": "2025-12-21",
+      "tags": ["bug", "calculation", "golf", "units"],
+      "files": [
+        "src/components/golf/ShotTrackingFinal.tsx"
+      ],
+      "commits": [
+        "f6625a5"
+      ],
+      "notes": [
+        "Added shotDistanceUnit field to ShotRecord interface",
+        "Store unit during calculation instead of guessing",
+        "Fixed: Shot 1 now shows '1105 feet' not '1105 yards'",
+        "Improved unit detection: Shot 1 always yards OR distance > 100"
+      ]
+    }
+  ],
+  "metadata": {
+    "totalTasks": 2,
+    "completedTasks": 2,
+    "lastUpdated": "2025-12-21T22:45:00Z"
+  }
+}

@@ -20,7 +20,7 @@ export default function GolfLoginPage() {
     setLoading(true);
     setError('');
 
-    const { data, error } = await (supabase as any).auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError(error.message);
@@ -45,7 +45,7 @@ export default function GolfLoginPage() {
             alt="GolfHelm"
             className="h-16 w-auto mx-auto mb-4"
           />
-          <h1 className="text-2xl font-semibold text-slate-900">Welcome to GolfHelm</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Welcome to GolfHelm</h1>
           <p className="text-slate-500 mt-1">Sign in to your account</p>
         </div>
 

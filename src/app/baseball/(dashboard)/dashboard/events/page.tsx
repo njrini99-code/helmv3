@@ -356,7 +356,7 @@ export default function EventsPage() {
           />
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-slate-100 sticky top-0 bg-white">
-              <h2 className="text-lg font-semibold text-slate-900">Create New Event</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">Create New Event</h2>
             </div>
             <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
               <Select

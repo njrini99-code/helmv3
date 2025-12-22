@@ -102,7 +102,14 @@ export default function NewRoundPage() {
   // Handle hole data change
   const updateHoleData = (holeIndex: number, field: 'par' | 'yardage', value: number) => {
     const updated = [...holesData];
-    updated[holeIndex] = { ...updated[holeIndex], [field]: value };
+    const currentHole = updated[holeIndex];
+    if (!currentHole) return; // Safety check
+
+    updated[holeIndex] = {
+      hole: currentHole.hole,
+      par: field === 'par' ? value : currentHole.par,
+      yardage: field === 'yardage' ? value : currentHole.yardage,
+    };
     setHolesData(updated);
   };
 
@@ -136,7 +143,7 @@ export default function NewRoundPage() {
         courseSlope: parseInt(slopeRating),
         roundType,
         startingHole,
-        roundDate: new Date().toISOString().split('T')[0],
+        roundDate: new Date().toISOString().split('T')[0]!,
         holes: holesData,
       };
 
@@ -196,25 +203,25 @@ export default function NewRoundPage() {
       {/* Progress Bar */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-semibold text-slate-900">Start New Round</h1>
-          <span className="text-sm text-slate-500">Step {currentStep} of 8</span>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Start New Round</h1>
+          <span className="text-sm leading-relaxed text-slate-500">Step {currentStep} of 8</span>
         </div>
         <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-green-600 transition-all duration-300"
+            className="h-full bg-slate-900 transition-all duration-300"
             style={{ width: `${(currentStep / 8) * 100}%` }}
           />
         </div>
       </div>
 
-      <Card>
+      <Card glass>
         <CardContent className="p-8">
           {/* Step 1: Course Name */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-2">Enter Course Name</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Enter Course Name</h2>
+                <p className="text-sm leading-relaxed text-slate-500">
                   What course are you playing today?
                 </p>
               </div>
@@ -244,12 +251,12 @@ export default function NewRoundPage() {
                         key={idx}
                         onClick={() => handleSelectRecentCourse(course)}
                         className="w-full text-left p-4 rounded-lg border border-slate-200
-                                   hover:border-green-500 hover:bg-green-50 transition-colors"
+                                   hover:border-green-500 hover:bg-slate-50 transition-colors"
                       >
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium text-slate-900">{course.course_name}</p>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm leading-relaxed text-slate-500">
                               {course.tees_played} • Par {course.total_par} • Last played {new Date(course.last_played).toLocaleDateString()}
                             </p>
                           </div>
@@ -267,8 +274,8 @@ export default function NewRoundPage() {
           {currentStep === 2 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-2">Enter Tee Box</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Enter Tee Box</h2>
+                <p className="text-sm leading-relaxed text-slate-500">
                   Which tees are you playing from?
                 </p>
               </div>
@@ -294,8 +301,8 @@ export default function NewRoundPage() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-2">Enter Par and Yardage</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Enter Par and Yardage</h2>
+                <p className="text-sm leading-relaxed text-slate-500">
                   Enter par and yardage for each hole
                 </p>
               </div>
@@ -305,7 +312,7 @@ export default function NewRoundPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Front 9</h3>
                   <div className="space-y-2">
-                    <div className="grid grid-cols-[60px_80px_1fr] gap-2 text-xs font-semibold text-slate-500 uppercase pb-2 border-b border-slate-200">
+                    <div className="grid grid-cols-[60px_80px_1fr] gap-2 text-[11px] font-medium uppercase tracking-wider text-slate-400 pb-2 border-b border-slate-200">
                       <div>Hole</div>
                       <div>Par</div>
                       <div>Yardage</div>
@@ -348,7 +355,7 @@ export default function NewRoundPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Back 9</h3>
                   <div className="space-y-2">
-                    <div className="grid grid-cols-[60px_80px_1fr] gap-2 text-xs font-semibold text-slate-500 uppercase pb-2 border-b border-slate-200">
+                    <div className="grid grid-cols-[60px_80px_1fr] gap-2 text-[11px] font-medium uppercase tracking-wider text-slate-400 pb-2 border-b border-slate-200">
                       <div>Hole</div>
                       <div>Par</div>
                       <div>Yardage</div>
@@ -389,19 +396,19 @@ export default function NewRoundPage() {
               </div>
 
               {/* Totals */}
-              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-xs font-medium text-green-700 uppercase tracking-wide mb-1">Total Par</p>
-                    <p className="text-2xl font-bold text-green-900">{holesData.reduce((sum, h) => sum + h.par, 0)}</p>
+                    <p className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-1">Total Par</p>
+                    <p className="text-2xl font-bold text-slate-900">{holesData.reduce((sum, h) => sum + h.par, 0)}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-green-700 uppercase tracking-wide mb-1">Total Yardage</p>
-                    <p className="text-2xl font-bold text-green-900">{holesData.reduce((sum, h) => sum + h.yardage, 0)}</p>
+                    <p className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-1">Total Yardage</p>
+                    <p className="text-2xl font-bold text-slate-900">{holesData.reduce((sum, h) => sum + h.yardage, 0)}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-green-700 uppercase tracking-wide mb-1">Holes Complete</p>
-                    <p className="text-2xl font-bold text-green-900">{holesData.filter(h => h.yardage > 0).length}/18</p>
+                    <p className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-1">Holes Complete</p>
+                    <p className="text-2xl font-bold text-slate-900">{holesData.filter(h => h.yardage > 0).length}/18</p>
                   </div>
                 </div>
               </div>
@@ -412,8 +419,8 @@ export default function NewRoundPage() {
           {currentStep === 4 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-2">Enter Course Rating</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Enter Course Rating</h2>
+                <p className="text-sm leading-relaxed text-slate-500">
                   The course rating is typically between 67.0 and 77.0
                 </p>
               </div>
@@ -442,8 +449,8 @@ export default function NewRoundPage() {
           {currentStep === 5 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-2">Enter Slope Rating</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Enter Slope Rating</h2>
+                <p className="text-sm leading-relaxed text-slate-500">
                   The slope rating is typically between 55 and 155
                 </p>
               </div>
@@ -471,8 +478,8 @@ export default function NewRoundPage() {
           {currentStep === 6 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-2">Select Round Type</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Select Round Type</h2>
+                <p className="text-sm leading-relaxed text-slate-500">
                   What type of round is this?
                 </p>
               </div>
@@ -488,17 +495,17 @@ export default function NewRoundPage() {
                     onClick={() => setRoundType(type.value as RoundType)}
                     className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                       roundType === type.value
-                        ? 'border-green-600 bg-green-50'
-                        : 'border-slate-200 hover:border-green-200'
+                        ? 'border-green-600 bg-slate-50'
+                        : 'border-slate-200 hover:border-slate-200'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-slate-900">{type.label}</p>
-                        <p className="text-sm text-slate-500 mt-1">{type.description}</p>
+                        <p className="text-sm leading-relaxed text-slate-500 mt-1">{type.description}</p>
                       </div>
                       {roundType === type.value && (
-                        <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center">
                           <IconCheck className="text-white" size={16} />
                         </div>
                       )}
@@ -513,8 +520,8 @@ export default function NewRoundPage() {
           {currentStep === 7 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-2">Select Starting Hole</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Select Starting Hole</h2>
+                <p className="text-sm leading-relaxed text-slate-500">
                   Where will you begin your round?
                 </p>
               </div>
@@ -530,17 +537,17 @@ export default function NewRoundPage() {
                     onClick={() => setStartingHole(start.value as StartingHole)}
                     className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                       startingHole === start.value
-                        ? 'border-green-600 bg-green-50'
-                        : 'border-slate-200 hover:border-green-200'
+                        ? 'border-green-600 bg-slate-50'
+                        : 'border-slate-200 hover:border-slate-200'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-slate-900">{start.label}</p>
-                        <p className="text-sm text-slate-500 mt-1">{start.description}</p>
+                        <p className="text-sm leading-relaxed text-slate-500 mt-1">{start.description}</p>
                       </div>
                       {startingHole === start.value && (
-                        <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center">
                           <IconCheck className="text-white" size={16} />
                         </div>
                       )}
@@ -555,8 +562,8 @@ export default function NewRoundPage() {
           {currentStep === 8 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-2">Review & Confirm</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Review & Confirm</h2>
+                <p className="text-sm leading-relaxed text-slate-500">
                   Please review your round details before starting
                 </p>
               </div>
@@ -564,35 +571,35 @@ export default function NewRoundPage() {
               <div className="bg-slate-50 rounded-lg p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Course</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">Course</p>
                     <p className="text-base font-semibold text-slate-900">{courseName}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Tees</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">Tees</p>
                     <p className="text-base font-semibold text-slate-900">{teeBoxName}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Par</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">Par</p>
                     <p className="text-base font-semibold text-slate-900">{holesData.reduce((sum, h) => sum + h.par, 0)}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Yardage</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">Yardage</p>
                     <p className="text-base font-semibold text-slate-900">{holesData.reduce((sum, h) => sum + h.yardage, 0)}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Rating</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">Rating</p>
                     <p className="text-base font-semibold text-slate-900">{courseRating}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Slope</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">Slope</p>
                     <p className="text-base font-semibold text-slate-900">{slopeRating}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Round Type</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">Round Type</p>
                     <p className="text-base font-semibold text-slate-900 capitalize">{roundType}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Starting Hole</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">Starting Hole</p>
                     <p className="text-base font-semibold text-slate-900">
                       {startingHole === 'shotgun' ? 'Shotgun' : `Hole ${startingHole}`}
                     </p>
@@ -600,8 +607,8 @@ export default function NewRoundPage() {
                 </div>
               </div>
 
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-900">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <p className="text-sm leading-relaxed text-slate-900">
                   <strong>Ready to start?</strong> Your round will be created and you'll begin tracking shots on Hole {startingHole === 'shotgun' ? '1' : startingHole}.
                 </p>
               </div>

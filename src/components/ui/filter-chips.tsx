@@ -50,7 +50,7 @@ export function FilterChips({
         <button
           type="button"
           onClick={onClearAll}
-          className="text-sm text-slate-500 hover:text-slate-700 transition-colors underline-offset-2 hover:underline"
+          className="text-sm leading-relaxed text-slate-500 hover:text-slate-700 transition-colors underline-offset-2 hover:underline"
         >
           Clear all
         </button>

@@ -4,8 +4,7 @@ import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Loading } from '@/components/ui/loading';
-import { ConversationList } from '@/components/messages/ConversationList';
-import { ChatWindow } from '@/components/messages/ChatWindow';
+import { LazyConversationList, LazyChatWindow } from '@/lib/lazy-components';
 import { EmptyChatState } from '@/components/messages/EmptyChatState';
 import { NewMessageModal } from '@/components/messages/NewMessageModal';
 import { useConversations, useMessages } from '@/hooks/use-messages';
@@ -119,7 +118,7 @@ function MessagesContent() {
         'transition-transform duration-300',
         mobileShowChat && 'hidden lg:block'
       )}>
-        <ConversationList
+        <LazyConversationList
           conversations={conversations as ConversationWithMeta[]}
           selectedId={selectedConversationId}
           currentUserId={user?.id || ''}
@@ -135,7 +134,7 @@ function MessagesContent() {
         !mobileShowChat && 'hidden lg:block'
       )}>
         {selectedConversationId ? (
-          <ChatWindow
+          <LazyChatWindow
             messages={messages}
             participant={selectedParticipant}
             currentUserId={user?.id || ''}

@@ -137,7 +137,7 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
                 <div className="p-6 border-b border-slate-200 bg-white">
                   <div className="flex items-center gap-2">
                     <IconVideo size={20} className="text-green-600" />
-                    <h2 className="text-lg font-semibold text-slate-900">Highlight Videos</h2>
+                    <h2 className="text-lg font-semibold tracking-tight text-slate-900">Highlight Videos</h2>
                   </div>
                 </div>
                 <div className="p-6 bg-slate-50">
@@ -181,7 +181,7 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
                 <div className="p-6 border-b border-slate-200 bg-white">
                   <div className="flex items-center gap-2">
                     <IconTrendingUp size={20} className="text-green-600" />
-                    <h2 className="text-lg font-semibold text-slate-900">Statistics</h2>
+                    <h2 className="text-lg font-semibold tracking-tight text-slate-900">Statistics</h2>
                     {latestStats.season && (
                       <Badge variant="secondary">{latestStats.season}</Badge>
                     )}
@@ -192,40 +192,40 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
                     {/* Batting Stats */}
                     {latestStats.batting_avg && (
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                        <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
                           AVG
                         </p>
-                        <p className="text-lg font-semibold text-slate-900">
+                        <p className="text-lg font-semibold tracking-tight text-slate-900">
                           {latestStats.batting_avg.toFixed(3)}
                         </p>
                       </div>
                     )}
                     {latestStats.home_runs !== null && (
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                        <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
                           HR
                         </p>
-                        <p className="text-lg font-semibold text-slate-900">
+                        <p className="text-lg font-semibold tracking-tight text-slate-900">
                           {latestStats.home_runs}
                         </p>
                       </div>
                     )}
                     {latestStats.rbis !== null && (
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                        <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
                           RBI
                         </p>
-                        <p className="text-lg font-semibold text-slate-900">
+                        <p className="text-lg font-semibold tracking-tight text-slate-900">
                           {latestStats.rbis}
                         </p>
                       </div>
                     )}
                     {latestStats.stolen_bases !== null && (
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                        <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
                           SB
                         </p>
-                        <p className="text-lg font-semibold text-slate-900">
+                        <p className="text-lg font-semibold tracking-tight text-slate-900">
                           {latestStats.stolen_bases}
                         </p>
                       </div>
@@ -234,30 +234,30 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
                     {/* Pitching Stats */}
                     {latestStats.era && (
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                        <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
                           ERA
                         </p>
-                        <p className="text-lg font-semibold text-slate-900">
+                        <p className="text-lg font-semibold tracking-tight text-slate-900">
                           {latestStats.era.toFixed(2)}
                         </p>
                       </div>
                     )}
                     {latestStats.strikeouts !== null && (
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                        <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
                           K
                         </p>
-                        <p className="text-lg font-semibold text-slate-900">
+                        <p className="text-lg font-semibold tracking-tight text-slate-900">
                           {latestStats.strikeouts}
                         </p>
                       </div>
                     )}
                     {latestStats.fb_velo_avg && (
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                        <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
                           FB Velo
                         </p>
-                        <p className="text-lg font-semibold text-slate-900">
+                        <p className="text-lg font-semibold tracking-tight text-slate-900">
                           {latestStats.fb_velo_avg} mph
                         </p>
                       </div>
@@ -344,15 +344,15 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
               </h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">Profile Views</span>
+                  <span className="text-sm leading-relaxed text-slate-600">Profile Views</span>
                   <span className="text-sm font-semibold text-slate-900">—</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">Watchlists</span>
+                  <span className="text-sm leading-relaxed text-slate-600">Watchlists</span>
                   <span className="text-sm font-semibold text-slate-900">—</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">Last Updated</span>
+                  <span className="text-sm leading-relaxed text-slate-600">Last Updated</span>
                   <span className="text-sm font-semibold text-slate-900">
                     {player.updated_at ? new Date(player.updated_at).toLocaleDateString() : '—'}
                   </span>

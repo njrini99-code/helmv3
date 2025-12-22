@@ -1,13 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { IconX, IconCheck } from '@/components/icons';
+import { IconX, IconCheck, IconDownload, IconBookmark, IconChartRadar } from '@/components/icons';
 import { getFullName, formatHeight, cn } from '@/lib/utils';
 import type { Player } from '@/lib/types';
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer } from 'recharts';
+import { SaveComparisonModal } from './save-comparison-modal';
+import { saveComparison } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
+import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface PlayerComparisonProps {
   players: Player[];
@@ -106,6 +112,11 @@ export function PlayerComparison({
   const [selectedStats] = useState<Set<string>>(
     new Set(statComparisons.map(s => s.label))
   );
+  const [showRadarChart, setShowRadarChart] = useState(true);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const comparisonRef = useRef<HTMLDivElement>(null);
 
   const getBestValue = (stat: StatComparison) => {
     const values = players
@@ -140,11 +151,137 @@ export function PlayerComparison({
     return numericValue === bestValue;
   };
 
+  // Prepare radar chart data
+  const getRadarData = () => {
+    const radarMetrics = [
+      { key: 'pitch_velo', label: 'Pitch Velo', max: 100 },
+      { key: 'exit_velo', label: 'Exit Velo', max: 110 },
+      { key: 'sixty_time', label: '60 Time', max: 8, inverse: true },
+      { key: 'gpa', label: 'GPA', max: 5 },
+      { key: 'height', label: 'Height', max: 80 }, // inches
+    ];
+
+    return radarMetrics.map(metric => {
+      const dataPoint: any = { metric: metric.label };
+
+      players.forEach((player, index) => {
+        let value = 0;
+
+        if (metric.key === 'height' && player.height_feet && player.height_inches) {
+          const totalInches = player.height_feet * 12 + player.height_inches;
+          value = (totalInches / metric.max) * 100;
+        } else if (metric.key === 'sixty_time' && player.sixty_time) {
+          // Inverse - lower is better, so invert the percentage
+          value = metric.inverse ? (1 - (player.sixty_time / metric.max)) * 100 : ((player as any)[metric.key] / metric.max) * 100;
+        } else if ((player as any)[metric.key]) {
+          value = ((player as any)[metric.key] / metric.max) * 100;
+        }
+
+        dataPoint[`player${index + 1}`] = Math.min(100, Math.max(0, value));
+      });
+
+      return dataPoint;
+    });
+  };
+
+  const PLAYER_COLORS = ['#16A34A', '#3B82F6', '#F59E0B', '#EF4444'];
+
+  const handleSave = () => {
+    setShowSaveModal(true);
+  };
+
+  const handleSaveComparison = async (data: { name: string; description?: string }) => {
+    setSaving(true);
+
+    try {
+      const playerIds = players.map(p => p.id);
+
+      // Prepare comparison data to cache (stats, radar data, etc.)
+      const comparisonData = {
+        radarData: getRadarData(),
+        stats: statComparisons.map(stat => ({
+          label: stat.label,
+          values: players.map(p => ({
+            playerId: p.id,
+            value: stat.getValue(p),
+            formatted: stat.format ? stat.format(stat.getValue(p)) : stat.getValue(p),
+          })),
+        })),
+        timestamp: new Date().toISOString(),
+      };
+
+      const result = await saveComparison({
+        name: data.name,
+        description: data.description,
+        playerIds,
+        comparisonData,
+      });
+
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Comparison saved successfully!');
+        setShowSaveModal(false);
+      }
+    } catch (error) {
+      toast.error('Failed to save comparison');
+      console.error('Save comparison error:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleExport = async () => {
+    if (!comparisonRef.current) {
+      toast.error('Unable to export comparison');
+      return;
+    }
+
+    setExporting(true);
+
+    try {
+      // Capture the comparison element as canvas
+      const canvas = await html2canvas(comparisonRef.current, {
+        scale: 2, // Higher quality
+        logging: false,
+        useCORS: true,
+        backgroundColor: '#FAF6F1', // Cream background
+      });
+
+      // Calculate PDF dimensions
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
+
+      // Add image to PDF
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+      // Generate filename with player names
+      const playerNames = players.map(p => getFullName(p.first_name, p.last_name)).join('_');
+      const filename = `player_comparison_${playerNames.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Save PDF
+      pdf.save(filename);
+
+      toast.success('PDF exported successfully!');
+    } catch (error) {
+      toast.error('Failed to export PDF');
+      console.error('Export error:', error);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
-    <Card className={cn('overflow-hidden', className)}>
-      {onClose && (
+    <>
+      <div ref={comparisonRef}>
+        <Card className={cn('overflow-hidden', className)}>
+          {onClose && (
         <CardHeader className="flex flex-row items-center justify-between border-b border-border-light">
-          <h2 className="text-lg font-semibold text-gray-900">Player Comparison</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Player Comparison</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <IconX size={18} />
           </Button>
@@ -157,7 +294,7 @@ export function PlayerComparison({
             {/* Player Headers */}
             <thead className="bg-cream-50 border-b border-border-light">
               <tr>
-                <th className="sticky left-0 bg-cream-50 z-10 px-4 py-3 text-left text-sm font-medium text-gray-600 min-w-[140px]">
+                <th className="sticky left-0 bg-cream-50 z-10 px-4 py-3 text-left text-sm font-medium text-slate-600 min-w-[140px]">
                   Metric
                 </th>
                 {players.map(player => {
@@ -175,15 +312,15 @@ export function PlayerComparison({
                           {onRemovePlayer && players.length > 1 && (
                             <button
                               onClick={() => onRemovePlayer(player.id)}
-                              className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors shadow-elevation-2"
+                              className="absolute -top-1 -right-1 w-5 h-5 bg-slate-700 text-white rounded-full flex items-center justify-center hover:bg-slate-800 transition-colors shadow-sm"
                             >
                               <IconX size={12} />
                             </button>
                           )}
                         </div>
                         <div className="text-center">
-                          <p className="font-semibold text-gray-900 text-sm">{name}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="font-semibold text-slate-900 text-sm">{name}</p>
+                          <p className="text-xs text-slate-500">
                             {player.high_school_name}
                           </p>
                           <div className="flex items-center gap-1 justify-center mt-1">
@@ -214,7 +351,7 @@ export function PlayerComparison({
                       index % 2 === 0 && 'bg-white'
                     )}
                   >
-                    <td className="sticky left-0 bg-inherit z-10 px-4 py-3 text-sm font-medium text-gray-700">
+                    <td className="sticky left-0 bg-inherit z-10 px-4 py-3 text-sm font-medium text-slate-700">
                       {stat.label}
                     </td>
                     {players.map(player => {
@@ -247,22 +384,108 @@ export function PlayerComparison({
           </table>
         </div>
 
+        {/* Radar Chart Visualization */}
+        {showRadarChart && (
+          <div className="p-6 border-t border-border-light bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <IconChartRadar size={20} className="text-green-600" />
+                <h3 className="text-base font-semibold text-slate-900">Performance Radar</h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowRadarChart(!showRadarChart)}
+              >
+                Hide Chart
+              </Button>
+            </div>
+            <ResponsiveContainer width="100%" height={400}>
+              <RadarChart data={getRadarData()}>
+                <PolarGrid stroke="#E2E8F0" />
+                <PolarAngleAxis
+                  dataKey="metric"
+                  tick={{ fill: '#64748B', fontSize: 12 }}
+                />
+                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
+                {players.map((player, index) => {
+                  const name = getFullName(player.first_name, player.last_name);
+                  return (
+                    <Radar
+                      key={player.id}
+                      name={name}
+                      dataKey={`player${index + 1}`}
+                      stroke={PLAYER_COLORS[index]}
+                      fill={PLAYER_COLORS[index]}
+                      fillOpacity={0.2}
+                      strokeWidth={2}
+                    />
+                  );
+                })}
+                <Legend
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  iconType="circle"
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+            <p className="text-xs text-slate-500 text-center mt-2">
+              Values are normalized to a 0-100 scale for comparison
+            </p>
+          </div>
+        )}
+
+        {!showRadarChart && (
+          <div className="p-4 bg-slate-50 border-t border-border-light">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowRadarChart(true)}
+              className="w-full"
+            >
+              <IconChartRadar size={16} className="mr-2" />
+              Show Radar Chart
+            </Button>
+          </div>
+        )}
+
         {/* Footer with action buttons */}
         <div className="p-4 bg-cream-50 border-t border-border-light flex items-center justify-between">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm leading-relaxed text-slate-600">
             Comparing {players.length} player{players.length > 1 ? 's' : ''}
           </p>
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm">
-              Export Comparison
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              <IconDownload size={16} className="mr-1.5" />
+              {exporting ? 'Exporting...' : 'Export PDF'}
             </Button>
-            <Button variant="primary" size="sm">
-              Save Comparison
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              <IconBookmark size={16} className="mr-1.5" />
+              {saving ? 'Saving...' : 'Save Comparison'}
             </Button>
           </div>
         </div>
       </CardContent>
     </Card>
+  </div>
+
+  {/* Save Comparison Modal - Outside ref to exclude from PDF */}
+  <SaveComparisonModal
+    open={showSaveModal}
+    onClose={() => setShowSaveModal(false)}
+    onSave={handleSaveComparison}
+    playerCount={players.length}
+  />
+</>
   );
 }
 
@@ -277,15 +500,15 @@ export function InlinePlayerComparison({ playerA, playerB }: { playerA: Player; 
       <div className="flex items-center gap-3">
         <Avatar name={nameA} src={playerA.avatar_url} size="lg" ring />
         <div>
-          <p className="font-semibold text-gray-900">{nameA}</p>
-          <p className="text-sm text-gray-500">{playerA.primary_position}</p>
+          <p className="font-semibold text-slate-900">{nameA}</p>
+          <p className="text-sm leading-relaxed text-slate-500">{playerA.primary_position}</p>
         </div>
       </div>
 
       {/* VS */}
       <div className="flex items-center justify-center">
-        <div className="px-4 py-2 bg-gray-100 rounded-lg">
-          <span className="text-sm font-semibold text-gray-600">VS</span>
+        <div className="px-4 py-2 bg-slate-100 rounded-lg">
+          <span className="text-sm font-semibold text-slate-600">VS</span>
         </div>
       </div>
 
@@ -293,8 +516,8 @@ export function InlinePlayerComparison({ playerA, playerB }: { playerA: Player; 
       <div className="flex items-center gap-3 flex-row-reverse">
         <Avatar name={nameB} src={playerB.avatar_url} size="lg" ring />
         <div className="text-right">
-          <p className="font-semibold text-gray-900">{nameB}</p>
-          <p className="text-sm text-gray-500">{playerB.primary_position}</p>
+          <p className="font-semibold text-slate-900">{nameB}</p>
+          <p className="text-sm leading-relaxed text-slate-500">{playerB.primary_position}</p>
         </div>
       </div>
     </div>

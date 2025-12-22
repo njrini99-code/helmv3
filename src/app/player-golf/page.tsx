@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { IconPlus, IconTarget, IconChevronRight } from '@/components/icons';
+import { IconPlus } from '@/components/icons';
 
 // Sample data - in production this would come from API
 const sampleStats = {
@@ -23,29 +23,10 @@ const recentRounds = [
 export default function GolfDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-
-        {/* Dev Mode Banner */}
-        <Link href="/player-golf/dev">
-          <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-xl hover:bg-green-100 transition-colors cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center">
-                  <IconTarget className="text-white" size={20} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-green-900">🚀 Dev Mode Active</p>
-                  <p className="text-xs text-green-700">Click here for quick access to all golf testing features</p>
-                </div>
-              </div>
-              <IconChevronRight className="text-green-600" size={24} />
-            </div>
-          </div>
-        </Link>
-
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
             <p className="text-slate-500 mt-1">Track your golf statistics and performance</p>
           </div>
           <div className="flex items-center gap-3">
@@ -67,13 +48,13 @@ export default function GolfDashboard() {
             <div className="grid grid-cols-2 gap-4">
 
               {/* Strokes Gained */}
-              <Card>
+              <Card glass>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-2">
                     <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Strokes Gained
                     </div>
-                    <div className="flex items-center gap-1 text-xs font-medium text-green-600">
+                    <div className="flex items-center gap-1 text-xs font-medium text-slate-600">
                       <span>{sampleStats.strokesGained.change}</span>
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -90,7 +71,7 @@ export default function GolfDashboard() {
               </Card>
 
               {/* Driving */}
-              <Card>
+              <Card glass>
                 <CardContent className="p-6">
                   <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                     Driving
@@ -106,7 +87,7 @@ export default function GolfDashboard() {
               </Card>
 
               {/* GIR */}
-              <Card>
+              <Card glass>
                 <CardContent className="p-6">
                   <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                     Greens in Regulation
@@ -121,7 +102,7 @@ export default function GolfDashboard() {
               </Card>
 
               {/* Putting */}
-              <Card>
+              <Card glass>
                 <CardContent className="p-6">
                   <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                     Putting
@@ -137,30 +118,24 @@ export default function GolfDashboard() {
             </div>
 
             {/* Quick Actions */}
-            <Card>
+            <Card glass>
               <CardContent className="p-6">
                 <h3 className="text-sm font-bold text-slate-900 mb-4">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <Link href="/player-golf/round/new">
-                    <button className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                    <button className="w-full px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
                       <IconPlus size={18} />
                       Start Round
                     </button>
                   </Link>
-                  <Link href="/player-golf/rounds/demo-round-123/play">
-                    <button className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
-                      🏌️ Start Demo Round
+                  <Link href="/player-golf/stats">
+                    <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg font-medium transition-colors">
+                      View Stats
                     </button>
                   </Link>
                   <Link href="/player-golf/rounds">
-                    <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
-                      <IconTarget size={18} />
-                      View Rounds
-                    </button>
-                  </Link>
-                  <Link href="/player-golf/dev">
-                    <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg font-medium transition-colors">
-                      Dev Mode
+                    <button className="w-full px-4 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg font-medium transition-colors col-span-2">
+                      View All Rounds
                     </button>
                   </Link>
                 </div>
@@ -170,11 +145,11 @@ export default function GolfDashboard() {
 
           {/* Recent Rounds Sidebar */}
           <div>
-            <Card>
+            <Card glass>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-bold text-slate-900">Recent Rounds</h3>
-                  <Link href="/golf/rounds" className="text-xs font-medium text-green-600 hover:text-green-700">
+                  <Link href="/golf/rounds" className="text-xs font-medium text-slate-600 hover:text-slate-700">
                     View All
                   </Link>
                 </div>
@@ -190,7 +165,7 @@ export default function GolfDashboard() {
                           </div>
                           <div className="flex items-center gap-2">
                             <div className={`text-xl font-bold ${
-                              round.scoreToPar.startsWith('-') ? 'text-green-600' :
+                              round.scoreToPar.startsWith('-') ? 'text-slate-600' :
                               round.scoreToPar === 'E' ? 'text-slate-700' :
                               'text-blue-600'
                             }`}>
@@ -216,7 +191,7 @@ export default function GolfDashboard() {
                 {recentRounds.length === 0 && (
                   <div className="text-center py-12">
                     <IconTarget size={32} className="mx-auto text-slate-300 mb-2" />
-                    <p className="text-sm text-slate-500">No rounds yet</p>
+                    <p className="text-sm leading-relaxed text-slate-500">No rounds yet</p>
                     <p className="text-xs text-slate-400 mt-1">Start tracking your rounds</p>
                   </div>
                 )}

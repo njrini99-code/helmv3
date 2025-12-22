@@ -307,9 +307,9 @@ export default function CalendarPage() {
                 onAddEvent={() => setShowEventModal(true)}
               />
             ) : (
-              <Card>
+              <Card glass>
                 <CardHeader>
-                  <h2 className="font-semibold text-gray-900">Schedule</h2>
+                  <h2 className="font-semibold text-slate-900">Schedule</h2>
                 </CardHeader>
                 <CardContent>
                   {loading ? (
@@ -343,7 +343,7 @@ export default function CalendarPage() {
                       <IconCalendar size={32} className="text-slate-400" />
                     </div>
                     <h3 className="text-lg font-medium text-slate-900 mb-2">No events scheduled</h3>
-                    <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
+                    <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
                       {isCoach
                         ? 'Add practices, games, and team events to keep everyone on the same page.'
                         : 'Your team schedule will appear here once your coach adds events.'}
@@ -385,7 +385,7 @@ export default function CalendarPage() {
                                 </span>
                               </div>
                               {(event.location_venue || event.location_city) && (
-                                <p className="text-sm text-slate-500 flex items-center gap-1 mb-2">
+                                <p className="text-sm leading-relaxed text-slate-500 flex items-center gap-1 mb-2">
                                   <IconMapPin size={14} />
                                   {event.location_venue}
                                   {event.location_city && `, ${event.location_city}`}
@@ -393,12 +393,12 @@ export default function CalendarPage() {
                                 </p>
                               )}
                               {event.opponent && (
-                                <p className="text-sm text-slate-600 mb-2">
+                                <p className="text-sm leading-relaxed text-slate-600 mb-2">
                                   vs {event.opponent} {event.home_away && `(${event.home_away})`}
                                 </p>
                               )}
                               {event.description && (
-                                <p className="text-sm text-slate-500 line-clamp-2">{event.description}</p>
+                                <p className="text-sm leading-relaxed text-slate-500 line-clamp-2">{event.description}</p>
                               )}
                             </div>
                           </div>
@@ -434,44 +434,44 @@ export default function CalendarPage() {
 
           <div className="space-y-6">
             {/* Event Types Legend */}
-            <Card>
+            <Card glass>
               <CardHeader>
-                <h2 className="font-semibold text-gray-900">Event Types</h2>
+                <h2 className="font-semibold text-slate-900">Event Types</h2>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <span className="text-sm text-slate-600">Practice</span>
+                  <span className="text-sm leading-relaxed text-slate-600">Practice</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="text-sm text-slate-600">Game</span>
+                  <span className="text-sm leading-relaxed text-slate-600">Game</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                  <span className="text-sm text-slate-600">Tournament</span>
+                  <span className="text-sm leading-relaxed text-slate-600">Tournament</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                  <span className="text-sm text-slate-600">Team Meeting</span>
+                  <span className="text-sm leading-relaxed text-slate-600">Team Meeting</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-slate-400"></div>
-                  <span className="text-sm text-slate-600">Other</span>
+                  <span className="text-sm leading-relaxed text-slate-600">Other</span>
                 </div>
               </CardContent>
             </Card>
 
             {/* Upcoming Events */}
-            <Card>
+            <Card glass>
               <CardHeader>
-                <h2 className="font-semibold text-gray-900">Upcoming</h2>
+                <h2 className="font-semibold text-slate-900">Upcoming</h2>
               </CardHeader>
               <CardContent>
                 {upcomingEvents.length === 0 ? (
                   <div className="text-center py-8">
                     <IconCalendar size={32} className="text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm text-slate-500">No upcoming events</p>
+                    <p className="text-sm leading-relaxed text-slate-500">No upcoming events</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -494,21 +494,21 @@ export default function CalendarPage() {
             </Card>
 
             {/* Quick Stats */}
-            <Card>
+            <Card glass>
               <CardHeader>
-                <h2 className="font-semibold text-gray-900">This Month</h2>
+                <h2 className="font-semibold text-slate-900">This Month</h2>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">Practices</span>
+                  <span className="text-sm leading-relaxed text-slate-600">Practices</span>
                   <span className="text-sm font-semibold text-slate-900">{stats.practices}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">Games</span>
+                  <span className="text-sm leading-relaxed text-slate-600">Games</span>
                   <span className="text-sm font-semibold text-slate-900">{stats.games}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">Total Events</span>
+                  <span className="text-sm leading-relaxed text-slate-600">Total Events</span>
                   <span className="text-sm font-semibold text-slate-900">{stats.total}</span>
                 </div>
               </CardContent>

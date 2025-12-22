@@ -125,7 +125,7 @@ function CompareContent() {
       />
       <div className="p-8 space-y-6">
         {/* Add Players Section */}
-        <Card>
+        <Card glass>
           <CardContent className="p-5">
             <div className="flex items-start gap-4">
               <div className="flex-1">
@@ -184,7 +184,7 @@ function CompareContent() {
                 )}
 
                 {searching && (
-                  <p className="text-sm text-slate-500 mt-2">Searching...</p>
+                  <p className="text-sm leading-relaxed text-slate-500 mt-2">Searching...</p>
                 )}
               </div>
 
@@ -216,14 +216,14 @@ function CompareContent() {
 
         {/* Comparison Table */}
         {players.length < 2 ? (
-          <Card>
+          <Card glass>
             <CardContent className="p-8 text-center">
               <div className="max-w-lg mx-auto">
                 <IconTarget size={40} className="mx-auto mb-4 text-slate-400" />
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">
                   {players.length === 0 ? 'No players selected' : 'Add one more player'}
                 </h3>
-                <p className="text-sm text-slate-600 mb-6">
+                <p className="text-sm leading-relaxed text-slate-600 mb-6">
                   {players.length === 0
                     ? 'Search and add at least 2 players above to start comparing them side by side.'
                     : 'Add at least one more player to start comparing.'}

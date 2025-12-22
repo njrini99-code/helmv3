@@ -43,14 +43,14 @@ export default function GolfCoachOnboarding() {
 
     try {
       // Get current user
-      const { data: { user } } = await (supabase as any).auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/golf/login');
         return;
       }
 
       // Step 1: Create organization
-      const { data: org, error: orgError } = await (supabase as any)
+      const { data: org, error: orgError } = await supabase
         .from('golf_organizations')
         .insert({
           name: orgName,
@@ -70,7 +70,7 @@ export default function GolfCoachOnboarding() {
       }
 
       // Step 2: Create team
-      const { data: team, error: teamError } = await (supabase as any)
+      const { data: team, error: teamError } = await supabase
         .from('golf_teams')
         .insert({
           organization_id: org.id,
@@ -88,7 +88,7 @@ export default function GolfCoachOnboarding() {
       }
 
       // Step 3: Update coach record
-      const { error: coachError } = await (supabase as any)
+      const { error: coachError } = await supabase
         .from('golf_coaches')
         .update({
           team_id: team.id,
@@ -182,7 +182,7 @@ export default function GolfCoachOnboarding() {
             Go to Dashboard
           </Button>
           {error && (
-            <p className="text-sm text-red-600 mt-4">{error}</p>
+            <p className="text-sm leading-relaxed text-red-600 mt-4">{error}</p>
           )}
         </div>
       </div>
@@ -212,7 +212,7 @@ export default function GolfCoachOnboarding() {
         <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
           {step === 'organization' && (
             <>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">
                 Organization Information
               </h2>
               <div className="space-y-4">
@@ -277,7 +277,7 @@ export default function GolfCoachOnboarding() {
 
           {step === 'team' && (
             <>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">
                 Team Details
               </h2>
               <div className="space-y-4">
@@ -315,7 +315,7 @@ export default function GolfCoachOnboarding() {
 
           {step === 'profile' && (
             <>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">
                 Your Profile
               </h2>
               <div className="space-y-4">

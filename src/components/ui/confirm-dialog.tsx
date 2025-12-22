@@ -73,7 +73,7 @@ export function ConfirmDialog({
 
         {/* Body */}
         <div className="px-6 py-4">
-          <p className="text-sm text-slate-600">{message}</p>
+          <p className="text-sm leading-relaxed text-slate-600">{message}</p>
         </div>
 
         {/* Footer */}

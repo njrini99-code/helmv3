@@ -137,7 +137,7 @@ export function DataTable<T>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider"
                   style={{ width: col.width }}
                 >
                   {col.header}
@@ -179,7 +179,7 @@ export function DataTable<T>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider"
                   style={{ width: col.width }}
                 >
                   {col.header}
@@ -194,7 +194,7 @@ export function DataTable<T>({
               {emptyIcon}
             </div>
           )}
-          <p className="text-sm text-slate-500">{emptyMessage}</p>
+          <p className="text-sm leading-relaxed text-slate-500">{emptyMessage}</p>
         </div>
       </div>
     );
@@ -222,7 +222,7 @@ export function DataTable<T>({
                   key={col.key}
                   onClick={() => handleSort(col.key)}
                   className={cn(
-                    'px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider',
+                    'px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider',
                     col.align === 'center' && 'text-center',
                     col.align === 'right' && 'text-right',
                     col.align !== 'center' && col.align !== 'right' && 'text-left',
@@ -330,7 +330,7 @@ export function SimpleTable({ headers, rows, className }: SimpleTableProps) {
             {headers.map((header, i) => (
               <th
                 key={i}
-                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider"
               >
                 {header}
               </th>

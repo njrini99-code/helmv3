@@ -297,7 +297,7 @@ export default function TeamsPage() {
 
                   {/* Team Info */}
                   <div className="pt-10 px-4 pb-4">
-                    <h3 className="text-lg font-semibold text-slate-900">{team.name}</h3>
+                    <h3 className="text-lg font-semibold tracking-tight text-slate-900">{team.name}</h3>
                     <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
                       {team.age_group && <Badge variant="secondary">{team.age_group}</Badge>}
                       {team.city && team.state && (
@@ -391,7 +391,7 @@ export default function TeamsPage() {
           />
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
-              <h2 className="text-lg font-semibold text-slate-900">Create New Team</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">Create New Team</h2>
             </div>
             <form onSubmit={handleCreateTeam} className="p-6 space-y-4">
               <Input

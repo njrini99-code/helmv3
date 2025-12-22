@@ -155,7 +155,7 @@ export function USMap({ selectedStates, onStateClick, stateCounts = {}, classNam
         <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-slate-900">{STATE_PATHS[hoveredState]?.name}</span>
-            <span className="text-sm text-slate-600">
+            <span className="text-sm leading-relaxed text-slate-600">
               {stateCounts[hoveredState] || 0} {(stateCounts[hoveredState] || 0) === 1 ? 'player' : 'players'}
             </span>
           </div>

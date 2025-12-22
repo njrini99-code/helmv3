@@ -89,7 +89,7 @@ export function ToastNotification({ toast, onClose }: ToastNotificationProps) {
       <div className="flex-1 min-w-0">
         <h4 className="font-semibold text-sm text-slate-900">{toast.title}</h4>
         {toast.message && (
-          <p className="text-sm text-slate-600 mt-0.5">{toast.message}</p>
+          <p className="text-sm leading-relaxed text-slate-600 mt-0.5">{toast.message}</p>
         )}
       </div>
 

@@ -98,7 +98,7 @@ export function Header({ title, subtitle, children, backHref, onMenuClick, showM
           {title && (
             <div className="min-w-0">
               <h1 className="text-lg font-semibold text-slate-900 tracking-tight truncate">{title}</h1>
-              {subtitle && <p className="text-sm text-slate-500 truncate">{subtitle}</p>}
+              {subtitle && <p className="text-sm leading-relaxed text-slate-500 truncate">{subtitle}</p>}
             </div>
           )}
         </div>
@@ -171,7 +171,7 @@ export function Header({ title, subtitle, children, backHref, onMenuClick, showM
                     <Avatar name={name} size="md" src={avatarUrl} />
                     <div className="min-w-0 flex-1">
                       <div className="font-medium text-slate-900 truncate">{name || 'User'}</div>
-                      <div className="text-sm text-slate-500 truncate">{email}</div>
+                      <div className="text-sm leading-relaxed text-slate-500 truncate">{email}</div>
                     </div>
                   </div>
                 </div>

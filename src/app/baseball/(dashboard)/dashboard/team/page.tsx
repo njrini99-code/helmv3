@@ -282,10 +282,10 @@ export default function TeamDashboardPage() {
 
           <div className="grid grid-cols-3 gap-6">
             <div className="col-span-2">
-              <Card>
+              <Card glass>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <h2 className="font-semibold text-gray-900">Recent Roster Activity</h2>
-                  <Link href="/baseball/dashboard/roster" className="text-sm text-green-600 hover:underline flex items-center gap-1">
+                  <h2 className="font-semibold text-slate-900">Recent Roster Activity</h2>
+                  <Link href="/baseball/dashboard/roster" className="text-sm leading-relaxed text-green-600 hover:underline flex items-center gap-1">
                     View roster <IconChevronRight size={14} />
                   </Link>
                 </CardHeader>
@@ -296,7 +296,7 @@ export default function TeamDashboardPage() {
                         <IconUsers size={24} className="text-slate-400" />
                       </div>
                       <h3 className="text-lg font-medium text-slate-900 mb-2">No players yet</h3>
-                      <p className="text-sm text-slate-500 mb-4 max-w-sm mx-auto">
+                      <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-sm mx-auto">
                         Start building your roster by inviting players to join your team.
                       </p>
                       <Link href="/baseball/dashboard/roster">
@@ -319,7 +319,7 @@ export default function TeamDashboardPage() {
                             <p className="font-medium text-slate-900">
                               {getFullName(member.player?.first_name, member.player?.last_name)}
                             </p>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm leading-relaxed text-slate-500">
                               {member.player?.primary_position} • Joined {member.joined_at ? formatRelativeTime(member.joined_at) : 'recently'}
                             </p>
                           </div>
@@ -333,9 +333,9 @@ export default function TeamDashboardPage() {
             </div>
 
             <div className="space-y-6">
-              <Card>
+              <Card glass>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <h2 className="font-semibold text-gray-900">Quick Actions</h2>
+                  <h2 className="font-semibold text-slate-900">Quick Actions</h2>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Link href="/baseball/dashboard/roster" className="block">
@@ -366,15 +366,15 @@ export default function TeamDashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card glass>
                 <CardHeader>
-                  <h2 className="font-semibold text-gray-900">Upcoming Events</h2>
+                  <h2 className="font-semibold text-slate-900">Upcoming Events</h2>
                 </CardHeader>
                 <CardContent>
                   {upcomingEvents.length === 0 ? (
                     <div className="text-center py-8">
                       <IconCalendar size={32} className="text-slate-300 mx-auto mb-2" />
-                      <p className="text-sm text-slate-500">No upcoming events</p>
+                      <p className="text-sm leading-relaxed text-slate-500">No upcoming events</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -413,9 +413,9 @@ export default function TeamDashboardPage() {
               <div className="flex-1">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h2 className="text-2xl font-semibold text-gray-900">{player?.first_name} {player?.last_name}</h2>
-                    <p className="text-gray-500">{player?.primary_position} • Class of {player?.grad_year}</p>
-                    <p className="text-sm text-gray-400 mt-1">{player?.high_school_name || player?.showcase_team_name}</p>
+                    <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{player?.first_name} {player?.last_name}</h2>
+                    <p className="text-slate-500">{player?.primary_position} • Class of {player?.grad_year}</p>
+                    <p className="text-sm leading-relaxed text-slate-400 mt-1">{player?.high_school_name || player?.showcase_team_name}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-4">
@@ -457,9 +457,9 @@ export default function TeamDashboardPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-6">
-          <Card>
+          <Card glass>
             <CardHeader>
-              <h2 className="font-semibold text-gray-900">My Development Plan</h2>
+              <h2 className="font-semibold text-slate-900">My Development Plan</h2>
             </CardHeader>
             <CardContent>
               {playerDevPlanTasks === 0 ? (
@@ -468,7 +468,7 @@ export default function TeamDashboardPage() {
                     <IconNote size={24} className="text-slate-400" />
                   </div>
                   <h3 className="text-lg font-medium text-slate-900 mb-2">No active plan</h3>
-                  <p className="text-sm text-slate-500 mb-4 max-w-sm mx-auto">
+                  <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-sm mx-auto">
                     Your coach will create a personalized development plan for you.
                   </p>
                 </div>
@@ -478,7 +478,7 @@ export default function TeamDashboardPage() {
                     <IconNote size={24} className="text-green-600" />
                   </div>
                   <h3 className="text-lg font-medium text-slate-900 mb-2">Active Plan</h3>
-                  <p className="text-sm text-slate-500 mb-4 max-w-sm mx-auto">
+                  <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-sm mx-auto">
                     You have {playerDevPlanTasks} {playerDevPlanTasks === 1 ? 'goal' : 'goals'} to work on.
                   </p>
                   <Link href="/baseball/dashboard/dev-plan">
@@ -489,9 +489,9 @@ export default function TeamDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardHeader>
-              <h2 className="font-semibold text-gray-900">Team Schedule</h2>
+              <h2 className="font-semibold text-slate-900">Team Schedule</h2>
             </CardHeader>
             <CardContent>
               {upcomingEvents.length === 0 ? (
@@ -500,7 +500,7 @@ export default function TeamDashboardPage() {
                     <IconCalendar size={24} className="text-slate-400" />
                   </div>
                   <h3 className="text-lg font-medium text-slate-900 mb-2">No upcoming events</h3>
-                  <p className="text-sm text-slate-500 mb-4 max-w-sm mx-auto">
+                  <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-sm mx-auto">
                     Team practices and games will appear here.
                   </p>
                 </div>
@@ -514,7 +514,7 @@ export default function TeamDashboardPage() {
                       <div className={`w-3 h-3 rounded-full mt-1 ${getEventColor(event.event_type)}`}></div>
                       <div className="flex-1">
                         <p className="font-medium text-slate-900">{event.name}</p>
-                        <p className="text-sm text-slate-500">{formatEventDate(event.start_time)}</p>
+                        <p className="text-sm leading-relaxed text-slate-500">{formatEventDate(event.start_time)}</p>
                       </div>
                     </div>
                   ))}

@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { IconSearch, IconX } from '@/components/icons';
+import { SearchAutocomplete } from '@/components/ui/search-autocomplete';
+import type { Player } from '@/lib/types';
 
 const POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'UTIL'];
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029];
@@ -86,38 +87,21 @@ export function FilterPanel({ currentFilters }: FilterPanelProps) {
         <label className="block text-sm font-medium text-slate-700 mb-2">
           Search
         </label>
-        <div className="relative">
-          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                updateFilter('search', search || undefined);
-              }
-            }}
-            placeholder="Name or school..."
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200
-                       focus:border-green-500 focus:ring-2 focus:ring-green-100
-                       text-sm text-slate-900 placeholder:text-slate-400"
-          />
-          {search && (
-            <button
-              onClick={() => {
-                setSearch('');
-                updateFilter('search', undefined);
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2"
-            >
-              <IconX size={16} className="text-slate-400 hover:text-slate-600" />
-            </button>
-          )}
-        </div>
+        <SearchAutocomplete
+          value={search}
+          onChange={setSearch}
+          onSelect={(player: Player) => {
+            // When a player is selected from autocomplete, apply the search filter
+            const fullName = `${player.first_name} ${player.last_name}`;
+            setSearch(fullName);
+            updateFilter('search', fullName);
+          }}
+          onSubmit={(value: string) => {
+            // When Enter is pressed, apply the search filter
+            updateFilter('search', value || undefined);
+          }}
+          placeholder="Name or school..."
+        />
       </div>
 
       {/* Grad Year */}
@@ -248,7 +232,7 @@ export function FilterPanel({ currentFilters }: FilterPanelProps) {
             className="w-4 h-4 rounded border-slate-300 text-green-600
                        focus:ring-green-500"
           />
-          <span className="text-sm text-slate-700">Has highlight video</span>
+          <span className="text-sm leading-relaxed text-slate-700">Has highlight video</span>
         </label>
       </div>
 

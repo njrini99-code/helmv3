@@ -86,7 +86,7 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-900 mb-1">Program Profile</h3>
-                      <p className="text-sm text-slate-500">Customize your public program page for recruits</p>
+                      <p className="text-sm leading-relaxed text-slate-500">Customize your public program page for recruits</p>
                     </div>
                   </div>
                   <IconChevronRight size={20} className="text-slate-400" />
@@ -108,7 +108,7 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-900 mb-1">Privacy Settings</h3>
-                      <p className="text-sm text-slate-500">Control what appears on your public profile</p>
+                      <p className="text-sm leading-relaxed text-slate-500">Control what appears on your public profile</p>
                     </div>
                   </div>
                   <IconChevronRight size={20} className="text-slate-400" />
@@ -120,18 +120,18 @@ export default function SettingsPage() {
 
         {/* Notification Settings (Coaches) */}
         {user?.role === 'coach' && (
-          <Card>
+          <Card glass>
             <CardHeader>
               <div className="flex items-center gap-2">
                 <IconBell size={20} className="text-slate-600" />
-                <h2 className="font-semibold text-gray-900">Notification Preferences</h2>
+                <h2 className="font-semibold text-slate-900">Notification Preferences</h2>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
                 <div>
                   <p className="font-medium text-slate-900">New Player Alerts</p>
-                  <p className="text-sm text-slate-500">Get notified when new players match your criteria</p>
+                  <p className="text-sm leading-relaxed text-slate-500">Get notified when new players match your criteria</p>
                 </div>
                 <input
                   type="checkbox"
@@ -144,7 +144,7 @@ export default function SettingsPage() {
               <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
                 <div>
                   <p className="font-medium text-slate-900">Message Notifications</p>
-                  <p className="text-sm text-slate-500">Email me when I receive new messages</p>
+                  <p className="text-sm leading-relaxed text-slate-500">Email me when I receive new messages</p>
                 </div>
                 <input
                   type="checkbox"
@@ -157,7 +157,7 @@ export default function SettingsPage() {
               <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
                 <div>
                   <p className="font-medium text-slate-900">Weekly Recruiting Digest</p>
-                  <p className="text-sm text-slate-500">Get a weekly summary of new prospects</p>
+                  <p className="text-sm leading-relaxed text-slate-500">Get a weekly summary of new prospects</p>
                 </div>
                 <input
                   type="checkbox"
@@ -170,11 +170,11 @@ export default function SettingsPage() {
           </Card>
         )}
 
-        <Card>
+        <Card glass>
           <CardHeader>
             <div className="flex items-center gap-2">
               <IconMail size={20} className="text-slate-600" />
-              <h2 className="font-semibold text-gray-900">Account Information</h2>
+              <h2 className="font-semibold text-slate-900">Account Information</h2>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -183,8 +183,8 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><h2 className="font-semibold text-gray-900">Change Password</h2></CardHeader>
+        <Card glass>
+          <CardHeader><h2 className="font-semibold text-slate-900">Change Password</h2></CardHeader>
           <CardContent>
             <form onSubmit={handlePasswordChange} className="space-y-4">
               <Input

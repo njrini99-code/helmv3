@@ -29,6 +29,7 @@ import {
 } from '@/components/icons';
 import { TeamSwitcher } from './team-switcher';
 import { useTeams } from '@/hooks/use-teams';
+import { usePlayerTeams } from '@/hooks/use-player-teams';
 
 // College/JUCO Coach - Recruiting Mode
 const coachRecruitingNav = [
@@ -41,13 +42,23 @@ const coachRecruitingNav = [
   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
 ];
 
-// HS/Showcase Coach - Team Mode
-const coachTeamNav = [
-  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+// HS Coach - Team Mode (HS-specific dashboard)
+const hsCoachTeamNav = [
+  { name: 'Dashboard', href: '/baseball/dashboard/team/high-school', icon: IconHome },
   { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
   { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
   { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
   { name: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconEye },
+  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
+  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+];
+
+// Showcase Coach - Team Mode
+const showcaseCoachTeamNav = [
+  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+  { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
+  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
+  { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
 ];
@@ -124,8 +135,12 @@ interface SidebarProps {
 export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, coach, player, signOut } = useAuth();
-  const { hasMultipleTeams, selectedTeam } = useTeams();
+  const { user, coach, player, signOut, coachMode, setCoachMode } = useAuth();
+
+  // Use appropriate teams hook based on user role
+  const coachTeams = useTeams();
+  const playerTeams = usePlayerTeams();
+  const { hasMultipleTeams, selectedTeam } = user?.role === 'coach' ? coachTeams : playerTeams;
 
   // Determine sport-specific logo based on pathname
   const isGolf = pathname.startsWith('/golf');
@@ -138,20 +153,8 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
     (coach?.coach_type === 'juco') ||
     (player && player.recruiting_activated && player.player_type !== 'college');
 
-  // Determine initial mode based on pathname
-  const getInitialMode = (): Mode => {
-    if (pathname.includes('/team') || pathname.includes('/roster') || pathname.includes('/dev-plan')) {
-      return 'team';
-    }
-    return 'recruiting';
-  };
-
-  const [currentMode, setCurrentMode] = useState<Mode>(getInitialMode());
-
-  // Update mode when pathname changes
-  useEffect(() => {
-    setCurrentMode(getInitialMode());
-  }, [pathname]);
+  // Use persisted coach mode from Zustand store
+  const currentMode = coachMode as Mode;
 
   // Determine navigation based on role, coach type, and mode
   const getNavigation = () => {
@@ -164,9 +167,12 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
       } else if (coach?.coach_type === 'showcase') {
         // Showcase coaches see organization navigation
         return showcaseOrgNav;
+      } else if (coach?.coach_type === 'high_school') {
+        // HS coaches only have team mode with HS-specific dashboard
+        return hsCoachTeamNav;
       } else {
-        // HS coaches only have team mode
-        return coachTeamNav;
+        // Default to HS nav for any undefined coach type
+        return hsCoachTeamNav;
       }
     } else if (user?.role === 'player') {
       if (player?.player_type === 'college' || !player?.recruiting_activated) {
@@ -196,12 +202,17 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
   const subtitle = coach ? (coach.school_name || 'Coach') : (player ? `${player.primary_position} • ${player.grad_year}` : '');
 
   const handleModeChange = (mode: Mode) => {
-    setCurrentMode(mode);
-    // Redirect to appropriate dashboard based on mode
+    setCoachMode(mode as 'recruiting' | 'team');
+    // Redirect to appropriate dashboard based on mode and coach type
     if (mode === 'recruiting') {
       router.push('/baseball/dashboard');
     } else {
-      router.push('/baseball/dashboard/team');
+      // Team mode - redirect to coach-specific team dashboard
+      if (coach?.coach_type === 'high_school') {
+        router.push('/baseball/dashboard/team/high-school');
+      } else {
+        router.push('/baseball/dashboard/team');
+      }
     }
   };
 
@@ -262,8 +273,8 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
           </div>
         )}
 
-        {/* Team Switcher for Showcase Coaches */}
-        {isShowcaseCoach && hasMultipleTeams && (
+        {/* Team Switcher for Showcase Coaches and Players with Multiple Teams */}
+        {(isShowcaseCoach || (user?.role === 'player' && hasMultipleTeams)) && hasMultipleTeams && (
           <TeamSwitcher collapsed={collapsed} />
         )}
 

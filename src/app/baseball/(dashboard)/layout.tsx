@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { CommandPalette } from '@/components/CommandPalette';
 import { ToastProvider } from '@/components/ui/toast';
-import { PeekPanelRoot } from '@/components/panels';
 import { cn } from '@/lib/utils';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -79,8 +78,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
     </div>
-      {/* Global Peek Panels */}
-      <PeekPanelRoot />
     </ToastProvider>
   );
 }

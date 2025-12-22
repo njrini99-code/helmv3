@@ -24,11 +24,11 @@ export default function AnalyticsPage() {
       <>
         <Header title="Analytics" subtitle="Track your recruiting activity" />
         <div className="p-8">
-          <Card>
+          <Card glass>
             <CardContent className="p-12 text-center">
               <IconEye size={48} className="mx-auto text-slate-300 mb-4" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No Analytics Data</h3>
-              <p className="text-sm text-slate-500">
+              <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">No Analytics Data</h3>
+              <p className="text-sm leading-relaxed text-slate-500">
                 Analytics data will appear once coaches start viewing your profile.
               </p>
             </CardContent>
@@ -49,7 +49,7 @@ export default function AnalyticsPage() {
       <div className="p-8 space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
+          <Card glass>
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-lg bg-green-50">
@@ -62,7 +62,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-lg bg-blue-50">
@@ -75,7 +75,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-lg bg-purple-50">
@@ -88,7 +88,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-lg bg-amber-50">
@@ -103,13 +103,13 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Views Over Time Chart */}
-        <Card>
+        <Card glass>
           <CardHeader className="border-b border-slate-200">
             <div className="flex items-center gap-2">
               <IconTrendingUp size={20} className="text-green-600" />
-              <h3 className="text-lg font-semibold text-slate-900">Profile Views Over Time</h3>
+              <h3 className="text-lg font-semibold tracking-tight text-slate-900">Profile Views Over Time</h3>
             </div>
-            <p className="text-sm text-slate-500 mt-1">Daily profile views for the last 30 days</p>
+            <p className="text-sm leading-relaxed text-slate-500 mt-1">Daily profile views for the last 30 days</p>
           </CardHeader>
           <CardContent className="p-6">
             {viewsOverTime.length > 0 ? (
@@ -155,17 +155,17 @@ export default function AnalyticsPage() {
             ) : (
               <div className="text-center py-12">
                 <IconCalendar size={48} className="mx-auto text-slate-300 mb-3" />
-                <p className="text-sm text-slate-500">No profile views yet</p>
+                <p className="text-sm leading-relaxed text-slate-500">No profile views yet</p>
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Top Schools Viewing */}
-        <Card>
+        <Card glass>
           <CardHeader className="border-b border-slate-200">
-            <h3 className="text-lg font-semibold text-slate-900">Top Schools Viewing Your Profile</h3>
-            <p className="text-sm text-slate-500 mt-1">Schools that have shown the most interest</p>
+            <h3 className="text-lg font-semibold tracking-tight text-slate-900">Top Schools Viewing Your Profile</h3>
+            <p className="text-sm leading-relaxed text-slate-500 mt-1">Schools that have shown the most interest</p>
           </CardHeader>
           <CardContent className="p-6">
             {topSchools.length > 0 ? (
@@ -187,7 +187,7 @@ export default function AnalyticsPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-semibold text-slate-900 tabular-nums">{school.view_count.toLocaleString()}</p>
+                      <p className="text-lg font-semibold tracking-tight text-slate-900 tabular-nums">{school.view_count.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">
                         {school.view_count === 1 ? 'view' : 'views'}
                       </p>
@@ -198,7 +198,7 @@ export default function AnalyticsPage() {
             ) : (
               <div className="text-center py-12">
                 <IconEye size={48} className="mx-auto text-slate-300 mb-3" />
-                <p className="text-sm text-slate-500">No school views yet</p>
+                <p className="text-sm leading-relaxed text-slate-500">No school views yet</p>
                 <p className="text-xs text-slate-400 mt-1">
                   Make sure your profile is complete and recruiting is activated
                 </p>

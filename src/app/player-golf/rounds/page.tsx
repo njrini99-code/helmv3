@@ -61,7 +61,7 @@ export default function RoundsPage() {
   };
 
   const getScoreColor = (scoreToPar: number) => {
-    if (scoreToPar < 0) return 'text-green-600';
+    if (scoreToPar < 0) return 'text-slate-600';
     if (scoreToPar === 0) return 'text-slate-700';
     return 'text-blue-600';
   };
@@ -72,7 +72,7 @@ export default function RoundsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">My Rounds</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">My Rounds</h1>
             <p className="text-slate-500 mt-1">View and track all your golf rounds</p>
           </div>
           <Link href="/golf/round/new">
@@ -89,7 +89,7 @@ export default function RoundsPage() {
             onClick={() => setFilterType('all')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               filterType === 'all'
-                ? 'bg-green-600 text-white'
+                ? 'bg-slate-900 text-white'
                 : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
             }`}
           >
@@ -99,7 +99,7 @@ export default function RoundsPage() {
             onClick={() => setFilterType('tournament')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               filterType === 'tournament'
-                ? 'bg-green-600 text-white'
+                ? 'bg-slate-900 text-white'
                 : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
             }`}
           >
@@ -109,7 +109,7 @@ export default function RoundsPage() {
             onClick={() => setFilterType('practice')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               filterType === 'practice'
-                ? 'bg-green-600 text-white'
+                ? 'bg-slate-900 text-white'
                 : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
             }`}
           >
@@ -122,12 +122,12 @@ export default function RoundsPage() {
           <div className="space-y-4">
             {sampleRounds.map((round) => (
               <Link key={round.id} href={`/golf/round/${round.id}`}>
-                <Card className="hover:border-green-200 hover:shadow-md transition-all cursor-pointer">
+                <Card glass className="hover:border-slate-200 hover:shadow-md transition-all cursor-pointer">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       {/* Course Info */}
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                        <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-1">
                           {round.course}
                         </h3>
                         <div className="flex items-center gap-4 text-sm text-slate-500">
@@ -143,7 +143,7 @@ export default function RoundsPage() {
                           <div className={`text-3xl font-bold ${getScoreColor(round.scoreToPar)}`}>
                             {formatScoreToPar(round.scoreToPar)}
                           </div>
-                          <div className="text-sm text-slate-500 mt-1">
+                          <div className="text-sm leading-relaxed text-slate-500 mt-1">
                             Score: {round.score}
                           </div>
                         </div>
@@ -173,13 +173,13 @@ export default function RoundsPage() {
             ))}
           </div>
         ) : (
-          <Card>
+          <Card glass>
             <CardContent className="p-12 text-center">
               <IconTarget size={48} className="mx-auto text-slate-300 mb-4" />
               <h3 className="text-lg font-medium text-slate-900 mb-2">
                 No rounds yet
               </h3>
-              <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+              <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-sm mx-auto">
                 Start tracking your golf rounds to analyze your performance and improvement over time.
               </p>
               <Link href="/golf/round/new">

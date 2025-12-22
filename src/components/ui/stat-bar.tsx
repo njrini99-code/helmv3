@@ -33,14 +33,14 @@ export function StatBar({
   return (
     <div className={cn('space-y-1.5', className)}>
       <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-gray-700">{label}</span>
+        <span className="font-medium text-slate-700">{label}</span>
         {showPercentage && (
-          <span className="text-gray-500">
+          <span className="text-slate-500">
             <AnimatedNumber value={percentage} decimals={0} suffix="%" />
           </span>
         )}
       </div>
-      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+      <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
         <div
           className={cn(
             'h-full rounded-full transition-all duration-1000 ease-out',

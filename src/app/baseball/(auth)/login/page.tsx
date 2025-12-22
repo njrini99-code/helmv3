@@ -40,7 +40,7 @@ export default function LoginPage() {
             alt="BaseballHelm"
             className="h-16 w-auto mx-auto mb-4"
           />
-          <h1 className="text-2xl font-semibold text-slate-900">Welcome back</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Welcome back</h1>
           <p className="text-slate-500 mt-1">Sign in to your account</p>
         </div>
 

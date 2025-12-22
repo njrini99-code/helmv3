@@ -7,12 +7,12 @@ export default function GolfSettingsPage() {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Settings</h1>
         <p className="text-slate-500 mt-1">Manage your account and preferences</p>
       </div>
 
       <div className="space-y-6">
-        <Card>
+        <Card glass>
           <CardHeader>
             <CardTitle>Account Settings</CardTitle>
           </CardHeader>
@@ -24,7 +24,7 @@ export default function GolfSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card glass>
           <CardHeader>
             <CardTitle>Team Settings</CardTitle>
           </CardHeader>
@@ -35,7 +35,7 @@ export default function GolfSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card glass>
           <CardHeader>
             <CardTitle>Notification Preferences</CardTitle>
           </CardHeader>

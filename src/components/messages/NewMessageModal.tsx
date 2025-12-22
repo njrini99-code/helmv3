@@ -163,7 +163,7 @@ export function NewMessageModal({
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-slate-900 truncate">{result.name}</p>
                     {result.subtitle && (
-                      <p className="text-sm text-slate-500 truncate">{result.subtitle}</p>
+                      <p className="text-sm leading-relaxed text-slate-500 truncate">{result.subtitle}</p>
                     )}
                   </div>
                   {selectedId === result.userId && (
@@ -179,7 +179,7 @@ export function NewMessageModal({
               <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
                 <IconSearch size={20} className="text-slate-400" />
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm leading-relaxed text-slate-500">
                 No {currentUserRole === 'coach' ? 'players' : 'coaches'} found
               </p>
               <p className="text-xs text-slate-400 mt-1">Try a different search term</p>
@@ -189,7 +189,7 @@ export function NewMessageModal({
               <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
                 <IconUsers size={20} className="text-slate-400" />
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm leading-relaxed text-slate-500">
                 Start typing to search
               </p>
               <p className="text-xs text-slate-400 mt-1">

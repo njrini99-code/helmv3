@@ -115,7 +115,7 @@ export default function SignupPage() {
               alt="BaseballHelm"
               className="h-16 w-auto mx-auto mb-4"
             />
-            <h1 className="text-2xl font-semibold text-slate-900">Join BaseballHelm</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Join BaseballHelm</h1>
             <p className="text-slate-500 mt-1">Select your role to get started</p>
           </div>
 
@@ -129,7 +129,7 @@ export default function SignupPage() {
               </div>
               <div>
                 <p className="font-semibold text-slate-900">Coach</p>
-                <p className="text-sm text-slate-500 mt-1">Discover and recruit athletes for your program</p>
+                <p className="text-sm leading-relaxed text-slate-500 mt-1">Discover and recruit athletes for your program</p>
               </div>
             </button>
 
@@ -142,7 +142,7 @@ export default function SignupPage() {
               </div>
               <div>
                 <p className="font-semibold text-slate-900">Player</p>
-                <p className="text-sm text-slate-500 mt-1">Showcase your skills and connect with colleges</p>
+                <p className="text-sm leading-relaxed text-slate-500 mt-1">Showcase your skills and connect with colleges</p>
               </div>
             </button>
           </div>
@@ -172,7 +172,7 @@ export default function SignupPage() {
               alt="BaseballHelm"
               className="h-16 w-auto mx-auto mb-4"
             />
-            <h1 className="text-2xl font-semibold text-slate-900">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
               {role === 'coach' ? 'Select Program Type' : 'Select Player Type'}
             </h1>
             <p className="text-slate-500 mt-1 capitalize">
@@ -261,7 +261,7 @@ export default function SignupPage() {
             alt="BaseballHelm"
             className="h-16 w-auto mx-auto mb-4"
           />
-          <h1 className="text-2xl font-semibold text-slate-900">Create your account</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Create your account</h1>
           <p className="text-slate-500 mt-1">
             <span className="capitalize">{role}</span>
             {' • '}

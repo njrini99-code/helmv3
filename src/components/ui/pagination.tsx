@@ -196,7 +196,7 @@ export function CompactPagination({
 
   return (
     <div className={cn('flex items-center justify-between', className)}>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm leading-relaxed text-slate-500">
         Showing <span className="font-medium text-slate-700">{startItem}</span> to{' '}
         <span className="font-medium text-slate-700">{endItem}</span> of{' '}
         <span className="font-medium text-slate-700">{totalItems}</span> results
@@ -252,7 +252,7 @@ export function PageSizeSelector({
 }: PageSizeSelectorProps) {
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <span className="text-sm text-slate-500">Show</span>
+      <span className="text-sm leading-relaxed text-slate-500">Show</span>
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
@@ -274,7 +274,7 @@ export function PageSizeSelector({
           </option>
         ))}
       </select>
-      <span className="text-sm text-slate-500">per page</span>
+      <span className="text-sm leading-relaxed text-slate-500">per page</span>
     </div>
   );
 }

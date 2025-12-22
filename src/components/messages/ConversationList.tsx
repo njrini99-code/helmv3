@@ -88,7 +88,7 @@ export function ConversationList({
             <h3 className="text-base font-medium text-slate-900 mb-1">
               {searchQuery ? 'No results' : 'No conversations'}
             </h3>
-            <p className="text-sm text-slate-500 mb-4 max-w-[200px]">
+            <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-[200px]">
               {searchQuery
                 ? 'Try a different search term'
                 : 'Start a conversation to connect with players or coaches'}
@@ -144,9 +144,10 @@ function ConversationItem({
     <button
       onClick={onClick}
       className={cn(
-        'w-full px-4 py-3 flex items-start gap-3 text-left transition-colors',
-        'hover:bg-slate-50',
-        isSelected && 'bg-green-50 hover:bg-green-50',
+        'w-full px-4 py-3 flex items-start gap-3 text-left transition-all duration-200',
+        'hover:bg-slate-50 active:scale-[0.98]',
+        isSelected && 'bg-green-50 hover:bg-green-50 border-l-2 border-green-600',
+        !isSelected && 'border-l-2 border-transparent'
       )}
     >
       {/* Avatar with online indicator */}
@@ -155,9 +156,13 @@ function ConversationItem({
           name={participant?.name || 'Unknown'}
           src={participant?.avatar}
           size="md"
+          className={cn(
+            'transition-all',
+            isSelected && 'ring-2 ring-green-600 ring-offset-2'
+          )}
         />
         {participant?.isOnline && (
-          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full animate-pulse" />
         )}
       </div>
 
@@ -165,13 +170,17 @@ function ConversationItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-0.5">
           <h4 className={cn(
-            'font-medium text-sm truncate',
-            unreadCount > 0 ? 'text-slate-900' : 'text-slate-700'
+            'font-medium text-sm truncate transition-colors',
+            unreadCount > 0 ? 'text-slate-900' : 'text-slate-700',
+            isSelected && 'text-green-700'
           )}>
             {participant?.name || 'Unknown'}
           </h4>
           {lastMessage?.sent_at && (
-            <span className="text-xs text-slate-400 flex-shrink-0 ml-2">
+            <span className={cn(
+              'text-xs flex-shrink-0 ml-2 transition-colors',
+              unreadCount > 0 ? 'text-green-600 font-medium' : 'text-slate-400'
+            )}>
               {formatRelativeTime(lastMessage.sent_at)}
             </span>
           )}
@@ -196,11 +205,12 @@ function ConversationItem({
                 </span>
               )}
               <p className={cn(
-                'text-sm truncate',
+                'text-xs truncate transition-all',
                 unreadCount > 0 && !isFromMe
-                  ? 'text-slate-900 font-medium'
+                  ? 'text-slate-900 font-semibold'
                   : 'text-slate-500'
               )}>
+                {isFromMe && <span className="text-slate-400 mr-1">You:</span>}
                 {lastMessage.content}
               </p>
             </>
@@ -211,7 +221,7 @@ function ConversationItem({
       {/* Unread Badge */}
       {unreadCount > 0 && (
         <div className="flex-shrink-0 self-center">
-          <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-green-600 text-white text-xs font-medium">
+          <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-green-600 text-white text-xs font-bold shadow-sm animate-pulse">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         </div>

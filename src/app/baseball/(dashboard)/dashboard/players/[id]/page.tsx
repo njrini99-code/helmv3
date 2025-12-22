@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Loading } from '@/components/ui/loading';
 import { BentoGrid, BentoCard, BentoStatCard } from '@/components/ui/bento-grid';
 import { BadgeChip } from '@/components/ui/filter-chips';
+import { VideoShowcase } from '@/components/player/VideoShowcase';
 import {
   IconArrowLeft,
   IconPlus,
@@ -22,7 +23,6 @@ import {
   IconActivity,
   IconRuler,
   IconTarget,
-  IconVideo,
 } from '@/components/icons';
 import { usePlayer } from '@/hooks/use-players';
 import { useWatchlist } from '@/hooks/use-watchlist';
@@ -79,8 +79,8 @@ export default function PlayerDetailPage() {
           <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
             <IconTarget size={28} className="text-slate-400" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Player not found</h3>
-          <p className="text-sm text-slate-500 mb-4">
+          <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">Player not found</h3>
+          <p className="text-sm leading-relaxed text-slate-500 mb-4">
             This player profile may have been removed or doesn't exist.
           </p>
           <Button variant="secondary" onClick={() => router.back()}>
@@ -298,7 +298,7 @@ export default function PlayerDetailPage() {
                 </a>
               )}
               {!player.email && !player.phone && (
-                <p className="text-sm text-slate-400 italic">No contact info provided</p>
+                <p className="text-sm leading-relaxed text-slate-400 italic">No contact info provided</p>
               )}
             </div>
           </BentoCard>
@@ -315,10 +315,10 @@ export default function PlayerDetailPage() {
                     href={'https://instagram.com/' + player.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 text-sm text-slate-600 hover:text-pink-600 transition-colors"
+                    className="flex items-center gap-3 text-sm text-slate-600 hover:text-slate-900 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center">
-                      <IconInstagram size={14} className="text-white" />
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                      <IconInstagram size={14} className="text-slate-600" strokeWidth={1.5} />
                     </div>
                     @{player.instagram}
                   </a>
@@ -328,10 +328,10 @@ export default function PlayerDetailPage() {
                     href={'https://twitter.com/' + player.twitter}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 text-sm text-slate-600 hover:text-blue-500 transition-colors"
+                    className="flex items-center gap-3 text-sm text-slate-600 hover:text-slate-900 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
-                      <IconTwitter size={14} className="text-white" />
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                      <IconTwitter size={14} className="text-slate-600" strokeWidth={1.5} />
                     </div>
                     @{player.twitter}
                   </a>
@@ -352,23 +352,15 @@ export default function PlayerDetailPage() {
             </div>
           </BentoCard>
 
-          {/* Videos Card - Placeholder */}
-          <BentoCard size="wide" className="bg-slate-50">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center">
-                <IconVideo size={24} className="text-slate-400" />
-              </div>
-              <div>
-                <h3 className="font-medium text-slate-900">Player Videos</h3>
-                <p className="text-sm text-slate-500">View highlights and game film</p>
-              </div>
-              <div className="ml-auto">
-                <Button variant="secondary" size="sm">
-                  View All
-                </Button>
-              </div>
-            </div>
-          </BentoCard>
+          {/* Videos Showcase */}
+          <div className="col-span-4">
+            <VideoShowcase
+              playerId={playerId}
+              maxVideos={4}
+              showViewAll={true}
+              onViewAll={() => router.push(`/baseball/dashboard/players/${playerId}/videos`)}
+            />
+          </div>
         </BentoGrid>
       </div>
     </>

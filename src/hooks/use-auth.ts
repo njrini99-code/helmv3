@@ -9,7 +9,7 @@ import type { Player, Coach } from '@/lib/types';
 export function useAuth() {
   const router = useRouter();
   const supabase = createClient();
-  const { user, coach, player, loading, isDevMode, setUser, setCoach, setPlayer, setLoading, clear } = useAuthStore();
+  const { user, coach, player, loading, isDevMode, coachMode, setUser, setCoach, setPlayer, setLoading, setCoachMode, clear } = useAuthStore();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -80,5 +80,5 @@ export function useAuth() {
     return { data, error };
   };
 
-  return { user, coach, player, loading, signOut, updatePlayer, updateCoach };
+  return { user, coach, player, loading, coachMode, setCoachMode, signOut, updatePlayer, updateCoach };
 }

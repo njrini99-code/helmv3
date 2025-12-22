@@ -9,7 +9,7 @@ export default function GolfQualifiersPage() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Qualifiers</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Qualifiers</h1>
           <p className="text-slate-500 mt-1">Manage team qualifying rounds</p>
         </div>
         <Button className="gap-2">
@@ -18,7 +18,7 @@ export default function GolfQualifiersPage() {
         </Button>
       </div>
 
-      <Card>
+      <Card glass>
         <CardContent className="py-12 text-center">
           <IconFlag size={48} className="mx-auto text-slate-300 mb-4" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">

@@ -88,8 +88,8 @@ export default function PipelinePage() {
         {watchlist.length === 0 && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-6 text-center">
             <IconUsers size={32} className="mx-auto mb-3 text-green-600" />
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">Your pipeline is empty</h3>
-            <p className="text-sm text-slate-600 mb-4">
+            <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">Your pipeline is empty</h3>
+            <p className="text-sm leading-relaxed text-slate-600 mb-4">
               Start by adding players to your watchlist from the Discover page.
             </p>
             <Link href="/baseball/dashboard/discover">

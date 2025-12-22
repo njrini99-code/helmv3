@@ -10,7 +10,12 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "db:types": "npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/lib/types/database.ts",
-    "check": "npm run typecheck && npm run lint"
+    "check": "npm run typecheck && npm run lint",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "analyze": "ANALYZE=true npm run build"
   },
   "keywords": [],
   "author": "",
@@ -33,6 +38,8 @@
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.0.10",
     "framer-motion": "^12.23.26",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.4",
     "next": "^16.0.10",
     "postcss": "^8.5.6",
     "react": "^19.2.3",
@@ -48,6 +55,8 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.2",
+    "@next/bundle-analyzer": "^16.1.1",
+    "@playwright/test": "^1.57.0",
     "supabase": "^2.67.1",
     "typescript-eslint": "^8.50.0"
   }

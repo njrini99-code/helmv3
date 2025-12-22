@@ -10,6 +10,7 @@ interface PlayerCardGridProps {
   columns?: 2 | 3 | 4;
   onWatchlist?: (playerId: string) => void;
   onMessage?: (playerId: string) => void;
+  onPlayerClick?: (playerId: string) => void;
   watchlistIds?: string[];
   loading?: boolean;
   emptyMessage?: string;
@@ -23,6 +24,7 @@ export function PlayerCardGrid({
   columns = 3,
   onWatchlist,
   onMessage,
+  onPlayerClick,
   watchlistIds = [],
   loading = false,
   emptyTitle = 'No players found',
@@ -56,7 +58,7 @@ export function PlayerCardGrid({
         <h3 className="text-lg font-semibold text-slate-900 mb-2">
           {emptyTitle}
         </h3>
-        <p className="text-sm text-slate-500 max-w-md">
+        <p className="text-sm leading-relaxed text-slate-500 max-w-md">
           {emptyMessage}
         </p>
       </div>
@@ -81,6 +83,7 @@ export function PlayerCardGrid({
               variant="compact"
               onWatchlist={onWatchlist ? () => onWatchlist(player.id) : undefined}
               onMessage={onMessage ? () => onMessage(player.id) : undefined}
+              onPlayerClick={onPlayerClick ? () => onPlayerClick(player.id) : undefined}
               isOnWatchlist={watchlistIds.includes(player.id)}
             />
           </div>
@@ -106,6 +109,7 @@ export function PlayerCardGrid({
             variant={variant}
             onWatchlist={onWatchlist ? () => onWatchlist(player.id) : undefined}
             onMessage={onMessage ? () => onMessage(player.id) : undefined}
+            onPlayerClick={onPlayerClick ? () => onPlayerClick(player.id) : undefined}
             isOnWatchlist={watchlistIds.includes(player.id)}
           />
         </div>

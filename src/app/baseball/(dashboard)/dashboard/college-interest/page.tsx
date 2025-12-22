@@ -211,7 +211,7 @@ export default function CollegeInterestPage() {
   if (user?.role !== 'coach') {
     return (
       <div className="p-8">
-        <Card>
+        <Card glass>
           <CardContent className="p-12 text-center">
             <p className="text-slate-500">Only coaches can access college interest tracking.</p>
           </CardContent>
@@ -264,12 +264,12 @@ export default function CollegeInterestPage() {
       <div className="p-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <Card>
+          <Card glass>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Players Tracked</p>
-                  <p className="text-2xl font-semibold text-slate-900 mt-1">{stats.totalPlayers}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.totalPlayers}</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
                   <IconEye size={24} className="text-blue-600" />
@@ -278,12 +278,12 @@ export default function CollegeInterestPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">High Interest</p>
-                  <p className="text-2xl font-semibold text-slate-900 mt-1">{stats.highInterest}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.highInterest}</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center">
                   <IconStar size={24} className="text-amber-600" />
@@ -292,12 +292,12 @@ export default function CollegeInterestPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Total Views</p>
-                  <p className="text-2xl font-semibold text-slate-900 mt-1">{stats.totalViews}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.totalViews}</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center">
                   <IconEye size={24} className="text-purple-600" />
@@ -306,12 +306,12 @@ export default function CollegeInterestPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Avg Coaches/Player</p>
-                  <p className="text-2xl font-semibold text-slate-900 mt-1">{stats.avgCoachesPerPlayer}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.avgCoachesPerPlayer}</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
                   <IconTrendingUp size={24} className="text-green-600" />
@@ -322,12 +322,12 @@ export default function CollegeInterestPage() {
         </div>
 
         {/* Interest List */}
-        <Card>
+        <Card glass>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-semibold text-gray-900">Player Interest Activity</h2>
-                <p className="text-sm text-slate-500 mt-1">
+                <h2 className="font-semibold text-slate-900">Player Interest Activity</h2>
+                <p className="text-sm leading-relaxed text-slate-500 mt-1">
                   See which colleges are viewing and tracking your players
                 </p>
               </div>
@@ -368,7 +368,7 @@ export default function CollegeInterestPage() {
                   <IconEye size={32} className="text-slate-400" />
                 </div>
                 <h3 className="text-lg font-medium text-slate-900 mb-2">No college interest yet</h3>
-                <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
+                <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
                   When college coaches view your players' profiles or add them to watchlists, you'll see the activity here.
                 </p>
               </div>
@@ -395,7 +395,7 @@ export default function CollegeInterestPage() {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-slate-600">
+                        <p className="text-sm leading-relaxed text-slate-600">
                           {interest.player_position} • {interest.player_grad_year}
                         </p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
@@ -409,7 +409,7 @@ export default function CollegeInterestPage() {
                     {/* Recent Activity */}
                     {interest.recent_activity.length > 0 && (
                       <div className="border-t border-slate-200 pt-3 space-y-2">
-                        <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Recent Activity</p>
+                        <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-2">Recent Activity</p>
                         {interest.recent_activity.slice(0, 5).map((activity) => (
                           <div
                             key={activity.id}

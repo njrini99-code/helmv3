@@ -201,7 +201,7 @@ export default function ProgramPage() {
       <>
         <Header title="Program Profile" subtitle="Coach access required" />
         <div className="p-6">
-          <Card>
+          <Card glass>
             <CardContent className="p-12 text-center">
               <p className="text-slate-500">This page is only available to coaches.</p>
             </CardContent>
@@ -216,10 +216,10 @@ export default function ProgramPage() {
       <>
         <Header title="Program Profile" subtitle="No organization found" />
         <div className="p-6">
-          <Card>
+          <Card glass>
             <CardContent className="p-12 text-center">
               <IconBuilding size={48} className="mx-auto text-slate-300 mb-4" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No Program Found</h3>
+              <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">No Program Found</h3>
               <p className="text-slate-500 mb-4">Your account is not associated with a program yet.</p>
             </CardContent>
           </Card>
@@ -243,12 +243,12 @@ export default function ProgramPage() {
       </Header>
 
       <div className="p-6 lg:p-8 max-w-3xl mx-auto">
-        <Card>
+        <Card glass>
           <CardContent className="p-6">
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Program Information</h3>
-                <p className="text-sm text-slate-500">
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">Program Information</h3>
+                <p className="text-sm leading-relaxed text-slate-500">
                   This information appears on your public program page that recruits can view.
                 </p>
               </div>
@@ -268,7 +268,7 @@ export default function ProgramPage() {
                 )}
                 <div>
                   <h4 className="font-medium text-slate-900 mb-1">Program Logo</h4>
-                  <p className="text-sm text-slate-500 mb-3">Upload a logo for your program page (max 2MB).</p>
+                  <p className="text-sm leading-relaxed text-slate-500 mb-3">Upload a logo for your program page (max 2MB).</p>
                   <input
                     ref={fileInputRef}
                     type="file"

@@ -149,7 +149,7 @@ export function CalendarView({
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                 <div
                   key={day}
-                  className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wide py-2"
+                  className="text-center text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wide py-2"
                 >
                   {day}
                 </div>
@@ -228,7 +228,7 @@ export function CalendarView({
                     key={day.toISOString()}
                     className="text-center py-2"
                   >
-                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <div className="text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wide">
                       {format(day, 'EEE')}
                     </div>
                     <div

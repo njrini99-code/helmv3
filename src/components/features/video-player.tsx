@@ -58,10 +58,10 @@ export function VideoPlayer({
 
   if (error) {
     return (
-      <div className={cn('relative rounded-xl overflow-hidden bg-gray-100 aspect-video flex items-center justify-center', className)}>
+      <div className={cn('relative rounded-xl overflow-hidden bg-slate-100 aspect-video flex items-center justify-center', className)}>
         <div className="text-center p-4">
-          <p className="text-gray-500 text-sm">Unable to load video</p>
-          <p className="text-gray-400 text-xs mt-1">The video may have been removed or is unavailable</p>
+          <p className="text-slate-500 text-sm">Unable to load video</p>
+          <p className="text-slate-400 text-xs mt-1">The video may have been removed or is unavailable</p>
         </div>
       </div>
     );

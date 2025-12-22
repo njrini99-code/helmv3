@@ -43,10 +43,30 @@ export type HighSchool = Tables['high_schools']['Row'];
 export type Watchlist = Tables['watchlists']['Row'];
 export type Video = Tables['videos']['Row'];
 
-// Messaging
+// Player Comparisons (manually added until types are regenerated)
+export interface PlayerComparison {
+  id: string;
+  coach_id: string;
+  name: string;
+  description: string | null;
+  player_ids: string[];
+  comparison_data: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlayerComparisonInsert {
+  coach_id: string;
+  name: string;
+  description?: string | null;
+  player_ids: string[];
+  comparison_data?: Record<string, any>;
+}
+
+// Messaging (using generated types from database)
+export type Message = Tables['messages']['Row'];
 export type Conversation = Tables['conversations']['Row'];
 export type ConversationParticipant = Tables['conversation_participants']['Row'];
-export type Message = Tables['messages']['Row'];
 export type Notification = Tables['notifications']['Row'];
 
 // Insert types (what you send when creating)
@@ -72,6 +92,7 @@ export type UserRole = Enums['user_role'];
 export type CoachType = Enums['coach_type'];
 export type PlayerType = Enums['player_type'];
 export type PipelineStage = Enums['pipeline_stage'];
+export type TeamType = 'high_school' | 'showcase' | 'juco' | 'college';
 
 // ============================================
 // COMPOSITE/JOINED TYPES

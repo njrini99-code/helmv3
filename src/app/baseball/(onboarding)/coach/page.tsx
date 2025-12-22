@@ -94,8 +94,8 @@ export default function CoachOnboarding() {
           <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <span className="text-white font-bold text-2xl">H</span>
           </div>
-          <h1 className="text-3xl font-semibold text-gray-900 mb-3">Welcome to Helm Sports Labs!</h1>
-          <p className="text-gray-600 mb-8 max-w-md mx-auto">
+          <h1 className="text-3xl font-semibold text-slate-900 mb-3">Welcome to Helm Sports Labs!</h1>
+          <p className="text-slate-600 mb-8 max-w-md mx-auto">
             Let's set up your program in 2 minutes. You'll be discovering talent in no time.
           </p>
 
@@ -114,7 +114,7 @@ export default function CoachOnboarding() {
                   className={`p-4 border-2 rounded-lg text-sm font-medium transition-all ${
                     coachType === type.value
                       ? 'border-brand-500 bg-brand-50 text-brand-700'
-                      : 'border-border-light bg-white text-gray-700 hover:border-border'
+                      : 'border-border-light bg-white text-slate-700 hover:border-border'
                   }`}
                 >
                   {type.label}
@@ -138,8 +138,8 @@ export default function CoachOnboarding() {
           <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <IconCheck size={32} className="text-white" />
           </div>
-          <h1 className="text-3xl font-semibold text-gray-900 mb-3">Your program is ready!</h1>
-          <p className="text-gray-600 mb-8">
+          <h1 className="text-3xl font-semibold text-slate-900 mb-3">Your program is ready!</h1>
+          <p className="text-slate-600 mb-8">
             {coachType === 'college' || coachType === 'juco'
               ? "You're all set to start discovering recruits."
               : "You're all set to start managing your team."}
@@ -147,7 +147,7 @@ export default function CoachOnboarding() {
           <Button size="lg" onClick={handleComplete} loading={loading} className="px-8">
             {coachType === 'college' || coachType === 'juco' ? 'Find your first recruit' : 'Invite your first player'}
           </Button>
-          {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
+          {error && <p className="text-sm leading-relaxed text-red-600 mt-4">{error}</p>}
         </div>
       </div>
     );
@@ -158,11 +158,11 @@ export default function CoachOnboarding() {
       <div className="w-full max-w-md">
         {/* Progress bar */}
         <div className="mb-8">
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+          <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
             <span>Step {step === 'program' ? 1 : step === 'profile' ? 2 : 3} of 3</span>
             <span>{step === 'program' ? 33 : step === 'profile' ? 67 : 100}% complete</span>
           </div>
-          <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
             <div
               className="h-full bg-brand-600 transition-all duration-300"
               style={{ width: `${step === 'program' ? 33 : step === 'profile' ? 67 : 100}%` }}
@@ -173,7 +173,7 @@ export default function CoachOnboarding() {
         <div className="bg-white rounded-2xl border border-border-light p-8 shadow-sm">
           {step === 'program' && (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Program Information</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">Program Information</h2>
               <div className="space-y-4">
                 <Input
                   label="School/Organization Name"
@@ -210,7 +210,7 @@ export default function CoachOnboarding() {
 
           {step === 'profile' && (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Your Profile</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">Your Profile</h2>
               <div className="space-y-4">
                 <Input label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Smith" required />
                 <Input label="Title/Role" value={coachTitle} onChange={(e) => setCoachTitle(e.target.value)} placeholder="Head Coach" required />
@@ -220,13 +220,13 @@ export default function CoachOnboarding() {
                   <label className="label mb-2">Photo (optional)</label>
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-full bg-cream-200 flex items-center justify-center">
-                      <IconUser size={28} className="text-gray-400" />
+                      <IconUser size={28} className="text-slate-400" />
                     </div>
                     <Button variant="secondary" size="sm">
                       Upload Photo
                     </Button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">JPG or PNG, max 5MB</p>
+                  <p className="text-xs text-slate-500 mt-2">JPG or PNG, max 5MB</p>
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
@@ -238,8 +238,8 @@ export default function CoachOnboarding() {
 
           {step === 'branding' && (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Branding</h2>
-              <p className="text-sm text-gray-600 mb-6">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">Branding</h2>
+              <p className="text-sm leading-relaxed text-slate-600 mb-6">
                 Customize your program's appearance. You can skip this step and update it later.
               </p>
               <div className="space-y-4">
@@ -247,7 +247,7 @@ export default function CoachOnboarding() {
                   <label className="label mb-2">Program Logo</label>
                   <div className="flex items-center gap-4">
                     <div className="w-20 h-20 rounded-lg bg-cream-200 flex items-center justify-center">
-                      <span className="text-2xl font-semibold text-gray-400">
+                      <span className="text-2xl font-semibold tracking-tight text-slate-400">
                         {schoolName ? schoolName.charAt(0).toUpperCase() : 'L'}
                       </span>
                     </div>
@@ -255,15 +255,15 @@ export default function CoachOnboarding() {
                       Upload Logo
                     </Button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">Square PNG or SVG, max 2MB</p>
+                  <p className="text-xs text-slate-500 mt-2">Square PNG or SVG, max 2MB</p>
                 </div>
                 <div>
                   <label className="label mb-2">Primary Color</label>
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg bg-brand-600 border-2 border-border-light" />
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm leading-relaxed text-slate-600">
                       <p className="font-medium">Kelly Green</p>
-                      <p className="text-xs text-gray-500">#16A34A (default)</p>
+                      <p className="text-xs text-slate-500">#16A34A (default)</p>
                     </div>
                   </div>
                 </div>

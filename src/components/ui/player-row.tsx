@@ -282,12 +282,12 @@ export function PlayerCard({
         <h3 className="font-semibold text-slate-900 truncate">{fullName}</h3>
         <div className="flex items-center gap-2 mt-1">
           <BadgeChip variant="success" size="sm">{player.primary_position}</BadgeChip>
-          <span className="text-sm text-slate-500">{player.grad_year}</span>
+          <span className="text-sm leading-relaxed text-slate-500">{player.grad_year}</span>
         </div>
       </div>
 
       {/* School & Location */}
-      <p className="text-sm text-slate-500 truncate mb-3">
+      <p className="text-sm leading-relaxed text-slate-500 truncate mb-3">
         {player.high_school_name}
         {location && ` • ${location}`}
       </p>

@@ -74,7 +74,7 @@ function BentoStatCard({
       />
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-slate-500 font-medium">{label}</p>
+          <p className="text-sm leading-relaxed text-slate-500 font-medium">{label}</p>
           <p className={`font-semibold text-slate-900 mt-1 ${size === 'large' ? 'text-3xl' : 'text-2xl'}`}>
             {typeof value === 'number' ? <AnimatedStat value={value} /> : value}
           </p>
@@ -158,7 +158,7 @@ export default function DashboardPage() {
                     <IconTarget size={24} className="text-green-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-400">Total Pipeline</p>
+                    <p className="text-sm leading-relaxed text-slate-400">Total Pipeline</p>
                     <p className="text-4xl font-bold text-white tabular-nums">
                       {coachStats?.watchlistCount || watchlist.length}
                     </p>
@@ -167,7 +167,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-4 gap-2 mt-6">
                   {(['watchlist', 'high_priority', 'offer_extended', 'committed'] as const).map((stage) => (
                     <div key={stage} className="text-center p-3 rounded-xl bg-white/5 backdrop-blur-sm">
-                      <p className="text-lg font-semibold text-white tabular-nums">{pipelineCounts[stage]}</p>
+                      <p className="text-lg font-semibold tracking-tight text-white tabular-nums">{pipelineCounts[stage]}</p>
                       <p className="text-xs text-slate-400 mt-0.5">{getPipelineStageLabel(stage).split(' ')[0]}</p>
                     </div>
                   ))}
@@ -222,7 +222,7 @@ export default function DashboardPage() {
                   </div>
                   <h2 className="font-semibold text-slate-900 tracking-tight">Recent Players</h2>
                 </div>
-                <Link href="/baseball/dashboard/discover" className="text-sm text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors group">
+                <Link href="/baseball/dashboard/discover" className="text-sm leading-relaxed text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors group">
                   View all <IconChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>
@@ -245,7 +245,7 @@ export default function DashboardPage() {
                       <IconUsers size={24} className="text-slate-400" />
                     </div>
                     <h3 className="text-base font-medium text-slate-900 mb-1">No players yet</h3>
-                    <p className="text-sm text-slate-500 text-center mb-4 max-w-xs">
+                    <p className="text-sm leading-relaxed text-slate-500 text-center mb-4 max-w-xs">
                       Start discovering players to build your recruiting pipeline
                     </p>
                     <Link href="/baseball/dashboard/discover">
@@ -346,7 +346,7 @@ export default function DashboardPage() {
                       <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
                         <IconCalendar size={18} className="text-slate-400" />
                       </div>
-                      <p className="text-sm text-slate-500 mb-3">No upcoming events</p>
+                      <p className="text-sm leading-relaxed text-slate-500 mb-3">No upcoming events</p>
                       <Link href="/baseball/dashboard/calendar">
                         <Button variant="secondary" size="sm" className="text-xs">
                           Add Event
@@ -417,7 +417,7 @@ export default function DashboardPage() {
                   </div>
                   <h2 className="font-semibold text-slate-900 tracking-tight">Engagement (7 Days)</h2>
                 </div>
-                <Link href="/baseball/dashboard/analytics" className="text-sm text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors group">
+                <Link href="/baseball/dashboard/analytics" className="text-sm leading-relaxed text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors group">
                   Details <IconChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>
@@ -473,7 +473,7 @@ export default function DashboardPage() {
                           src={activity.player?.avatar_url}
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-slate-900">
+                          <p className="text-sm leading-relaxed text-slate-900">
                             <span className="font-medium">
                               {activity.player?.first_name} {activity.player?.last_name}
                             </span>
@@ -514,7 +514,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-slate-500">Recruiting-activated players by state</p>
                 </div>
               </div>
-              <Link href="/baseball/dashboard/discover" className="text-sm text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors group">
+              <Link href="/baseball/dashboard/discover" className="text-sm leading-relaxed text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors group">
                 Discover <IconChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
@@ -576,7 +576,7 @@ export default function DashboardPage() {
                   <IconSearch size={16} className="text-slate-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600">No saved searches yet</p>
+                  <p className="text-sm leading-relaxed text-slate-600">No saved searches yet</p>
                   <p className="text-xs text-slate-400">Save filters in Discover to quickly find players</p>
                 </div>
                 <Link href="/baseball/dashboard/discover">
@@ -600,13 +600,13 @@ export default function DashboardPage() {
         {/* Recruiting Activation Banner */}
         {player?.player_type !== 'college' && !player?.recruiting_activated && (
           <div className="relative bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl border border-slate-700/50 p-6 overflow-hidden">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-green-500/10 rounded-full blur-3xl" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-slate-700/20 rounded-full blur-3xl" />
             <div className="relative z-10 flex items-center gap-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center flex-shrink-0 shadow-glow-green">
-                <IconTarget size={28} className="text-white" />
+              <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center flex-shrink-0">
+                <IconTarget size={28} className="text-white" strokeWidth={1.5} />
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-semibold text-white mb-1 tracking-tight">
+                <h3 className="text-xl font-semibold tracking-tight text-white mb-1 tracking-tight">
                   Ready to get recruited?
                 </h3>
                 <p className="text-slate-300">
@@ -635,9 +635,9 @@ export default function DashboardPage() {
             <div className="flex-1">
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">{player?.first_name} {player?.last_name}</h2>
+                  <h2 className="text-2xl font-semibold tracking-tight text-slate-900 tracking-tight">{player?.first_name} {player?.last_name}</h2>
                   <p className="text-slate-500">{player?.primary_position} • Class of {player?.grad_year}</p>
-                  <p className="text-sm text-slate-400 mt-1">{player?.high_school_name} • {player?.city}, {player?.state}</p>
+                  <p className="text-sm leading-relaxed text-slate-400 mt-1">{player?.high_school_name} • {player?.city}, {player?.state}</p>
                 </div>
                 <Link href="/baseball/dashboard/profile">
                   <Button variant="secondary" size="sm" className="gap-2">
@@ -720,7 +720,7 @@ export default function DashboardPage() {
                 ].map((stat) => (
                   <div key={stat.label} className="p-4 bg-slate-50/80 rounded-xl border border-slate-100/50 hover:bg-slate-100/80 transition-colors">
                     <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">{stat.label}</p>
-                    <p className="text-xl font-semibold text-slate-900 mt-1 tabular-nums">{stat.value}</p>
+                    <p className="text-xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stat.value}</p>
                   </div>
                 ))}
               </div>

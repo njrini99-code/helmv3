@@ -106,7 +106,7 @@ export function BentoStatCard({
     <BentoCard className={cn('group', className)}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-slate-500 font-medium">{label}</p>
+          <p className="text-sm leading-relaxed text-slate-500 font-medium">{label}</p>
           <p className={cn('font-semibold text-slate-900 mt-1 tabular-nums', valueSize[size])}>
             {typeof value === 'number' ? value.toLocaleString() : value}
           </p>

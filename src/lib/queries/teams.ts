@@ -182,6 +182,28 @@ export async function joinTeam(playerId: string, inviteCode: string) {
   // Get and validate invitation
   const invitation = await getTeamInvitation(inviteCode);
 
+  // Get the team being joined
+  const { data: team, error: teamError } = await supabase
+    .from('teams')
+    .select('id, name, team_type')
+    .eq('id', invitation.team_id)
+    .single();
+
+  if (teamError || !team) {
+    throw new Error('Team not found');
+  }
+
+  // Get player info
+  const { data: player, error: playerError } = await supabase
+    .from('players')
+    .select('id, player_type')
+    .eq('id', playerId)
+    .single();
+
+  if (playerError || !player) {
+    throw new Error('Player not found');
+  }
+
   // Check if player is already a member
   const { data: existing } = await supabase
     .from('team_members')
@@ -192,6 +214,48 @@ export async function joinTeam(playerId: string, inviteCode: string) {
 
   if (existing) {
     throw new Error('Already a member of this team');
+  }
+
+  // Get player's current teams
+  const { data: currentTeams, error: teamsError } = await supabase
+    .from('team_members')
+    .select('team:teams(id, name, team_type)')
+    .eq('player_id', playerId)
+    .eq('status', 'active');
+
+  if (teamsError) {
+    throw teamsError;
+  }
+
+  const activeTeams = currentTeams?.map((tm: any) => tm.team).filter(Boolean) || [];
+  const teamTypes = activeTeams.map((t: any) => t.team_type);
+
+  // Validate team limits based on player type
+  if (player.player_type === 'college' || player.player_type === 'juco') {
+    // College and JUCO players can only be on 1 team
+    if (activeTeams.length >= 1) {
+      throw new Error(`${player.player_type === 'college' ? 'College' : 'JUCO'} players can only be on one team`);
+    }
+    // Must match their player type
+    if (team.team_type !== player.player_type) {
+      throw new Error(`${player.player_type === 'college' ? 'College' : 'JUCO'} players can only join ${player.player_type} teams`);
+    }
+  } else if (player.player_type === 'high_school' || player.player_type === 'showcase') {
+    // HS and Showcase players can be on max 2 teams
+    if (activeTeams.length >= 2) {
+      throw new Error('You can only be on 2 teams maximum');
+    }
+    // Can only have 1 HS team and 1 Showcase team
+    if (team.team_type === 'high_school' && teamTypes.includes('high_school')) {
+      throw new Error('You are already on a high school team');
+    }
+    if (team.team_type === 'showcase' && teamTypes.includes('showcase')) {
+      throw new Error('You are already on a showcase team');
+    }
+    // Must be HS or Showcase team
+    if (team.team_type !== 'high_school' && team.team_type !== 'showcase') {
+      throw new Error('High school and showcase players can only join high school or showcase teams');
+    }
   }
 
   // Add player to team

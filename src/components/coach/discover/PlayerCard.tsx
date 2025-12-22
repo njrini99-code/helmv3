@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { StatusDot } from '@/components/ui/status-dot';
 import { usePeekPanelStore } from '@/stores/peek-panel-store';
@@ -39,16 +40,18 @@ interface PlayerCardProps {
   variant?: 'default' | 'compact' | 'featured';
   onWatchlist?: () => void;
   onMessage?: () => void;
+  onPlayerClick?: () => void;
   isOnWatchlist?: boolean;
   className?: string;
   usePeekPanel?: boolean;
 }
 
-export function PlayerCard({
+const PlayerCardComponent = function PlayerCard({
   player,
   variant = 'default',
   onWatchlist,
   onMessage,
+  onPlayerClick,
   isOnWatchlist = false,
   className,
   usePeekPanel = true,
@@ -56,8 +59,12 @@ export function PlayerCard({
   const { openPlayerPanel } = usePeekPanelStore();
 
   const handleClick = (e: React.MouseEvent) => {
-    if (usePeekPanel) {
-      e.preventDefault();
+    e.preventDefault();
+
+    // Use onPlayerClick if provided, otherwise fall back to Zustand store
+    if (onPlayerClick) {
+      onPlayerClick();
+    } else if (usePeekPanel) {
       openPlayerPanel(player.id);
     }
   };
@@ -79,7 +86,7 @@ export function PlayerCard({
           <div className="font-medium text-slate-900 truncate">
             {player.firstName} {player.lastName}
           </div>
-          <div className="text-sm text-slate-500">
+          <div className="text-sm leading-relaxed text-slate-500">
             {player.position} • {player.graduationYear}
           </div>
         </div>
@@ -100,7 +107,7 @@ export function PlayerCard({
         className
       )}>
         {/* Cover Image */}
-        <div className="h-32 bg-gradient-to-br from-green-400 to-emerald-500 relative">
+        <div className="h-32 bg-gradient-to-br from-slate-200 to-slate-300 relative">
           {player.coverImage && (
             <img
               src={player.coverImage}
@@ -116,7 +123,7 @@ export function PlayerCard({
               icon={isOnWatchlist ? IconHeartFilled : IconHeart}
               onClick={onWatchlist}
               active={isOnWatchlist}
-              activeClass="bg-red-500 text-white"
+              activeClass="text-emerald-600"
             />
             <ActionButton icon={IconMessage} onClick={onMessage} />
           </div>
@@ -131,7 +138,7 @@ export function PlayerCard({
 
           <div onClick={handleClick} className="group cursor-pointer">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-lg text-slate-900 group-hover:text-green-600 transition-colors">
+              <h3 className="font-semibold text-lg text-slate-900 group-hover:text-emerald-600 transition-colors">
                 {player.firstName} {player.lastName}
               </h3>
               {player.verified && <VerifiedBadge />}
@@ -195,14 +202,14 @@ export function PlayerCard({
           <div className="flex-1 min-w-0">
             <div onClick={handleClick} className="cursor-pointer">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-slate-900 group-hover:text-green-600 transition-colors truncate">
+                <h3 className="font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors truncate">
                   {player.firstName} {player.lastName}
                 </h3>
                 {player.verified && <VerifiedBadge />}
               </div>
             </div>
 
-            <div className="text-sm text-slate-500 mb-2">
+            <div className="text-sm leading-relaxed text-slate-500 mb-2">
               {player.position} • Class of {player.graduationYear}
             </div>
 
@@ -239,7 +246,7 @@ export function PlayerCard({
             icon={isOnWatchlist ? IconHeartFilled : IconHeart}
             onClick={onWatchlist}
             active={isOnWatchlist}
-            activeClass="text-red-500"
+            activeClass="text-emerald-600"
             size="sm"
           />
           <ActionButton icon={IconMessage} onClick={onMessage} size="sm" />
@@ -247,11 +254,15 @@ export function PlayerCard({
       </div>
     </div>
   );
-}
+};
+
+// Memoize the main component to prevent unnecessary re-renders
+export const PlayerCard = memo(PlayerCardComponent);
+PlayerCard.displayName = 'PlayerCard';
 
 // ===== Sub-components =====
 
-function PlayerAvatar({
+const PlayerAvatar = memo(function PlayerAvatar({
   player,
   size = 'md',
   border = false
@@ -281,17 +292,17 @@ function PlayerAvatar({
       )}
     </div>
   );
-}
+});
 
-function VerifiedBadge() {
+const VerifiedBadge = memo(function VerifiedBadge() {
   return (
-    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0" title="Verified Profile">
+    <div className="w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0" title="Verified Profile">
       <IconCheck size={10} className="text-white" />
     </div>
   );
-}
+});
 
-function StatBadge({
+const StatBadge = memo(function StatBadge({
   label,
   value,
   unit,
@@ -316,14 +327,14 @@ function StatBadge({
     <div className="text-center">
       <div className="text-lg font-semibold text-slate-900">
         {value}
-        {unit && <span className="text-sm font-normal text-slate-400 ml-0.5">{unit}</span>}
+        {unit && <span className="text-sm font-normal leading-relaxed text-slate-400 ml-0.5">{unit}</span>}
       </div>
       <div className="text-xs text-slate-500">{label}</div>
     </div>
   );
-}
+});
 
-function ActionButton({
+const ActionButton = memo(function ActionButton({
   icon: Icon,
   onClick,
   active = false,
@@ -361,7 +372,7 @@ function ActionButton({
       <Icon size={16} />
     </button>
   );
-}
+});
 
 function getStatusVariant(status: string): 'info' | 'warning' | 'success' {
   const variants: Record<string, 'info' | 'warning' | 'success'> = {

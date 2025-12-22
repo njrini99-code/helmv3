@@ -78,6 +78,8 @@ export function IconSmile({ size = 18, ...p }: IconProps) { return <svg width={s
 export function IconMoreVertical({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>; }
 export function IconGlobe({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20" /></svg>; }
 export function IconLayers({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" /><path d="m22 12-8.58 3.91a2 2 0 0 1-1.66 0L3.19 12" /><path d="m22 17-8.58 3.91a2 2 0 0 1-1.66 0L3.19 17" /></svg>; }
+export function IconBookmark({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>; }
+export function IconChartRadar({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="m12 2 4 7h8l-6 5 2 8-8-6-8 6 2-8-6-5h8l4-7z" /><circle cx="12" cy="12" r="3" /></svg>; }
 
 // Golf-specific icons
 export function IconGolf({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="19" cy="5" r="2" /><path d="M4 22h16M12 22v-7M8 22a5 5 0 0 1 8 0" /><path d="M12 15V5l7-2" /></svg>; }

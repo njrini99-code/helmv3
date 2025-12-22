@@ -114,8 +114,8 @@ export default function PlayerOnboarding() {
           <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <span className="text-white font-bold text-2xl">H</span>
           </div>
-          <h1 className="text-3xl font-semibold text-gray-900 mb-3">Let's build your profile</h1>
-          <p className="text-gray-600 mb-8 max-w-md mx-auto">
+          <h1 className="text-3xl font-semibold text-slate-900 mb-3">Let's build your profile</h1>
+          <p className="text-slate-600 mb-8 max-w-md mx-auto">
             We'll help you create a profile that stands out to college coaches. This will take about 3 minutes.
           </p>
           <Button size="lg" onClick={() => setStep('basic')} className="px-8">
@@ -133,14 +133,14 @@ export default function PlayerOnboarding() {
           <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <IconCheck size={32} className="text-white" />
           </div>
-          <h1 className="text-3xl font-semibold text-gray-900 mb-3">Your profile is ready!</h1>
-          <p className="text-gray-600 mb-8">
+          <h1 className="text-3xl font-semibold text-slate-900 mb-3">Your profile is ready!</h1>
+          <p className="text-slate-600 mb-8">
             You're all set to start connecting with college coaches.
           </p>
           <Button size="lg" onClick={handleComplete} loading={loading} className="px-8">
             Go to Dashboard
           </Button>
-          {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
+          {error && <p className="text-sm leading-relaxed text-red-600 mt-4">{error}</p>}
         </div>
       </div>
     );
@@ -151,11 +151,11 @@ export default function PlayerOnboarding() {
       <div className="w-full max-w-md">
         {/* Progress bar */}
         <div className="mb-8">
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+          <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
             <span>Step {step === 'basic' ? 1 : step === 'baseball' ? 2 : step === 'physical' ? 3 : step === 'metrics' ? 4 : 5} of 5</span>
             <span>{step === 'basic' ? 20 : step === 'baseball' ? 40 : step === 'physical' ? 60 : step === 'metrics' ? 80 : 100}% complete</span>
           </div>
-          <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
             <div
               className="h-full bg-brand-600 transition-all duration-300"
               style={{ width: `${step === 'basic' ? 20 : step === 'baseball' ? 40 : step === 'physical' ? 60 : step === 'metrics' ? 80 : 100}%` }}
@@ -166,7 +166,7 @@ export default function PlayerOnboarding() {
         <div className="bg-white rounded-2xl border border-border-light p-8 shadow-sm">
           {step === 'basic' && (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Basic Information</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">Basic Information</h2>
               <div className="space-y-4">
                 <Input label="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
                 <Input label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
@@ -187,7 +187,7 @@ export default function PlayerOnboarding() {
 
           {step === 'baseball' && (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Baseball Info</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">Baseball Info</h2>
               <div className="space-y-4">
                 <NativeSelect label="Primary Position" value={primaryPosition} onChange={(e) => setPrimaryPosition(e.target.value)} required>
                   <option value="">Select position</option>
@@ -217,7 +217,7 @@ export default function PlayerOnboarding() {
 
           {step === 'physical' && (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Physical Measurements</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">Physical Measurements</h2>
               <div className="space-y-4">
                 <div>
                   <label className="label">Height</label>
@@ -241,8 +241,8 @@ export default function PlayerOnboarding() {
 
           {step === 'metrics' && (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Metrics</h2>
-              <p className="text-sm text-gray-600 mb-4">Add at least one metric. You can add more later.</p>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">Metrics</h2>
+              <p className="text-sm leading-relaxed text-slate-600 mb-4">Add at least one metric. You can add more later.</p>
               <div className="space-y-4">
                 <Input label="Pitch Velocity (mph)" type="number" step="0.1" value={pitchVelo} onChange={(e) => setPitchVelo(e.target.value)} placeholder="85.0" />
                 <Input label="Exit Velocity (mph)" type="number" step="0.1" value={exitVelo} onChange={(e) => setExitVelo(e.target.value)} placeholder="90.0" />
@@ -257,18 +257,18 @@ export default function PlayerOnboarding() {
 
           {step === 'photo' && (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Profile Photo</h2>
-              <p className="text-sm text-gray-600 mb-6">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">Profile Photo</h2>
+              <p className="text-sm leading-relaxed text-slate-600 mb-6">
                 Add a profile photo to help coaches recognize you. You can skip this step and add one later.
               </p>
               <div className="flex flex-col items-center mb-6">
                 <div className="w-32 h-32 rounded-full bg-cream-200 flex items-center justify-center mb-4">
-                  <IconUser size={48} className="text-gray-400" />
+                  <IconUser size={48} className="text-slate-400" />
                 </div>
                 <Button variant="secondary" size="sm">
                   Upload Photo
                 </Button>
-                <p className="text-xs text-gray-500 mt-2">JPG or PNG, max 5MB</p>
+                <p className="text-xs text-slate-500 mt-2">JPG or PNG, max 5MB</p>
               </div>
               <div className="flex gap-3 mt-6">
                 <Button variant="secondary" onClick={() => setStep('metrics')} className="flex-1">Back</Button>

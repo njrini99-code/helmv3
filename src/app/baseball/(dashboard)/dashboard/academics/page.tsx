@@ -191,57 +191,57 @@ export default function AcademicsPage() {
       <div className="p-8 space-y-6">
         {/* Summary Cards */}
         <div className="grid grid-cols-4 gap-4">
-          <Card>
+          <Card glass>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
                   <IconUsers size={20} className="text-slate-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Total Athletes</p>
-                  <p className="text-2xl font-semibold text-slate-900">{students.length}</p>
+                  <p className="text-sm leading-relaxed text-slate-500">Total Athletes</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900">{students.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
                   <IconGraduationCap size={20} className="text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Team GPA</p>
-                  <p className="text-2xl font-semibold text-slate-900">{avgGpa.toFixed(2)}</p>
+                  <p className="text-sm leading-relaxed text-slate-500">Team GPA</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900">{avgGpa.toFixed(2)}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
                   <IconCheck size={20} className="text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Eligible</p>
-                  <p className="text-2xl font-semibold text-slate-900">{eligibleCount}</p>
+                  <p className="text-sm leading-relaxed text-slate-500">Eligible</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900">{eligibleCount}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
                   <IconGraduationCap size={20} className="text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">At Risk</p>
-                  <p className="text-2xl font-semibold text-slate-900">{atRiskCount}</p>
+                  <p className="text-sm leading-relaxed text-slate-500">At Risk</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900">{atRiskCount}</p>
                 </div>
               </div>
             </CardContent>
@@ -249,7 +249,7 @@ export default function AcademicsPage() {
         </div>
 
         {/* Student Table */}
-        <Card>
+        <Card glass>
           <CardHeader>
             <h2 className="font-semibold text-slate-900">Student-Athletes</h2>
           </CardHeader>
@@ -258,13 +258,13 @@ export default function AcademicsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Player</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Position</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">GPA</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Credits</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Standing</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Eligibility</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Actions</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Player</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Position</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">GPA</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Credits</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Standing</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Eligibility</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -281,7 +281,7 @@ export default function AcademicsPage() {
                             <p className="font-medium text-slate-900">
                               {getFullName(student.first_name, student.last_name)}
                             </p>
-                            <p className="text-sm text-slate-500">Class of {student.grad_year}</p>
+                            <p className="text-sm leading-relaxed text-slate-500">Class of {student.grad_year}</p>
                           </div>
                         </div>
                       </td>

@@ -5,12 +5,13 @@ import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Loading } from '@/components/ui/loading';
 import { PageLoading } from '@/components/ui/loading';
+import { TableRowSkeleton } from '@/components/ui/skeletons';
 import { Avatar } from '@/components/ui/avatar';
 import { IconTrash, IconUser } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 import { PlayerDetailModal } from '@/components/coach/PlayerDetailModal';
+import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { useAuth } from '@/hooks/use-auth';
 import { useRecruitingRouteProtection } from '@/hooks/use-route-protection';
 import { getFullName } from '@/lib/utils';
@@ -60,6 +61,7 @@ export default function WatchlistPage() {
   const [removeConfirm, setRemoveConfirm] = useState<string | null>(null);
   const [bulkRemoveConfirm, setBulkRemoveConfirm] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [peekPlayerId, setPeekPlayerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !routeLoading && isAllowed && coach?.id) {
@@ -324,7 +326,7 @@ export default function WatchlistPage() {
                   setPositionFilter('all');
                   setGradYearFilter('all');
                 }}
-                className="text-sm text-slate-600 hover:text-slate-900 underline"
+                className="text-sm leading-relaxed text-slate-600 hover:text-slate-900 underline"
               >
                 Clear filters
               </button>
@@ -359,7 +361,7 @@ export default function WatchlistPage() {
               </Button>
               <button
                 onClick={() => setSelectedPlayers(new Set())}
-                className="text-sm text-slate-600 hover:text-slate-900 underline"
+                className="text-sm leading-relaxed text-slate-600 hover:text-slate-900 underline"
               >
                 Clear selection
               </button>
@@ -368,7 +370,28 @@ export default function WatchlistPage() {
         )}
 
         {loading ? (
-          <Loading />
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="px-4 py-3 w-12"></th>
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">Player</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">Position</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">Grad Year</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">Location</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">Last Contact</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">Notes</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRowSkeleton key={i} columns={9} />
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : filteredWatchlist.length === 0 ? (
           <EmptyState
             icon={<IconUser size={24} />}
@@ -395,28 +418,28 @@ export default function WatchlistPage() {
                       className="rounded border-slate-300 text-green-600 focus:ring-green-500"
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">
                     Player
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">
                     Position
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">
                     Grad Year
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">
                     Location
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">
                     Last Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">
                     Notes
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -434,14 +457,17 @@ export default function WatchlistPage() {
                         />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
+                        <div
+                          className="flex items-center gap-3 cursor-pointer group"
+                          onClick={() => setPeekPlayerId(item.player.id)}
+                        >
                           <Avatar
                             src={item.player.avatar_url}
                             name={getFullName(item.player.first_name, item.player.last_name)}
                             size="md"
                           />
                           <div>
-                            <p className="text-sm font-medium text-slate-900">
+                            <p className="text-sm font-medium text-slate-900 group-hover:text-green-600 transition-colors">
                               {getFullName(item.player.first_name, item.player.last_name)}
                             </p>
                             <p className="text-xs text-slate-500">
@@ -570,6 +596,12 @@ export default function WatchlistPage() {
         loading={removing}
         onConfirm={handleBulkRemoveConfirm}
         onCancel={() => setBulkRemoveConfirm(false)}
+      />
+
+      {/* Player Peek Panel */}
+      <PlayerPeekPanel
+        playerId={peekPlayerId}
+        onClose={() => setPeekPlayerId(null)}
       />
     </>
   );

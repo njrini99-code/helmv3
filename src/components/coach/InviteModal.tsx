@@ -85,7 +85,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">Invite Players</h2>
-                <p className="text-sm text-slate-500">{teamName}</p>
+                <p className="text-sm leading-relaxed text-slate-500">{teamName}</p>
               </div>
             </div>
             <button
@@ -101,7 +101,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
         <CardContent className="p-6">
           {!inviteCode ? (
             <>
-              <p className="text-sm text-slate-600 mb-4">
+              <p className="text-sm leading-relaxed text-slate-600 mb-4">
                 Generate a unique invite link that players can use to join your team. You can share this link via email, text, or any messaging platform.
               </p>
 
@@ -141,7 +141,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
                   </div>
                   <div>
                     <h3 className="font-medium text-slate-900 mb-1">Invite link generated!</h3>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm leading-relaxed text-slate-600">
                       Share this link with players to join your team.
                     </p>
                   </div>

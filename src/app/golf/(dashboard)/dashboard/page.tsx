@@ -65,7 +65,7 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
           Welcome back, {coach.full_name?.split(' ')[0] || 'Coach'}
         </h1>
         <p className="text-slate-500 mt-1">
@@ -75,57 +75,57 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card>
+        <Card glass>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
                 <IconUsers size={24} className="text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Roster Size</p>
-                <p className="text-2xl font-semibold text-slate-900">{stats.rosterSize}</p>
+                <p className="text-sm leading-relaxed text-slate-500">Roster Size</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900">{stats.rosterSize}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card glass>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
                 <IconCalendar size={24} className="text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Upcoming Events</p>
-                <p className="text-2xl font-semibold text-slate-900">{stats.upcomingEvents}</p>
+                <p className="text-sm leading-relaxed text-slate-500">Upcoming Events</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900">{stats.upcomingEvents}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card glass>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
                 <IconFlag size={24} className="text-amber-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Active Qualifiers</p>
-                <p className="text-2xl font-semibold text-slate-900">{stats.activeQualifiers}</p>
+                <p className="text-sm leading-relaxed text-slate-500">Active Qualifiers</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900">{stats.activeQualifiers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card glass>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
                 <IconChartBar size={24} className="text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Team Average</p>
-                <p className="text-2xl font-semibold text-slate-900">
+                <p className="text-sm leading-relaxed text-slate-500">Team Average</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900">
                   {stats.teamScoringAverage ? stats.teamScoringAverage.toFixed(1) : '--'}
                 </p>
               </div>
@@ -184,7 +184,7 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
               <div className="text-center py-8">
                 <IconGolf size={32} className="mx-auto text-slate-300 mb-3" />
                 <p className="text-slate-500">No rounds recorded yet</p>
-                <p className="text-sm text-slate-400 mt-1">
+                <p className="text-sm leading-relaxed text-slate-400 mt-1">
                   Players can submit rounds from their dashboard
                 </p>
               </div>
@@ -197,7 +197,7 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
                   >
                     <div>
                       <p className="font-medium text-slate-900">{round.player_name}</p>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm leading-relaxed text-slate-500">
                         {round.course_name} • {new Date(round.round_date).toLocaleDateString()}
                       </p>
                     </div>
@@ -225,7 +225,7 @@ function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
           Welcome back, {player.first_name}
         </h1>
         <p className="text-slate-500 mt-1">
@@ -235,29 +235,29 @@ function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card>
+        <Card glass>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
                 <IconGolf size={24} className="text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Rounds Played</p>
-                <p className="text-2xl font-semibold text-slate-900">{stats.roundsPlayed}</p>
+                <p className="text-sm leading-relaxed text-slate-500">Rounds Played</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900">{stats.roundsPlayed}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card glass>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
                 <IconChartBar size={24} className="text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Scoring Average</p>
-                <p className="text-2xl font-semibold text-slate-900">
+                <p className="text-sm leading-relaxed text-slate-500">Scoring Average</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900">
                   {stats.scoringAverage ? stats.scoringAverage.toFixed(1) : '--'}
                 </p>
               </div>
@@ -265,15 +265,15 @@ function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card glass>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
                 <IconFlag size={24} className="text-amber-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Best Round</p>
-                <p className="text-2xl font-semibold text-slate-900">
+                <p className="text-sm leading-relaxed text-slate-500">Best Round</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900">
                   {stats.bestRound || '--'}
                 </p>
               </div>
@@ -281,15 +281,15 @@ function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card glass>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
                 <IconChartBar size={24} className="text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Handicap</p>
-                <p className="text-2xl font-semibold text-slate-900">
+                <p className="text-sm leading-relaxed text-slate-500">Handicap</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900">
                   {stats.handicap !== null ? stats.handicap.toFixed(1) : '--'}
                 </p>
               </div>
@@ -363,7 +363,7 @@ function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                   >
                     <div>
                       <p className="font-medium text-slate-900">{round.course_name}</p>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm leading-relaxed text-slate-500">
                         {new Date(round.round_date).toLocaleDateString()}
                       </p>
                     </div>
@@ -462,11 +462,11 @@ export default function GolfDashboardPage() {
       }
 
       // Normal Supabase data loading
-      const { data: { user } } = await (supabase as any).auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       // Check if coach
-      const { data: coach } = await (supabase as any)
+      const { data: coach } = await supabase
         .from('golf_coaches')
         .select('*, team:golf_teams(*), organization:golf_organizations(*)')
         .eq('user_id', user.id)
@@ -479,27 +479,27 @@ export default function GolfDashboardPage() {
         const teamId = coach.team_id;
 
         // Get roster size
-        const { count: rosterSize } = await (supabase as any)
+        const { count: rosterSize } = await supabase
           .from('golf_players')
           .select('*', { count: 'exact', head: true })
           .eq('team_id', teamId);
 
         // Get upcoming events
-        const { count: upcomingEvents } = await (supabase as any)
+        const { count: upcomingEvents } = await supabase
           .from('golf_events')
           .select('*', { count: 'exact', head: true })
           .eq('team_id', teamId)
           .gte('start_date', new Date().toISOString().split('T')[0]);
 
         // Get active qualifiers
-        const { count: activeQualifiers } = await (supabase as any)
+        const { count: activeQualifiers } = await supabase
           .from('golf_qualifiers')
           .select('*', { count: 'exact', head: true })
           .eq('team_id', teamId)
           .in('status', ['upcoming', 'in_progress']);
 
         // Get recent rounds with player names
-        const { data: recentRounds } = await (supabase as any)
+        const { data: recentRounds } = await supabase
           .from('golf_rounds')
           .select('*, player:golf_players(first_name, last_name)')
           .eq('player.team_id', teamId)
@@ -530,7 +530,7 @@ export default function GolfDashboardPage() {
       }
 
       // Check if player
-      const { data: player } = await (supabase as any)
+      const { data: player } = await supabase
         .from('golf_players')
         .select('*, team:golf_teams(*)')
         .eq('user_id', user.id)
@@ -540,7 +540,7 @@ export default function GolfDashboardPage() {
         setUserRole('player');
 
         // Get player's rounds
-        const { data: rounds } = await (supabase as any)
+        const { data: rounds } = await supabase
           .from('golf_rounds')
           .select('*')
           .eq('player_id', player.id)

@@ -86,7 +86,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
                 <h2 className="text-lg font-semibold text-slate-900">
                   {isEditing ? 'Edit Event' : 'Create Event'}
                 </h2>
-                <p className="text-sm text-slate-500">Add to your team calendar</p>
+                <p className="text-sm leading-relaxed text-slate-500">Add to your team calendar</p>
               </div>
             </div>
             <button

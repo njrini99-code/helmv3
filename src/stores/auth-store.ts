@@ -3,16 +3,20 @@ import { persist } from 'zustand/middleware';
 import type { User, Coach, Player } from '@/lib/types';
 import { DEV_ACCOUNTS, type DevAccountType } from '@/lib/dev-mode';
 
+export type CoachMode = 'recruiting' | 'team';
+
 interface AuthState {
   user: User | null;
   coach: Coach | null;
   player: Player | null;
   loading: boolean;
   isDevMode: boolean;
+  coachMode: CoachMode;
   setUser: (user: User | null) => void;
   setCoach: (coach: Coach | null) => void;
   setPlayer: (player: Player | null) => void;
   setLoading: (loading: boolean) => void;
+  setCoachMode: (mode: CoachMode) => void;
   setDevUser: (devData: { id: string; email: string; role: 'coach' | 'player' }) => void;
   clear: () => void;
 }
@@ -25,10 +29,12 @@ export const useAuthStore = create<AuthState>()(
       player: null,
       loading: true,
       isDevMode: false,
+      coachMode: 'recruiting',
       setUser: (user) => set({ user }),
       setCoach: (coach) => set({ coach }),
       setPlayer: (player) => set({ player }),
       setLoading: (loading) => set({ loading }),
+      setCoachMode: (mode) => set({ coachMode: mode }),
       setDevUser: (devData) => {
         const accountKey = (Object.keys(DEV_ACCOUNTS) as DevAccountType[]).find(
           (key) => DEV_ACCOUNTS[key].id === devData.id
@@ -61,6 +67,7 @@ export const useAuthStore = create<AuthState>()(
         coach: state.coach,
         player: state.player,
         isDevMode: state.isDevMode,
+        coachMode: state.coachMode,
       }),
     }
   )

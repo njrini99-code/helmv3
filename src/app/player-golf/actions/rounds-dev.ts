@@ -44,6 +44,10 @@ export async function createRoundDevMode(input: CreateRoundInput) {
   } else {
     // Use first available player
     player = players[0];
+    // Ensure player exists
+    if (!player) {
+      throw new Error('No player available for dev mode round creation');
+    }
     console.log('✅ Using existing player:', player.id);
   }
 

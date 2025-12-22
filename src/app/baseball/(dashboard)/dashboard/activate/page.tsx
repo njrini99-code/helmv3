@@ -27,7 +27,7 @@ export default function ActivateRecruitingPage() {
   if (player?.player_type === 'college') {
     return (
       <div className="p-8">
-        <Card>
+        <Card glass>
           <CardContent className="p-12 text-center">
             <h3 className="text-lg font-medium text-slate-900 mb-2">Not Available</h3>
             <p className="text-slate-500">Recruiting features are not available for college players.</p>
@@ -96,7 +96,7 @@ export default function ActivateRecruitingPage() {
             <div className="w-16 h-16 rounded-full bg-green-600 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={32} className="text-white" />
             </div>
-            <h2 className="text-2xl font-semibold text-slate-900 mb-3">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-3">
               Ready to be recruited?
             </h2>
             <p className="text-slate-600 max-w-2xl mx-auto mb-6">
@@ -111,7 +111,7 @@ export default function ActivateRecruitingPage() {
 
         {/* Features Grid */}
         <div className="grid grid-cols-2 gap-6 mb-6">
-          <Card>
+          <Card glass>
             <CardHeader>
               <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-3">
                 <IconEye size={24} className="text-blue-600" />
@@ -119,7 +119,7 @@ export default function ActivateRecruitingPage() {
               <h3 className="font-semibold text-slate-900">Get Discovered</h3>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600 mb-3">
+              <p className="text-sm leading-relaxed text-slate-600 mb-3">
                 Make your profile visible in coach searches and recommendations.
               </p>
               <ul className="space-y-2 text-sm text-slate-600">
@@ -139,7 +139,7 @@ export default function ActivateRecruitingPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardHeader>
               <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center mb-3">
                 <IconUsers size={24} className="text-purple-600" />
@@ -147,7 +147,7 @@ export default function ActivateRecruitingPage() {
               <h3 className="font-semibold text-slate-900">Connect with Coaches</h3>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600 mb-3">
+              <p className="text-sm leading-relaxed text-slate-600 mb-3">
                 See which coaches are interested and message them directly.
               </p>
               <ul className="space-y-2 text-sm text-slate-600">
@@ -167,7 +167,7 @@ export default function ActivateRecruitingPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardHeader>
               <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3">
                 <IconTarget size={24} className="text-green-600" />
@@ -175,7 +175,7 @@ export default function ActivateRecruitingPage() {
               <h3 className="font-semibold text-slate-900">Manage Your Journey</h3>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600 mb-3">
+              <p className="text-sm leading-relaxed text-slate-600 mb-3">
                 Track your recruiting progress and manage your college list.
               </p>
               <ul className="space-y-2 text-sm text-slate-600">
@@ -195,7 +195,7 @@ export default function ActivateRecruitingPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card glass>
             <CardHeader>
               <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mb-3">
                 <IconChart size={24} className="text-amber-600" />
@@ -203,7 +203,7 @@ export default function ActivateRecruitingPage() {
               <h3 className="font-semibold text-slate-900">Track Analytics</h3>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600 mb-3">
+              <p className="text-sm leading-relaxed text-slate-600 mb-3">
                 Understand your recruiting reach and optimize your profile.
               </p>
               <ul className="space-y-2 text-sm text-slate-600">
@@ -252,7 +252,7 @@ export default function ActivateRecruitingPage() {
         </Card>
 
         {/* CTA */}
-        <Card>
+        <Card glass>
           <CardContent className="p-8 text-center">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-6">
@@ -267,7 +267,7 @@ export default function ActivateRecruitingPage() {
             >
               Activate Recruiting
             </Button>
-            <p className="text-sm text-slate-500 mt-4">
+            <p className="text-sm leading-relaxed text-slate-500 mt-4">
               By activating, you agree to make your profile visible to college coaches
             </p>
           </CardContent>

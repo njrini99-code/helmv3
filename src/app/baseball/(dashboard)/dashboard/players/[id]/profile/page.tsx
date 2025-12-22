@@ -69,15 +69,15 @@ export default async function PlayerProfilePage({ params }: PageProps) {
               <div className="space-y-3">
                 <div>
                   <p className="text-xs text-slate-500">Profile Views</p>
-                  <p className="text-lg font-semibold text-slate-900">127</p>
+                  <p className="text-lg font-semibold tracking-tight text-slate-900">127</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Watchlists</p>
-                  <p className="text-lg font-semibold text-slate-900">8</p>
+                  <p className="text-lg font-semibold tracking-tight text-slate-900">8</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Last Active</p>
-                  <p className="text-lg font-semibold text-slate-900">2h ago</p>
+                  <p className="text-lg font-semibold tracking-tight text-slate-900">2h ago</p>
                 </div>
               </div>
             </div>

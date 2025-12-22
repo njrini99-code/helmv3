@@ -167,7 +167,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
 
               {showDescription && organization.description && (
                 <div className="p-6 bg-white">
-                  <h2 className="text-lg font-semibold text-slate-900 mb-3">About</h2>
+                  <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-3">About</h2>
                   <p className="text-slate-600 leading-relaxed whitespace-pre-line">
                     {organization.description}
                   </p>
@@ -181,7 +181,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                 <div className="p-6 border-b border-slate-200 bg-white">
                   <div className="flex items-center gap-2">
                     <IconUsers size={20} className="text-green-600" />
-                    <h2 className="text-lg font-semibold text-slate-900">Coaching Staff</h2>
+                    <h2 className="text-lg font-semibold tracking-tight text-slate-900">Coaching Staff</h2>
                   </div>
                 </div>
                 <div className="p-6 bg-slate-50">
@@ -209,7 +209,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                             <h3 className="font-semibold text-slate-900 truncate">
                               {member.name}
                             </h3>
-                            <p className="text-sm text-green-600 mb-2">{member.title}</p>
+                            <p className="text-sm leading-relaxed text-green-600 mb-2">{member.title}</p>
                             {showStaffBios && member.bio && (
                               <p className="text-xs text-slate-600 line-clamp-3">
                                 {member.bio}
@@ -228,7 +228,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
             {showFacilities && facilities.length > 0 && (
               <Card className="overflow-hidden">
                 <div className="p-6 border-b border-slate-200 bg-white">
-                  <h2 className="text-lg font-semibold text-slate-900">Facilities</h2>
+                  <h2 className="text-lg font-semibold tracking-tight text-slate-900">Facilities</h2>
                 </div>
                 <div className="p-6 bg-slate-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -258,7 +258,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                             </p>
                           )}
                           {facility.description && (
-                            <p className="text-sm text-slate-600 line-clamp-2">
+                            <p className="text-sm leading-relaxed text-slate-600 line-clamp-2">
                               {facility.description}
                             </p>
                           )}
@@ -276,7 +276,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                 <div className="p-6 border-b border-slate-200 bg-white">
                   <div className="flex items-center gap-2">
                     <IconStar size={20} className="text-green-600" />
-                    <h2 className="text-lg font-semibold text-slate-900">
+                    <h2 className="text-lg font-semibold tracking-tight text-slate-900">
                       Class of {new Date().getFullYear()} Commits
                     </h2>
                   </div>
@@ -288,7 +288,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium text-slate-900">{commit.player_name}</p>
-                            <p className="text-sm text-slate-600">
+                            <p className="text-sm leading-relaxed text-slate-600">
                               {commit.position} • {commit.high_school}
                             </p>
                             <p className="text-xs text-slate-500">
@@ -320,7 +320,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                     href={organization.website_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-green-600 hover:text-green-700 hover:underline break-all"
+                    className="text-sm leading-relaxed text-green-600 hover:text-green-700 hover:underline break-all"
                   >
                     Visit Website
                   </a>
@@ -340,7 +340,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
               <div className="space-y-3">
                 {organization.division && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">Division</span>
+                    <span className="text-sm leading-relaxed text-slate-600">Division</span>
                     <span className="text-sm font-semibold text-slate-900">
                       {organization.division}
                     </span>
@@ -348,7 +348,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                 )}
                 {organization.conference && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">Conference</span>
+                    <span className="text-sm leading-relaxed text-slate-600">Conference</span>
                     <span className="text-sm font-semibold text-slate-900">
                       {organization.conference}
                     </span>
@@ -356,7 +356,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                 )}
                 {staff.length > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">Coaching Staff</span>
+                    <span className="text-sm leading-relaxed text-slate-600">Coaching Staff</span>
                     <span className="text-sm font-semibold text-slate-900">
                       {staff.length}
                     </span>
@@ -364,7 +364,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                 )}
                 {commitments.length > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">Commits</span>
+                    <span className="text-sm leading-relaxed text-slate-600">Commits</span>
                     <span className="text-sm font-semibold text-slate-900">
                       {commitments.length}
                     </span>

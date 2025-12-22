@@ -175,9 +175,9 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
               Select Player *
             </label>
             {loadingPlayers ? (
-              <div className="text-sm text-slate-500">Loading roster...</div>
+              <div className="text-sm leading-relaxed text-slate-500">Loading roster...</div>
             ) : players.length === 0 ? (
-              <div className="text-sm text-slate-500">
+              <div className="text-sm leading-relaxed text-slate-500">
                 No players in roster. Add players to your team first.
               </div>
             ) : (
@@ -279,7 +279,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
 
             {goals.length === 0 ? (
               <div className="border border-dashed border-slate-300 rounded-lg p-6 text-center">
-                <p className="text-sm text-slate-500 mb-2">No goals added yet</p>
+                <p className="text-sm leading-relaxed text-slate-500 mb-2">No goals added yet</p>
                 <Button type="button" variant="secondary" size="sm" onClick={addGoal}>
                   <IconPlus size={14} className="mr-1" />
                   Add First Goal

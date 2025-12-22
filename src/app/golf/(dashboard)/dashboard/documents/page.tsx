@@ -9,7 +9,7 @@ export default function GolfDocumentsPage() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Documents</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Documents</h1>
           <p className="text-slate-500 mt-1">Team files and resources</p>
         </div>
         <Button className="gap-2">
@@ -18,7 +18,7 @@ export default function GolfDocumentsPage() {
         </Button>
       </div>
 
-      <Card>
+      <Card glass>
         <CardContent className="py-12 text-center">
           <IconFolder size={48} className="mx-auto text-slate-300 mb-4" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">

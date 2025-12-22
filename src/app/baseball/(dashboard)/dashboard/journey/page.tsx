@@ -107,7 +107,7 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
   };
 
   return (
-    <Card>
+    <Card glass>
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -143,14 +143,14 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
             </div>
           )}
           {school.coach_name && (
-            <div className="text-sm text-slate-500">
+            <div className="text-sm leading-relaxed text-slate-500">
               Contact: {school.coach_name}
             </div>
           )}
         </div>
 
         {school.notes && (
-          <p className="text-sm text-slate-500 mt-3 italic">"{school.notes}"</p>
+          <p className="text-sm leading-relaxed text-slate-500 mt-3 italic">"{school.notes}"</p>
         )}
 
         <div className="flex items-center justify-between mt-4">
@@ -160,7 +160,7 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
           {school.organization_id && (
             <Link
               href={`/baseball/program/${school.organization_id}`}
-              className="text-sm text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
+              className="text-sm leading-relaxed text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
             >
               View Program <IconChevronRight size={14} />
             </Link>
@@ -181,7 +181,7 @@ function TimelineEvent({ event }: { event: JourneyEvent }) {
         <div className="w-0.5 flex-1 bg-slate-100 mt-2" />
       </div>
       <div className="flex-1 pb-6">
-        <p className="text-sm text-slate-900">{event.description}</p>
+        <p className="text-sm leading-relaxed text-slate-900">{event.description}</p>
         <p className="text-xs text-slate-400 mt-1">{formatRelativeTime(event.timestamp)}</p>
       </div>
     </div>
@@ -232,33 +232,33 @@ export default function JourneyPage() {
         {/* Stats Overview */}
         {stats && stats.total_interests > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-            <Card>
+            <Card glass>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold text-slate-900">{stats.total_interests}</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900">{stats.total_interests}</p>
                 <p className="text-xs text-slate-500">Total Schools</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card glass>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold text-slate-900">{stats.schools_interested}</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900">{stats.schools_interested}</p>
                 <p className="text-xs text-slate-500">Interested</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card glass>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold text-blue-600">{stats.schools_contacted}</p>
+                <p className="text-2xl font-semibold tracking-tight text-blue-600">{stats.schools_contacted}</p>
                 <p className="text-xs text-slate-500">Contacted</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card glass>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold text-purple-600">{stats.schools_visited}</p>
+                <p className="text-2xl font-semibold tracking-tight text-purple-600">{stats.schools_visited}</p>
                 <p className="text-xs text-slate-500">Visited</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card glass>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold text-amber-600">{stats.schools_offered}</p>
+                <p className="text-2xl font-semibold tracking-tight text-amber-600">{stats.schools_offered}</p>
                 <p className="text-xs text-slate-500">Offers</p>
               </CardContent>
             </Card>
@@ -268,13 +268,13 @@ export default function JourneyPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Schools List */}
           <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Your Schools</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-4">Your Schools</h2>
             {displaySchools.length === 0 ? (
-              <Card>
+              <Card glass>
                 <CardContent className="p-8 text-center">
                   <IconTarget size={40} className="mx-auto mb-4 text-slate-400" />
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No schools in your journey</h3>
-                  <p className="text-sm text-slate-600 mb-6">
+                  <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">No schools in your journey</h3>
+                  <p className="text-sm leading-relaxed text-slate-600 mb-6">
                     Start by adding schools you're interested in from the Discover Colleges page.
                   </p>
                   <Link href="/baseball/dashboard/colleges">
@@ -314,13 +314,13 @@ export default function JourneyPage() {
 
           {/* Activity Timeline */}
           <div>
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent Activity</h2>
-            <Card>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-4">Recent Activity</h2>
+            <Card glass>
               <CardContent className="p-5">
                 {events.length === 0 ? (
                   <div className="text-center py-8">
                     <IconCalendar size={32} className="mx-auto text-slate-300 mb-2" />
-                    <p className="text-sm text-slate-500">No activity yet</p>
+                    <p className="text-sm leading-relaxed text-slate-500">No activity yet</p>
                     <p className="text-xs text-slate-400 mt-1">
                       Activity from coaches will appear here
                     </p>
@@ -331,7 +331,7 @@ export default function JourneyPage() {
                       <TimelineEvent key={event.id} event={event} />
                     ))}
                     {events.length > 10 && (
-                      <p className="text-sm text-slate-500 text-center pt-4">
+                      <p className="text-sm leading-relaxed text-slate-500 text-center pt-4">
                         + {events.length - 10} more events
                       </p>
                     )}

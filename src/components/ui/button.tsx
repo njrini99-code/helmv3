@@ -31,7 +31,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        'btn focus-ring',
+        'btn focus-ring transition-all duration-150 ease-out',
         variant === 'primary' && 'btn-primary',
         variant === 'secondary' && 'btn-secondary',
         variant === 'ghost' && 'btn-ghost',

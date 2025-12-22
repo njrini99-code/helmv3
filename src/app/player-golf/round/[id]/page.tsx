@@ -20,31 +20,32 @@ export default async function RoundPage({ params }: { params: { id: string } }) 
   const holes = round.golf_holes
     .sort((a: any, b: any) => a.hole_number - b.hole_number)
     .map((hole: any) => ({
-      hole_number: hole.hole_number,
+      number: hole.hole_number,
       par: hole.par,
       yardage: hole.yardage || 0,
+      score: hole.score || null, // Score from database if available
     }));
 
   // If no holes, create a default 18-hole course (shouldn't happen with new round creation)
   if (holes.length === 0) {
     for (let i = 1; i <= 18; i++) {
       holes.push({
-        hole_number: i,
+        number: i,
         par: 4, // Default to par 4
         yardage: 400, // Default yardage
+        score: null, // No score yet
       });
     }
   }
 
   return (
     <ShotTrackingFinal
-      roundId={params.id}
       holes={holes}
-      startingHole={round.starting_hole || 1}
-      courseName={round.course_name}
-      teesPlayed={round.tees_played || ''}
-      courseRating={round.course_rating}
-      courseSlope={round.course_slope}
+      currentHoleIndex={0} // Start at first hole
+      onHoleComplete={(holeIndex, score, shots) => {
+        // This will need to be handled in a client component wrapper
+        console.log('Hole completed:', holeIndex, score, shots);
+      }}
     />
   );
 }

@@ -212,13 +212,13 @@ export default function VideosPage() {
 
         {/* Empty State */}
         {videos.length === 0 && !showUpload ? (
-          <Card>
+          <Card glass>
             <CardContent className="p-12 text-center">
               <IconVideo size={48} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">
                 {isCoach ? "No videos from your team yet" : "No videos yet"}
               </h3>
-              <p className="text-sm text-gray-500 mb-6">
+              <p className="text-sm leading-relaxed text-slate-500 mb-6">
                 {isCoach
                   ? "Videos uploaded by your players will appear here"
                   : "Upload your first highlight video to showcase your skills"}
@@ -261,7 +261,7 @@ export default function VideosPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 truncate">{video.title}</h3>
+                          <h3 className="font-semibold text-slate-900 truncate">{video.title}</h3>
                           {video.is_primary && (
                             <Badge variant="success" className="flex items-center gap-1">
                               <IconStar size={12} />
@@ -269,8 +269,8 @@ export default function VideosPage() {
                             </Badge>
                           )}
                         </div>
-                        {video.description && <p className="text-sm text-gray-600 line-clamp-2">{video.description}</p>}
-                        <p className="text-xs text-gray-500 mt-1">
+                        {video.description && <p className="text-sm leading-relaxed text-slate-600 line-clamp-2">{video.description}</p>}
+                        <p className="text-xs text-slate-500 mt-1">
                           {video.created_at && formatRelativeTime(video.created_at)} • {video.view_count || 0} views
                         </p>
                       </div>

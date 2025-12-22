@@ -68,7 +68,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
                 'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
                 activeTab === tab.id
                   ? 'bg-brand-600 text-white'
-                  : 'text-gray-600 hover:bg-cream-100'
+                  : 'text-slate-600 hover:bg-cream-100'
               )}
             >
               {tab.label}
@@ -81,11 +81,11 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
       <div className="p-6">
         {activeTab === 'personal' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Personal Information</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
                 <input
                   type="text"
                   value={formData.first_name || ''}
@@ -96,7 +96,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
                 <input
                   type="text"
                   value={formData.last_name || ''}
@@ -109,7 +109,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
                 <input
                   type="text"
                   value={formData.city || ''}
@@ -119,7 +119,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">State *</label>
                 <select
                   value={formData.state || ''}
                   onChange={(e) => handleInputChange('state', e.target.value)}
@@ -135,7 +135,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">High School *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">High School *</label>
               <input
                 type="text"
                 value={formData.high_school_name || ''}
@@ -146,7 +146,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">About Me</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">About Me</label>
               <textarea
                 value={formData.about_me || ''}
                 onChange={(e) => handleInputChange('about_me', e.target.value)}
@@ -160,11 +160,11 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
         {activeTab === 'athletic' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Athletic Information</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Athletic Information</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Position *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Position *</label>
                 <select
                   value={formData.primary_position || ''}
                   onChange={(e) => handleInputChange('primary_position', e.target.value)}
@@ -179,7 +179,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Graduation Year *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Graduation Year *</label>
                 <select
                   value={formData.grad_year || ''}
                   onChange={(e) => handleInputChange('grad_year', parseInt(e.target.value))}
@@ -196,7 +196,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bats</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Bats</label>
                 <select
                   value={formData.bats || ''}
                   onChange={(e) => handleInputChange('bats', e.target.value)}
@@ -210,7 +210,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Throws</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Throws</label>
                 <select
                   value={formData.throws || ''}
                   onChange={(e) => handleInputChange('throws', e.target.value)}
@@ -225,7 +225,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Height</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Height</label>
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="number"
@@ -249,7 +249,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Weight (lbs)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Weight (lbs)</label>
                 <input
                   type="number"
                   value={formData.weight_lbs || ''}
@@ -262,7 +262,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pitch Velocity (mph)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Pitch Velocity (mph)</label>
                 <input
                   type="number"
                   value={formData.pitch_velo || ''}
@@ -273,7 +273,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Exit Velocity (mph)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Exit Velocity (mph)</label>
                 <input
                   type="number"
                   value={formData.exit_velo || ''}
@@ -286,7 +286,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">60-Yard Time (sec)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">60-Yard Time (sec)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -298,7 +298,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pop Time (sec)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Pop Time (sec)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -307,12 +307,12 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
                   className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
                   placeholder="2.0"
                 />
-                <p className="text-xs text-gray-500 mt-1">For catchers</p>
+                <p className="text-xs text-slate-500 mt-1">For catchers</p>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Travel Team</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Travel Team</label>
               <input
                 type="text"
                 value={formData.club_team || ''}
@@ -326,11 +326,11 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
         {activeTab === 'academic' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Academic Information</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Academic Information</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">GPA</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">GPA</label>
                 <input
                   type="number"
                   step="0.01"
@@ -344,7 +344,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">SAT Score</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">SAT Score</label>
                 <input
                   type="number"
                   value={formData.sat_score || ''}
@@ -356,7 +356,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">ACT Score</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">ACT Score</label>
               <input
                 type="number"
                 value={formData.act_score || ''}
@@ -371,10 +371,10 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
         {activeTab === 'videos' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Video Settings</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Video Settings</h3>
 
             <div className="bg-cream-50 rounded-lg p-4 border border-border">
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm leading-relaxed text-slate-600 mb-3">
                 Manage your highlight videos and game footage from the Videos page in your dashboard.
               </p>
               <a
@@ -393,7 +393,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
                   onChange={(e) => handleInputChange('has_video', e.target.checked)}
                   className="w-4 h-4 text-brand-600 border-border rounded focus:ring-brand-600"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-slate-700">
                   I have highlight videos uploaded
                 </span>
               </label>
@@ -403,10 +403,10 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
         {activeTab === 'social' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Social & Contact Information</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Social & Contact Information</h3>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
               <input
                 type="email"
                 value={formData.email || ''}
@@ -417,7 +417,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
               <input
                 type="tel"
                 value={formData.phone || ''}
@@ -428,9 +428,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Twitter Handle</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Twitter Handle</label>
               <div className="flex items-center">
-                <span className="px-3 py-2 bg-gray-100 border border-r-0 border-border rounded-l-lg text-gray-600">@</span>
+                <span className="px-3 py-2 bg-slate-100 border border-r-0 border-border rounded-l-lg text-slate-600">@</span>
                 <input
                   type="text"
                   value={formData.twitter || ''}
@@ -442,9 +442,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Instagram Handle</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Instagram Handle</label>
               <div className="flex items-center">
-                <span className="px-3 py-2 bg-gray-100 border border-r-0 border-border rounded-l-lg text-gray-600">@</span>
+                <span className="px-3 py-2 bg-slate-100 border border-r-0 border-border rounded-l-lg text-slate-600">@</span>
                 <input
                   type="text"
                   value={formData.instagram || ''}

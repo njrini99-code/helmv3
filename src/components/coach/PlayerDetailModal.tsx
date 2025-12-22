@@ -131,7 +131,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
           {player.about_me && (
             <div>
               <h4 className="text-sm font-semibold text-slate-700 mb-2">About</h4>
-              <p className="text-sm text-slate-600">{player.about_me}</p>
+              <p className="text-sm leading-relaxed text-slate-600">{player.about_me}</p>
             </div>
           )}
 
@@ -211,13 +211,13 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
             {player.club_team && (
               <div>
                 <h4 className="text-sm font-semibold text-slate-700 mb-2">Travel Team</h4>
-                <p className="text-sm text-slate-600">{player.club_team}</p>
+                <p className="text-sm leading-relaxed text-slate-600">{player.club_team}</p>
               </div>
             )}
             {player.primary_goal && (
               <div>
                 <h4 className="text-sm font-semibold text-slate-700 mb-2">Primary Goal</h4>
-                <p className="text-sm text-slate-600">{player.primary_goal}</p>
+                <p className="text-sm leading-relaxed text-slate-600">{player.primary_goal}</p>
               </div>
             )}
           </div>
@@ -244,7 +244,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
                     href={`https://twitter.com/${player.twitter}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-green-600 hover:text-green-700"
+                    className="text-sm leading-relaxed text-green-600 hover:text-green-700"
                   >
                     @{player.twitter}
                   </a>
@@ -254,7 +254,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
                     href={`https://instagram.com/${player.instagram}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-green-600 hover:text-green-700"
+                    className="text-sm leading-relaxed text-green-600 hover:text-green-700"
                   >
                     @{player.instagram}
                   </a>

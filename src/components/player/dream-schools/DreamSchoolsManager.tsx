@@ -102,7 +102,7 @@ export function DreamSchoolsManager({ playerId, initialSchools = [] }: DreamScho
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Dream Schools</h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm leading-relaxed text-slate-500">
             Rank your top 10 dream schools ({schools.length}/10)
           </p>
         </div>
@@ -122,7 +122,7 @@ export function DreamSchoolsManager({ playerId, initialSchools = [] }: DreamScho
           <h3 className="text-lg font-medium text-slate-900 mb-2">
             No dream schools yet
           </h3>
-          <p className="text-sm text-slate-500 mb-4 max-w-md mx-auto">
+          <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-md mx-auto">
             Add up to 10 schools you'd like to attend. Coaches can see your list when viewing your profile.
           </p>
           <Button onClick={addSchool} size="sm">
@@ -164,7 +164,7 @@ export function DreamSchoolsManager({ playerId, initialSchools = [] }: DreamScho
                     {school.college_program?.name || 'Unknown School'}
                   </h3>
                   {school.college_program?.division && (
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm leading-relaxed text-slate-500">
                       {school.college_program.division}
                     </p>
                   )}

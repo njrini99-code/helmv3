@@ -11,7 +11,7 @@ export function Badge({ className, variant = 'default', size = 'md', dot, childr
     <span
       className={cn(
         'badge',
-        variant === 'default' && 'bg-cream-200 text-gray-700',
+        variant === 'default' && 'bg-cream-200 text-slate-700',
         variant === 'primary' && 'badge-primary',
         variant === 'secondary' && 'badge-secondary',
         variant === 'success' && 'badge-success',
@@ -28,9 +28,9 @@ export function Badge({ className, variant = 'default', size = 'md', dot, childr
         <span
           className={cn(
             'w-1.5 h-1.5 rounded-full mr-1',
-            variant === 'default' && 'bg-gray-500',
+            variant === 'default' && 'bg-slate-500',
             variant === 'primary' && 'bg-brand-600',
-            variant === 'secondary' && 'bg-gray-500',
+            variant === 'secondary' && 'bg-slate-500',
             variant === 'success' && 'bg-green-600',
             variant === 'warning' && 'bg-amber-600',
             variant === 'error' && 'bg-red-600',

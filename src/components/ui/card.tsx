@@ -60,7 +60,7 @@ export function CardTitle({ className, children, ...props }: React.HTMLAttribute
 
 export function CardDescription({ className, children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={cn('text-sm text-slate-500 mt-1', className)} {...props}>
+    <p className={cn('text-sm leading-relaxed text-slate-500 mt-1', className)} {...props}>
       {children}
     </p>
   );

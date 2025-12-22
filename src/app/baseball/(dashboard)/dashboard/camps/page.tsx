@@ -70,7 +70,7 @@ function CampCard({
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-slate-900 mb-1">{camp.name}</h3>
             {camp.organization && (
-              <p className="text-sm text-slate-600 mb-2">{camp.organization.name}</p>
+              <p className="text-sm leading-relaxed text-slate-600 mb-2">{camp.organization.name}</p>
             )}
             <div className="flex flex-col gap-1.5 text-sm text-slate-500">
               <div className="flex items-center gap-1.5">
@@ -101,7 +101,7 @@ function CampCard({
               {camp.status === 'active' ? 'Open' : camp.status || 'Pending'}
             </Badge>
             {camp.price && (
-              <p className="text-lg font-semibold text-slate-900">
+              <p className="text-lg font-semibold tracking-tight text-slate-900">
                 ${camp.price}
               </p>
             )}
@@ -109,7 +109,7 @@ function CampCard({
         </div>
 
         {camp.description && (
-          <p className="text-sm text-slate-600 mt-3 line-clamp-2">{camp.description}</p>
+          <p className="text-sm leading-relaxed text-slate-600 mt-3 line-clamp-2">{camp.description}</p>
         )}
 
         {/* Player Actions */}

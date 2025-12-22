@@ -258,7 +258,7 @@ export function PrivacySettingsForm({
             <h3 className="text-lg font-semibold text-slate-900 mb-1">
               {group.title}
             </h3>
-            <p className="text-sm text-slate-500">{group.description}</p>
+            <p className="text-sm leading-relaxed text-slate-500">{group.description}</p>
           </div>
 
           <div className="p-6 space-y-4 bg-slate-50">

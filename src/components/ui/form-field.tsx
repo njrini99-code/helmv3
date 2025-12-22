@@ -67,7 +67,7 @@ export function FormSection({
       <div className="mb-4">
         <h3 className="text-lg font-medium text-slate-900">{title}</h3>
         {description && (
-          <p className="text-sm text-slate-500 mt-1">{description}</p>
+          <p className="text-sm leading-relaxed text-slate-500 mt-1">{description}</p>
         )}
       </div>
       <div className="space-y-4">{children}</div>
@@ -125,7 +125,7 @@ interface InlineFieldProps {
 export function InlineField({ label, children, className }: InlineFieldProps) {
   return (
     <div className={cn('flex items-center justify-between gap-4', className)}>
-      <span className="text-sm text-slate-700 flex-shrink-0">{label}</span>
+      <span className="text-sm leading-relaxed text-slate-700 flex-shrink-0">{label}</span>
       <div className="flex-1 max-w-xs">{children}</div>
     </div>
   );

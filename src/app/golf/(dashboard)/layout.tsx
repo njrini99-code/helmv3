@@ -52,7 +52,7 @@ export default function GolfDashboardLayout({
       }
 
       // Normal Supabase auth flow
-      const { data: { user } } = await (supabase as any).auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
         // In dev mode, redirect to dev page instead of login
@@ -66,7 +66,7 @@ export default function GolfDashboardLayout({
 
       // Check if user is a golf coach
       // Using type assertion until golf schema is added to Supabase types
-      const { data: coach } = await (supabase as any)
+      const { data: coach } = await supabase
         .from('golf_coaches')
         .select('*, team:golf_teams(name)')
         .eq('user_id', user.id)
@@ -88,7 +88,7 @@ export default function GolfDashboardLayout({
       }
 
       // Check if user is a golf player
-      const { data: player } = await (supabase as any)
+      const { data: player } = await supabase
         .from('golf_players')
         .select('*, team:golf_teams(name)')
         .eq('user_id', user.id)

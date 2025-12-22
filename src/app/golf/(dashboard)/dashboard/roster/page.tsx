@@ -16,11 +16,11 @@ export default function GolfRosterPage() {
 
   useEffect(() => {
     async function loadRoster() {
-      const { data: { user } } = await (supabase as any).auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       // Get coach's team
-      const { data: coach } = await (supabase as any)
+      const { data: coach } = await supabase
         .from('golf_coaches')
         .select('team_id')
         .eq('user_id', user.id)
@@ -30,7 +30,7 @@ export default function GolfRosterPage() {
       setTeamId(coach.team_id);
 
       // Fetch players
-      const { data: playersData } = await (supabase as any)
+      const { data: playersData } = await supabase
         .from('golf_players')
         .select('*')
         .eq('team_id', coach.team_id)
@@ -49,7 +49,7 @@ export default function GolfRosterPage() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Roster</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Roster</h1>
           <p className="text-slate-500 mt-1">{players.length} players on roster</p>
         </div>
         <Button className="gap-2">
@@ -59,7 +59,7 @@ export default function GolfRosterPage() {
       </div>
 
       {players.length === 0 ? (
-        <Card>
+        <Card glass>
           <CardContent className="py-12 text-center">
             <IconUsers size={48} className="mx-auto text-slate-300 mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">
@@ -75,7 +75,7 @@ export default function GolfRosterPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card glass>
           <CardHeader>
             <CardTitle>Team Roster</CardTitle>
           </CardHeader>
@@ -93,7 +93,7 @@ export default function GolfRosterPage() {
                       <p className="font-medium text-slate-900">
                         {player.first_name} {player.last_name}
                       </p>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm leading-relaxed text-slate-500">
                         {player.year || 'Player'} • {player.hometown}, {player.state}
                       </p>
                     </div>

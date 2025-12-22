@@ -163,7 +163,7 @@ export function SearchInput({
   return (
     <div className={cn('relative', className)}>
       <div className="relative">
-        <IconSearch size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <IconSearch size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         <input
           ref={inputRef}
           type="text"
@@ -177,10 +177,10 @@ export function SearchInput({
           autoCapitalize="off"
           spellCheck={false}
           className={cn(
-            'w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-transparent rounded-lg',
-            'placeholder:text-gray-400 transition-all',
+            'w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-transparent rounded-lg',
+            'placeholder:text-slate-400 transition-all',
             'focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none',
-            'hover:bg-gray-100 hover:border-gray-200'
+            'hover:bg-slate-100 hover:border-slate-200'
           )}
         />
       </div>
@@ -193,10 +193,10 @@ export function SearchInput({
           {showRecent ? (
             <div className="py-2">
               <div className="flex items-center justify-between px-4 py-2">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Recent Searches</span>
+                <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Recent Searches</span>
                 <button
                   onClick={clearRecent}
-                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   Clear
                 </button>
@@ -209,10 +209,10 @@ export function SearchInput({
                     'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors',
                     selectedIndex === index
                       ? 'bg-brand-50 text-brand-700'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      : 'text-slate-700 hover:bg-slate-50'
                   )}
                 >
-                  <IconClock size={16} className="text-gray-400 flex-shrink-0" />
+                  <IconClock size={16} className="text-slate-400 flex-shrink-0" />
                   <span className="truncate">{item}</span>
                 </button>
               ))}
@@ -220,7 +220,7 @@ export function SearchInput({
           ) : (
             <div className="py-2">
               <div className="px-4 py-2">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Suggestions</span>
+                <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Suggestions</span>
               </div>
               {allSuggestions.map((item, index) => (
                 <button
@@ -237,13 +237,13 @@ export function SearchInput({
                     'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors',
                     selectedIndex === index
                       ? 'bg-brand-50 text-brand-700'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      : 'text-slate-700 hover:bg-slate-50'
                   )}
                 >
                   {item.type === 'trending' ? (
                     <IconTrendingUp size={16} className="text-brand-500 flex-shrink-0" />
                   ) : (
-                    <IconSearch size={16} className="text-gray-400 flex-shrink-0" />
+                    <IconSearch size={16} className="text-slate-400 flex-shrink-0" />
                   )}
                   <span className="truncate">{item.text}</span>
                 </button>

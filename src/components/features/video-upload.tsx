@@ -164,9 +164,9 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <h3 className="font-semibold text-gray-900">Upload Video</h3>
+        <h3 className="font-semibold text-slate-900">Upload Video</h3>
         {onCancel && (
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-cream-100">
+          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-cream-100">
             <IconX size={20} />
           </button>
         )}
@@ -184,12 +184,12 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
             )}
           >
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-cream-100 flex items-center justify-center">
-              <IconVideo size={32} className="text-gray-400" />
+              <IconVideo size={32} className="text-slate-400" />
             </div>
-            <p className="text-sm font-medium text-gray-900 mb-1">
+            <p className="text-sm font-medium text-slate-900 mb-1">
               {dragOver ? 'Drop video here' : 'Click or drag to upload video'}
             </p>
-            <p className="text-xs text-gray-500">MP4, MOV, WebM, or AVI up to 100MB</p>
+            <p className="text-xs text-slate-500">MP4, MOV, WebM, or AVI up to 100MB</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -237,20 +237,20 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
                 className="w-5 h-5 text-brand-600 rounded border-border focus:ring-brand-500"
               />
               <div>
-                <span className="text-sm font-medium text-gray-900">Set as primary video</span>
-                <p className="text-xs text-gray-500">This video will be shown first on your profile</p>
+                <span className="text-sm font-medium text-slate-900">Set as primary video</span>
+                <p className="text-xs text-slate-500">This video will be shown first on your profile</p>
               </div>
             </label>
             {error && (
               <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm leading-relaxed text-red-600">{error}</p>
               </div>
             )}
             {uploading && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Uploading...</span>
-                  <span className="font-medium text-gray-900">{progress}%</span>
+                  <span className="text-slate-600">Uploading...</span>
+                  <span className="font-medium text-slate-900">{progress}%</span>
                 </div>
                 <div className="w-full bg-cream-200 rounded-full h-2 overflow-hidden">
                   <div className="bg-brand-600 h-2 rounded-full transition-all duration-300" style={{ width: progress + '%' }} />

@@ -36,7 +36,7 @@ export default async function PrivacySettingsPage() {
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-slate-900 mb-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-2">
             Privacy Settings
           </h1>
           <p className="text-slate-600">

@@ -24,7 +24,7 @@ export default function GolfSignupPage() {
 
     try {
       // Step 1: Create auth user
-      const { data: authData, error: authError } = await (supabase as any).auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -42,7 +42,7 @@ export default function GolfSignupPage() {
       }
 
       // Step 2: Create user record for golf coach
-      const { error: userError } = await (supabase as any).from('users').insert({
+      const { error: userError } = await supabase.from('users').insert({
         id: authData.user.id,
         email,
         role: 'coach',
@@ -57,7 +57,7 @@ export default function GolfSignupPage() {
 
       // Step 3: Create golf coach record
       // Note: golf_coaches table - using type assertion until schema is updated
-      const { error: coachError } = await (supabase as any).from('golf_coaches').insert({
+      const { error: coachError } = await supabase.from('golf_coaches').insert({
         user_id: authData.user.id,
         full_name: fullName,
         onboarding_completed: false,
@@ -89,7 +89,7 @@ export default function GolfSignupPage() {
             alt="GolfHelm"
             className="h-16 w-auto mx-auto mb-4"
           />
-          <h1 className="text-2xl font-semibold text-slate-900">Join GolfHelm</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Join GolfHelm</h1>
           <p className="text-slate-500 mt-1">Create your coaching account</p>
         </div>
 
@@ -151,11 +151,11 @@ export default function GolfSignupPage() {
         </div>
 
         <div className="text-center mt-6 space-y-2">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm leading-relaxed text-slate-500">
             Are you a player?{' '}
             <span className="text-slate-600">Ask your coach for an invite link.</span>
           </p>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm leading-relaxed text-slate-400">
             <Link href="/" className="hover:text-slate-600 transition-colors">
               ← Back to HelmLabs
             </Link>

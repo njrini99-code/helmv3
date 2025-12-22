@@ -57,7 +57,7 @@ export default function CollegesPage() {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-4 mb-6">
           <div className="relative flex-1 min-w-[200px] max-w-md">
-            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}

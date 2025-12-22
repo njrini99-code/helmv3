@@ -53,10 +53,10 @@ export default function ConversationPage() {
               <div key={msg.id} className={cn('flex', isOwn ? 'justify-end' : 'justify-start')}>
                 <div className={cn('max-w-md', isOwn ? 'order-2' : 'order-1')}>
                   {!isOwn && <Avatar name={otherName} size="sm" className="mb-1" />}
-                  <div className={cn('px-4 py-2 rounded-2xl', isOwn ? 'bg-brand-600 text-white rounded-br-md' : 'bg-cream-200 text-gray-900 rounded-bl-md')}>
+                  <div className={cn('px-4 py-2 rounded-2xl', isOwn ? 'bg-brand-600 text-white rounded-br-md' : 'bg-cream-200 text-slate-900 rounded-bl-md')}>
                     <p className="text-sm">{msg.content}</p>
                   </div>
-                  <p className={cn('text-xs text-gray-400 mt-1', isOwn ? 'text-right' : 'text-left')}>
+                  <p className={cn('text-xs text-slate-400 mt-1', isOwn ? 'text-right' : 'text-left')}>
                     {msg.sent_at ? formatDateTime(msg.sent_at) : ''}
                   </p>
                 </div>

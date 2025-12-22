@@ -33,7 +33,7 @@ const typeIcons: Record<string, { icon: string; color: string }> = {
   message: { icon: '💬', color: 'bg-green-100 text-green-600' },
   evaluation: { icon: '📊', color: 'bg-purple-100 text-purple-600' },
   camp_interest: { icon: '🏕️', color: 'bg-cyan-100 text-cyan-600' },
-  other: { icon: '🔔', color: 'bg-gray-100 text-gray-600' },
+  other: { icon: '🔔', color: 'bg-slate-100 text-slate-600' },
 };
 
 function formatTimestamp(timestamp: string): string {
@@ -91,9 +91,9 @@ export function NotificationCenter({
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors"
       >
-        <IconBell size={20} className="text-gray-600" />
+        <IconBell size={20} className="text-slate-600" />
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-600 rounded-full animate-pulse" />
         )}
@@ -108,7 +108,7 @@ export function NotificationCenter({
           {/* Header */}
           <div className="p-4 border-b border-border-light">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+              <h3 className="font-semibold text-slate-900 flex items-center gap-2">
                 Notifications
                 {unreadCount > 0 && (
                   <Badge variant="primary" className="px-2 py-0.5">
@@ -136,8 +136,8 @@ export function NotificationCenter({
                 className={cn(
                   'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
                   filter === 'all'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 )}
               >
                 All
@@ -147,8 +147,8 @@ export function NotificationCenter({
                 className={cn(
                   'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
                   filter === 'unread'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 )}
               >
                 Unread {unreadCount > 0 && `(${unreadCount})`}
@@ -160,13 +160,13 @@ export function NotificationCenter({
           <div className="max-h-[480px] overflow-y-auto custom-scrollbar">
             {filteredNotifications.length === 0 ? (
               <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <IconBell size={24} className="text-gray-400" />
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <IconBell size={24} className="text-slate-400" />
                 </div>
-                <p className="text-sm font-medium text-gray-900 mb-1">
+                <p className="text-sm font-medium text-slate-900 mb-1">
                   {filter === 'unread' ? 'All caught up!' : 'No notifications'}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-500">
                   {filter === 'unread'
                     ? 'You have no unread notifications'
                     : 'Notifications will appear here'}
@@ -206,13 +206,13 @@ export function NotificationCenter({
 
                           {/* Content */}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 mb-0.5">
+                            <p className="text-sm font-medium text-slate-900 mb-0.5">
                               {notification.title}
                             </p>
-                            <p className="text-sm text-gray-600 line-clamp-2">
+                            <p className="text-sm leading-relaxed text-slate-600 line-clamp-2">
                               {notification.message}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-slate-400 mt-1">
                               {formatTimestamp(notification.timestamp)}
                             </p>
                           </div>
@@ -225,7 +225,7 @@ export function NotificationCenter({
                                 className="p-1 hover:bg-white rounded transition-colors"
                                 title="Mark as read"
                               >
-                                <IconCheck size={14} className="text-gray-400 hover:text-gray-600" />
+                                <IconCheck size={14} className="text-slate-400 hover:text-slate-600" />
                               </button>
                             )}
                             <button
@@ -233,7 +233,7 @@ export function NotificationCenter({
                               className="p-1 hover:bg-white rounded transition-colors"
                               title="Delete"
                             >
-                              <IconX size={14} className="text-gray-400 hover:text-red-600" />
+                              <IconX size={14} className="text-slate-400 hover:text-red-600" />
                             </button>
                           </div>
                         </div>

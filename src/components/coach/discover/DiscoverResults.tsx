@@ -18,6 +18,7 @@ interface DiscoverResultsProps {
   totalCount: number;
   currentPage: number;
   totalPages: number;
+  onPlayerClick?: (playerId: string) => void;
 }
 
 export function DiscoverResults({
@@ -27,6 +28,7 @@ export function DiscoverResults({
   totalCount,
   currentPage,
   totalPages,
+  onPlayerClick,
 }: DiscoverResultsProps) {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -134,7 +136,7 @@ export function DiscoverResults({
       {/* Results Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm leading-relaxed text-slate-500">
             {totalCount > 0 ? (
               <>
                 Showing <span className="font-medium text-slate-900">{(currentPage - 1) * 24 + 1}</span>
@@ -159,7 +161,7 @@ export function DiscoverResults({
         <div className="bg-white rounded-2xl border border-slate-200 p-8">
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-slate-900 mb-2">Player Distribution by State</h3>
-            <p className="text-sm text-slate-500">Click a state to filter players by location</p>
+            <p className="text-sm leading-relaxed text-slate-500">Click a state to filter players by location</p>
           </div>
           <USAMap stateData={stateData} onStateClick={handleStateClick} />
         </div>
@@ -171,6 +173,7 @@ export function DiscoverResults({
           columns={viewMode === 'list' ? 2 : 3}
           onWatchlist={handleWatchlist}
           onMessage={handleMessage}
+          onPlayerClick={onPlayerClick}
           watchlistIds={watchlistIds}
           emptyTitle="No players found"
           emptyMessage="Try adjusting your filters or search criteria to find more players."

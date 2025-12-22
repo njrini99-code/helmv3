@@ -40,7 +40,7 @@ export function StatusDot({
         )}
       />
       {label && (
-        <span className="text-sm text-slate-600">{label}</span>
+        <span className="text-sm leading-relaxed text-slate-600">{label}</span>
       )}
     </div>
   );
@@ -72,7 +72,7 @@ export function PipelineStatusDot({
     <div className="flex items-center gap-2">
       <span className={cn('w-2 h-2 rounded-full flex-shrink-0', colorClass)} />
       {showLabel && (
-        <span className="text-sm text-slate-600">{labelText}</span>
+        <span className="text-sm leading-relaxed text-slate-600">{labelText}</span>
       )}
     </div>
   );

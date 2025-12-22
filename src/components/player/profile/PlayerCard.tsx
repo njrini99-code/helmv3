@@ -126,7 +126,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
       {showPhysicals && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-6 border-b border-slate-200 bg-white">
           <div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
               Height
             </p>
             <p className="text-lg font-semibold text-slate-900">
@@ -136,7 +136,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
             </p>
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
               Weight
             </p>
             <p className="text-lg font-semibold text-slate-900">
@@ -146,7 +146,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
           {showBatsThrows && (
             <>
               <div>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
                   Bats
                 </p>
                 <p className="text-lg font-semibold text-slate-900">
@@ -154,7 +154,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
                 </p>
               </div>
               <div>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
                   Throws
                 </p>
                 <p className="text-lg font-semibold text-slate-900">
@@ -178,7 +178,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
               <IconMail size={16} className="text-slate-400" />
               <a
                 href={`mailto:${player.email}`}
-                className="text-sm text-green-600 hover:text-green-700 hover:underline"
+                className="text-sm leading-relaxed text-green-600 hover:text-green-700 hover:underline"
               >
                 {player.email}
               </a>
@@ -190,7 +190,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
               <IconPhone size={16} className="text-slate-400" />
               <a
                 href={`tel:${player.phone}`}
-                className="text-sm text-green-600 hover:text-green-700 hover:underline"
+                className="text-sm leading-relaxed text-green-600 hover:text-green-700 hover:underline"
               >
                 {player.phone}
               </a>

@@ -34,7 +34,7 @@ export function EngagementChart({ data, loading }: EngagementChartProps) {
   if (data.length === 0) {
     return (
       <div className="h-[200px] flex items-center justify-center">
-        <p className="text-sm text-slate-400">No engagement data yet</p>
+        <p className="text-sm leading-relaxed text-slate-400">No engagement data yet</p>
       </div>
     );
   }

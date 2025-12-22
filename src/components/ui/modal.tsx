@@ -70,7 +70,7 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
                 <h2 className="text-lg font-semibold text-slate-900 tracking-tight">{title}</h2>
               )}
               {description && (
-                <p className="text-sm text-slate-500 mt-0.5">{description}</p>
+                <p className="text-sm leading-relaxed text-slate-500 mt-0.5">{description}</p>
               )}
             </div>
             <button

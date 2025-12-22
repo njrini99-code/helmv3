@@ -5,11 +5,13 @@ import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { FilterPanel } from '@/components/coach/discover/FilterPanel';
 import { DiscoverResults } from '@/components/coach/discover/DiscoverResults';
+import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { Header } from '@/components/layout/header';
 import { PageLoading } from '@/components/ui/loading';
 import { SkeletonDiscover } from '@/components/ui/skeleton-loader';
 import { useAuth } from '@/hooks/use-auth';
 import { useRecruitingRouteProtection } from '@/hooks/use-route-protection';
+import { getPlayersOptimized } from '@/lib/queries/performance';
 import type { Player } from '@/lib/types';
 
 function DiscoverContent() {
@@ -21,6 +23,7 @@ function DiscoverContent() {
   const [watchlistIds, setWatchlistIds] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   // Parse filters from URL
   const filters = useMemo(() => ({
@@ -156,11 +159,18 @@ function DiscoverContent() {
                 totalCount={totalCount}
                 currentPage={page}
                 totalPages={totalPages}
+                onPlayerClick={(id) => setSelectedPlayerId(id)}
               />
             )}
           </div>
         </div>
       </div>
+
+      {/* Player Peek Panel */}
+      <PlayerPeekPanel
+        playerId={selectedPlayerId}
+        onClose={() => setSelectedPlayerId(null)}
+      />
     </>
   );
 }

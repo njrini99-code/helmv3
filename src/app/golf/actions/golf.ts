@@ -2,11 +2,56 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import type {
-  GolfRoundInput,
-  GolfEventInput,
-  GolfQualifierInput,
-} from '@/lib/types/golf';
+
+// Temporary input types until we have form schemas
+interface GolfRoundInput {
+  qualifierId?: string;
+  courseName: string;
+  courseCity?: string;
+  courseState?: string;
+  courseRating?: number;
+  courseSlope?: number;
+  teesPlayed?: string;
+  roundType: 'practice' | 'tournament' | 'qualifier';
+  roundDate: string;
+  holes: Array<{
+    holeNumber: number;
+    par: number;
+    score: number;
+    putts?: number;
+    fairwayHit?: boolean;
+    greenInRegulation?: boolean;
+    penalties?: number;
+    notes?: string;
+  }>;
+}
+
+interface GolfEventInput {
+  title: string;
+  eventType: 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
+  startDate: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  allDay?: boolean;
+  location?: string;
+  courseName?: string;
+  description?: string;
+  isMandatory?: boolean;
+}
+
+interface GolfQualifierInput {
+  name: string;
+  description?: string;
+  courseName?: string;
+  location?: string;
+  numRounds: number;
+  holesPerRound: number;
+  startDate: string;
+  endDate?: string;
+  showLiveLeaderboard?: boolean;
+  playerIds: string[];
+}
 
 // ============================================================================
 // ROUND ACTIONS
@@ -15,11 +60,11 @@ import type {
 export async function submitGolfRound(data: GolfRoundInput) {
   const supabase = await createClient();
 
-  const { data: { user } } = await (supabase as any).auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
   // Get player record
-  const { data: player } = await (supabase as any)
+  const { data: player } = await supabase
     .from('golf_players')
     .select('id')
     .eq('user_id', user.id)
@@ -38,7 +83,7 @@ export async function submitGolfRound(data: GolfRoundInput) {
   const totalPenalties = data.holes.reduce((sum, h) => sum + (h.penalties || 0), 0);
 
   // Insert round
-  const { data: round, error: roundError } = await (supabase as any)
+  const { data: round, error: roundError } = await supabase
     .from('golf_rounds')
     .insert({
       player_id: player.id,
@@ -80,7 +125,7 @@ export async function submitGolfRound(data: GolfRoundInput) {
     notes: hole.notes || null,
   }));
 
-  const { error: holesError } = await (supabase as any)
+  const { error: holesError } = await supabase
     .from('golf_holes')
     .insert(holesData);
 
@@ -96,11 +141,11 @@ export async function submitGolfRound(data: GolfRoundInput) {
 export async function deleteGolfRound(roundId: string) {
   const supabase = await createClient();
 
-  const { data: { user } } = await (supabase as any).auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
   // Verify ownership
-  const { data: round } = await (supabase as any)
+  const { data: round } = await supabase
     .from('golf_rounds')
     .select('player_id, player:golf_players(user_id)')
     .eq('id', roundId)
@@ -111,10 +156,10 @@ export async function deleteGolfRound(roundId: string) {
   }
 
   // Delete holes first (cascade should handle this but being explicit)
-  await (supabase as any).from('golf_holes').delete().eq('round_id', roundId);
+  await supabase.from('golf_holes').delete().eq('round_id', roundId);
 
   // Delete round
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('golf_rounds')
     .delete()
     .eq('id', roundId);
@@ -133,11 +178,11 @@ export async function deleteGolfRound(roundId: string) {
 export async function createGolfEvent(data: GolfEventInput) {
   const supabase = await createClient();
 
-  const { data: { user } } = await (supabase as any).auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
   // Get coach and team
-  const { data: coach } = await (supabase as any)
+  const { data: coach } = await supabase
     .from('golf_coaches')
     .select('id, team_id')
     .eq('user_id', user.id)
@@ -145,7 +190,7 @@ export async function createGolfEvent(data: GolfEventInput) {
 
   if (!coach?.team_id) throw new Error('Coach or team not found');
 
-  const { data: event, error } = await (supabase as any)
+  const { data: event, error } = await supabase
     .from('golf_events')
     .insert({
       team_id: coach.team_id,
@@ -176,10 +221,10 @@ export async function createGolfEvent(data: GolfEventInput) {
 export async function updateGolfEvent(eventId: string, data: Partial<GolfEventInput>) {
   const supabase = await createClient();
 
-  const { data: { user } } = await (supabase as any).auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('golf_events')
     .update({
       title: data.title,
@@ -204,10 +249,10 @@ export async function updateGolfEvent(eventId: string, data: Partial<GolfEventIn
 export async function deleteGolfEvent(eventId: string) {
   const supabase = await createClient();
 
-  const { data: { user } } = await (supabase as any).auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('golf_events')
     .delete()
     .eq('id', eventId);
@@ -224,11 +269,11 @@ export async function deleteGolfEvent(eventId: string) {
 export async function createGolfQualifier(data: GolfQualifierInput) {
   const supabase = await createClient();
 
-  const { data: { user } } = await (supabase as any).auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
   // Get coach and team
-  const { data: coach } = await (supabase as any)
+  const { data: coach } = await supabase
     .from('golf_coaches')
     .select('id, team_id')
     .eq('user_id', user.id)
@@ -237,7 +282,7 @@ export async function createGolfQualifier(data: GolfQualifierInput) {
   if (!coach?.team_id) throw new Error('Coach or team not found');
 
   // Create qualifier
-  const { data: qualifier, error: qualifierError } = await (supabase as any)
+  const { data: qualifier, error: qualifierError } = await supabase
     .from('golf_qualifiers')
     .insert({
       team_id: coach.team_id,
@@ -267,7 +312,7 @@ export async function createGolfQualifier(data: GolfQualifierInput) {
       rounds_completed: 0,
     }));
 
-    const { error: entriesError } = await (supabase as any)
+    const { error: entriesError } = await supabase
       .from('golf_qualifier_entries')
       .insert(entries);
 
@@ -283,10 +328,10 @@ export async function createGolfQualifier(data: GolfQualifierInput) {
 export async function updateQualifierStatus(qualifierId: string, status: 'upcoming' | 'in_progress' | 'completed') {
   const supabase = await createClient();
 
-  const { data: { user } } = await (supabase as any).auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('golf_qualifiers')
     .update({ status })
     .eq('id', qualifierId);
@@ -308,11 +353,11 @@ export async function createAnnouncement(data: {
 }) {
   const supabase = await createClient();
 
-  const { data: { user } } = await (supabase as any).auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
   // Get coach and team
-  const { data: coach } = await (supabase as any)
+  const { data: coach } = await supabase
     .from('golf_coaches')
     .select('id, team_id')
     .eq('user_id', user.id)
@@ -320,7 +365,7 @@ export async function createAnnouncement(data: {
 
   if (!coach?.team_id) throw new Error('Coach or team not found');
 
-  const { data: announcement, error } = await (supabase as any)
+  const { data: announcement, error } = await supabase
     .from('golf_announcements')
     .insert({
       team_id: coach.team_id,
@@ -350,11 +395,11 @@ export async function createAnnouncement(data: {
 export async function invitePlayerToTeam(email: string) {
   const supabase = await createClient();
 
-  const { data: { user } } = await (supabase as any).auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
   // Get coach and team
-  const { data: coach } = await (supabase as any)
+  const { data: coach } = await supabase
     .from('golf_coaches')
     .select('id, team_id, team:golf_teams(name, invite_code)')
     .eq('user_id', user.id)
@@ -366,7 +411,7 @@ export async function invitePlayerToTeam(email: string) {
   let inviteCode = coach.team?.invite_code;
   if (!inviteCode) {
     inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    await (supabase as any)
+    await supabase
       .from('golf_teams')
       .update({ invite_code: inviteCode })
       .eq('id', coach.team_id);
@@ -383,10 +428,10 @@ export async function invitePlayerToTeam(email: string) {
 export async function updatePlayerStatus(playerId: string, status: 'active' | 'injured' | 'redshirt' | 'inactive') {
   const supabase = await createClient();
 
-  const { data: { user } } = await (supabase as any).auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('golf_players')
     .update({ status })
     .eq('id', playerId);

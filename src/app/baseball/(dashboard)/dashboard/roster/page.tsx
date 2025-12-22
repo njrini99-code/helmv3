@@ -131,7 +131,7 @@ export default function RosterPage() {
   if (user?.role !== 'coach') {
     return (
       <div className="p-8">
-        <Card>
+        <Card glass>
           <CardContent className="p-12 text-center">
             <p className="text-slate-500">Only coaches can access roster management.</p>
           </CardContent>
@@ -187,12 +187,12 @@ export default function RosterPage() {
         </Card>
 
         {/* Roster Table */}
-        <Card>
+        <Card glass>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-semibold text-gray-900">Team Roster</h2>
-                <p className="text-sm text-slate-500 mt-1">
+                <h2 className="font-semibold text-slate-900">Team Roster</h2>
+                <p className="text-sm leading-relaxed text-slate-500 mt-1">
                   {filteredRoster.length} {filteredRoster.length === 1 ? 'player' : 'players'}
                 </p>
               </div>
@@ -210,7 +210,7 @@ export default function RosterPage() {
                   <IconUsers size={32} className="text-slate-400" />
                 </div>
                 <h3 className="text-lg font-medium text-slate-900 mb-2">Build your roster</h3>
-                <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
+                <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
                   Invite players to join your team by generating a team invite link. Players can use this link to join and complete their profiles.
                 </p>
                 <Button onClick={() => setShowInviteModal(true)}>
@@ -224,13 +224,13 @@ export default function RosterPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-200">
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Player</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Position</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Grad Year</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Location</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Jersey</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Actions</th>
+                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Player</th>
+                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Position</th>
+                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Grad Year</th>
+                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Location</th>
+                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Jersey</th>
+                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Status</th>
+                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -291,7 +291,7 @@ export default function RosterPage() {
         {roster.length === 0 && (
           <Card className="mt-6">
             <CardHeader>
-              <h2 className="font-semibold text-gray-900">How to add players</h2>
+              <h2 className="font-semibold text-slate-900">How to add players</h2>
             </CardHeader>
             <CardContent>
               <ol className="space-y-3 text-sm text-slate-600">

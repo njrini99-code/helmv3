@@ -48,9 +48,9 @@ export function PlayerCard({ player, showWatchlistButton = true, usePeekPanel = 
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="font-semibold text-gray-900 truncate">{name}</h3>
-                  <p className="text-sm text-gray-500 truncate">{player.high_school_name}</p>
-                  <p className="text-xs text-gray-400">{player.city}, {player.state}</p>
+                  <h3 className="font-semibold text-slate-900 truncate">{name}</h3>
+                  <p className="text-sm leading-relaxed text-slate-500 truncate">{player.high_school_name}</p>
+                  <p className="text-xs text-slate-400">{player.city}, {player.state}</p>
                 </div>
                 {player.has_video && <IconVideo size={16} className="text-brand-600 flex-shrink-0" />}
               </div>
@@ -64,20 +64,20 @@ export function PlayerCard({ player, showWatchlistButton = true, usePeekPanel = 
 
           <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-border-light">
             <div>
-              <p className="text-2xs text-gray-400 uppercase tracking-wide">Height</p>
-              <p className="text-sm font-medium text-gray-900">{formatHeight(player.height_feet, player.height_inches)}</p>
+              <p className="text-2xs text-slate-400 uppercase tracking-wide">Height</p>
+              <p className="text-sm font-medium text-slate-900">{formatHeight(player.height_feet, player.height_inches)}</p>
             </div>
             <div>
-              <p className="text-2xs text-gray-400 uppercase tracking-wide">Weight</p>
-              <p className="text-sm font-medium text-gray-900">{player.weight_lbs ? `${player.weight_lbs}` : '—'}</p>
+              <p className="text-2xs text-slate-400 uppercase tracking-wide">Weight</p>
+              <p className="text-sm font-medium text-slate-900">{player.weight_lbs ? `${player.weight_lbs}` : '—'}</p>
             </div>
             <div>
-              <p className="text-2xs text-gray-400 uppercase tracking-wide">Velo</p>
-              <p className="text-sm font-medium text-gray-900">{player.pitch_velo || player.exit_velo || '—'}</p>
+              <p className="text-2xs text-slate-400 uppercase tracking-wide">Velo</p>
+              <p className="text-sm font-medium text-slate-900">{player.pitch_velo || player.exit_velo || '—'}</p>
             </div>
             <div>
-              <p className="text-2xs text-gray-400 uppercase tracking-wide">GPA</p>
-              <p className="text-sm font-medium text-gray-900">{player.gpa?.toFixed(2) || '—'}</p>
+              <p className="text-2xs text-slate-400 uppercase tracking-wide">GPA</p>
+              <p className="text-sm font-medium text-slate-900">{player.gpa?.toFixed(2) || '—'}</p>
             </div>
           </div>
 

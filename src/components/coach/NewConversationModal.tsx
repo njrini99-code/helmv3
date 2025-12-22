@@ -191,7 +191,7 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
               )}
 
               {loading && (
-                <p className="text-sm text-slate-500 text-center py-4">
+                <p className="text-sm leading-relaxed text-slate-500 text-center py-4">
                   Searching...
                 </p>
               )}

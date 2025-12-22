@@ -1,0 +1,676 @@
+# Helm Sports Labs - Product Requirements Document
+# Generated: December 22, 2024
+# Version: 3.0
+
+## PRODUCT OVERVIEW
+Helm Sports Labs is a dual-platform sports management system:
+1. Baseball Recruiting Platform - Connect players with college coaches
+2. Golf Team Management Platform - Track rounds, shots, and player development
+
+---
+
+## SECTION 1: COMPLETED FEATURES ✅
+
+### Baseball Platform - Authentication & Core Infrastructure
+
+AUTH-001: User Authentication System
+- Email/password authentication via Supabase Auth
+- Role-based signup (Coach vs Player)
+- Protected routes with middleware
+- Session management
+
+AUTH-002: Player Onboarding Flow
+- 5-step wizard: Basic Info → Baseball Info → Physical/School → Metrics → Profile/Goals
+- Avatar upload integration
+- Position selection, graduation year
+- Metrics capture: pitch velocity, exit velocity, 60-yard time, GPA
+- Links to Supabase Auth user
+
+AUTH-003: Coach Onboarding Flow
+- 4-step wizard: Personal Info → Program Info → Program Details → Preferences
+- Creates coach record, organization, and team
+- Logo upload, brand colors
+- Links to Supabase Auth user
+
+### College Coach - Recruiting Suite
+
+RECRUIT-001: Player Discovery System
+- Advanced filtering: grad year, position, state, velocity metrics, GPA
+- Name and school search
+- Pagination (24 players per page)
+- USA Map visualization with state click filters
+- Filter panel with real-time URL params
+- Shows recruiting-activated players only
+- Watchlist integration (add/remove from card)
+
+RECRUIT-002: Recruiting Watchlist Management
+- Full CRUD operations on watchlist
+- Table view with player details
+- Inline status dropdown (5 pipeline stages)
+- Inline notes editing
+- Filter tabs by status
+- Filter by position and grad year
+- Bulk selection and bulk actions
+- Bulk remove with confirmation
+- Player detail modal
+
+RECRUIT-003: Recruiting Pipeline Board
+- Drag-and-drop kanban board with 5 columns
+- Pipeline stages: watchlist, high_priority, offer_extended, committed, uninterested
+- Uses @dnd-kit for smooth interactions
+- Grad year filter
+- Real-time stage updates
+- Empty state with CTA to Discover
+
+RECRUIT-004: Player Comparison Tool
+- Side-by-side comparison of 2-4 players
+- Search and add players dynamically
+- Player removal
+- URL-based state management
+- Metrics comparison table
+- Stats comparison
+
+RECRUIT-005: College Coach Dashboard
+- Bento Grid layout with glass morphism
+- Pipeline stats (watchlist, high_priority, offer_extended, committed counts)
+- Profile views, messages stats
+- Recent players list (last 5)
+- 7-day engagement chart
+- Activity feed (last 8 events)
+- Upcoming events & camps calendar widget
+- USA map showing player distribution by state
+- Quick actions (Discover, Messages, Calendar, Edit Program)
+
+### Player Features
+
+PLAYER-001: Player Dashboard
+- Profile card with avatar, name, position, grad year, school, location
+- Bento grid stats: Profile views, On watchlists count, Messages, Video views
+- Your Stats card (height, weight, velocity, GPA)
+- Quick actions (Complete profile, Browse colleges, Check messages)
+- Recruiting activation banner (if not activated)
+- Profile completion percentage badge
+
+PLAYER-002: Player Profile Management
+- Full profile editing
+- Avatar upload
+- Baseball stats and metrics
+- School information
+- Contact details
+- Privacy settings
+
+PLAYER-003: Recruiting Journey Tracker
+- Track colleges player is interested in
+- Update status per school (interested, researching, contacted, visited, offered, committed)
+- Timeline view of journey events
+- Milestone tracking
+
+PLAYER-004: Player Analytics Dashboard
+- Profile views, watchlist adds, video views, messages sent
+- 7-day engagement chart (Recharts)
+- Top schools viewing profile
+- Engagement metrics
+
+### Messaging System
+
+MSG-001: Real-time Messaging Platform
+- Full real-time messaging between coaches and players
+- Conversation list with unread counts
+- Chat window with message history
+- New conversation modal
+- Mobile-responsive (split view on desktop, single view on mobile)
+- URL-based conversation selection
+- Real-time updates
+
+### Video Management
+
+VIDEO-001: Video Upload and Library
+- Video upload with drag-and-drop
+- Supabase Storage integration
+- Video library grid view
+- Search videos by title or player name
+- Video player modal
+- Delete videos with confirmation
+- Coach view: See all team player videos
+- Player view: Personal video library
+
+### Camps Management
+
+CAMP-001: Camp Management System
+- Coach: Create, edit, delete camps
+- Player: Browse camps, register/unregister
+- Camp cards with date, location, capacity, price
+- Registration tracking
+- Filter by status (upcoming, past)
+- Camp detail view
+
+### Calendar & Events
+
+CAL-001: Team Calendar System
+- Full calendar view of team events
+- Create, edit, delete events
+- Event types: game, practice, tournament, camp, showcase, team_meeting
+- Team-specific events
+- Coach calendar management
+
+### Team Management
+
+TEAM-001: Roster Management System
+- View team members with full details
+- Search by name, position, grad year
+- Generate team invite links
+- Jersey number assignment
+- Player status badges (recruiting active vs team only)
+- Team invitation system
+
+TEAM-002: Team Dashboard
+- Team stats and roster overview
+- Team-specific view for HS/Showcase coaches
+- Quick actions
+
+### Settings & Configuration
+
+SET-001: User Settings
+- Account settings
+- Profile settings
+- Privacy settings
+- Notification preferences
+
+SET-002: Program Profile Management
+- Edit organization details
+- School name, website, division, conference
+- Location (city, state)
+- About program description
+- Brand colors (primary, secondary)
+- Logo upload
+
+### Infrastructure & Shared Systems
+
+SYS-001: Navigation System
+- Dynamic sidebar with role-based navigation
+- Responsive header
+- Mobile menu
+- User dropdown
+
+SYS-002: Authentication Store
+- Zustand store for auth state
+- useAuth hook with user, coach, player, loading
+- Real-time auth state management
+
+SYS-003: Route Protection System
+- Recruiting route protection (college/JUCO coaches only)
+- Team route protection (HS/JUCO/Showcase coaches)
+- Role-based redirects
+
+SYS-004: Database Query Layer
+- Centralized query functions
+- Type-safe Supabase queries
+- Error handling
+
+SYS-005: UI Component Library
+- 40+ reusable components
+- Button, Card, Input, Select, Badge, Avatar, Modal, Toast
+- Design system: Kelly Green (#16A34A) + Cream White (#FAF6F1)
+- Glass morphism effects
+- Subtle animations
+
+### Golf Platform - Core Features
+
+GOLF-001: Golf Dashboard
+- Golf coach dashboard with team overview
+- Round management
+- Player statistics
+
+GOLF-002: Golf Player Features
+- Player golf dashboard
+- Round tracking
+- Shot tracking component
+- Scorecard integration
+
+GOLF-003: Shot Tracking System
+- Real-time shot tracking during rounds
+- Distance calculation
+- Club selection
+- Shot type tracking
+- Scorecard integration with premium dark theme
+
+---
+
+## SECTION 2: IN-PROGRESS FEATURES ⚠️
+
+### High School Coach Features
+
+HS-001: HS Coach Team Dashboard (INCOMPLETE)
+- Currently redirects to generic team dashboard
+- NEEDS: HS-specific metrics and features
+- NEEDS: Player development tracking
+- NEEDS: Academic tracking for HS players
+- STATUS: 40% complete
+
+HS-002: College Interest Tracking (PARTIAL)
+- Shows which college coaches are viewing players on roster
+- NEEDS: Full engagement event tracking
+- NEEDS: Detailed analytics per player
+- NEEDS: Notifications when coaches view players
+- STATUS: 50% complete
+
+HS-003: Developmental Plans System (PARTIAL)
+- Create dev plans for players
+- NEEDS: Drill library
+- NEEDS: Progress tracking
+- NEEDS: Player goal setting
+- NEEDS: Player view integration
+- STATUS: 40% complete
+
+### JUCO Coach Features
+
+JUCO-001: JUCO Mode Toggle (NOT INTEGRATED)
+- Component exists but not wired up
+- NEEDS: Routing logic for mode switching
+- NEEDS: Separate recruiting and team dashboards
+- NEEDS: Mode state management
+- STATUS: 20% complete
+
+JUCO-002: Academics Tracking (STUB)
+- Stub page exists
+- NEEDS: Academic records database schema
+- NEEDS: GPA tracking over time
+- NEEDS: Transcripts upload
+- NEEDS: Academic eligibility tracking
+- STATUS: 10% complete
+
+JUCO-003: Transfer Tracking (NOT STARTED)
+- NEEDS: Transfer portal integration
+- NEEDS: 4-year college tracking
+- NEEDS: Transfer timeline
+- STATUS: 0% complete
+
+### Showcase Coach Features
+
+SHOW-001: Multi-Team Management (INCOMPLETE)
+- Teams listing page partially built
+- NEEDS: Team switcher dropdown
+- NEEDS: Per-team roster pages (/team/[id]/roster)
+- NEEDS: Per-team videos, calendar
+- NEEDS: Organization-level dashboard
+- STATUS: 35% complete
+
+SHOW-002: Showcase Events Management (PARTIAL)
+- Basic events page exists
+- NEEDS: Event registration
+- NEEDS: Event analytics
+- NEEDS: Multi-team event coordination
+- STATUS: 30% complete
+
+### Player Features
+
+PLAYER-005: Multi-Team Support (NOT IMPLEMENTED)
+- Currently players can only join 1 team
+- NEEDS: Allow 2 teams (HS + Showcase)
+- NEEDS: Team switcher dropdown
+- NEEDS: Isolated team contexts
+- STATUS: 0% complete
+
+PLAYER-006: College Discovery (INCOMPLETE)
+- Browse colleges page exists
+- NEEDS: Filter by division, conference, location
+- NEEDS: Save to "dream schools"
+- NEEDS: School comparison
+- STATUS: 40% complete
+
+PLAYER-007: Recruiting Activation Flow (BASIC)
+- Basic activation works
+- NEEDS: Privacy settings review modal
+- NEEDS: Terms acceptance
+- NEEDS: Benefits explanation
+- NEEDS: Anonymous vs Identified interest UI
+- STATUS: 60% complete
+
+### Video Features
+
+VIDEO-002: Video Clipping Tool (DATABASE READY, NO UI)
+- Database has is_clip and parent_video_id fields
+- NEEDS: Clip editor UI component
+- NEEDS: Timeline scrubber
+- NEEDS: Set start/end times
+- NEEDS: Save clips as separate video records
+- STATUS: 20% complete
+
+### Comparison Features
+
+RECRUIT-006: Advanced Player Comparison (PARTIAL)
+- Basic comparison works
+- NEEDS: Radar chart overlay
+- NEEDS: Save comparisons feature (table exists)
+- NEEDS: Export comparison to PDF
+- STATUS: 60% complete
+
+### Public Profiles
+
+PUB-001: Public Player Profiles (BASIC)
+- Basic layout exists
+- NEEDS: Privacy settings enforcement
+- NEEDS: Video embeds
+- NEEDS: Achievement/honors display
+- NEEDS: Recruiting status visibility
+- STATUS: 50% complete
+
+PUB-002: Public Program Profiles (BASIC)
+- Basic structure exists
+- NEEDS: Full content display
+- NEEDS: SEO optimization
+- NEEDS: Roster preview
+- STATUS: 40% complete
+
+### Golf Platform Enhancements
+
+GOLF-004: Golf Round Management (PARTIAL)
+- Basic round tracking exists
+- NEEDS: Round history
+- NEEDS: Statistics aggregation
+- NEEDS: Performance analytics
+- STATUS: 40% complete
+
+GOLF-005: Golf Team Management (PARTIAL)
+- Basic team structure exists
+- NEEDS: Multi-player tracking
+- NEEDS: Team statistics
+- NEEDS: Tournament management
+- STATUS: 35% complete
+
+---
+
+## SECTION 3: PLANNED FEATURES 🚀
+
+### Critical Priority (P0) - Fix Core Gaps
+
+CORE-001: Implement JUCO Mode Toggle
+- Wire up ModeToggle component
+- Create routing logic for mode switching
+- Separate recruiting and team dashboards for JUCO
+- Mode state persistence
+- PRIORITY: P0 - CRITICAL
+
+CORE-002: Implement Multi-Team Support for Players
+- Database schema update for multiple team memberships
+- Team switcher dropdown component
+- Isolated team contexts
+- Team selection state management
+- Allow HS + Showcase team combinations
+- PRIORITY: P0 - CRITICAL
+
+CORE-003: Complete HS Coach Dashboard
+- HS-specific team metrics
+- Player development overview
+- College interest notifications
+- Academic tracking integration
+- Parent portal preparation
+- PRIORITY: P0 - CRITICAL
+
+CORE-004: Separate Golf Platform
+- Move golf app to separate directory or repository
+- Independent routing
+- Separate authentication context
+- Clear documentation
+- PRIORITY: P0 - CRITICAL
+
+CORE-005: Remove Dead Code
+- Delete unused peek panel components
+- Remove duplicate pipeline implementations
+- Clean up test/dev files
+- Remove deprecated components
+- PRIORITY: P0 - CRITICAL
+
+### High Priority (P1) - Complete Partially Built Features
+
+FEATURE-001: Complete Video Clipping System
+- Build clip editor UI
+- Timeline scrubber component
+- Start/end time selection
+- Preview clip before saving
+- Save clips as separate video records
+- Clip tagging (at-bat, pitch, etc.)
+- PRIORITY: P1
+
+FEATURE-002: Implement Notifications System
+- Notification bell component integration
+- Real-time notifications with Supabase Realtime
+- Email notifications
+- Push notifications (PWA)
+- Notification preferences
+- Mark as read/unread
+- PRIORITY: P1
+
+FEATURE-003: Complete Player Comparison Tool
+- Add radar chart overlay (Recharts)
+- Save comparison feature (use existing table)
+- Comparison history
+- Export comparison to PDF
+- Share comparison link
+- PRIORITY: P1
+
+FEATURE-004: Complete Showcase Coach Multi-Team Management
+- Organization-level dashboard
+- Per-team routing (/coach/showcase/team/[id]/...)
+- Team switcher component
+- Multi-team calendar view
+- Cross-team analytics
+- PRIORITY: P1
+
+FEATURE-005: Anonymous vs Identified Interest System
+- UI to show "A D1 coach viewed" vs "Coach John Smith from Texas A&M viewed"
+- Privacy settings enforcement
+- Recruiting activation benefits
+- Activation flow improvements
+- PRIORITY: P1
+
+### Medium Priority (P2) - New Features
+
+FEATURE-006: Complete Developmental Plans System
+- Drill library with videos
+- Progress tracking dashboard
+- Player goal setting
+- Coach feedback system
+- Milestone achievements
+- PRIORITY: P2
+
+FEATURE-007: Academics Tracking System
+- Academic records database schema
+- GPA tracking over time
+- Transcripts upload
+- Academic eligibility tracking
+- Semester/year breakdown
+- PRIORITY: P2
+
+FEATURE-008: College Interest Analytics
+- Full engagement analytics
+- Notifications when coaches view players
+- Interest timeline
+- School engagement heatmap
+- PRIORITY: P2
+
+FEATURE-009: Advanced Search System
+- Global search with Command Palette
+- Saved searches (use existing UI)
+- Search history
+- Advanced filters
+- Quick keyboard shortcuts
+- PRIORITY: P2
+
+FEATURE-010: College Discovery Enhancements
+- Filter by division, conference, location
+- School comparison tool
+- Dream schools list
+- School match scoring
+- PRIORITY: P2
+
+### Golf Platform Expansion (P2)
+
+GOLF-006: Complete Golf Round Management
+- Detailed round history
+- Statistics aggregation
+- Performance analytics
+- Handicap calculation
+- Round comparison
+- PRIORITY: P2
+
+GOLF-007: Golf Tournament System
+- Tournament creation and management
+- Leaderboards
+- Live scoring
+- Tournament analytics
+- Team tournaments
+- PRIORITY: P2
+
+GOLF-008: Golf Player Development
+- Swing analysis
+- Practice tracking
+- Goal setting
+- Performance trends
+- Coach feedback
+- PRIORITY: P2
+
+GOLF-009: Golf Team Statistics
+- Team performance metrics
+- Player comparison
+- Season statistics
+- Team rankings
+- PRIORITY: P2
+
+GOLF-010: Golf Course Management
+- Course database
+- Course ratings
+- Hole details
+- Yardage tracking
+- PRIORITY: P2
+
+### Low Priority (P3) - Future Enhancements
+
+FUTURE-001: Mobile App
+- React Native or PWA
+- Push notifications
+- Offline support
+- Mobile-optimized UI
+- PRIORITY: P3
+
+FUTURE-002: Advanced Analytics
+- Predictive analytics for recruiting
+- ML-based player matching
+- Trend analysis
+- Custom reports
+- PRIORITY: P3
+
+FUTURE-003: Parent Portal
+- Parent accounts
+- Communication system
+- Academic tracking access
+- Recruiting updates
+- PRIORITY: P3
+
+FUTURE-004: Payment System
+- Subscription management
+- Camp payment processing
+- Premium features
+- Billing dashboard
+- PRIORITY: P3
+
+FUTURE-005: Social Features
+- Activity feed
+- Player achievements sharing
+- Team announcements
+- Social media integration
+- PRIORITY: P3
+
+---
+
+## TECHNICAL DEBT & IMPROVEMENTS
+
+TECH-001: Type System Cleanup
+- Ensure all types from @/lib/types
+- Remove deprecated type imports
+- Add missing type definitions
+- PRIORITY: P1
+
+TECH-002: Performance Optimization
+- Image optimization
+- Lazy loading
+- Code splitting
+- Bundle size reduction
+- PRIORITY: P2
+
+TECH-003: Testing Infrastructure
+- E2E tests with Playwright
+- Component tests with Vitest
+- API tests
+- Test coverage > 80%
+- PRIORITY: P2
+
+TECH-004: Documentation Updates
+- Update CLAUDE.md with golf platform
+- Document all hooks
+- API documentation
+- Component documentation
+- PRIORITY: P2
+
+TECH-005: Accessibility Improvements
+- WCAG 2.1 AA compliance
+- Keyboard navigation
+- Screen reader support
+- Color contrast fixes
+- PRIORITY: P2
+
+---
+
+## SUCCESS METRICS
+
+### Baseball Platform
+- College Coach adoption: 100+ programs
+- Player registrations: 1000+ players
+- Active recruiting conversations: 500+/month
+- Camp registrations: 50+/month
+- Platform engagement: 70% weekly active users
+
+### Golf Platform
+- Coach adoption: 50+ programs
+- Player registrations: 500+ players
+- Rounds tracked: 1000+/month
+- Shot tracking usage: 80% of rounds
+- Platform engagement: 60% weekly active users
+
+---
+
+## RELEASE TIMELINE
+
+### Phase 1: Critical Fixes (Weeks 1-2)
+- CORE-001: JUCO Mode Toggle
+- CORE-003: HS Coach Dashboard
+- CORE-004: Separate Golf Platform
+- CORE-005: Remove Dead Code
+
+### Phase 2: Complete Partial Features (Weeks 3-4)
+- CORE-002: Multi-Team Support
+- FEATURE-001: Video Clipping
+- FEATURE-003: Player Comparison
+- FEATURE-005: Anonymous Interest
+
+### Phase 3: New Features (Weeks 5-8)
+- FEATURE-002: Notifications
+- FEATURE-004: Showcase Multi-Team
+- FEATURE-006: Dev Plans
+- FEATURE-007: Academics
+
+### Phase 4: Golf Expansion (Weeks 9-12)
+- GOLF-006: Round Management
+- GOLF-007: Tournament System
+- GOLF-008: Player Development
+- GOLF-009: Team Statistics
+
+### Phase 5: Future Enhancements (Weeks 13+)
+- FUTURE-001: Mobile App
+- FUTURE-002: Advanced Analytics
+- FUTURE-003: Parent Portal
+- FUTURE-004: Payment System
+
+---
+
+END OF PRD

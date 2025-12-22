@@ -23,7 +23,7 @@ export function EmptyChatState({ onNewConversation, className }: EmptyChatStateP
         Your Messages
       </h3>
 
-      <p className="text-sm text-slate-500 max-w-sm mb-6">
+      <p className="text-sm leading-relaxed text-slate-500 max-w-sm mb-6">
         Connect with coaches and players. Start a conversation to discuss recruiting, share updates, or ask questions.
       </p>
 

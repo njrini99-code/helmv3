@@ -243,7 +243,7 @@ export function SchoolPeekPanel() {
                     <h4 className="text-sm font-semibold text-slate-900 mb-2">
                       About the Program
                     </h4>
-                    <p className="text-sm text-slate-600 leading-relaxed line-clamp-4">
+                    <p className="text-sm leading-relaxed text-slate-600 leading-relaxed line-clamp-4">
                       {school.description}
                     </p>
                   </div>
