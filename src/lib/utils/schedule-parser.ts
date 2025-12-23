@@ -139,6 +139,150 @@ export function parseLocation(location: string): { building: string; room: strin
   return { building: cleaned, room: '' };
 }
 
+// Parse table format (tab or multiple-space separated)
+function parseTableFormat(lines: string[], semester: string): ParsedClass[] {
+  const classes: ParsedClass[] = [];
+  
+  // Find header row to understand column order
+  let headerIndex = -1;
+  let columnMap: Record<string, number> = {};
+  
+  const headerKeywords = ['course', 'title', 'name', 'days', 'time', 'location', 'instructor', 'credits', 'room', 'building'];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].toLowerCase();
+    const matchCount = headerKeywords.filter(kw => line.includes(kw)).length;
+    if (matchCount >= 2) {
+      headerIndex = i;
+      // Map columns
+      const cols = lines[i].split(/\t+/);
+      cols.forEach((col, idx) => {
+        const lower = col.toLowerCase().trim();
+        if (lower.includes('course') || lower === 'code') columnMap['course'] = idx;
+        if (lower.includes('title') || lower.includes('name')) columnMap['title'] = idx;
+        if (lower.includes('day')) columnMap['days'] = idx;
+        if (lower.includes('time')) columnMap['time'] = idx;
+        if (lower.includes('location') || lower.includes('room') || lower.includes('building')) columnMap['location'] = idx;
+        if (lower.includes('instructor') || lower.includes('professor') || lower.includes('prof')) columnMap['instructor'] = idx;
+        if (lower.includes('credit') || lower.includes('unit') || lower.includes('hr')) columnMap['credits'] = idx;
+      });
+      break;
+    }
+  }
+  
+  // Parse data rows
+  const startRow = headerIndex >= 0 ? headerIndex + 1 : 0;
+  
+  for (let i = startRow; i < lines.length; i++) {
+    const line = lines[i];
+    const cols = line.split(/\t+/);
+    
+    // Skip if not enough columns or no course code found
+    if (cols.length < 2) continue;
+    
+    // Try to find course code in any column
+    let courseCode = '';
+    let courseCodeIdx = -1;
+    
+    for (let j = 0; j < cols.length; j++) {
+      const code = parseCourseCode(cols[j]);
+      if (code) {
+        courseCode = code;
+        courseCodeIdx = j;
+        break;
+      }
+    }
+    
+    if (!courseCode) continue;
+    
+    // Build class object
+    const classData: Partial<ParsedClass> = {
+      id: generateId(),
+      course_code: courseCode,
+      semester,
+    };
+    
+    // If we have header mapping, use it
+    if (Object.keys(columnMap).length > 0) {
+      if (columnMap['title'] !== undefined && cols[columnMap['title']]) {
+        classData.course_name = cols[columnMap['title']].trim();
+      }
+      if (columnMap['days'] !== undefined && cols[columnMap['days']]) {
+        classData.days = parseDays(cols[columnMap['days']]);
+      }
+      if (columnMap['time'] !== undefined && cols[columnMap['time']]) {
+        const times = parseTimeRange(cols[columnMap['time']]);
+        classData.start_time = times.start;
+        classData.end_time = times.end;
+      }
+      if (columnMap['location'] !== undefined && cols[columnMap['location']]) {
+        const loc = parseLocation(cols[columnMap['location']]);
+        classData.location = cols[columnMap['location']].trim();
+        classData.building = loc.building;
+        classData.room = loc.room;
+      }
+      if (columnMap['instructor'] !== undefined && cols[columnMap['instructor']]) {
+        classData.instructor = cols[columnMap['instructor']].trim();
+      }
+      if (columnMap['credits'] !== undefined && cols[columnMap['credits']]) {
+        const cred = parseFloat(cols[columnMap['credits']]);
+        if (!isNaN(cred)) classData.credits = cred;
+      }
+    } else {
+      // No header - try to infer from position and content
+      for (let j = 0; j < cols.length; j++) {
+        if (j === courseCodeIdx) continue;
+        const col = cols[j].trim();
+        if (!col) continue;
+        
+        // Check what type of data this column contains
+        if (!classData.course_name && col.length > 3 && !col.match(/^\d/) && !col.match(/^[MTWFS]/)) {
+          // Likely course name
+          classData.course_name = col;
+        } else if (!classData.days?.length && col.match(/^[MTWThFSaSu]+$/i)) {
+          // Days pattern
+          classData.days = parseDays(col);
+        } else if (!classData.start_time && col.match(/\d{1,2}:\d{2}/)) {
+          // Time pattern
+          const times = parseTimeRange(col);
+          classData.start_time = times.start;
+          classData.end_time = times.end;
+        } else if (!classData.location && col.match(/[A-Za-z]+\s*\d{2,4}/)) {
+          // Location pattern (building + room)
+          const loc = parseLocation(col);
+          classData.location = col;
+          classData.building = loc.building;
+          classData.room = loc.room;
+        } else if (!classData.instructor && col.match(/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.)/i)) {
+          // Instructor
+          classData.instructor = col;
+        } else if (!classData.credits && col.match(/^\d(\.\d)?$/)) {
+          // Credits (single digit, possibly with decimal)
+          classData.credits = parseFloat(col);
+        }
+      }
+    }
+    
+    // Add defaults for missing required fields
+    classes.push({
+      id: classData.id || generateId(),
+      course_code: classData.course_code || '',
+      course_name: classData.course_name || '',
+      instructor: classData.instructor || '',
+      days: classData.days || [],
+      start_time: classData.start_time || '',
+      end_time: classData.end_time || '',
+      location: classData.location || '',
+      building: classData.building || '',
+      room: classData.room || '',
+      credits: classData.credits || null,
+      semester,
+    });
+  }
+  
+  return classes;
+}
+
 // Detect semester from text
 export function detectSemester(text: string): string {
   const now = new Date();
@@ -165,6 +309,14 @@ export function parseScheduleText(text: string): ParsedClass[] {
   const classes: ParsedClass[] = [];
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const semester = detectSemester(text);
+  
+  // First, try to detect if this is a table format (tab-separated)
+  const isTableFormat = lines.some(line => line.includes('\t'));
+  
+  if (isTableFormat) {
+    // Parse as table - each row is a potential class
+    return parseTableFormat(lines, semester);
+  }
   
   let currentClass: Partial<ParsedClass> | null = null;
 
