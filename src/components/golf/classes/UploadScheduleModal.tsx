@@ -75,18 +75,22 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
         // Sort by Y position (descending - PDF coordinates start from bottom)
         // then by X position (ascending - left to right)
         const sortedItems = [...items].sort((a, b) => {
-          const yDiff = b.transform[5] - a.transform[5]; // Y is index 5
+          const aY = a.transform?.[5] ?? 0;
+          const bY = b.transform?.[5] ?? 0;
+          const yDiff = bY - aY; // Y is index 5
           if (Math.abs(yDiff) > 5) return yDiff; // Different row (5px threshold)
-          return a.transform[4] - b.transform[4]; // Same row, sort by X
+          const aX = a.transform?.[4] ?? 0;
+          const bX = b.transform?.[4] ?? 0;
+          return aX - bX; // Same row, sort by X
         });
-        
+
         // Group items into rows based on Y position
         const rows: string[][] = [];
         let currentRow: string[] = [];
-        let lastY = sortedItems[0]?.transform[5] ?? 0;
-        
+        let lastY = sortedItems[0]?.transform?.[5] ?? 0;
+
         for (const item of sortedItems) {
-          const y = item.transform[5];
+          const y = item.transform?.[5] ?? 0;
           // If Y changed significantly, start a new row
           if (Math.abs(y - lastY) > 5) {
             if (currentRow.length > 0) {
@@ -95,7 +99,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
             currentRow = [];
             lastY = y;
           }
-          if (item.str.trim()) {
+          if (item.str?.trim()) {
             currentRow.push(item.str.trim());
           }
         }
@@ -103,13 +107,12 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
         if (currentRow.length > 0) {
           rows.push(currentRow);
         }
-        
+
         // Join each row with tabs (to separate columns), rows with newlines
         const pageText = rows.map(row => row.join('\t')).join('\n');
         fullText += pageText + '\n';
       }
-      
-      console.log('Extracted PDF text:', fullText); // Debug log
+
       return fullText;
     } catch (err) {
       console.error('PDF extraction error:', err);

@@ -150,13 +150,16 @@ function parseTableFormat(lines: string[], semester: string): ParsedClass[] {
   const headerKeywords = ['course', 'title', 'name', 'days', 'time', 'location', 'instructor', 'credits', 'room', 'building'];
   
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].toLowerCase();
+    const lineText = lines[i];
+    if (!lineText) continue;
+    const line = lineText.toLowerCase();
     const matchCount = headerKeywords.filter(kw => line.includes(kw)).length;
     if (matchCount >= 2) {
       headerIndex = i;
       // Map columns
-      const cols = lines[i].split(/\t+/);
+      const cols = lineText.split(/\t+/);
       cols.forEach((col, idx) => {
+        if (!col) return;
         const lower = col.toLowerCase().trim();
         if (lower.includes('course') || lower === 'code') columnMap['course'] = idx;
         if (lower.includes('title') || lower.includes('name')) columnMap['title'] = idx;
@@ -175,64 +178,81 @@ function parseTableFormat(lines: string[], semester: string): ParsedClass[] {
   
   for (let i = startRow; i < lines.length; i++) {
     const line = lines[i];
+    if (!line) continue;
     const cols = line.split(/\t+/);
-    
+
     // Skip if not enough columns or no course code found
     if (cols.length < 2) continue;
-    
+
     // Try to find course code in any column
     let courseCode = '';
     let courseCodeIdx = -1;
-    
+
     for (let j = 0; j < cols.length; j++) {
-      const code = parseCourseCode(cols[j]);
+      const colValue = cols[j];
+      if (!colValue) continue;
+      const code = parseCourseCode(colValue);
       if (code) {
         courseCode = code;
         courseCodeIdx = j;
         break;
       }
     }
-    
+
     if (!courseCode) continue;
-    
+
     // Build class object
     const classData: Partial<ParsedClass> = {
       id: generateId(),
       course_code: courseCode,
       semester,
     };
-    
+
     // If we have header mapping, use it
     if (Object.keys(columnMap).length > 0) {
-      if (columnMap['title'] !== undefined && cols[columnMap['title']]) {
-        classData.course_name = cols[columnMap['title']].trim();
+      const titleCol = columnMap['title'];
+      if (titleCol !== undefined && cols[titleCol]) {
+        classData.course_name = cols[titleCol]?.trim();
       }
-      if (columnMap['days'] !== undefined && cols[columnMap['days']]) {
-        classData.days = parseDays(cols[columnMap['days']]);
+      const daysCol = columnMap['days'];
+      if (daysCol !== undefined && cols[daysCol]) {
+        classData.days = parseDays(cols[daysCol]);
       }
-      if (columnMap['time'] !== undefined && cols[columnMap['time']]) {
-        const times = parseTimeRange(cols[columnMap['time']]);
+      const timeCol = columnMap['time'];
+      if (timeCol !== undefined && cols[timeCol]) {
+        const times = parseTimeRange(cols[timeCol]);
         classData.start_time = times.start;
         classData.end_time = times.end;
       }
-      if (columnMap['location'] !== undefined && cols[columnMap['location']]) {
-        const loc = parseLocation(cols[columnMap['location']]);
-        classData.location = cols[columnMap['location']].trim();
-        classData.building = loc.building;
-        classData.room = loc.room;
+      const locCol = columnMap['location'];
+      if (locCol !== undefined && cols[locCol]) {
+        const locValue = cols[locCol];
+        if (locValue) {
+          const loc = parseLocation(locValue);
+          classData.location = locValue.trim();
+          classData.building = loc.building;
+          classData.room = loc.room;
+        }
       }
-      if (columnMap['instructor'] !== undefined && cols[columnMap['instructor']]) {
-        classData.instructor = cols[columnMap['instructor']].trim();
+      const instrCol = columnMap['instructor'];
+      if (instrCol !== undefined && cols[instrCol]) {
+        classData.instructor = cols[instrCol]?.trim();
       }
-      if (columnMap['credits'] !== undefined && cols[columnMap['credits']]) {
-        const cred = parseFloat(cols[columnMap['credits']]);
-        if (!isNaN(cred)) classData.credits = cred;
+      const creditsCol = columnMap['credits'];
+      if (creditsCol !== undefined && cols[creditsCol]) {
+        const credValue = cols[creditsCol];
+        if (credValue) {
+          const cred = parseFloat(credValue);
+          if (!isNaN(cred)) classData.credits = cred;
+        }
       }
     } else {
       // No header - try to infer from position and content
       for (let j = 0; j < cols.length; j++) {
         if (j === courseCodeIdx) continue;
-        const col = cols[j].trim();
+        const colValue = cols[j];
+        if (!colValue) continue;
+        const col = colValue.trim();
         if (!col) continue;
         
         // Check what type of data this column contains
