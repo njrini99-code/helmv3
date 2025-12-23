@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { GolfSidebar } from '@/components/golf/layout/GolfSidebar';
 import { PageLoading } from '@/components/ui/loading';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
+import { ToastProvider } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 
 interface UserData {
@@ -144,9 +145,11 @@ export default function GolfDashboardLayout({
 
   return (
     <SidebarProvider>
-      <GolfDashboardContent userData={userData}>
-        {children}
-      </GolfDashboardContent>
+      <ToastProvider>
+        <GolfDashboardContent userData={userData}>
+          {children}
+        </GolfDashboardContent>
+      </ToastProvider>
     </SidebarProvider>
   );
 }

@@ -4,20 +4,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { IconMail, IconPlus, IconSend, IconArrowLeft, IconMessageSquare } from '@/components/icons';
-import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/components/ui/toast';
-import { useGolfConversations, useGolfMessages, type GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
+import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
 import { createGolfConversation } from '@/app/golf/actions/messages';
 import { GolfNewMessageModal } from '@/components/golf/messages/GolfNewMessageModal';
 import { createClient } from '@/lib/supabase/client';
 
 export default function GolfMessagesPage() {
   const { showToast } = useToast();
-  const { user } = useAuthStore();
   const { conversations, loading: conversationsLoading, refetch } = useGolfConversations();
   
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
@@ -27,12 +25,15 @@ export default function GolfMessagesPage() {
   // Get messages for selected conversation
   const { messages, loading: messagesLoading, sendMessage } = useGolfMessages(selectedConversationId || '');
 
-  // Fetch user's team and role
+  // Fetch current user and their team/role
   useEffect(() => {
     const fetchUserInfo = async () => {
+      const supabase = createClient();
+      
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       
-      const supabase = createClient();
+      setCurrentUserId(user.id);
       
       // Check if user is a golf coach
       const { data: coach } = await supabase
@@ -61,7 +62,7 @@ export default function GolfMessagesPage() {
     };
     
     fetchUserInfo();
-  }, [user]);
+  }, []);
 
   // Auto-select first conversation
   useEffect(() => {
@@ -257,7 +258,7 @@ export default function GolfMessagesPage() {
                 </div>
               ) : (
                 messages.map((msg, idx) => {
-                  const isOwn = msg.sender_id === user?.id;
+                  const isOwn = msg.sender_id === currentUserId;
                   const showAvatar = !isOwn && (idx === 0 || messages[idx - 1]?.sender_id !== msg.sender_id);
                   
                   return (

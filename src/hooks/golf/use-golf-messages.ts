@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useAuthStore } from '@/stores/auth-store';
 import { sendGolfMessage, markGolfMessagesAsRead } from '@/app/golf/actions/messages';
 import type { Message } from '@/lib/types';
 
@@ -89,11 +88,22 @@ export function useGolfMessages(conversationId: string) {
 export function useGolfConversations() {
   const [conversations, setConversations] = useState<GolfConversationWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuthStore();
+  const [userId, setUserId] = useState<string | null>(null);
   const supabase = createClient();
 
+  // Get the current user on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
+    getUser();
+  }, []);
+
   const fetchConversations = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setLoading(false);
       return;
     }
@@ -104,7 +114,7 @@ export function useGolfConversations() {
     const { data: participantData } = await supabase
       .from('conversation_participants')
       .select('conversation_id')
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     if (!participantData || participantData.length === 0) {
       setConversations([]);
@@ -144,14 +154,14 @@ export function useGolfConversations() {
           .from('conversation_participants')
           .select('last_read_at')
           .eq('conversation_id', conv.id)
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .single();
 
         const { count: unreadCount } = await supabase
           .from('messages')
           .select('*', { count: 'exact', head: true })
           .eq('conversation_id', conv.id)
-          .neq('sender_id', user.id)
+          .neq('sender_id', userId)
           .gt('sent_at', participant?.last_read_at || '1970-01-01');
 
         // Find other participants
@@ -159,11 +169,11 @@ export function useGolfConversations() {
           .from('conversation_participants')
           .select('user_id')
           .eq('conversation_id', conv.id)
-          .neq('user_id', user.id);
+          .neq('user_id', userId);
 
         let otherParticipant: GolfConversationParticipant | undefined;
 
-        if (otherParticipants && otherParticipants.length > 0 && otherParticipants[0]) {
+        if (otherParticipants && otherParticipants.length > 0) {
           const otherUserId = otherParticipants[0].user_id;
 
           // Try to find as golf coach
@@ -212,33 +222,38 @@ export function useGolfConversations() {
 
     setConversations(conversationsWithMeta);
     setLoading(false);
-  }, [user]);
+  }, [userId]);
 
+  // Fetch conversations when userId is set
   useEffect(() => {
-    fetchConversations();
-
-    // Set up real-time subscription for new messages
-    if (user) {
-      const channel = supabase
-        .channel('golf-conversations')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-          },
-          () => {
-            fetchConversations();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+    if (userId) {
+      fetchConversations();
     }
-  }, [user, fetchConversations]);
+  }, [userId, fetchConversations]);
+
+  // Set up real-time subscription for new messages
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel('golf-conversations')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        () => {
+          fetchConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, fetchConversations]);
 
   return { conversations, loading, refetch: fetchConversations };
 }
