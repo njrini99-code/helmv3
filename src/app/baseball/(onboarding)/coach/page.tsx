@@ -55,10 +55,43 @@ export default function CoachOnboarding() {
     setError('');
 
     try {
+      if (!user) {
+        router.push('/baseball/login');
+        return;
+      }
+
+      // Step 1: Create organization
+      const orgType = coachType === 'college' ? 'college'
+        : coachType === 'juco' ? 'juco'
+        : coachType === 'high_school' ? 'high_school'
+        : 'showcase_org';
+
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .insert({
+          name: schoolName,
+          type: orgType,
+          division: division || null,
+          conference: conference || null,
+          location_city: schoolCity || null,
+          location_state: schoolState || null,
+        })
+        .select()
+        .single();
+
+      if (orgError) {
+        console.error('Organization error:', orgError);
+        setError(`Failed to create organization: ${orgError.message}`);
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: Update coach record with organization_id
       const { error: updateError } = await supabase
         .from('coaches')
         .update({
           coach_type: coachType,
+          organization_id: org.id,
           full_name: fullName,
           coach_title: coachTitle,
           email_contact: email,
@@ -74,6 +107,7 @@ export default function CoachOnboarding() {
         .eq('user_id', user.id);
 
       if (updateError) {
+        console.error('Coach update error:', updateError);
         setError(updateError.message);
         setLoading(false);
         return;
@@ -82,6 +116,7 @@ export default function CoachOnboarding() {
       router.push('/baseball/dashboard');
       router.refresh();
     } catch (err) {
+      console.error('Onboarding error:', err);
       setError('An error occurred. Please try again.');
       setLoading(false);
     }
