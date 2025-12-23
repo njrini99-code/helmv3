@@ -5,7 +5,38 @@
  * Used to compute player career stats and per-round stats.
  */
 
-import type { HoleStats } from '@/components/golf/ShotTrackingComprehensive';
+// HoleStats type - defined inline since ShotTrackingComprehensive is not yet implemented
+interface HoleStats {
+  holeNumber: number;
+  par: number;
+  score: number;
+  putts: number;
+  fairwayHit?: boolean | null;
+  greenInRegulation?: boolean;
+  usedDriver?: boolean;
+  drivingDistance?: number;
+  driveMissDirection?: 'left' | 'right' | null;
+  approachDistance?: number;
+  approachProximity?: number;
+  approachLie?: string;
+  firstPuttDistance?: number;
+  firstPuttLeave?: number | null;
+  firstPuttMissDirection?: string;
+  scrambleAttempt?: boolean;
+  scrambleMade?: boolean;
+  sandSaveAttempt?: boolean;
+  sandSaveMade?: boolean;
+  penaltyStrokes: number;
+  holedOutDistance?: number;
+  holedOutType?: string;
+  shots: Array<{
+    shotNumber: number;
+    shotType: string;
+    result?: string;
+    lieBefore?: string;
+    distanceToHoleBefore?: number;
+  }>;
+}
 
 // ============================================================================
 // TYPES
@@ -579,10 +610,12 @@ export function calculateStats(rounds: RoundData[]): GolfStats {
       // First putt analysis
       if (hole.firstPuttDistance) {
         const bucket = getPuttDistanceBucket(hole.firstPuttDistance);
-        puttAttempts[bucket].total++;
-        
-        if (hole.putts === 1) {
-          puttAttempts[bucket].made++;
+        const puttData = puttAttempts[bucket];
+        if (puttData) {
+          puttData.total++;
+          if (hole.putts === 1) {
+            puttData.made++;
+          }
         }
         
         // Putt leave (proximity after first putt)
@@ -602,8 +635,11 @@ export function calculateStats(rounds: RoundData[]): GolfStats {
         
         // Putt efficiency
         const effBucket = hole.firstPuttDistance >= 30 ? '30_plus' : bucket;
-        puttEfficiency[effBucket].totalPutts += hole.putts;
-        puttEfficiency[effBucket].count++;
+        const effData = puttEfficiency[effBucket];
+        if (effData) {
+          effData.totalPutts += hole.putts;
+          effData.count++;
+        }
         
         // Miss direction
         if (hole.firstPuttMissDirection) {
@@ -628,15 +664,21 @@ export function calculateStats(rounds: RoundData[]): GolfStats {
         if (hole.approachLie === 'sand') approachProxSand.push(hole.approachProximity);
         
         const distBucket = getApproachDistanceBucket(hole.approachDistance);
-        approachProxByDistance[distBucket].push(hole.approachProximity);
+        const approachArr = approachProxByDistance[distBucket];
+        if (approachArr) {
+          approachArr.push(hole.approachProximity);
+        }
         
         // Approach efficiency (strokes to finish from approach)
         const strokesToFinish = hole.score - (hole.shots.findIndex(s => 
           s.shotType === 'approach' && (s.result === 'green' || s.result === 'hole')
         ));
         if (strokesToFinish > 0) {
-          approachEffByDistance[distBucket].totalStrokes += strokesToFinish;
-          approachEffByDistance[distBucket].count++;
+          const effData = approachEffByDistance[distBucket];
+          if (effData) {
+            effData.totalStrokes += strokesToFinish;
+            effData.count++;
+          }
         }
       }
       
@@ -661,15 +703,17 @@ export function calculateStats(rounds: RoundData[]): GolfStats {
           
           // By distance
           const dist = scrambleShot.distanceToHoleBefore;
-          if (dist <= 10) {
-            scramble0_10.total++;
-            if (hole.scrambleMade) scramble0_10.made++;
-          } else if (dist <= 20) {
-            scramble10_20.total++;
-            if (hole.scrambleMade) scramble10_20.made++;
-          } else if (dist <= 30) {
-            scramble20_30.total++;
-            if (hole.scrambleMade) scramble20_30.made++;
+          if (dist != null) {
+            if (dist <= 10) {
+              scramble0_10.total++;
+              if (hole.scrambleMade) scramble0_10.made++;
+            } else if (dist <= 20) {
+              scramble10_20.total++;
+              if (hole.scrambleMade) scramble10_20.made++;
+            } else if (dist <= 30) {
+              scramble20_30.total++;
+              if (hole.scrambleMade) scramble20_30.made++;
+            }
           }
         }
       }
@@ -687,15 +731,17 @@ export function calculateStats(rounds: RoundData[]): GolfStats {
         atgStrokes.push(strokesToFinish);
         
         const dist = shot.distanceToHoleBefore;
-        if (dist <= 10) {
-          atg0_10.strokes += strokesToFinish;
-          atg0_10.count++;
-        } else if (dist <= 20) {
-          atg10_20.strokes += strokesToFinish;
-          atg10_20.count++;
-        } else if (dist <= 30) {
-          atg20_30.strokes += strokesToFinish;
-          atg20_30.count++;
+        if (dist != null) {
+          if (dist <= 10) {
+            atg0_10.strokes += strokesToFinish;
+            atg0_10.count++;
+          } else if (dist <= 20) {
+            atg10_20.strokes += strokesToFinish;
+            atg10_20.count++;
+          } else if (dist <= 30) {
+            atg20_30.strokes += strokesToFinish;
+            atg20_30.count++;
+          }
         }
         
         if (shot.lieBefore === 'fairway') {
