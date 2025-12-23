@@ -275,13 +275,13 @@ export function getAverageByRoundType(rounds: GolfRound[]) {
       byType[round.round_type] = { total: 0, count: 0 };
     }
 
-    byType[round.round_type].total += round.total_score;
-    byType[round.round_type].count += 1;
+    byType[round.round_type]!.total += round.total_score;
+    byType[round.round_type]!.count += 1;
   });
 
   const result: Record<string, number> = {};
   Object.keys(byType).forEach(type => {
-    result[type] = Math.round((byType[type].total / byType[type].count) * 10) / 10;
+    result[type] = Math.round((byType[type]!.total / byType[type]!.count) * 10) / 10;
   });
 
   return result;

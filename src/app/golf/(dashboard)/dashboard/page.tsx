@@ -409,44 +409,56 @@ export default function GolfDashboardPage() {
         // Load coach dashboard data
         const teamId = coach.team_id;
 
-        // Get roster size
-        const { count: rosterSize } = await supabase
-          .from('golf_players')
-          .select('*', { count: 'exact', head: true })
-          .eq('team_id', teamId);
+        // Only fetch team data if coach has a team
+        let rosterSize = 0;
+        let upcomingEvents = 0;
+        let activeQualifiers = 0;
+        let recentRounds: any[] = [];
 
-        // Get upcoming events
-        const { count: upcomingEvents } = await supabase
-          .from('golf_events')
-          .select('*', { count: 'exact', head: true })
-          .eq('team_id', teamId)
-          .gte('start_date', new Date().toISOString().split('T')[0]);
+        if (teamId) {
+          // Get roster size
+          const { count: rosterCount } = await supabase
+            .from('golf_players')
+            .select('*', { count: 'exact', head: true })
+            .eq('team_id', teamId);
+          rosterSize = rosterCount || 0;
 
-        // Get active qualifiers
-        const { count: activeQualifiers } = await supabase
-          .from('golf_qualifiers')
-          .select('*', { count: 'exact', head: true })
-          .eq('team_id', teamId)
-          .in('status', ['upcoming', 'in_progress']);
+          // Get upcoming events
+          const { count: eventsCount } = await supabase
+            .from('golf_events')
+            .select('*', { count: 'exact', head: true })
+            .eq('team_id', teamId)
+            .gte('start_date', new Date().toISOString().split('T')[0]);
+          upcomingEvents = eventsCount || 0;
 
-        // Get recent rounds with player names
-        const { data: recentRounds } = await supabase
-          .from('golf_rounds')
-          .select('*, player:golf_players(first_name, last_name)')
-          .eq('player.team_id', teamId)
-          .order('round_date', { ascending: false })
-          .limit(5);
+          // Get active qualifiers
+          const { count: qualifiersCount } = await supabase
+            .from('golf_qualifiers')
+            .select('*', { count: 'exact', head: true })
+            .eq('team_id', teamId)
+            .in('status', ['upcoming', 'in_progress']);
+          activeQualifiers = qualifiersCount || 0;
+
+          // Get recent rounds with player names
+          const { data: rounds } = await supabase
+            .from('golf_rounds')
+            .select('*, player:golf_players(first_name, last_name)')
+            .eq('player.team_id', teamId)
+            .order('round_date', { ascending: false })
+            .limit(5);
+          recentRounds = rounds || [];
+        }
 
         setCoachData({
           coach: coach as GolfCoach,
           team: coach.team as GolfTeam,
           stats: {
-            rosterSize: rosterSize || 0,
-            upcomingEvents: upcomingEvents || 0,
-            activeQualifiers: activeQualifiers || 0,
+            rosterSize,
+            upcomingEvents,
+            activeQualifiers,
             teamScoringAverage: null, // Would calculate from rounds
           },
-          recentRounds: (recentRounds || []).map((r: any) => ({
+          recentRounds: recentRounds.map((r: any) => ({
             id: r.id,
             player_name: `${r.player?.first_name || ''} ${r.player?.last_name || ''}`.trim() || 'Unknown',
             course_name: r.course_name,

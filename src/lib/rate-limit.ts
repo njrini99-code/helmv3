@@ -13,11 +13,11 @@ const rateLimitMap = new Map<string, RateLimitEntry>();
 // Clean up expired entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
-  for (const [key, entry] of rateLimitMap.entries()) {
+  Array.from(rateLimitMap.entries()).forEach(([key, entry]) => {
     if (now > entry.resetAt) {
       rateLimitMap.delete(key);
     }
-  }
+  });
 }, 5 * 60 * 1000);
 
 export interface RateLimitConfig {
@@ -89,7 +89,7 @@ export function checkRateLimit(
 export function getClientIdentifier(headers: Headers): string {
   const forwardedFor = headers.get('x-forwarded-for');
   if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim();
+    return forwardedFor.split(',')[0]!.trim();
   }
 
   const realIp = headers.get('x-real-ip');

@@ -7,7 +7,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false, // Disable for smoother dev experience
 
   compiler: {
     // Remove console logs in production for cleaner logs

@@ -5,12 +5,70 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { GolfSidebar } from '@/components/golf/layout/GolfSidebar';
 import { PageLoading } from '@/components/ui/loading';
+import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
+import { cn } from '@/lib/utils';
 
 interface UserData {
   role: 'coach' | 'player';
   name: string;
   teamName?: string;
   avatarUrl?: string;
+}
+
+function GolfDashboardContent({ children, userData }: { children: React.ReactNode; userData: UserData }) {
+  const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
+
+  return (
+    <div className="flex h-screen bg-[#FAF6F1]">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block">
+        <GolfSidebar
+          userRole={userData.role}
+          userName={userData.name}
+          teamName={userData.teamName}
+          avatarUrl={userData.avatarUrl}
+        />
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      <div
+        className={cn(
+          'fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden',
+          'transition-opacity duration-300 ease-out',
+          mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+        onClick={() => setMobileOpen(false)}
+      />
+      
+      {/* Mobile Sidebar */}
+      <div
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 lg:hidden',
+          'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <GolfSidebar
+          userRole={userData.role}
+          userName={userData.name}
+          teamName={userData.teamName}
+          avatarUrl={userData.avatarUrl}
+          isMobile
+        />
+      </div>
+
+      {/* Main content */}
+      <main
+        className={cn(
+          'flex-1 overflow-y-auto',
+          'transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          collapsed ? 'lg:ml-[72px]' : 'lg:ml-60'
+        )}
+      >
+        {children}
+      </main>
+    </div>
+  );
 }
 
 export default function GolfDashboardLayout({
@@ -25,7 +83,6 @@ export default function GolfDashboardLayout({
 
   useEffect(() => {
     async function loadUser() {
-      // Normal Supabase auth flow
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
@@ -33,8 +90,6 @@ export default function GolfDashboardLayout({
         return;
       }
 
-      // Check if user is a golf coach
-      // Using type assertion until golf schema is added to Supabase types
       const { data: coach } = await supabase
         .from('golf_coaches')
         .select('*, team:golf_teams(name)')
@@ -50,13 +105,12 @@ export default function GolfDashboardLayout({
           role: 'coach',
           name: coach.full_name || 'Coach',
           teamName: coach.team?.name,
-          avatarUrl: coach.avatar_url,
+          avatarUrl: coach.avatar_url || undefined,
         });
         setLoading(false);
         return;
       }
 
-      // Check if user is a golf player
       const { data: player } = await supabase
         .from('golf_players')
         .select('*, team:golf_teams(name)')
@@ -72,13 +126,12 @@ export default function GolfDashboardLayout({
           role: 'player',
           name: `${player.first_name} ${player.last_name}`,
           teamName: player.team?.name,
-          avatarUrl: player.avatar_url,
+          avatarUrl: player.avatar_url || undefined,
         });
         setLoading(false);
         return;
       }
 
-      // No golf profile found - redirect to signup
       router.push('/golf/signup');
     }
 
@@ -90,16 +143,10 @@ export default function GolfDashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-[#FAF6F1]">
-      <GolfSidebar
-        userRole={userData.role}
-        userName={userData.name}
-        teamName={userData.teamName}
-        avatarUrl={userData.avatarUrl}
-      />
-      <main className="flex-1 overflow-y-auto">
+    <SidebarProvider>
+      <GolfDashboardContent userData={userData}>
         {children}
-      </main>
-    </div>
+      </GolfDashboardContent>
+    </SidebarProvider>
   );
 }

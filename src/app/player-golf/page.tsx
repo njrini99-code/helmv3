@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { IconPlus } from '@/components/icons';
+import { IconPlus, IconChevronRight, IconTarget } from '@/components/icons';
 
 // Sample data - in production this would come from API
 const sampleStats = {

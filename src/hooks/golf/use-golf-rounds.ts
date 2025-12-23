@@ -64,6 +64,7 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
         const scores = roundsData.map((r: any) => r.total_score).filter((s: any): s is number => s !== null);
         const scoringAverage = scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
         const bestRound = scores.length > 0 ? Math.min(...scores) : 0;
+        const worstRound = scores.length > 0 ? Math.max(...scores) : 0;
 
         // Calculate score distribution from holes
         let eagles = 0, birdies = 0, pars = 0, bogeys = 0, doubleBogeys = 0;
@@ -111,21 +112,14 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
         const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : undefined;
 
         setStats({
-          scoringAverage,
-          bestRound,
-          roundsPlayed,
-          handicap: undefined, // Would come from player record
-          puttingAverage: totalPutts > 0 ? totalPutts / roundsPlayed : undefined,
-          fairwayPercentage: fairwaysTotal > 0 ? (fairwaysHit / fairwaysTotal) * 100 : undefined,
-          girPercentage: greensTotal > 0 ? (greensInReg / greensTotal) * 100 : undefined,
-          eagles,
-          birdies,
-          pars,
-          bogeys,
-          doubleBogeys,
-          par3Average: avg(par3Scores),
-          par4Average: avg(par4Scores),
-          par5Average: avg(par5Scores),
+          rounds_played: roundsPlayed,
+          scoring_average: scoringAverage,
+          best_round: bestRound,
+          worst_round: worstRound || 0,
+          putts_per_round: totalPutts > 0 ? totalPutts / roundsPlayed : 0,
+          fairways_hit_percentage: fairwaysTotal > 0 ? (fairwaysHit / fairwaysTotal) * 100 : 0,
+          greens_in_regulation_percentage: greensTotal > 0 ? (greensInReg / greensTotal) * 100 : 0,
+          handicap_index: undefined,
         });
       } else {
         setStats(null);

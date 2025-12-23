@@ -1,83 +1,67 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { CommandPalette } from '@/components/CommandPalette';
 import { ToastProvider } from '@/components/ui/toast';
+import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { cn } from '@/lib/utils';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Close mobile menu on window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setMobileMenuOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Prevent body scroll when mobile menu is open
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [mobileMenuOpen]);
+function DashboardContent({ children }: { children: React.ReactNode }) {
+  const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
 
   return (
-    <ToastProvider>
     <div className="min-h-screen bg-slate-50">
-      {/* Command Palette - Available everywhere */}
+      {/* Command Palette */}
       <CommandPalette />
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
+        <Sidebar />
       </div>
 
       {/* Mobile Sidebar Overlay */}
-      {mobileMenuOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-          <div className="fixed inset-y-0 left-0 z-50 lg:hidden">
-            <Sidebar
-              isMobile
-              onClose={() => setMobileMenuOpen(false)}
-            />
-          </div>
-        </>
-      )}
+      <div
+        className={cn(
+          'fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden',
+          'transition-opacity duration-300 ease-out',
+          mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+        onClick={() => setMobileOpen(false)}
+      />
+      
+      {/* Mobile Sidebar */}
+      <div
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 lg:hidden',
+          'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <Sidebar isMobile />
+      </div>
 
       {/* Main Content Area */}
       <div
         className={cn(
-          'min-h-screen flex flex-col transition-all duration-300',
-          sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-60'
+          'min-h-screen flex flex-col',
+          'transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          collapsed ? 'lg:ml-[72px]' : 'lg:ml-60'
         )}
       >
-        {/* Page Content - Each page renders its own Header with title */}
         <main className="flex-1">
-          <div className="animate-fade-in">
-            {children}
-          </div>
+          {children}
         </main>
       </div>
     </div>
-    </ToastProvider>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <ToastProvider>
+        <DashboardContent>{children}</DashboardContent>
+      </ToastProvider>
+    </SidebarProvider>
   );
 }

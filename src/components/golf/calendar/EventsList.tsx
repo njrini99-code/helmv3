@@ -54,8 +54,8 @@ export function EventsList({ events, isCoach }: EventsListProps) {
     // Handle HH:MM:SS format
     const parts = timeStr.split(':');
     if (parts.length >= 2) {
-      const hours = parseInt(parts[0]);
-      const minutes = parts[1];
+      const hours = parseInt(parts[0]!);
+      const minutes = parts[1]!;
       const ampm = hours >= 12 ? 'PM' : 'AM';
       const displayHours = hours % 12 || 12;
       return `${displayHours}:${minutes} ${ampm}`;

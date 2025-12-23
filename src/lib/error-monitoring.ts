@@ -138,7 +138,7 @@ class ErrorMonitoring {
     if (typeof window !== 'undefined') {
       import('@sentry/nextjs').then((Sentry) => {
         Sentry.captureException(new Error(report.message), {
-          level: this.mapSeverityToSentryLevel(report.severity) as any,
+          level: this.mapSeverityToSentryLevel(report.severity),
           contexts: {
             error_context: report.context,
           },
@@ -146,7 +146,7 @@ class ErrorMonitoring {
             timestamp: report.timestamp,
             stack: report.stack,
           },
-        });
+        } as any);
       }).catch(() => {
         // Sentry not available, fallback to console
         console.error('[Production Error]', report);
@@ -164,7 +164,7 @@ class ErrorMonitoring {
       // Server-side
       import('@sentry/nextjs').then((Sentry) => {
         Sentry.captureException(new Error(report.message), {
-          level: this.mapSeverityToSentryLevel(report.severity) as any,
+          level: this.mapSeverityToSentryLevel(report.severity),
           contexts: {
             error_context: report.context,
           },
@@ -172,7 +172,7 @@ class ErrorMonitoring {
             timestamp: report.timestamp,
             stack: report.stack,
           },
-        });
+        } as any);
       }).catch(() => {
         console.error('[Server Error]', report);
       });

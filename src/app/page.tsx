@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 /**
  * Helm Sports Lab — Landing Page
@@ -265,10 +266,25 @@ export default function HomePage() {
     if (!demoEmail) return;
     
     setDemoLoading(true);
-    
-    // For now, just show success - you can add Supabase/API integration later
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('demo_requests')
+        .insert({ 
+          email: demoEmail,
+          product: 'both',
+          status: 'pending'
+        });
+      
+      if (error) {
+        console.error('Demo request error:', error);
+        // Still show success to user - don't block on DB errors
+      }
+    } catch (err) {
+      console.error('Demo request error:', err);
+    }
+
     setDemoSubmitted(true);
     setDemoLoading(false);
   };

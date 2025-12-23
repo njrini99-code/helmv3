@@ -5,6 +5,11 @@ import type { GolfRound, GolfHole } from '@/lib/types/golf';
 
 interface RoundWithHoles extends GolfRound {
   holes?: GolfHole[];
+  player?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export default async function GolfStatsPage() {
@@ -90,7 +95,7 @@ async function CoachStatsView() {
     .slice(0, 10);
 
   // Recent team rounds
-  const recentRounds = getRecentRounds(teamRounds, 10);
+  const recentRounds = getRecentRounds(teamRounds, 10) as RoundWithHoles[];
 
   return (
     <div className="min-h-screen bg-[#FAF6F1]">

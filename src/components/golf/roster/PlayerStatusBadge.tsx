@@ -21,7 +21,7 @@ export function PlayerStatusBadge({ playerId, currentStatus }: PlayerStatusBadge
     { value: 'inactive', label: 'Inactive', color: 'bg-slate-100 text-slate-600' },
   ];
 
-  const currentStatusObj = statuses.find(s => s.value === currentStatus) || statuses[0];
+  const currentStatusObj = statuses.find(s => s.value === currentStatus) || statuses[0]!;
 
   const handleStatusChange = async (newStatus: 'active' | 'injured' | 'redshirt' | 'inactive') => {
     setLoading(true);

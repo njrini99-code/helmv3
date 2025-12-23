@@ -73,7 +73,7 @@ export function AnnouncementCard({ announcement, isCoach, playerId }: Announceme
             <div>
               <h3 className="text-lg font-semibold text-slate-900">{announcement.title}</h3>
               <p className="text-sm text-slate-500">
-                {formatDate(announcement.published_at || announcement.created_at)}
+                {formatDate(announcement.published_at || announcement.created_at || new Date().toISOString())}
               </p>
             </div>
             <span

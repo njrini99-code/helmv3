@@ -9,15 +9,10 @@ import type { Player, Coach } from '@/lib/types';
 export function useAuth() {
   const router = useRouter();
   const supabase = createClient();
-  const { user, coach, player, loading, isDevMode, coachMode, setUser, setCoach, setPlayer, setLoading, setCoachMode, clear } = useAuthStore();
+  const { user, coach, player, loading, coachMode, setUser, setCoach, setPlayer, setLoading, setCoachMode, clear } = useAuthStore();
 
   useEffect(() => {
     const fetchUser = async () => {
-      // If dev mode is active and user is already set, don't fetch from Supabase
-      if (isDevMode && user) {
-        setLoading(false);
-        return;
-      }
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
 
@@ -45,20 +40,18 @@ export function useAuth() {
 
     fetchUser();
 
-    // Don't set up auth state listener in dev mode
-    if (!isDevMode) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-        if (event === 'SIGNED_OUT') {
-          clear();
-          router.push('/baseball/login');
-        } else if (event === 'SIGNED_IN') {
-          fetchUser();
-        }
-      });
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_OUT') {
+        clear();
+        router.push('/baseball/login');
+      } else if (event === 'SIGNED_IN') {
+        fetchUser();
+      }
+    });
 
-      return () => subscription.unsubscribe();
-    }
-  }, [isDevMode]);
+    return () => subscription.unsubscribe();
+  }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();

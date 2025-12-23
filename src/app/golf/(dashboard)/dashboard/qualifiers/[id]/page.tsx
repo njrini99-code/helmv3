@@ -39,7 +39,7 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
     notFound();
   }
 
-  const qualifierData = qualifier as QualifierWithEntries;
+  const qualifierData = qualifier as any as QualifierWithEntries;
 
   // Get all rounds for this qualifier
   const { data: rounds } = await supabase
@@ -76,9 +76,9 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
 
   // Mark ties
   for (let i = 0; i < leaderboard.length; i++) {
-    if (i > 0 && leaderboard[i].totalScore === leaderboard[i - 1].totalScore) {
-      leaderboard[i].isTied = true;
-      leaderboard[i - 1].isTied = true;
+    if (i > 0 && leaderboard[i]!.totalScore === leaderboard[i - 1]!.totalScore) {
+      leaderboard[i]!.isTied = true;
+      leaderboard[i - 1]!.isTied = true;
     }
   }
 
@@ -207,7 +207,7 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
                   {leaderboard.map((entry, index) => {
                     const position = index + 1;
                     const isLeader = position === 1;
-                    const showPosition = !entry.isTied || index === 0 || leaderboard[index - 1].totalScore !== entry.totalScore;
+                    const showPosition = !entry.isTied || index === 0 || leaderboard[index - 1]!.totalScore !== entry.totalScore;
 
                     return (
                       <tr

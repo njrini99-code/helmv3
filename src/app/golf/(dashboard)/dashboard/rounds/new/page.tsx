@@ -4,13 +4,25 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ShotTrackingFinal from '@/components/golf/ShotTrackingFinal';
 import { submitGolfRound } from '@/app/golf/actions/golf';
-import type { ShotRecord } from '@/lib/types/golf';
 
 interface Hole {
   number: number;
   par: number;
   yardage: number;
   score: number | null;
+}
+
+interface ShotRecord {
+  shotNumber: number;
+  shotType: 'tee' | 'approach' | 'around_green' | 'putting';
+  distanceToHoleBefore: number;
+  distanceToHoleAfter: number;
+  shotDistance: number;
+  usedDriver?: boolean;
+  resultOfShot: string;
+  missDirection?: string;
+  puttBreak?: 'right_to_left' | 'left_to_right' | 'straight';
+  puttSlope?: 'uphill' | 'downhill' | 'level' | 'severe';
 }
 
 interface RoundSetupForm {
@@ -67,7 +79,7 @@ export default function NewRoundPage() {
 
   const handleHoleComplete = (holeIndex: number, score: number, shots: ShotRecord[]) => {
     const updatedHoles = [...holes];
-    const hole = updatedHoles[holeIndex];
+    const hole = updatedHoles[holeIndex]!;
     updatedHoles[holeIndex] = {
       number: hole.number,
       par: hole.par,

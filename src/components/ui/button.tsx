@@ -31,7 +31,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        'btn focus-ring transition-all duration-150 ease-out',
+        'btn focus-ring',
+        'transition-all duration-100 ease-out', // Faster transitions
+        'will-change-transform', // GPU acceleration
+        'active:scale-[0.97] active:transition-none', // Instant press feedback
         variant === 'primary' && 'btn-primary',
         variant === 'secondary' && 'btn-secondary',
         variant === 'ghost' && 'btn-ghost',

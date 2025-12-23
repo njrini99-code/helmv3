@@ -22,7 +22,6 @@ import {
   IconTarget,
   IconStar,
   IconEye,
-  IconChevronLeft,
   IconHelp,
   IconGraduationCap,
   IconLayers,
@@ -31,6 +30,7 @@ import { TeamSwitcher } from './team-switcher';
 import { useTeams } from '@/hooks/use-teams';
 import { usePlayerTeams } from '@/hooks/use-player-teams';
 import { useUnreadCount } from '@/hooks/use-unread-count';
+import { useSidebar } from '@/contexts/sidebar-context';
 
 // College/JUCO Coach - Recruiting Mode
 const coachRecruitingNav = [
@@ -127,17 +127,15 @@ const playerSecondaryNav = [
 ];
 
 interface SidebarProps {
-  collapsed?: boolean;
-  onToggle?: () => void;
-  onClose?: () => void;
   isMobile?: boolean;
 }
 
-export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false }: SidebarProps) {
+export function Sidebar({ isMobile = false }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, coach, player, signOut, coachMode, setCoachMode } = useAuth();
   const { unreadCount } = useUnreadCount();
+  const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
 
   // Use appropriate teams hook based on user role
   const coachTeams = useTeams();
@@ -164,31 +162,24 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
       if (coach?.coach_type === 'college') {
         return coachRecruitingNav;
       } else if (coach?.coach_type === 'juco') {
-        // JUCO has both modes, team mode includes Academics
         return currentMode === 'recruiting' ? coachRecruitingNav : jucoTeamNav;
       } else if (coach?.coach_type === 'showcase') {
-        // Showcase coaches see organization navigation
         return showcaseOrgNav;
       } else if (coach?.coach_type === 'high_school') {
-        // HS coaches only have team mode with HS-specific dashboard
         return hsCoachTeamNav;
       } else {
-        // Default to HS nav for any undefined coach type
         return hsCoachTeamNav;
       }
     } else if (user?.role === 'player') {
       if (player?.player_type === 'college' || !player?.recruiting_activated) {
-        // College players or players without recruiting activated only see team mode
         return playerTeamNav;
       } else {
-        // HS, Showcase, JUCO players with recruiting activated can toggle
         return currentMode === 'recruiting' ? playerRecruitingNav : playerTeamNav;
       }
     }
-    return coachRecruitingNav; // Default fallback
+    return coachRecruitingNav;
   };
 
-  // Get team-specific navigation for showcase coaches
   const getTeamNavigation = () => {
     if (coach?.coach_type === 'showcase' && selectedTeam) {
       return showcaseTeamNav;
@@ -205,11 +196,9 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
 
   const handleModeChange = (mode: Mode) => {
     setCoachMode(mode as 'recruiting' | 'team');
-    // Redirect to appropriate dashboard based on mode and coach type
     if (mode === 'recruiting') {
       router.push('/baseball/dashboard');
     } else {
-      // Team mode - redirect to coach-specific team dashboard
       if (coach?.coach_type === 'high_school') {
         router.push('/baseball/dashboard/team/high-school');
       } else {
@@ -219,9 +208,8 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
   };
 
   const handleNavClick = () => {
-    // Close mobile sidebar on navigation
-    if (isMobile && onClose) {
-      onClose();
+    if (isMobile) {
+      setMobileOpen(false);
     }
   };
 
@@ -230,54 +218,70 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
     router.push('/baseball/login');
   };
 
+  // For mobile, always show expanded; for desktop, use collapsed state
+  const isCollapsed = isMobile ? false : collapsed;
+
   return (
     <aside
       className={cn(
-        'h-screen bg-white border-r border-slate-100 flex flex-col transition-all duration-300 ease-in-out',
-        collapsed ? 'w-[72px]' : 'w-60',
+        'h-screen bg-white border-r border-slate-100 flex flex-col',
+        'transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+        'will-change-[width]',
+        isCollapsed ? 'w-[72px]' : 'w-60',
         !isMobile && 'fixed left-0 top-0 z-40'
       )}
     >
       {/* Logo */}
-      <div className="h-16 px-4 flex items-center justify-between border-b border-slate-100">
+      <div className={cn(
+        'h-16 flex items-center border-b border-slate-100',
+        'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+        isCollapsed ? 'px-3 justify-center' : 'px-4'
+      )}>
         <Link
           href={dashboardHref}
-          className="flex items-center group"
+          className="flex items-center group overflow-hidden"
           onClick={handleNavClick}
         >
-          <img
-            src={logoSrc}
-            alt={logoAlt}
-            className="h-9 w-auto transition-all duration-200 group-hover:scale-105"
-          />
-        </Link>
-        {onToggle && !isMobile && (
-          <button
-            onClick={onToggle}
-            className={cn(
-              'p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-200',
-              collapsed && 'absolute -right-3 top-6 bg-white border border-slate-200 shadow-sm z-50'
-            )}
-          >
-            <IconChevronLeft
-              size={16}
-              className={cn('transition-transform duration-300', collapsed && 'rotate-180')}
+          {/* Show "H" badge when collapsed, full logo when expanded */}
+          <div className="relative h-9 flex items-center">
+            {/* Icon badge - visible when collapsed */}
+            <div
+              className={cn(
+                'w-9 h-9 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center',
+                'shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 absolute'
+              )}
+            >
+              <span className="text-white font-bold text-lg">H</span>
+            </div>
+            {/* Full logo - visible when expanded */}
+            <img
+              src={logoSrc}
+              alt={logoAlt}
+              className={cn(
+                'h-9 w-auto transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                isCollapsed ? 'opacity-0 scale-75 absolute' : 'opacity-100 scale-100'
+              )}
             />
-          </button>
-        )}
+          </div>
+        </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto custom-scrollbar">
-        {showModeToggle && !collapsed && (
-          <div className="mb-4 px-1">
+      <nav className={cn(
+        'flex-1 py-4 overflow-y-auto overflow-x-hidden custom-scrollbar',
+        'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+        isCollapsed ? 'px-2' : 'px-3'
+      )}>
+        {showModeToggle && !isCollapsed && (
+          <div className="mb-4 px-1 animate-fade-in">
             <ModeToggle currentMode={currentMode} onModeChange={handleModeChange} />
           </div>
         )}
 
-        {/* Team Switcher for Showcase Coaches and Players with Multiple Teams */}
+        {/* Team Switcher */}
         {(isShowcaseCoach || (user?.role === 'player' && hasMultipleTeams)) && hasMultipleTeams && (
-          <TeamSwitcher collapsed={collapsed} />
+          <TeamSwitcher collapsed={isCollapsed} />
         )}
 
         <ul className="space-y-1">
@@ -288,34 +292,43 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
                 <Link
                   href={item.href}
                   onClick={handleNavClick}
-                  title={collapsed ? item.name : undefined}
+                  title={isCollapsed ? item.name : undefined}
                   className={cn(
-                    'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                    'relative flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium',
+                    'transition-all duration-150 ease-out will-change-transform',
+                    'active:scale-[0.98]',
                     isActive
                       ? 'bg-green-50 text-green-700'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
-                    collapsed && 'justify-center px-2'
+                    isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
                 >
                   <item.icon
                     size={20}
                     className={cn(
-                      'flex-shrink-0 transition-colors',
+                      'flex-shrink-0 transition-colors duration-150',
                       isActive ? 'text-green-600' : 'text-slate-400'
                     )}
                   />
-                  {!collapsed && (
-                    <>
-                      <span className="flex-1">{item.name}</span>
-                      {item.badge && unreadCount > 0 && (
-                        <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center text-xs font-medium bg-green-500 text-white rounded-full">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
+                  {/* Text - animates out */}
+                  <span
+                    className={cn(
+                      'flex-1 whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                      isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                    )}
+                  >
+                    {item.name}
+                  </span>
+                  {/* Badge */}
+                  {item.badge && unreadCount > 0 && (
+                    <span
+                      className={cn(
+                        'flex items-center justify-center text-xs font-medium bg-green-500 text-white rounded-full transition-all duration-300',
+                        isCollapsed
+                          ? 'absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-[10px]'
+                          : 'min-w-[20px] h-5 px-1.5'
                       )}
-                    </>
-                  )}
-                  {collapsed && item.badge && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-medium bg-green-500 text-white rounded-full">
+                    >
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
@@ -329,8 +342,8 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
         {isShowcaseCoach && selectedTeam && teamNavigation.length > 0 && (
           <>
             <div className="my-4 border-t border-slate-100" />
-            {!collapsed && (
-              <p className="px-4 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider">
+            {!isCollapsed && (
+              <p className="px-4 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider whitespace-nowrap overflow-hidden">
                 {selectedTeam.name}
               </p>
             )}
@@ -342,13 +355,14 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
                     <Link
                       href={item.href}
                       onClick={handleNavClick}
-                      title={collapsed ? item.name : undefined}
+                      title={isCollapsed ? item.name : undefined}
                       className={cn(
-                        'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                        'relative flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium',
+                        'transition-all duration-150 ease-out',
                         isActive
                           ? 'bg-green-50 text-green-700'
                           : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
-                        collapsed && 'justify-center px-2'
+                        isCollapsed ? 'justify-center px-2' : 'px-3'
                       )}
                     >
                       <item.icon
@@ -358,7 +372,14 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
                           isActive ? 'text-green-600' : 'text-slate-400'
                         )}
                       />
-                      {!collapsed && <span className="flex-1">{item.name}</span>}
+                      <span
+                        className={cn(
+                          'flex-1 whitespace-nowrap transition-all duration-300',
+                          isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                        )}
+                      >
+                        {item.name}
+                      </span>
                     </Link>
                   </li>
                 );
@@ -379,17 +400,25 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
                 <Link
                   href={item.href}
                   onClick={handleNavClick}
-                  title={collapsed ? item.name : undefined}
+                  title={isCollapsed ? item.name : undefined}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                    'flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium',
+                    'transition-all duration-150 ease-out',
                     isActive
                       ? 'bg-slate-100 text-slate-900'
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700',
-                    collapsed && 'justify-center px-2'
+                    isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
                 >
                   <item.icon size={20} className="flex-shrink-0 text-slate-400" />
-                  {!collapsed && <span>{item.name}</span>}
+                  <span
+                    className={cn(
+                      'whitespace-nowrap transition-all duration-300',
+                      isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                    )}
+                  >
+                    {item.name}
+                  </span>
                 </Link>
               </li>
             );
@@ -398,37 +427,56 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
       </nav>
 
       {/* Bottom section */}
-      <div className="p-3 border-t border-slate-100">
-        {/* Pro badge (only when expanded) - billing coming soon */}
-        {!collapsed && (
-          <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-medium text-slate-900">Free Plan</span>
-              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-100 text-green-700 rounded">BETA</span>
-            </div>
-            <div className="text-xs text-slate-500">Pro plans coming soon</div>
+      <div className={cn(
+        'border-t border-slate-100 transition-[padding] duration-300',
+        isCollapsed ? 'p-2' : 'p-3'
+      )}>
+        {/* Pro badge (only when expanded) */}
+        <div
+          className={cn(
+            'rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 overflow-hidden',
+            'transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+            isCollapsed ? 'h-0 opacity-0 p-0 mb-0 border-0' : 'h-auto opacity-100 p-4 mb-3'
+          )}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-medium text-slate-900">Free Plan</span>
+            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-100 text-green-700 rounded">BETA</span>
           </div>
-        )}
+          <div className="text-xs text-slate-500">Pro plans coming soon</div>
+        </div>
 
         {/* User info */}
-        {!collapsed && (
-          <div className="px-3 py-2.5 mb-2 rounded-xl bg-slate-50">
-            <p className="text-sm font-medium text-slate-900 truncate">{displayName}</p>
-            <p className="text-xs text-slate-500 truncate">{subtitle}</p>
-          </div>
-        )}
+        <div
+          className={cn(
+            'rounded-xl bg-slate-50 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+            isCollapsed ? 'h-0 opacity-0 p-0 mb-0' : 'h-auto opacity-100 px-3 py-2.5 mb-2'
+          )}
+        >
+          <p className="text-sm font-medium text-slate-900 truncate">{displayName}</p>
+          <p className="text-xs text-slate-500 truncate">{subtitle}</p>
+        </div>
 
         {/* Sign out */}
         <button
           onClick={handleSignOut}
-          title={collapsed ? 'Sign out' : undefined}
+          title={isCollapsed ? 'Sign out' : undefined}
           className={cn(
-            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all duration-200',
-            collapsed && 'justify-center px-2'
+            'w-full flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium',
+            'text-slate-500 hover:bg-slate-50 hover:text-slate-700',
+            'transition-all duration-150 ease-out active:scale-[0.98]',
+            isCollapsed ? 'justify-center px-2' : 'px-3'
           )}
         >
-          <IconLogOut size={20} className="text-slate-400" />
-          {!collapsed && <span>Sign out</span>}
+          <IconLogOut size={20} className="flex-shrink-0 text-slate-400" />
+          <span
+            className={cn(
+              'whitespace-nowrap transition-all duration-300',
+              isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+            )}
+          >
+            Sign out
+          </span>
         </button>
       </div>
     </aside>

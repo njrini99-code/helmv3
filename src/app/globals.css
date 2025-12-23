@@ -38,13 +38,32 @@
   }
 
   html {
-    scroll-behavior: smooth;
+    /* scroll-behavior: smooth; -- Disabled: can feel sluggish */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
+  /* GPU acceleration for smoother animations */
   body {
     @apply bg-slate-50 text-slate-900 antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     letter-spacing: -0.011em;
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+  }
+
+  /* Smooth all transitions globally */
+  *, *::before, *::after {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   /* Premium selection color */
@@ -58,10 +77,21 @@
   h2 { letter-spacing: -0.02em; @apply font-semibold text-slate-900; }
   h3, h4, h5, h6 { letter-spacing: -0.015em; @apply font-semibold text-slate-900; }
 
-  /* Cursor states */
-  button, a, [role="button"] { @apply cursor-pointer; }
+  /* Cursor states - with instant feedback */
+  button, a, [role="button"] { 
+    @apply cursor-pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; /* Faster clicks on mobile */
+  }
   button:disabled, [disabled] { @apply cursor-not-allowed; }
   [draggable="true"] { @apply cursor-grab active:cursor-grabbing; }
+
+  /* Smooth button press effect */
+  button:not(:disabled):active,
+  [role="button"]:not(:disabled):active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease-out;
+  }
 
   /* Global focus-visible styles for accessibility */
   button:focus-visible,
@@ -257,8 +287,10 @@
 
   /* ===== PREMIUM CARD SYSTEM ===== */
   .card {
-    @apply bg-white border border-slate-100 rounded-xl transition-all duration-200 ease-out;
+    @apply bg-white border border-slate-100 rounded-xl;
     box-shadow: var(--shadow-elevation-low);
+    transform: translateZ(0); /* Force GPU layer */
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, border-color 0.15s ease-out;
   }
 
   .card-lift {

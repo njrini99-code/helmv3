@@ -38,7 +38,7 @@ export function CreateQualifierButton() {
         .eq('status', 'active')
         .order('last_name');
 
-      setPlayers(playersData || []);
+      setPlayers(playersData as any || []);
     }
 
     if (isOpen) {
