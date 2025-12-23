@@ -140,11 +140,12 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
-              style-src 'self' 'unsafe-inline';
+              script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:;
+              style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               img-src 'self' data: https: blob:;
-              font-src 'self' data:;
-              connect-src 'self' https://*.supabase.co https://sentry.io;
+              font-src 'self' data: https://fonts.gstatic.com;
+              connect-src 'self' https://*.supabase.co https://sentry.io https://cdnjs.cloudflare.com;
+              worker-src 'self' blob:;
               frame-ancestors 'none';
             `.replace(/\s{2,}/g, ' ').trim(),
           },
