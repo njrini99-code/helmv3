@@ -11,7 +11,8 @@ const nextConfig = {
 
   compiler: {
     // Remove console logs in production for cleaner logs
-    removeConsole: process.env.NODE_ENV === 'production',
+    // Temporarily disabled for debugging PDF upload
+    // removeConsole: process.env.NODE_ENV === 'production',
   },
 
   // Turbopack configuration (Next.js 16+)

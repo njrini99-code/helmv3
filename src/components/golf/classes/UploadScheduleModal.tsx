@@ -58,19 +58,34 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
     try {
+      console.log('[PDF] Starting extraction for:', file.name, 'size:', file.size);
+      
       const pdfjsLib = await loadPdfJs();
+      console.log('[PDF] PDF.js library loaded');
+      
       const arrayBuffer = await file.arrayBuffer();
+      console.log('[PDF] ArrayBuffer created, size:', arrayBuffer.byteLength);
+      
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      console.log('[PDF] Document loaded, pages:', pdf.numPages);
       
       let fullText = '';
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         
+        console.log('[PDF] Page', i, '- items:', textContent.items.length);
+        
         // Group text items by Y position to preserve rows
         const items = textContent.items as Array<{ str: string; transform: number[] }>;
         
-        if (items.length === 0) continue;
+        if (items.length === 0) {
+          console.log('[PDF] Page', i, 'has no items, skipping');
+          continue;
+        }
+        
+        // Debug: log first few items
+        console.log('[PDF] Sample items:', items.slice(0, 3).map(it => ({ str: it.str, x: it.transform?.[4], y: it.transform?.[5] })));
         
         // Sort by Y position (descending - PDF coordinates start from bottom)
         // then by X position (ascending - left to right)
@@ -107,15 +122,21 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
         if (currentRow.length > 0) {
           rows.push(currentRow);
         }
+        
+        console.log('[PDF] Page', i, '- rows extracted:', rows.length);
 
         // Join each row with tabs (to separate columns), rows with newlines
         const pageText = rows.map(row => row.join('\t')).join('\n');
         fullText += pageText + '\n';
       }
 
+      console.log('[PDF] === EXTRACTED TEXT START ===');
+      console.log(fullText);
+      console.log('[PDF] === EXTRACTED TEXT END ===');
+      
       return fullText;
     } catch (err) {
-      console.error('PDF extraction error:', err);
+      console.error('[PDF] Extraction error:', err);
       throw new Error('Failed to extract text from PDF. Try using TXT or paste text instead.');
     }
   };
@@ -123,19 +144,28 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
   const processFile = async (file: File) => {
     setLoading(true);
     setError('');
+    console.log('[Process] Starting to process file:', file.name, file.type);
 
     try {
       let text = '';
 
       if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+        console.log('[Process] Detected PDF file');
         text = await extractTextFromPDF(file);
       } else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+        console.log('[Process] Detected TXT file');
         text = await file.text();
       } else {
         throw new Error('Unsupported file type. Please upload a PDF or TXT file.');
       }
       
+      console.log('[Process] Extracted text length:', text.length);
+      console.log('[Process] Calling parseScheduleText...');
+      
       const classes = parseScheduleText(text);
+      
+      console.log('[Process] Parsed classes:', classes.length);
+      console.log('[Process] Classes:', JSON.stringify(classes, null, 2));
       
       if (classes.length === 0) {
         setError('No classes found in the file. Try pasting your schedule text instead.');
@@ -145,7 +175,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
       
       onParsed(classes);
     } catch (err: any) {
-      console.error('Error processing file:', err);
+      console.error('[Process] Error:', err);
       setError(err.message || 'Failed to process file. Try pasting your schedule text instead.');
     } finally {
       setLoading(false);

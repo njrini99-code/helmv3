@@ -141,6 +141,7 @@ export function parseLocation(location: string): { building: string; room: strin
 
 // Parse table format (tab or multiple-space separated)
 function parseTableFormat(lines: string[], semester: string): ParsedClass[] {
+  console.log('[TableParser] Starting with', lines.length, 'lines');
   const classes: ParsedClass[] = [];
   
   // Find header row to understand column order
@@ -326,16 +327,25 @@ export function detectSemester(text: string): string {
 
 // Main parser function for schedule text
 export function parseScheduleText(text: string): ParsedClass[] {
+  console.log('[Parser] Starting to parse text, length:', text.length);
+  
   const classes: ParsedClass[] = [];
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const semester = detectSemester(text);
   
+  console.log('[Parser] Lines after split:', lines.length);
+  console.log('[Parser] Detected semester:', semester);
+  console.log('[Parser] First 5 lines:', lines.slice(0, 5));
+  
   // First, try to detect if this is a table format (tab-separated)
   const isTableFormat = lines.some(line => line.includes('\t'));
+  console.log('[Parser] Is table format:', isTableFormat);
   
   if (isTableFormat) {
     // Parse as table - each row is a potential class
-    return parseTableFormat(lines, semester);
+    const result = parseTableFormat(lines, semester);
+    console.log('[Parser] Table format result:', result.length, 'classes');
+    return result;
   }
   
   let currentClass: Partial<ParsedClass> | null = null;
