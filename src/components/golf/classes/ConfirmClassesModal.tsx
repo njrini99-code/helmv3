@@ -69,11 +69,19 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
   };
 
   const handleConfirm = async () => {
-    if (classes.length === 0) return;
+    if (classes.length === 0) {
+      console.log('[ConfirmModal] No classes to confirm');
+      return;
+    }
     
+    console.log('[ConfirmModal] Confirming', classes.length, 'classes');
     setLoading(true);
+    
     try {
       await onConfirm(classes);
+      console.log('[ConfirmModal] Confirm completed successfully');
+    } catch (error) {
+      console.error('[ConfirmModal] Error during confirm:', error);
     } finally {
       setLoading(false);
     }

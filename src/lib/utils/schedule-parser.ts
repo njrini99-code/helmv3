@@ -44,9 +44,37 @@ const DAY_PATTERNS: Record<string, string[]> = {
   'MTWRF': ['M', 'T', 'W', 'Th', 'F'],
 };
 
+// Invalid course code prefixes (common false positives)
+const INVALID_COURSE_PREFIXES = [
+  'FALL', 'SPRING', 'SUMMER', 'WINTER',
+  'TIME', 'ROOM', 'BLDG', 'BUILDING',
+  'PAGE', 'TOTAL', 'SCHEDULE', 'GRID',
+  'WEEKLY', 'DAILY', 'CREDITS',
+];
+
 // Generate unique ID
 function generateId(): string {
   return `class_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Check if a course code is valid (not a false positive)
+function isValidCourseCode(code: string): boolean {
+  if (!code) return false;
+  
+  const prefix = code.split(/\s+/)[0]?.toUpperCase();
+  if (!prefix) return false;
+  
+  // Check against invalid prefixes
+  if (INVALID_COURSE_PREFIXES.includes(prefix)) {
+    return false;
+  }
+  
+  // Must have letters followed by numbers
+  if (!code.match(/^[A-Z]{2,5}\s*\d{3,4}[A-Z]?$/i)) {
+    return false;
+  }
+  
+  return true;
 }
 
 // Parse days string into array
@@ -84,7 +112,7 @@ export function parseDays(daysStr: string): string[] {
 }
 
 // Parse time string to 24-hour format (HH:MM)
-export function parseTime(timeStr: string): string {
+export function parseTime(timeStr: string, inferredPeriod?: string): string {
   const cleaned = timeStr.trim().toUpperCase().replace(/\s+/g, '');
   
   // Match patterns like "9:30AM", "09:30 AM", "1:00PM", "13:00"
@@ -94,7 +122,17 @@ export function parseTime(timeStr: string): string {
 
   let hours = parseInt(match[1], 10);
   const minutes = match[2] ? parseInt(match[2], 10) : 0;
-  const period = match[3]?.toUpperCase();
+  let period = match[3]?.toUpperCase() || inferredPeriod;
+  
+  // If no period and hours <= 12, we need context
+  // If inferredPeriod is provided, use it
+  if (!period && hours <= 12 && hours >= 1) {
+    // Default logic: if hour is 8-11, likely AM; if 12 or 1-7, likely PM
+    // But prefer inferredPeriod if available
+    if (inferredPeriod) {
+      period = inferredPeriod;
+    }
+  }
   
   // Convert to 24-hour format
   if (period === 'PM' && hours !== 12) {
@@ -106,20 +144,48 @@ export function parseTime(timeStr: string): string {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
-// Parse time range (e.g., "9:30AM - 10:45AM")
+// Parse time range (e.g., "9:30AM - 10:45AM" or "1:00 - 1:50 PM")
 export function parseTimeRange(rangeStr: string): { start: string; end: string } {
   const parts = rangeStr.split(/[-–—to]/i).map(s => s.trim());
   
-  return {
-    start: parts[0] ? parseTime(parts[0]) : '',
-    end: parts[1] ? parseTime(parts[1]) : '',
-  };
+  if (parts.length < 2) {
+    return {
+      start: parts[0] ? parseTime(parts[0]) : '',
+      end: '',
+    };
+  }
+  
+  // Check if the end time has AM/PM
+  const endTimeStr = parts[1] || '';
+  const endPeriodMatch = endTimeStr.match(/(AM|PM)/i);
+  const endPeriod = endPeriodMatch ? endPeriodMatch[1]?.toUpperCase() : undefined;
+  
+  // Parse end time first (it usually has AM/PM)
+  const endTime = parseTime(endTimeStr);
+  
+  // Parse start time, using end time's period if start doesn't have one
+  const startTimeStr = parts[0] || '';
+  const startPeriodMatch = startTimeStr.match(/(AM|PM)/i);
+  const startPeriod = startPeriodMatch ? startPeriodMatch[1]?.toUpperCase() : endPeriod;
+  
+  const startTime = parseTime(startTimeStr, startPeriod);
+  
+  return { start: startTime, end: endTime };
 }
 
 // Parse course code (e.g., "BUAD 123" or "BUAD123")
 export function parseCourseCode(text: string): string {
   const match = text.match(/([A-Z]{2,5})\s*(\d{3,4}[A-Z]?)/i);
-  return (match && match[1] && match[2]) ? `${match[1].toUpperCase()} ${match[2]}` : '';
+  if (!match || !match[1] || !match[2]) return '';
+  
+  const code = `${match[1].toUpperCase()} ${match[2]}`;
+  
+  // Validate the code
+  if (!isValidCourseCode(code)) {
+    return '';
+  }
+  
+  return code;
 }
 
 // Parse location into building and room
@@ -170,6 +236,7 @@ function parseTableFormat(lines: string[], semester: string): ParsedClass[] {
         if (lower.includes('instructor') || lower.includes('professor') || lower.includes('prof')) columnMap['instructor'] = idx;
         if (lower.includes('credit') || lower.includes('unit') || lower.includes('hr')) columnMap['credits'] = idx;
       });
+      console.log('[TableParser] Found header at line', i, 'columns:', columnMap);
       break;
     }
   }
@@ -180,6 +247,16 @@ function parseTableFormat(lines: string[], semester: string): ParsedClass[] {
   for (let i = startRow; i < lines.length; i++) {
     const line = lines[i];
     if (!line) continue;
+    
+    // Skip lines that look like section headers or grid headers
+    if (line.toLowerCase().includes('weekly time grid') ||
+        line.toLowerCase().includes('schedule summary') ||
+        line.toLowerCase().includes('monday') ||
+        line.toLowerCase().includes('tuesday')) {
+      console.log('[TableParser] Skipping header line:', line.substring(0, 50));
+      continue;
+    }
+    
     const cols = line.split(/\t+/);
 
     // Skip if not enough columns or no course code found
@@ -274,7 +351,7 @@ function parseTableFormat(lines: string[], semester: string): ParsedClass[] {
           classData.location = col;
           classData.building = loc.building;
           classData.room = loc.room;
-        } else if (!classData.instructor && col.match(/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.)/i)) {
+        } else if (!classData.instructor && col.match(/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.|TA\s)/i)) {
           // Instructor
           classData.instructor = col;
         } else if (!classData.credits && col.match(/^\d(\.\d)?$/)) {
@@ -284,24 +361,62 @@ function parseTableFormat(lines: string[], semester: string): ParsedClass[] {
       }
     }
     
-    // Add defaults for missing required fields
-    classes.push({
-      id: classData.id || generateId(),
-      course_code: classData.course_code || '',
-      course_name: classData.course_name || '',
-      instructor: classData.instructor || '',
-      days: classData.days || [],
-      start_time: classData.start_time || '',
-      end_time: classData.end_time || '',
-      location: classData.location || '',
-      building: classData.building || '',
-      room: classData.room || '',
-      credits: classData.credits || null,
-      semester,
-    });
+    // Only add if we have meaningful data (course name or time)
+    if (classData.course_name || classData.start_time || classData.location) {
+      classes.push({
+        id: classData.id || generateId(),
+        course_code: classData.course_code || '',
+        course_name: classData.course_name || '',
+        instructor: classData.instructor || '',
+        days: classData.days || [],
+        start_time: classData.start_time || '',
+        end_time: classData.end_time || '',
+        location: classData.location || '',
+        building: classData.building || '',
+        room: classData.room || '',
+        credits: classData.credits || null,
+        semester,
+      });
+    }
   }
   
   return classes;
+}
+
+// Deduplicate classes by course_code, keeping the one with more data
+function deduplicateClasses(classes: ParsedClass[]): ParsedClass[] {
+  const classMap = new Map<string, ParsedClass>();
+  
+  for (const cls of classes) {
+    const existing = classMap.get(cls.course_code);
+    
+    if (!existing) {
+      classMap.set(cls.course_code, cls);
+    } else {
+      // Count how much data each has
+      const existingScore = scoreClass(existing);
+      const newScore = scoreClass(cls);
+      
+      if (newScore > existingScore) {
+        classMap.set(cls.course_code, cls);
+      }
+    }
+  }
+  
+  return Array.from(classMap.values());
+}
+
+// Score a class by how much data it has
+function scoreClass(cls: ParsedClass): number {
+  let score = 0;
+  if (cls.course_name) score += 2;
+  if (cls.instructor) score += 1;
+  if (cls.days.length > 0) score += 1;
+  if (cls.start_time) score += 2;
+  if (cls.end_time) score += 1;
+  if (cls.location) score += 1;
+  if (cls.credits) score += 1;
+  return score;
 }
 
 // Detect semester from text
@@ -329,7 +444,6 @@ export function detectSemester(text: string): string {
 export function parseScheduleText(text: string): ParsedClass[] {
   console.log('[Parser] Starting to parse text, length:', text.length);
   
-  const classes: ParsedClass[] = [];
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const semester = detectSemester(text);
   
@@ -341,13 +455,28 @@ export function parseScheduleText(text: string): ParsedClass[] {
   const isTableFormat = lines.some(line => line.includes('\t'));
   console.log('[Parser] Is table format:', isTableFormat);
   
+  let classes: ParsedClass[] = [];
+  
   if (isTableFormat) {
     // Parse as table - each row is a potential class
-    const result = parseTableFormat(lines, semester);
-    console.log('[Parser] Table format result:', result.length, 'classes');
-    return result;
+    classes = parseTableFormat(lines, semester);
+    console.log('[Parser] Table format result:', classes.length, 'classes (before dedup)');
+  } else {
+    // Parse as multi-line format
+    classes = parseMultiLineFormat(lines, semester);
+    console.log('[Parser] Multi-line format result:', classes.length, 'classes (before dedup)');
   }
   
+  // Deduplicate by course code
+  const dedupedClasses = deduplicateClasses(classes);
+  console.log('[Parser] After deduplication:', dedupedClasses.length, 'classes');
+  
+  return dedupedClasses;
+}
+
+// Parse multi-line format (course code on one line, details on following lines)
+function parseMultiLineFormat(lines: string[], semester: string): ParsedClass[] {
+  const classes: ParsedClass[] = [];
   let currentClass: Partial<ParsedClass> | null = null;
 
   for (let i = 0; i < lines.length; i++) {
@@ -437,7 +566,7 @@ export function parseScheduleText(text: string): ParsedClass[] {
 
       // Instructor
       if (!currentClass.instructor) {
-        const instrMatch = line.match(/(?:Prof\.?|Dr\.?|Professor|Instructor|Staff)[:\s]+([A-Za-z\s.]+?)(?=\s*[-–—|]|$)/i);
+        const instrMatch = line.match(/(?:Prof\.?|Dr\.?|Professor|Instructor|Staff|TA)[:\s]+([A-Za-z\s.]+?)(?=\s*[-–—|]|$)/i);
         if (instrMatch && instrMatch[1]) {
           currentClass.instructor = instrMatch[1].trim();
         }
@@ -539,5 +668,5 @@ export function generateClassColor(): string {
     '#DB2777', // pink
   ];
   const randomIndex = Math.floor(Math.random() * colors.length);
-  return colors[randomIndex] || '#16A34A'; // Default to green if undefined
+  return colors[randomIndex] || '#16A34A';
 }
