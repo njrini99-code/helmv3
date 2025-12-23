@@ -89,9 +89,9 @@ export function parseTime(timeStr: string): string {
   
   // Match patterns like "9:30AM", "09:30 AM", "1:00PM", "13:00"
   const match = cleaned.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)?/i);
-  
-  if (!match) return '';
-  
+
+  if (!match || !match[1]) return '';
+
   let hours = parseInt(match[1], 10);
   const minutes = match[2] ? parseInt(match[2], 10) : 0;
   const period = match[3]?.toUpperCase();
@@ -119,7 +119,7 @@ export function parseTimeRange(rangeStr: string): { start: string; end: string }
 // Parse course code (e.g., "BUAD 123" or "BUAD123")
 export function parseCourseCode(text: string): string {
   const match = text.match(/([A-Z]{2,5})\s*(\d{3,4}[A-Z]?)/i);
-  return match ? `${match[1].toUpperCase()} ${match[2]}` : '';
+  return (match && match[1] && match[2]) ? `${match[1].toUpperCase()} ${match[2]}` : '';
 }
 
 // Parse location into building and room
@@ -128,8 +128,8 @@ export function parseLocation(location: string): { building: string; room: strin
   
   // Common patterns: "HAL 101", "Hall Building 101", "Room 305"
   const match = cleaned.match(/^([A-Za-z\s]+?)\s*(\d+[A-Za-z]?)$/);
-  
-  if (match) {
+
+  if (match && match[1] && match[2]) {
     return {
       building: match[1].trim(),
       room: match[2].trim(),
@@ -167,10 +167,11 @@ export function parseScheduleText(text: string): ParsedClass[] {
   const semester = detectSemester(text);
   
   let currentClass: Partial<ParsedClass> | null = null;
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    
+    if (!line) continue;
+
     // Try to find course code
     const courseCode = parseCourseCode(line);
     
@@ -201,34 +202,34 @@ export function parseScheduleText(text: string): ParsedClass[] {
       if (codeIndex !== -1) {
         const afterCode = line.substring(codeIndex + courseCode.replace(/\s/g, '').length);
         const nameMatch = afterCode.match(/[-–—|]?\s*([A-Za-z][A-Za-z\s&,]+?)(?=\s*[-–—|]|\s*[MTWThFSaSu]+|\s*\d{1,2}:|$)/);
-        if (nameMatch) {
+        if (nameMatch && nameMatch[1]) {
           currentClass.course_name = nameMatch[1].trim();
         }
       }
       
       // Try to find days in same line
       const daysMatch = line.match(/\b(M?T?W?(Th)?F?|MWF|TTh|TR|MW)\b/);
-      if (daysMatch && daysMatch[0].length >= 1) {
+      if (daysMatch && daysMatch[0] && daysMatch[0].length >= 1) {
         currentClass.days = parseDays(daysMatch[0]);
       }
-      
+
       // Try to find time in same line
       const timeMatch = line.match(/(\d{1,2}:\d{2}\s*(AM|PM)?)\s*[-–—to]+\s*(\d{1,2}:\d{2}\s*(AM|PM)?)/i);
-      if (timeMatch) {
+      if (timeMatch && timeMatch[0]) {
         const times = parseTimeRange(timeMatch[0]);
         currentClass.start_time = times.start;
         currentClass.end_time = times.end;
       }
-      
+
       // Try to find instructor
       const instrMatch = line.match(/(?:Prof\.?|Dr\.?|Professor|Instructor)[:\s]+([A-Za-z\s.]+?)(?=\s*[-–—|]|$)/i);
-      if (instrMatch) {
+      if (instrMatch && instrMatch[1]) {
         currentClass.instructor = instrMatch[1].trim();
       }
-      
+
       // Try to find credits
       const creditsMatch = line.match(/(\d+(?:\.\d+)?)\s*(?:credits?|units?|hrs?|hours?)/i);
-      if (creditsMatch) {
+      if (creditsMatch && creditsMatch[1]) {
         currentClass.credits = parseFloat(creditsMatch[1]);
       }
     } else if (currentClass) {
@@ -237,33 +238,33 @@ export function parseScheduleText(text: string): ParsedClass[] {
       // Days
       if (!currentClass.days || currentClass.days.length === 0) {
         const daysMatch = line.match(/\b(M?T?W?(Th)?F?|MWF|TTh|TR|MW)\b/);
-        if (daysMatch && daysMatch[0].length >= 1) {
+        if (daysMatch && daysMatch[0] && daysMatch[0].length >= 1) {
           currentClass.days = parseDays(daysMatch[0]);
         }
       }
-      
+
       // Time
       if (!currentClass.start_time) {
         const timeMatch = line.match(/(\d{1,2}:\d{2}\s*(AM|PM)?)\s*[-–—to]+\s*(\d{1,2}:\d{2}\s*(AM|PM)?)/i);
-        if (timeMatch) {
+        if (timeMatch && timeMatch[0]) {
           const times = parseTimeRange(timeMatch[0]);
           currentClass.start_time = times.start;
           currentClass.end_time = times.end;
         }
       }
-      
+
       // Instructor
       if (!currentClass.instructor) {
         const instrMatch = line.match(/(?:Prof\.?|Dr\.?|Professor|Instructor|Staff)[:\s]+([A-Za-z\s.]+?)(?=\s*[-–—|]|$)/i);
-        if (instrMatch) {
+        if (instrMatch && instrMatch[1]) {
           currentClass.instructor = instrMatch[1].trim();
         }
       }
-      
+
       // Location
       if (!currentClass.location) {
         const locMatch = line.match(/([A-Z]{2,4})\s*(\d{3,4}[A-Za-z]?)/);
-        if (locMatch) {
+        if (locMatch && locMatch[0]) {
           const loc = parseLocation(locMatch[0]);
           currentClass.location = locMatch[0];
           currentClass.building = loc.building;
@@ -302,14 +303,17 @@ export function parseScheduleText(text: string): ParsedClass[] {
 // Format time for display (e.g., "09:30" -> "9:30 AM")
 export function formatTimeDisplay(time: string): string {
   if (!time) return '';
-  
-  const [hoursStr, minutes] = time.split(':');
+
+  const parts = time.split(':');
+  if (parts.length < 2 || !parts[0] || !parts[1]) return time;
+
+  const [hoursStr, minutes] = parts;
   let hours = parseInt(hoursStr, 10);
   const period = hours >= 12 ? 'PM' : 'AM';
-  
+
   if (hours > 12) hours -= 12;
   if (hours === 0) hours = 12;
-  
+
   return `${hours}:${minutes} ${period}`;
 }
 
@@ -352,5 +356,6 @@ export function generateClassColor(): string {
     '#4F46E5', // indigo
     '#DB2777', // pink
   ];
-  return colors[Math.floor(Math.random() * colors.length)];
+  const randomIndex = Math.floor(Math.random() * colors.length);
+  return colors[randomIndex] || '#16A34A'; // Default to green if undefined
 }

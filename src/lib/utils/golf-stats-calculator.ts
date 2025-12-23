@@ -5,30 +5,30 @@
  * Used to compute player career stats and per-round stats.
  */
 
-// HoleStats type - defined inline since ShotTrackingComprehensive is not yet implemented
+// HoleStats type - must match the type exported from ShotTrackingComprehensive.tsx
 interface HoleStats {
   holeNumber: number;
   par: number;
   score: number;
   putts: number;
-  fairwayHit?: boolean | null;
-  greenInRegulation?: boolean;
-  usedDriver?: boolean;
-  drivingDistance?: number;
-  driveMissDirection?: 'left' | 'right' | null;
-  approachDistance?: number;
-  approachProximity?: number;
-  approachLie?: string;
-  firstPuttDistance?: number;
-  firstPuttLeave?: number | null;
-  firstPuttMissDirection?: string;
-  scrambleAttempt?: boolean;
-  scrambleMade?: boolean;
-  sandSaveAttempt?: boolean;
-  sandSaveMade?: boolean;
+  fairwayHit: boolean | null;
+  greenInRegulation: boolean;
+  usedDriver: boolean | null;
+  drivingDistance: number | null;
+  driveMissDirection: string | null;
+  approachDistance: number | null;
+  approachProximity: number | null;
+  approachLie: string | null;
+  firstPuttDistance: number | null;
+  firstPuttLeave: number | null;
+  firstPuttMissDirection: string | null;
+  scrambleAttempt: boolean;
+  scrambleMade: boolean;
+  sandSaveAttempt: boolean;
+  sandSaveMade: boolean;
   penaltyStrokes: number;
-  holedOutDistance?: number;
-  holedOutType?: string;
+  holedOutDistance: number | null;
+  holedOutType: string | null;
   shots: Array<{
     shotNumber: number;
     shotType: string;
@@ -619,17 +619,19 @@ export function calculateStats(rounds: RoundData[]): GolfStats {
         }
         
         // Putt leave (proximity after first putt)
-        if (hole.firstPuttLeave !== null && hole.firstPuttLeave > 0) {
+        if (hole.firstPuttLeave !== null && hole.firstPuttLeave !== undefined && hole.firstPuttLeave > 0) {
           allPuttLeaves.push(hole.firstPuttLeave);
-          
-          if (hole.firstPuttDistance >= 5 && hole.firstPuttDistance < 10) {
-            puttLeaves['5_10'].push(hole.firstPuttLeave);
-          } else if (hole.firstPuttDistance >= 10 && hole.firstPuttDistance < 15) {
-            puttLeaves['10_15'].push(hole.firstPuttLeave);
-          } else if (hole.firstPuttDistance >= 15 && hole.firstPuttDistance < 20) {
-            puttLeaves['15_20'].push(hole.firstPuttLeave);
-          } else if (hole.firstPuttDistance >= 20) {
-            puttLeaves['20_plus'].push(hole.firstPuttLeave);
+
+          if (hole.firstPuttDistance !== null && hole.firstPuttDistance !== undefined) {
+            if (hole.firstPuttDistance >= 5 && hole.firstPuttDistance < 10) {
+              puttLeaves['5_10']?.push(hole.firstPuttLeave);
+            } else if (hole.firstPuttDistance >= 10 && hole.firstPuttDistance < 15) {
+              puttLeaves['10_15']?.push(hole.firstPuttLeave);
+            } else if (hole.firstPuttDistance >= 15 && hole.firstPuttDistance < 20) {
+              puttLeaves['15_20']?.push(hole.firstPuttLeave);
+            } else if (hole.firstPuttDistance >= 20) {
+              puttLeaves['20_plus']?.push(hole.firstPuttLeave);
+            }
           }
         }
         
@@ -818,42 +820,46 @@ export function calculateStats(rounds: RoundData[]): GolfStats {
   stats.threePuttsPerRound = safeAverage(stats.threePuttsTotal, numRounds);
   
   // Putt make percentages
-  stats.puttMakePct0_3 = safePercent(puttAttempts['0_3'].made, puttAttempts['0_3'].total);
-  stats.puttMakePct3_5 = safePercent(puttAttempts['3_5'].made, puttAttempts['3_5'].total);
-  stats.puttMakePct5_10 = safePercent(puttAttempts['5_10'].made, puttAttempts['5_10'].total);
-  stats.puttMakePct10_15 = safePercent(puttAttempts['10_15'].made, puttAttempts['10_15'].total);
-  stats.puttMakePct15_20 = safePercent(puttAttempts['15_20'].made, puttAttempts['15_20'].total);
-  stats.puttMakePct20_25 = safePercent(puttAttempts['20_25'].made, puttAttempts['20_25'].total);
-  stats.puttMakePct25_30 = safePercent(puttAttempts['25_30'].made, puttAttempts['25_30'].total);
-  stats.puttMakePct30_35 = safePercent(puttAttempts['30_35'].made, puttAttempts['30_35'].total);
-  stats.puttMakePct35Plus = safePercent(puttAttempts['35_plus'].made, puttAttempts['35_plus'].total);
+  stats.puttMakePct0_3 = safePercent(puttAttempts['0_3']?.made || 0, puttAttempts['0_3']?.total || 0);
+  stats.puttMakePct3_5 = safePercent(puttAttempts['3_5']?.made || 0, puttAttempts['3_5']?.total || 0);
+  stats.puttMakePct5_10 = safePercent(puttAttempts['5_10']?.made || 0, puttAttempts['5_10']?.total || 0);
+  stats.puttMakePct10_15 = safePercent(puttAttempts['10_15']?.made || 0, puttAttempts['10_15']?.total || 0);
+  stats.puttMakePct15_20 = safePercent(puttAttempts['15_20']?.made || 0, puttAttempts['15_20']?.total || 0);
+  stats.puttMakePct20_25 = safePercent(puttAttempts['20_25']?.made || 0, puttAttempts['20_25']?.total || 0);
+  stats.puttMakePct25_30 = safePercent(puttAttempts['25_30']?.made || 0, puttAttempts['25_30']?.total || 0);
+  stats.puttMakePct30_35 = safePercent(puttAttempts['30_35']?.made || 0, puttAttempts['30_35']?.total || 0);
+  stats.puttMakePct35Plus = safePercent(puttAttempts['35_plus']?.made || 0, puttAttempts['35_plus']?.total || 0);
   
   // Putt proximity
   stats.puttProximityAvg = allPuttLeaves.length > 0
     ? Math.round(allPuttLeaves.reduce((a, b) => a + b, 0) / allPuttLeaves.length * 10) / 10
     : null;
-  stats.puttProximity5_10 = puttLeaves['5_10'].length > 0
-    ? Math.round(puttLeaves['5_10'].reduce((a, b) => a + b, 0) / puttLeaves['5_10'].length * 10) / 10
+  const leaves_5_10 = puttLeaves['5_10'];
+  stats.puttProximity5_10 = leaves_5_10 && leaves_5_10.length > 0
+    ? Math.round(leaves_5_10.reduce((a, b) => a + b, 0) / leaves_5_10.length * 10) / 10
     : null;
-  stats.puttProximity10_15 = puttLeaves['10_15'].length > 0
-    ? Math.round(puttLeaves['10_15'].reduce((a, b) => a + b, 0) / puttLeaves['10_15'].length * 10) / 10
+  const leaves_10_15 = puttLeaves['10_15'];
+  stats.puttProximity10_15 = leaves_10_15 && leaves_10_15.length > 0
+    ? Math.round(leaves_10_15.reduce((a, b) => a + b, 0) / leaves_10_15.length * 10) / 10
     : null;
-  stats.puttProximity15_20 = puttLeaves['15_20'].length > 0
-    ? Math.round(puttLeaves['15_20'].reduce((a, b) => a + b, 0) / puttLeaves['15_20'].length * 10) / 10
+  const leaves_15_20 = puttLeaves['15_20'];
+  stats.puttProximity15_20 = leaves_15_20 && leaves_15_20.length > 0
+    ? Math.round(leaves_15_20.reduce((a, b) => a + b, 0) / leaves_15_20.length * 10) / 10
     : null;
-  stats.puttProximity20Plus = puttLeaves['20_plus'].length > 0
-    ? Math.round(puttLeaves['20_plus'].reduce((a, b) => a + b, 0) / puttLeaves['20_plus'].length * 10) / 10
+  const leaves_20_plus = puttLeaves['20_plus'];
+  stats.puttProximity20Plus = leaves_20_plus && leaves_20_plus.length > 0
+    ? Math.round(leaves_20_plus.reduce((a, b) => a + b, 0) / leaves_20_plus.length * 10) / 10
     : null;
   
   // Putt efficiency
-  stats.puttEfficiency0_3 = safeAverage(puttEfficiency['0_3'].totalPutts, puttEfficiency['0_3'].count);
-  stats.puttEfficiency3_5 = safeAverage(puttEfficiency['3_5'].totalPutts, puttEfficiency['3_5'].count);
-  stats.puttEfficiency5_10 = safeAverage(puttEfficiency['5_10'].totalPutts, puttEfficiency['5_10'].count);
-  stats.puttEfficiency10_15 = safeAverage(puttEfficiency['10_15'].totalPutts, puttEfficiency['10_15'].count);
-  stats.puttEfficiency15_20 = safeAverage(puttEfficiency['15_20'].totalPutts, puttEfficiency['15_20'].count);
-  stats.puttEfficiency20_25 = safeAverage(puttEfficiency['20_25'].totalPutts, puttEfficiency['20_25'].count);
-  stats.puttEfficiency25_30 = safeAverage(puttEfficiency['25_30'].totalPutts, puttEfficiency['25_30'].count);
-  stats.puttEfficiency30Plus = safeAverage(puttEfficiency['30_plus'].totalPutts, puttEfficiency['30_plus'].count);
+  stats.puttEfficiency0_3 = safeAverage(puttEfficiency['0_3']?.totalPutts || 0, puttEfficiency['0_3']?.count || 0);
+  stats.puttEfficiency3_5 = safeAverage(puttEfficiency['3_5']?.totalPutts || 0, puttEfficiency['3_5']?.count || 0);
+  stats.puttEfficiency5_10 = safeAverage(puttEfficiency['5_10']?.totalPutts || 0, puttEfficiency['5_10']?.count || 0);
+  stats.puttEfficiency10_15 = safeAverage(puttEfficiency['10_15']?.totalPutts || 0, puttEfficiency['10_15']?.count || 0);
+  stats.puttEfficiency15_20 = safeAverage(puttEfficiency['15_20']?.totalPutts || 0, puttEfficiency['15_20']?.count || 0);
+  stats.puttEfficiency20_25 = safeAverage(puttEfficiency['20_25']?.totalPutts || 0, puttEfficiency['20_25']?.count || 0);
+  stats.puttEfficiency25_30 = safeAverage(puttEfficiency['25_30']?.totalPutts || 0, puttEfficiency['25_30']?.count || 0);
+  stats.puttEfficiency30Plus = safeAverage(puttEfficiency['30_plus']?.totalPutts || 0, puttEfficiency['30_plus']?.count || 0);
   
   // Putt miss direction
   stats.puttMissLeftPct = safePercent(puttMisses.left, puttMisses.total);
@@ -888,16 +894,18 @@ export function calculateStats(rounds: RoundData[]): GolfStats {
   for (const bucket of Object.keys(approachProxByDistance)) {
     const arr = approachProxByDistance[bucket];
     const key = `approachProx${bucket.replace('_', '_')}` as keyof GolfStats;
-    if (arr.length > 0) {
+    if (arr && arr.length > 0) {
       (stats as any)[key] = Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
     }
   }
-  
+
   // Approach efficiency
   for (const bucket of Object.keys(approachEffByDistance)) {
     const data = approachEffByDistance[bucket];
     const key = `approachEff${bucket.replace('_', '_')}` as keyof GolfStats;
-    (stats as any)[key] = safeAverage(data.totalStrokes, data.count);
+    if (data) {
+      (stats as any)[key] = safeAverage(data.totalStrokes, data.count);
+    }
   }
   
   // Scrambling
