@@ -488,6 +488,42 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_requests: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          message: string | null
+          name: string | null
+          organization: string | null
+          product: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          message?: string | null
+          name?: string | null
+          organization?: string | null
+          product?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          message?: string | null
+          name?: string | null
+          organization?: string | null
+          product?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       developmental_plans: {
         Row: {
           coach_id: string
@@ -1077,45 +1113,114 @@ export type Database = {
       }
       golf_holes: {
         Row: {
+          approach_distance: number | null
+          approach_lie: string | null
+          approach_miss_direction: string | null
+          approach_proximity: number | null
+          approach_result: string | null
           created_at: string | null
+          drive_miss_direction: string | null
+          drive_result: string | null
+          driving_distance: number | null
           fairway_hit: boolean | null
+          first_putt_break: string | null
+          first_putt_distance: number | null
+          first_putt_leave: number | null
+          first_putt_miss_direction: string | null
+          first_putt_slope: string | null
           green_in_regulation: boolean | null
           hole_number: number
+          holed_out_distance: number | null
+          holed_out_type: string | null
           id: string
           par: number
+          penalty_strokes: number | null
           putts: number | null
           round_id: string
+          sand_save_attempt: boolean | null
+          sand_save_made: boolean | null
           score: number | null
           score_to_par: number | null
+          scramble_attempt: boolean | null
+          scramble_made: boolean | null
+          up_and_down_attempt: boolean | null
+          up_and_down_made: boolean | null
           updated_at: string | null
+          used_driver: boolean | null
           yardage: number | null
         }
         Insert: {
+          approach_distance?: number | null
+          approach_lie?: string | null
+          approach_miss_direction?: string | null
+          approach_proximity?: number | null
+          approach_result?: string | null
           created_at?: string | null
+          drive_miss_direction?: string | null
+          drive_result?: string | null
+          driving_distance?: number | null
           fairway_hit?: boolean | null
+          first_putt_break?: string | null
+          first_putt_distance?: number | null
+          first_putt_leave?: number | null
+          first_putt_miss_direction?: string | null
+          first_putt_slope?: string | null
           green_in_regulation?: boolean | null
           hole_number: number
+          holed_out_distance?: number | null
+          holed_out_type?: string | null
           id?: string
           par: number
+          penalty_strokes?: number | null
           putts?: number | null
           round_id: string
+          sand_save_attempt?: boolean | null
+          sand_save_made?: boolean | null
           score?: number | null
           score_to_par?: number | null
+          scramble_attempt?: boolean | null
+          scramble_made?: boolean | null
+          up_and_down_attempt?: boolean | null
+          up_and_down_made?: boolean | null
           updated_at?: string | null
+          used_driver?: boolean | null
           yardage?: number | null
         }
         Update: {
+          approach_distance?: number | null
+          approach_lie?: string | null
+          approach_miss_direction?: string | null
+          approach_proximity?: number | null
+          approach_result?: string | null
           created_at?: string | null
+          drive_miss_direction?: string | null
+          drive_result?: string | null
+          driving_distance?: number | null
           fairway_hit?: boolean | null
+          first_putt_break?: string | null
+          first_putt_distance?: number | null
+          first_putt_leave?: number | null
+          first_putt_miss_direction?: string | null
+          first_putt_slope?: string | null
           green_in_regulation?: boolean | null
           hole_number?: number
+          holed_out_distance?: number | null
+          holed_out_type?: string | null
           id?: string
           par?: number
+          penalty_strokes?: number | null
           putts?: number | null
           round_id?: string
+          sand_save_attempt?: boolean | null
+          sand_save_made?: boolean | null
           score?: number | null
           score_to_par?: number | null
+          scramble_attempt?: boolean | null
+          scramble_made?: boolean | null
+          up_and_down_attempt?: boolean | null
+          up_and_down_made?: boolean | null
           updated_at?: string | null
+          used_driver?: boolean | null
           yardage?: number | null
         }
         Relationships: [
@@ -1166,48 +1271,470 @@ export type Database = {
       }
       golf_player_classes: {
         Row: {
+          building: string | null
+          color: string | null
           course_code: string | null
           course_name: string
           created_at: string | null
+          credits: number | null
           day_of_week: number
+          days: string[] | null
           end_time: string
           id: string
           instructor: string | null
           location: string | null
+          notes: string | null
           player_id: string
+          room: string | null
           semester: string | null
           start_time: string
           updated_at: string | null
         }
         Insert: {
+          building?: string | null
+          color?: string | null
           course_code?: string | null
           course_name: string
           created_at?: string | null
+          credits?: number | null
           day_of_week: number
+          days?: string[] | null
           end_time: string
           id?: string
           instructor?: string | null
           location?: string | null
+          notes?: string | null
           player_id: string
+          room?: string | null
           semester?: string | null
           start_time: string
           updated_at?: string | null
         }
         Update: {
+          building?: string | null
+          color?: string | null
           course_code?: string | null
           course_name?: string
           created_at?: string | null
+          credits?: number | null
           day_of_week?: number
+          days?: string[] | null
           end_time?: string
           id?: string
           instructor?: string | null
           location?: string | null
+          notes?: string | null
           player_id?: string
+          room?: string | null
           semester?: string | null
           start_time?: string
           updated_at?: string | null
         }
         Relationships: []
+      }
+      golf_player_stats: {
+        Row: {
+          approach_eff_100_125: number | null
+          approach_eff_125_150: number | null
+          approach_eff_150_175: number | null
+          approach_eff_175_200: number | null
+          approach_eff_200_225: number | null
+          approach_eff_225_plus: number | null
+          approach_eff_30_75: number | null
+          approach_eff_75_100: number | null
+          approach_prox_100_125: number | null
+          approach_prox_125_150: number | null
+          approach_prox_150_175: number | null
+          approach_prox_175_200: number | null
+          approach_prox_200_225: number | null
+          approach_prox_225_plus: number | null
+          approach_prox_30_75: number | null
+          approach_prox_75_100: number | null
+          approach_proximity_avg: number | null
+          approach_proximity_fairway: number | null
+          approach_proximity_par3: number | null
+          approach_proximity_par4: number | null
+          approach_proximity_par5: number | null
+          approach_proximity_rough: number | null
+          approach_proximity_sand: number | null
+          atg_eff_fairway: number | null
+          atg_eff_rough: number | null
+          atg_eff_sand: number | null
+          atg_efficiency_0_10: number | null
+          atg_efficiency_10_20: number | null
+          atg_efficiency_20_30: number | null
+          atg_efficiency_avg: number | null
+          best_round: number | null
+          birdies_per_round: number | null
+          bogeys_per_round: number | null
+          created_at: string | null
+          current_no_3putt_streak: number | null
+          double_plus_per_round: number | null
+          driving_distance_avg: number | null
+          driving_distance_driver_only: number | null
+          eagles_per_round: number | null
+          fairway_opportunities: number | null
+          fairway_pct_driver: number | null
+          fairway_pct_non_driver: number | null
+          fairway_pct_par4: number | null
+          fairway_pct_par5: number | null
+          fairway_percentage: number | null
+          fairways_hit: number | null
+          gir_opportunities: number | null
+          gir_pct_par3: number | null
+          gir_pct_par4: number | null
+          gir_pct_par5: number | null
+          gir_per_round: number | null
+          gir_percentage: number | null
+          gir_total: number | null
+          holes_played: number | null
+          id: string
+          last_calculated_at: string | null
+          longest_hole_out: number | null
+          longest_no_3putt_streak: number | null
+          miss_left_count: number | null
+          miss_left_pct: number | null
+          miss_right_count: number | null
+          miss_right_pct: number | null
+          most_birdies_round: number | null
+          most_birdies_row: number | null
+          most_pars_row: number | null
+          one_putts_total: number | null
+          pars_per_round: number | null
+          penalties_per_round: number | null
+          player_id: string
+          practice_rounds: number | null
+          practice_scoring_avg: number | null
+          putt_efficiency_0_3: number | null
+          putt_efficiency_10_15: number | null
+          putt_efficiency_15_20: number | null
+          putt_efficiency_20_25: number | null
+          putt_efficiency_25_30: number | null
+          putt_efficiency_3_5: number | null
+          putt_efficiency_30_plus: number | null
+          putt_efficiency_5_10: number | null
+          putt_make_pct_0_3: number | null
+          putt_make_pct_10_15: number | null
+          putt_make_pct_15_20: number | null
+          putt_make_pct_20_25: number | null
+          putt_make_pct_25_30: number | null
+          putt_make_pct_3_5: number | null
+          putt_make_pct_30_35: number | null
+          putt_make_pct_35_plus: number | null
+          putt_make_pct_5_10: number | null
+          putt_miss_left_pct: number | null
+          putt_miss_long_pct: number | null
+          putt_miss_right_pct: number | null
+          putt_miss_short_pct: number | null
+          putt_proximity_10_15: number | null
+          putt_proximity_15_20: number | null
+          putt_proximity_20_plus: number | null
+          putt_proximity_5_10: number | null
+          putt_proximity_avg: number | null
+          putts_per_gir: number | null
+          putts_per_hole: number | null
+          putts_per_round: number | null
+          qualifying_rounds: number | null
+          qualifying_scoring_avg: number | null
+          rounds_played: number | null
+          sand_save_attempts: number | null
+          sand_save_percentage: number | null
+          sand_saves_made: number | null
+          scoring_average: number | null
+          scramble_attempts: number | null
+          scrambles_made: number | null
+          scrambling_pct_0_10: number | null
+          scrambling_pct_10_20: number | null
+          scrambling_pct_20_30: number | null
+          scrambling_pct_fairway: number | null
+          scrambling_pct_rough: number | null
+          scrambling_pct_sand: number | null
+          scrambling_percentage: number | null
+          three_putts_per_round: number | null
+          three_putts_total: number | null
+          total_birdies: number | null
+          total_bogeys: number | null
+          total_double_plus: number | null
+          total_eagles: number | null
+          total_pars: number | null
+          total_penalties: number | null
+          total_putts: number | null
+          tournament_rounds: number | null
+          tournament_scoring_avg: number | null
+          updated_at: string | null
+          worst_round: number | null
+        }
+        Insert: {
+          approach_eff_100_125?: number | null
+          approach_eff_125_150?: number | null
+          approach_eff_150_175?: number | null
+          approach_eff_175_200?: number | null
+          approach_eff_200_225?: number | null
+          approach_eff_225_plus?: number | null
+          approach_eff_30_75?: number | null
+          approach_eff_75_100?: number | null
+          approach_prox_100_125?: number | null
+          approach_prox_125_150?: number | null
+          approach_prox_150_175?: number | null
+          approach_prox_175_200?: number | null
+          approach_prox_200_225?: number | null
+          approach_prox_225_plus?: number | null
+          approach_prox_30_75?: number | null
+          approach_prox_75_100?: number | null
+          approach_proximity_avg?: number | null
+          approach_proximity_fairway?: number | null
+          approach_proximity_par3?: number | null
+          approach_proximity_par4?: number | null
+          approach_proximity_par5?: number | null
+          approach_proximity_rough?: number | null
+          approach_proximity_sand?: number | null
+          atg_eff_fairway?: number | null
+          atg_eff_rough?: number | null
+          atg_eff_sand?: number | null
+          atg_efficiency_0_10?: number | null
+          atg_efficiency_10_20?: number | null
+          atg_efficiency_20_30?: number | null
+          atg_efficiency_avg?: number | null
+          best_round?: number | null
+          birdies_per_round?: number | null
+          bogeys_per_round?: number | null
+          created_at?: string | null
+          current_no_3putt_streak?: number | null
+          double_plus_per_round?: number | null
+          driving_distance_avg?: number | null
+          driving_distance_driver_only?: number | null
+          eagles_per_round?: number | null
+          fairway_opportunities?: number | null
+          fairway_pct_driver?: number | null
+          fairway_pct_non_driver?: number | null
+          fairway_pct_par4?: number | null
+          fairway_pct_par5?: number | null
+          fairway_percentage?: number | null
+          fairways_hit?: number | null
+          gir_opportunities?: number | null
+          gir_pct_par3?: number | null
+          gir_pct_par4?: number | null
+          gir_pct_par5?: number | null
+          gir_per_round?: number | null
+          gir_percentage?: number | null
+          gir_total?: number | null
+          holes_played?: number | null
+          id?: string
+          last_calculated_at?: string | null
+          longest_hole_out?: number | null
+          longest_no_3putt_streak?: number | null
+          miss_left_count?: number | null
+          miss_left_pct?: number | null
+          miss_right_count?: number | null
+          miss_right_pct?: number | null
+          most_birdies_round?: number | null
+          most_birdies_row?: number | null
+          most_pars_row?: number | null
+          one_putts_total?: number | null
+          pars_per_round?: number | null
+          penalties_per_round?: number | null
+          player_id: string
+          practice_rounds?: number | null
+          practice_scoring_avg?: number | null
+          putt_efficiency_0_3?: number | null
+          putt_efficiency_10_15?: number | null
+          putt_efficiency_15_20?: number | null
+          putt_efficiency_20_25?: number | null
+          putt_efficiency_25_30?: number | null
+          putt_efficiency_3_5?: number | null
+          putt_efficiency_30_plus?: number | null
+          putt_efficiency_5_10?: number | null
+          putt_make_pct_0_3?: number | null
+          putt_make_pct_10_15?: number | null
+          putt_make_pct_15_20?: number | null
+          putt_make_pct_20_25?: number | null
+          putt_make_pct_25_30?: number | null
+          putt_make_pct_3_5?: number | null
+          putt_make_pct_30_35?: number | null
+          putt_make_pct_35_plus?: number | null
+          putt_make_pct_5_10?: number | null
+          putt_miss_left_pct?: number | null
+          putt_miss_long_pct?: number | null
+          putt_miss_right_pct?: number | null
+          putt_miss_short_pct?: number | null
+          putt_proximity_10_15?: number | null
+          putt_proximity_15_20?: number | null
+          putt_proximity_20_plus?: number | null
+          putt_proximity_5_10?: number | null
+          putt_proximity_avg?: number | null
+          putts_per_gir?: number | null
+          putts_per_hole?: number | null
+          putts_per_round?: number | null
+          qualifying_rounds?: number | null
+          qualifying_scoring_avg?: number | null
+          rounds_played?: number | null
+          sand_save_attempts?: number | null
+          sand_save_percentage?: number | null
+          sand_saves_made?: number | null
+          scoring_average?: number | null
+          scramble_attempts?: number | null
+          scrambles_made?: number | null
+          scrambling_pct_0_10?: number | null
+          scrambling_pct_10_20?: number | null
+          scrambling_pct_20_30?: number | null
+          scrambling_pct_fairway?: number | null
+          scrambling_pct_rough?: number | null
+          scrambling_pct_sand?: number | null
+          scrambling_percentage?: number | null
+          three_putts_per_round?: number | null
+          three_putts_total?: number | null
+          total_birdies?: number | null
+          total_bogeys?: number | null
+          total_double_plus?: number | null
+          total_eagles?: number | null
+          total_pars?: number | null
+          total_penalties?: number | null
+          total_putts?: number | null
+          tournament_rounds?: number | null
+          tournament_scoring_avg?: number | null
+          updated_at?: string | null
+          worst_round?: number | null
+        }
+        Update: {
+          approach_eff_100_125?: number | null
+          approach_eff_125_150?: number | null
+          approach_eff_150_175?: number | null
+          approach_eff_175_200?: number | null
+          approach_eff_200_225?: number | null
+          approach_eff_225_plus?: number | null
+          approach_eff_30_75?: number | null
+          approach_eff_75_100?: number | null
+          approach_prox_100_125?: number | null
+          approach_prox_125_150?: number | null
+          approach_prox_150_175?: number | null
+          approach_prox_175_200?: number | null
+          approach_prox_200_225?: number | null
+          approach_prox_225_plus?: number | null
+          approach_prox_30_75?: number | null
+          approach_prox_75_100?: number | null
+          approach_proximity_avg?: number | null
+          approach_proximity_fairway?: number | null
+          approach_proximity_par3?: number | null
+          approach_proximity_par4?: number | null
+          approach_proximity_par5?: number | null
+          approach_proximity_rough?: number | null
+          approach_proximity_sand?: number | null
+          atg_eff_fairway?: number | null
+          atg_eff_rough?: number | null
+          atg_eff_sand?: number | null
+          atg_efficiency_0_10?: number | null
+          atg_efficiency_10_20?: number | null
+          atg_efficiency_20_30?: number | null
+          atg_efficiency_avg?: number | null
+          best_round?: number | null
+          birdies_per_round?: number | null
+          bogeys_per_round?: number | null
+          created_at?: string | null
+          current_no_3putt_streak?: number | null
+          double_plus_per_round?: number | null
+          driving_distance_avg?: number | null
+          driving_distance_driver_only?: number | null
+          eagles_per_round?: number | null
+          fairway_opportunities?: number | null
+          fairway_pct_driver?: number | null
+          fairway_pct_non_driver?: number | null
+          fairway_pct_par4?: number | null
+          fairway_pct_par5?: number | null
+          fairway_percentage?: number | null
+          fairways_hit?: number | null
+          gir_opportunities?: number | null
+          gir_pct_par3?: number | null
+          gir_pct_par4?: number | null
+          gir_pct_par5?: number | null
+          gir_per_round?: number | null
+          gir_percentage?: number | null
+          gir_total?: number | null
+          holes_played?: number | null
+          id?: string
+          last_calculated_at?: string | null
+          longest_hole_out?: number | null
+          longest_no_3putt_streak?: number | null
+          miss_left_count?: number | null
+          miss_left_pct?: number | null
+          miss_right_count?: number | null
+          miss_right_pct?: number | null
+          most_birdies_round?: number | null
+          most_birdies_row?: number | null
+          most_pars_row?: number | null
+          one_putts_total?: number | null
+          pars_per_round?: number | null
+          penalties_per_round?: number | null
+          player_id?: string
+          practice_rounds?: number | null
+          practice_scoring_avg?: number | null
+          putt_efficiency_0_3?: number | null
+          putt_efficiency_10_15?: number | null
+          putt_efficiency_15_20?: number | null
+          putt_efficiency_20_25?: number | null
+          putt_efficiency_25_30?: number | null
+          putt_efficiency_3_5?: number | null
+          putt_efficiency_30_plus?: number | null
+          putt_efficiency_5_10?: number | null
+          putt_make_pct_0_3?: number | null
+          putt_make_pct_10_15?: number | null
+          putt_make_pct_15_20?: number | null
+          putt_make_pct_20_25?: number | null
+          putt_make_pct_25_30?: number | null
+          putt_make_pct_3_5?: number | null
+          putt_make_pct_30_35?: number | null
+          putt_make_pct_35_plus?: number | null
+          putt_make_pct_5_10?: number | null
+          putt_miss_left_pct?: number | null
+          putt_miss_long_pct?: number | null
+          putt_miss_right_pct?: number | null
+          putt_miss_short_pct?: number | null
+          putt_proximity_10_15?: number | null
+          putt_proximity_15_20?: number | null
+          putt_proximity_20_plus?: number | null
+          putt_proximity_5_10?: number | null
+          putt_proximity_avg?: number | null
+          putts_per_gir?: number | null
+          putts_per_hole?: number | null
+          putts_per_round?: number | null
+          qualifying_rounds?: number | null
+          qualifying_scoring_avg?: number | null
+          rounds_played?: number | null
+          sand_save_attempts?: number | null
+          sand_save_percentage?: number | null
+          sand_saves_made?: number | null
+          scoring_average?: number | null
+          scramble_attempts?: number | null
+          scrambles_made?: number | null
+          scrambling_pct_0_10?: number | null
+          scrambling_pct_10_20?: number | null
+          scrambling_pct_20_30?: number | null
+          scrambling_pct_fairway?: number | null
+          scrambling_pct_rough?: number | null
+          scrambling_pct_sand?: number | null
+          scrambling_percentage?: number | null
+          three_putts_per_round?: number | null
+          three_putts_total?: number | null
+          total_birdies?: number | null
+          total_bogeys?: number | null
+          total_double_plus?: number | null
+          total_eagles?: number | null
+          total_pars?: number | null
+          total_penalties?: number | null
+          total_putts?: number | null
+          tournament_rounds?: number | null
+          tournament_scoring_avg?: number | null
+          updated_at?: string | null
+          worst_round?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       golf_players: {
         Row: {
@@ -1401,69 +1928,120 @@ export type Database = {
       }
       golf_rounds: {
         Row: {
+          birdies: number | null
+          bogeys: number | null
           course_city: string | null
           course_name: string
           course_rating: number | null
           course_slope: number | null
           course_state: string | null
           created_at: string | null
+          double_bogeys_plus: number | null
+          driving_accuracy: number | null
+          driving_distance_avg: number | null
+          eagles: number | null
           fairways_hit: number | null
           fairways_total: number | null
           greens_in_regulation: number | null
           greens_total: number | null
           id: string
           is_verified: boolean | null
+          longest_drive: number | null
+          longest_hole_out: number | null
+          longest_putt_made: number | null
+          pars: number | null
+          penalty_strokes: number | null
           player_id: string
+          putts_per_gir: number | null
           round_date: string
           round_type: string | null
+          sand_save_attempts: number | null
+          sand_saves_made: number | null
+          scrambles_made: number | null
+          scrambling_attempts: number | null
           starting_hole: number | null
           tees_played: string | null
+          three_putts: number | null
           total_putts: number | null
           total_score: number | null
           total_to_par: number | null
           updated_at: string | null
         }
         Insert: {
+          birdies?: number | null
+          bogeys?: number | null
           course_city?: string | null
           course_name: string
           course_rating?: number | null
           course_slope?: number | null
           course_state?: string | null
           created_at?: string | null
+          double_bogeys_plus?: number | null
+          driving_accuracy?: number | null
+          driving_distance_avg?: number | null
+          eagles?: number | null
           fairways_hit?: number | null
           fairways_total?: number | null
           greens_in_regulation?: number | null
           greens_total?: number | null
           id?: string
           is_verified?: boolean | null
+          longest_drive?: number | null
+          longest_hole_out?: number | null
+          longest_putt_made?: number | null
+          pars?: number | null
+          penalty_strokes?: number | null
           player_id: string
+          putts_per_gir?: number | null
           round_date: string
           round_type?: string | null
+          sand_save_attempts?: number | null
+          sand_saves_made?: number | null
+          scrambles_made?: number | null
+          scrambling_attempts?: number | null
           starting_hole?: number | null
           tees_played?: string | null
+          three_putts?: number | null
           total_putts?: number | null
           total_score?: number | null
           total_to_par?: number | null
           updated_at?: string | null
         }
         Update: {
+          birdies?: number | null
+          bogeys?: number | null
           course_city?: string | null
           course_name?: string
           course_rating?: number | null
           course_slope?: number | null
           course_state?: string | null
           created_at?: string | null
+          double_bogeys_plus?: number | null
+          driving_accuracy?: number | null
+          driving_distance_avg?: number | null
+          eagles?: number | null
           fairways_hit?: number | null
           fairways_total?: number | null
           greens_in_regulation?: number | null
           greens_total?: number | null
           id?: string
           is_verified?: boolean | null
+          longest_drive?: number | null
+          longest_hole_out?: number | null
+          longest_putt_made?: number | null
+          pars?: number | null
+          penalty_strokes?: number | null
           player_id?: string
+          putts_per_gir?: number | null
           round_date?: string
           round_type?: string | null
+          sand_save_attempts?: number | null
+          sand_saves_made?: number | null
+          scrambles_made?: number | null
+          scrambling_attempts?: number | null
           starting_hole?: number | null
           tees_played?: string | null
+          three_putts?: number | null
           total_putts?: number | null
           total_score?: number | null
           total_to_par?: number | null
@@ -1475,6 +2053,93 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_shots: {
+        Row: {
+          club_type: string
+          created_at: string | null
+          distance_to_hole_after: number | null
+          distance_to_hole_before: number | null
+          distance_unit_after: string | null
+          distance_unit_before: string | null
+          hole_id: string | null
+          hole_number: number
+          id: string
+          is_penalty: boolean | null
+          lie_before: string | null
+          miss_direction: string | null
+          penalty_type: string | null
+          putt_break: string | null
+          putt_slope: string | null
+          result: string
+          round_id: string
+          shot_distance: number | null
+          shot_number: number
+          shot_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          club_type: string
+          created_at?: string | null
+          distance_to_hole_after?: number | null
+          distance_to_hole_before?: number | null
+          distance_unit_after?: string | null
+          distance_unit_before?: string | null
+          hole_id?: string | null
+          hole_number: number
+          id?: string
+          is_penalty?: boolean | null
+          lie_before?: string | null
+          miss_direction?: string | null
+          penalty_type?: string | null
+          putt_break?: string | null
+          putt_slope?: string | null
+          result: string
+          round_id: string
+          shot_distance?: number | null
+          shot_number: number
+          shot_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          club_type?: string
+          created_at?: string | null
+          distance_to_hole_after?: number | null
+          distance_to_hole_before?: number | null
+          distance_unit_after?: string | null
+          distance_unit_before?: string | null
+          hole_id?: string | null
+          hole_number?: number
+          id?: string
+          is_penalty?: boolean | null
+          lie_before?: string | null
+          miss_direction?: string | null
+          penalty_type?: string | null
+          putt_break?: string | null
+          putt_slope?: string | null
+          result?: string
+          round_id?: string
+          shot_distance?: number | null
+          shot_number?: number
+          shot_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_shots_hole_id_fkey"
+            columns: ["hole_id"]
+            isOneToOne: false
+            referencedRelation: "golf_holes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_shots_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "golf_rounds"
             referencedColumns: ["id"]
           },
         ]
@@ -2879,82 +3544,92 @@ export type Database = {
         Args: { p_coach_id: string }
         Returns: number
       }
+      calculate_player_stats: {
+        Args: { p_player_id: string }
+        Returns: undefined
+      }
       calculate_profile_completion:
         | {
             Args: { p: Database["public"]["Tables"]["players"]["Row"] }
             Returns: number
           }
-        | { Args: { p_player_id: string }; Returns: number }
+        | { Args: { player_id_param: string }; Returns: number }
       get_active_dev_plans: {
         Args: { p_player_id: string }
         Returns: {
-          coach_name: string
-          plan_id: string
-          progress_percent: number
+          coach_id: string
+          created_at: string
+          id: string
+          player_id: string
           status: string
           title: string
+          updated_at: string
         }[]
       }
       get_coach_profile: {
         Args: { p_coach_id: string }
         Returns: {
-          about: string
-          coach_id: string
-          coach_title: string
           coach_type: string
           conference: string
           division: string
           email: string
-          full_name: string
-          logo_url: string
+          id: string
+          name: string
+          organization_id: string
           organization_name: string
-          philosophy: string
-          phone: string
-          program_values: string
-          team_count: number
-          what_they_look_for: string
+          user_id: string
         }[]
       }
       get_coach_teams: {
         Args: { p_coach_id: string }
         Returns: {
           is_head_coach: boolean
-          player_count: number
-          role: string
+          season: string
           team_id: string
           team_name: string
           team_type: string
         }[]
       }
-      get_engagement_trends: {
-        Args: { p_days?: number; p_interval?: string; p_player_id: string }
-        Returns: {
-          period: string
-          profile_views: number
-          video_views: number
-          watchlist_adds: number
-        }[]
-      }
+      get_engagement_trends:
+        | {
+            Args: { p_days?: number; p_interval?: string; p_player_id: string }
+            Returns: {
+              period: string
+              profile_views: number
+              video_views: number
+              watchlist_adds: number
+            }[]
+          }
+        | {
+            Args: { days_param?: number; player_id_param: string }
+            Returns: {
+              date: string
+              messages: number
+              profile_views: number
+              total_events: number
+              video_views: number
+            }[]
+          }
       get_golf_coach_id: { Args: never; Returns: string }
       get_golf_player_id: { Args: never; Returns: string }
       get_player_engagement_summary: {
         Args: { p_days?: number; p_player_id: string }
         Returns: {
-          messages_received: number
-          period_end: string
-          period_start: string
+          recent_engagement_count: number
+          total_profile_views: number
+          total_video_views: number
           total_views: number
-          unique_coaches: number
-          video_views: number
-          watchlist_adds: number
+          unique_viewers: number
         }[]
       }
       get_player_notes: {
         Args: { p_coach_id: string; p_player_id: string }
         Returns: {
+          coach_id: string
           created_at: string
-          note_content: string
-          note_id: string
+          id: string
+          note: string
+          player_id: string
           tags: string[]
           updated_at: string
         }[]
@@ -2962,9 +3637,7 @@ export type Database = {
       get_player_teams: {
         Args: { p_player_id: string }
         Returns: {
-          is_primary: boolean
-          jersey_number: number
-          role: string
+          season: string
           team_id: string
           team_name: string
           team_type: string
@@ -2973,21 +3646,18 @@ export type Database = {
       get_recent_engagement: {
         Args: { p_limit?: number; p_player_id: string }
         Returns: {
-          coach_name: string
-          coach_school: string
-          engagement_date: string
-          engagement_type: string
-          event_id: string
-          is_anonymous: boolean
+          created_at: string
+          event_type: string
+          id: string
+          viewer_user_id: string
         }[]
       }
       get_upcoming_events: {
-        Args: { p_coach_id: string; p_days_ahead?: number }
+        Args: { p_coach_id: string; p_days?: number }
         Returns: {
           end_time: string
-          event_id: string
           event_type: string
-          location: string
+          id: string
           start_time: string
           title: string
         }[]
@@ -2996,15 +3666,21 @@ export type Database = {
       is_golf_coach_of_team: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_player_of_team: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_member: { Args: { team_uuid: string }; Returns: boolean }
-      record_profile_view: {
-        Args: {
-          p_coach_id?: string
-          p_duration_seconds?: number
-          p_is_anonymous?: boolean
-          p_player_id: string
-        }
-        Returns: string
-      }
+      is_user_on_team_staff: { Args: { team_uuid: string }; Returns: boolean }
+      record_profile_view:
+        | {
+            Args: {
+              p_coach_id?: string
+              p_duration_seconds?: number
+              p_is_anonymous?: boolean
+              p_player_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: { viewed_player_id: string; viewer_id: string }
+            Returns: undefined
+          }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

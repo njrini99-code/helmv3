@@ -83,7 +83,7 @@ export default function SignupPage() {
       // Step 3: Create role-specific record
       if (role === 'coach') {
         const { error: coachError } = await supabase.from('coaches').insert({
-          user_id: authData.session.user.id,
+          user_id: authData.user.id,
           coach_type: coachType!,
           full_name: fullName,
           onboarding_completed: false
@@ -97,7 +97,7 @@ export default function SignupPage() {
       } else {
         const [firstName, ...lastParts] = fullName.split(' ');
         const { error: playerError } = await supabase.from('players').insert({
-          user_id: authData.session.user.id,
+          user_id: authData.user.id,
           player_type: playerType!,
           first_name: firstName,
           last_name: lastParts.join(' ') || '',

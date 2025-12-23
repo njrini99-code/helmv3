@@ -3,18 +3,88 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { IconArrowLeft, IconMapPin, IconCalendar, IconCheck, IconEdit, IconTrash } from '@/components/icons';
-import type { GolfRound, GolfHole } from '@/lib/types/golf';
+import { IconArrowLeft, IconMapPin, IconCalendar, IconCheck, IconChartBar } from '@/components/icons';
 
-interface RoundWithDetails extends Omit<GolfRound, 'player' | 'holes'> {
+interface RoundWithDetails {
+  id: string;
+  player_id: string;
+  course_name: string;
+  course_city: string | null;
+  course_state: string | null;
+  course_rating: number | null;
+  course_slope: number | null;
+  tees_played: string | null;
+  round_type: string;
+  round_date: string;
+  total_score: number | null;
+  total_to_par: number | null;
+  total_putts: number | null;
+  fairways_hit: number | null;
+  fairways_total: number | null;
+  greens_in_regulation: number | null;
+  greens_total: number | null;
+  total_penalties: number | null;
+  is_verified: boolean;
+  notes: string | null;
+  // Comprehensive stats
+  driving_distance_avg: number | null;
+  driving_accuracy: number | null;
+  putts_per_gir: number | null;
+  scrambling_attempts: number | null;
+  scrambles_made: number | null;
+  sand_save_attempts: number | null;
+  sand_saves_made: number | null;
+  penalty_strokes: number | null;
+  three_putts: number | null;
+  birdies: number | null;
+  pars: number | null;
+  bogeys: number | null;
+  double_bogeys_plus: number | null;
+  eagles: number | null;
+  longest_drive: number | null;
+  longest_putt_made: number | null;
+  longest_hole_out: number | null;
   player: {
     first_name: string | null;
     last_name: string | null;
     team_id: string | null;
   } | null;
-  holes: GolfHole[];
-  total_penalties?: number | null;
-  notes?: string | null;
+  holes: Array<{
+    id: string;
+    hole_number: number;
+    par: number;
+    yardage: number | null;
+    score: number;
+    score_to_par: number | null;
+    putts: number | null;
+    fairway_hit: boolean | null;
+    green_in_regulation: boolean | null;
+    penalties: number | null;
+    driving_distance: number | null;
+    used_driver: boolean | null;
+    drive_miss_direction: string | null;
+    approach_distance: number | null;
+    approach_lie: string | null;
+    approach_proximity: number | null;
+    scramble_attempt: boolean | null;
+    scramble_made: boolean | null;
+    sand_save_attempt: boolean | null;
+    sand_save_made: boolean | null;
+    first_putt_distance: number | null;
+    first_putt_leave: number | null;
+    holed_out_distance: number | null;
+    holed_out_type: string | null;
+  }>;
+}
+
+function StatBox({ label, value, subValue }: { label: string; value: string | number; subValue?: string }) {
+  return (
+    <div className="text-center">
+      <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">{label}</p>
+      <p className="text-xl font-bold text-slate-900">{value}</p>
+      {subValue && <p className="text-xs text-slate-400">{subValue}</p>}
+    </div>
+  );
 }
 
 export default async function RoundDetailPage({
@@ -80,6 +150,21 @@ export default async function RoundDetailPage({
   // Sort holes by number
   const sortedHoles = [...(roundData.holes || [])].sort((a, b) => a.hole_number - b.hole_number);
 
+  // Check if we have comprehensive stats
+  const hasComprehensiveStats = roundData.driving_distance_avg !== null || 
+                                 roundData.scrambles_made !== null ||
+                                 roundData.longest_drive !== null;
+
+  // Calculate scrambling %
+  const scramblingPct = roundData.scrambling_attempts && roundData.scrambling_attempts > 0
+    ? Math.round((roundData.scrambles_made || 0) / roundData.scrambling_attempts * 100)
+    : null;
+
+  // Calculate sand save %
+  const sandSavePct = roundData.sand_save_attempts && roundData.sand_save_attempts > 0
+    ? Math.round((roundData.sand_saves_made || 0) / roundData.sand_save_attempts * 100)
+    : null;
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -98,6 +183,12 @@ export default async function RoundDetailPage({
             Round Details
           </p>
         </div>
+        <Link href="/golf/dashboard/stats">
+          <Button variant="secondary" size="sm">
+            <IconChartBar size={16} className="mr-2" />
+            View All Stats
+          </Button>
+        </Link>
       </div>
 
       {/* Round Summary Card */}
@@ -118,6 +209,11 @@ export default async function RoundDetailPage({
                 <span className="px-2.5 py-1 text-xs rounded-full bg-slate-100 text-slate-600 capitalize">
                   {roundData.round_type}
                 </span>
+                {hasComprehensiveStats && (
+                  <span className="px-2.5 py-1 text-xs rounded-full bg-green-50 text-green-600 font-medium">
+                    📊 Full Stats
+                  </span>
+                )}
               </div>
               
               <div className="flex items-center gap-6 text-sm text-slate-500">
@@ -158,11 +254,50 @@ export default async function RoundDetailPage({
             </div>
           </div>
 
+          {/* Scoring Breakdown */}
+          {hasComprehensiveStats && (roundData.birdies !== null || roundData.pars !== null) && (
+            <div className="grid grid-cols-5 gap-4 py-4 border-t border-slate-200">
+              <div className="text-center">
+                <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-1">
+                  <span className="text-yellow-700 font-bold text-sm">{roundData.eagles || 0}</span>
+                </div>
+                <p className="text-xs text-slate-500">Eagles</p>
+              </div>
+              <div className="text-center">
+                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-1">
+                  <span className="text-red-600 font-bold text-sm">{roundData.birdies || 0}</span>
+                </div>
+                <p className="text-xs text-slate-500">Birdies</p>
+              </div>
+              <div className="text-center">
+                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-1">
+                  <span className="text-slate-700 font-bold text-sm">{roundData.pars || 0}</span>
+                </div>
+                <p className="text-xs text-slate-500">Pars</p>
+              </div>
+              <div className="text-center">
+                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-1">
+                  <span className="text-orange-600 font-bold text-sm">{roundData.bogeys || 0}</span>
+                </div>
+                <p className="text-xs text-slate-500">Bogeys</p>
+              </div>
+              <div className="text-center">
+                <div className="w-8 h-8 rounded-full bg-red-200 flex items-center justify-center mx-auto mb-1">
+                  <span className="text-red-700 font-bold text-sm">{roundData.double_bogeys_plus || 0}</span>
+                </div>
+                <p className="text-xs text-slate-500">Double+</p>
+              </div>
+            </div>
+          )}
+
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-slate-200">
             <div>
               <p className="text-sm text-slate-500">Total Putts</p>
               <p className="text-2xl font-semibold text-slate-900">{roundData.total_putts || '--'}</p>
+              {roundData.three_putts !== null && roundData.three_putts > 0 && (
+                <p className="text-xs text-red-500">{roundData.three_putts} three-putts</p>
+              )}
             </div>
             <div>
               <p className="text-sm text-slate-500">Fairways Hit</p>
@@ -196,6 +331,53 @@ export default async function RoundDetailPage({
             </div>
           </div>
 
+          {/* Comprehensive Stats */}
+          {hasComprehensiveStats && (
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 pt-6 border-t border-slate-200 mt-6">
+              {roundData.driving_distance_avg && (
+                <StatBox 
+                  label="Avg Drive" 
+                  value={`${Math.round(roundData.driving_distance_avg)}`}
+                  subValue="yards"
+                />
+              )}
+              {roundData.longest_drive && (
+                <StatBox 
+                  label="Longest Drive" 
+                  value={`${roundData.longest_drive}`}
+                  subValue="yards"
+                />
+              )}
+              {roundData.putts_per_gir && (
+                <StatBox 
+                  label="Putts/GIR" 
+                  value={roundData.putts_per_gir.toFixed(2)}
+                />
+              )}
+              {scramblingPct !== null && (
+                <StatBox 
+                  label="Scrambling" 
+                  value={`${scramblingPct}%`}
+                  subValue={`${roundData.scrambles_made}/${roundData.scrambling_attempts}`}
+                />
+              )}
+              {sandSavePct !== null && (
+                <StatBox 
+                  label="Sand Saves" 
+                  value={`${sandSavePct}%`}
+                  subValue={`${roundData.sand_saves_made}/${roundData.sand_save_attempts}`}
+                />
+              )}
+              {roundData.longest_putt_made && (
+                <StatBox 
+                  label="Longest Putt" 
+                  value={`${roundData.longest_putt_made}'`}
+                  subValue="made"
+                />
+              )}
+            </div>
+          )}
+
           {roundData.notes && (
             <div className="mt-6 pt-6 border-t border-slate-200">
               <p className="text-sm font-medium text-slate-700 mb-2">Notes</p>
@@ -215,13 +397,20 @@ export default async function RoundDetailPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-medium text-slate-500">Hole</th>
-                  <th className="text-center py-3 px-4 font-medium text-slate-500">Par</th>
-                  <th className="text-center py-3 px-4 font-medium text-slate-500">Score</th>
-                  <th className="text-center py-3 px-4 font-medium text-slate-500">+/-</th>
-                  <th className="text-center py-3 px-4 font-medium text-slate-500">Putts</th>
-                  <th className="text-center py-3 px-4 font-medium text-slate-500">FIR</th>
-                  <th className="text-center py-3 px-4 font-medium text-slate-500">GIR</th>
+                  <th className="text-left py-3 px-3 font-medium text-slate-500">Hole</th>
+                  <th className="text-center py-3 px-3 font-medium text-slate-500">Par</th>
+                  <th className="text-center py-3 px-3 font-medium text-slate-500">Score</th>
+                  <th className="text-center py-3 px-3 font-medium text-slate-500">+/-</th>
+                  <th className="text-center py-3 px-3 font-medium text-slate-500">Putts</th>
+                  <th className="text-center py-3 px-3 font-medium text-slate-500">FIR</th>
+                  <th className="text-center py-3 px-3 font-medium text-slate-500">GIR</th>
+                  {hasComprehensiveStats && (
+                    <>
+                      <th className="text-center py-3 px-3 font-medium text-slate-500">Drive</th>
+                      <th className="text-center py-3 px-3 font-medium text-slate-500">Prox</th>
+                      <th className="text-center py-3 px-3 font-medium text-slate-500">Scramble</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -235,41 +424,67 @@ export default async function RoundDetailPage({
 
                   return (
                     <tr key={hole.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-4 font-medium text-slate-900">{hole.hole_number}</td>
-                      <td className="text-center py-3 px-4 text-slate-600">{hole.par}</td>
-                      <td className={`text-center py-3 px-4 ${holeScoreColor}`}>{hole.score}</td>
-                      <td className={`text-center py-3 px-4 ${holeScoreColor}`}>
+                      <td className="py-3 px-3 font-medium text-slate-900">{hole.hole_number}</td>
+                      <td className="text-center py-3 px-3 text-slate-600">{hole.par}</td>
+                      <td className={`text-center py-3 px-3 ${holeScoreColor}`}>{hole.score}</td>
+                      <td className={`text-center py-3 px-3 ${holeScoreColor}`}>
                         {holeToPar === 0 ? 'E' : holeToPar > 0 ? `+${holeToPar}` : holeToPar}
                       </td>
-                      <td className="text-center py-3 px-4 text-slate-600">{hole.putts || '--'}</td>
-                      <td className="text-center py-3 px-4">
+                      <td className="text-center py-3 px-3 text-slate-600">{hole.putts || '--'}</td>
+                      <td className="text-center py-3 px-3">
                         {hole.fairway_hit === true ? '✓' : hole.fairway_hit === false ? '✗' : '--'}
                       </td>
-                      <td className="text-center py-3 px-4">
+                      <td className="text-center py-3 px-3">
                         {hole.green_in_regulation === true ? '✓' : hole.green_in_regulation === false ? '✗' : '--'}
                       </td>
+                      {hasComprehensiveStats && (
+                        <>
+                          <td className="text-center py-3 px-3 text-slate-600">
+                            {hole.driving_distance ? `${hole.driving_distance}y` : '--'}
+                          </td>
+                          <td className="text-center py-3 px-3 text-slate-600">
+                            {hole.approach_proximity ? `${hole.approach_proximity}'` : '--'}
+                          </td>
+                          <td className="text-center py-3 px-3">
+                            {hole.scramble_attempt === true 
+                              ? hole.scramble_made ? '✓' : '✗'
+                              : '--'}
+                          </td>
+                        </>
+                      )}
                     </tr>
                   );
                 })}
                 {sortedHoles.length > 0 && (
                   <tr className="bg-slate-50 font-semibold">
-                    <td className="py-3 px-4">Total</td>
-                    <td className="text-center py-3 px-4">{sortedHoles.reduce((sum, h) => sum + h.par, 0)}</td>
-                    <td className="text-center py-3 px-4 text-slate-900">{roundData.total_score}</td>
-                    <td className={`text-center py-3 px-4 ${scoreColor}`}>
+                    <td className="py-3 px-3">Total</td>
+                    <td className="text-center py-3 px-3">{sortedHoles.reduce((sum, h) => sum + h.par, 0)}</td>
+                    <td className="text-center py-3 px-3 text-slate-900">{roundData.total_score}</td>
+                    <td className={`text-center py-3 px-3 ${scoreColor}`}>
                       {scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar}
                     </td>
-                    <td className="text-center py-3 px-4">{roundData.total_putts || '--'}</td>
-                    <td className="text-center py-3 px-4">
+                    <td className="text-center py-3 px-3">{roundData.total_putts || '--'}</td>
+                    <td className="text-center py-3 px-3">
                       {roundData.fairways_hit !== null && roundData.fairways_total
                         ? `${roundData.fairways_hit}/${roundData.fairways_total}`
                         : '--'}
                     </td>
-                    <td className="text-center py-3 px-4">
+                    <td className="text-center py-3 px-3">
                       {roundData.greens_in_regulation !== null && roundData.greens_total
                         ? `${roundData.greens_in_regulation}/${roundData.greens_total}`
                         : '--'}
                     </td>
+                    {hasComprehensiveStats && (
+                      <>
+                        <td className="text-center py-3 px-3">
+                          {roundData.driving_distance_avg ? `${Math.round(roundData.driving_distance_avg)}y` : '--'}
+                        </td>
+                        <td className="text-center py-3 px-3">--</td>
+                        <td className="text-center py-3 px-3">
+                          {scramblingPct !== null ? `${scramblingPct}%` : '--'}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 )}
               </tbody>
@@ -277,6 +492,43 @@ export default async function RoundDetailPage({
           </div>
         </CardContent>
       </Card>
+
+      {/* Records / Highlights */}
+      {(roundData.longest_hole_out || roundData.longest_drive) && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Round Highlights</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {roundData.longest_drive && (
+                <div className="bg-blue-50 rounded-xl p-4 text-center">
+                  <p className="text-sm text-blue-600 font-medium mb-1">Longest Drive</p>
+                  <p className="text-2xl font-bold text-blue-700">{roundData.longest_drive} yds</p>
+                </div>
+              )}
+              {roundData.longest_putt_made && (
+                <div className="bg-green-50 rounded-xl p-4 text-center">
+                  <p className="text-sm text-green-600 font-medium mb-1">Longest Putt Made</p>
+                  <p className="text-2xl font-bold text-green-700">{roundData.longest_putt_made} ft</p>
+                </div>
+              )}
+              {roundData.longest_hole_out && (
+                <div className="bg-yellow-50 rounded-xl p-4 text-center">
+                  <p className="text-sm text-yellow-700 font-medium mb-1">Longest Hole Out</p>
+                  <p className="text-2xl font-bold text-yellow-800">{roundData.longest_hole_out} yds</p>
+                </div>
+              )}
+              {roundData.eagles && roundData.eagles > 0 && (
+                <div className="bg-purple-50 rounded-xl p-4 text-center">
+                  <p className="text-sm text-purple-600 font-medium mb-1">Eagles</p>
+                  <p className="text-2xl font-bold text-purple-700">{roundData.eagles}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
