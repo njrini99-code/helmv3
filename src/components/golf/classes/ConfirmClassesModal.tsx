@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconX, IconCheck, IconPencil, IconTrash, IconPlus } from '@/components/icons';
@@ -23,11 +23,17 @@ const DAYS = [
 ];
 
 export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses }: ConfirmClassesModalProps) {
-  const [classes, setClasses] = useState<ParsedClass[]>(
-    parsedClasses.map(c => ({ ...c, color: generateClassColor() })) as ParsedClass[]
-  );
+  const [classes, setClasses] = useState<ParsedClass[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Update classes when parsedClasses prop changes
+  useEffect(() => {
+    if (parsedClasses.length > 0) {
+      console.log('[ConfirmModal] Received', parsedClasses.length, 'classes');
+      setClasses(parsedClasses.map(c => ({ ...c, color: generateClassColor() })));
+    }
+  }, [parsedClasses]);
 
   if (!isOpen) return null;
 
