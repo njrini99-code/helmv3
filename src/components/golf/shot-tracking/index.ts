@@ -1,2 +1,3 @@
-export { default as ShotTrackingComprehensive, type ShotRecord, type HoleStats } from './ShotTrackingComprehensive';
-export { default as ShotTrackingFinal } from './ShotTrackingFinal';
+// Shot tracking components
+// TODO: Add shot tracking components when implementing detailed shot-by-shot tracking
+export {};
