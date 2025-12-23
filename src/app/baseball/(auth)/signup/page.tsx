@@ -37,14 +37,24 @@ export default function SignupPage() {
       // Step 1: Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
 
+      console.log('SignUp Response:', { authData, authError });
+
       if (authError) {
         setError(authError.message);
         setLoading(false);
         return;
       }
 
-      if (!authData.user || !authData.session) {
-        setError('Failed to create account. Please try again.');
+      if (!authData.user) {
+        console.error('No user in auth response');
+        setError('Failed to create account. No user returned.');
+        setLoading(false);
+        return;
+      }
+
+      if (!authData.session) {
+        console.error('No session in auth response');
+        setError('Failed to create account. No session returned.');
         setLoading(false);
         return;
       }
