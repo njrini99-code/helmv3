@@ -41,24 +41,31 @@ export default function GolfSignupPage() {
         return;
       }
 
-      // Step 2: Create user record for golf coach
-      const { error: userError } = await supabase.from('users').insert({
-        id: authData.user.id,
-        email,
-        role: 'coach',
-      });
+      // Step 2: Verify auth session is established
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-      if (userError) {
-        console.error('User insert error:', userError);
-        setError(`Failed to create user profile: ${userError.message}`);
+      if (sessionError || !session) {
+        setError('Failed to establish session. Please try logging in.');
         setLoading(false);
         return;
       }
 
-      // Step 3: Create golf coach record
-      // Note: golf_coaches table - using type assertion until schema is updated
+      // Step 3: Update user record with role
+      const { error: userError } = await supabase
+        .from('users')
+        .update({ role: 'coach' })
+        .eq('id', authData.user.id);
+
+      if (userError) {
+        console.error('User update error:', userError);
+        setError(`Failed to set user role: ${userError.message}`);
+        setLoading(false);
+        return;
+      }
+
+      // Step 4: Create golf coach record
       const { error: coachError } = await supabase.from('golf_coaches').insert({
-        user_id: authData.user.id,
+        user_id: session.user.id,
         full_name: fullName,
         onboarding_completed: false,
       });
