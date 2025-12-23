@@ -14,7 +14,7 @@ import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedCl
 interface PlayerClass {
   id: string;
   player_id: string;
-  course_code: string;
+  course_code: string | null;
   course_name: string;
   instructor: string | null;
   days: string[];
@@ -28,8 +28,8 @@ interface PlayerClass {
   color: string | null;
   notes: string | null;
   day_of_week: number | null;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export default function GolfClassesPage() {
