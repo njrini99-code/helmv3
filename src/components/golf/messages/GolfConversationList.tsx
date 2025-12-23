@@ -21,7 +21,9 @@ export function GolfConversationList({
   onNewConversation,
   className,
 }: GolfConversationListProps) {
-  const formatTime = (timestamp: string) => {
+  const formatTime = (timestamp: string | null) => {
+    if (!timestamp) return '';
+
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();

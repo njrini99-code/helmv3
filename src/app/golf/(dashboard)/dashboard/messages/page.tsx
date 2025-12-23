@@ -387,7 +387,9 @@ function MessageInput({ onSend }: { onSend: (content: string) => Promise<boolean
 }
 
 // Time formatting helper
-function formatTime(dateStr: string): string {
+function formatTime(dateStr: string | null): string {
+  if (!dateStr) return '';
+
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();

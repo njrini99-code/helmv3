@@ -48,16 +48,18 @@ export function GolfChatWindow({
     setSending(false);
   };
 
-  const formatTime = (timestamp: string) => {
+  const formatTime = (timestamp: string | null) => {
+    if (!timestamp) return '';
+
     const date = new Date(timestamp);
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
-    
+
     if (isToday) {
       return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     }
-    
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + 
+
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) +
            ' ' + date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   };
 
@@ -151,9 +153,9 @@ export function GolfChatWindow({
           />
           <Button
             type="submit"
-            size="icon"
+            size="sm"
             disabled={!inputValue.trim() || sending}
-            className="rounded-full"
+            className="rounded-full w-10 h-10 p-0"
           >
             {sending ? (
               <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
