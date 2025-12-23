@@ -15,7 +15,9 @@ const nextConfig = {
   },
 
   // Turbopack configuration (Next.js 16+)
-  turbopack: {},
+  turbopack: {
+    root: '/Users/ricknini/Downloads/helmv3',
+  },
 
   // Transpile specific packages that need compilation
   transpilePackages: ['pdfjs-dist'],
