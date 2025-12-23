@@ -5,7 +5,31 @@
  * Calculates all stats from shot-level data stored in the database.
  */
 
-import type { HoleStats } from '@/components/golf/ShotTrackingComprehensive';
+// HoleStats type - defined here since ShotTrackingComprehensive is not yet implemented
+export interface HoleStats {
+  holeNumber: number;
+  par: number;
+  score: number;
+  putts: number;
+  fairwayHit?: boolean;
+  greenInRegulation?: boolean;
+  usedDriver?: boolean;
+  drivingDistance?: number;
+  driveMissDirection?: 'left' | 'right' | null;
+  approachDistance?: number;
+  approachProximity?: number;
+  approachLie?: string;
+  firstPuttDistance?: number;
+  firstPuttLeave?: number | null;
+  firstPuttMissDirection?: string;
+  scrambleAttempt?: boolean;
+  scrambleMade?: boolean;
+  sandSaveAttempt?: boolean;
+  sandSaveMade?: boolean;
+  penaltyStrokes: number;
+  holedOutDistance?: number;
+  holedOutType?: string;
+}
 
 // ============================================================================
 // TYPES
