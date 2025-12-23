@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { GolfSidebar } from '@/components/golf/layout/GolfSidebar';
 import { PageLoading } from '@/components/ui/loading';
-import { useGolfAuthStore } from '@/stores/golf-auth-store';
-import { isGolfDevMode } from '@/lib/golf-dev-mode';
 
 interface UserData {
   role: 'coach' | 'player';
@@ -25,42 +23,13 @@ export default function GolfDashboardLayout({
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<UserData | null>(null);
 
-  // Check for dev mode auth
-  const { user: devUser, coach: devCoach, player: devPlayer, isDevMode } = useGolfAuthStore();
-
   useEffect(() => {
     async function loadUser() {
-      // Check dev mode first
-      if (isGolfDevMode() && isDevMode && devUser) {
-        if (devCoach) {
-          setUserData({
-            role: 'coach',
-            name: devCoach.full_name || 'Coach',
-            teamName: devCoach.team?.name,
-            avatarUrl: devCoach.avatar_url || undefined,
-          });
-        } else if (devPlayer) {
-          setUserData({
-            role: 'player',
-            name: `${devPlayer.first_name} ${devPlayer.last_name}`,
-            teamName: devPlayer.team?.name,
-            avatarUrl: devPlayer.avatar_url || undefined,
-          });
-        }
-        setLoading(false);
-        return;
-      }
-
       // Normal Supabase auth flow
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        // In dev mode, redirect to dev page instead of login
-        if (isGolfDevMode()) {
-          router.push('/golf/dev');
-        } else {
-          router.push('/golf/login');
-        }
+        router.push('/golf/login');
         return;
       }
 
@@ -114,7 +83,7 @@ export default function GolfDashboardLayout({
     }
 
     loadUser();
-  }, [router, supabase, isDevMode, devUser, devCoach, devPlayer]);
+  }, [router, supabase]);
 
   if (loading || !userData) {
     return <PageLoading />;

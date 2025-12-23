@@ -256,6 +256,23 @@ function FeatureRow({
    MAIN PAGE
 ───────────────────────────────────────────────────────────── */
 export default function HomePage() {
+  const [demoEmail, setDemoEmail] = useState('');
+  const [demoSubmitted, setDemoSubmitted] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  const handleDemoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!demoEmail) return;
+    
+    setDemoLoading(true);
+    
+    // For now, just show success - you can add Supabase/API integration later
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    setDemoSubmitted(true);
+    setDemoLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF6F1] overflow-hidden">
       
@@ -546,17 +563,36 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-                  <input
-                    type="email"
-                    placeholder="Enter your email"
-                    className="flex-1 px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-green-300 focus:ring-2 focus:ring-green-100 transition-all"
-                  />
-                  <MagneticButton href="#" size="lg">
-                    Book a demo
-                    <ArrowRight className="h-4 w-4" />
-                  </MagneticButton>
-                </div>
+                {demoSubmitted ? (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-6 max-w-md mx-auto">
+                    <div className="flex items-center gap-3 text-green-700">
+                      <Check className="h-5 w-5" />
+                      <div className="text-left">
+                        <p className="font-medium">Thanks! We'll be in touch soon.</p>
+                        <p className="text-sm text-green-600">Check {demoEmail} for next steps.</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleDemoSubmit} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                    <input
+                      type="email"
+                      value={demoEmail}
+                      onChange={(e) => setDemoEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      required
+                      className="flex-1 px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-green-300 focus:ring-2 focus:ring-green-100 transition-all"
+                    />
+                    <button
+                      type="submit"
+                      disabled={demoLoading}
+                      className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-500 shadow-lg shadow-green-600/25 hover:shadow-xl hover:shadow-green-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {demoLoading ? 'Sending...' : 'Book a demo'}
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </form>
+                )}
               </div>
             </motion.div>
           </div>

@@ -52,18 +52,27 @@ export default function SignupPage() {
         return;
       }
 
+      // If no session, email confirmation is required
       if (!authData.session) {
-        console.error('No session in auth response');
-        setError('Failed to create account. No session returned.');
-        setLoading(false);
+        console.log('Email confirmation required - redirecting to verify-email');
+        router.push('/auth/verify-email');
         return;
       }
 
-      // Step 2: Update user record with role
+      // Step 2: Upsert user record with role (handles race condition with trigger)
+      // The trigger creates the users record, but we use upsert to be safe
       const { error: userError } = await supabase
         .from('users')
-        .update({ role })
-        .eq('id', authData.user.id);
+        .upsert(
+          {
+            id: authData.user.id,
+            email: authData.user.email || email,
+            role,
+          },
+          {
+            onConflict: 'id',
+          }
+        );
 
       if (userError) {
         setError(`Failed to set user role: ${userError.message}`);

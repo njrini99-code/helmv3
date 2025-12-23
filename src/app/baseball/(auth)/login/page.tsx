@@ -47,7 +47,14 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required autoFocus />
-            <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+            <div>
+              <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+              <div className="text-right mt-2">
+                <Link href="/baseball/forgot-password" className="text-sm text-green-600 hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
                 {error}

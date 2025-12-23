@@ -6,9 +6,15 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { IconUsers } from '@/components/icons';
+import { cn } from '@/lib/utils';
+import { IconUsers, IconUser } from '@/components/icons';
+
+type Role = 'coach' | 'player';
+type Step = 'role' | 'details';
 
 export default function GolfSignupPage() {
+  const [step, setStep] = useState<Step>('role');
+  const [role, setRole] = useState<Role | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -19,6 +25,8 @@ export default function GolfSignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!role) return;
+
     setLoading(true);
     setError('');
 
@@ -35,42 +43,79 @@ export default function GolfSignupPage() {
         return;
       }
 
-      if (!authData.user || !authData.session) {
+      if (!authData.user) {
         setError('Failed to create account. Please try again.');
         setLoading(false);
         return;
       }
 
-      // Step 2: Update user record with role
+      // If no session, email confirmation is required
+      if (!authData.session) {
+        console.log('Email confirmation required - redirecting to verify-email');
+        router.push('/auth/verify-email');
+        return;
+      }
+
+      // Step 2: Upsert user record with role (handles race condition with trigger)
       const { error: userError } = await supabase
         .from('users')
-        .update({ role: 'coach' })
-        .eq('id', authData.user.id);
+        .upsert(
+          {
+            id: authData.user.id,
+            email: authData.user.email || email,
+            role,
+          },
+          {
+            onConflict: 'id',
+          }
+        );
 
       if (userError) {
-        console.error('User update error:', userError);
+        console.error('User upsert error:', userError);
         setError(`Failed to set user role: ${userError.message}`);
         setLoading(false);
         return;
       }
 
-      // Step 3: Create golf coach record
-      const { error: coachError } = await supabase.from('golf_coaches').insert({
-        user_id: authData.session.user.id,
-        full_name: fullName,
-        onboarding_completed: false,
-      });
+      // Step 3: Create role-specific record
+      if (role === 'coach') {
+        const { error: coachError } = await supabase.from('golf_coaches').insert({
+          user_id: authData.session.user.id,
+          full_name: fullName,
+          onboarding_completed: false,
+        });
 
-      if (coachError) {
-        console.error('Golf coach insert error:', coachError);
-        setError(`Failed to create coach profile: ${coachError.message}`);
-        setLoading(false);
-        return;
+        if (coachError) {
+          console.error('Golf coach insert error:', coachError);
+          setError(`Failed to create coach profile: ${coachError.message}`);
+          setLoading(false);
+          return;
+        }
+
+        // Success - redirect to golf coach onboarding
+        router.push('/golf/coach');
+        router.refresh();
+      } else {
+        // Player
+        const [firstName, ...lastParts] = fullName.split(' ');
+        const { error: playerError } = await supabase.from('golf_players').insert({
+          user_id: authData.session.user.id,
+          first_name: firstName,
+          last_name: lastParts.join(' ') || '',
+          onboarding_completed: false,
+        });
+
+        if (playerError) {
+          console.error('Golf player insert error:', playerError);
+          setError(`Failed to create player profile: ${playerError.message}`);
+          setLoading(false);
+          return;
+        }
+
+        // Success - redirect to golf player onboarding
+        router.push('/golf/player');
+        router.refresh();
       }
-
-      // Success - redirect to golf coach onboarding
-      router.push('/golf/coach');
-      router.refresh();
     } catch (err) {
       console.error('Signup error:', err);
       setError('An unexpected error occurred. Please try again.');
@@ -78,6 +123,67 @@ export default function GolfSignupPage() {
     }
   };
 
+  // Step 1: Role Selection
+  if (step === 'role') {
+    return (
+      <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <img
+              src="/helm-golf-logo.png"
+              alt="GolfHelm"
+              className="h-16 w-auto mx-auto mb-4"
+            />
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Join GolfHelm</h1>
+            <p className="text-slate-500 mt-1">Select your role to get started</p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => { setRole('coach'); setStep('details'); }}
+              className="w-full p-6 bg-white rounded-2xl border-2 border-slate-200 text-left transition-all hover:border-green-500 hover:shadow-md flex items-start gap-4"
+            >
+              <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                <IconUsers size={24} className="text-green-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">Coach</p>
+                <p className="text-sm leading-relaxed text-slate-500 mt-1">Manage your golf team and players</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => { setRole('player'); setStep('details'); }}
+              className="w-full p-6 bg-white rounded-2xl border-2 border-slate-200 text-left transition-all hover:border-green-500 hover:shadow-md flex items-start gap-4"
+            >
+              <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                <IconUser size={24} className="text-green-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">Player</p>
+                <p className="text-sm leading-relaxed text-slate-500 mt-1">Track your progress and performance</p>
+              </div>
+            </button>
+          </div>
+
+          <p className="text-center text-sm text-slate-500 mt-6">
+            Already have an account?{' '}
+            <Link href="/golf/login" className="text-green-600 font-medium hover:underline">
+              Sign in
+            </Link>
+          </p>
+
+          <p className="text-center text-sm text-slate-400 mt-4">
+            <Link href="/" className="hover:text-slate-600 transition-colors">
+              ← Back to HelmLabs
+            </Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 2: Account Details
   return (
     <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -87,22 +193,13 @@ export default function GolfSignupPage() {
             alt="GolfHelm"
             className="h-16 w-auto mx-auto mb-4"
           />
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Join GolfHelm</h1>
-          <p className="text-slate-500 mt-1">Create your coaching account</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Create your account</h1>
+          <p className="text-slate-500 mt-1">
+            <span className="capitalize">{role}</span> account
+          </p>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-          {/* Coach Badge */}
-          <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl border border-green-100 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-              <IconUsers size={20} className="text-green-600" />
-            </div>
-            <div>
-              <p className="font-medium text-slate-900 text-sm">Golf Coach Account</p>
-              <p className="text-xs text-slate-500">Manage your team and players</p>
-            </div>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="Full Name"
@@ -140,6 +237,13 @@ export default function GolfSignupPage() {
             </Button>
           </form>
 
+          <button
+            onClick={() => setStep('role')}
+            className="w-full text-center text-sm text-slate-500 mt-4 hover:text-slate-700 transition-colors"
+          >
+            ← Change role
+          </button>
+
           <p className="text-center text-sm text-slate-500 mt-6">
             Already have an account?{' '}
             <Link href="/golf/login" className="text-green-600 font-medium hover:underline">
@@ -148,17 +252,11 @@ export default function GolfSignupPage() {
           </p>
         </div>
 
-        <div className="text-center mt-6 space-y-2">
-          <p className="text-sm leading-relaxed text-slate-500">
-            Are you a player?{' '}
-            <span className="text-slate-600">Ask your coach for an invite link.</span>
-          </p>
-          <p className="text-sm leading-relaxed text-slate-400">
-            <Link href="/" className="hover:text-slate-600 transition-colors">
-              ← Back to HelmLabs
-            </Link>
-          </p>
-        </div>
+        <p className="text-center text-sm text-slate-400 mt-6">
+          <Link href="/" className="hover:text-slate-600 transition-colors">
+            ← Back to HelmLabs
+          </Link>
+        </p>
       </div>
     </div>
   );

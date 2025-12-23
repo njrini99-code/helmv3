@@ -30,6 +30,7 @@ import {
 import { TeamSwitcher } from './team-switcher';
 import { useTeams } from '@/hooks/use-teams';
 import { usePlayerTeams } from '@/hooks/use-player-teams';
+import { useUnreadCount } from '@/hooks/use-unread-count';
 
 // College/JUCO Coach - Recruiting Mode
 const coachRecruitingNav = [
@@ -109,7 +110,7 @@ const playerTeamNav = [
   { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
   { name: 'Dev Plan', href: '/baseball/dashboard/dev-plan', icon: IconNote },
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
-  { name: 'Messages', href: '/baseball/dashboard/team/messages', icon: IconMessage, badge: true },
+  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
 ];
 
 // Secondary navigation (coach)
@@ -136,6 +137,7 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
   const pathname = usePathname();
   const router = useRouter();
   const { user, coach, player, signOut, coachMode, setCoachMode } = useAuth();
+  const { unreadCount } = useUnreadCount();
 
   // Use appropriate teams hook based on user role
   const coachTeams = useTeams();
@@ -305,13 +307,17 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
                   {!collapsed && (
                     <>
                       <span className="flex-1">{item.name}</span>
-                      {item.badge && (
-                        <span className="w-2 h-2 rounded-full bg-green-500" />
+                      {item.badge && unreadCount > 0 && (
+                        <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center text-xs font-medium bg-green-500 text-white rounded-full">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
                       )}
                     </>
                   )}
-                  {collapsed && item.badge && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500" />
+                  {collapsed && item.badge && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-medium bg-green-500 text-white rounded-full">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
                   )}
                 </Link>
               </li>
@@ -393,14 +399,14 @@ export function Sidebar({ collapsed = false, onToggle, onClose, isMobile = false
 
       {/* Bottom section */}
       <div className="p-3 border-t border-slate-100">
-        {/* Upgrade CTA (only when expanded) */}
+        {/* Pro badge (only when expanded) - billing coming soon */}
         {!collapsed && (
-          <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100">
-            <div className="text-sm font-medium text-slate-900 mb-1">Upgrade to Pro</div>
-            <div className="text-xs text-slate-500 mb-3">Unlock unlimited features</div>
-            <button className="w-full py-2 px-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
-              Upgrade Now
-            </button>
+          <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-medium text-slate-900">Free Plan</span>
+              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-100 text-green-700 rounded">BETA</span>
+            </div>
+            <div className="text-xs text-slate-500">Pro plans coming soon</div>
           </div>
         )}
 

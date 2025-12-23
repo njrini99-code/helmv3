@@ -33,7 +33,7 @@ import { usePlayers } from '@/hooks/use-players';
 import { useCoachStats, usePlayerStats } from '@/hooks/use-stats';
 import { useActivityFeed, useUpcomingEvents, useEngagementChart, useSavedSearches, usePlayersByState } from '@/hooks/use-dashboard';
 import { EngagementChart } from '@/components/dashboard/EngagementChart';
-import { USMap } from '@/components/features/us-map';
+import { USAMap } from '@/components/coach/discover/USAMap';
 import { getFullName, formatHeight, getPipelineStageLabel, pluralize, formatRelativeTime } from '@/lib/utils';
 
 // Animated number component
@@ -552,13 +552,28 @@ export default function DashboardPage() {
                   <div className="animate-pulse text-slate-400 text-sm">Loading map...</div>
                 </div>
               ) : (
-                <USMap
-                  selectedStates={[]}
+                <USAMap
+                  stateData={Object.entries(stateCounts).reduce((acc, [stateCode, count]) => {
+                    // State name mapping (full names)
+                    const stateNames: Record<string, string> = {
+                      'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
+                      'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'FL': 'Florida', 'GA': 'Georgia',
+                      'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa',
+                      'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+                      'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri',
+                      'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey',
+                      'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
+                      'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+                      'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont',
+                      'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
+                    };
+                    acc[stateCode] = { name: stateNames[stateCode] || stateCode, count };
+                    return acc;
+                  }, {} as Record<string, { name: string; count: number }>)}
                   onStateClick={(state) => {
                     // Navigate to discover with state filter
                     window.location.href = `/baseball/dashboard/discover?state=${state}`;
                   }}
-                  stateCounts={stateCounts}
                   className="border-0 p-0 bg-transparent"
                 />
               )}

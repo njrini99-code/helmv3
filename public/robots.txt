@@ -1,0 +1,24 @@
+# Helm Sports Labs - Robots.txt
+
+User-agent: *
+Allow: /
+Allow: /baseball
+Allow: /golf
+
+# Block auth and dashboard pages
+Disallow: /baseball/dashboard
+Disallow: /baseball/login
+Disallow: /baseball/signup
+Disallow: /baseball/coach
+Disallow: /baseball/player
+Disallow: /golf/dashboard
+Disallow: /golf/login
+Disallow: /golf/signup
+Disallow: /golf/coach
+Disallow: /golf/player
+Disallow: /auth
+
+# Block API routes
+Disallow: /api
+
+Sitemap: https://helmlab.com/sitemap.xml

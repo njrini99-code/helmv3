@@ -60,14 +60,21 @@ export default function GolfLoginPage() {
               required
               autoFocus
             />
-            <Input
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
+            <div>
+              <Input
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+              <div className="text-right mt-2">
+                <Link href="/golf/forgot-password" className="text-sm text-green-600 hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
                 {error}

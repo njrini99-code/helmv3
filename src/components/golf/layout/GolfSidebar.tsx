@@ -100,6 +100,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl }: GolfSid
             src="/helm-golf-logo.png"
             alt="GolfHelm"
             className="h-8 w-auto"
+            style={{ mixBlendMode: 'multiply' }}
           />
         </Link>
       </div>

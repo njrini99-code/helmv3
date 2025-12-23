@@ -17,7 +17,6 @@ import {
 } from '@/components/icons';
 import type { GolfCoach, GolfPlayer, GolfTeam } from '@/lib/types/golf';
 import { useGolfAuthStore } from '@/stores/golf-auth-store';
-import { isGolfDevMode, DEV_GOLF_ROSTER, DEV_GOLF_RECENT_ROUNDS } from '@/lib/golf-dev-mode';
 
 interface DashboardStats {
   rosterSize: number;
@@ -391,76 +390,8 @@ export default function GolfDashboardPage() {
   const [coachData, setCoachData] = useState<CoachDashboardData | null>(null);
   const [playerData, setPlayerData] = useState<PlayerDashboardData | null>(null);
 
-  // Get dev mode auth state
-  const { coach: devCoach, player: devPlayer, isDevMode } = useGolfAuthStore();
-
   useEffect(() => {
     async function loadDashboard() {
-      // Check for dev mode first
-      if (isGolfDevMode() && isDevMode) {
-        if (devCoach) {
-          setUserRole('coach');
-          setCoachData({
-            coach: devCoach,
-            team: devCoach.team || null,
-            stats: {
-              rosterSize: DEV_GOLF_ROSTER.length,
-              upcomingEvents: 3,
-              activeQualifiers: 1,
-              teamScoringAverage: 72.4,
-            },
-            recentRounds: DEV_GOLF_RECENT_ROUNDS.map(r => ({
-              id: r.id,
-              player_name: r.player_name,
-              course_name: r.course_name,
-              total_score: r.total_score,
-              total_to_par: r.total_to_par,
-              round_date: r.round_date,
-            })) as Array<{ id: string; player_name: string; course_name: string; total_score: number; total_to_par: number; round_date: string }>,
-          });
-          setLoading(false);
-          return;
-        }
-        if (devPlayer) {
-          setUserRole('player');
-          setPlayerData({
-            player: devPlayer,
-            team: devPlayer.team || null,
-            stats: {
-              roundsPlayed: 12,
-              scoringAverage: 73.2,
-              bestRound: 68,
-              handicap: devPlayer.handicap || null,
-            },
-            recentRounds: [
-              {
-                id: 'dev-player-round-1',
-                course_name: 'University Golf Club',
-                total_score: 72,
-                total_to_par: 0,
-                round_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-              },
-              {
-                id: 'dev-player-round-2',
-                course_name: 'Austin Country Club',
-                total_score: 74,
-                total_to_par: 2,
-                round_date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-              },
-              {
-                id: 'dev-player-round-3',
-                course_name: 'Barton Creek Resort',
-                total_score: 68,
-                total_to_par: -4,
-                round_date: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-              },
-            ],
-          });
-          setLoading(false);
-          return;
-        }
-      }
-
       // Normal Supabase data loading
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -580,7 +511,7 @@ export default function GolfDashboardPage() {
     }
 
     loadDashboard();
-  }, [supabase, isDevMode, devCoach, devPlayer]);
+  }, [supabase]);
 
   if (loading) {
     return <PageLoading />;
