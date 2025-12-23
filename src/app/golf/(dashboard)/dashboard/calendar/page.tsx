@@ -1,34 +1,82 @@
-'use client';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import { CalendarView } from '@/components/golf/calendar/CalendarView';
+import { EventsList } from '@/components/golf/calendar/EventsList';
+import { CreateEventButton } from '@/components/golf/calendar/CreateEventButton';
+import type { GolfEvent } from '@/lib/types/golf';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { IconCalendar, IconPlus } from '@/components/icons';
+export default async function GolfCalendarPage() {
+  const supabase = await createClient();
 
-export default function GolfCalendarPage() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/golf/login');
+
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const userRole = userData?.role;
+
+  let teamId: string | null = null;
+  let events: GolfEvent[] = [];
+
+  if (userRole === 'coach') {
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, team_id')
+      .eq('user_id', user.id)
+      .single();
+
+    teamId = coach?.team_id || null;
+  } else {
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id, team_id')
+      .eq('user_id', user.id)
+      .single();
+
+    teamId = player?.team_id || null;
+  }
+
+  if (teamId) {
+    const { data: eventsData } = await supabase
+      .from('golf_events')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('start_date', { ascending: true });
+
+    events = eventsData || [];
+  }
+
+  const isCoach = userRole === 'coach';
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Calendar</h1>
-          <p className="text-slate-500 mt-1">Team schedule and events</p>
+    <div className="min-h-screen bg-[#FAF6F1]">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900">Calendar</h1>
+            <p className="text-slate-500 mt-1">Team schedule and events</p>
+          </div>
+          {isCoach && <CreateEventButton />}
         </div>
-        <Button className="gap-2">
-          <IconPlus size={18} />
-          Add Event
-        </Button>
-      </div>
 
-      <Card glass>
-        <CardContent className="py-12 text-center">
-          <IconCalendar size={48} className="mx-auto text-slate-300 mb-4" />
-          <h3 className="text-lg font-medium text-slate-900 mb-2">
-            Calendar Coming Soon
-          </h3>
-          <p className="text-slate-500">
-            View and manage team events, practices, and tournaments
-          </p>
-        </CardContent>
-      </Card>
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Calendar View */}
+          <div className="lg:col-span-2">
+            <CalendarView events={events} />
+          </div>
+
+          {/* Events List */}
+          <div>
+            <EventsList events={events} isCoach={isCoach} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

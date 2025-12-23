@@ -146,7 +146,7 @@ export interface CreateTaskData {
   title: string;
   description?: string;
   due_date?: string;
-  priority?: GolfTaskPriority;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
   assigned_to?: string[];
 }
 

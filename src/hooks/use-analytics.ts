@@ -46,10 +46,10 @@ export function useAnalytics() {
 
       setLoading(true);
 
-      // Get player record
+      // Get player record with recruiting_activated status
       const { data: player } = await supabase
         .from('players')
-        .select('id')
+        .select('id, recruiting_activated')
         .eq('user_id', user.id)
         .single();
 
@@ -57,6 +57,8 @@ export function useAnalytics() {
         setLoading(false);
         return;
       }
+
+      const isRecruitingActivated = player.recruiting_activated || false;
 
       // Calculate date 30 days ago
       const thirtyDaysAgo = new Date();
@@ -120,22 +122,45 @@ export function useAnalytics() {
       }
 
       // Calculate top schools (by profile views)
-      const schoolViews: Record<string, { name: string; count: number; division?: string; logo?: string }> = {};
+      // If recruiting not activated, show anonymous data
+      const schoolViews: Record<string, { name: string; count: number; division?: string; logo?: string; state?: string; conference?: string }> = {};
       events
         .filter(e => e.engagement_type === 'profile_view' && e.coaches)
         .forEach(event => {
           const coach = event.coaches as any;
-          if (coach?.school_name) {
-            const key = coach.school_name;
+          if (coach) {
+            let key: string;
+            let displayName: string;
+
+            if (isRecruitingActivated) {
+              // Show identified school name
+              key = coach.school_name || 'Unknown School';
+              displayName = key;
+            } else {
+              // Show anonymous data: "A coach from [State]" or "[Division] program"
+              if (coach.state) {
+                key = `state_${coach.state}`;
+                displayName = `A coach from ${coach.state}`;
+              } else if (coach.division) {
+                key = `division_${coach.division}`;
+                displayName = `${coach.division} program`;
+              } else {
+                key = 'unknown';
+                displayName = 'A college coach';
+              }
+            }
+
             if (!schoolViews[key]) {
               schoolViews[key] = {
-                name: coach.school_name,
+                name: displayName,
                 count: 0,
-                division: coach.division,
-                logo: coach.logo_url,
+                division: isRecruitingActivated ? coach.division : undefined,
+                logo: isRecruitingActivated ? coach.logo_url : undefined,
+                state: coach.state,
+                conference: coach.conference,
               };
             }
-            schoolViews[key].count++;
+            schoolViews[key]!.count++;
           }
         });
 

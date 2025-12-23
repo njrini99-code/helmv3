@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Header } from '@/components/layout/header';
@@ -103,7 +103,8 @@ function BentoStatCard({
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, coach, player, loading: authLoading } = useAuth();
+  const pathname = usePathname();
+  const { user, coach, player, loading: authLoading, coachMode } = useAuth();
   const { watchlist } = useWatchlist();
   const { players, loading: playersLoading } = usePlayers({ limit: 5 });
   const { stats: coachStats } = useCoachStats();
@@ -116,21 +117,48 @@ export default function DashboardPage() {
   const { searches: savedSearches } = useSavedSearches();
   const { stateCounts, loading: stateCountsLoading } = usePlayersByState();
 
-  // Redirect HS and Showcase coaches to team dashboard
-  // They should NOT see the recruiting dashboard
+  // Redirect based on coach type and mode
   useEffect(() => {
-    if (!authLoading && user?.role === 'coach') {
-      if (coach?.coach_type === 'high_school' || coach?.coach_type === 'showcase') {
-        router.replace('/baseball/dashboard/team');
+    if (authLoading) return;
+
+    if (user?.role === 'coach' && coach) {
+      switch (coach.coach_type) {
+        case 'high_school':
+          // HS coaches always go to team dashboard
+          router.replace('/baseball/dashboard/team/high-school');
+          return;
+        case 'showcase':
+          // Showcase coaches go to team/org dashboard
+          router.replace('/baseball/dashboard/team');
+          return;
+        case 'juco':
+          // JUCO respects mode toggle
+          if (coachMode === 'team') {
+            router.replace('/baseball/dashboard/team');
+            return;
+          }
+          // If recruiting mode, continue to show this page
+          break;
+        case 'college':
+          // College coaches see this page (recruiting dashboard)
+          break;
+        default:
+          // Unknown coach type, redirect to team
+          router.replace('/baseball/dashboard/team');
+          return;
       }
     }
-  }, [authLoading, user?.role, coach?.coach_type, router]);
+  }, [authLoading, user, coach, coachMode, router, pathname]);
 
   if (authLoading) return <PageLoading />;
 
-  // Show loading while redirecting HS/Showcase coaches
-  if (user?.role === 'coach' && (coach?.coach_type === 'high_school' || coach?.coach_type === 'showcase')) {
-    return <PageLoading />;
+  // Show loading while redirecting
+  if (user?.role === 'coach' && coach) {
+    if (coach.coach_type === 'high_school' ||
+        coach.coach_type === 'showcase' ||
+        (coach.coach_type === 'juco' && coachMode === 'team')) {
+      return <PageLoading />;
+    }
   }
 
   // Coach Dashboard

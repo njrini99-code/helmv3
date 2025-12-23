@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { PageLoading } from '@/components/ui/loading';
 import { IconCalendar, IconPlus, IconClock, IconMapPin, IconTrash, IconEdit } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
+import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { EventModal } from '@/components/coach/EventModal';
 import { CalendarView } from '@/components/shared/CalendarView';
@@ -32,11 +33,11 @@ interface Event {
 
 export default function CalendarPage() {
   const { user, coach, player, loading: authLoading } = useAuth();
+  const { selectedTeamId } = useTeamStore();
   const { showToast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'month' | 'week' | 'list'>('list');
-  const [teamId, setTeamId] = useState<string | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -46,51 +47,13 @@ export default function CalendarPage() {
   const isCoach = user?.role === 'coach';
 
   useEffect(() => {
-    if (coach?.id && isCoach) {
-      fetchCoachTeam();
-    } else if (player?.id) {
-      fetchPlayerTeam();
-    }
-  }, [coach?.id, player?.id, isCoach]);
-
-  useEffect(() => {
-    if (teamId) {
+    if (selectedTeamId) {
       fetchEvents();
     }
-  }, [teamId]);
-
-  async function fetchCoachTeam() {
-    if (!coach?.id) return;
-
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('team_coach_staff')
-      .select('team_id')
-      .eq('coach_id', coach.id)
-      .single();
-
-    if (data?.team_id) {
-      setTeamId(data.team_id);
-    }
-  }
-
-  async function fetchPlayerTeam() {
-    if (!player?.id) return;
-
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('player_id', player.id)
-      .single();
-
-    if (data?.team_id) {
-      setTeamId(data.team_id);
-    }
-  }
+  }, [selectedTeamId]);
 
   async function fetchEvents() {
-    if (!teamId) return;
+    if (!selectedTeamId) return;
 
     setLoading(true);
     const supabase = createClient();
@@ -98,7 +61,7 @@ export default function CalendarPage() {
     const { data, error } = await supabase
       .from('events')
       .select('*')
-      .eq('team_id', teamId)
+      .eq('team_id', selectedTeamId)
       .order('start_time', { ascending: true });
 
     if (error) {
@@ -518,9 +481,9 @@ export default function CalendarPage() {
       </div>
 
       {/* Event Modal */}
-      {showEventModal && teamId && coach?.id && (
+      {showEventModal && selectedTeamId && coach?.id && (
         <EventModal
-          teamId={teamId}
+          teamId={selectedTeamId}
           coachId={coach.id}
           event={editingEvent}
           onClose={handleCloseModal}

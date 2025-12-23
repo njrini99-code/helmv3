@@ -4,7 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ShotTrackingFinal from '@/components/golf/ShotTrackingFinal';
 import { submitGolfRound } from '@/app/golf/actions/golf';
-import type { HoleData } from '@/lib/types/golf';
+import type { ShotRecord } from '@/lib/types/golf';
+
+interface Hole {
+  number: number;
+  par: number;
+  yardage: number;
+  score: number | null;
+}
 
 interface RoundSetupForm {
   courseName: string;
@@ -28,26 +35,24 @@ export default function NewRoundPage() {
     courseSlope: '',
     teesPlayed: 'White',
     roundType: 'practice',
-    roundDate: new Date().toISOString().split('T')[0],
+    roundDate: new Date().toISOString().split('T')[0]!,
   });
   const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
-  const [holes, setHoles] = useState<HoleData[]>([]);
+  const [holes, setHoles] = useState<Hole[]>([]);
+  const [holeShots, setHoleShots] = useState<ShotRecord[][]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   // Initialize 18 holes with default pars
   const initializeHoles = () => {
-    const defaultHoles: HoleData[] = Array.from({ length: 18 }, (_, i) => ({
-      hole_number: i + 1,
-      par: i < 4 || (i >= 9 && i < 13) ? 4 : i === 2 || i === 11 ? 3 : 5, // Typical par distribution
+    const defaultHoles: Hole[] = Array.from({ length: 18 }, (_, i) => ({
+      number: i + 1,
+      par: i < 4 || (i >= 9 && i < 13) ? 4 : i === 2 || i === 11 ? 3 : 5,
       yardage: i < 4 || (i >= 9 && i < 13) ? 370 : i === 2 || i === 11 ? 180 : 520,
-      score: undefined,
-      putts: undefined,
-      fairway_hit: undefined,
-      green_in_regulation: undefined,
-      shots: [],
+      score: null,
     }));
     setHoles(defaultHoles);
+    setHoleShots(Array(18).fill([]));
   };
 
   const handleSetupSubmit = (e: React.FormEvent) => {
@@ -60,21 +65,31 @@ export default function NewRoundPage() {
     setStep('tracking');
   };
 
-  const handleHoleComplete = (holeData: HoleData) => {
+  const handleHoleComplete = (holeIndex: number, score: number, shots: ShotRecord[]) => {
     const updatedHoles = [...holes];
-    updatedHoles[currentHoleIndex] = holeData;
+    const hole = updatedHoles[holeIndex];
+    updatedHoles[holeIndex] = {
+      number: hole.number,
+      par: hole.par,
+      yardage: hole.yardage,
+      score,
+    };
     setHoles(updatedHoles);
 
+    const updatedShots = [...holeShots];
+    updatedShots[holeIndex] = shots;
+    setHoleShots(updatedShots);
+
     // Move to next hole or finish
-    if (currentHoleIndex < holes.length - 1) {
-      setCurrentHoleIndex(currentHoleIndex + 1);
+    if (holeIndex < holes.length - 1) {
+      setCurrentHoleIndex(holeIndex + 1);
     } else {
       // All holes complete, submit round
       handleRoundSubmit(updatedHoles);
     }
   };
 
-  const handleRoundSubmit = async (completedHoles: HoleData[]) => {
+  const handleRoundSubmit = async (completedHoles: Hole[]) => {
     setSubmitting(true);
     setError('');
 
@@ -89,13 +104,13 @@ export default function NewRoundPage() {
         roundType: setupData.roundType,
         roundDate: setupData.roundDate,
         holes: completedHoles.map(hole => ({
-          holeNumber: hole.hole_number,
+          holeNumber: hole.number,
           par: hole.par,
-          score: hole.score || hole.par, // Default to par if no score
-          putts: hole.putts,
-          fairwayHit: hole.fairway_hit,
-          greenInRegulation: hole.green_in_regulation,
-          penalties: 0, // Can be enhanced later
+          score: hole.score || hole.par,
+          putts: undefined,
+          fairwayHit: undefined,
+          greenInRegulation: undefined,
+          penalties: 0,
         })),
       };
 

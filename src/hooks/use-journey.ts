@@ -132,6 +132,8 @@ export function useJourney() {
       });
     });
 
+    const isRecruitingActivated = player.recruiting_activated || false;
+
     // Add engagement events to timeline
     (engagementEvents || []).forEach(event => {
       let type: JourneyEvent['type'] = 'profile_view';
@@ -140,19 +142,19 @@ export function useJourney() {
       switch (event.engagement_type) {
         case 'profile_view':
           type = 'profile_view';
-          description = event.is_anonymous
+          description = !isRecruitingActivated
             ? `A coach from ${event.coaches?.school_name || 'a program'} viewed your profile`
             : `${event.coaches?.full_name || 'A coach'} from ${event.coaches?.school_name || 'unknown'} viewed your profile`;
           break;
         case 'watchlist_add':
           type = 'watchlist_add';
-          description = event.is_anonymous
+          description = !isRecruitingActivated
             ? `A coach from ${event.coaches?.school_name || 'a program'} added you to their watchlist`
             : `${event.coaches?.full_name || 'A coach'} from ${event.coaches?.school_name || 'unknown'} added you to their watchlist`;
           break;
         case 'video_view':
           type = 'video_view';
-          description = event.is_anonymous
+          description = !isRecruitingActivated
             ? `A coach from ${event.coaches?.school_name || 'a program'} watched your video`
             : `${event.coaches?.full_name || 'A coach'} from ${event.coaches?.school_name || 'unknown'} watched your video`;
           break;
@@ -163,11 +165,11 @@ export function useJourney() {
       timelineEvents.push({
         id: event.id,
         type,
-        school_name: event.coaches?.school_name || 'Unknown',
-        coach_name: event.coaches?.full_name,
+        school_name: isRecruitingActivated ? (event.coaches?.school_name || 'Unknown') : 'A college program',
+        coach_name: isRecruitingActivated ? event.coaches?.full_name : null,
         timestamp: event.engagement_date,
         description,
-        is_anonymous: event.is_anonymous || false,
+        is_anonymous: !isRecruitingActivated,
       });
     });
 

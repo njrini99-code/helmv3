@@ -11,6 +11,7 @@ import { PageLoading } from '@/components/ui/loading';
 import { IconNote, IconPlus, IconUsers, IconTarget, IconCheck, IconClock } from '@/components/icons';
 import { CreateDevPlanModal } from '@/components/coach/CreateDevPlanModal';
 import { useAuth } from '@/hooks/use-auth';
+import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName } from '@/lib/utils';
 
@@ -36,38 +37,17 @@ interface DevPlan {
 export default function DevPlansPage() {
   const router = useRouter();
   const { user, coach, loading: authLoading } = useAuth();
+  const { selectedTeamId } = useTeamStore();
   const [plans, setPlans] = useState<DevPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
-  const [teamId, setTeamId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
-    if (coach?.id) {
-      fetchCoachTeam();
-    }
-  }, [coach?.id]);
-
-  useEffect(() => {
-    if (teamId) {
+    if (selectedTeamId) {
       fetchPlans();
     }
-  }, [teamId, filter]);
-
-  async function fetchCoachTeam() {
-    if (!coach?.id) return;
-
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('team_coach_staff')
-      .select('team_id')
-      .eq('coach_id', coach.id)
-      .single();
-
-    if (data?.team_id) {
-      setTeamId(data.team_id);
-    }
-  }
+  }, [selectedTeamId, filter]);
 
   async function fetchPlans() {
     if (!coach?.id) return;
@@ -416,7 +396,7 @@ export default function DevPlansPage() {
           setShowCreateModal(false);
           router.refresh();
         }}
-        teamId={teamId}
+        teamId={selectedTeamId}
       />
     </>
   );

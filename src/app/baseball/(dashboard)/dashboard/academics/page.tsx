@@ -13,6 +13,7 @@ import { Select } from '@/components/ui/select';
 import { IconGraduationCap, IconUsers, IconEdit, IconCheck } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouteProtection } from '@/hooks/use-route-protection';
+import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName } from '@/lib/utils';
 
@@ -45,6 +46,7 @@ const eligibilityColors = {
 
 export default function AcademicsPage() {
   const { coach, loading: authLoading } = useAuth();
+  const { selectedTeamId } = useTeamStore();
   // Only JUCO coaches can access this page
   const { isAllowed, isLoading: routeLoading } = useRouteProtection({
     allowedCoachTypes: ['juco'],
@@ -58,31 +60,20 @@ export default function AcademicsPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    if (!authLoading && !routeLoading && isAllowed && coach?.id) {
+    if (!authLoading && !routeLoading && isAllowed && selectedTeamId) {
       fetchStudentAthletes();
+    } else if (!authLoading && !routeLoading && isAllowed && !selectedTeamId) {
+      setLoading(false);
     }
-  }, [authLoading, routeLoading, isAllowed, coach?.id]);
+  }, [authLoading, routeLoading, isAllowed, selectedTeamId]);
 
   async function fetchStudentAthletes() {
-    if (!coach?.id) return;
+    if (!selectedTeamId) return;
 
     setLoading(true);
 
-    // Get team ID first
-    const { data: staffData } = await supabase
-      .from('team_coach_staff')
-      .select('team_id')
-      .eq('coach_id', coach.id)
-      .single();
-
-    if (!staffData?.team_id) {
-      setStudents([]);
-      setLoading(false);
-      return;
-    }
-
-    // Get team members with player details
-    const { data: membersData } = await supabase
+    // Get team members with player details and academic info
+    const { data: membersData, error } = await supabase
       .from('team_members')
       .select(`
         id,
@@ -94,12 +85,23 @@ export default function AcademicsPage() {
           avatar_url,
           primary_position,
           grad_year,
-          gpa
+          gpa,
+          credits_completed,
+          credits_required,
+          academic_standing,
+          eligibility_status
         )
       `)
-      .eq('team_id', staffData.team_id);
+      .eq('team_id', selectedTeamId);
 
-    // Transform data - in a real app, academic info would come from a separate table
+    if (error) {
+      console.error('Error fetching students:', error);
+      setStudents([]);
+      setLoading(false);
+      return;
+    }
+
+    // Transform data with real academic information
     const transformedStudents: StudentAthlete[] = (membersData || []).map((member) => {
       const player = member.players as any;
       return {
@@ -111,10 +113,10 @@ export default function AcademicsPage() {
         primary_position: player?.primary_position || null,
         grad_year: player?.grad_year || null,
         gpa: player?.gpa || null,
-        credits_completed: Math.floor(Math.random() * 60) + 10, // Mock data
-        credits_required: 60,
-        academic_standing: ['good', 'good', 'good', 'warning', 'probation'][Math.floor(Math.random() * 5)] as any,
-        eligibility_status: ['eligible', 'eligible', 'eligible', 'pending'][Math.floor(Math.random() * 4)] as any,
+        credits_completed: player?.credits_completed || 0,
+        credits_required: player?.credits_required || 60,
+        academic_standing: player?.academic_standing || 'good',
+        eligibility_status: player?.eligibility_status || 'eligible',
       };
     });
 
@@ -133,7 +135,30 @@ export default function AcademicsPage() {
   };
 
   const saveEditing = async () => {
-    // In a real app, this would save to a student_academics table
+    if (!editingId) return;
+
+    const student = students.find(s => s.id === editingId);
+    if (!student) return;
+
+    // Update player record with academic information
+    const { error } = await supabase
+      .from('players')
+      .update({
+        gpa: editValues.gpa !== undefined ? editValues.gpa : student.gpa,
+        credits_completed: editValues.credits_completed !== undefined ? editValues.credits_completed : student.credits_completed,
+        academic_standing: editValues.academic_standing !== undefined ? editValues.academic_standing : student.academic_standing,
+        eligibility_status: editValues.eligibility_status !== undefined ? editValues.eligibility_status : student.eligibility_status,
+      })
+      .eq('id', student.player_id);
+
+    if (error) {
+      console.error('Error saving academic data:', error);
+      // Show error to user (in a real app, use toast notification)
+      alert('Failed to save academic data');
+      return;
+    }
+
+    // Update local state
     setStudents(students.map(s =>
       s.id === editingId ? { ...s, ...editValues } : s
     ));

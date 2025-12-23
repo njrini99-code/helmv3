@@ -1,34 +1,33 @@
-'use client';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import { IconClipboardList } from '@/components/icons';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { IconClipboardList, IconPlus } from '@/components/icons';
+export default async function GolfTasksPage() {
+  const supabase = await createClient();
 
-export default function GolfTasksPage() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/golf/login');
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Tasks</h1>
-          <p className="text-slate-500 mt-1">Assign and track player tasks</p>
+    <div className="min-h-screen bg-[#FAF6F1]">
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
+            <p className="text-slate-500 mt-1">Assign and track player tasks</p>
+          </div>
         </div>
-        <Button className="gap-2">
-          <IconPlus size={18} />
-          Create Task
-        </Button>
-      </div>
 
-      <Card glass>
-        <CardContent className="py-12 text-center">
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 shadow-sm text-center">
           <IconClipboardList size={48} className="mx-auto text-slate-300 mb-4" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">
-            No Active Tasks
+            Tasks Coming Soon
           </h3>
           <p className="text-slate-500">
-            Create tasks for your team to complete
+            Assign and track completion of team tasks
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

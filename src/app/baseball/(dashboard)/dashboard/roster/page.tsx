@@ -10,6 +10,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { PageLoading } from '@/components/ui/loading';
 import { IconUsers, IconSearch, IconFilter, IconLink } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
+import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName } from '@/lib/utils';
 import { InviteModal } from '@/components/coach/InviteModal';
@@ -35,63 +36,23 @@ interface TeamMember {
 
 export default function RosterPage() {
   const { user, coach, loading: authLoading } = useAuth();
+  const { selectedTeamId, getSelectedTeam } = useTeamStore();
+  const selectedTeam = getSelectedTeam();
   const [searchQuery, setSearchQuery] = useState('');
   const [roster, setRoster] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [teamId, setTeamId] = useState<string | null>(null);
-  const [teamName, setTeamName] = useState<string>('Your Team');
 
   useEffect(() => {
-    if (coach?.id) {
-      fetchCoachTeam();
-    }
-  }, [coach?.id]);
-
-  useEffect(() => {
-    if (teamId) {
+    if (selectedTeamId) {
       fetchRoster();
-    }
-  }, [teamId]);
-
-  async function fetchCoachTeam() {
-    if (!coach?.id) return;
-
-    const supabase = createClient();
-
-    // Find the team this coach belongs to
-    const { data: staffData, error: staffError } = await supabase
-      .from('team_coach_staff')
-      .select('team_id')
-      .eq('coach_id', coach.id)
-      .single();
-
-    if (staffError) {
-      // In dev mode, just show empty state instead of error
-      setLoading(false);
-      return;
-    }
-
-    if (staffData?.team_id) {
-      setTeamId(staffData.team_id);
-
-      // Fetch team name
-      const { data: teamData } = await supabase
-        .from('teams')
-        .select('name')
-        .eq('id', staffData.team_id)
-        .single();
-
-      if (teamData?.name) {
-        setTeamName(teamData.name);
-      }
     } else {
       setLoading(false);
     }
-  }
+  }, [selectedTeamId]);
 
   async function fetchRoster() {
-    if (!teamId) return;
+    if (!selectedTeamId) return;
 
     setLoading(true);
     const supabase = createClient();
@@ -116,7 +77,7 @@ export default function RosterPage() {
           recruiting_activated
         )
       `)
-      .eq('team_id', teamId)
+      .eq('team_id', selectedTeamId)
       .order('joined_at', { ascending: false });
 
     if (error) {
@@ -329,10 +290,10 @@ export default function RosterPage() {
       </div>
 
       {/* Invite Modal */}
-      {showInviteModal && teamId && coach?.id && (
+      {showInviteModal && selectedTeamId && coach?.id && (
         <InviteModal
-          teamId={teamId}
-          teamName={teamName}
+          teamId={selectedTeamId}
+          teamName={selectedTeam?.name || 'Your Team'}
           coachId={coach.id}
           onClose={() => setShowInviteModal(false)}
         />

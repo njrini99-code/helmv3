@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { IconVideo, IconPlus, IconStar, IconTrash, IconSearch, IconFilter } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
+import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { formatRelativeTime, getFullName } from '@/lib/utils';
 import type { Video } from '@/lib/types';
@@ -32,11 +33,11 @@ interface VideoWithPlayer extends Video {
 
 export default function VideosPage() {
   const { user, player, coach, loading: authLoading } = useAuth();
+  const { selectedTeamId } = useTeamStore();
   const [videos, setVideos] = useState<VideoWithPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [teamId, setTeamId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; url: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const { showToast } = useToast();
@@ -44,37 +45,16 @@ export default function VideosPage() {
 
   const isCoach = user?.role === 'coach';
 
-  // Fetch coach's team
-  useEffect(() => {
-    if (coach?.id && isCoach) {
-      fetchCoachTeam();
-    }
-  }, [coach?.id, isCoach]);
-
-  async function fetchCoachTeam() {
-    if (!coach?.id) return;
-
-    const { data, error } = await supabase
-      .from('team_coach_staff')
-      .select('team_id')
-      .eq('coach_id', coach.id)
-      .single();
-
-    if (!error && data?.team_id) {
-      setTeamId(data.team_id);
-    }
-  }
-
   // Fetch videos
   const fetchVideos = async () => {
     setLoading(true);
 
-    if (isCoach && teamId) {
+    if (isCoach && selectedTeamId) {
       // Coach: fetch videos from all team players
       const { data: teamMembers } = await supabase
         .from('team_members')
         .select('player_id')
-        .eq('team_id', teamId);
+        .eq('team_id', selectedTeamId);
 
       if (teamMembers && teamMembers.length > 0) {
         const playerIds = teamMembers.map(m => m.player_id);
@@ -117,10 +97,10 @@ export default function VideosPage() {
   useEffect(() => {
     if (player) {
       fetchVideos();
-    } else if (isCoach && teamId) {
+    } else if (isCoach && selectedTeamId) {
       fetchVideos();
     }
-  }, [player, isCoach, teamId]);
+  }, [player, isCoach, selectedTeamId]);
 
   const handleDeleteConfirm = async () => {
     if (!deleteConfirm || !player) return;

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
 import { IconUsers, IconVideo, IconCalendar, IconNote, IconChevronRight, IconBuilding } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
+import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName, formatRelativeTime } from '@/lib/utils';
 
@@ -35,8 +36,8 @@ interface Event {
 
 export default function TeamDashboardPage() {
   const { user, coach, player, loading: authLoading } = useAuth();
+  const { selectedTeamId } = useTeamStore();
   const [loading, setLoading] = useState(true);
-  const [, setTeamId] = useState<string | null>(null);
 
   // Coach stats
   const [rosterCount, setRosterCount] = useState(0);
@@ -52,33 +53,20 @@ export default function TeamDashboardPage() {
   const [playerTeamCount, setPlayerTeamCount] = useState(0);
 
   useEffect(() => {
-    if (coach?.id && user?.role === 'coach') {
+    if (selectedTeamId && coach?.id && user?.role === 'coach') {
       fetchCoachTeamData();
-    } else if (player?.id && user?.role === 'player') {
+    } else if (selectedTeamId && player?.id && user?.role === 'player') {
       fetchPlayerTeamData();
+    } else {
+      setLoading(false);
     }
-  }, [coach?.id, player?.id, user?.role]);
+  }, [selectedTeamId, coach?.id, player?.id, user?.role]);
 
   async function fetchCoachTeamData() {
-    if (!coach?.id) return;
+    if (!coach?.id || !selectedTeamId) return;
 
     const supabase = createClient();
     setLoading(true);
-
-    // Get team ID
-    const { data: staffData } = await supabase
-      .from('team_coach_staff')
-      .select('team_id')
-      .eq('coach_id', coach.id)
-      .single();
-
-    if (!staffData?.team_id) {
-      setLoading(false);
-      return;
-    }
-
-    const currentTeamId = staffData.team_id;
-    setTeamId(currentTeamId);
 
     // Fetch all stats in parallel
     const [
@@ -92,13 +80,13 @@ export default function TeamDashboardPage() {
       supabase
         .from('team_members')
         .select('*', { count: 'exact', head: true })
-        .eq('team_id', currentTeamId),
+        .eq('team_id', selectedTeamId),
 
       // Video count (from all team players)
       supabase
         .from('team_members')
         .select('player_id')
-        .eq('team_id', currentTeamId)
+        .eq('team_id', selectedTeamId)
         .then(async ({ data: members }) => {
           if (!members || members.length === 0) return { count: 0 };
           const playerIds = members.map(m => m.player_id);
@@ -119,7 +107,7 @@ export default function TeamDashboardPage() {
       supabase
         .from('events')
         .select('id, name, event_type, start_time')
-        .eq('team_id', currentTeamId)
+        .eq('team_id', selectedTeamId)
         .gte('start_time', new Date().toISOString())
         .lte('start_time', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString())
         .order('start_time', { ascending: true })
@@ -139,7 +127,7 @@ export default function TeamDashboardPage() {
             primary_position
           )
         `)
-        .eq('team_id', currentTeamId)
+        .eq('team_id', selectedTeamId)
         .order('joined_at', { ascending: false })
         .limit(5),
     ]);
@@ -154,25 +142,10 @@ export default function TeamDashboardPage() {
   }
 
   async function fetchPlayerTeamData() {
-    if (!player?.id) return;
+    if (!player?.id || !selectedTeamId) return;
 
     const supabase = createClient();
     setLoading(true);
-
-    // Get team ID
-    const { data: memberData } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('player_id', player.id)
-      .single();
-
-    if (!memberData?.team_id) {
-      setLoading(false);
-      return;
-    }
-
-    const currentTeamId = memberData.team_id;
-    setTeamId(currentTeamId);
 
     // Fetch player stats in parallel
     const [
@@ -199,13 +172,13 @@ export default function TeamDashboardPage() {
       supabase
         .from('team_members')
         .select('*', { count: 'exact', head: true })
-        .eq('team_id', currentTeamId),
+        .eq('team_id', selectedTeamId),
 
       // Upcoming events
       supabase
         .from('events')
         .select('id, name, event_type, start_time')
-        .eq('team_id', currentTeamId)
+        .eq('team_id', selectedTeamId)
         .gte('start_time', new Date().toISOString())
         .order('start_time', { ascending: true })
         .limit(3),
