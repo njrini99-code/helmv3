@@ -11,6 +11,31 @@ interface UploadScheduleModalProps {
   onParsed: (classes: ParsedClass[]) => void;
 }
 
+// Load PDF.js from CDN (avoids Vercel native dependency issues)
+const loadPdfJs = async () => {
+  const PDFJS_VERSION = '3.11.174';
+  const PDFJS_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}`;
+  
+  // Check if already loaded
+  if ((window as any).pdfjsLib) {
+    return (window as any).pdfjsLib;
+  }
+  
+  // Load the main library
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `${PDFJS_CDN}/pdf.min.js`;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load PDF.js'));
+    document.head.appendChild(script);
+  });
+  
+  const pdfjsLib = (window as any).pdfjsLib;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `${PDFJS_CDN}/pdf.worker.min.js`;
+  
+  return pdfjsLib;
+};
+
 export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadScheduleModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -31,24 +56,25 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
     }
   };
 
-  // PDF support temporarily disabled due to build issues
-  // Will be re-enabled once Turbopack compatibility is resolved
   const extractTextFromPDF = async (file: File): Promise<string> => {
-    throw new Error('PDF support is currently unavailable. Please use TXT file or paste your schedule text instead.');
-
-    // TODO: Re-enable once pdfjs-dist is compatible with Turbopack
-    // const pdfjsLib = await import('pdfjs-dist');
-    // pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-    // const arrayBuffer = await file.arrayBuffer();
-    // const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    // let fullText = '';
-    // for (let i = 1; i <= pdf.numPages; i++) {
-    //   const page = await pdf.getPage(i);
-    //   const textContent = await page.getTextContent();
-    //   const pageText = textContent.items.map((item: any) => item.str).join(' ');
-    //   fullText += pageText + '\n';
-    // }
-    // return fullText;
+    try {
+      const pdfjsLib = await loadPdfJs();
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      
+      return fullText;
+    } catch (err) {
+      console.error('PDF extraction error:', err);
+      throw new Error('Failed to extract text from PDF. Try using TXT or paste text instead.');
+    }
   };
 
   const processFile = async (file: File) => {
@@ -58,13 +84,12 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
     try {
       let text = '';
 
-      if (file.type === 'application/pdf') {
-        // PDF support temporarily disabled
-        throw new Error('PDF upload is temporarily disabled. Please export your schedule as TXT or use the Paste Text option.');
+      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+        text = await extractTextFromPDF(file);
       } else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
         text = await file.text();
       } else {
-        throw new Error('Unsupported file type. Please upload a TXT file or use Paste Text.');
+        throw new Error('Unsupported file type. Please upload a PDF or TXT file.');
       }
       
       const classes = parseScheduleText(text);
@@ -202,7 +227,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".txt"
+                accept=".pdf,.txt"
                 onChange={handleFileSelect}
                 className="hidden"
               />
@@ -216,7 +241,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               </div>
 
               <p className="text-slate-900 font-medium mb-1">
-                {loading ? 'Processing...' : 'Drop your TXT file here'}
+                {loading ? 'Processing...' : 'Drop your PDF or TXT file here'}
               </p>
               <p className="text-sm text-slate-500 mb-4">
                 or click to browse files
@@ -225,7 +250,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               <div className="flex items-center justify-center gap-4 text-xs text-slate-400">
                 <span className="flex items-center gap-1">
                   <IconFileText size={14} />
-                  TXT files only
+                  PDF & TXT supported
                 </span>
               </div>
             </div>
@@ -261,7 +286,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           <div className="mt-6 p-4 bg-slate-50 rounded-xl">
             <p className="text-sm font-medium text-slate-700 mb-2">Tips for best results:</p>
             <ul className="text-xs text-slate-500 space-y-1">
-              <li>• Export your schedule from your university portal as TXT or copy the text</li>
+              <li>• Export your schedule from your university portal as PDF or TXT</li>
               <li>• Include course codes like "BUAD 123" or "MATH201"</li>
               <li>• Days can be formatted as MWF, TTh, MW, etc.</li>
               <li>• Times like "9:30AM - 10:45AM" work best</li>
