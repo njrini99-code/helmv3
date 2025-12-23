@@ -389,7 +389,7 @@ export function calculatePlayerStats(rounds: RoundData[]): PlayerStats {
         puttMakeByBucket[bucket].made++;
       }
       
-      if (hole.firstPuttLeave !== null && hole.firstPuttLeave > 0) {
+      if (hole.firstPuttLeave != null && hole.firstPuttLeave > 0) {
         puttProximityByBucket[bucket].sum += hole.firstPuttLeave;
         puttProximityByBucket[bucket].count++;
         totalFirstPuttProximity += hole.firstPuttLeave;
