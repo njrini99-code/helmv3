@@ -52,22 +52,6 @@ export default function SignupPage() {
         return;
       }
 
-      // If no session, email confirmation is required
-      if (!authData.session) {
-        console.log('Email confirmation required - saving intent and redirecting');
-        
-        // Save signup intent to localStorage for after email verification
-        localStorage.setItem('signup_intent', JSON.stringify({
-          role,
-          coachType,
-          playerType,
-          fullName,
-        }));
-        
-        router.push('/auth/verify-email');
-        return;
-      }
-
       // Step 2: Upsert user record with role (handles race condition with trigger)
       // The trigger creates the users record, but we use upsert to be safe
       const userEmail = authData.user.email || email;

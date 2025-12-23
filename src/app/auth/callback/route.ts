@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL('/baseball/dashboard', requestUrl.origin));
       }
 
-      // No profile exists - need to complete signup
-      // This happens when email confirmation is required
+      // No profile exists - redirect to complete signup
+      // This handles OAuth users who need to create their profile
       return NextResponse.redirect(new URL('/baseball/complete-signup', requestUrl.origin));
     }
   }

@@ -20,44 +20,6 @@ export default function CompleteSignupPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  // Auto-create profile from saved intent
-  const autoCreateProfile = async (user: any, intent: any) => {
-    try {
-      // Update users table
-      await supabase
-        .from('users')
-        .upsert({ id: user.id, email: user.email, role: intent.role }, { onConflict: 'id' });
-
-      if (intent.role === 'coach') {
-        await supabase.from('coaches').insert({
-          user_id: user.id,
-          coach_type: intent.coachType,
-          full_name: intent.fullName || user.email?.split('@')[0] || 'Coach',
-          onboarding_completed: false
-        });
-        localStorage.removeItem('signup_intent');
-        router.push('/baseball/coach');
-      } else {
-        const fullName = intent.fullName || user.email?.split('@')[0] || 'Player';
-        const [firstName, ...lastParts] = fullName.split(' ');
-        await supabase.from('players').insert({
-          user_id: user.id,
-          player_type: intent.playerType,
-          first_name: firstName,
-          last_name: lastParts.join(' ') || '',
-          recruiting_activated: intent.playerType !== 'college',
-          onboarding_completed: false,
-          profile_completion_percent: 0
-        });
-        localStorage.removeItem('signup_intent');
-        router.push('/baseball/player');
-      }
-    } catch (err) {
-      console.error('Auto-create profile error:', err);
-      setChecking(false);
-    }
-  };
-
   // Check if user is logged in and doesn't have a profile
   useEffect(() => {
     async function checkUser() {
@@ -91,26 +53,7 @@ export default function CompleteSignupPage() {
         return;
       }
 
-      // Check localStorage for saved signup intent
-      const savedIntent = localStorage.getItem('signup_intent');
-      if (savedIntent) {
-        try {
-          const intent = JSON.parse(savedIntent);
-          
-          // If we have complete intent, auto-create the profile
-          if (intent.role && ((intent.role === 'coach' && intent.coachType) || (intent.role === 'player' && intent.playerType))) {
-            await autoCreateProfile(user, intent);
-            return;
-          }
-          
-          setRole(intent.role);
-          setCoachType(intent.coachType);
-          setPlayerType(intent.playerType);
-        } catch (e) {
-          // Ignore parse errors
-        }
-      }
-
+      // User has no profile - show role selection
       setChecking(false);
     }
 
@@ -165,8 +108,6 @@ export default function CompleteSignupPage() {
           return;
         }
 
-        // Clear saved intent
-        localStorage.removeItem('signup_intent');
         router.push('/baseball/coach');
       } else {
         const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Player';
@@ -188,8 +129,6 @@ export default function CompleteSignupPage() {
           return;
         }
 
-        // Clear saved intent
-        localStorage.removeItem('signup_intent');
         router.push('/baseball/player');
       }
     } catch (err) {

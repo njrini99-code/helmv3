@@ -49,20 +49,20 @@ export default function GolfSignupPage() {
         return;
       }
 
-      // If no session, email confirmation is required
-      if (!authData.session) {
-        console.log('Email confirmation required - redirecting to verify-email');
-        router.push('/auth/verify-email');
+      // Step 2: Upsert user record with role (handles race condition with trigger)
+      const userEmail = authData.user.email || email;
+      if (!userEmail) {
+        setError('Email is required');
+        setLoading(false);
         return;
       }
 
-      // Step 2: Upsert user record with role (handles race condition with trigger)
       const { error: userError } = await supabase
         .from('users')
         .upsert(
           {
             id: authData.user.id,
-            email: authData.user.email || email,
+            email: userEmail,
             role,
           },
           {
