@@ -55,7 +55,7 @@ export function DashboardHeader({ title, children }: DashboardHeaderProps) {
             'transition-colors duration-150 active:scale-95',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40'
           )}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label="Toggle menu"
         >
           <MenuIcon open={mobileOpen} />
         </button>

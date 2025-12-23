@@ -39,7 +39,8 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
     notFound();
   }
 
-  const qualifierData = qualifier as any as QualifierWithEntries;
+  // Type assertion needed due to Supabase's nested join type inference limitations
+  const qualifierData = qualifier as unknown as QualifierWithEntries;
 
   // Get all rounds for this qualifier
   const { data: rounds } = await supabase

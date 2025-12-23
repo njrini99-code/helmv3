@@ -38,7 +38,12 @@ export function CreateQualifierButton() {
         .eq('status', 'active')
         .order('last_name');
 
-      setPlayers(playersData as any || []);
+      // Filter out players with missing names
+      const validPlayers = (playersData || []).filter(
+        (p): p is { id: string; first_name: string; last_name: string } =>
+          !!p.first_name && !!p.last_name
+      );
+      setPlayers(validPlayers);
     }
 
     if (isOpen) {

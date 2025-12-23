@@ -89,12 +89,15 @@ export function checkRateLimit(
 export function getClientIdentifier(headers: Headers): string {
   const forwardedFor = headers.get('x-forwarded-for');
   if (forwardedFor) {
-    return forwardedFor.split(',')[0]!.trim();
+    const ip = forwardedFor.split(',')[0]?.trim();
+    if (ip && ip.length > 0) {
+      return ip;
+    }
   }
 
   const realIp = headers.get('x-real-ip');
-  if (realIp) {
-    return realIp;
+  if (realIp && realIp.trim().length > 0) {
+    return realIp.trim();
   }
 
   // Fallback to a default identifier

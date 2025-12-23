@@ -260,33 +260,30 @@ export default function HomePage() {
   const [demoEmail, setDemoEmail] = useState('');
   const [demoSubmitted, setDemoSubmitted] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [demoError, setDemoError] = useState<string | null>(null);
 
   const handleDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!demoEmail) return;
-    
+
     setDemoLoading(true);
+    setDemoError(null);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('demo_requests')
-        .insert({ 
-          email: demoEmail,
-          product: 'both',
-          status: 'pending'
-        });
-      
-      if (error) {
-        console.error('Demo request error:', error);
-        // Still show success to user - don't block on DB errors
-      }
+      // For now, just log the demo request
+      // TODO: Set up demo_requests table or integrate with external service
+      console.log('Demo request:', { email: demoEmail, timestamp: new Date().toISOString() });
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setDemoSubmitted(true);
     } catch (err) {
       console.error('Demo request error:', err);
+      setDemoError('Unable to submit request. Please try again or contact us directly.');
+    } finally {
+      setDemoLoading(false);
     }
-
-    setDemoSubmitted(true);
-    setDemoLoading(false);
   };
 
   return (
@@ -590,24 +587,31 @@ export default function HomePage() {
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleDemoSubmit} className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-                    <input
-                      type="email"
-                      value={demoEmail}
-                      onChange={(e) => setDemoEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      required
-                      className="flex-1 px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-green-300 focus:ring-2 focus:ring-green-100 transition-all"
-                    />
-                    <button
-                      type="submit"
-                      disabled={demoLoading}
-                      className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-500 shadow-lg shadow-green-600/25 hover:shadow-xl hover:shadow-green-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {demoLoading ? 'Sending...' : 'Book a demo'}
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </form>
+                  <div className="space-y-3 max-w-md mx-auto">
+                    {demoError && (
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                        <p className="text-sm text-red-700">{demoError}</p>
+                      </div>
+                    )}
+                    <form onSubmit={handleDemoSubmit} className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <input
+                        type="email"
+                        value={demoEmail}
+                        onChange={(e) => setDemoEmail(e.target.value)}
+                        placeholder="Enter your email"
+                        required
+                        className="flex-1 px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-green-300 focus:ring-2 focus:ring-green-100 transition-all"
+                      />
+                      <button
+                        type="submit"
+                        disabled={demoLoading}
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-500 shadow-lg shadow-green-600/25 hover:shadow-xl hover:shadow-green-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {demoLoading ? 'Sending...' : 'Book a demo'}
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </form>
+                  </div>
                 )}
               </div>
             </motion.div>

@@ -8,8 +8,8 @@ You are performing an emergency production audit. This app is being presented in
 ## PROJECT CONTEXT
 
 - **Stack:** Next.js 14+, TypeScript, Supabase, Tailwind CSS
-- **Project Path:** /Users/ricknini/Downloads/helmv3
-- **Supabase Project ID:** dgvlnelygibgrrjehbyc
+- **Project Path:** [PROJECT_ROOT]
+- **Supabase Project ID:** [SUPABASE_PROJECT_ID]
 - **Two main modules:** Baseball (recruiting) and Golf (team management)
 
 ---
@@ -17,7 +17,7 @@ You are performing an emergency production audit. This app is being presented in
 ## PHASE 1: BUILD VERIFICATION (Do This First)
 
 ```bash
-cd /Users/ricknini/Downloads/helmv3
+cd [PROJECT_ROOT]
 npm install
 npm run build
 ```
@@ -536,7 +536,7 @@ REMAINING RISKS:
 ## START NOW
 
 ```bash
-cd /Users/ricknini/Downloads/helmv3
+cd [PROJECT_ROOT]
 npm run build
 ```
 

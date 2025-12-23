@@ -54,7 +54,16 @@ export default function SignupPage() {
 
       // If no session, email confirmation is required
       if (!authData.session) {
-        console.log('Email confirmation required - redirecting to verify-email');
+        console.log('Email confirmation required - saving intent and redirecting');
+        
+        // Save signup intent to localStorage for after email verification
+        localStorage.setItem('signup_intent', JSON.stringify({
+          role,
+          coachType,
+          playerType,
+          fullName,
+        }));
+        
         router.push('/auth/verify-email');
         return;
       }

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { cn } from '@/lib/utils';
-import { IconChevronLeft, IconSearch } from '@/components/icons';
+import { IconChevronLeft } from '@/components/icons';
 
 // Menu icon
 function MenuIcon({ className }: { className?: string }) {
@@ -79,16 +79,6 @@ export function GolfHeader({ title, subtitle, children, backHref }: GolfHeaderPr
         {/* Right: Actions */}
         <div className="flex items-center gap-3">
           {children}
-
-          {/* Search button */}
-          <button
-            onClick={() => {
-              // Could trigger a search modal
-            }}
-            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <IconSearch size={20} />
-          </button>
         </div>
       </div>
     </header>

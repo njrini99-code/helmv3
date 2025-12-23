@@ -19,14 +19,24 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
 
   // Persist collapsed state
   useEffect(() => {
-    const saved = localStorage.getItem('sidebar-collapsed');
-    if (saved !== null) {
-      setCollapsed(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      if (saved !== null) {
+        setCollapsed(JSON.parse(saved));
+      }
+    } catch (error) {
+      // localStorage unavailable (SSR, incognito, etc.)
+      console.warn('Failed to load sidebar state from localStorage:', error);
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed));
+    try {
+      localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed));
+    } catch (error) {
+      // localStorage unavailable (SSR, incognito, etc.)
+      console.warn('Failed to save sidebar state to localStorage:', error);
+    }
   }, [collapsed]);
 
   // Close mobile menu on resize
