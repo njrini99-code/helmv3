@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { IconAlertTriangle } from '@/components/icons';
+import { IconWarning } from '@/components/icons';
 
 export default function MessagesError({
   error,
@@ -19,7 +19,7 @@ export default function MessagesError({
     <div className="min-h-screen flex items-center justify-center bg-[#FAF6F1] p-4">
       <div className="text-center">
         <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-          <IconAlertTriangle size={32} className="text-red-500" />
+          <IconWarning size={32} className="text-red-500" />
         </div>
         <h2 className="text-xl font-semibold text-slate-900 mb-2">
           Something went wrong

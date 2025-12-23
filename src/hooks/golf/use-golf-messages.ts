@@ -173,7 +173,7 @@ export function useGolfConversations() {
 
         let otherParticipant: GolfConversationParticipant | undefined;
 
-        if (otherParticipants && otherParticipants.length > 0) {
+        if (otherParticipants && otherParticipants.length > 0 && otherParticipants[0]) {
           const otherUserId = otherParticipants[0].user_id;
 
           // Try to find as golf coach
