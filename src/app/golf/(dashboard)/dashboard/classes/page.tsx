@@ -256,7 +256,7 @@ export default function GolfClassesPage() {
     
     setEditingClass({
       id: selectedClass.id,
-      course_code: selectedClass.course_code,
+      course_code: selectedClass.course_code || '',
       course_name: selectedClass.course_name,
       instructor: selectedClass.instructor || '',
       days: selectedClass.days || [],
