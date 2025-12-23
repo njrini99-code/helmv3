@@ -17,6 +17,9 @@ const nextConfig = {
   // Turbopack configuration (Next.js 16+)
   turbopack: {},
 
+  // Transpile specific packages that need compilation
+  transpilePackages: ['pdfjs-dist'],
+
   // Allow images from Supabase storage
   images: {
     remotePatterns: [
@@ -137,7 +140,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net;
+              script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
               style-src 'self' 'unsafe-inline';
               img-src 'self' data: https: blob:;
               font-src 'self' data:;
