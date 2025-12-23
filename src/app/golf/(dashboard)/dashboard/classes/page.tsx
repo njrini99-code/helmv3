@@ -552,6 +552,7 @@ export default function GolfClassesPage() {
         onDelete={handleDeleteClass}
         classData={selectedClass ? {
           ...selectedClass,
+          course_code: selectedClass.course_code || '',
           instructor: selectedClass.instructor || '',
           days: selectedClass.days || [],
           start_time: selectedClass.start_time || '',
