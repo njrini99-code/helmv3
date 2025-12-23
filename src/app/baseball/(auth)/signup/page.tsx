@@ -70,12 +70,19 @@ export default function SignupPage() {
 
       // Step 2: Upsert user record with role (handles race condition with trigger)
       // The trigger creates the users record, but we use upsert to be safe
+      const userEmail = authData.user.email || email;
+      if (!userEmail) {
+        setError('Email is required');
+        setLoading(false);
+        return;
+      }
+
       const { error: userError } = await supabase
         .from('users')
         .upsert(
           {
             id: authData.user.id,
-            email: authData.user.email || email,
+            email: userEmail,
             role,
           },
           {

@@ -135,6 +135,12 @@ export default function CompleteSignupPage() {
       }
 
       // Update users table with role
+      if (!user.email) {
+        setError('Email is required');
+        setLoading(false);
+        return;
+      }
+
       await supabase
         .from('users')
         .upsert({
