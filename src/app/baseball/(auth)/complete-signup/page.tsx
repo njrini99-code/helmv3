@@ -135,7 +135,8 @@ export default function CompleteSignupPage() {
       }
 
       // Update users table with role
-      if (!user.email) {
+      const userEmail = user.email;
+      if (!userEmail) {
         setError('Email is required');
         setLoading(false);
         return;
@@ -145,7 +146,7 @@ export default function CompleteSignupPage() {
         .from('users')
         .upsert({
           id: user.id,
-          email: user.email,
+          email: userEmail,
           role,
         }, { onConflict: 'id' });
 
