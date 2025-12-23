@@ -381,17 +381,21 @@ export function calculatePlayerStats(rounds: RoundData[]): PlayerStats {
         puttEfficiencyByBucket[bucket] = { sum: 0, count: 0 };
       }
       
-      puttMakeByBucket[bucket].total++;
-      puttEfficiencyByBucket[bucket].sum += hole.putts;
-      puttEfficiencyByBucket[bucket].count++;
+      const makeData = puttMakeByBucket[bucket]!;
+      const effData = puttEfficiencyByBucket[bucket]!;
+      const proxData = puttProximityByBucket[bucket]!;
+      
+      makeData.total++;
+      effData.sum += hole.putts;
+      effData.count++;
       
       if (hole.putts === 1) {
-        puttMakeByBucket[bucket].made++;
+        makeData.made++;
       }
       
       if (hole.firstPuttLeave != null && hole.firstPuttLeave > 0) {
-        puttProximityByBucket[bucket].sum += hole.firstPuttLeave;
-        puttProximityByBucket[bucket].count++;
+        proxData.sum += hole.firstPuttLeave;
+        proxData.count++;
         totalFirstPuttProximity += hole.firstPuttLeave;
         firstPuttCount++;
       }
@@ -475,16 +479,19 @@ export function calculatePlayerStats(rounds: RoundData[]): PlayerStats {
       if (!approachByBucket[bucket]) {
         approachByBucket[bucket] = { sum: 0, count: 0 };
       }
-      approachByBucket[bucket].sum += hole.approachProximity;
-      approachByBucket[bucket].count++;
+      const bucketData = approachByBucket[bucket]!;
+      bucketData.sum += hole.approachProximity;
+      bucketData.count++;
       
       // By lie
       if (hole.approachLie) {
-        if (!approachByLie[hole.approachLie]) {
-          approachByLie[hole.approachLie] = { sum: 0, count: 0 };
+        const lie = hole.approachLie;
+        if (!approachByLie[lie]) {
+          approachByLie[lie] = { sum: 0, count: 0 };
         }
-        approachByLie[hole.approachLie].sum += hole.approachProximity;
-        approachByLie[hole.approachLie].count++;
+        const lieData = approachByLie[lie]!;
+        lieData.sum += hole.approachProximity;
+        lieData.count++;
       }
       
       // By par
@@ -492,8 +499,9 @@ export function calculatePlayerStats(rounds: RoundData[]): PlayerStats {
       if (!approachByPar[parKey]) {
         approachByPar[parKey] = { sum: 0, count: 0 };
       }
-      approachByPar[parKey].sum += hole.approachProximity;
-      approachByPar[parKey].count++;
+      const parData = approachByPar[parKey]!;
+      parData.sum += hole.approachProximity;
+      parData.count++;
     }
   });
   
