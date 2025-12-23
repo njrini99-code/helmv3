@@ -35,22 +35,13 @@ export default function GolfSignupPage() {
         return;
       }
 
-      if (!authData.user) {
+      if (!authData.user || !authData.session) {
         setError('Failed to create account. Please try again.');
         setLoading(false);
         return;
       }
 
-      // Step 2: Verify auth session is established
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError || !session) {
-        setError('Failed to establish session. Please try logging in.');
-        setLoading(false);
-        return;
-      }
-
-      // Step 3: Update user record with role
+      // Step 2: Update user record with role
       const { error: userError } = await supabase
         .from('users')
         .update({ role: 'coach' })
@@ -63,9 +54,9 @@ export default function GolfSignupPage() {
         return;
       }
 
-      // Step 4: Create golf coach record
+      // Step 3: Create golf coach record
       const { error: coachError } = await supabase.from('golf_coaches').insert({
-        user_id: session.user.id,
+        user_id: authData.session.user.id,
         full_name: fullName,
         onboarding_completed: false,
       });
