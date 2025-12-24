@@ -206,7 +206,6 @@ export async function submitGolfRoundComprehensive(data: GolfRoundInputComprehen
     putts: hole.putts,
     fairway_hit: hole.fairwayHit,
     green_in_regulation: hole.greenInRegulation,
-    penalties: hole.penaltyStrokes,
     // New comprehensive stats columns
     driving_distance: hole.drivingDistance,
     used_driver: hole.usedDriver,
