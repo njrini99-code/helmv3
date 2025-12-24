@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward } from '@/components/icons';
-import type { GolfStats } from '@/lib/utils/golf-stats-calculator';
-import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator';
+import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-type StatsCategory = 'scoring' | 'driving' | 'approach' | 'putting';
+type StatsCategory = 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling';
 
 interface StatsDisplayProps {
   stats: GolfStats;
@@ -144,7 +144,7 @@ function ScoringStats({ stats }: { stats: GolfStats }) {
         <StatRow label="Most Pars in a Row" value={formatStatInt(stats.mostParsRow)} />
         <StatRow label="Current No 3-Putt Streak" value={`${formatStatInt(stats.currentNo3PuttStreak)} holes`} />
         <StatRow label="Longest No 3-Putt Streak" value={`${formatStatInt(stats.longestNo3PuttStreak)} holes`} />
-        <StatRow label="Longest Hole Out" value={stats.longestHoleOut ? `${stats.longestHoleOut} yards` : '-'} />
+        <StatRow label="Longest Hole Out" value={stats.longestHoleOut ? `${stats.longestHoleOut} feet` : '-'} />
       </StatSection>
     </div>
   );
@@ -173,7 +173,7 @@ function DrivingStats({ stats }: { stats: GolfStats }) {
         />
         <StatCard 
           label="Fairways/Round" 
-          value={stats.fairwayOpportunities > 0 ? formatStat(stats.fairwaysHit / stats.roundsPlayed, '', 1) : '-'} 
+          value={formatStat(stats.fairwaysHitPerRound, '', 1)} 
         />
       </div>
 
@@ -207,9 +207,19 @@ function DrivingStats({ stats }: { stats: GolfStats }) {
         </div>
       </StatSection>
 
+      {/* GIR Stats */}
+      <StatSection title="GIR Stats">
+        <StatRow label="GIR %" value={formatStat(stats.girPercentage, '%')} />
+        <StatRow label="GIR/Round" value={formatStat(stats.girPerRound, '', 1)} />
+        <StatRow label="Par 3 GIR%" value={formatStat(stats.girPctPar3, '%')} />
+        <StatRow label="Par 4 GIR%" value={formatStat(stats.girPctPar4, '%')} />
+        <StatRow label="Par 5 GIR%" value={formatStat(stats.girPctPar5, '%')} />
+      </StatSection>
+
       {/* Totals */}
       <StatSection title="Totals">
         <StatRow label="Fairways Hit" value={`${stats.fairwaysHit} / ${stats.fairwayOpportunities}`} />
+        <StatRow label="GIR Total" value={`${stats.girTotal} / ${stats.girOpportunities}`} />
         <StatRow label="Holes Played" value={formatStatInt(stats.holesPlayed)} />
       </StatSection>
     </div>
@@ -220,51 +230,40 @@ function ApproachStats({ stats }: { stats: GolfStats }) {
   return (
     <div className="space-y-4">
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard 
-          label="GIR %" 
-          value={formatStat(stats.girPercentage, '%')} 
-          highlight 
-          large 
-        />
-        <StatCard 
-          label="GIR / Round" 
-          value={formatStat(stats.girPerRound, '', 1)} 
-        />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <StatCard 
           label="Approach Proximity" 
           value={stats.approachProximityAvg ? `${Math.round(stats.approachProximityAvg)}'` : '-'} 
           subValue="avg to hole"
+          highlight 
+          large 
         />
         <StatCard 
-          label="Total GIR" 
-          value={`${stats.girTotal}/${stats.girOpportunities}`} 
+          label="From Fairway" 
+          value={stats.approachProximityFairway ? `${Math.round(stats.approachProximityFairway)}'` : '-'} 
+        />
+        <StatCard 
+          label="From Rough" 
+          value={stats.approachProximityRough ? `${Math.round(stats.approachProximityRough)}'` : '-'} 
         />
       </div>
 
-      {/* GIR by Hole Type */}
-      <StatSection title="GIR % by Hole Type">
-        <StatRow label="Par 3s" value={formatStat(stats.girPctPar3, '%')} />
-        <StatRow label="Par 4s" value={formatStat(stats.girPctPar4, '%')} />
-        <StatRow label="Par 5s" value={formatStat(stats.girPctPar5, '%')} />
-      </StatSection>
-
       {/* Proximity by Hole Type */}
-      <StatSection title="Approach Proximity by Hole Type (feet)">
+      <StatSection title="Proximity by Hole Type (feet)">
         <StatRow label="Par 3s" value={stats.approachProximityPar3 ? `${Math.round(stats.approachProximityPar3)}'` : '-'} />
         <StatRow label="Par 4s" value={stats.approachProximityPar4 ? `${Math.round(stats.approachProximityPar4)}'` : '-'} />
         <StatRow label="Par 5s" value={stats.approachProximityPar5 ? `${Math.round(stats.approachProximityPar5)}'` : '-'} />
       </StatSection>
 
       {/* Proximity by Lie */}
-      <StatSection title="Approach Proximity by Lie (feet)">
+      <StatSection title="Proximity by Lie (feet)">
         <StatRow label="From Fairway" value={stats.approachProximityFairway ? `${Math.round(stats.approachProximityFairway)}'` : '-'} />
         <StatRow label="From Rough" value={stats.approachProximityRough ? `${Math.round(stats.approachProximityRough)}'` : '-'} />
         <StatRow label="From Sand" value={stats.approachProximitySand ? `${Math.round(stats.approachProximitySand)}'` : '-'} />
       </StatSection>
 
       {/* Proximity by Distance */}
-      <StatSection title="Approach Proximity by Distance (feet from hole)">
+      <StatSection title="Proximity by Distance (feet from hole)">
         <StatRow label="30-75 yards" value={stats.approachProx30_75 ? `${Math.round(stats.approachProx30_75)}'` : '-'} />
         <StatRow label="75-100 yards" value={stats.approachProx75_100 ? `${Math.round(stats.approachProx75_100)}'` : '-'} />
         <StatRow label="100-125 yards" value={stats.approachProx100_125 ? `${Math.round(stats.approachProx100_125)}'` : '-'} />
@@ -277,14 +276,14 @@ function ApproachStats({ stats }: { stats: GolfStats }) {
 
       {/* Approach Efficiency */}
       <StatSection title="Approach Efficiency (avg strokes to hole out)">
-        <StatRow label="30-75 yards" value={formatStat(stats.approachEff30_75, '', 2)} />
-        <StatRow label="75-100 yards" value={formatStat(stats.approachEff75_100, '', 2)} />
-        <StatRow label="100-125 yards" value={formatStat(stats.approachEff100_125, '', 2)} />
-        <StatRow label="125-150 yards" value={formatStat(stats.approachEff125_150, '', 2)} />
-        <StatRow label="150-175 yards" value={formatStat(stats.approachEff150_175, '', 2)} />
-        <StatRow label="175-200 yards" value={formatStat(stats.approachEff175_200, '', 2)} />
-        <StatRow label="200-225 yards" value={formatStat(stats.approachEff200_225, '', 2)} />
-        <StatRow label="225+ yards" value={formatStat(stats.approachEff225Plus, '', 2)} />
+        <StatRow label="30-75 yards" value={formatStat(stats.approachEff30_75.fairway, '', 2)} />
+        <StatRow label="75-100 yards" value={formatStat(stats.approachEff75_100.fairway, '', 2)} />
+        <StatRow label="100-125 yards" value={formatStat(stats.approachEff100_125.fairway, '', 2)} />
+        <StatRow label="125-150 yards" value={formatStat(stats.approachEff125_150.fairway, '', 2)} />
+        <StatRow label="150-175 yards" value={formatStat(stats.approachEff150_175.fairway, '', 2)} />
+        <StatRow label="175-200 yards" value={formatStat(stats.approachEff175_200.fairway, '', 2)} />
+        <StatRow label="200-225 yards" value={formatStat(stats.approachEff200_225.fairway, '', 2)} />
+        <StatRow label="225+ yards" value={formatStat(stats.approachEff225Plus.fairway, '', 2)} />
       </StatSection>
     </div>
   );
@@ -347,7 +346,7 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
 
       {/* Putting Proximity */}
       <StatSection title="First Putt Leave (avg feet remaining)">
-        <StatRow label="Overall Average" value={stats.puttProximityAvg ? `${stats.puttProximityAvg.toFixed(1)}'` : '-'} />
+        <StatRow label="From 0-5 feet" value={stats.puttProximity0_5 ? `${stats.puttProximity0_5.toFixed(1)}'` : '-'} />
         <StatRow label="From 5-10 feet" value={stats.puttProximity5_10 ? `${stats.puttProximity5_10.toFixed(1)}'` : '-'} />
         <StatRow label="From 10-15 feet" value={stats.puttProximity10_15 ? `${stats.puttProximity10_15.toFixed(1)}'` : '-'} />
         <StatRow label="From 15-20 feet" value={stats.puttProximity15_20 ? `${stats.puttProximity15_20.toFixed(1)}'` : '-'} />
@@ -356,14 +355,14 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
 
       {/* Putting Efficiency */}
       <StatSection title="Putting Efficiency (avg putts to hole out)">
-        <StatRow label="0-3 feet" value={formatStat(stats.puttEfficiency0_3, '', 2)} />
-        <StatRow label="3-5 feet" value={formatStat(stats.puttEfficiency3_5, '', 2)} />
-        <StatRow label="5-10 feet" value={formatStat(stats.puttEfficiency5_10, '', 2)} />
-        <StatRow label="10-15 feet" value={formatStat(stats.puttEfficiency10_15, '', 2)} />
-        <StatRow label="15-20 feet" value={formatStat(stats.puttEfficiency15_20, '', 2)} />
-        <StatRow label="20-25 feet" value={formatStat(stats.puttEfficiency20_25, '', 2)} />
-        <StatRow label="25-30 feet" value={formatStat(stats.puttEfficiency25_30, '', 2)} />
-        <StatRow label="30+ feet" value={formatStat(stats.puttEfficiency30Plus, '', 2)} />
+        <StatRow label="0-5 feet" value={formatStat(stats.puttEff0_5, '', 2)} />
+        <StatRow label="5-10 feet" value={formatStat(stats.puttEff5_10, '', 2)} />
+        <StatRow label="10-15 feet" value={formatStat(stats.puttEff10_15, '', 2)} />
+        <StatRow label="15-20 feet" value={formatStat(stats.puttEff15_20, '', 2)} />
+        <StatRow label="20-25 feet" value={formatStat(stats.puttEff20_25, '', 2)} />
+        <StatRow label="25-30 feet" value={formatStat(stats.puttEff25_30, '', 2)} />
+        <StatRow label="30-35 feet" value={formatStat(stats.puttEff30_35, '', 2)} />
+        <StatRow label="35+ feet" value={formatStat(stats.puttEff35Plus, '', 2)} />
       </StatSection>
 
       {/* Miss Direction */}
@@ -473,6 +472,7 @@ export default function GolfStatsDisplay({ stats, playerName }: StatsDisplayProp
     { id: 'driving', label: 'Driving', icon: <IconGolf size={16} /> },
     { id: 'approach', label: 'Approach', icon: <IconTarget size={16} /> },
     { id: 'putting', label: 'Putting', icon: <IconFlag size={16} /> },
+    { id: 'scrambling', label: 'Scrambling', icon: <IconTrendingUp size={16} /> },
   ];
 
   return (
@@ -513,6 +513,7 @@ export default function GolfStatsDisplay({ stats, playerName }: StatsDisplayProp
           {activeCategory === 'driving' && <DrivingStats stats={stats} />}
           {activeCategory === 'approach' && <ApproachStats stats={stats} />}
           {activeCategory === 'putting' && <PuttingStats stats={stats} />}
+          {activeCategory === 'scrambling' && <ScramblingStats stats={stats} />}
         </div>
 
         {/* Empty State */}

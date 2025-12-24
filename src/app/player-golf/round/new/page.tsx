@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconChevronLeft, IconChevronRight, IconCheck } from '@/components/icons';
 import { getRecentCourses, getCourseFromRound, type RecentCourse } from '../../actions/courses';
 import { createRound } from '../../actions/rounds';
 import { createRoundDevMode } from '../../actions/rounds-dev';
+import { CourseSelector } from '@/components/golf/CourseSelector';
+import { getSavedCourses, getCourseWithHoles } from '@/app/golf/actions/courses';
+import type { GolfCourse } from '@/lib/types/golf-course';
 
 type RoundType = 'practice' | 'qualifying' | 'tournament';
 type StartingHole = 1 | 10 | 'shotgun';
@@ -20,11 +23,18 @@ interface HoleData {
 
 export default function NewRoundPage() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
+  const searchParams = useSearchParams();
+  const [currentStep, setCurrentStep] = useState(0); // Start at 0 for course selection
   const [loading, setLoading] = useState(false);
+
+  // Course Selection (NEW - Step 0)
+  const [selectedCourse, setSelectedCourse] = useState<GolfCourse | null>(null);
+  const [useNewCourse, setUseNewCourse] = useState(false);
 
   // Step 1: Course Name
   const [courseName, setCourseName] = useState('');
+  const [courseCity, setCourseCity] = useState('');
+  const [courseState, setCourseState] = useState('');
   const [recentCourses, setRecentCourses] = useState<RecentCourse[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(true);
 
@@ -67,6 +77,97 @@ export default function NewRoundPage() {
     loadRecentCourses();
   }, []);
 
+  // Auto-populate from course creation (uses sessionStorage instead of DB query)
+  useEffect(() => {
+    const newCourseDataStr = sessionStorage.getItem('newCourseData');
+    if (!newCourseDataStr) return;
+
+    try {
+      const newCourseData = JSON.parse(newCourseDataStr);
+
+      // Populate all fields directly from the data the user just entered
+      setSelectedCourse({ id: newCourseData.courseId } as GolfCourse);
+      setCourseName(newCourseData.courseName);
+      setCourseCity(newCourseData.city || '');
+      setCourseState(newCourseData.state || '');
+      setTeeBoxName(newCourseData.teeName || '');
+      setCourseRating(newCourseData.courseRating?.toString() || '72.0');
+      setSlopeRating(newCourseData.slopeRating?.toString() || '113');
+
+      // Load hole data directly from what they configured
+      const loadedHoles = newCourseData.holes.map((h: any) => ({
+        hole: h.holeNumber,
+        par: h.par,
+        yardage: h.yardage,
+      }));
+      setHolesData(loadedHoles);
+
+      // Skip to round type (step 4)
+      setCurrentStep(4);
+
+      // Clear sessionStorage after using
+      sessionStorage.removeItem('newCourseData');
+    } catch (error) {
+      console.error('Error loading course data from sessionStorage:', error);
+      sessionStorage.removeItem('newCourseData');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Handle selecting a saved course
+  const handleSelectSavedCourse = async (course: GolfCourse | null) => {
+    if (!course) return;
+
+    try {
+      setLoading(true);
+      const { course: courseData, holes } = await getCourseWithHoles(course.id);
+
+      if (!courseData || holes.length !== 18) {
+        throw new Error('Invalid course data');
+      }
+
+      setSelectedCourse(courseData);
+      setCourseName(courseData.name);
+      setCourseCity(courseData.city || '');
+      setCourseState(courseData.state || '');
+      setTeeBoxName(courseData.default_tee_name || '');
+      setCourseRating(courseData.course_rating?.toString() || '72.0');
+      setSlopeRating(courseData.slope_rating?.toString() || '113');
+
+      // Load hole data
+      const loadedHoles = holes.map(h => ({
+        hole: h.hole_number,
+        par: h.par,
+        yardage: h.yardage,
+      }));
+      setHolesData(loadedHoles);
+
+      // Skip to round type (step 6 in original flow, now step 4)
+      setCurrentStep(4);
+    } catch (error) {
+      console.error('Error loading course:', error);
+      alert('Failed to load course data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle creating new course
+  const handleCreateNewCourse = () => {
+    // Navigate to course setup page
+    const params = new URLSearchParams({
+      type: roundType,
+      returnTo: '/player-golf/round/new'
+    });
+    router.push(`/player-golf/rounds/new/course-setup?${params.toString()}`);
+  };
+
+  // Handle manual entry (skip saved courses)
+  const handleManualEntry = () => {
+    setUseNewCourse(true);
+    setCurrentStep(1);
+  };
+
   // Handle selecting a recent course
   const handleSelectRecentCourse = async (course: RecentCourse) => {
     try {
@@ -86,14 +187,14 @@ export default function NewRoundPage() {
         setHolesData(loadedHoles);
       }
 
-      // Auto-advance to step 4 (skip manual entry of course, tee, holes)
-      setCurrentStep(4);
+      // Auto-advance to step 3 (holes data)
+      setCurrentStep(3);
     } catch (error) {
       console.error('Error loading course data:', error);
       // On error, just set the name and let user continue manually
       setCourseName(course.course_name);
       setTeeBoxName(course.tees_played);
-      setCurrentStep(3);
+      setCurrentStep(2);
     } finally {
       setLoading(false);
     }
@@ -103,7 +204,7 @@ export default function NewRoundPage() {
   const updateHoleData = (holeIndex: number, field: 'par' | 'yardage', value: number) => {
     const updated = [...holesData];
     const currentHole = updated[holeIndex];
-    if (!currentHole) return; // Safety check
+    if (!currentHole) return;
 
     updated[holeIndex] = {
       hole: currentHole.hole,
@@ -136,8 +237,8 @@ export default function NewRoundPage() {
 
       const roundData = {
         courseName,
-        courseCity: '',
-        courseState: '',
+        courseCity,
+        courseState,
         teesPlayed: teeBoxName,
         courseRating: parseFloat(courseRating),
         courseSlope: parseInt(slopeRating),
@@ -145,6 +246,7 @@ export default function NewRoundPage() {
         startingHole,
         roundDate: new Date().toISOString().split('T')[0]!,
         holes: holesData,
+        courseId: selectedCourse?.id, // Include course ID if from saved course
       };
 
       // Try dev mode first (no auth required)
@@ -171,7 +273,7 @@ export default function NewRoundPage() {
   };
 
   const nextStep = () => {
-    if (currentStep < 8) {
+    if (currentStep < 6) {
       setCurrentStep(currentStep + 1);
     } else {
       handleCreateRound();
@@ -179,23 +281,39 @@ export default function NewRoundPage() {
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
+    if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
   };
 
   const canProceed = () => {
     switch (currentStep) {
+      case 0: return true; // Course selection
       case 1: return canProceedFromStep1();
       case 2: return canProceedFromStep2();
       case 3: return canProceedFromStep3();
-      case 4: return canProceedFromStep4();
-      case 5: return canProceedFromStep5();
-      case 6: return true;
-      case 7: return true;
-      case 8: return true;
+      case 4: return true; // Round type
+      case 5: return true; // Starting hole
+      case 6: return true; // Confirmation
       default: return false;
     }
+  };
+
+  const getTotalSteps = () => {
+    // If using saved course: skip steps 1-3, so 4 total steps (course select, round type, starting hole, confirm)
+    // If manual entry: all 7 steps
+    return selectedCourse ? 4 : 7;
+  };
+
+  const getCurrentStepDisplay = () => {
+    if (selectedCourse) {
+      // Adjusted numbering for saved course flow
+      if (currentStep === 0) return 1;
+      if (currentStep === 4) return 2;
+      if (currentStep === 5) return 3;
+      if (currentStep === 6) return 4;
+    }
+    return currentStep + 1;
   };
 
   return (
@@ -204,18 +322,55 @@ export default function NewRoundPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Start New Round</h1>
-          <span className="text-sm leading-relaxed text-slate-500">Step {currentStep} of 8</span>
+          <span className="text-sm leading-relaxed text-slate-500">
+            Step {getCurrentStepDisplay()} of {getTotalSteps()}
+          </span>
         </div>
         <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
           <div
             className="h-full bg-slate-900 transition-all duration-300"
-            style={{ width: `${(currentStep / 8) * 100}%` }}
+            style={{ width: `${(getCurrentStepDisplay() / getTotalSteps()) * 100}%` }}
           />
         </div>
       </div>
 
       <Card glass>
         <CardContent className="p-8">
+          {/* Step 0: Course Selection */}
+          {currentStep === 0 && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Select Course</h2>
+                <p className="text-sm leading-relaxed text-slate-500">
+                  Choose a saved course or enter course details manually
+                </p>
+              </div>
+
+              <CourseSelector
+                onSelectCourse={handleSelectSavedCourse}
+                onCreateNew={handleCreateNewCourse}
+                selectedCourseId={selectedCourse?.id}
+              />
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-white text-slate-500">or</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleManualEntry}
+                className="w-full p-4 border border-slate-200 rounded-xl
+                           text-slate-700 font-medium hover:bg-slate-50 transition-colors"
+              >
+                Enter Course Details Manually
+              </button>
+            </div>
+          )}
+
           {/* Step 1: Course Name */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -239,6 +394,37 @@ export default function NewRoundPage() {
                              focus:border-green-500 focus:ring-2 focus:ring-green-100
                              text-slate-900 placeholder:text-slate-400 transition-colors"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    City (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={courseCity}
+                    onChange={(e) => setCourseCity(e.target.value)}
+                    placeholder="e.g., Pebble Beach"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200
+                               focus:border-green-500 focus:ring-2 focus:ring-green-100
+                               text-slate-900 placeholder:text-slate-400 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    State (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={courseState}
+                    onChange={(e) => setCourseState(e.target.value)}
+                    placeholder="e.g., CA"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200
+                               focus:border-green-500 focus:ring-2 focus:ring-green-100
+                               text-slate-900 placeholder:text-slate-400 transition-colors"
+                  />
+                </div>
               </div>
 
               {/* Recently Played Courses */}
@@ -293,6 +479,36 @@ export default function NewRoundPage() {
                              focus:border-green-500 focus:ring-2 focus:ring-green-100
                              text-slate-900 placeholder:text-slate-400 transition-colors"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Course Rating
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={courseRating}
+                    onChange={(e) => setCourseRating(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200
+                               focus:border-green-500 focus:ring-2 focus:ring-green-100
+                               text-slate-900 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Slope Rating
+                  </label>
+                  <input
+                    type="number"
+                    value={slopeRating}
+                    onChange={(e) => setSlopeRating(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200
+                               focus:border-green-500 focus:ring-2 focus:ring-green-100
+                               text-slate-900 transition-colors"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -415,67 +631,8 @@ export default function NewRoundPage() {
             </div>
           )}
 
-          {/* Step 4: Course Rating */}
+          {/* Step 4: Round Type */}
           {currentStep === 4 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Enter Course Rating</h2>
-                <p className="text-sm leading-relaxed text-slate-500">
-                  The course rating is typically between 67.0 and 77.0
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Course Rating
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="67.0"
-                  max="77.0"
-                  value={courseRating}
-                  onChange={(e) => setCourseRating(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200
-                             focus:border-green-500 focus:ring-2 focus:ring-green-100
-                             text-slate-900 transition-colors"
-                />
-                <p className="text-xs text-slate-500 mt-1">Range: 67.0 - 77.0</p>
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Slope Rating */}
-          {currentStep === 5 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Enter Slope Rating</h2>
-                <p className="text-sm leading-relaxed text-slate-500">
-                  The slope rating is typically between 55 and 155
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Slope Rating
-                </label>
-                <input
-                  type="number"
-                  min="55"
-                  max="155"
-                  value={slopeRating}
-                  onChange={(e) => setSlopeRating(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200
-                             focus:border-green-500 focus:ring-2 focus:ring-green-100
-                             text-slate-900 transition-colors"
-                />
-                <p className="text-xs text-slate-500 mt-1">Range: 55 - 155 (113 is average)</p>
-              </div>
-            </div>
-          )}
-
-          {/* Step 6: Round Type */}
-          {currentStep === 6 && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Select Round Type</h2>
@@ -516,8 +673,8 @@ export default function NewRoundPage() {
             </div>
           )}
 
-          {/* Step 7: Starting Hole */}
-          {currentStep === 7 && (
+          {/* Step 5: Starting Hole */}
+          {currentStep === 5 && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Select Starting Hole</h2>
@@ -558,8 +715,8 @@ export default function NewRoundPage() {
             </div>
           )}
 
-          {/* Step 8: Confirmation */}
-          {currentStep === 8 && (
+          {/* Step 6: Confirmation */}
+          {currentStep === 6 && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">Review & Confirm</h2>
@@ -573,6 +730,9 @@ export default function NewRoundPage() {
                   <div>
                     <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">Course</p>
                     <p className="text-base font-semibold text-slate-900">{courseName}</p>
+                    {(courseCity || courseState) && (
+                      <p className="text-sm text-slate-500">{courseCity}{courseState ? `, ${courseState}` : ''}</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">Tees</p>
@@ -621,19 +781,19 @@ export default function NewRoundPage() {
       <div className="flex items-center justify-between mt-6">
         <Button
           variant="secondary"
-          onClick={currentStep === 1 ? () => router.back() : prevStep}
+          onClick={currentStep === 0 ? () => router.back() : prevStep}
           disabled={loading}
         >
           <IconChevronLeft size={18} />
-          {currentStep === 1 ? 'Cancel' : 'Back'}
+          {currentStep === 0 ? 'Cancel' : 'Back'}
         </Button>
         <Button
           onClick={nextStep}
           disabled={!canProceed() || loading}
           className="flex items-center gap-2"
         >
-          {currentStep === 8 ? (loading ? 'Creating...' : 'Start Round') : 'Next'}
-          {currentStep < 8 && <IconChevronRight size={18} />}
+          {currentStep === 6 ? (loading ? 'Creating...' : 'Start Round') : 'Next'}
+          {currentStep < 6 && <IconChevronRight size={18} />}
         </Button>
       </div>
     </div>

@@ -1,21 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-
-/**
- * GolfHelm Shot Tracking - COMPREHENSIVE STATS VERSION
- * 
- * Premium UI with comprehensive stats capture for 50+ golf statistics:
- * - Dark scorecard with yardages
- * - Shot progress pills
- * - Green hole info header
- * - Mini hole visualization
- * - Detailed shot-by-shot tracking
- * - Penalty strokes
- * - Putt break/slope/miss direction
- * - Lie type (auto from previous shot)
- * - Distance tracking for all shots
- */
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 // ============================================================================
 // TYPES
@@ -98,28 +83,24 @@ export default function ShotTrackingComprehensive({
   if (!currentHole) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg text-slate-600">Invalid hole data</p>
-        </div>
+        <p className="text-lg text-slate-600">Invalid hole data</p>
       </div>
     );
   }
 
   // ============================================================================
-  // STATE
+  // STATE & REFS
   // ============================================================================
-  
+
   const [currentShot, setCurrentShot] = useState(1);
   const [shotHistory, setShotHistory] = useState<ShotRecord[]>([]);
-  const [hasBeenOnGreen, setHasBeenOnGreen] = useState(false);
-  const [puttCount, setPuttCount] = useState(0);
+
+  // Ref for auto-focusing distance input
+  const distanceInputRef = useRef<HTMLInputElement>(null);
   
-  // Distance tracking
+  // Current position state
   const [distanceToHole, setDistanceToHole] = useState(currentHole.yardage);
   const [distanceUnit, setDistanceUnit] = useState<'yards' | 'feet'>('yards');
-  const [measuredDistance, setMeasuredDistance] = useState<string>('');
-  
-  // Current lie (auto-populated from previous shot result)
   const [currentLie, setCurrentLie] = useState<'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other'>('tee');
   
   // Shot input state
@@ -129,16 +110,13 @@ export default function ShotTrackingComprehensive({
   const [puttBreak, setPuttBreak] = useState<string | null>(null);
   const [puttSlope, setPuttSlope] = useState<string | null>(null);
   
-  // Penalty state
+  // Distance after shot (key fix: we ask for this after EVERY shot)
+  const [distanceAfterShot, setDistanceAfterShot] = useState<string>('');
+  const [distanceAfterUnit, setDistanceAfterUnit] = useState<'yards' | 'feet'>('yards');
+  
+  // Penalty modal
   const [showPenaltyModal, setShowPenaltyModal] = useState(false);
   const [penaltyType, setPenaltyType] = useState<string | null>(null);
-  
-  // First putt tracking (for stats)
-  const [firstPuttData, setFirstPuttData] = useState<{
-    distance: number;
-    break: string;
-    slope: string;
-  } | null>(null);
 
   // ============================================================================
   // RESET ON HOLE CHANGE
@@ -147,20 +125,18 @@ export default function ShotTrackingComprehensive({
   useEffect(() => {
     setCurrentShot(1);
     setShotHistory([]);
-    setHasBeenOnGreen(false);
-    setPuttCount(0);
     setDistanceToHole(currentHole.yardage);
     setDistanceUnit('yards');
-    setMeasuredDistance('');
     setCurrentLie('tee');
     setUsedDriver(null);
     setResultOfShot(null);
     setMissDirection(null);
     setPuttBreak(null);
     setPuttSlope(null);
+    setDistanceAfterShot('');
+    setDistanceAfterUnit('yards');
     setShowPenaltyModal(false);
     setPenaltyType(null);
-    setFirstPuttData(null);
   }, [currentHoleIndex, currentHole.yardage]);
 
   // ============================================================================
@@ -168,68 +144,87 @@ export default function ShotTrackingComprehensive({
   // ============================================================================
   
   const getShotType = useCallback((): 'tee' | 'approach' | 'around_green' | 'putting' => {
-    if (hasBeenOnGreen || currentLie === 'green') return 'putting';
+    if (currentLie === 'green') return 'putting';
     if (currentShot === 1 && currentHole.par === 3) return 'approach';
     if (currentShot === 1 && currentHole.par !== 3) return 'tee';
-    
-    const dist = measuredDistance ? parseInt(measuredDistance) : distanceToHole;
-    if (distanceUnit === 'feet' || dist <= 30) return 'around_green';
+    if (distanceUnit === 'feet' || distanceToHole <= 30) return 'around_green';
     return 'approach';
-  }, [hasBeenOnGreen, currentLie, currentShot, currentHole.par, measuredDistance, distanceToHole, distanceUnit]);
+  }, [currentLie, currentShot, currentHole.par, distanceUnit, distanceToHole]);
 
   const shotType = getShotType();
-  
+  const isPutting = shotType === 'putting';
+  const isTeeShot = shotType === 'tee';
+  const isApproachOrAroundGreen = shotType === 'approach' || shotType === 'around_green';
+
   const getClubType = (): 'driver' | 'non_driver' | 'putter' => {
-    if (shotType === 'putting') return 'putter';
-    if (shotType === 'tee' && currentHole.par !== 3 && usedDriver) return 'driver';
+    if (isPutting) return 'putter';
+    if (isTeeShot && currentHole.par !== 3 && usedDriver) return 'driver';
     return 'non_driver';
   };
+
+  // Auto-set distance unit based on result
+  useEffect(() => {
+    if (resultOfShot === 'green') {
+      setDistanceAfterUnit('feet');
+    } else if (resultOfShot === 'hole') {
+      setDistanceAfterShot('0');
+      setDistanceAfterUnit('feet');
+    } else if (resultOfShot && resultOfShot !== 'hole') {
+      // Keep yards for non-green results unless we're already putting
+      if (!isPutting) {
+        setDistanceAfterUnit('yards');
+      }
+    }
+  }, [resultOfShot, isPutting]);
+
+  // Auto-focus distance input when it appears
+  useEffect(() => {
+    if (resultOfShot && resultOfShot !== 'hole' && distanceInputRef.current) {
+      // Small delay to ensure the input is rendered
+      setTimeout(() => {
+        distanceInputRef.current?.focus();
+      }, 100);
+    }
+  }, [resultOfShot]);
 
   // ============================================================================
   // VALIDATION
   // ============================================================================
   
   const isReadyForNextShot = (): boolean => {
-    // Shot 1 (tee shot)
-    if (currentShot === 1) {
-      if (!resultOfShot) return false;
-      if (currentHole.par !== 3 && usedDriver === null) return false;
-      if (['rough', 'sand', 'other'].includes(resultOfShot) && !missDirection) return false;
-      return true;
-    }
-    
-    // Must have measured distance
-    if (!measuredDistance) return false;
-    
-    // Putting requires break and slope
-    if (shotType === 'putting' && (!puttBreak || !puttSlope)) return false;
-    
-    // Must have result
+    // Must have a result
     if (!resultOfShot) return false;
     
+    // Tee shot on par 4/5 needs driver selection
+    if (isTeeShot && currentHole.par !== 3 && usedDriver === null) return false;
+    
+    // Non-hole results need distance after (unless holed out)
+    if (resultOfShot !== 'hole') {
+      if (!distanceAfterShot || parseInt(distanceAfterShot) < 0) return false;
+    }
+    
+    // Putting needs break and slope
+    if (isPutting && resultOfShot !== 'hole') {
+      if (!puttBreak || !puttSlope) return false;
+    }
+    
     // Miss direction required for misses
-    if (shotType !== 'putting' && ['rough', 'sand', 'other'].includes(resultOfShot) && !missDirection) {
-      return false;
-    }
-    if (shotType === 'putting' && resultOfShot !== 'hole' && !missDirection) {
-      return false;
-    }
+    if (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot) && !missDirection) return false;
+    if (isApproachOrAroundGreen && !['green', 'hole', 'fairway'].includes(resultOfShot) && !missDirection) return false;
+    if (isPutting && resultOfShot !== 'hole' && !missDirection) return false;
     
     return true;
   };
 
   // ============================================================================
-  // PENALTY HANDLING
+  // HANDLERS
   // ============================================================================
   
-  const handleAddPenalty = () => {
-    setShowPenaltyModal(true);
-  };
+  const handleAddPenalty = () => setShowPenaltyModal(true);
 
   const confirmPenalty = () => {
     if (!penaltyType) return;
     
-    // Create penalty shot record
     const penaltyShot: ShotRecord = {
       shotNumber: currentShot,
       shotType: 'penalty',
@@ -238,7 +233,7 @@ export default function ShotTrackingComprehensive({
       distanceToHoleBefore: distanceToHole,
       distanceUnitBefore: distanceUnit,
       result: 'penalty',
-      distanceToHoleAfter: distanceToHole, // stays same
+      distanceToHoleAfter: distanceToHole,
       distanceUnitAfter: distanceUnit,
       shotDistance: 0,
       isPenalty: true,
@@ -249,41 +244,26 @@ export default function ShotTrackingComprehensive({
     setCurrentShot(prev => prev + 1);
     setShowPenaltyModal(false);
     setPenaltyType(null);
-    
-    // Save shot if callback provided
     onSaveShot?.(penaltyShot);
   };
 
-  // ============================================================================
-  // SHOT RECORDING
-  // ============================================================================
-  
   const handleNextShot = () => {
     // Calculate distances
-    let shotDistance = 0;
-    let distanceAfter = distanceToHole;
-    let unitAfter = distanceUnit;
+    let distanceAfter: number;
+    let unitAfter: 'yards' | 'feet';
     
-    if (currentShot === 1) {
-      // First shot - no distance measured yet
-      distanceAfter = distanceToHole;
-    } else {
-      const measured = parseInt(measuredDistance);
-      distanceAfter = measured;
-      
-      // Convert for shot distance calculation
-      let beforeInYards = distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole;
-      let afterInYards = distanceUnit === 'feet' ? measured / 3 : measured;
-      shotDistance = Math.round(beforeInYards - afterInYards);
-    }
-    
-    // Update unit if landing on green
-    if (resultOfShot === 'green') {
+    if (resultOfShot === 'hole') {
+      distanceAfter = 0;
       unitAfter = 'feet';
-      if (distanceUnit === 'yards' && currentShot > 1) {
-        distanceAfter = parseInt(measuredDistance) * 3; // Convert to feet
-      }
+    } else {
+      distanceAfter = parseInt(distanceAfterShot) || 0;
+      unitAfter = distanceAfterUnit;
     }
+    
+    // Calculate shot distance (normalize to yards for comparison)
+    const beforeInYards = distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole;
+    const afterInYards = unitAfter === 'feet' ? distanceAfter / 3 : distanceAfter;
+    const shotDistance = Math.max(0, Math.round(beforeInYards - afterInYards));
     
     // Create shot record
     const shotRecord: ShotRecord = {
@@ -298,170 +278,185 @@ export default function ShotTrackingComprehensive({
       distanceUnitAfter: unitAfter,
       shotDistance: shotDistance,
       missDirection: missDirection || undefined,
-      puttBreak: shotType === 'putting' ? puttBreak as any : undefined,
-      puttSlope: shotType === 'putting' ? puttSlope as any : undefined,
+      puttBreak: isPutting ? puttBreak as any : undefined,
+      puttSlope: isPutting ? puttSlope as any : undefined,
       isPenalty: false,
     };
-    
+
     const updatedHistory = [...shotHistory, shotRecord];
     setShotHistory(updatedHistory);
-    
-    // Track first putt data for stats
-    if (shotType === 'putting' && puttCount === 0) {
-      setFirstPuttData({
-        distance: distanceToHole,
-        break: puttBreak!,
-        slope: puttSlope!,
-      });
-    }
-    
-    // Update putt count
-    if (shotType === 'putting') {
-      setPuttCount(prev => prev + 1);
-    }
-    
-    // Save shot if callback provided
     onSaveShot?.(shotRecord);
-    
-    // If holed out, complete the hole
+
+    // Check if hole complete
     if (resultOfShot === 'hole') {
       completeHole(updatedHistory);
       return;
     }
-    
-    // Update lie based on result
+
+    // Update state for next shot
     const newLie = resultOfShot as 'fairway' | 'rough' | 'sand' | 'green' | 'other';
     setCurrentLie(newLie);
-    
-    // Update green status
-    if (resultOfShot === 'green') {
-      setHasBeenOnGreen(true);
-    } else if (hasBeenOnGreen && resultOfShot !== 'green') {
-      // Putted off green (rare but possible)
-      setHasBeenOnGreen(false);
-    }
-    
-    // Set up for next shot
     setCurrentShot(currentShot + 1);
     setDistanceToHole(distanceAfter);
     setDistanceUnit(unitAfter);
-    setMeasuredDistance('');
+    
+    // Reset input state
     setUsedDriver(null);
     setResultOfShot(null);
     setMissDirection(null);
     setPuttBreak(null);
     setPuttSlope(null);
+    setDistanceAfterShot('');
+    setDistanceAfterUnit(newLie === 'green' ? 'feet' : 'yards');
   };
 
   // ============================================================================
-  // HOLE COMPLETION
+  // HOLE COMPLETION - COMPREHENSIVE STATS CALCULATION
   // ============================================================================
   
   const completeHole = (shots: ShotRecord[]) => {
-    const score = shots.filter(s => !s.isPenalty).length + shots.filter(s => s.isPenalty).length;
+    const nonPenaltyShots = shots.filter(s => !s.isPenalty);
+    const score = shots.length;
     const putts = shots.filter(s => s.shotType === 'putting').length;
     const penalties = shots.filter(s => s.isPenalty).length;
-    
-    // Determine fairway hit (for par 4/5)
+
+    // -------------------------------------------------------------------------
+    // DRIVING STATS (Par 4/5 only)
+    // -------------------------------------------------------------------------
     let fairwayHit: boolean | null = null;
     let drivingDistance: number | null = null;
     let driveMissDirection: string | null = null;
     let driverUsed: boolean | null = null;
-    
+
     if (currentHole.par >= 4) {
-      const teeShot = shots.find(s => s.shotType === 'tee');
+      const teeShot = shots.find(s => s.shotType === 'tee' && !s.isPenalty);
       if (teeShot) {
         fairwayHit = teeShot.result === 'fairway';
         driveMissDirection = teeShot.missDirection || null;
         driverUsed = teeShot.clubType === 'driver';
         
-        // Calculate driving distance
-        const nextShot = shots.find(s => s.shotNumber === 2 && !s.isPenalty);
-        if (nextShot && teeShot.distanceUnitBefore === 'yards') {
-          drivingDistance = teeShot.distanceToHoleBefore - (nextShot.distanceToHoleBefore);
-        }
+        // Driving distance = distance before - distance after
+        // Normalize to yards
+        const beforeYards = teeShot.distanceUnitBefore === 'feet' 
+          ? teeShot.distanceToHoleBefore / 3 
+          : teeShot.distanceToHoleBefore;
+        const afterYards = teeShot.distanceUnitAfter === 'feet' 
+          ? teeShot.distanceToHoleAfter / 3 
+          : teeShot.distanceToHoleAfter;
+        drivingDistance = Math.round(beforeYards - afterYards);
       }
     }
-    
-    // GIR calculation
-    const shotsToGreen = currentHole.par - 2;
-    const shotsTakenToGreen = shots.findIndex(s => s.result === 'green' || s.result === 'hole');
-    const nonPenaltyShotsToGreen = shots
-      .slice(0, shotsTakenToGreen + 1)
-      .filter(s => !s.isPenalty).length;
-    const greenInRegulation = shotsTakenToGreen !== -1 && nonPenaltyShotsToGreen <= shotsToGreen;
-    
-    // Approach data
+
+    // -------------------------------------------------------------------------
+    // APPROACH STATS (shot that reached the green or closest approach)
+    // -------------------------------------------------------------------------
     let approachDistance: number | null = null;
     let approachLie: string | null = null;
     let approachProximity: number | null = null;
     let approachMissDirection: string | null = null;
-    
-    const approachShot = shots.find(s => s.shotType === 'approach' && s.result === 'green');
-    if (approachShot) {
-      approachDistance = approachShot.distanceToHoleBefore;
-      approachLie = approachShot.lieBefore;
-      approachProximity = approachShot.distanceToHoleAfter;
-      if (approachShot.distanceUnitAfter === 'yards') {
-        approachProximity = approachShot.distanceToHoleAfter * 3; // Convert to feet
-      }
-    } else {
-      // Check around the green shots that hit green
-      const atgShot = shots.find(s => s.shotType === 'around_green' && s.result === 'green');
-      if (atgShot) {
-        approachDistance = atgShot.distanceToHoleBefore;
-        approachLie = atgShot.lieBefore;
-        approachProximity = atgShot.distanceToHoleAfter;
+
+    // Find the approach shot (the shot that hit the green, or last shot before green)
+    const greenShotIndex = nonPenaltyShots.findIndex(s => s.result === 'green' || s.result === 'hole');
+    if (greenShotIndex > 0 || (greenShotIndex === 0 && currentHole.par === 3)) {
+      const approachShot = nonPenaltyShots[greenShotIndex];
+      if (approachShot && approachShot.shotType !== 'putting') {
+        // Approach distance (in yards)
+        approachDistance = approachShot.distanceUnitBefore === 'feet'
+          ? Math.round(approachShot.distanceToHoleBefore / 3)
+          : approachShot.distanceToHoleBefore;
+        approachLie = approachShot.lieBefore;
+        
+        // Approach proximity (distance after, in feet)
+        if (approachShot.result === 'green') {
+          approachProximity = approachShot.distanceUnitAfter === 'yards'
+            ? approachShot.distanceToHoleAfter * 3
+            : approachShot.distanceToHoleAfter;
+        }
+        approachMissDirection = approachShot.missDirection || null;
       }
     }
-    
-    // Miss approach direction
-    const missedApproach = shots.find(s => 
-      (s.shotType === 'approach' || s.shotType === 'around_green') && 
-      s.result !== 'green' && s.result !== 'hole'
-    );
-    if (missedApproach) {
-      approachMissDirection = missedApproach.missDirection || null;
-    }
-    
-    // Scrambling
-    const scrambleAttempt = !greenInRegulation;
+
+    // -------------------------------------------------------------------------
+    // GREEN IN REGULATION
+    // -------------------------------------------------------------------------
+    const shotsToGreen = currentHole.par - 2; // Par 4 = 2 shots, Par 5 = 3 shots, Par 3 = 1 shot
+    const shotsTakenToGreen = nonPenaltyShots.findIndex(s => s.result === 'green' || s.result === 'hole');
+    const greenInRegulation = shotsTakenToGreen !== -1 && (shotsTakenToGreen + 1) <= shotsToGreen;
+
+    // -------------------------------------------------------------------------
+    // SCRAMBLING (missed GIR but still made par or better)
+    // -------------------------------------------------------------------------
+    const scrambleAttempt = !greenInRegulation && shotsTakenToGreen !== -1;
     const scrambleMade = scrambleAttempt && score <= currentHole.par;
+
+    // -------------------------------------------------------------------------
+    // SAND SAVE (in bunker around green, got up and down)
+    // -------------------------------------------------------------------------
+    let sandSaveAttempt = false;
+    let sandSaveMade = false;
     
-    // Sand save
-    const hadSandShot = shots.some(s => s.lieBefore === 'sand' && s.shotType === 'around_green');
-    const sandSaveAttempt = hadSandShot && !greenInRegulation;
-    const sandSaveMade = sandSaveAttempt && score <= currentHole.par;
+    // Find if there was a shot from sand near the green
+    const sandShots = nonPenaltyShots.filter(s => 
+      s.lieBefore === 'sand' && 
+      (s.shotType === 'around_green' || (s.distanceUnitBefore === 'yards' && s.distanceToHoleBefore <= 50))
+    );
     
-    // First putt data
-    const firstPutt = shots.find(s => s.shotType === 'putting');
+    if (sandShots.length > 0) {
+      sandSaveAttempt = true;
+      // Sand save made if from that point, finished in par or better
+      const sandShotIndex = nonPenaltyShots.findIndex(s => s === sandShots[0]);
+      const shotsAfterSand = nonPenaltyShots.length - sandShotIndex;
+      // Up and down from sand = 2 shots (chip + putt) or 1 shot (hole out)
+      sandSaveMade = shotsAfterSand <= 2 && score <= currentHole.par;
+    }
+
+    // -------------------------------------------------------------------------
+    // PUTTING STATS
+    // -------------------------------------------------------------------------
     let firstPuttDistance: number | null = null;
     let firstPuttLeave: number | null = null;
-    let firstPuttBreakVal: string | null = null;
-    let firstPuttSlopeVal: string | null = null;
-    let firstPuttMissDir: string | null = null;
-    
-    if (firstPutt) {
-      firstPuttDistance = firstPutt.distanceToHoleBefore;
-      firstPuttLeave = firstPutt.result === 'hole' ? 0 : firstPutt.distanceToHoleAfter;
-      firstPuttBreakVal = firstPutt.puttBreak || null;
-      firstPuttSlopeVal = firstPutt.puttSlope || null;
-      firstPuttMissDir = firstPutt.result === 'hole' ? null : firstPutt.missDirection || null;
+    let firstPuttBreak: string | null = null;
+    let firstPuttSlope: string | null = null;
+    let firstPuttMissDirection: string | null = null;
+
+    const puttingShots = nonPenaltyShots.filter(s => s.shotType === 'putting');
+    if (puttingShots.length > 0) {
+      const firstPutt = puttingShots[0]!;
+      
+      // First putt distance (in feet)
+      firstPuttDistance = firstPutt.distanceUnitBefore === 'yards'
+        ? firstPutt.distanceToHoleBefore * 3
+        : firstPutt.distanceToHoleBefore;
+      
+      firstPuttBreak = firstPutt.puttBreak || null;
+      firstPuttSlope = firstPutt.puttSlope || null;
+      
+      // If first putt missed, record leave distance and miss direction
+      if (firstPutt.result !== 'hole' && puttingShots.length > 1) {
+        firstPuttLeave = firstPutt.distanceUnitAfter === 'yards'
+          ? firstPutt.distanceToHoleAfter * 3
+          : firstPutt.distanceToHoleAfter;
+        firstPuttMissDirection = firstPutt.missDirection || null;
+      }
     }
-    
-    // Hole out from off green
+
+    // -------------------------------------------------------------------------
+    // HOLE OUT STATS (holed from off the green)
+    // -------------------------------------------------------------------------
     let holedOutDistance: number | null = null;
     let holedOutType: string | null = null;
-    
-    const holedFromOffGreen = shots.find(s => 
-      s.result === 'hole' && s.shotType !== 'putting'
-    );
-    if (holedFromOffGreen) {
-      holedOutDistance = holedFromOffGreen.distanceToHoleBefore;
-      holedOutType = holedFromOffGreen.shotType;
+
+    const holeOutShot = nonPenaltyShots.find(s => s.result === 'hole' && s.shotType !== 'putting');
+    if (holeOutShot) {
+      holedOutDistance = holeOutShot.distanceUnitBefore === 'feet'
+        ? holeOutShot.distanceToHoleBefore
+        : holeOutShot.distanceToHoleBefore * 3; // Convert to feet
+      holedOutType = holeOutShot.shotType;
     }
-    
-    // Build hole stats
+
+    // -------------------------------------------------------------------------
+    // BUILD FINAL STATS OBJECT
+    // -------------------------------------------------------------------------
     const holeStats: HoleStats = {
       holeNumber: currentHole.number,
       par: currentHole.par,
@@ -484,337 +479,362 @@ export default function ShotTrackingComprehensive({
       penaltyStrokes: penalties,
       firstPuttDistance,
       firstPuttLeave,
-      firstPuttBreak: firstPuttBreakVal,
-      firstPuttSlope: firstPuttSlopeVal,
-      firstPuttMissDirection: firstPuttMissDir,
+      firstPuttBreak,
+      firstPuttSlope,
+      firstPuttMissDirection,
       holedOutDistance,
       holedOutType,
       shots,
     };
-    
+
     onHoleComplete(currentHoleIndex, holeStats);
   };
 
-  // ============================================================================
-  // UI HELPERS
-  // ============================================================================
-  
   const handleResultSelect = (result: string) => {
     setResultOfShot(result);
-    if (shotType !== 'putting' && !['rough', 'sand', 'other'].includes(result)) {
+    // Clear miss direction if not needed
+    if (!['rough', 'sand', 'other'].includes(result) && !isPutting) {
       setMissDirection(null);
     }
-    if (shotType === 'putting' && result === 'hole') {
+    if (result === 'hole') {
       setMissDirection(null);
     }
   };
 
-  // Calculate running totals
+  // ============================================================================
+  // CALCULATIONS FOR DISPLAY
+  // ============================================================================
+  
   const front9Score = holes.slice(0, 9).reduce((sum, h) => sum + (h.score || 0), 0);
   const back9Score = holes.slice(9, 18).reduce((sum, h) => sum + (h.score || 0), 0);
   const front9HasScores = holes.slice(0, 9).some(h => h.score !== null);
   const back9HasScores = holes.slice(9, 18).some(h => h.score !== null);
   const totalPar = holes.reduce((sum, h) => sum + h.par, 0);
-
-  // Current distance for visualization
-  const currentDistanceDisplay = currentShot === 1 
-    ? currentHole.yardage 
-    : (measuredDistance ? parseInt(measuredDistance) : distanceToHole);
-  const currentUnitDisplay = currentShot === 1 ? 'yards' : distanceUnit;
+  
+  // For sidebar visualization
+  const displayDistance = resultOfShot === 'hole' ? 0 : (parseInt(distanceAfterShot) || distanceToHole);
+  const displayUnit = resultOfShot === 'hole' ? 'feet' : (distanceAfterShot ? distanceAfterUnit : distanceUnit);
+  
+  // Convert to yards for progress calculation
+  const totalYards = currentHole.yardage;
+  const remainingYards = displayUnit === 'feet' ? displayDistance / 3 : displayDistance;
+  const progressPercent = Math.max(0, Math.min(100, ((totalYards - remainingYards) / totalYards) * 100));
 
   // ============================================================================
   // RENDER
   // ============================================================================
-  
+
   return (
-    <div className="min-h-screen bg-slate-100">
-      
-      {/* ================================================================== */}
-      {/* DARK SCORECARD HEADER */}
-      {/* ================================================================== */}
-      <div className="w-full bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
+    <div className="min-h-screen bg-white">
+
+      {/* SCORECARD - Dark header */}
+      <div className="bg-[#1e293b] sticky top-0 z-50">
+        {/* Mobile Navigation */}
+        <div className="lg:hidden flex justify-between items-center px-4 py-2 border-b border-slate-600">
+          <button
+            onClick={() => {
+              const element = document.getElementById(`hole-${Math.max(1, currentHole.number - 1)}`);
+              element?.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+            }}
+            disabled={currentHoleIndex === 0}
+            className="px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity uppercase tracking-wide">
+            ← Prev
+          </button>
+          <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">
+            Hole {currentHole.number} of 18
+          </span>
+          <button
+            onClick={() => {
+              const element = document.getElementById(`hole-${Math.min(18, currentHole.number + 1)}`);
+              element?.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+            }}
+            disabled={currentHoleIndex === 17}
+            className="px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity uppercase tracking-wide">
+            Next →
+          </button>
+        </div>
+
         <div className="overflow-x-auto">
           <div className="inline-flex min-w-full">
-            
             {/* Front 9 */}
             {holes.slice(0, 9).map((hole, idx) => {
               const isCurrent = idx === currentHoleIndex;
               const hasScore = hole.score !== null;
-              const toPar = hasScore ? (hole.score! - hole.par) : 0;
-              
+              const scoreToPar = hasScore ? (hole.score || 0) - hole.par : 0;
+              const getScoreColor = () => {
+                if (isCurrent) return 'text-white';
+                if (!hasScore) return 'text-slate-500';
+                if (scoreToPar <= -2) return 'text-blue-400'; // Eagle or better
+                if (scoreToPar === -1) return 'text-green-400'; // Birdie
+                if (scoreToPar === 0) return 'text-white'; // Par
+                if (scoreToPar === 1) return 'text-amber-400'; // Bogey
+                return 'text-red-400'; // Double+
+              };
               return (
-                <div 
-                  key={hole.number}
-                  className={`min-w-[72px] py-3 px-2 border-r border-slate-700 text-center transition-all
-                    ${isCurrent ? 'bg-green-600' : 'hover:bg-slate-700'}`}
-                >
-                  <div className={`text-xs font-semibold mb-0.5 ${isCurrent ? 'text-green-100' : 'text-slate-400'}`}>
-                    Hole {hole.number}
-                  </div>
-                  <div className={`text-xs mb-0.5 ${isCurrent ? 'text-green-200' : 'text-slate-500'}`}>
-                    Par {hole.par}
-                  </div>
-                  <div className={`text-xs mb-1.5 ${isCurrent ? 'text-green-200' : 'text-slate-500'}`}>
-                    {hole.yardage} yds
-                  </div>
-                  <div className="flex justify-center">
-                    {hasScore ? (
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold
-                        ${toPar <= -2 ? 'bg-yellow-400 text-slate-900' : ''}
-                        ${toPar === -1 ? 'bg-red-500 text-white' : ''}
-                        ${toPar === 0 ? 'bg-slate-600 text-white' : ''}
-                        ${toPar === 1 ? 'bg-slate-500 text-white border-2 border-slate-300' : ''}
-                        ${toPar >= 2 ? 'bg-slate-500 text-white border-2 border-slate-300' : ''}
-                      `}>
-                        {hole.score}
-                      </div>
-                    ) : (
-                      <div className={`text-lg font-bold ${isCurrent ? 'text-green-200' : 'text-slate-600'}`}>
-                        -
-                      </div>
-                    )}
+                <div key={hole.number} id={`hole-${hole.number}`} className={`min-w-[75px] py-3 px-2 text-center border-r border-slate-600 ${isCurrent ? 'bg-emerald-600' : ''}`}>
+                  <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-slate-300'}`}>Hole {hole.number}</div>
+                  <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-slate-400'}`}>Par {hole.par}</div>
+                  <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-slate-500'}`}>{hole.yardage} yds</div>
+                  <div className={`mt-1 text-lg font-bold ${getScoreColor()}`}>
+                    {hasScore ? hole.score : '-'}
                   </div>
                 </div>
               );
             })}
-
             {/* OUT */}
-            <div className="min-w-[72px] py-3 px-2 border-r-2 border-slate-600 text-center bg-slate-900">
-              <div className="text-xs font-bold text-slate-300 mb-0.5">OUT</div>
-              <div className="text-xs text-slate-500 mb-0.5">
-                Par {holes.slice(0, 9).reduce((sum, h) => sum + h.par, 0)}
-              </div>
-              <div className="text-xs text-slate-500 mb-1.5">
-                {holes.slice(0, 9).reduce((sum, h) => sum + h.yardage, 0)}
-              </div>
-              <div className="text-base font-bold text-white">
-                {front9HasScores ? front9Score : '-'}
-              </div>
+            <div className="min-w-[75px] py-3 px-2 text-center bg-[#334155] border-r-2 border-slate-500">
+              <div className="text-xs font-semibold text-amber-400">OUT</div>
+              <div className="text-xs text-slate-400">Par {holes.slice(0, 9).reduce((s, h) => s + h.par, 0)}</div>
+              <div className="text-xs text-slate-500">{holes.slice(0, 9).reduce((s, h) => s + h.yardage, 0)}</div>
+              <div className="mt-1 text-lg font-bold text-amber-400">{front9HasScores ? front9Score : '-'}</div>
             </div>
-
             {/* Back 9 */}
             {holes.slice(9, 18).map((hole, idx) => {
               const actualIdx = idx + 9;
               const isCurrent = actualIdx === currentHoleIndex;
               const hasScore = hole.score !== null;
-              const toPar = hasScore ? (hole.score! - hole.par) : 0;
-              
+              const scoreToPar = hasScore ? (hole.score || 0) - hole.par : 0;
+              const getScoreColor = () => {
+                if (isCurrent) return 'text-white';
+                if (!hasScore) return 'text-slate-500';
+                if (scoreToPar <= -2) return 'text-blue-400'; // Eagle or better
+                if (scoreToPar === -1) return 'text-green-400'; // Birdie
+                if (scoreToPar === 0) return 'text-white'; // Par
+                if (scoreToPar === 1) return 'text-amber-400'; // Bogey
+                return 'text-red-400'; // Double+
+              };
               return (
-                <div 
-                  key={hole.number}
-                  className={`min-w-[72px] py-3 px-2 border-r border-slate-700 text-center transition-all
-                    ${isCurrent ? 'bg-green-600' : 'hover:bg-slate-700'}`}
-                >
-                  <div className={`text-xs font-semibold mb-0.5 ${isCurrent ? 'text-green-100' : 'text-slate-400'}`}>
-                    Hole {hole.number}
-                  </div>
-                  <div className={`text-xs mb-0.5 ${isCurrent ? 'text-green-200' : 'text-slate-500'}`}>
-                    Par {hole.par}
-                  </div>
-                  <div className={`text-xs mb-1.5 ${isCurrent ? 'text-green-200' : 'text-slate-500'}`}>
-                    {hole.yardage} yds
-                  </div>
-                  <div className="flex justify-center">
-                    {hasScore ? (
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold
-                        ${toPar <= -2 ? 'bg-yellow-400 text-slate-900' : ''}
-                        ${toPar === -1 ? 'bg-red-500 text-white' : ''}
-                        ${toPar === 0 ? 'bg-slate-600 text-white' : ''}
-                        ${toPar === 1 ? 'bg-slate-500 text-white border-2 border-slate-300' : ''}
-                        ${toPar >= 2 ? 'bg-slate-500 text-white border-2 border-slate-300' : ''}
-                      `}>
-                        {hole.score}
-                      </div>
-                    ) : (
-                      <div className={`text-lg font-bold ${isCurrent ? 'text-green-200' : 'text-slate-600'}`}>
-                        -
-                      </div>
-                    )}
+                <div key={hole.number} id={`hole-${hole.number}`} className={`min-w-[75px] py-3 px-2 text-center border-r border-slate-600 ${isCurrent ? 'bg-emerald-600' : ''}`}>
+                  <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-slate-300'}`}>Hole {hole.number}</div>
+                  <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-slate-400'}`}>Par {hole.par}</div>
+                  <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-slate-500'}`}>{hole.yardage} yds</div>
+                  <div className={`mt-1 text-lg font-bold ${getScoreColor()}`}>
+                    {hasScore ? hole.score : '-'}
                   </div>
                 </div>
               );
             })}
-
             {/* IN */}
-            <div className="min-w-[72px] py-3 px-2 border-r-2 border-slate-600 text-center bg-slate-900">
-              <div className="text-xs font-bold text-slate-300 mb-0.5">IN</div>
-              <div className="text-xs text-slate-500 mb-0.5">
-                Par {holes.slice(9, 18).reduce((sum, h) => sum + h.par, 0)}
-              </div>
-              <div className="text-xs text-slate-500 mb-1.5">
-                {holes.slice(9, 18).reduce((sum, h) => sum + h.yardage, 0)}
-              </div>
-              <div className="text-base font-bold text-white">
-                {back9HasScores ? back9Score : '-'}
-              </div>
+            <div className="min-w-[75px] py-3 px-2 text-center bg-[#334155] border-r-2 border-slate-500">
+              <div className="text-xs font-semibold text-amber-400">IN</div>
+              <div className="text-xs text-slate-400">Par {holes.slice(9, 18).reduce((s, h) => s + h.par, 0)}</div>
+              <div className="text-xs text-slate-500">{holes.slice(9, 18).reduce((s, h) => s + h.yardage, 0)}</div>
+              <div className="mt-1 text-lg font-bold text-amber-400">{back9HasScores ? back9Score : '-'}</div>
             </div>
-
             {/* TOTAL */}
-            <div className="min-w-[80px] py-3 px-2 text-center bg-slate-950">
-              <div className="text-xs font-bold text-white mb-0.5">TOTAL</div>
-              <div className="text-xs text-slate-400 mb-0.5">
-                Par {totalPar}
-              </div>
-              <div className="text-xs text-slate-400 mb-1.5">
-                {holes.reduce((sum, h) => sum + h.yardage, 0)}
-              </div>
-              <div className="text-lg font-bold text-green-400">
-                {(front9HasScores || back9HasScores) ? front9Score + back9Score : '-'}
-              </div>
+            <div className="min-w-[85px] py-3 px-2 text-center bg-[#0f172a]">
+              <div className="text-xs font-semibold text-white">TOTAL</div>
+              <div className="text-xs text-slate-400">Par {totalPar}</div>
+              <div className="text-xs text-slate-500">{holes.reduce((s, h) => s + h.yardage, 0)}</div>
+              <div className="mt-1 text-lg font-bold text-white">{(front9HasScores || back9HasScores) ? front9Score + back9Score : '-'}</div>
             </div>
-
           </div>
         </div>
       </div>
 
-      {/* ================================================================== */}
-      {/* MAIN CONTENT AREA */}
-      {/* ================================================================== */}
+      {/* MAIN CONTENT */}
       <div className="flex">
-        
-        {/* LEFT: Shot Tracking Interface */}
-        <div className="flex-1 p-4 max-w-3xl mx-auto space-y-4">
-          
-          {/* Shot Progress Pills */}
-          <div className="flex items-center gap-2 px-2">
-            <span className="text-sm font-semibold text-slate-500 mr-2">SHOT</span>
-            {[1, 2, 3, 4, 5, 6].map(num => {
+        <div className="flex-1 max-w-3xl mx-auto p-6 space-y-5">
+
+          {/* Shot Pills - Sticky - Dynamic */}
+          <div className="sticky top-[105px] lg:top-[81px] z-40 bg-white py-4 -mt-4 -mx-6 px-6 flex items-center gap-2 shadow-sm shadow-emerald-950/5 border-b border-slate-100">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-2">Shot</span>
+            {Array.from({ length: Math.max(6, currentShot + 1) }, (_, i) => i + 1).map(num => {
               const isActive = num === currentShot;
               const isCompleted = num < currentShot;
-              const hasPenalty = shotHistory.some(s => s.shotNumber === num && s.isPenalty);
-              
+              const isFuture = num > currentShot;
               return (
-                <div
-                  key={num}
-                  className={`w-14 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all
-                    ${isActive ? 'bg-green-500 text-white shadow-lg' : ''}
-                    ${isCompleted && !hasPenalty ? 'bg-green-200 text-green-800' : ''}
-                    ${isCompleted && hasPenalty ? 'bg-red-200 text-red-800' : ''}
-                    ${!isActive && !isCompleted ? 'bg-slate-200 text-slate-400' : ''}
-                  `}
-                >
+                <div key={num} className={`flex-1 min-w-[44px] h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all
+                  ${isActive ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-950/5' : ''}
+                  ${isCompleted ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : ''}
+                  ${isFuture ? 'bg-slate-50 text-slate-400 ring-1 ring-slate-200' : ''}`}>
                   {num}
                 </div>
               );
             })}
-            {currentShot > 6 && (
-              <div className="w-14 h-9 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold shadow-lg">
-                {currentShot}
-              </div>
-            )}
           </div>
 
-          {/* Green Header - Hole Info */}
-          <div className="bg-gradient-to-r from-green-600 to-green-500 rounded-2xl p-5 shadow-lg">
+          {/* Hole Header */}
+          <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg p-6 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-950/5">
             <div className="flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-white">Hole {currentHole.number}</h1>
-                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-semibold text-white">
+                  <h1 className="text-3xl font-bold">Hole {currentHole.number}</h1>
+                  <span className="px-3 py-1 bg-white/15 backdrop-blur-sm rounded-md text-xs font-semibold uppercase tracking-wide">
                     Par {currentHole.par}
                   </span>
                 </div>
-                <p className="text-green-100 mt-1">
+                <p className="text-emerald-100 text-sm mt-2">
                   Shot {currentShot} • {shotType.charAt(0).toUpperCase() + shotType.slice(1).replace('_', ' ')}
-                  {currentLie !== 'tee' && currentShot > 1 && (
-                    <span className="ml-2 text-green-200">• From {currentLie}</span>
-                  )}
+                  {' • '}<span className="capitalize font-medium">{currentLie}</span>
                 </p>
               </div>
               <div className="text-right">
-                <div className="text-xs text-green-200 uppercase font-semibold">Measure Distance</div>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <input
-                    type="number"
-                    value={currentShot === 1 ? currentHole.yardage : measuredDistance}
-                    onChange={(e) => currentShot > 1 && setMeasuredDistance(e.target.value)}
-                    disabled={currentShot === 1}
-                    placeholder="0"
-                    className={`w-20 px-2 py-2 rounded-lg text-2xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-white/50
-                      ${currentShot === 1 
-                        ? 'bg-white/20 text-white cursor-not-allowed' 
-                        : 'bg-white text-green-600'
-                      }`}
-                  />
-                  <span className="text-lg font-bold text-white uppercase">
-                    {currentShot === 1 ? 'YDS' : distanceUnit === 'yards' ? 'YDS' : 'FEET'}
-                  </span>
-                </div>
+                <p className="text-emerald-200 text-xs font-semibold uppercase tracking-wider">Distance</p>
+                <p className="text-4xl font-bold mt-1">
+                  {distanceToHole}<span className="text-xl ml-1 font-semibold text-emerald-100">{distanceUnit === 'yards' ? 'YDS' : 'FT'}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Inline Progress Bar - Mobile Only */}
+            <div className="xl:hidden mt-6 bg-white/10 backdrop-blur-sm rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-emerald-100 font-semibold uppercase tracking-wide">Progress</span>
+                <span className="text-xs text-emerald-100 font-bold">{Math.round(progressPercent)}%</span>
+              </div>
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-white transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-3 text-xs text-emerald-100">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full border border-white/60"></span>
+                  Tee
+                </span>
+                <span className="font-bold text-sm">{displayDistance} {displayUnit} left</span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  Hole
+                  <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Driver Selection (Shot 1 for Par 4/5) */}
-          {currentShot === 1 && currentHole.par !== 3 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-              <div className="text-sm font-bold text-slate-600 uppercase mb-3">Club Off Tee</div>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setUsedDriver(true)}
-                  className={`py-4 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2
-                    ${usedDriver === true 
-                      ? 'bg-green-500 border-green-500 text-white shadow-md' 
-                      : 'border-slate-200 hover:border-green-400 hover:bg-green-50'
-                    }`}
-                >
-                  <span className="text-xl">🏌️</span> Driver
+          {/* Club Selection (Tee Shot Par 4/5) - Segmented Control */}
+          {isTeeShot && currentHole.par !== 3 && (
+            <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Club Off Tee</p>
+              <div className="inline-flex bg-slate-100 rounded-lg p-1 w-full">
+                <button onClick={() => setUsedDriver(true)}
+                  className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
+                    usedDriver === true
+                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                      : 'text-slate-600 hover:text-slate-900'}`}>
+                  Driver
                 </button>
-                <button
-                  onClick={() => setUsedDriver(false)}
-                  className={`py-4 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2
-                    ${usedDriver === false 
-                      ? 'bg-green-500 border-green-500 text-white shadow-md' 
-                      : 'border-slate-200 hover:border-green-400 hover:bg-green-50'
-                    }`}
-                >
-                  <span className="text-xl">🏑</span> Non-Driver
+                <button onClick={() => setUsedDriver(false)}
+                  className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
+                    usedDriver === false
+                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                      : 'text-slate-600 hover:text-slate-900'}`}>
+                  Non-Driver
                 </button>
               </div>
             </div>
           )}
 
-          {/* Putting: Break & Slope */}
-          {shotType === 'putting' && currentShot > 1 && measuredDistance && (
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-              <div className="text-sm font-bold text-slate-600 uppercase mb-3">⛳ Putt Details</div>
-              
-              <div className="mb-4">
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Break</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { value: 'left_to_right', label: 'L → R' },
-                    { value: 'straight', label: 'Straight' },
-                    { value: 'right_to_left', label: 'R → L' },
-                  ].map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setPuttBreak(opt.value)}
-                      className={`py-3 rounded-xl border-2 font-semibold transition-all
-                        ${puttBreak === opt.value 
-                          ? 'bg-green-500 border-green-500 text-white' 
-                          : 'border-slate-200 hover:border-green-400'
-                        }`}
-                    >
-                      {opt.label}
+          {/* Shot Result - Context-Aware */}
+          <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Shot Result</p>
+            <div className="grid grid-cols-3 gap-2">
+              {(() => {
+                // Smart result options based on shot type
+                let options: string[];
+
+                if (isTeeShot && currentHole.par !== 3) {
+                  // Par 4/5 tee shot - can't hit green from tee
+                  options = ['Fairway', 'Rough', 'Sand', 'Other'];
+                } else if (isTeeShot && currentHole.par === 3) {
+                  // Par 3 tee shot - aiming for green
+                  options = ['Green', 'Rough', 'Sand', 'Other'];
+                } else {
+                  // All other shots (approach, around green, putting) - show all options
+                  options = ['Fairway', 'Rough', 'Sand', 'Green', 'Hole', 'Other'];
+                }
+
+                return options.map(r => (
+                  <button key={r} onClick={() => handleResultSelect(r.toLowerCase())}
+                    className={`py-3 rounded-lg font-semibold text-sm transition-all ${
+                      resultOfShot === r.toLowerCase()
+                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                        : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100'}`}>
+                    {r}
+                  </button>
+                ));
+              })()}
+            </div>
+          </div>
+
+          {/* Distance After Shot (if not holed) */}
+          {resultOfShot && resultOfShot !== 'hole' && (
+            <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">
+                Distance Remaining
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  ref={distanceInputRef}
+                  type="number"
+                  value={distanceAfterShot}
+                  onChange={(e) => setDistanceAfterShot(e.target.value)}
+                  placeholder="0"
+                  className="flex-1 h-12 px-4 rounded-lg text-2xl font-bold text-slate-900 text-center bg-slate-50 ring-1 ring-slate-200 focus:ring-2 focus:ring-emerald-600 focus:outline-none transition-all"
+                />
+                <div className="inline-flex bg-slate-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setDistanceAfterUnit('yards')}
+                    className={`px-3 py-2 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
+                      distanceAfterUnit === 'yards'
+                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Yards
+                  </button>
+                  <button
+                    onClick={() => setDistanceAfterUnit('feet')}
+                    className={`px-3 py-2 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
+                      distanceAfterUnit === 'feet'
+                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Feet
+                  </button>
+                </div>
+              </div>
+              {distanceAfterShot && (
+                <p className="text-xs text-slate-500 font-medium mt-3">
+                  Shot distance: ~{Math.max(0, Math.round(
+                    (distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole) -
+                    (distanceAfterUnit === 'feet' ? parseInt(distanceAfterShot) / 3 : parseInt(distanceAfterShot))
+                  ))} yards
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Putt Details (when putting and not holed) */}
+          {isPutting && resultOfShot && resultOfShot !== 'hole' && (
+            <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Putt Details</p>
+              <div className="mb-6">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Break</p>
+                <div className="inline-flex bg-slate-100 rounded-lg p-1 w-full">
+                  {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}].map(b => (
+                    <button key={b.v} onClick={() => setPuttBreak(b.v)}
+                      className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                        puttBreak === b.v
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                          : 'text-slate-600 hover:text-slate-900'}`}>
+                      {b.l}
                     </button>
                   ))}
                 </div>
               </div>
-
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Slope</label>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Slope</p>
                 <div className="grid grid-cols-4 gap-2">
-                  {['uphill', 'downhill', 'level', 'severe'].map(slope => (
-                    <button
-                      key={slope}
-                      onClick={() => setPuttSlope(slope)}
-                      className={`py-3 rounded-xl border-2 font-semibold text-sm transition-all
-                        ${puttSlope === slope 
-                          ? 'bg-green-500 border-green-500 text-white' 
-                          : 'border-slate-200 hover:border-green-400'
-                        }`}
-                    >
-                      {slope.charAt(0).toUpperCase() + slope.slice(1)}
+                  {['uphill', 'downhill', 'level', 'severe'].map(s => (
+                    <button key={s} onClick={() => setPuttSlope(s)}
+                      className={`py-2.5 rounded-lg font-semibold text-xs transition-all ${
+                        puttSlope === s
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                          : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100'}`}>
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
                     </button>
                   ))}
                 </div>
@@ -822,114 +842,46 @@ export default function ShotTrackingComprehensive({
             </div>
           )}
 
-          {/* Shot Result */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="text-sm font-bold text-slate-500 uppercase mb-3">Shot Result</div>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { value: 'fairway', label: 'Fairway' },
-                { value: 'rough', label: 'Rough' },
-                { value: 'sand', label: 'Sand' },
-                { value: 'green', label: 'Green' },
-                { value: 'hole', label: 'Hole', icon: '🕳️' },
-                { value: 'other', label: 'Other' },
-              ].map(option => (
-                <button
-                  key={option.value}
-                  onClick={() => handleResultSelect(option.value)}
-                  className={`py-4 rounded-xl border-2 font-bold transition-all
-                    ${resultOfShot === option.value 
-                      ? option.value === 'hole'
-                        ? 'bg-yellow-400 border-yellow-400 text-slate-900 shadow-md'
-                        : 'bg-green-500 border-green-500 text-white shadow-md'
-                      : 'border-slate-200 hover:border-green-400 hover:bg-green-50'
-                    }`}
-                >
-                  {option.icon && <span className="mr-1">{option.icon}</span>}
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Miss Directions */}
-          {((shotType === 'tee' && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
-            ((shotType === 'approach' || shotType === 'around_green') && resultOfShot && !['green', 'hole', 'fairway'].includes(resultOfShot)) ||
-            (shotType === 'putting' && resultOfShot && resultOfShot !== 'hole')) && (
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-              <div className="text-sm font-bold text-slate-500 uppercase mb-3">Miss Direction</div>
-              
-              {/* Tee shot: Left/Right only */}
-              {shotType === 'tee' && (
-                <div className="grid grid-cols-2 gap-3">
-                  {['left', 'right'].map(dir => (
-                    <button
-                      key={dir}
-                      onClick={() => setMissDirection(dir)}
-                      className={`py-4 rounded-xl border-2 font-bold transition-all
-                        ${missDirection === dir 
-                          ? 'bg-green-500 border-green-500 text-white' 
-                          : 'border-slate-200 hover:border-green-400'
-                        }`}
-                    >
-                      {dir === 'left' ? '← Left' : 'Right →'}
+          {/* Miss Direction */}
+          {((isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
+            (isApproachOrAroundGreen && resultOfShot && !['green', 'hole', 'fairway'].includes(resultOfShot)) ||
+            (isPutting && resultOfShot && resultOfShot !== 'hole')) && (
+            <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Miss Direction</p>
+              {isTeeShot && (
+                <div className="inline-flex bg-slate-100 rounded-lg p-1 w-full">
+                  {['left', 'right'].map(d => (
+                    <button key={d} onClick={() => setMissDirection(d)}
+                      className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                        missDirection === d
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                          : 'text-slate-600 hover:text-slate-900'}`}>
+                      {d === 'left' ? '←' : ''} {d.charAt(0).toUpperCase() + d.slice(1)} {d === 'right' ? '→' : ''}
                     </button>
                   ))}
                 </div>
               )}
-
-              {/* Approach/Around green: 9-zone grid */}
-              {(shotType === 'approach' || shotType === 'around_green') && (
-                <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
-                  {['long_left', 'long', 'long_right', 'left', null, 'right', 'short_left', 'short', 'short_right'].map((dir, idx) => (
-                    dir === null ? (
-                      <div key={idx} className="flex items-center justify-center">
-                        <div className="w-10 h-10 rounded-full bg-green-100 border-2 border-green-300 flex items-center justify-center text-lg">
-                          ⛳
-                        </div>
+              {(isApproachOrAroundGreen || isPutting) && (
+                <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
+                  {['long_left', 'long', 'long_right', 'left', null, 'right', 'short_left', 'short', 'short_right'].map((d, i) => (
+                    d === null ? (
+                      <div key={i} className="flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-emerald-50 ring-2 ring-emerald-200 flex items-center justify-center text-base">⛳</div>
                       </div>
                     ) : (
-                      <button
-                        key={dir}
-                        onClick={() => setMissDirection(dir)}
-                        className={`py-3 rounded-xl border-2 font-semibold text-sm transition-all
-                          ${missDirection === dir 
-                            ? 'bg-green-500 border-green-500 text-white' 
-                            : 'border-slate-200 hover:border-green-400'
-                          }`}
-                      >
-                        {dir.split('_').map(w => w.charAt(0).toUpperCase()).join('-')}
-                      </button>
-                    )
-                  ))}
-                </div>
-              )}
-
-              {/* Putting: 9-zone grid */}
-              {shotType === 'putting' && (
-                <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
-                  {[
-                    'long_left', 'long', 'long_right',
-                    'left', null, 'right',
-                    'short_left', 'short', 'short_right'
-                  ].map((dir, idx) => (
-                    dir === null ? (
-                      <div key={idx} className="flex items-center justify-center">
-                        <div className="w-10 h-10 rounded-full bg-green-100 border-2 border-green-300 flex items-center justify-center text-lg">
-                          ⛳
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        key={dir}
-                        onClick={() => setMissDirection(dir)}
-                        className={`py-3 rounded-xl border-2 font-semibold text-sm transition-all
-                          ${missDirection === dir 
-                            ? 'bg-green-500 border-green-500 text-white' 
-                            : 'border-slate-200 hover:border-green-400'
-                          }`}
-                      >
-                        {dir.split('_').map(w => w.charAt(0).toUpperCase()).join('-')}
+                      <button key={d} onClick={() => setMissDirection(d)}
+                        className={`py-2.5 rounded-lg font-semibold text-xs transition-all ${
+                          missDirection === d
+                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                            : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100'}`}>
+                        {d === 'long_left' && '↖'}
+                        {d === 'long' && '↑'}
+                        {d === 'long_right' && '↗'}
+                        {d === 'left' && '←'}
+                        {d === 'right' && '→'}
+                        {d === 'short_left' && '↙'}
+                        {d === 'short' && '↓'}
+                        {d === 'short_right' && '↘'}
                       </button>
                     )
                   ))}
@@ -939,158 +891,174 @@ export default function ShotTrackingComprehensive({
           )}
 
           {/* Next Shot Button */}
-          <button
-            onClick={handleNextShot}
-            disabled={!isReadyForNextShot()}
-            className={`w-full py-5 rounded-xl font-bold text-lg transition-all
-              ${isReadyForNextShot() 
-                ? resultOfShot === 'hole'
-                  ? 'bg-yellow-400 text-slate-900 hover:bg-yellow-500 shadow-lg'
-                  : 'bg-green-500 text-white hover:bg-green-600 shadow-lg'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              }`}
-          >
-            {resultOfShot === 'hole' 
-              ? `✅ Complete Hole - Score: ${currentShot}` 
-              : 'Next Shot'}
+          <button onClick={handleNextShot} disabled={!isReadyForNextShot()}
+            className={`w-full py-4 rounded-lg font-bold text-base transition-all ${
+              isReadyForNextShot()
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                : 'bg-slate-100 text-slate-400 cursor-not-allowed ring-1 ring-slate-200'}`}>
+            {resultOfShot === 'hole' ? `Complete Hole - Score: ${currentShot}` : 'Next Shot →'}
+          </button>
+
+          {/* Penalty Button */}
+          <button onClick={handleAddPenalty}
+            className="w-full py-3 rounded-lg font-semibold text-sm text-red-600 bg-red-50 ring-1 ring-red-200 hover:bg-red-100 hover:ring-red-300 transition-all">
+            ⚠️ Add Penalty Stroke
           </button>
 
           {/* Shot History */}
           {shotHistory.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-              <div className="text-sm font-bold text-slate-500 uppercase mb-3">
-                Shot History (Score: {currentShot})
+            <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Shot History
+                </p>
+                <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
+                  Score: {currentShot}
+                </p>
               </div>
               <div className="space-y-2">
-                {shotHistory.map((shot, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`flex justify-between items-center py-3 px-3 rounded-lg border
-                      ${shot.isPenalty ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={`text-sm font-bold ${shot.isPenalty ? 'text-red-600' : 'text-green-600'}`}>
-                        #{shot.shotNumber}
-                      </span>
-                      <div>
-                        <span className="font-semibold text-slate-700">
-                          {shot.isPenalty ? 'Penalty' : shot.shotType.replace('_', ' ').toUpperCase()}
-                        </span>
-                        {!shot.isPenalty && (
-                          <span className="text-slate-500 ml-2">→ {shot.result}</span>
-                        )}
+                {shotHistory.map((shot, idx) => {
+                  // Determine icon and colors based on shot type
+                  const getShotIcon = () => {
+                    if (shot.isPenalty) return '⚠️';
+                    if (shot.shotType === 'tee') return '⛳';
+                    if (shot.shotType === 'putting') return '⛳';
+                    if (shot.result === 'green') return '🎯';
+                    if (shot.result === 'hole') return '🏆';
+                    return '🏌️';
+                  };
+
+                  const getIconBgColor = () => {
+                    if (shot.isPenalty) return 'bg-red-50 ring-red-200';
+                    if (shot.shotType === 'tee') return 'bg-blue-50 ring-blue-200';
+                    if (shot.shotType === 'putting') return 'bg-emerald-50 ring-emerald-200';
+                    if (shot.result === 'green') return 'bg-emerald-50 ring-emerald-200';
+                    return 'bg-slate-50 ring-slate-200';
+                  };
+
+                  return (
+                    <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100 transition-all">
+                      <div className="flex items-center gap-3">
+                        {/* Shot Icon */}
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-base ring-1 flex-shrink-0 ${getIconBgColor()}`}>
+                          {getShotIcon()}
+                        </div>
+
+                        {/* Shot Details */}
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-bold ${shot.isPenalty ? 'text-red-600' : 'text-emerald-600'}`}>
+                              Shot {shot.shotNumber}
+                            </span>
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-semibold uppercase tracking-wide">
+                              {shot.isPenalty ? 'Penalty' : shot.shotType.replace('_', ' ')}
+                            </span>
+                          </div>
+                          {!shot.isPenalty && (
+                            <span className="text-xs text-slate-600 capitalize mt-0.5 font-medium">
+                              {shot.lieBefore} → {shot.result}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Distance/Result */}
+                      <div className="text-right">
+                        {shot.result === 'hole' ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-base">🏆</span>
+                            <span className="font-bold text-xs text-emerald-600 uppercase tracking-wide">Holed</span>
+                          </div>
+                        ) : !shot.isPenalty && shot.shotDistance > 0 ? (
+                          <div className="flex flex-col items-end">
+                            <span className="font-bold text-sm text-slate-900">{shot.shotDistance}<span className="text-xs text-slate-500 ml-0.5 font-semibold">yds</span></span>
+                            <span className="text-xs text-slate-500 font-medium">{shot.distanceToHoleAfter}{shot.distanceUnitAfter === 'yards' ? 'y' : 'ft'} left</span>
+                          </div>
+                        ) : shot.isPenalty ? (
+                          <div className="px-2 py-0.5 bg-red-100 rounded ring-1 ring-red-200">
+                            <span className="text-xs font-bold text-red-700 uppercase tracking-wide">{shot.penaltyType}</span>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
-                    {!shot.isPenalty && shot.shotDistance > 0 && (
-                      <div className="text-right">
-                        <span className="font-bold text-slate-700">{shot.shotDistance} yds</span>
-                      </div>
-                    )}
-                    {shot.isPenalty && (
-                      <span className="text-xs font-semibold text-red-500 uppercase">
-                        {shot.penaltyType}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
-
-          {/* Penalty Button */}
-          <button
-            onClick={handleAddPenalty}
-            className="w-full py-3 bg-red-50 border-2 border-red-200 rounded-xl text-red-600 font-semibold hover:bg-red-100 transition-all"
-          >
-            ⚠️ Add Penalty Stroke
-          </button>
-
         </div>
 
-        {/* RIGHT: Mini Hole Visualization */}
-        <div className="hidden lg:block w-48 p-4">
-          <div className="sticky top-36 bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="text-center mb-3">
-              <div className="text-xs font-bold text-slate-500 uppercase">Hole {currentHole.number}</div>
-              <div className="text-lg font-bold text-green-600">{currentShot} {currentShot === 1 ? 'shot' : 'shots'}</div>
-            </div>
-            
-            {/* Visual representation */}
-            <div className="relative h-64 flex flex-col items-center">
-              {/* Flag at top */}
-              <div className="w-4 h-4 bg-green-500 rounded-full border-2 border-green-600 mb-1"></div>
-              
-              {/* Distance bar */}
-              <div className="flex-1 w-2 bg-slate-200 rounded-full relative overflow-hidden">
-                <div 
-                  className="absolute bottom-0 w-full bg-gradient-to-t from-green-500 to-green-400 rounded-full transition-all duration-300"
-                  style={{ 
-                    height: `${Math.min(100, Math.max(5, (1 - currentDistanceDisplay / currentHole.yardage) * 100))}%` 
+        {/* Right Sidebar - Mini Golf Course Visualization */}
+        <div className="hidden xl:block w-44 p-4">
+          <div className="sticky top-32 bg-white rounded-lg p-5 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+            {/* Header */}
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Hole {currentHole.number}</p>
+            <p className="text-2xl font-bold text-emerald-600 text-center mt-1">{currentShot} shot{currentShot > 1 ? 's' : ''}</p>
+
+            {/* Golf Course Visualization */}
+            <div className="my-6 flex flex-col items-center h-48 relative">
+              {/* The Hole (top) - emerald filled circle */}
+              <div className="w-4 h-4 rounded-full bg-emerald-600 z-10 flex-shrink-0 shadow-sm shadow-emerald-950/10"></div>
+
+              {/* Track line container */}
+              <div className="flex-1 w-0.5 relative my-1">
+                {/* Background gray line */}
+                <div className="absolute inset-0 bg-slate-200 rounded-full"></div>
+
+                {/* Emerald progress line (from top = distance covered) */}
+                <div
+                  className="absolute top-0 left-0 right-0 bg-emerald-600 transition-all duration-500 rounded-full"
+                  style={{ height: `${progressPercent}%` }}
+                ></div>
+
+                {/* Ball position marker - larger emerald dot */}
+                <div
+                  className="absolute w-3.5 h-3.5 rounded-full bg-emerald-600 z-10 shadow-sm shadow-emerald-950/10 ring-2 ring-white transition-all duration-500"
+                  style={{
+                    top: `${Math.min(95, progressPercent)}%`,
+                    left: '50%',
+                    transform: 'translateX(-50%)'
                   }}
                 ></div>
               </div>
-              
-              {/* Ball at bottom */}
-              <div className="w-3 h-3 bg-white rounded-full border-2 border-slate-400 mt-1"></div>
+
+              {/* The Tee (bottom) - small outlined circle */}
+              <div className="w-3 h-3 rounded-full border-2 border-slate-300 bg-white z-10 flex-shrink-0"></div>
             </div>
-            
+
             {/* Distance remaining */}
-            <div className="text-center mt-3">
-              <div className="text-2xl font-bold text-green-600">
-                {currentDistanceDisplay}
-              </div>
-              <div className="text-xs text-slate-500">{currentUnitDisplay} left</div>
-            </div>
+            <p className="text-3xl font-bold text-emerald-600 text-center">{displayDistance}</p>
+            <p className="text-xs text-slate-500 font-semibold text-center mt-1 uppercase tracking-wide">{displayUnit} left</p>
           </div>
         </div>
       </div>
 
-      {/* ================================================================== */}
-      {/* PENALTY MODAL */}
-      {/* ================================================================== */}
+      {/* Penalty Modal */}
       {showPenaltyModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">⚠️ Add Penalty</h2>
-            
+          <div className="bg-white rounded-lg max-w-sm w-full p-6 shadow-xl shadow-slate-950/10 ring-1 ring-slate-200">
+            <h2 className="text-lg font-bold text-slate-900 mb-6">Add Penalty Stroke</h2>
             <div className="space-y-2 mb-6">
-              {[
-                { value: 'ob', label: 'Out of Bounds', emoji: '🚫' },
-                { value: 'water', label: 'Water Hazard', emoji: '💧' },
-                { value: 'unplayable', label: 'Unplayable Lie', emoji: '🌳' },
-                { value: 'lost', label: 'Lost Ball', emoji: '❓' },
-              ].map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setPenaltyType(opt.value)}
-                  className={`w-full py-4 rounded-xl border-2 font-semibold text-left px-4 transition-all flex items-center gap-3
-                    ${penaltyType === opt.value 
-                      ? 'bg-red-500 border-red-500 text-white' 
-                      : 'border-slate-200 hover:border-red-300 hover:bg-red-50'
-                    }`}
-                >
-                  <span className="text-xl">{opt.emoji}</span>
-                  {opt.label}
+              {[{v: 'ob', l: 'Out of Bounds'}, {v: 'water', l: 'Water Hazard'}, {v: 'unplayable', l: 'Unplayable Lie'}, {v: 'lost', l: 'Lost Ball'}].map(p => (
+                <button key={p.v} onClick={() => setPenaltyType(p.v)}
+                  className={`w-full py-3 px-4 rounded-lg font-semibold text-sm text-left transition-all ${
+                    penaltyType === p.v
+                      ? 'bg-red-600 text-white shadow-sm shadow-red-950/10 ring-1 ring-red-700'
+                      : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-red-300 hover:bg-red-50'}`}>
+                  {p.l}
                 </button>
               ))}
             </div>
-            
             <div className="flex gap-3">
-              <button
-                onClick={() => { setShowPenaltyModal(false); setPenaltyType(null); }}
-                className="flex-1 py-3 border-2 border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50 transition-all"
-              >
+              <button onClick={() => { setShowPenaltyModal(false); setPenaltyType(null); }}
+                className="flex-1 py-3 rounded-lg font-semibold text-sm text-slate-600 bg-slate-100 ring-1 ring-slate-200 hover:bg-slate-200 hover:ring-slate-300 transition-all">
                 Cancel
               </button>
-              <button
-                onClick={confirmPenalty}
-                disabled={!penaltyType}
-                className={`flex-1 py-3 rounded-xl font-semibold transition-all
-                  ${penaltyType 
-                    ? 'bg-red-500 text-white hover:bg-red-600' 
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
-              >
+              <button onClick={confirmPenalty} disabled={!penaltyType}
+                className={`flex-1 py-3 rounded-lg font-semibold text-sm transition-all ${
+                  penaltyType
+                    ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-950/10 ring-1 ring-red-700'
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed ring-1 ring-slate-200'}`}>
                 Add +1 Stroke
               </button>
             </div>

@@ -912,6 +912,136 @@ export type Database = {
           },
         ]
       }
+      golf_course_holes: {
+        Row: {
+          course_id: string
+          handicap_index: number | null
+          hole_number: number
+          id: string
+          par: number
+          yardage: number
+        }
+        Insert: {
+          course_id: string
+          handicap_index?: number | null
+          hole_number: number
+          id?: string
+          par: number
+          yardage: number
+        }
+        Update: {
+          course_id?: string
+          handicap_index?: number | null
+          hole_number?: number
+          id?: string
+          par?: number
+          yardage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_course_holes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "golf_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_course_tees: {
+        Row: {
+          course_id: string
+          course_rating: number | null
+          hole_yardages: Json | null
+          id: string
+          slope_rating: number | null
+          tee_color: string | null
+          tee_name: string
+          total_yardage: number | null
+        }
+        Insert: {
+          course_id: string
+          course_rating?: number | null
+          hole_yardages?: Json | null
+          id?: string
+          slope_rating?: number | null
+          tee_color?: string | null
+          tee_name: string
+          total_yardage?: number | null
+        }
+        Update: {
+          course_id?: string
+          course_rating?: number | null
+          hole_yardages?: Json | null
+          id?: string
+          slope_rating?: number | null
+          tee_color?: string | null
+          tee_name?: string
+          total_yardage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_course_tees_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "golf_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_courses: {
+        Row: {
+          city: string | null
+          country: string | null
+          course_rating: number | null
+          created_at: string | null
+          created_by: string | null
+          default_tee_color: string | null
+          default_tee_name: string | null
+          id: string
+          is_public: boolean | null
+          name: string
+          slope_rating: number | null
+          state: string | null
+          total_par: number | null
+          total_yardage: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          course_rating?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          default_tee_color?: string | null
+          default_tee_name?: string | null
+          id?: string
+          is_public?: boolean | null
+          name: string
+          slope_rating?: number | null
+          state?: string | null
+          total_par?: number | null
+          total_yardage?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          course_rating?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          default_tee_color?: string | null
+          default_tee_name?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          slope_rating?: number | null
+          state?: string | null
+          total_par?: number | null
+          total_yardage?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       golf_documents: {
         Row: {
           category: string | null
@@ -1931,6 +2061,7 @@ export type Database = {
           birdies: number | null
           bogeys: number | null
           course_city: string | null
+          course_id: string | null
           course_name: string
           course_rating: number | null
           course_slope: number | null
@@ -1971,6 +2102,7 @@ export type Database = {
           birdies?: number | null
           bogeys?: number | null
           course_city?: string | null
+          course_id?: string | null
           course_name: string
           course_rating?: number | null
           course_slope?: number | null
@@ -2011,6 +2143,7 @@ export type Database = {
           birdies?: number | null
           bogeys?: number | null
           course_city?: string | null
+          course_id?: string | null
           course_name?: string
           course_rating?: number | null
           course_slope?: number | null
@@ -2048,6 +2181,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "golf_rounds_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "golf_courses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "golf_rounds_player_id_fkey"
             columns: ["player_id"]

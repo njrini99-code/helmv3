@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { calculateStats, type RoundData, type GolfStats } from '@/lib/utils/golf-stats-calculator';
+import {
+  calculateStatsFromShots,
+  type GolfStats,
+  type RawShot,
+  type HoleInfo,
+  type RoundInfo
+} from '@/lib/utils/golf-stats-calculator-shots';
 import GolfStatsDisplay from '@/components/golf/stats/GolfStatsDisplay';
 import { IconChevronLeft, IconUser } from '@/components/icons';
 
@@ -115,7 +121,7 @@ export default function GolfStatsPage() {
     setLoadingStats(true);
     const supabase = createClient();
 
-    // Fetch all rounds with holes
+    // Fetch all rounds with their IDs
     const { data: rounds } = await supabase
       .from('golf_rounds')
       .select(`
@@ -129,59 +135,76 @@ export default function GolfStatsPage() {
       .eq('player_id', playerId)
       .order('round_date', { ascending: false });
 
-    // Always calculate stats, even with empty array (to show empty state with category pills)
-    let roundsData: RoundData[] = [];
-
-    if (rounds && rounds.length > 0) {
-      // Fetch holes for all rounds
-      const roundIds = rounds.map(r => r.id);
-      const { data: holes } = await supabase
-        .from('golf_holes')
-        .select('*')
-        .in('round_id', roundIds);
-
-      // Transform data into RoundData format
-      roundsData = rounds.map(round => {
-        const roundHoles = (holes || []).filter(h => h.round_id === round.id);
-
-        return {
-          id: round.id,
-          roundDate: round.round_date,
-          courseName: round.course_name,
-          roundType: round.round_type as 'practice' | 'qualifying' | 'tournament',
-          totalScore: round.total_score || 0,
-          totalToPar: round.total_to_par || 0,
-          holes: roundHoles.map(hole => ({
-            holeNumber: hole.hole_number,
-            par: hole.par,
-            score: hole.score || 0,
-            putts: hole.putts || 0,
-            fairwayHit: hole.fairway_hit,
-            greenInRegulation: hole.green_in_regulation || false,
-            usedDriver: hole.used_driver,
-            drivingDistance: hole.driving_distance,
-            driveMissDirection: hole.drive_miss_direction,
-            approachDistance: hole.approach_distance,
-            approachProximity: hole.approach_proximity,
-            approachLie: hole.approach_lie,
-            firstPuttDistance: hole.first_putt_distance,
-            firstPuttLeave: hole.first_putt_leave,
-            firstPuttMissDirection: hole.first_putt_miss_direction,
-            scrambleAttempt: hole.scramble_attempt || false,
-            scrambleMade: hole.scramble_made || false,
-            sandSaveAttempt: hole.sand_save_attempt || false,
-            sandSaveMade: hole.sand_save_made || false,
-            penaltyStrokes: hole.penalty_strokes || 0,
-            holedOutDistance: hole.holed_out_distance,
-            holedOutType: hole.holed_out_type,
-            shots: [] // Empty for now unless we have shot tracking data
-          }))
-        };
-      });
+    // Initialize empty stats if no rounds
+    if (!rounds || rounds.length === 0) {
+      const stats = calculateStatsFromShots([], [], []);
+      setComprehensiveStats(stats);
+      setLoadingStats(false);
+      return;
     }
 
-    // Calculate comprehensive stats (works with empty array too)
-    const stats = calculateStats(roundsData);
+    const roundIds = rounds.map(r => r.id);
+
+    // Fetch holes (par and yardage only - no pre-calculated stats needed)
+    const { data: holesData } = await supabase
+      .from('golf_holes')
+      .select('id, round_id, hole_number, par, yardage')
+      .in('round_id', roundIds);
+
+    // Fetch ALL shots (source of truth)
+    const { data: shotsData } = await supabase
+      .from('golf_shots')
+      .select('*')
+      .in('round_id', roundIds)
+      .order('hole_number')
+      .order('shot_number');
+
+    // Transform to types expected by calculator
+    const roundsInfo: RoundInfo[] = rounds.map(r => ({
+      id: r.id,
+      round_date: r.round_date,
+      course_name: r.course_name,
+      round_type: r.round_type as 'practice' | 'qualifying' | 'tournament',
+    }));
+
+    const holesInfo: HoleInfo[] = (holesData || []).map(h => ({
+      id: h.id,
+      round_id: h.round_id,
+      hole_number: h.hole_number,
+      par: h.par,
+      yardage: h.yardage,
+    }));
+
+    const shots: RawShot[] = (shotsData || [])
+      .filter(s =>
+        s.distance_to_hole_before !== null &&
+        s.distance_to_hole_after !== null &&
+        s.shot_distance !== null
+      )
+      .map(s => ({
+        id: s.id,
+        round_id: s.round_id,
+        hole_id: s.hole_id,
+        hole_number: s.hole_number,
+        shot_number: s.shot_number,
+        shot_type: s.shot_type as 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty',
+        club_type: s.club_type as 'driver' | 'non_driver' | 'putter',
+        lie_before: s.lie_before as 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other',
+        distance_to_hole_before: s.distance_to_hole_before!,
+        distance_unit_before: s.distance_unit_before as 'yards' | 'feet',
+        result: s.result as 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty',
+        distance_to_hole_after: s.distance_to_hole_after!,
+        distance_unit_after: s.distance_unit_after as 'yards' | 'feet',
+        shot_distance: s.shot_distance!,
+        miss_direction: s.miss_direction,
+        putt_break: s.putt_break,
+        putt_slope: s.putt_slope,
+        is_penalty: s.is_penalty ?? false,
+        penalty_type: s.penalty_type,
+      }));
+
+    // Calculate stats from raw shots ONLY (pure shot-based approach)
+    const stats = calculateStatsFromShots(shots, holesInfo, roundsInfo);
     setComprehensiveStats(stats);
     setLoadingStats(false);
   }

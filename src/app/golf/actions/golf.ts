@@ -16,6 +16,7 @@ interface GolfRoundInput {
   courseRating?: number;
   courseSlope?: number;
   teesPlayed?: string;
+  courseId?: string;
   roundType: 'practice' | 'tournament' | 'qualifier';
   roundDate: string;
   holes: Array<{
@@ -39,6 +40,7 @@ interface GolfRoundInputComprehensive {
   courseRating?: number;
   courseSlope?: number;
   teesPlayed?: string;
+  courseId?: string;
   roundType: 'practice' | 'tournament' | 'qualifier';
   roundDate: string;
   holes: HoleStats[];
@@ -160,6 +162,7 @@ export async function submitGolfRoundComprehensive(data: GolfRoundInputComprehen
       course_rating: data.courseRating || null,
       course_slope: data.courseSlope || null,
       tees_played: data.teesPlayed || null,
+      course_id: data.courseId || null,
       round_type: data.roundType,
       round_date: data.roundDate,
       total_score: totalScore,
@@ -327,6 +330,7 @@ export async function submitGolfRound(data: GolfRoundInput) {
       course_rating: data.courseRating || null,
       course_slope: data.courseSlope || null,
       tees_played: data.teesPlayed || null,
+      course_id: data.courseId || null,
       round_type: data.roundType,
       round_date: data.roundDate,
       total_score: totalScore,
