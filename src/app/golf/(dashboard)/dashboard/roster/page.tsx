@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { InvitePlayerButton } from '@/components/golf/roster/InvitePlayerButton';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
-import type { GolfPlayer, GolfRound } from '@/lib/types/golf';
-import { IconUsers } from '@/components/icons';
+import type { GolfPlayer } from '@/lib/types/golf';
+import { IconUsers, IconSearch, IconChartBar, IconMessage, IconChevronRight } from '@/components/icons';
 
 interface PlayerWithStats extends GolfPlayer {
   rounds_count?: number;
@@ -60,100 +61,160 @@ export default async function GolfRosterPage() {
   const inviteCode = typeof coach.team === 'object' && coach.team ? coach.team.invite_code : null;
 
   return (
-    <div className="min-h-screen bg-[#FAF6F1]">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Team Roster</h1>
-            <p className="text-slate-500 mt-1">
-              {playersWithStats.length} {playersWithStats.length === 1 ? 'player' : 'players'} on {teamName}
-            </p>
+    <div className="min-h-screen">
+      {/* Header Section */}
+      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Team Roster</h1>
+              <p className="text-slate-500 mt-0.5">
+                {playersWithStats.length} {playersWithStats.length === 1 ? 'player' : 'players'} on {teamName}
+              </p>
+            </div>
+            <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
           </div>
-          <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
         </div>
+      </div>
 
-        {/* Roster Grid */}
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {playersWithStats.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 shadow-sm text-center">
-            <IconUsers size={48} className="mx-auto text-slate-300 mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">
-              No Players Yet
-            </h3>
-            <p className="text-slate-500 mb-4">
-              Invite players to join your team
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <IconUsers size={28} className="text-slate-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">No Players Yet</h3>
+            <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+              Start building your team by inviting players to join your roster
             </p>
             <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Player</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Year</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Hometown</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Rounds</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Avg Score</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Handicap</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {playersWithStats.map((player) => (
-                    <tr key={player.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                            <span className="text-green-600 font-medium text-sm">
-                              {player.first_name?.[0] || '?'}{player.last_name?.[0] || '?'}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-slate-900">
-                              {player.first_name} {player.last_name}
-                            </p>
-                            {player.email && (
-                              <p className="text-xs text-slate-500">{player.email}</p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
+          <div className="space-y-3">
+            {playersWithStats.map((player, index) => (
+              <div
+                key={player.id}
+                className="group bg-white rounded-xl border border-slate-200/60 hover:border-slate-300 hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all duration-200"
+                style={{
+                  animation: 'fadeInUp 0.4s ease-out forwards',
+                  animationDelay: `${index * 30}ms`,
+                  opacity: 0,
+                }}
+              >
+                <div className="flex items-center gap-4 p-4">
+                  {/* Avatar */}
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <span className="text-white font-semibold text-sm">
+                        {player.first_name?.[0] || '?'}{player.last_name?.[0] || '?'}
+                      </span>
+                    </div>
+                    {/* Status indicator */}
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-emerald-500" />
+                  </div>
 
-                      <td className="px-6 py-4 text-sm text-slate-600">
-                        {player.year || '-'}
-                      </td>
+                  {/* Player Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-slate-900">
+                        {player.first_name} {player.last_name}
+                      </p>
+                      <PlayerStatusBadge playerId={player.id} currentStatus={player.status} />
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-sm text-slate-500 capitalize">
+                        {player.year?.replace('_', ' ') || 'Player'}
+                      </span>
+                      {player.hometown && player.state && (
+                        <>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-sm text-slate-500">
+                            {player.hometown}, {player.state}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
-                      <td className="px-6 py-4 text-sm text-slate-600">
-                        {player.hometown && player.state
-                          ? `${player.hometown}, ${player.state}`
-                          : '-'}
-                      </td>
+                  {/* Stats */}
+                  <div className="hidden md:flex items-center gap-6">
+                    <div className="text-center px-3">
+                      <p className="text-xs text-slate-400 mb-0.5">Rounds</p>
+                      <p className="font-semibold text-slate-900 tabular-nums">{player.rounds_count || 0}</p>
+                    </div>
+                    <div className="text-center px-3">
+                      <p className="text-xs text-slate-400 mb-0.5">Avg Score</p>
+                      <p className="font-semibold text-slate-900 tabular-nums">
+                        {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '--'}
+                      </p>
+                    </div>
+                    <div className="text-center px-3">
+                      <p className="text-xs text-slate-400 mb-0.5">Handicap</p>
+                      <p className="font-semibold text-slate-900 tabular-nums">
+                        {player.handicap !== null ? player.handicap.toFixed(1) : '--'}
+                      </p>
+                    </div>
+                  </div>
 
-                      <td className="px-6 py-4 text-sm text-slate-600 text-right">
-                        {player.rounds_count || 0}
-                      </td>
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Link href={`/golf/dashboard/stats?player=${player.id}`}>
+                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="View Stats">
+                        <IconChartBar size={18} className="text-slate-500" />
+                      </button>
+                    </Link>
+                    <Link href={`/golf/dashboard/messages?player=${player.id}`}>
+                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="Send Message">
+                        <IconMessage size={18} className="text-slate-500" />
+                      </button>
+                    </Link>
+                    <Link href={`/golf/dashboard/roster/${player.id}`}>
+                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="View Profile">
+                        <IconChevronRight size={18} className="text-slate-400" />
+                      </button>
+                    </Link>
+                  </div>
+                </div>
 
-                      <td className="px-6 py-4 text-sm font-medium text-slate-900 text-right">
-                        {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '-'}
-                      </td>
-
-                      <td className="px-6 py-4 text-sm text-slate-600 text-right">
-                        {player.handicap !== null ? player.handicap.toFixed(1) : '-'}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <PlayerStatusBadge playerId={player.id} currentStatus={player.status} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                {/* Mobile Stats Row */}
+                <div className="md:hidden flex items-center justify-around px-4 py-3 border-t border-slate-100 bg-slate-50/50 rounded-b-xl">
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">Rounds</p>
+                    <p className="font-semibold text-slate-900 text-sm">{player.rounds_count || 0}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">Avg</p>
+                    <p className="font-semibold text-slate-900 text-sm">
+                      {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '--'}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">HCP</p>
+                    <p className="font-semibold text-slate-900 text-sm">
+                      {player.handicap !== null ? player.handicap.toFixed(1) : '--'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
+
+      {/* CSS Keyframes */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

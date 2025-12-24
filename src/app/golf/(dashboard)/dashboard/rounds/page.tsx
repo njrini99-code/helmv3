@@ -1,10 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { IconPlus, IconGolf, IconCalendar, IconMapPin, IconCheck } from '@/components/icons';
-import type { GolfRound, GolfPlayer, GolfCoach } from '@/lib/types/golf';
+import { cn } from '@/lib/utils';
+import { IconPlus, IconGolf, IconCalendar, IconMapPin, IconCheck, IconChevronRight } from '@/components/icons';
+import type { GolfRound } from '@/lib/types/golf';
 
 interface RoundWithPlayer extends GolfRound {
   player: {
@@ -44,7 +43,6 @@ export default async function RoundsPage() {
   let rounds: RoundWithPlayer[] = [];
 
   if (userRole === 'coach' && coach?.team_id) {
-    // Coach sees all team rounds
     const { data } = await supabase
       .from('golf_rounds')
       .select(`
@@ -57,7 +55,6 @@ export default async function RoundsPage() {
 
     rounds = data as RoundWithPlayer[] || [];
   } else if (userRole === 'player' && player) {
-    // Player sees only their rounds
     const { data } = await supabase
       .from('golf_rounds')
       .select(`
@@ -70,129 +67,184 @@ export default async function RoundsPage() {
     rounds = data as RoundWithPlayer[] || [];
   }
 
+  // Group rounds by date
+  const groupedRounds = rounds.reduce((acc, round) => {
+    const date = new Date(round.round_date).toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    });
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(round);
+    return acc;
+  }, {} as Record<string, RoundWithPlayer[]>);
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Rounds
-          </h1>
-          <p className="text-slate-500 mt-1">
-            {userRole === 'coach' ? 'Team round history' : 'Your round history'}
-          </p>
+    <div className="min-h-screen">
+      {/* Header Section */}
+      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Rounds</h1>
+              <p className="text-slate-500 mt-0.5">
+                {rounds.length} round{rounds.length !== 1 ? 's' : ''} recorded
+              </p>
+            </div>
+            {userRole === 'player' && (
+              <Link href="/golf/dashboard/rounds/new">
+                <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-medium text-sm rounded-xl hover:bg-slate-800 transition-colors">
+                  <IconPlus size={16} />
+                  New Round
+                </button>
+              </Link>
+            )}
+          </div>
         </div>
-        {userRole === 'player' && (
-          <Link href="/golf/dashboard/rounds/new">
-            <Button>
-              <IconPlus size={16} className="mr-2" />
-              New Round
-            </Button>
-          </Link>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        {rounds.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <IconGolf size={28} className="text-slate-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">No Rounds Yet</h3>
+            <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+              {userRole === 'coach' 
+                ? "Your players haven't submitted any rounds yet."
+                : 'Start tracking your golf rounds to see stats and improvement over time.'}
+            </p>
+            {userRole === 'player' && (
+              <Link href="/golf/dashboard/rounds/new">
+                <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-medium text-sm rounded-xl hover:bg-slate-800 transition-colors">
+                  <IconPlus size={16} />
+                  Submit First Round
+                </button>
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {Object.entries(groupedRounds).map(([monthYear, monthRounds], groupIndex) => (
+              <div key={monthYear}>
+                <h2 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">
+                  {monthYear}
+                </h2>
+                <div className="space-y-2">
+                  {monthRounds.map((round, index) => {
+                    const playerName = round.player 
+                      ? `${round.player.first_name} ${round.player.last_name}`
+                      : 'Unknown Player';
+                    
+                    const scoreToPar = round.total_to_par || 0;
+
+                    return (
+                      <Link key={round.id} href={`/golf/dashboard/rounds/${round.id}`}>
+                        <div 
+                          className="group bg-white rounded-xl border border-slate-200/60 hover:border-slate-300 hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all duration-200"
+                          style={{
+                            animation: 'fadeInUp 0.4s ease-out forwards',
+                            animationDelay: `${(groupIndex * 100) + (index * 30)}ms`,
+                            opacity: 0,
+                          }}
+                        >
+                          <div className="flex items-center gap-4 p-4">
+                            {/* Score Badge */}
+                            <div className={cn(
+                              'w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0',
+                              scoreToPar < 0 ? 'bg-emerald-50' : scoreToPar === 0 ? 'bg-slate-100' : 'bg-amber-50'
+                            )}>
+                              <span className={cn(
+                                'text-xl font-bold',
+                                scoreToPar < 0 ? 'text-emerald-600' : scoreToPar === 0 ? 'text-slate-700' : 'text-amber-600'
+                              )}>
+                                {round.total_score || '--'}
+                              </span>
+                              <span className={cn(
+                                'text-[10px] font-medium',
+                                scoreToPar < 0 ? 'text-emerald-500' : scoreToPar === 0 ? 'text-slate-500' : 'text-amber-500'
+                              )}>
+                                {scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar}
+                              </span>
+                            </div>
+
+                            {/* Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">
+                                  {round.course_name}
+                                </h3>
+                                {round.is_verified && (
+                                  <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-emerald-100 text-emerald-700">
+                                    <IconCheck size={10} />
+                                    Verified
+                                  </span>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-4 text-sm text-slate-500">
+                                {userRole === 'coach' && (
+                                  <span className="flex items-center gap-1.5">
+                                    <IconGolf size={14} className="text-slate-400" />
+                                    {playerName}
+                                  </span>
+                                )}
+                                <span className="flex items-center gap-1.5">
+                                  <IconCalendar size={14} className="text-slate-400" />
+                                  {new Date(round.round_date).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })}
+                                </span>
+                                {round.course_city && round.course_state && (
+                                  <span className="flex items-center gap-1.5 hidden sm:flex">
+                                    <IconMapPin size={14} className="text-slate-400" />
+                                    {round.course_city}, {round.course_state}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Right Side */}
+                            <div className="hidden md:flex items-center gap-6">
+                              {round.total_putts && (
+                                <div className="text-center px-3">
+                                  <p className="text-xs text-slate-400 mb-0.5">Putts</p>
+                                  <p className="font-semibold text-slate-700 tabular-nums">{round.total_putts}</p>
+                                </div>
+                              )}
+                              <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600 capitalize">
+                                {round.round_type}
+                              </span>
+                            </div>
+
+                            <IconChevronRight size={18} className="text-slate-300 group-hover:text-emerald-500 transition-colors flex-shrink-0" />
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Rounds List */}
-      {rounds.length === 0 ? (
-        <Card>
-          <CardContent className="p-12">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <IconGolf size={32} className="text-slate-400" />
-              </div>
-              <h3 className="text-lg font-medium text-slate-900 mb-2">
-                No rounds yet
-              </h3>
-              <p className="text-slate-500 mb-6 max-w-sm mx-auto">
-                {userRole === 'coach' 
-                  ? 'Your players haven\'t submitted any rounds yet.'
-                  : 'Start tracking your golf rounds to see stats and improvement over time.'}
-              </p>
-              {userRole === 'player' && (
-                <Link href="/golf/dashboard/rounds/new">
-                  <Button>
-                    <IconPlus size={16} className="mr-2" />
-                    Submit Your First Round
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {rounds.map((round) => {
-            const playerName = round.player 
-              ? `${round.player.first_name} ${round.player.last_name}`
-              : 'Unknown Player';
-            
-            const scoreToPar = round.total_to_par || 0;
-            const scoreColor = scoreToPar === 0 
-              ? 'text-slate-600' 
-              : scoreToPar < 0 
-                ? 'text-green-600' 
-                : 'text-red-600';
-
-            return (
-              <Link key={round.id} href={`/golf/dashboard/rounds/${round.id}`}>
-                <Card className="hover:border-green-200 hover:shadow-md transition-all cursor-pointer">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-3">
-                          <h3 className="text-lg font-semibold text-slate-900">
-                            {round.course_name}
-                          </h3>
-                          {round.is_verified && (
-                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 flex items-center gap-1">
-                              <IconCheck size={12} />
-                              Verified
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-6 text-sm text-slate-500">
-                          {userRole === 'coach' && (
-                            <div className="flex items-center gap-2">
-                              <IconGolf size={16} />
-                              <span>{playerName}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <IconCalendar size={16} />
-                            <span>{new Date(round.round_date).toLocaleDateString()}</span>
-                          </div>
-                          {round.course_city && round.course_state && (
-                            <div className="flex items-center gap-2">
-                              <IconMapPin size={16} />
-                              <span>{round.course_city}, {round.course_state}</span>
-                            </div>
-                          )}
-                          <span className="px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-600 capitalize">
-                            {round.round_type}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="text-3xl font-bold text-slate-900 mb-1">
-                          {round.total_score || '--'}
-                        </div>
-                        <div className={`text-sm font-medium ${scoreColor}`}>
-                          {scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar}
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">
-                          {round.total_putts ? `${round.total_putts} putts` : ''}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
-      )}
+      {/* CSS Keyframes */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

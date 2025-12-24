@@ -7,6 +7,9 @@ import { GolfSidebar } from '@/components/golf/layout/GolfSidebar';
 import { PageLoading } from '@/components/ui/loading';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { ToastProvider } from '@/components/ui/toast';
+import { CommandPalette } from '@/components/golf/CommandPalette';
+import { MobileBottomNav } from '@/components/golf/MobileBottomNav';
+import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
 import { cn } from '@/lib/utils';
 
 interface UserData {
@@ -18,9 +21,13 @@ interface UserData {
 
 function GolfDashboardContent({ children, userData }: { children: React.ReactNode; userData: UserData }) {
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
+  const isCoach = userData.role === 'coach';
 
   return (
-    <div className="flex h-screen bg-[#FAF6F1]">
+    <div className="flex h-screen bg-slate-50">
+      {/* Command Palette (Cmd+K) */}
+      <CommandPalette isCoach={isCoach} />
+      
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <GolfSidebar
@@ -61,13 +68,21 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       {/* Main content */}
       <main
         className={cn(
-          'flex-1 overflow-y-auto',
+          'flex-1 overflow-y-auto pb-20 lg:pb-0',
           'transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          collapsed ? 'lg:ml-[72px]' : 'lg:ml-60'
+          collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'
         )}
       >
-        {children}
+        <div className="animate-page-enter min-h-full">
+          {children}
+        </div>
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav isCoach={isCoach} />
+
+      {/* Keyboard Shortcut Hint (shows once) */}
+      <KeyboardShortcutHint />
     </div>
   );
 }

@@ -43,7 +43,6 @@ export default async function GolfCalendarPage() {
     teamId = player?.team_id || null;
     playerId = player?.id || null;
 
-    // Fetch player's classes
     if (playerId) {
       const { data: classesData } = await supabase
         .from('golf_player_classes')
@@ -71,42 +70,68 @@ export default async function GolfCalendarPage() {
   const isCoach = userRole === 'coach';
   const isPlayer = userRole === 'player';
 
-  return (
-    <div className="min-h-screen bg-[#FAF6F1]">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Calendar</h1>
-            <p className="text-slate-500 mt-1">
-              {isPlayer && classes.length > 0 
-                ? `Team schedule, events & ${classes.length} classes`
-                : 'Team schedule and events'
-              }
-            </p>
-          </div>
-          {isCoach && <CreateEventButton />}
-        </div>
+  // Count upcoming events
+  const upcomingCount = events.filter(e => new Date(e.start_date) >= new Date()).length;
 
-        {/* Main Content */}
+  return (
+    <div className="min-h-screen">
+      {/* Header Section */}
+      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Calendar</h1>
+              <p className="text-slate-500 mt-0.5">
+                {upcomingCount} upcoming event{upcomingCount !== 1 ? 's' : ''}
+                {isPlayer && classes.length > 0 && ` • ${classes.length} class${classes.length !== 1 ? 'es' : ''}`}
+              </p>
+            </div>
+            {isCoach && <CreateEventButton />}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar View */}
-          <div className="lg:col-span-2">
+          <div 
+            className="lg:col-span-2"
+            style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0 }}
+          >
             <CalendarContainer events={events} classes={classes} />
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Events List */}
-            <EventsList events={events} isCoach={isCoach} />
+            <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '100ms', opacity: 0 }}>
+              <EventsList events={events} isCoach={isCoach} />
+            </div>
             
             {/* Classes List (for players) */}
             {isPlayer && classes.length > 0 && (
-              <CalendarClassesList classes={classes} />
+              <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '200ms', opacity: 0 }}>
+                <CalendarClassesList classes={classes} />
+              </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* CSS Keyframes */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
