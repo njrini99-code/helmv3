@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import ShotTrackingFinal from '@/components/golf/ShotTrackingFinal';
+import ShotTrackingComprehensive, { type HoleStats } from '@/components/golf/ShotTrackingComprehensive';
 
 export default async function RoundPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -16,7 +16,7 @@ export default async function RoundPage({ params }: { params: { id: string } }) 
     notFound();
   }
 
-  // Transform golf_holes data to the format expected by ShotTrackingFinal
+  // Transform golf_holes data to the format expected by ShotTrackingComprehensive
   const holes = round.golf_holes
     .sort((a: any, b: any) => a.hole_number - b.hole_number)
     .map((hole: any) => ({
@@ -39,12 +39,12 @@ export default async function RoundPage({ params }: { params: { id: string } }) 
   }
 
   return (
-    <ShotTrackingFinal
+    <ShotTrackingComprehensive
       holes={holes}
       currentHoleIndex={0} // Start at first hole
-      onHoleComplete={(holeIndex, score, shots) => {
+      onHoleComplete={(holeIndex: number, stats: HoleStats) => {
         // This will need to be handled in a client component wrapper
-        console.log('Hole completed:', holeIndex, score, shots);
+        console.log('Hole completed:', holeIndex, stats);
       }}
     />
   );
