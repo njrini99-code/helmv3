@@ -26,12 +26,8 @@ export default function GolfLoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      // Redirect to player-golf for test accounts, golf/dashboard for coaches
-      if (email.includes('test@golfhelm.com')) {
-        router.push('/player-golf');
-      } else {
-        router.push('/golf/dashboard');
-      }
+      // Redirect to golf dashboard for all users
+      router.push('/golf/dashboard');
       router.refresh();
     }
   };

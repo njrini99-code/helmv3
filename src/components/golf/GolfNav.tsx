@@ -6,17 +6,17 @@ import { IconTarget, IconList, IconChartBar, IconHome } from '@/components/icons
 
 const navItems = [
   {
-    href: '/player-golf',
+    href: '/golf/dashboard',
     label: 'Dashboard',
     icon: IconHome,
   },
   {
-    href: '/player-golf/rounds',
+    href: '/golf/dashboard/rounds',
     label: 'My Rounds',
     icon: IconList,
   },
   {
-    href: '/player-golf/stats',
+    href: '/golf/dashboard/stats',
     label: 'Statistics',
     icon: IconChartBar,
   },
@@ -26,8 +26,8 @@ export function GolfNav() {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
-    if (href === '/player-golf') {
-      return pathname === '/player-golf' || pathname === '/player-golf/dashboard';
+    if (href === '/golf/dashboard') {
+      return pathname === '/golf/dashboard';
     }
     return pathname?.startsWith(href);
   };
@@ -37,7 +37,7 @@ export function GolfNav() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo/Brand */}
-          <Link href="/player-golf" className="flex items-center gap-2">
+          <Link href="/golf/dashboard" className="flex items-center gap-2">
             <IconTarget size={24} className="text-green-600" />
             <span className="text-xl font-semibold text-slate-900">Golf Tracker</span>
           </Link>

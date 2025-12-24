@@ -114,7 +114,7 @@ export async function createCourse(data: CourseSetupData): Promise<{
     return { success: false, error: 'Failed to save hole configurations' };
   }
 
-  revalidatePath('/player-golf/rounds');
+  revalidatePath('/golf/dashboard/rounds');
 
   return { success: true, courseId: course.id };
 }
@@ -182,7 +182,7 @@ export async function updateCourse(
       .eq('id', courseId);
   }
 
-  revalidatePath('/player-golf/rounds');
+  revalidatePath('/golf/dashboard/rounds');
 
   return { success: true };
 }
@@ -207,7 +207,7 @@ export async function deleteCourse(courseId: string): Promise<{
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath('/player-golf/rounds');
+  revalidatePath('/golf/dashboard/rounds');
 
   return { success: true };
 }
