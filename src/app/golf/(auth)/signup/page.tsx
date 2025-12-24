@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconUsers, IconUser, IconArrowRight } from '@/components/icons';
 
+// Force dynamic rendering to avoid prerender errors
+export const dynamic = 'force-dynamic';
+
 type Role = 'coach' | 'player';
 type Step = 'role' | 'details';
 

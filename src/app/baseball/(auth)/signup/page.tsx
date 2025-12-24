@@ -11,6 +11,9 @@ import { cn } from '@/lib/utils';
 import { IconUsers, IconUser, IconArrowRight, IconCheck } from '@/components/icons';
 import type { CoachType, PlayerType } from '@/lib/types';
 
+// Force dynamic rendering to avoid prerender errors
+export const dynamic = 'force-dynamic';
+
 type Role = 'coach' | 'player';
 type Step = 'role' | 'type' | 'details';
 

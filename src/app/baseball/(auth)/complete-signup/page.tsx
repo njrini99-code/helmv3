@@ -10,6 +10,9 @@ import type { CoachType, PlayerType } from '@/lib/types';
 
 type Role = 'coach' | 'player';
 
+// Force dynamic rendering to avoid prerender errors
+export const dynamic = 'force-dynamic';
+
 export default function CompleteSignupPage() {
   const [role, setRole] = useState<Role | null>(null);
   const [coachType, setCoachType] = useState<CoachType | null>(null);
