@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive, { type HoleStats } from '@/components/golf/ShotTrackingComprehensive';
 import { submitGolfRoundComprehensive } from '@/app/golf/actions/golf';
+import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
+import type { HoleConfig } from '@/lib/types/golf-course';
 
 interface Hole {
   number: number;
@@ -35,7 +37,7 @@ const DEFAULT_HOLES: { par: number; yardage: number }[] = [
 
 export default function NewRoundPage() {
   const router = useRouter();
-  const [step, setStep] = useState<'setup' | 'tracking' | 'submitting'>('setup');
+  const [step, setStep] = useState<'setup' | 'holes' | 'tracking' | 'submitting'>('setup');
   const [setupData, setSetupData] = useState<RoundSetupForm>({
     courseName: '',
     courseCity: '',
@@ -69,7 +71,19 @@ export default function NewRoundPage() {
       setError('Please enter a course name');
       return;
     }
-    initializeHoles();
+    setStep('holes');
+  };
+
+  const handleHolesSave = (configuredHoles: HoleConfig[]) => {
+    // Convert HoleConfig to Hole format
+    const initialHoles: Hole[] = configuredHoles.map((h) => ({
+      number: h.holeNumber,
+      par: h.par,
+      yardage: h.yardage,
+      score: null,
+    }));
+    setHoles(initialHoles);
+    setCompletedHoleStats([]);
     setStep('tracking');
   };
 
@@ -150,7 +164,7 @@ export default function NewRoundPage() {
                       type="text"
                       value={setupData.courseName}
                       onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
                       placeholder="Pebble Beach Golf Links"
                       required
                     />
@@ -165,7 +179,7 @@ export default function NewRoundPage() {
                         type="text"
                         value={setupData.courseCity}
                         onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
                         placeholder="Pebble Beach"
                       />
                     </div>
@@ -177,7 +191,7 @@ export default function NewRoundPage() {
                         type="text"
                         value={setupData.courseState}
                         onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
                         placeholder="CA"
                         maxLength={2}
                       />
@@ -194,7 +208,7 @@ export default function NewRoundPage() {
                         step="0.1"
                         value={setupData.courseRating}
                         onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
                         placeholder="72.1"
                       />
                     </div>
@@ -206,7 +220,7 @@ export default function NewRoundPage() {
                         type="number"
                         value={setupData.courseSlope}
                         onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
                         placeholder="133"
                       />
                     </div>
@@ -217,7 +231,7 @@ export default function NewRoundPage() {
                       <select
                         value={setupData.teesPlayed}
                         onChange={(e) => setSetupData({ ...setupData, teesPlayed: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
                       >
                         <option>Championship</option>
                         <option>Black</option>
@@ -242,7 +256,7 @@ export default function NewRoundPage() {
                     <select
                       value={setupData.roundType}
                       onChange={(e) => setSetupData({ ...setupData, roundType: e.target.value as any })}
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
                     >
                       <option value="practice">Practice</option>
                       <option value="tournament">Tournament</option>
@@ -257,7 +271,7 @@ export default function NewRoundPage() {
                       type="date"
                       value={setupData.roundDate}
                       onChange={(e) => setSetupData({ ...setupData, roundDate: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
                       required
                     />
                   </div>
@@ -265,10 +279,10 @@ export default function NewRoundPage() {
               </div>
 
               {/* Stats Info Box */}
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                <h3 className="font-medium text-green-800 mb-2">📊 Comprehensive Stats Tracking</h3>
-                <p className="text-sm text-green-700">
-                  This round will track 50+ statistics including driving distance, approach proximity, 
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <h3 className="font-medium text-emerald-800 mb-2">📊 Comprehensive Stats Tracking</h3>
+                <p className="text-sm text-emerald-700">
+                  This round will track 50+ statistics including driving distance, approach proximity,
                   putting efficiency, scrambling, and more. Use your rangefinder for accurate distances.
                 </p>
               </div>
@@ -289,13 +303,30 @@ export default function NewRoundPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-green-600 font-medium text-white hover:bg-green-700 transition-colors"
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-emerald-600 font-medium text-white hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700"
                 >
-                  Start Round →
+                  Next: Configure Holes →
                 </button>
               </div>
             </form>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // HOLES CONFIGURATION STEP
+  // ============================================================================
+  if (step === 'holes') {
+    return (
+      <div className="min-h-screen bg-[#FAF6F1]">
+        <div className="max-w-lg mx-auto px-4 py-6">
+          <HoleConfigurationForm
+            courseName={setupData.courseName}
+            onSave={handleHolesSave}
+            onBack={() => setStep('setup')}
+          />
         </div>
       </div>
     );
