@@ -35,10 +35,36 @@ export default function GolfStatsPage() {
   const [comprehensiveStats, setComprehensiveStats] = useState<GolfStats | null>(null);
   const [playerName, setPlayerName] = useState('');
   const [loadingStats, setLoadingStats] = useState(false);
+  const [rounds, setRounds] = useState<any[]>([]);
+  const [selectedRoundId, setSelectedRoundId] = useState<string | 'overall'>('overall');
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Reload stats when round selection changes
+  useEffect(() => {
+    if (selectedPlayerId) {
+      loadPlayerStats(selectedPlayerId);
+    } else if (userRole === 'player') {
+      // Reload player's own stats
+      const reloadPlayerStats = async () => {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: player } = await supabase
+            .from('golf_players')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+          if (player) {
+            await loadPlayerStats(player.id);
+          }
+        }
+      };
+      reloadPlayerStats();
+    }
+  }, [selectedRoundId]);
 
   async function loadData() {
     const supabase = createClient();
@@ -122,7 +148,7 @@ export default function GolfStatsPage() {
     const supabase = createClient();
 
     // Fetch all rounds with their IDs
-    const { data: rounds } = await supabase
+    const { data: roundsData } = await supabase
       .from('golf_rounds')
       .select(`
         id,
@@ -135,15 +161,21 @@ export default function GolfStatsPage() {
       .eq('player_id', playerId)
       .order('round_date', { ascending: false });
 
+    // Store rounds for selector
+    setRounds(roundsData || []);
+
     // Initialize empty stats if no rounds
-    if (!rounds || rounds.length === 0) {
+    if (!roundsData || roundsData.length === 0) {
       const stats = calculateStatsFromShots([], [], []);
       setComprehensiveStats(stats);
       setLoadingStats(false);
       return;
     }
 
-    const roundIds = rounds.map(r => r.id);
+    // Determine which rounds to include based on selection
+    const roundIds = selectedRoundId === 'overall'
+      ? roundsData.map(r => r.id)
+      : [selectedRoundId];
 
     // Fetch holes (par and yardage only - no pre-calculated stats needed)
     const { data: holesData } = await supabase
@@ -159,8 +191,12 @@ export default function GolfStatsPage() {
       .order('hole_number')
       .order('shot_number');
 
-    // Transform to types expected by calculator
-    const roundsInfo: RoundInfo[] = rounds.map(r => ({
+    // Transform to types expected by calculator (only filtered rounds)
+    const filteredRoundsData = selectedRoundId === 'overall'
+      ? roundsData
+      : roundsData.filter(r => r.id === selectedRoundId);
+
+    const roundsInfo: RoundInfo[] = filteredRoundsData.map(r => ({
       id: r.id,
       round_date: r.round_date,
       course_name: r.course_name,
@@ -336,7 +372,13 @@ export default function GolfStatsPage() {
           <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
         </div>
       ) : comprehensiveStats ? (
-        <GolfStatsDisplay stats={comprehensiveStats} playerName={playerName} />
+        <GolfStatsDisplay
+          stats={comprehensiveStats}
+          playerName={playerName}
+          rounds={rounds}
+          selectedRoundId={selectedRoundId}
+          onRoundChange={setSelectedRoundId}
+        />
       ) : null}
     </div>
   );

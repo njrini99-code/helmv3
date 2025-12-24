@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive, { type HoleStats } from '@/components/golf/ShotTrackingComprehensive';
 import { submitGolfRoundComprehensive } from '@/app/golf/actions/golf';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
+import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
 import type { HoleConfig } from '@/lib/types/golf-course';
 
 interface Hole {
@@ -35,6 +36,24 @@ const DEFAULT_HOLES: { par: number; yardage: number }[] = [
   { par: 3, yardage: 195 }, { par: 4, yardage: 435 }, { par: 5, yardage: 555 },
 ];
 
+interface RoundSummary {
+  id: string;
+  courseName: string;
+  roundDate: string;
+  totalScore: number;
+  totalToPar: number;
+  totalPutts: number;
+  fairwaysHit: number;
+  fairwaysTotal: number;
+  greensInReg: number;
+  greensTotal: number;
+  birdies: number;
+  eagles: number;
+  pars: number;
+  bogeys: number;
+  doublePlus: number;
+}
+
 export default function NewRoundPage() {
   const router = useRouter();
   const [step, setStep] = useState<'setup' | 'holes' | 'tracking' | 'submitting'>('setup');
@@ -52,6 +71,8 @@ export default function NewRoundPage() {
   const [holes, setHoles] = useState<Hole[]>([]);
   const [completedHoleStats, setCompletedHoleStats] = useState<HoleStats[]>([]);
   const [error, setError] = useState('');
+  const [showSummary, setShowSummary] = useState(false);
+  const [summaryData, setSummaryData] = useState<RoundSummary | null>(null);
 
   // Initialize 18 holes with default pars/yardages
   const initializeHoles = () => {
@@ -127,10 +148,59 @@ export default function NewRoundPage() {
         holes: allHoleStats,
       };
 
+      console.log('Submitting round data:', roundData);
       const result = await submitGolfRoundComprehensive(roundData);
-      router.push(`/golf/dashboard/rounds/${result.id}`);
+      console.log('Round submitted successfully:', result);
+
+      // Calculate summary stats
+      const totalScore = allHoleStats.reduce((sum, h) => sum + h.score, 0);
+      const totalPar = allHoleStats.reduce((sum, h) => sum + h.par, 0);
+      const totalToPar = totalScore - totalPar;
+      const totalPutts = allHoleStats.reduce((sum, h) => sum + h.putts, 0);
+      const fairwaysHit = allHoleStats.reduce((sum, h) => sum + (h.fairwayHit ? 1 : 0), 0);
+      const fairwaysTotal = allHoleStats.filter(h => h.par >= 4).length; // Par 4s and 5s
+      const greensInReg = allHoleStats.reduce((sum, h) => sum + (h.greenInRegulation ? 1 : 0), 0);
+      const greensTotal = allHoleStats.length;
+
+      // Score distribution
+      let eagles = 0;
+      let birdies = 0;
+      let pars = 0;
+      let bogeys = 0;
+      let doublePlus = 0;
+
+      allHoleStats.forEach(hole => {
+        const toPar = hole.score - hole.par;
+        if (toPar <= -2) eagles++;
+        else if (toPar === -1) birdies++;
+        else if (toPar === 0) pars++;
+        else if (toPar === 1) bogeys++;
+        else doublePlus++;
+      });
+
+      // Show summary modal
+      setSummaryData({
+        id: result.id,
+        courseName: setupData.courseName,
+        roundDate: setupData.roundDate,
+        totalScore,
+        totalToPar,
+        totalPutts,
+        fairwaysHit,
+        fairwaysTotal,
+        greensInReg,
+        greensTotal,
+        birdies,
+        eagles,
+        pars,
+        bogeys,
+        doublePlus,
+      });
+      setStep('tracking'); // Change step back so modal can render
+      setShowSummary(true);
     } catch (err) {
-      console.error('Failed to submit round:', err);
+      console.error('Failed to submit round - Full error:', err);
+      console.error('Error details:', JSON.stringify(err, null, 2));
       setError(err instanceof Error ? err.message : 'Failed to submit round');
       setStep('tracking');
     }
@@ -362,10 +432,20 @@ export default function NewRoundPage() {
   // TRACKING STEP
   // ============================================================================
   return (
-    <ShotTrackingComprehensive
-      holes={holes}
-      currentHoleIndex={currentHoleIndex}
-      onHoleComplete={handleHoleComplete}
-    />
+    <>
+      <ShotTrackingComprehensive
+        holes={holes}
+        currentHoleIndex={currentHoleIndex}
+        onHoleComplete={handleHoleComplete}
+      />
+
+      {/* Round Completion Summary Modal */}
+      {showSummary && summaryData && (
+        <RoundCompletionSummary
+          summary={summaryData}
+          onClose={() => setShowSummary(false)}
+        />
+      )}
+    </>
   );
 }

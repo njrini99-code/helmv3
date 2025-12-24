@@ -90,8 +90,9 @@ function StatBox({ label, value, subValue }: { label: string; value: string | nu
 export default async function RoundDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -107,7 +108,7 @@ export default async function RoundDetailPage({
       player:golf_players(first_name, last_name, team_id),
       holes:golf_holes(*)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (error || !round) {

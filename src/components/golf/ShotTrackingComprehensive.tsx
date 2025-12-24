@@ -177,15 +177,23 @@ export default function ShotTrackingComprehensive({
     }
   }, [resultOfShot, isPutting]);
 
-  // Auto-focus distance input when it appears
+  // Auto-focus distance input when it appears (only if miss direction not needed or already filled)
   useEffect(() => {
     if (resultOfShot && resultOfShot !== 'hole' && distanceInputRef.current) {
-      // Small delay to ensure the input is rendered
-      setTimeout(() => {
-        distanceInputRef.current?.focus();
-      }, 100);
+      // Check if miss direction is needed
+      const needsMissDirection =
+        (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot)) ||
+        (isApproachOrAroundGreen && !['green', 'hole', 'fairway'].includes(resultOfShot)) ||
+        (isPutting && resultOfShot !== 'hole');
+
+      // Only auto-focus distance if miss direction not needed OR already filled
+      if (!needsMissDirection || missDirection) {
+        setTimeout(() => {
+          distanceInputRef.current?.focus();
+        }, 100);
+      }
     }
-  }, [resultOfShot]);
+  }, [resultOfShot, missDirection, isTeeShot, isApproachOrAroundGreen, isPutting]);
 
   // ============================================================================
   // VALIDATION
@@ -203,8 +211,8 @@ export default function ShotTrackingComprehensive({
       if (!distanceAfterShot || parseInt(distanceAfterShot) < 0) return false;
     }
     
-    // Putting needs break and slope
-    if (isPutting && resultOfShot !== 'hole') {
+    // Putting always needs break and slope (filled before result)
+    if (isPutting) {
       if (!puttBreak || !puttSlope) return false;
     }
     
@@ -299,7 +307,7 @@ export default function ShotTrackingComprehensive({
     setCurrentShot(currentShot + 1);
     setDistanceToHole(distanceAfter);
     setDistanceUnit(unitAfter);
-    
+
     // Reset input state
     setUsedDriver(null);
     setResultOfShot(null);
@@ -726,9 +734,50 @@ export default function ShotTrackingComprehensive({
             </div>
           )}
 
+          {/* Putt Details (FIRST - when putting) */}
+          {isPutting && (
+            <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 border-2 border-emerald-200 shadow-lg shadow-emerald-950/5">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-bold text-emerald-900 uppercase tracking-wide">⛳ Putting Details</p>
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md">Fill First</span>
+              </div>
+              <p className="text-xs text-slate-600 mb-4">Describe your putt before selecting the result</p>
+              <div className="mb-6">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Break</p>
+                <div className="inline-flex bg-white rounded-lg p-1 w-full border border-emerald-200">
+                  {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}].map(b => (
+                    <button key={b.v} onClick={() => setPuttBreak(b.v)}
+                      className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                        puttBreak === b.v
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                          : 'text-slate-600 hover:text-slate-900'}`}>
+                      {b.l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Slope</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {['uphill', 'downhill', 'level', 'severe'].map(s => (
+                    <button key={s} onClick={() => setPuttSlope(s)}
+                      className={`py-2.5 rounded-lg font-semibold text-xs transition-all ${
+                        puttSlope === s
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                          : 'bg-white text-slate-700 ring-1 ring-emerald-200 hover:ring-emerald-300 hover:bg-slate-50'}`}>
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Shot Result - Context-Aware */}
           <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
-            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Shot Result</p>
+            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">
+              {isPutting ? 'Putt Result' : 'Shot Result'}
+            </p>
             <div className="grid grid-cols-3 gap-2">
               {(() => {
                 // Smart result options based on shot type
@@ -757,90 +806,6 @@ export default function ShotTrackingComprehensive({
               })()}
             </div>
           </div>
-
-          {/* Distance After Shot (if not holed) */}
-          {resultOfShot && resultOfShot !== 'hole' && (
-            <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
-              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">
-                Distance Remaining
-              </p>
-              <div className="flex items-center gap-3">
-                <input
-                  ref={distanceInputRef}
-                  type="number"
-                  value={distanceAfterShot}
-                  onChange={(e) => setDistanceAfterShot(e.target.value)}
-                  placeholder="0"
-                  className="flex-1 h-12 px-4 rounded-lg text-2xl font-bold text-slate-900 text-center bg-slate-50 ring-1 ring-slate-200 focus:ring-2 focus:ring-emerald-600 focus:outline-none transition-all"
-                />
-                <div className="inline-flex bg-slate-100 rounded-lg p-1">
-                  <button
-                    onClick={() => setDistanceAfterUnit('yards')}
-                    className={`px-3 py-2 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
-                      distanceAfterUnit === 'yards'
-                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Yards
-                  </button>
-                  <button
-                    onClick={() => setDistanceAfterUnit('feet')}
-                    className={`px-3 py-2 rounded-md font-semibold text-xs uppercase tracking-wide transition-all ${
-                      distanceAfterUnit === 'feet'
-                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Feet
-                  </button>
-                </div>
-              </div>
-              {distanceAfterShot && (
-                <p className="text-xs text-slate-500 font-medium mt-3">
-                  Shot distance: ~{Math.max(0, Math.round(
-                    (distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole) -
-                    (distanceAfterUnit === 'feet' ? parseInt(distanceAfterShot) / 3 : parseInt(distanceAfterShot))
-                  ))} yards
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Putt Details (when putting and not holed) */}
-          {isPutting && resultOfShot && resultOfShot !== 'hole' && (
-            <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
-              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Putt Details</p>
-              <div className="mb-6">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Break</p>
-                <div className="inline-flex bg-slate-100 rounded-lg p-1 w-full">
-                  {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}].map(b => (
-                    <button key={b.v} onClick={() => setPuttBreak(b.v)}
-                      className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
-                        puttBreak === b.v
-                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                          : 'text-slate-600 hover:text-slate-900'}`}>
-                      {b.l}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Slope</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {['uphill', 'downhill', 'level', 'severe'].map(s => (
-                    <button key={s} onClick={() => setPuttSlope(s)}
-                      className={`py-2.5 rounded-lg font-semibold text-xs transition-all ${
-                        puttSlope === s
-                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                          : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100'}`}>
-                      {s.charAt(0).toUpperCase() + s.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Miss Direction */}
           {((isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
@@ -885,6 +850,62 @@ export default function ShotTrackingComprehensive({
                       </button>
                     )
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Distance Remaining - Final Step (if not holed) */}
+          {resultOfShot && resultOfShot !== 'hole' && (
+            <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 border-2 border-emerald-200 shadow-lg shadow-emerald-950/5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-bold text-emerald-900 uppercase tracking-wide">
+                  📏 Final Step: Distance Remaining
+                </p>
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md">Required</span>
+              </div>
+              <p className="text-xs text-slate-600 mb-4">Enter the distance to the hole after this shot</p>
+              <div className="flex items-center gap-3 mb-3">
+                <input
+                  ref={distanceInputRef}
+                  type="number"
+                  value={distanceAfterShot}
+                  onChange={(e) => setDistanceAfterShot(e.target.value)}
+                  placeholder="Enter distance"
+                  className="flex-1 h-14 px-5 rounded-xl text-3xl font-bold text-emerald-900 text-center bg-white border-2 border-emerald-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 focus:outline-none transition-all placeholder:text-slate-300"
+                />
+                <div className="inline-flex bg-white rounded-lg p-1 border-2 border-emerald-300">
+                  <button
+                    onClick={() => setDistanceAfterUnit('yards')}
+                    className={`px-4 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
+                      distanceAfterUnit === 'yards'
+                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Yards
+                  </button>
+                  <button
+                    onClick={() => setDistanceAfterUnit('feet')}
+                    className={`px-4 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
+                      distanceAfterUnit === 'feet'
+                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Feet
+                  </button>
+                </div>
+              </div>
+              {distanceAfterShot && (
+                <div className="flex items-center justify-between bg-white/60 rounded-lg px-4 py-2.5 border border-emerald-200">
+                  <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Shot Distance</span>
+                  <span className="text-lg font-bold text-emerald-700">
+                    ~{Math.max(0, Math.round(
+                      (distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole) -
+                      (distanceAfterUnit === 'feet' ? parseInt(distanceAfterShot) / 3 : parseInt(distanceAfterShot))
+                    ))} yards
+                  </span>
                 </div>
               )}
             </div>

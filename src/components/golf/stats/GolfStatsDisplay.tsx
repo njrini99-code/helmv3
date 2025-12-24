@@ -1,19 +1,31 @@
 'use client';
 
 import { useState } from 'react';
-import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward } from '@/components/icons';
+import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward, IconChartBar } from '@/components/icons';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
+import ProgressStats from './ProgressStats';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-type StatsCategory = 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling';
+type StatsCategory = 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling' | 'progress';
+
+interface RoundOption {
+  id: string;
+  round_date: string;
+  course_name: string;
+  total_score: number;
+  total_to_par: number;
+}
 
 interface StatsDisplayProps {
   stats: GolfStats;
   playerName?: string;
+  rounds?: RoundOption[];
+  selectedRoundId?: string | 'overall';
+  onRoundChange?: (roundId: string | 'overall') => void;
 }
 
 // ============================================================================
@@ -464,10 +476,17 @@ function ScramblingStats({ stats }: { stats: GolfStats }) {
 // MAIN COMPONENT
 // ============================================================================
 
-export default function GolfStatsDisplay({ stats, playerName }: StatsDisplayProps) {
+export default function GolfStatsDisplay({
+  stats,
+  playerName,
+  rounds = [],
+  selectedRoundId = 'overall',
+  onRoundChange
+}: StatsDisplayProps) {
   const [activeCategory, setActiveCategory] = useState<StatsCategory>('scoring');
 
   const categories: { id: StatsCategory; label: string; icon: React.ReactNode }[] = [
+    { id: 'progress', label: 'Progress', icon: <IconChartBar size={16} /> },
     { id: 'scoring', label: 'Scoring', icon: <IconAward size={16} /> },
     { id: 'driving', label: 'Driving', icon: <IconGolf size={16} /> },
     { id: 'approach', label: 'Approach', icon: <IconTarget size={16} /> },
@@ -475,18 +494,53 @@ export default function GolfStatsDisplay({ stats, playerName }: StatsDisplayProp
     { id: 'scrambling', label: 'Scrambling', icon: <IconTrendingUp size={16} /> },
   ];
 
+  const formatRoundDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF6F1]">
       <div className="max-w-4xl mx-auto px-4 py-6">
         
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">
-            {playerName ? `${playerName}'s Stats` : 'My Stats'}
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            {stats.roundsPlayed} rounds • {stats.holesPlayed} holes
-          </p>
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">
+                {playerName ? `${playerName}'s Stats` : 'My Stats'}
+              </h1>
+              <p className="text-slate-500 text-sm mt-1">
+                {stats.roundsPlayed} rounds • {stats.holesPlayed} holes
+              </p>
+            </div>
+
+            {/* Round Selector */}
+            {onRoundChange && rounds.length > 0 && (
+              <div className="min-w-[200px]">
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
+                  View Stats
+                </label>
+                <select
+                  value={selectedRoundId}
+                  onChange={(e) => onRoundChange(e.target.value as string | 'overall')}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 bg-white hover:border-green-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-colors"
+                >
+                  <option value="overall">Overall Stats</option>
+                  <optgroup label="Individual Rounds">
+                    {rounds.map(round => (
+                      <option key={round.id} value={round.id}>
+                        {formatRoundDate(round.round_date)} • {round.course_name} ({round.total_score})
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Category Pills */}
@@ -509,6 +563,7 @@ export default function GolfStatsDisplay({ stats, playerName }: StatsDisplayProp
 
         {/* Stats Content */}
         <div>
+          {activeCategory === 'progress' && <ProgressStats stats={stats} rounds={rounds} />}
           {activeCategory === 'scoring' && <ScoringStats stats={stats} />}
           {activeCategory === 'driving' && <DrivingStats stats={stats} />}
           {activeCategory === 'approach' && <ApproachStats stats={stats} />}

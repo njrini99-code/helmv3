@@ -338,16 +338,14 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
     ? shotToGreen.shot_number <= (par - 2)
     : false;
 
-  // Approach shot (last non-putting shot before green)
-  const approachShot = sortedShots
-    .filter(s => s.shot_type === 'approach' || s.shot_type === 'around_green')
-    .sort((a, b) => b.shot_number - a.shot_number)[0];
-
-  const approachDistance = approachShot && shotToGreen && approachShot.shot_number < shotToGreen.shot_number
-    ? normalizeToYards(approachShot.distance_to_hole_before, approachShot.distance_unit_before)
+  // Approach distance and lie - use the shot that landed on green when it IS an approach/ATG shot
+  const approachDistance = shotToGreen && (shotToGreen.shot_type === 'approach' || shotToGreen.shot_type === 'around_green')
+    ? normalizeToYards(shotToGreen.distance_to_hole_before, shotToGreen.distance_unit_before)
     : null;
 
-  const approachLie = approachShot ? approachShot.lie_before : null;
+  const approachLie = shotToGreen && (shotToGreen.shot_type === 'approach' || shotToGreen.shot_type === 'around_green')
+    ? shotToGreen.lie_before
+    : null;
 
   const approachProximity = shotToGreen && shotToGreen.result === 'green'
     ? normalizeToFeet(shotToGreen.distance_to_hole_after, shotToGreen.distance_unit_after)
@@ -629,8 +627,8 @@ function aggregateRoundStats(rounds: Array<{
   let qualifyingScore = 0;
   let tournamentScore = 0;
 
-  let drivingDistances: number[] = [];
-  let drivingDistancesDriverOnly: number[] = [];
+  const drivingDistances: number[] = [];
+  const drivingDistancesDriverOnly: number[] = [];
   let fairwaysPar4 = { hit: 0, total: 0 };
   let fairwaysPar5 = { hit: 0, total: 0 };
   let fairwaysDriver = { hit: 0, total: 0 };

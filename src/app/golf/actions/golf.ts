@@ -33,7 +33,6 @@ interface GolfRoundInput {
 
 // Comprehensive input with full stats
 interface GolfRoundInputComprehensive {
-  qualifierId?: string;
   courseName: string;
   courseCity?: string;
   courseState?: string;
@@ -155,7 +154,6 @@ export async function submitGolfRoundComprehensive(data: GolfRoundInputComprehen
     .from('golf_rounds')
     .insert({
       player_id: player.id,
-      qualifier_id: data.qualifierId || null,
       course_name: data.courseName,
       course_city: data.courseCity || null,
       course_state: data.courseState || null,
@@ -172,7 +170,6 @@ export async function submitGolfRoundComprehensive(data: GolfRoundInputComprehen
       fairways_total: fairwaysTotal,
       greens_in_regulation: greensInReg,
       greens_total: data.holes.length,
-      total_penalties: totalPenalties,
       is_verified: false,
       // New comprehensive stats columns
       driving_distance_avg: drivingDistanceAvg,
