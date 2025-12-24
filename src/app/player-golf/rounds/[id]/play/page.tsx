@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import ShotTrackingFinal from '@/components/golf/ShotTrackingFinal';
+import ShotTrackingComprehensive, { type HoleStats } from '@/components/golf/ShotTrackingComprehensive';
 
 interface Hole {
   number: number;
@@ -41,25 +41,28 @@ export default function PlayRoundPage() {
 
   const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
 
-  const handleHoleComplete = (holeIndex: number, score: number, shots: any[]) => {
+  const handleHoleComplete = (holeIndex: number, stats: HoleStats) => {
     console.log('Golf Player - Hole complete:', {
       roundId,
       holeIndex,
-      holeNumber: holeIndex + 1,
-      score,
-      totalShots: shots.length
+      holeNumber: stats.holeNumber,
+      score: stats.score,
+      putts: stats.putts,
+      fairwayHit: stats.fairwayHit,
+      gir: stats.greenInRegulation,
+      totalShots: stats.shots.length
     });
 
     // Update score in state
     const updatedHoles = [...holes];
     const currentHole = updatedHoles[holeIndex];
     if (currentHole) {
-      currentHole.score = score;
+      currentHole.score = stats.score;
       setHoles(updatedHoles);
     }
 
-    // TODO: Save to Supabase
-    // await saveHoleToDatabase(roundId, holeIndex + 1, score, shots);
+    // TODO: Save to Supabase with full HoleStats
+    // await saveHoleToDatabase(roundId, stats);
 
     // Move to next hole or finish
     if (holeIndex < 17) {
@@ -68,14 +71,16 @@ export default function PlayRoundPage() {
     } else {
       // Round complete!
       const totalScore = updatedHoles.reduce((sum, h) => sum + (h.score || 0), 0);
-      console.log('Round complete! Total score:', totalScore);
-      alert(`Round complete! Total score: ${totalScore}`);
+      const totalPar = updatedHoles.reduce((sum, h) => sum + h.par, 0);
+      const toPar = totalScore - totalPar;
+      console.log('Round complete! Total score:', totalScore, `(${toPar >= 0 ? '+' : ''}${toPar})`);
+      alert(`Round complete! Total score: ${totalScore} (${toPar >= 0 ? '+' : ''}${toPar})`);
       router.push('/player-golf');
     }
   };
 
   return (
-    <ShotTrackingFinal
+    <ShotTrackingComprehensive
       holes={holes}
       currentHoleIndex={currentHoleIndex}
       onHoleComplete={handleHoleComplete}

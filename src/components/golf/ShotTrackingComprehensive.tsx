@@ -5,7 +5,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 /**
  * GolfHelm Shot Tracking - COMPREHENSIVE STATS VERSION
  * 
- * Captures all data needed for 50+ golf statistics:
+ * Premium UI with comprehensive stats capture for 50+ golf statistics:
+ * - Dark scorecard with yardages
+ * - Shot progress pills
+ * - Green hole info header
+ * - Mini hole visualization
  * - Detailed shot-by-shot tracking
  * - Penalty strokes
  * - Putt break/slope/miss direction
@@ -505,450 +509,540 @@ export default function ShotTrackingComprehensive({
     }
   };
 
-  const getScoreDisplay = (hole: Hole) => {
-    if (hole.score === null) {
-      return { display: '-', className: 'text-slate-300' };
-    }
-    const diff = hole.score - hole.par;
-    if (diff <= -2) {
-      return {
-        display: hole.score,
-        className: 'w-7 h-7 rounded-full bg-yellow-400 border border-yellow-500 flex items-center justify-center',
-        textColor: 'text-slate-900'
-      };
-    } else if (diff === -1) {
-      return {
-        display: hole.score,
-        className: 'w-7 h-7 rounded-full bg-red-500 flex items-center justify-center',
-        textColor: 'text-white'
-      };
-    } else if (diff === 0) {
-      return { display: hole.score, className: '', textColor: 'text-slate-900' };
-    } else if (diff === 1) {
-      return {
-        display: hole.score,
-        className: 'w-7 h-7 border-2 border-slate-900 rounded-sm flex items-center justify-center',
-        textColor: 'text-slate-900'
-      };
-    } else {
-      return {
-        display: hole.score,
-        className: 'w-7 h-7 border-4 border-slate-900 rounded-sm flex items-center justify-center',
-        textColor: 'text-slate-900'
-      };
-    }
-  };
+  // Calculate running totals
+  const front9Score = holes.slice(0, 9).reduce((sum, h) => sum + (h.score || 0), 0);
+  const back9Score = holes.slice(9, 18).reduce((sum, h) => sum + (h.score || 0), 0);
+  const front9HasScores = holes.slice(0, 9).some(h => h.score !== null);
+  const back9HasScores = holes.slice(9, 18).some(h => h.score !== null);
+  const totalPar = holes.reduce((sum, h) => sum + h.par, 0);
+
+  // Current distance for visualization
+  const currentDistanceDisplay = currentShot === 1 
+    ? currentHole.yardage 
+    : (measuredDistance ? parseInt(measuredDistance) : distanceToHole);
+  const currentUnitDisplay = currentShot === 1 ? 'yards' : distanceUnit;
 
   // ============================================================================
   // RENDER
   // ============================================================================
   
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-100">
       
       {/* ================================================================== */}
-      {/* HORIZONTAL SCORECARD */}
+      {/* DARK SCORECARD HEADER */}
       {/* ================================================================== */}
-      <div className="w-full bg-white border-b border-slate-200 shadow-md sticky top-0 z-50">
+      <div className="w-full bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
         <div className="overflow-x-auto">
           <div className="inline-flex min-w-full">
             
             {/* Front 9 */}
-            <div className="flex">
-              {holes.slice(0, 9).map((hole, idx) => {
-                const scoreData = getScoreDisplay(hole);
-                const isCurrent = idx === currentHoleIndex;
-                return (
-                  <div 
-                    key={hole.number}
-                    className={`min-w-[70px] p-2 border-r border-slate-200 text-center
-                      ${isCurrent ? 'bg-green-50 border-l-4 border-l-green-600' : ''}`}
-                  >
-                    <div className="text-xs font-bold text-slate-600">H{hole.number}</div>
-                    <div className="text-xs text-slate-500">P{hole.par}</div>
-                    <div className={scoreData.className || 'mt-1'}>
-                      <span className={`font-bold text-sm ${scoreData.textColor || 'text-slate-900'}`}>
-                        {scoreData.display}
-                      </span>
-                    </div>
+            {holes.slice(0, 9).map((hole, idx) => {
+              const isCurrent = idx === currentHoleIndex;
+              const hasScore = hole.score !== null;
+              const toPar = hasScore ? (hole.score! - hole.par) : 0;
+              
+              return (
+                <div 
+                  key={hole.number}
+                  className={`min-w-[72px] py-3 px-2 border-r border-slate-700 text-center transition-all
+                    ${isCurrent ? 'bg-green-600' : 'hover:bg-slate-700'}`}
+                >
+                  <div className={`text-xs font-semibold mb-0.5 ${isCurrent ? 'text-green-100' : 'text-slate-400'}`}>
+                    Hole {hole.number}
                   </div>
-                );
-              })}
-            </div>
+                  <div className={`text-xs mb-0.5 ${isCurrent ? 'text-green-200' : 'text-slate-500'}`}>
+                    Par {hole.par}
+                  </div>
+                  <div className={`text-xs mb-1.5 ${isCurrent ? 'text-green-200' : 'text-slate-500'}`}>
+                    {hole.yardage} yds
+                  </div>
+                  <div className="flex justify-center">
+                    {hasScore ? (
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold
+                        ${toPar <= -2 ? 'bg-yellow-400 text-slate-900' : ''}
+                        ${toPar === -1 ? 'bg-red-500 text-white' : ''}
+                        ${toPar === 0 ? 'bg-slate-600 text-white' : ''}
+                        ${toPar === 1 ? 'bg-slate-500 text-white border-2 border-slate-300' : ''}
+                        ${toPar >= 2 ? 'bg-slate-500 text-white border-2 border-slate-300' : ''}
+                      `}>
+                        {hole.score}
+                      </div>
+                    ) : (
+                      <div className={`text-lg font-bold ${isCurrent ? 'text-green-200' : 'text-slate-600'}`}>
+                        -
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
 
             {/* OUT */}
-            <div className="min-w-[70px] p-2 border-r-2 border-slate-400 text-center bg-slate-100">
-              <div className="text-xs font-bold text-slate-700">OUT</div>
-              <div className="text-xs text-slate-600">
-                {holes.slice(0, 9).reduce((sum, h) => sum + h.par, 0)}
+            <div className="min-w-[72px] py-3 px-2 border-r-2 border-slate-600 text-center bg-slate-900">
+              <div className="text-xs font-bold text-slate-300 mb-0.5">OUT</div>
+              <div className="text-xs text-slate-500 mb-0.5">
+                Par {holes.slice(0, 9).reduce((sum, h) => sum + h.par, 0)}
               </div>
-              <div className="text-sm font-bold text-slate-900 mt-1">
-                {holes.slice(0, 9).filter(h => h.score !== null).length > 0
-                  ? holes.slice(0, 9).reduce((sum, h) => sum + (h.score || 0), 0)
-                  : '-'}
+              <div className="text-xs text-slate-500 mb-1.5">
+                {holes.slice(0, 9).reduce((sum, h) => sum + h.yardage, 0)}
+              </div>
+              <div className="text-base font-bold text-white">
+                {front9HasScores ? front9Score : '-'}
               </div>
             </div>
 
             {/* Back 9 */}
-            <div className="flex">
-              {holes.slice(9, 18).map((hole, idx) => {
-                const scoreData = getScoreDisplay(hole);
-                const isCurrent = idx + 9 === currentHoleIndex;
-                return (
-                  <div 
-                    key={hole.number}
-                    className={`min-w-[70px] p-2 border-r border-slate-200 text-center
-                      ${isCurrent ? 'bg-green-50 border-l-4 border-l-green-600' : ''}`}
-                  >
-                    <div className="text-xs font-bold text-slate-600">H{hole.number}</div>
-                    <div className="text-xs text-slate-500">P{hole.par}</div>
-                    <div className={scoreData.className || 'mt-1'}>
-                      <span className={`font-bold text-sm ${scoreData.textColor || 'text-slate-900'}`}>
-                        {scoreData.display}
-                      </span>
-                    </div>
+            {holes.slice(9, 18).map((hole, idx) => {
+              const actualIdx = idx + 9;
+              const isCurrent = actualIdx === currentHoleIndex;
+              const hasScore = hole.score !== null;
+              const toPar = hasScore ? (hole.score! - hole.par) : 0;
+              
+              return (
+                <div 
+                  key={hole.number}
+                  className={`min-w-[72px] py-3 px-2 border-r border-slate-700 text-center transition-all
+                    ${isCurrent ? 'bg-green-600' : 'hover:bg-slate-700'}`}
+                >
+                  <div className={`text-xs font-semibold mb-0.5 ${isCurrent ? 'text-green-100' : 'text-slate-400'}`}>
+                    Hole {hole.number}
                   </div>
-                );
-              })}
+                  <div className={`text-xs mb-0.5 ${isCurrent ? 'text-green-200' : 'text-slate-500'}`}>
+                    Par {hole.par}
+                  </div>
+                  <div className={`text-xs mb-1.5 ${isCurrent ? 'text-green-200' : 'text-slate-500'}`}>
+                    {hole.yardage} yds
+                  </div>
+                  <div className="flex justify-center">
+                    {hasScore ? (
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold
+                        ${toPar <= -2 ? 'bg-yellow-400 text-slate-900' : ''}
+                        ${toPar === -1 ? 'bg-red-500 text-white' : ''}
+                        ${toPar === 0 ? 'bg-slate-600 text-white' : ''}
+                        ${toPar === 1 ? 'bg-slate-500 text-white border-2 border-slate-300' : ''}
+                        ${toPar >= 2 ? 'bg-slate-500 text-white border-2 border-slate-300' : ''}
+                      `}>
+                        {hole.score}
+                      </div>
+                    ) : (
+                      <div className={`text-lg font-bold ${isCurrent ? 'text-green-200' : 'text-slate-600'}`}>
+                        -
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* IN */}
+            <div className="min-w-[72px] py-3 px-2 border-r-2 border-slate-600 text-center bg-slate-900">
+              <div className="text-xs font-bold text-slate-300 mb-0.5">IN</div>
+              <div className="text-xs text-slate-500 mb-0.5">
+                Par {holes.slice(9, 18).reduce((sum, h) => sum + h.par, 0)}
+              </div>
+              <div className="text-xs text-slate-500 mb-1.5">
+                {holes.slice(9, 18).reduce((sum, h) => sum + h.yardage, 0)}
+              </div>
+              <div className="text-base font-bold text-white">
+                {back9HasScores ? back9Score : '-'}
+              </div>
             </div>
 
-            {/* IN + TOTAL */}
-            <div className="min-w-[70px] p-2 border-r-2 border-slate-400 text-center bg-slate-100">
-              <div className="text-xs font-bold text-slate-700">IN</div>
-              <div className="text-xs text-slate-600">
-                {holes.slice(9, 18).reduce((sum, h) => sum + h.par, 0)}
+            {/* TOTAL */}
+            <div className="min-w-[80px] py-3 px-2 text-center bg-slate-950">
+              <div className="text-xs font-bold text-white mb-0.5">TOTAL</div>
+              <div className="text-xs text-slate-400 mb-0.5">
+                Par {totalPar}
               </div>
-              <div className="text-sm font-bold text-slate-900 mt-1">
-                {holes.slice(9, 18).filter(h => h.score !== null).length > 0
-                  ? holes.slice(9, 18).reduce((sum, h) => sum + (h.score || 0), 0)
-                  : '-'}
+              <div className="text-xs text-slate-400 mb-1.5">
+                {holes.reduce((sum, h) => sum + h.yardage, 0)}
               </div>
-            </div>
-            <div className="min-w-[80px] p-2 text-center bg-slate-200">
-              <div className="text-xs font-bold text-slate-800">TOT</div>
-              <div className="text-xs text-slate-700">
-                {holes.reduce((sum, h) => sum + h.par, 0)}
-              </div>
-              <div className="text-lg font-bold text-green-600 mt-0.5">
-                {holes.filter(h => h.score !== null).length > 0
-                  ? holes.reduce((sum, h) => sum + (h.score || 0), 0)
-                  : '-'}
+              <div className="text-lg font-bold text-green-400">
+                {(front9HasScores || back9HasScores) ? front9Score + back9Score : '-'}
               </div>
             </div>
+
           </div>
         </div>
       </div>
 
       {/* ================================================================== */}
-      {/* SHOT TRACKING INTERFACE */}
+      {/* MAIN CONTENT AREA */}
       {/* ================================================================== */}
-      <div className="p-4 max-w-2xl mx-auto space-y-4">
+      <div className="flex">
         
-        {/* Header */}
-        <div className="bg-white rounded-xl border-2 border-slate-200 p-4 shadow-md">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-xl font-bold text-slate-800">Hole {currentHole.number}</h1>
-              <p className="text-sm text-slate-600">
-                Shot {currentShot} • {shotType.replace('_', ' ')}
-                {currentLie !== 'tee' && ` • From ${currentLie}`}
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-slate-500">Par</div>
-              <div className="text-2xl font-bold text-slate-800">{currentHole.par}</div>
-              <div className="text-xs text-slate-500">{currentHole.yardage} yds</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Penalty Button */}
-        <button
-          onClick={handleAddPenalty}
-          className="w-full py-3 bg-red-50 border-2 border-red-200 rounded-xl text-red-600 font-semibold hover:bg-red-100 transition-all"
-        >
-          ⚠️ Add Penalty Stroke
-        </button>
-
-        {/* Shot 1: Distance from setup + Driver selection */}
-        {currentShot === 1 && (
-          <>
-            <div className="bg-white rounded-xl border-2 border-slate-200 p-4 shadow-sm">
-              <div className="text-center">
-                <div className="text-sm font-bold text-slate-500 uppercase mb-1">Distance to Hole</div>
-                <div className="text-5xl font-bold text-green-600">
-                  {distanceToHole}
-                  <span className="text-xl ml-2 text-slate-600">yards</span>
+        {/* LEFT: Shot Tracking Interface */}
+        <div className="flex-1 p-4 max-w-3xl mx-auto space-y-4">
+          
+          {/* Shot Progress Pills */}
+          <div className="flex items-center gap-2 px-2">
+            <span className="text-sm font-semibold text-slate-500 mr-2">SHOT</span>
+            {[1, 2, 3, 4, 5, 6].map(num => {
+              const isActive = num === currentShot;
+              const isCompleted = num < currentShot;
+              const hasPenalty = shotHistory.some(s => s.shotNumber === num && s.isPenalty);
+              
+              return (
+                <div
+                  key={num}
+                  className={`w-14 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all
+                    ${isActive ? 'bg-green-500 text-white shadow-lg' : ''}
+                    ${isCompleted && !hasPenalty ? 'bg-green-200 text-green-800' : ''}
+                    ${isCompleted && hasPenalty ? 'bg-red-200 text-red-800' : ''}
+                    ${!isActive && !isCompleted ? 'bg-slate-200 text-slate-400' : ''}
+                  `}
+                >
+                  {num}
                 </div>
-              </div>
-            </div>
-
-            {currentHole.par !== 3 && (
-              <div className="bg-white rounded-xl border-2 border-slate-200 p-4 shadow-sm">
-                <div className="text-sm font-bold text-slate-600 uppercase mb-2">Club Off Tee</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setUsedDriver(true)}
-                    className={`py-4 rounded-lg border-2 font-bold transition-all ${
-                      usedDriver === true 
-                        ? 'bg-green-600 border-green-600 text-white' 
-                        : 'border-slate-300 hover:border-green-600'
-                    }`}
-                  >
-                    🏌️ Driver
-                  </button>
-                  <button
-                    onClick={() => setUsedDriver(false)}
-                    className={`py-4 rounded-lg border-2 font-bold transition-all ${
-                      usedDriver === false 
-                        ? 'bg-green-600 border-green-600 text-white' 
-                        : 'border-slate-300 hover:border-green-600'
-                    }`}
-                  >
-                    ⛳ Non-Driver
-                  </button>
-                </div>
+              );
+            })}
+            {currentShot > 6 && (
+              <div className="w-14 h-9 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold shadow-lg">
+                {currentShot}
               </div>
             )}
-          </>
-        )}
+          </div>
 
-        {/* Shot 2+: Measure distance first */}
-        {currentShot > 1 && (
-          <>
-            <div className="bg-white rounded-xl border-2 border-green-200 p-4 shadow-sm">
-              <div className="text-center mb-3">
-                <div className="text-sm font-bold text-green-700 uppercase mb-1">
-                  📍 Distance to Hole
-                </div>
-                <p className="text-xs text-slate-600">Use your rangefinder</p>
-              </div>
-              
-              <div className="flex items-center justify-center gap-3">
-                <input
-                  type="number"
-                  value={measuredDistance}
-                  onChange={(e) => setMeasuredDistance(e.target.value)}
-                  placeholder="0"
-                  className="w-28 px-3 py-3 border-2 border-green-300 rounded-lg text-2xl font-bold text-green-600 text-center focus:border-green-600 focus:outline-none"
-                />
-                <span className="text-lg font-semibold text-slate-600">{distanceUnit}</span>
-              </div>
-              
-              {measuredDistance && (
-                <div className="mt-3 p-2 bg-green-50 rounded-lg border border-green-200 text-center">
-                  <span className="text-xs text-green-700 font-semibold">
-                    Shot distance: ~{Math.max(0, distanceToHole - parseInt(measuredDistance))} {distanceUnit}
+          {/* Green Header - Hole Info */}
+          <div className="bg-gradient-to-r from-green-600 to-green-500 rounded-2xl p-5 shadow-lg">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold text-white">Hole {currentHole.number}</h1>
+                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-semibold text-white">
+                    Par {currentHole.par}
                   </span>
                 </div>
-              )}
-            </div>
-
-            {/* Putting: Break & Slope */}
-            {shotType === 'putting' && measuredDistance && (
-              <div className="bg-white rounded-xl border-2 border-blue-200 p-4 shadow-sm">
-                <div className="text-sm font-bold text-blue-700 uppercase mb-3">⛳ Putt Details</div>
-                
-                <div className="mb-3">
-                  <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Break</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { value: 'left_to_right', label: 'L→R' },
-                      { value: 'straight', label: 'Straight' },
-                      { value: 'right_to_left', label: 'R→L' },
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setPuttBreak(opt.value)}
-                        className={`py-2 rounded-lg border-2 font-semibold text-sm transition-all ${
-                          puttBreak === opt.value 
-                            ? 'bg-blue-600 border-blue-600 text-white' 
-                            : 'border-slate-300 hover:border-blue-600'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Slope</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {['uphill', 'downhill', 'level', 'severe'].map(slope => (
-                      <button
-                        key={slope}
-                        onClick={() => setPuttSlope(slope)}
-                        className={`py-2 rounded-lg border-2 font-semibold text-xs transition-all ${
-                          puttSlope === slope 
-                            ? 'bg-blue-600 border-blue-600 text-white' 
-                            : 'border-slate-300 hover:border-blue-600'
-                        }`}
-                      >
-                        {slope.charAt(0).toUpperCase() + slope.slice(1)}
-                      </button>
-                    ))}
-                  </div>
+                <p className="text-green-100 mt-1">
+                  Shot {currentShot} • {shotType.charAt(0).toUpperCase() + shotType.slice(1).replace('_', ' ')}
+                  {currentLie !== 'tee' && currentShot > 1 && (
+                    <span className="ml-2 text-green-200">• From {currentLie}</span>
+                  )}
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-green-200 uppercase font-semibold">Measure Distance</div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <input
+                    type="number"
+                    value={currentShot === 1 ? currentHole.yardage : measuredDistance}
+                    onChange={(e) => currentShot > 1 && setMeasuredDistance(e.target.value)}
+                    disabled={currentShot === 1}
+                    placeholder="0"
+                    className={`w-20 px-2 py-2 rounded-lg text-2xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-white/50
+                      ${currentShot === 1 
+                        ? 'bg-white/20 text-white cursor-not-allowed' 
+                        : 'bg-white text-green-600'
+                      }`}
+                  />
+                  <span className="text-lg font-bold text-white uppercase">
+                    {currentShot === 1 ? 'YDS' : distanceUnit === 'yards' ? 'YDS' : 'FEET'}
+                  </span>
                 </div>
               </div>
-            )}
-          </>
-        )}
-
-        {/* Result of Shot */}
-        <div className="bg-white rounded-xl border-2 border-slate-200 p-4 shadow-sm">
-          <div className="text-center text-sm font-bold text-slate-400 uppercase mb-2">
-            --- Hit Your Shot ---
+            </div>
           </div>
-          <div className="text-sm font-bold text-slate-600 uppercase mb-2">Result</div>
-          <div className="grid grid-cols-3 gap-2">
-            {['fairway', 'rough', 'sand', 'green', 'hole', 'other'].map(option => (
-              <button
-                key={option}
-                onClick={() => handleResultSelect(option)}
-                className={`py-3 rounded-lg border-2 font-bold text-sm transition-all ${
-                  resultOfShot === option 
-                    ? option === 'hole' 
-                      ? 'bg-yellow-500 border-yellow-500 text-white'
-                      : 'bg-green-600 border-green-600 text-white' 
-                    : 'border-slate-300 hover:border-green-600'
-                }`}
-              >
-                {option === 'hole' ? '🕳️ Hole!' : option.charAt(0).toUpperCase() + option.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* Miss Directions */}
-        {((shotType === 'tee' && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
-          ((shotType === 'approach' || shotType === 'around_green') && resultOfShot && resultOfShot !== 'green' && resultOfShot !== 'hole' && resultOfShot !== 'fairway') ||
-          (shotType === 'putting' && resultOfShot && resultOfShot !== 'hole')) && (
-          <div className="bg-white rounded-xl border-2 border-slate-200 p-4 shadow-sm">
-            <div className="text-sm font-bold text-slate-600 uppercase mb-2">Miss Direction</div>
-            
-            {/* Tee shot: Left/Right only */}
-            {shotType === 'tee' && (
+          {/* Driver Selection (Shot 1 for Par 4/5) */}
+          {currentShot === 1 && currentHole.par !== 3 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="text-sm font-bold text-slate-600 uppercase mb-3">Club Off Tee</div>
               <div className="grid grid-cols-2 gap-3">
-                {['left', 'right'].map(dir => (
-                  <button
-                    key={dir}
-                    onClick={() => setMissDirection(dir)}
-                    className={`py-3 rounded-lg border-2 font-bold transition-all ${
-                      missDirection === dir 
-                        ? 'bg-green-600 border-green-600 text-white' 
-                        : 'border-slate-300 hover:border-green-600'
+                <button
+                  onClick={() => setUsedDriver(true)}
+                  className={`py-4 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2
+                    ${usedDriver === true 
+                      ? 'bg-green-500 border-green-500 text-white shadow-md' 
+                      : 'border-slate-200 hover:border-green-400 hover:bg-green-50'
                     }`}
-                  >
-                    {dir === 'left' ? '← Left' : 'Right →'}
-                  </button>
-                ))}
+                >
+                  <span className="text-xl">🏌️</span> Driver
+                </button>
+                <button
+                  onClick={() => setUsedDriver(false)}
+                  className={`py-4 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2
+                    ${usedDriver === false 
+                      ? 'bg-green-500 border-green-500 text-white shadow-md' 
+                      : 'border-slate-200 hover:border-green-400 hover:bg-green-50'
+                    }`}
+                >
+                  <span className="text-xl">🏑</span> Non-Driver
+                </button>
               </div>
-            )}
-
-            {/* Approach/Around green: 9-zone grid */}
-            {(shotType === 'approach' || shotType === 'around_green') && (
-              <div className="grid grid-cols-3 gap-2">
-                {['long_left', 'long', 'long_right', 'left', null, 'right', 'short_left', 'short', 'short_right'].map((dir, idx) => (
-                  dir === null ? (
-                    <div key={idx} className="flex items-center justify-center text-2xl">⛳</div>
-                  ) : (
-                    <button
-                      key={dir}
-                      onClick={() => setMissDirection(dir)}
-                      className={`py-2 rounded-lg border-2 font-semibold text-xs transition-all ${
-                        missDirection === dir 
-                          ? 'bg-green-600 border-green-600 text-white' 
-                          : 'border-slate-300 hover:border-green-600'
-                      }`}
-                    >
-                      {dir.split('_').map(w => w.charAt(0).toUpperCase()).join('-')}
-                    </button>
-                  )
-                ))}
-              </div>
-            )}
-
-            {/* Putting: 8-zone (including long) */}
-            {shotType === 'putting' && (
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  'long_left', 'long', 'long_right',
-                  'left', null, 'right',
-                  'short_left', 'short', 'short_right'
-                ].map((dir, idx) => (
-                  dir === null ? (
-                    <div key={idx} className="flex items-center justify-center">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-slate-300 flex items-center justify-center text-sm">⛳</div>
-                    </div>
-                  ) : (
-                    <button
-                      key={dir}
-                      onClick={() => setMissDirection(dir)}
-                      className={`py-2 rounded-lg border-2 font-semibold text-xs transition-all ${
-                        missDirection === dir 
-                          ? 'bg-green-600 border-green-600 text-white' 
-                          : 'border-slate-300 hover:border-green-600'
-                      }`}
-                    >
-                      {dir.split('_').map(w => w.charAt(0).toUpperCase()).join('-')}
-                    </button>
-                  )
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Next Shot Button */}
-        <button
-          onClick={handleNextShot}
-          disabled={!isReadyForNextShot()}
-          className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
-            isReadyForNextShot() 
-              ? resultOfShot === 'hole'
-                ? 'bg-yellow-500 text-white hover:bg-yellow-600 shadow-lg'
-                : 'bg-green-600 text-white hover:bg-green-700 shadow-lg'
-              : 'bg-slate-300 text-slate-500 cursor-not-allowed'
-          }`}
-        >
-          {resultOfShot === 'hole' 
-            ? `✅ Complete Hole - Score: ${currentShot}` 
-            : 'Next Shot →'}
-        </button>
-
-        {/* Shot History */}
-        {shotHistory.length > 0 && (
-          <div className="bg-white rounded-xl border-2 border-slate-200 p-4 shadow-sm">
-            <div className="text-sm font-bold text-slate-600 uppercase mb-3">
-              Shot History (Score: {currentShot})
             </div>
-            <div className="space-y-2">
-              {shotHistory.map((shot, idx) => (
-                <div key={idx} className={`flex justify-between items-center py-2 border-b border-slate-100 ${shot.isPenalty ? 'bg-red-50 -mx-2 px-2 rounded' : ''}`}>
-                  <div>
-                    <span className={`font-bold ${shot.isPenalty ? 'text-red-600' : 'text-green-600'}`}>
-                      {shot.isPenalty ? '⚠️ Penalty' : `Shot ${shot.shotNumber}`}
-                    </span>
-                    <span className="text-slate-600 ml-2 text-sm">
-                      {shot.isPenalty ? shot.penaltyType : shot.shotType.replace('_', ' ')}
-                    </span>
-                  </div>
-                  <div className="text-right text-sm">
-                    {!shot.isPenalty && (
-                      <>
-                        <div className="font-semibold">{shot.result}</div>
-                        <div className="text-xs text-slate-500">
-                          {shot.distanceToHoleAfter} {shot.distanceUnitAfter}
-                        </div>
-                      </>
-                    )}
-                  </div>
+          )}
+
+          {/* Putting: Break & Slope */}
+          {shotType === 'putting' && currentShot > 1 && measuredDistance && (
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="text-sm font-bold text-slate-600 uppercase mb-3">⛳ Putt Details</div>
+              
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Break</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'left_to_right', label: 'L → R' },
+                    { value: 'straight', label: 'Straight' },
+                    { value: 'right_to_left', label: 'R → L' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setPuttBreak(opt.value)}
+                      className={`py-3 rounded-xl border-2 font-semibold transition-all
+                        ${puttBreak === opt.value 
+                          ? 'bg-green-500 border-green-500 text-white' 
+                          : 'border-slate-200 hover:border-green-400'
+                        }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Slope</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {['uphill', 'downhill', 'level', 'severe'].map(slope => (
+                    <button
+                      key={slope}
+                      onClick={() => setPuttSlope(slope)}
+                      className={`py-3 rounded-xl border-2 font-semibold text-sm transition-all
+                        ${puttSlope === slope 
+                          ? 'bg-green-500 border-green-500 text-white' 
+                          : 'border-slate-200 hover:border-green-400'
+                        }`}
+                    >
+                      {slope.charAt(0).toUpperCase() + slope.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Shot Result */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <div className="text-sm font-bold text-slate-500 uppercase mb-3">Shot Result</div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { value: 'fairway', label: 'Fairway' },
+                { value: 'rough', label: 'Rough' },
+                { value: 'sand', label: 'Sand' },
+                { value: 'green', label: 'Green' },
+                { value: 'hole', label: 'Hole', icon: '🕳️' },
+                { value: 'other', label: 'Other' },
+              ].map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => handleResultSelect(option.value)}
+                  className={`py-4 rounded-xl border-2 font-bold transition-all
+                    ${resultOfShot === option.value 
+                      ? option.value === 'hole'
+                        ? 'bg-yellow-400 border-yellow-400 text-slate-900 shadow-md'
+                        : 'bg-green-500 border-green-500 text-white shadow-md'
+                      : 'border-slate-200 hover:border-green-400 hover:bg-green-50'
+                    }`}
+                >
+                  {option.icon && <span className="mr-1">{option.icon}</span>}
+                  {option.label}
+                </button>
               ))}
             </div>
           </div>
-        )}
+
+          {/* Miss Directions */}
+          {((shotType === 'tee' && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
+            ((shotType === 'approach' || shotType === 'around_green') && resultOfShot && !['green', 'hole', 'fairway'].includes(resultOfShot)) ||
+            (shotType === 'putting' && resultOfShot && resultOfShot !== 'hole')) && (
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="text-sm font-bold text-slate-500 uppercase mb-3">Miss Direction</div>
+              
+              {/* Tee shot: Left/Right only */}
+              {shotType === 'tee' && (
+                <div className="grid grid-cols-2 gap-3">
+                  {['left', 'right'].map(dir => (
+                    <button
+                      key={dir}
+                      onClick={() => setMissDirection(dir)}
+                      className={`py-4 rounded-xl border-2 font-bold transition-all
+                        ${missDirection === dir 
+                          ? 'bg-green-500 border-green-500 text-white' 
+                          : 'border-slate-200 hover:border-green-400'
+                        }`}
+                    >
+                      {dir === 'left' ? '← Left' : 'Right →'}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Approach/Around green: 9-zone grid */}
+              {(shotType === 'approach' || shotType === 'around_green') && (
+                <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
+                  {['long_left', 'long', 'long_right', 'left', null, 'right', 'short_left', 'short', 'short_right'].map((dir, idx) => (
+                    dir === null ? (
+                      <div key={idx} className="flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-green-100 border-2 border-green-300 flex items-center justify-center text-lg">
+                          ⛳
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        key={dir}
+                        onClick={() => setMissDirection(dir)}
+                        className={`py-3 rounded-xl border-2 font-semibold text-sm transition-all
+                          ${missDirection === dir 
+                            ? 'bg-green-500 border-green-500 text-white' 
+                            : 'border-slate-200 hover:border-green-400'
+                          }`}
+                      >
+                        {dir.split('_').map(w => w.charAt(0).toUpperCase()).join('-')}
+                      </button>
+                    )
+                  ))}
+                </div>
+              )}
+
+              {/* Putting: 9-zone grid */}
+              {shotType === 'putting' && (
+                <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
+                  {[
+                    'long_left', 'long', 'long_right',
+                    'left', null, 'right',
+                    'short_left', 'short', 'short_right'
+                  ].map((dir, idx) => (
+                    dir === null ? (
+                      <div key={idx} className="flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-green-100 border-2 border-green-300 flex items-center justify-center text-lg">
+                          ⛳
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        key={dir}
+                        onClick={() => setMissDirection(dir)}
+                        className={`py-3 rounded-xl border-2 font-semibold text-sm transition-all
+                          ${missDirection === dir 
+                            ? 'bg-green-500 border-green-500 text-white' 
+                            : 'border-slate-200 hover:border-green-400'
+                          }`}
+                      >
+                        {dir.split('_').map(w => w.charAt(0).toUpperCase()).join('-')}
+                      </button>
+                    )
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Next Shot Button */}
+          <button
+            onClick={handleNextShot}
+            disabled={!isReadyForNextShot()}
+            className={`w-full py-5 rounded-xl font-bold text-lg transition-all
+              ${isReadyForNextShot() 
+                ? resultOfShot === 'hole'
+                  ? 'bg-yellow-400 text-slate-900 hover:bg-yellow-500 shadow-lg'
+                  : 'bg-green-500 text-white hover:bg-green-600 shadow-lg'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+          >
+            {resultOfShot === 'hole' 
+              ? `✅ Complete Hole - Score: ${currentShot}` 
+              : 'Next Shot'}
+          </button>
+
+          {/* Shot History */}
+          {shotHistory.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="text-sm font-bold text-slate-500 uppercase mb-3">
+                Shot History (Score: {currentShot})
+              </div>
+              <div className="space-y-2">
+                {shotHistory.map((shot, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`flex justify-between items-center py-3 px-3 rounded-lg border
+                      ${shot.isPenalty ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm font-bold ${shot.isPenalty ? 'text-red-600' : 'text-green-600'}`}>
+                        #{shot.shotNumber}
+                      </span>
+                      <div>
+                        <span className="font-semibold text-slate-700">
+                          {shot.isPenalty ? 'Penalty' : shot.shotType.replace('_', ' ').toUpperCase()}
+                        </span>
+                        {!shot.isPenalty && (
+                          <span className="text-slate-500 ml-2">→ {shot.result}</span>
+                        )}
+                      </div>
+                    </div>
+                    {!shot.isPenalty && shot.shotDistance > 0 && (
+                      <div className="text-right">
+                        <span className="font-bold text-slate-700">{shot.shotDistance} yds</span>
+                      </div>
+                    )}
+                    {shot.isPenalty && (
+                      <span className="text-xs font-semibold text-red-500 uppercase">
+                        {shot.penaltyType}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Penalty Button */}
+          <button
+            onClick={handleAddPenalty}
+            className="w-full py-3 bg-red-50 border-2 border-red-200 rounded-xl text-red-600 font-semibold hover:bg-red-100 transition-all"
+          >
+            ⚠️ Add Penalty Stroke
+          </button>
+
+        </div>
+
+        {/* RIGHT: Mini Hole Visualization */}
+        <div className="hidden lg:block w-48 p-4">
+          <div className="sticky top-36 bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <div className="text-center mb-3">
+              <div className="text-xs font-bold text-slate-500 uppercase">Hole {currentHole.number}</div>
+              <div className="text-lg font-bold text-green-600">{currentShot} {currentShot === 1 ? 'shot' : 'shots'}</div>
+            </div>
+            
+            {/* Visual representation */}
+            <div className="relative h-64 flex flex-col items-center">
+              {/* Flag at top */}
+              <div className="w-4 h-4 bg-green-500 rounded-full border-2 border-green-600 mb-1"></div>
+              
+              {/* Distance bar */}
+              <div className="flex-1 w-2 bg-slate-200 rounded-full relative overflow-hidden">
+                <div 
+                  className="absolute bottom-0 w-full bg-gradient-to-t from-green-500 to-green-400 rounded-full transition-all duration-300"
+                  style={{ 
+                    height: `${Math.min(100, Math.max(5, (1 - currentDistanceDisplay / currentHole.yardage) * 100))}%` 
+                  }}
+                ></div>
+              </div>
+              
+              {/* Ball at bottom */}
+              <div className="w-3 h-3 bg-white rounded-full border-2 border-slate-400 mt-1"></div>
+            </div>
+            
+            {/* Distance remaining */}
+            <div className="text-center mt-3">
+              <div className="text-2xl font-bold text-green-600">
+                {currentDistanceDisplay}
+              </div>
+              <div className="text-xs text-slate-500">{currentUnitDisplay} left</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ================================================================== */}
@@ -956,8 +1050,8 @@ export default function ShotTrackingComprehensive({
       {/* ================================================================== */}
       {showPenaltyModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">⚠️ Penalty Stroke</h2>
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">⚠️ Add Penalty</h2>
             
             <div className="space-y-2 mb-6">
               {[
@@ -969,13 +1063,14 @@ export default function ShotTrackingComprehensive({
                 <button
                   key={opt.value}
                   onClick={() => setPenaltyType(opt.value)}
-                  className={`w-full py-3 rounded-lg border-2 font-semibold text-left px-4 transition-all ${
-                    penaltyType === opt.value 
-                      ? 'bg-red-600 border-red-600 text-white' 
-                      : 'border-slate-300 hover:border-red-400'
-                  }`}
+                  className={`w-full py-4 rounded-xl border-2 font-semibold text-left px-4 transition-all flex items-center gap-3
+                    ${penaltyType === opt.value 
+                      ? 'bg-red-500 border-red-500 text-white' 
+                      : 'border-slate-200 hover:border-red-300 hover:bg-red-50'
+                    }`}
                 >
-                  {opt.emoji} {opt.label}
+                  <span className="text-xl">{opt.emoji}</span>
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -983,18 +1078,18 @@ export default function ShotTrackingComprehensive({
             <div className="flex gap-3">
               <button
                 onClick={() => { setShowPenaltyModal(false); setPenaltyType(null); }}
-                className="flex-1 py-3 border-2 border-slate-300 rounded-lg font-semibold text-slate-600 hover:bg-slate-50"
+                className="flex-1 py-3 border-2 border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmPenalty}
                 disabled={!penaltyType}
-                className={`flex-1 py-3 rounded-lg font-semibold transition-all ${
-                  penaltyType 
-                    ? 'bg-red-600 text-white hover:bg-red-700' 
+                className={`flex-1 py-3 rounded-xl font-semibold transition-all
+                  ${penaltyType 
+                    ? 'bg-red-500 text-white hover:bg-red-600' 
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Add +1 Stroke
               </button>
