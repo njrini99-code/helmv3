@@ -2,18 +2,41 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
 import { PageLoading } from '@/components/ui/loading';
-import { IconArrowRight, IconCheck, IconUser } from '@/components/icons';
+import { IconArrowRight, IconCheck, IconUser, IconUpload } from '@/components/icons';
+import { cn } from '@/lib/utils';
 
 type Step = 'welcome' | 'program' | 'profile' | 'branding' | 'complete';
 type CoachType = 'college' | 'juco' | 'high_school' | 'showcase';
 
 const divisions = ['D1', 'D2', 'D3', 'NAIA'];
+
+const STEPS = ['welcome', 'program', 'profile', 'branding', 'complete'] as const;
+
+const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -20 },
+};
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const staggerItem = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+};
 
 export default function CoachOnboarding() {
   const router = useRouter();
@@ -49,6 +72,9 @@ export default function CoachOnboarding() {
     router.push('/baseball/dashboard');
     return null;
   }
+
+  const currentStepIndex = STEPS.indexOf(step);
+  const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
 
   const handleComplete = async () => {
     setLoading(true);
@@ -122,195 +148,557 @@ export default function CoachOnboarding() {
     }
   };
 
-  if (step === 'welcome') {
-    return (
-      <div className="min-h-screen bg-cream-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl text-center">
-          <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <span className="text-white font-bold text-2xl">H</span>
-          </div>
-          <h1 className="text-3xl font-semibold text-slate-900 mb-3">Welcome to Helm Sports Labs!</h1>
-          <p className="text-slate-600 mb-8 max-w-md mx-auto">
-            Let's set up your program in 2 minutes. You'll be discovering talent in no time.
-          </p>
-
-          <div className="bg-white rounded-2xl border border-border-light p-6 mb-8 max-w-md mx-auto">
-            <label className="label mb-3">Select your program type</label>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { value: 'college', label: 'College' },
-                { value: 'juco', label: 'JUCO' },
-                { value: 'high_school', label: 'High School' },
-                { value: 'showcase', label: 'Showcase' },
-              ].map(type => (
-                <button
-                  key={type.value}
-                  onClick={() => setCoachType(type.value as CoachType)}
-                  className={`p-4 border-2 rounded-lg text-sm font-medium transition-all ${
-                    coachType === type.value
-                      ? 'border-brand-500 bg-brand-50 text-brand-700'
-                      : 'border-border-light bg-white text-slate-700 hover:border-border'
-                  }`}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Button size="lg" onClick={() => setStep('program')} className="px-8">
-            Get Started <IconArrowRight size={16} className="ml-1" />
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === 'complete') {
-    return (
-      <div className="min-h-screen bg-cream-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg text-center">
-          <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <IconCheck size={32} className="text-white" />
-          </div>
-          <h1 className="text-3xl font-semibold text-slate-900 mb-3">Your program is ready!</h1>
-          <p className="text-slate-600 mb-8">
-            {coachType === 'college' || coachType === 'juco'
-              ? "You're all set to start discovering recruits."
-              : "You're all set to start managing your team."}
-          </p>
-          <Button size="lg" onClick={handleComplete} loading={loading} className="px-8">
-            {coachType === 'college' || coachType === 'juco' ? 'Find your first recruit' : 'Invite your first player'}
-          </Button>
-          {error && <p className="text-sm leading-relaxed text-red-600 mt-4">{error}</p>}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-cream-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Progress bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-            <span>Step {step === 'program' ? 1 : step === 'profile' ? 2 : 3} of 3</span>
-            <span>{step === 'program' ? 33 : step === 'profile' ? 67 : 100}% complete</span>
-          </div>
-          <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-brand-600 transition-all duration-300"
-              style={{ width: `${step === 'program' ? 33 : step === 'profile' ? 67 : 100}%` }}
-            />
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#FAF6F1] via-[#F5F1EC] to-[#EAE6E1] relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            rotate: [0, 90, 0],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-green-100/20 to-transparent rounded-full blur-3xl"
+        />
+        <motion.div
+          animate={{
+            scale: [1.2, 1, 1.2],
+            rotate: [90, 0, 90],
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-green-50/20 to-transparent rounded-full blur-3xl"
+        />
+      </div>
 
-        <div className="bg-white rounded-2xl border border-border-light p-8 shadow-sm">
+      {/* Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 h-1 bg-slate-200/50 backdrop-blur-sm z-50">
+        <motion.div
+          className="h-full bg-gradient-to-r from-green-500 to-green-600"
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+        />
+      </div>
+
+      <div className="relative min-h-screen flex items-center justify-center p-4">
+        <AnimatePresence mode="wait">
+          {step === 'welcome' && (
+            <motion.div
+              key="welcome"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-2xl"
+            >
+              <motion.div
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+                className="space-y-8"
+              >
+                {/* Logo & Header */}
+                <motion.div variants={staggerItem} className="text-center">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                    className="mb-6 inline-block"
+                  >
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
+                      <div className="relative w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-xl shadow-green-900/20">
+                        <span className="text-white font-bold text-3xl">H</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                  <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-3">
+                    Welcome to Helm Sports Labs!
+                  </h1>
+                  <p className="text-slate-600 text-lg max-w-md mx-auto leading-relaxed">
+                    Let's set up your program in 2 minutes. You'll be discovering talent in no time.
+                  </p>
+                </motion.div>
+
+                {/* Coach Type Selection */}
+                <motion.div
+                  variants={staggerItem}
+                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5 max-w-md mx-auto"
+                >
+                  <label className="block text-sm font-semibold text-slate-700 mb-4">
+                    Select your program type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { value: 'college', label: 'College', emoji: '🎓' },
+                      { value: 'juco', label: 'JUCO', emoji: '⚾' },
+                      { value: 'high_school', label: 'High School', emoji: '🏫' },
+                      { value: 'showcase', label: 'Showcase', emoji: '✨' },
+                    ].map((type) => (
+                      <motion.button
+                        key={type.value}
+                        whileHover={{ scale: 1.05, y: -4 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setCoachType(type.value as CoachType)}
+                        className={cn(
+                          'relative p-4 border-2 rounded-xl text-sm font-medium transition-all group overflow-hidden',
+                          coachType === type.value
+                            ? 'border-green-500 bg-green-50 text-green-700 shadow-lg shadow-green-900/10'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-green-200 hover:shadow-md'
+                        )}
+                      >
+                        {coachType === type.value && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="absolute top-2 right-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center"
+                          >
+                            <IconCheck size={12} className="text-white" />
+                          </motion.div>
+                        )}
+                        <div className="text-2xl mb-2">{type.emoji}</div>
+                        <div>{type.label}</div>
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* Get Started Button */}
+                <motion.div variants={staggerItem} className="text-center">
+                  <Button
+                    size="lg"
+                    onClick={() => setStep('program')}
+                    className="px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
+                  >
+                    Get Started
+                    <IconArrowRight size={16} className="ml-2" />
+                  </Button>
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          )}
+
           {step === 'program' && (
-            <>
-              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">Program Information</h2>
-              <div className="space-y-4">
-                <Input
-                  label="School/Organization Name"
-                  value={schoolName}
-                  onChange={(e) => setSchoolName(e.target.value)}
-                  placeholder="Texas A&M University"
-                  required
-                />
-                {(coachType === 'college' || coachType === 'juco') && (
-                  <>
-                    <NativeSelect label="Division" value={division} onChange={(e) => setDivision(e.target.value)}>
-                      <option value="">Select division</option>
-                      {divisions.map(div => <option key={div} value={div}>{div}</option>)}
-                    </NativeSelect>
-                    <Input
-                      label="Conference"
-                      value={conference}
-                      onChange={(e) => setConference(e.target.value)}
-                      placeholder="SEC"
-                    />
-                  </>
-                )}
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label="City" value={schoolCity} onChange={(e) => setSchoolCity(e.target.value)} placeholder="College Station" />
-                  <Input label="State" value={schoolState} onChange={(e) => setSchoolState(e.target.value)} placeholder="TX" maxLength={2} />
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <Button variant="secondary" onClick={() => setStep('welcome')} className="flex-1">Back</Button>
-                <Button onClick={() => setStep('profile')} disabled={!schoolName} className="flex-1">Next</Button>
-              </div>
-            </>
+            <motion.div
+              key="program"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-md"
+            >
+              <motion.div
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+                className="space-y-6"
+              >
+                <motion.div variants={staggerItem} className="text-center mb-8">
+                  <div className="text-sm font-medium text-slate-500 mb-2">
+                    Step 1 of 3
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">Program Information</h2>
+                </motion.div>
+
+                <motion.div
+                  variants={staggerItem}
+                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
+                >
+                  <div className="space-y-5">
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <Input
+                        label="School/Organization Name"
+                        value={schoolName}
+                        onChange={(e) => setSchoolName(e.target.value)}
+                        placeholder="Texas A&M University"
+                        required
+                        autoFocus
+                      />
+                    </motion.div>
+
+                    {(coachType === 'college' || coachType === 'juco') && (
+                      <>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.3 }}
+                        >
+                          <NativeSelect
+                            label="Division"
+                            value={division}
+                            onChange={(e) => setDivision(e.target.value)}
+                          >
+                            <option value="">Select division</option>
+                            {divisions.map((div) => (
+                              <option key={div} value={div}>
+                                {div}
+                              </option>
+                            ))}
+                          </NativeSelect>
+                        </motion.div>
+
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.4 }}
+                        >
+                          <Input
+                            label="Conference"
+                            value={conference}
+                            onChange={(e) => setConference(e.target.value)}
+                            placeholder="SEC"
+                          />
+                        </motion.div>
+                      </>
+                    )}
+
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="grid grid-cols-2 gap-4"
+                    >
+                      <Input
+                        label="City"
+                        value={schoolCity}
+                        onChange={(e) => setSchoolCity(e.target.value)}
+                        placeholder="College Station"
+                      />
+                      <Input
+                        label="State"
+                        value={schoolState}
+                        onChange={(e) => setSchoolState(e.target.value)}
+                        placeholder="TX"
+                        maxLength={2}
+                      />
+                    </motion.div>
+                  </div>
+
+                  <div className="flex gap-3 mt-8">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setStep('welcome')}
+                      className="flex-1"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={() => setStep('profile')}
+                      disabled={!schoolName}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            </motion.div>
           )}
 
           {step === 'profile' && (
-            <>
-              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">Your Profile</h2>
-              <div className="space-y-4">
-                <Input label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Smith" required />
-                <Input label="Title/Role" value={coachTitle} onChange={(e) => setCoachTitle(e.target.value)} placeholder="Head Coach" required />
-                <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="coach@school.edu" />
-                <Input label="Phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
-                <div>
-                  <label className="label mb-2">Photo (optional)</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-cream-200 flex items-center justify-center">
-                      <IconUser size={28} className="text-slate-400" />
-                    </div>
-                    <Button variant="secondary" size="sm">
-                      Upload Photo
+            <motion.div
+              key="profile"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-md"
+            >
+              <motion.div
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+                className="space-y-6"
+              >
+                <motion.div variants={staggerItem} className="text-center mb-8">
+                  <div className="text-sm font-medium text-slate-500 mb-2">
+                    Step 2 of 3
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">Your Profile</h2>
+                </motion.div>
+
+                <motion.div
+                  variants={staggerItem}
+                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
+                >
+                  <div className="space-y-5">
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <Input
+                        label="Full Name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="John Smith"
+                        required
+                        autoFocus
+                      />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <Input
+                        label="Title/Role"
+                        value={coachTitle}
+                        onChange={(e) => setCoachTitle(e.target.value)}
+                        placeholder="Head Coach"
+                        required
+                      />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <Input
+                        label="Email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="coach@school.edu"
+                      />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <Input
+                        label="Phone"
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="(555) 123-4567"
+                      />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.6 }}
+                    >
+                      <label className="block text-sm font-medium text-slate-700 mb-3">
+                        Photo (optional)
+                      </label>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shadow-sm">
+                          <IconUser size={28} className="text-slate-400" />
+                        </div>
+                        <Button variant="secondary" size="sm">
+                          <IconUpload size={16} className="mr-2" />
+                          Upload Photo
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2">JPG or PNG, max 5MB</p>
+                    </motion.div>
+                  </div>
+
+                  <div className="flex gap-3 mt-8">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setStep('program')}
+                      className="flex-1"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={() => setStep('branding')}
+                      disabled={!fullName || !coachTitle}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      Next
                     </Button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">JPG or PNG, max 5MB</p>
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <Button variant="secondary" onClick={() => setStep('program')} className="flex-1">Back</Button>
-                <Button onClick={() => setStep('branding')} disabled={!fullName || !coachTitle} className="flex-1">Next</Button>
-              </div>
-            </>
+                </motion.div>
+              </motion.div>
+            </motion.div>
           )}
 
           {step === 'branding' && (
-            <>
-              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-6">Branding</h2>
-              <p className="text-sm leading-relaxed text-slate-600 mb-6">
-                Customize your program's appearance. You can skip this step and update it later.
-              </p>
-              <div className="space-y-4">
-                <div>
-                  <label className="label mb-2">Program Logo</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-lg bg-cream-200 flex items-center justify-center">
-                      <span className="text-2xl font-semibold tracking-tight text-slate-400">
-                        {schoolName ? schoolName.charAt(0).toUpperCase() : 'L'}
-                      </span>
-                    </div>
-                    <Button variant="secondary" size="sm">
-                      Upload Logo
+            <motion.div
+              key="branding"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-md"
+            >
+              <motion.div
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+                className="space-y-6"
+              >
+                <motion.div variants={staggerItem} className="text-center mb-8">
+                  <div className="text-sm font-medium text-slate-500 mb-2">
+                    Step 3 of 3
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">Branding</h2>
+                  <p className="text-sm text-slate-600 mt-2">
+                    Customize your program's appearance. You can skip this and update it later.
+                  </p>
+                </motion.div>
+
+                <motion.div
+                  variants={staggerItem}
+                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
+                >
+                  <div className="space-y-6">
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <label className="block text-sm font-medium text-slate-700 mb-3">
+                        Program Logo
+                      </label>
+                      <div className="flex items-center gap-4">
+                        <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shadow-sm">
+                          <span className="text-3xl font-bold text-slate-400">
+                            {schoolName ? schoolName.charAt(0).toUpperCase() : 'L'}
+                          </span>
+                        </div>
+                        <Button variant="secondary" size="sm">
+                          <IconUpload size={16} className="mr-2" />
+                          Upload Logo
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2">Square PNG or SVG, max 2MB</p>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <label className="block text-sm font-medium text-slate-700 mb-3">
+                        Primary Color
+                      </label>
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-green-600 border-2 border-slate-200 shadow-sm" />
+                        <div className="text-sm text-slate-600">
+                          <p className="font-medium text-slate-900">Kelly Green</p>
+                          <p className="text-xs text-slate-500">#16A34A (default)</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  <div className="flex gap-3 mt-8">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setStep('profile')}
+                      className="flex-1"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setStep('complete')}
+                      className="flex-1"
+                    >
+                      Skip
+                    </Button>
+                    <Button
+                      onClick={() => setStep('complete')}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      Complete
                     </Button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">Square PNG or SVG, max 2MB</p>
-                </div>
-                <div>
-                  <label className="label mb-2">Primary Color</label>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-brand-600 border-2 border-border-light" />
-                    <div className="text-sm leading-relaxed text-slate-600">
-                      <p className="font-medium">Kelly Green</p>
-                      <p className="text-xs text-slate-500">#16A34A (default)</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <Button variant="secondary" onClick={() => setStep('profile')} className="flex-1">Back</Button>
-                <Button variant="ghost" onClick={() => setStep('complete')} className="flex-1">Skip for now</Button>
-                <Button onClick={() => setStep('complete')} className="flex-1">Complete</Button>
-              </div>
-            </>
+                </motion.div>
+              </motion.div>
+            </motion.div>
           )}
-        </div>
+
+          {step === 'complete' && (
+            <motion.div
+              key="complete"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-lg"
+            >
+              <motion.div
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+                className="space-y-8"
+              >
+                {/* Success Icon */}
+                <motion.div variants={staggerItem} className="text-center">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
+                    className="mb-6 inline-block"
+                  >
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
+                      <div className="relative w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-xl shadow-green-900/20">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.4 }}
+                        >
+                          <IconCheck size={40} className="text-white" />
+                        </motion.div>
+                      </div>
+                    </div>
+                  </motion.div>
+                  <h1 className="text-3xl font-bold text-slate-900 mb-3">
+                    Your program is ready!
+                  </h1>
+                  <p className="text-slate-600 text-lg max-w-md mx-auto leading-relaxed">
+                    {coachType === 'college' || coachType === 'juco'
+                      ? "You're all set to start discovering recruits."
+                      : "You're all set to start managing your team."}
+                  </p>
+                </motion.div>
+
+                {/* CTA Button */}
+                <motion.div variants={staggerItem} className="text-center">
+                  <Button
+                    size="lg"
+                    onClick={handleComplete}
+                    loading={loading}
+                    className="px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
+                  >
+                    {coachType === 'college' || coachType === 'juco'
+                      ? 'Find your first recruit'
+                      : 'Invite your first player'}
+                  </Button>
+                  {error && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-sm text-red-600 mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3"
+                    >
+                      {error}
+                    </motion.p>
+                  )}
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
