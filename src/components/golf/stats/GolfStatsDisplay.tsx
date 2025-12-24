@@ -9,7 +9,7 @@ import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator';
 // TYPES
 // ============================================================================
 
-type StatsCategory = 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling';
+type StatsCategory = 'scoring' | 'driving' | 'approach' | 'putting';
 
 interface StatsDisplayProps {
   stats: GolfStats;
@@ -473,7 +473,6 @@ export default function GolfStatsDisplay({ stats, playerName }: StatsDisplayProp
     { id: 'driving', label: 'Driving', icon: <IconGolf size={16} /> },
     { id: 'approach', label: 'Approach', icon: <IconTarget size={16} /> },
     { id: 'putting', label: 'Putting', icon: <IconFlag size={16} /> },
-    { id: 'scrambling', label: 'Scrambling', icon: <IconTrendingUp size={16} /> },
   ];
 
   return (
@@ -514,7 +513,6 @@ export default function GolfStatsDisplay({ stats, playerName }: StatsDisplayProp
           {activeCategory === 'driving' && <DrivingStats stats={stats} />}
           {activeCategory === 'approach' && <ApproachStats stats={stats} />}
           {activeCategory === 'putting' && <PuttingStats stats={stats} />}
-          {activeCategory === 'scrambling' && <ScramblingStats stats={stats} />}
         </div>
 
         {/* Empty State */}
