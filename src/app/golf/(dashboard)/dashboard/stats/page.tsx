@@ -154,7 +154,7 @@ export default function GolfStatsPage() {
           holes: roundHoles.map(hole => ({
             holeNumber: hole.hole_number,
             par: hole.par,
-            score: hole.score,
+            score: hole.score || 0,
             putts: hole.putts || 0,
             fairwayHit: hole.fairway_hit,
             greenInRegulation: hole.green_in_regulation || false,
@@ -171,7 +171,7 @@ export default function GolfStatsPage() {
             scrambleMade: hole.scramble_made || false,
             sandSaveAttempt: hole.sand_save_attempt || false,
             sandSaveMade: hole.sand_save_made || false,
-            penaltyStrokes: hole.penalties || 0,
+            penaltyStrokes: hole.penalty_strokes || 0,
             holedOutDistance: hole.holed_out_distance,
             holedOutType: hole.holed_out_type,
             shots: [] // Empty for now unless we have shot tracking data
