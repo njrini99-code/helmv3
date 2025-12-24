@@ -24,7 +24,7 @@ export function PlayerQuickCard({ player, children, className }: PlayerQuickCard
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<'top' | 'bottom'>('bottom');
   const triggerRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const name = `${player.first_name || ''} ${player.last_name || ''}`.trim();
 

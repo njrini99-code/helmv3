@@ -59,13 +59,14 @@ export function RecentActivityFeed({
         if (rounds) {
           for (const round of rounds) {
             if (round.player) {
+              const toPar = round.total_to_par ?? 0;
               items.push({
                 id: `round-${round.id}`,
                 type: 'round',
                 title: `${(round.player as any).first_name} ${(round.player as any).last_name}`,
-                subtitle: `Shot ${round.total_score} (${round.total_to_par > 0 ? '+' : ''}${round.total_to_par}) at ${round.course_name}`,
+                subtitle: `Shot ${round.total_score} (${toPar > 0 ? '+' : ''}${toPar}) at ${round.course_name}`,
                 timestamp: round.round_date,
-                metadata: { score: round.total_score, toPar: round.total_to_par },
+                metadata: { score: round.total_score, toPar },
               });
             }
           }
@@ -122,13 +123,14 @@ export function RecentActivityFeed({
 
         if (rounds) {
           for (const round of rounds) {
+            const toPar = round.total_to_par ?? 0;
             items.push({
               id: `round-${round.id}`,
               type: 'round',
               title: round.course_name,
-              subtitle: `Shot ${round.total_score} (${round.total_to_par > 0 ? '+' : ''}${round.total_to_par})`,
+              subtitle: `Shot ${round.total_score} (${toPar > 0 ? '+' : ''}${toPar})`,
               timestamp: round.round_date,
-              metadata: { score: round.total_score, toPar: round.total_to_par },
+              metadata: { score: round.total_score, toPar },
             });
           }
         }

@@ -55,6 +55,7 @@ export default async function GolfAnnouncementsPage() {
 
   // Get recent count (announcements from last 7 days)
   const recentCount = announcements.filter(a => {
+    if (!a.published_at) return false; // Handle null published_at
     const publishedAt = new Date(a.published_at);
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
