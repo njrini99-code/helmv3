@@ -1,23 +1,21 @@
 'use client';
 
-import React, { useRef, useState } from "react";
-import { AnimatePresence, motion, useMotionValue, useSpring } from "framer-motion";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   ArrowRight,
   Calendar,
   Check,
-  ChevronRight,
   Globe,
-  Menu,
   ShieldCheck,
-  X,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { GlassNav } from "@/components/ui/GlassNav";
+import { HeroSection } from "@/components/hero/HeroSection";
 
 /**
  * Helm Sports Lab — Landing Page
- * Large integrated logos as background elements
+ * Cinematic hero with dark theme + product sections
  */
 
 const LOGOS = {
@@ -25,135 +23,6 @@ const LOGOS = {
   baseball: "/helm-baseball-logo.png",
   golf: "/helm-golf-logo.png",
 };
-
-/* ─────────────────────────────────────────────────────────────
-   MAGNETIC BUTTON
-───────────────────────────────────────────────────────────── */
-function MagneticButton({
-  children,
-  href,
-  variant = "primary",
-  size = "default",
-  className = "",
-}: {
-  children: React.ReactNode;
-  href?: string;
-  variant?: "primary" | "secondary" | "ghost";
-  size?: "sm" | "default" | "lg";
-  className?: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const springX = useSpring(x, { stiffness: 500, damping: 30 });
-  const springY = useSpring(y, { stiffness: 500, damping: 30 });
-
-  const handleMove = (e: React.MouseEvent) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    x.set((e.clientX - centerX) * 0.08);
-    y.set((e.clientY - centerY) * 0.08);
-  };
-
-  const handleLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
-  const sizes = {
-    sm: "px-4 py-2 text-sm",
-    default: "px-5 py-2.5 text-sm",
-    lg: "px-6 py-3 text-base",
-  };
-
-  const variants = {
-    primary: "bg-green-600 text-white font-medium hover:bg-green-500 shadow-lg shadow-green-600/25 hover:shadow-xl hover:shadow-green-600/30",
-    secondary: "bg-white text-slate-700 font-medium border border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-sm",
-    ghost: "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
-  };
-
-  const content = (
-    <motion.div
-      ref={ref}
-      style={{ x: springX, y: springY }}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
-      className={`
-        inline-flex items-center justify-center gap-2 rounded-lg transition-all duration-200 active:scale-[0.97]
-        ${sizes[size]}
-        ${variants[variant]}
-        ${className}
-      `}
-    >
-      {children}
-    </motion.div>
-  );
-
-  if (href) {
-    return href.startsWith("/") || href.startsWith("#") ? (
-      <Link href={href}>{content}</Link>
-    ) : (
-      <a href={href}>{content}</a>
-    );
-  }
-
-  return content;
-}
-
-/* ─────────────────────────────────────────────────────────────
-   MOBILE MENU
-───────────────────────────────────────────────────────────── */
-function MobileMenu() {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="md:hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-        aria-label="Toggle menu"
-      >
-        {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute top-full left-0 right-0 mt-2 mx-4 p-4 rounded-2xl bg-white border border-slate-200 shadow-xl"
-          >
-            <nav className="flex flex-col gap-1">
-              {[
-                { label: "BaseballHelm", href: "#baseball" },
-                { label: "GolfHelm", href: "#golf" },
-                { label: "About", href: "/about" },
-              ].map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className="px-4 py-3 text-slate-700 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors"
-                >
-                  {item.label}
-                </a>
-              ))}
-              <div className="pt-3 mt-2 border-t border-slate-100">
-                <MagneticButton href="#demo" className="w-full justify-center">
-                  Book a demo
-                  <ArrowRight className="h-4 w-4" />
-                </MagneticButton>
-              </div>
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
 
 /* ─────────────────────────────────────────────────────────────
    PRODUCT CARD - with large integrated logo
@@ -287,152 +156,14 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF6F1] overflow-hidden">
-      
-      {/* HERO BACKGROUND - Large main logo */}
-      <div className="fixed inset-0 pointer-events-none">
-        {/* Mesh gradient */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: `
-              radial-gradient(ellipse 80% 60% at 70% 20%, rgba(22, 163, 74, 0.06), transparent 50%),
-              radial-gradient(ellipse 60% 50% at 20% 80%, rgba(22, 163, 74, 0.04), transparent 50%)
-            `,
-          }}
-        />
-        
-        {/* Giant main logo - hero area */}
-        <div className="absolute -right-32 top-0 w-[700px] h-[700px] lg:w-[900px] lg:h-[900px]">
-          <img 
-            src={LOGOS.main} 
-            alt="" 
-            className="w-full h-full object-contain opacity-[0.04]"
-            style={{
-              filter: 'grayscale(100%)',
-            }}
-          />
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#0a0a0a] overflow-hidden">
+      {/* Glass Navigation */}
+      <GlassNav />
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#FAF6F1]/80 backdrop-blur-xl border-b border-slate-200/50">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex items-center justify-between py-5">
-            <a href="#" className="flex items-center group">
-              <img 
-                src={LOGOS.main} 
-                alt="Helm Sports Labs" 
-                className="h-16 sm:h-20 w-auto transition-transform duration-200 group-hover:scale-[1.02]" 
-                style={{ mixBlendMode: 'multiply' }}
-              />
-            </a>
+      {/* Cinematic Hero Section */}
+      <HeroSection />
 
-            <nav className="hidden md:flex items-center gap-1">
-              {[
-                { label: "BaseballHelm", href: "#baseball" },
-                { label: "GolfHelm", href: "#golf" },
-                { label: "About", href: "/about" },
-              ].map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900 transition-colors rounded-lg hover:bg-white/50"
-                >
-                  {item.label}
-                </a>
-              ))}
-            </nav>
-
-            <div className="hidden md:block">
-              <MagneticButton href="#demo">
-                Book a demo
-                <ArrowRight className="h-4 w-4" />
-              </MagneticButton>
-            </div>
-
-            <MobileMenu />
-          </div>
-        </div>
-      </header>
-
-      <main className="relative z-10">
-        {/* HERO */}
-        <section className="px-4 sm:px-6 pt-20 sm:pt-32 pb-24">
-          <div className="mx-auto max-w-6xl">
-            <div className="max-w-2xl">
-              {/* Badge */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-green-50 border border-green-100 text-green-700 mb-6">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  Built for recruiting weeks and real staff workflows
-                </span>
-              </motion.div>
-
-              {/* Headline */}
-              <motion.h1
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-slate-900 mb-6"
-              >
-                Run recruiting and team management like a{" "}
-                <span className="text-green-600">modern program.</span>
-              </motion.h1>
-
-              {/* Subhead */}
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="text-lg sm:text-xl text-slate-600 mb-8 leading-relaxed"
-              >
-                A clean command center for college staffs: recruiting pipelines, roster planning, and athlete development.
-              </motion.p>
-
-              {/* CTAs */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="flex flex-wrap gap-3 mb-12"
-              >
-                <MagneticButton href="#demo" size="lg">
-                  Book a demo
-                  <ArrowRight className="h-4 w-4" />
-                </MagneticButton>
-                <MagneticButton href="#baseball" variant="secondary" size="lg">
-                  Explore products
-                </MagneticButton>
-              </motion.div>
-
-              {/* Trust badges */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="flex flex-wrap gap-4 text-sm text-slate-500"
-              >
-                <span className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-green-600" />
-                  NCAA compliant
-                </span>
-                <span className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-green-600" />
-                  Fast onboarding
-                </span>
-                <span className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-green-600" />
-                  D1, D2, D3 programs
-                </span>
-              </motion.div>
-            </div>
-          </div>
-        </section>
+      <main className="relative z-10 bg-[#FAF6F1]">
 
         {/* PRODUCTS */}
         <section id="baseball" className="px-4 sm:px-6 py-20">

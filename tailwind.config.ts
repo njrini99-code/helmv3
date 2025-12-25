@@ -5,6 +5,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Onboarding spec-compliant colors (exact from design spec)
+        onboarding: {
+          'kelly-green': '#169B45',
+          'kelly-green-hover': '#128A3D',
+          'kelly-green-muted': 'rgba(22, 155, 69, 0.1)',
+          'cream': '#FFFDF7',
+          'warm-white': '#FAFAF8',
+          'black': '#000000',
+          'rich-black': '#0A0A0A',
+          'text-primary': '#1A1A1A',
+          'text-secondary': '#6B6B6B',
+          'text-muted': '#9B9B9B',
+          'border-light': 'rgba(0, 0, 0, 0.08)',
+          'border-medium': 'rgba(0, 0, 0, 0.12)',
+        },
         cream: {
           50: '#FDFCFA',
           100: '#F8F7F4',
@@ -41,7 +56,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif']
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        'sf-pro': ['"SF Pro Display"', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         '2xs': '11px',
