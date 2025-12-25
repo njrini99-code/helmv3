@@ -9,7 +9,7 @@ interface MousePosition {
   normalizedY: number; // -1 to 1
 }
 
-export function useMousePosition(ref?: RefObject<HTMLElement>): MousePosition {
+export function useMousePosition(ref?: RefObject<HTMLElement | null>): MousePosition {
   const [position, setPosition] = useState<MousePosition>({
     x: 0,
     y: 0,
