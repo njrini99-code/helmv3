@@ -33,7 +33,7 @@ export function WelcomeTransition({ onComplete }: WelcomeTransitionProps) {
       >
         {/* Welcome message */}
         <motion.h1
-          className="text-4xl md:text-5xl font-semibold tracking-tight font-sf-pro"
+          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight font-sf-pro px-4"
           style={{ letterSpacing: '-0.02em' }}
         >
           <span className="text-onboarding-kelly-green">Welcome to </span>

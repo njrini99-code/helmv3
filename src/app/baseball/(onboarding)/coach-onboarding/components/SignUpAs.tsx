@@ -19,7 +19,7 @@ export function SignUpAs({ onSelect }: SignUpAsProps) {
       >
         {/* Logo */}
         <motion.div variants={fadeInUp} className="flex justify-center">
-          <div className="text-2xl font-semibold tracking-tight font-sf-pro">
+          <div className="text-xl sm:text-2xl font-semibold tracking-tight font-sf-pro">
             <span className="text-onboarding-kelly-green">Baseball</span>
             <span className="text-onboarding-rich-black">Helm</span>
           </div>

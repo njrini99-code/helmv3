@@ -30,7 +30,7 @@ export function TeamLevel({ onSelect, onBack, currentProgress, totalSteps }: Tea
       <div className="w-full max-w-md pt-12 space-y-16">
         {/* Logo */}
         <div className="text-center">
-          <div className="text-2xl font-semibold tracking-tight mb-4 font-sf-pro">
+          <div className="text-xl sm:text-2xl font-semibold tracking-tight mb-4 font-sf-pro">
             <span className="text-onboarding-kelly-green">Baseball</span>
             <span className="text-onboarding-rich-black">Helm</span>
           </div>
@@ -40,7 +40,7 @@ export function TeamLevel({ onSelect, onBack, currentProgress, totalSteps }: Tea
         {/* Content */}
         <motion.div variants={staggerContainer} className="space-y-8">
           {/* Heading */}
-          <motion.h1 variants={fadeInUp} className="text-2xl font-semibold text-onboarding-text-primary text-center font-sf-pro">
+          <motion.h1 variants={fadeInUp} className="text-xl sm:text-2xl font-semibold text-onboarding-text-primary text-center font-sf-pro">
             What level is your team?
           </motion.h1>
 

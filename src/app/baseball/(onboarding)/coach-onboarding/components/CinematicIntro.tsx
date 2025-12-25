@@ -40,8 +40,8 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
       */}
       
       {/* ===== LEFT SIDE OF CENTER ===== */}
-      <div 
-        className="fixed top-1/2 right-1/2 flex items-center"
+      <div
+        className="fixed top-1/2 right-1/2 flex items-center px-2"
         style={{ transform: 'translateY(-50%)' }}
       >
         {/* "Take the" - fades out when transitioning to logo */}
@@ -55,7 +55,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: isTagline ? 1 : 0, y: 0 }}
             transition={{ duration: 1.0, delay: isTagline ? 0 : 0, ease: cinematicEase }}
-            className="text-4xl md:text-5xl font-semibold font-sf-pro whitespace-nowrap mr-4"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold font-sf-pro whitespace-nowrap mr-2 sm:mr-3 md:mr-4"
             style={{ letterSpacing: '-0.02em', color: '#FFFFFF' }}
           >
             Take
@@ -64,7 +64,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: isTagline ? 1 : 0, y: 0 }}
             transition={{ duration: 1.0, delay: isTagline ? 0.6 : 0, ease: cinematicEase }}
-            className="text-4xl md:text-5xl font-semibold font-sf-pro whitespace-nowrap mr-4"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold font-sf-pro whitespace-nowrap mr-2 sm:mr-3 md:mr-4"
             style={{ letterSpacing: '-0.02em', color: '#FFFFFF' }}
           >
             the
@@ -73,11 +73,11 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
 
         {/* "Baseball" - RIGHT at the seam, no margin */}
         <motion.span
-          className="text-4xl md:text-5xl font-semibold font-sf-pro whitespace-nowrap"
+          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold font-sf-pro whitespace-nowrap"
           style={{ letterSpacing: '-0.02em', color: '#FFFFFF' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: isLogoPhase ? 1 : 0 }}
-          transition={{ 
+          transition={{
             duration: 3.5,
             delay: isLogoPhase ? 0.3 : 0,
             ease: slowRevealEase,
@@ -88,13 +88,13 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
       </div>
 
       {/* ===== RIGHT SIDE OF CENTER ===== */}
-      <div 
-        className="fixed top-1/2 left-1/2 flex items-center"
+      <div
+        className="fixed top-1/2 left-1/2 flex items-center px-2"
         style={{ transform: 'translateY(-50%)' }}
       >
         {/* "Helm" - RIGHT at the seam, no margin */}
         <motion.span
-          className="text-4xl md:text-5xl font-semibold font-sf-pro whitespace-nowrap"
+          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold font-sf-pro whitespace-nowrap"
           style={{ letterSpacing: '-0.02em', color: '#4ADE80' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -114,7 +114,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: isTagline ? 1 : 0, y: 0 }}
             transition={{ duration: 1.0, delay: isTagline ? 1.8 : 0, ease: cinematicEase }}
-            className="text-4xl md:text-5xl font-semibold font-sf-pro whitespace-nowrap ml-4"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold font-sf-pro whitespace-nowrap ml-2 sm:ml-3 md:ml-4"
             style={{ letterSpacing: '-0.02em', color: '#FFFFFF' }}
           >
             of
@@ -123,7 +123,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: isTagline ? 1 : 0, y: 0 }}
             transition={{ duration: 1.0, delay: isTagline ? 2.4 : 0, ease: cinematicEase }}
-            className="text-4xl md:text-5xl font-semibold font-sf-pro whitespace-nowrap ml-4"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold font-sf-pro whitespace-nowrap ml-2 sm:ml-3 md:ml-4"
             style={{ letterSpacing: '-0.02em', color: '#FFFFFF' }}
           >
             your
@@ -132,7 +132,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: isTagline ? 1 : 0, y: 0 }}
             transition={{ duration: 1.0, delay: isTagline ? 3.0 : 0, ease: cinematicEase }}
-            className="text-4xl md:text-5xl font-semibold font-sf-pro whitespace-nowrap ml-4"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold font-sf-pro whitespace-nowrap ml-2 sm:ml-3 md:ml-4"
             style={{ letterSpacing: '-0.02em', color: '#FFFFFF' }}
           >
             program
@@ -142,23 +142,23 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
 
       {/* "Let's get started" - below center */}
       <motion.p
-        className="fixed left-1/2"
-        style={{ 
+        className="fixed left-1/2 px-4"
+        style={{
           top: '58%',
           transform: 'translateX(-50%)',
         }}
         initial={{ opacity: 0, y: 15 }}
-        animate={{ 
+        animate={{
           opacity: phase === 'logo-form' ? 1 : 0,
           y: phase === 'logo-form' ? 0 : 15
         }}
-        transition={{ 
-          duration: 1.0, 
+        transition={{
+          duration: 1.0,
           delay: phase === 'logo-form' ? 3.0 : 0,
           ease: cinematicEase
         }}
       >
-        <span className="text-2xl md:text-3xl font-semibold text-white font-sf-pro">
+        <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white font-sf-pro text-center">
           Let's get started
         </span>
       </motion.p>

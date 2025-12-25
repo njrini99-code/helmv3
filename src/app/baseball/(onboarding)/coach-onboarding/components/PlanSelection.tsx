@@ -42,7 +42,7 @@ export function PlanSelection({ onSelect, onBack, currentProgress, totalSteps }:
         </div>
 
         <div className="space-y-12">
-          <h1 className="text-2xl font-semibold text-onboarding-text-primary text-center font-sf-pro">
+          <h1 className="text-xl sm:text-2xl font-semibold text-onboarding-text-primary text-center font-sf-pro">
             Choose your plan
           </h1>
 
@@ -54,9 +54,9 @@ export function PlanSelection({ onSelect, onBack, currentProgress, totalSteps }:
               transition={{ duration: 0.2 }}
             >
               <div>
-                <h3 className="text-xl font-semibold text-onboarding-text-primary font-sf-pro">Free Recruiting</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-onboarding-text-primary font-sf-pro">Free Recruiting</h3>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold text-onboarding-text-primary font-sf-pro">$0</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-onboarding-text-primary font-sf-pro">$0</span>
                   <span className="text-onboarding-text-secondary font-sf-pro">/month</span>
                 </div>
               </div>
@@ -88,9 +88,9 @@ export function PlanSelection({ onSelect, onBack, currentProgress, totalSteps }:
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold text-onboarding-text-primary font-sf-pro">Elite Program Management</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-onboarding-text-primary font-sf-pro">Elite Program Management</h3>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold text-onboarding-text-primary font-sf-pro">$200</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-onboarding-text-primary font-sf-pro">$200</span>
                   <span className="text-onboarding-text-secondary font-sf-pro">/month</span>
                 </div>
               </div>

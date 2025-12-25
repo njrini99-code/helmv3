@@ -31,7 +31,7 @@ export function Division({ onSelect, onBack, currentProgress, totalSteps }: Divi
     >
       <div className="w-full max-w-md pt-12 space-y-16">
         <div className="text-center">
-          <div className="text-2xl font-semibold tracking-tight mb-4 font-sf-pro">
+          <div className="text-xl sm:text-2xl font-semibold tracking-tight mb-4 font-sf-pro">
             <span className="text-onboarding-kelly-green">Baseball</span>
             <span className="text-onboarding-rich-black">Helm</span>
           </div>
@@ -39,7 +39,7 @@ export function Division({ onSelect, onBack, currentProgress, totalSteps }: Divi
         </div>
 
         <div className="space-y-8">
-          <h1 className="text-2xl font-semibold text-onboarding-text-primary text-center font-sf-pro">
+          <h1 className="text-xl sm:text-2xl font-semibold text-onboarding-text-primary text-center font-sf-pro">
             What division is your team?
           </h1>
 
