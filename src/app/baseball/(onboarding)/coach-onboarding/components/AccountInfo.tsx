@@ -8,8 +8,8 @@ import { ProgressDots } from './ProgressDots';
 import { slideInFromRight } from '../animations/variants';
 
 interface AccountInfoProps {
-  initialData: { fullName: string; title: string };
-  onSubmit: (data: { fullName: string; title: string }) => void;
+  initialData: { fullName: string; title: string; email: string; password: string };
+  onSubmit: (data: { fullName: string; title: string; email: string; password: string }) => void;
   onBack: () => void;
   currentProgress: number;
   totalSteps: number;
@@ -18,8 +18,10 @@ interface AccountInfoProps {
 export function AccountInfo({ initialData, onSubmit, onBack, currentProgress, totalSteps }: AccountInfoProps) {
   const [fullName, setFullName] = useState(initialData.fullName);
   const [title, setTitle] = useState(initialData.title);
+  const [email, setEmail] = useState(initialData.email);
+  const [password, setPassword] = useState(initialData.password);
 
-  const isValid = fullName.trim() && title.trim();
+  const isValid = fullName.trim() && title.trim() && email.trim() && password.length >= 6;
 
   return (
     <motion.div
@@ -40,7 +42,7 @@ export function AccountInfo({ initialData, onSubmit, onBack, currentProgress, to
 
         <div className="space-y-8">
           <h1 className="text-2xl font-semibold text-onboarding-text-primary text-center font-sf-pro">
-            Tell us about yourself
+            Create your account
           </h1>
 
           <div className="space-y-4">
@@ -56,12 +58,29 @@ export function AccountInfo({ initialData, onSubmit, onBack, currentProgress, to
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Head Coach"
             />
+            <OnboardingInput
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+            <OnboardingInput
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+            <p className="text-xs text-onboarding-text-secondary">
+              Password must be at least 6 characters
+            </p>
           </div>
 
           <div className="space-y-4">
             <OnboardingButton
               disabled={!isValid}
-              onClick={() => onSubmit({ fullName, title })}
+              onClick={() => onSubmit({ fullName, title, email, password })}
             >
               Next
             </OnboardingButton>

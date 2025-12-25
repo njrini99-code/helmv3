@@ -21,6 +21,8 @@ export interface OnboardingData {
   state: string;
   fullName: string;
   title: string;
+  email: string;
+  password: string;
   plan: 'free' | 'elite' | null;
 }
 
@@ -37,6 +39,8 @@ export function useOnboardingFlow() {
     state: '',
     fullName: '',
     title: '',
+    email: '',
+    password: '',
     plan: null,
   });
 
@@ -135,6 +139,8 @@ export function useOnboardingFlow() {
       state: '',
       fullName: '',
       title: '',
+      email: '',
+      password: '',
       plan: null,
     });
     setCurrentStep('role-selection');

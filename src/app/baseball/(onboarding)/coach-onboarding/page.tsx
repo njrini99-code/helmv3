@@ -55,18 +55,67 @@ export default function CoachOnboarding() {
     setError(null);
 
     try {
-      // Get authenticated user
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.error('No authenticated user found');
-        router.push('/baseball/login');
+      // Step 1: Create auth user account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (authError) {
+        console.error('Auth signup error:', authError);
+        setError(`Failed to create account: ${authError.message}`);
+        setIsSubmitting(false);
         return;
       }
 
+      if (!authData.user) {
+        setError('Failed to create account. Please try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const userId = authData.user.id;
+      const userEmail = authData.user.email || data.email;
+
+      // Validate role
+      if (!data.role) {
+        setError('User role is required');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Step 2: Create user record with role
+      const { error: userError } = await supabase
+        .from('users')
+        .upsert(
+          {
+            id: userId,
+            email: userEmail,
+            role: data.role,
+          },
+          {
+            onConflict: 'id',
+          }
+        );
+
+      if (userError) {
+        console.error('User creation error:', userError);
+        setError(`Failed to set user role: ${userError.message}`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Handle player signup (redirect to player onboarding)
+      if (data.role === 'player') {
+        router.push('/baseball/player');
+        router.refresh();
+        return;
+      }
+
+      // Continue with coach setup
       // Determine coach_type based on teamLevel and division
       let coachType: 'college' | 'juco' | 'high_school' | 'showcase';
-      
+
       if (data.teamLevel === 'high-school') {
         coachType = 'high_school';
       } else if (data.teamLevel === 'showcase') {
@@ -83,7 +132,7 @@ export default function CoachOnboarding() {
         : coachType === 'high_school' ? 'high_school'
         : 'showcase_org';
 
-      // Step 1: Create organization
+      // Step 3: Create organization
       const { data: org, error: orgError } = await supabase
         .from('organizations')
         .insert({
@@ -103,10 +152,11 @@ export default function CoachOnboarding() {
         return;
       }
 
-      // Step 2: Update coach record with onboarding data
-      const { error: updateError } = await supabase
+      // Step 4: Create coach record
+      const { error: coachError } = await supabase
         .from('coaches')
-        .update({
+        .insert({
+          user_id: userId,
           coach_type: coachType,
           organization_id: org.id,
           full_name: data.fullName,
@@ -116,12 +166,11 @@ export default function CoachOnboarding() {
           school_state: data.state || null,
           program_division: data.division || null,
           onboarding_completed: true,
-        })
-        .eq('user_id', user.id);
+        });
 
-      if (updateError) {
-        console.error('Coach update error:', updateError);
-        setError(`Failed to update profile: ${updateError.message}`);
+      if (coachError) {
+        console.error('Coach creation error:', coachError);
+        setError(`Failed to create coach profile: ${coachError.message}`);
         setIsSubmitting(false);
         return;
       }
@@ -201,6 +250,8 @@ export default function CoachOnboarding() {
           initialData={{
             fullName: data.fullName,
             title: data.title,
+            email: data.email,
+            password: data.password,
           }}
           onSubmit={(accountData) => {
             updateData(accountData);
