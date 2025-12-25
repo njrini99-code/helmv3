@@ -1,0 +1,119 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - complementary [ref=e13]:
+      - button [ref=e14] [cursor=pointer]:
+        - img [ref=e15]
+      - link "G GolfHelm" [ref=e18] [cursor=pointer]:
+        - /url: /golf/dashboard
+        - generic [ref=e19]:
+          - generic [ref=e21]: G
+          - img "GolfHelm" [ref=e22]
+      - generic [ref=e24]:
+        - generic [ref=e26]: NR
+        - generic [ref=e27]:
+          - paragraph [ref=e28]: Nick Rini
+          - paragraph [ref=e29]: Golf Team
+      - navigation [ref=e31]:
+        - generic [ref=e32]:
+          - paragraph [ref=e33]: My Golf
+          - link "Dashboard" [ref=e34] [cursor=pointer]:
+            - /url: /golf/dashboard
+            - img [ref=e35]
+            - generic [ref=e38]: Dashboard
+          - link "My Rounds" [ref=e39] [cursor=pointer]:
+            - /url: /golf/dashboard/rounds
+            - img [ref=e40]
+            - generic [ref=e44]: My Rounds
+          - link "Calendar" [ref=e45] [cursor=pointer]:
+            - /url: /golf/dashboard/calendar
+            - img [ref=e46]
+            - generic [ref=e49]: Calendar
+          - link "My Stats" [ref=e50] [cursor=pointer]:
+            - /url: /golf/dashboard/stats
+            - img [ref=e51]
+            - generic [ref=e53]: My Stats
+          - link "Classes" [ref=e54] [cursor=pointer]:
+            - /url: /golf/dashboard/classes
+            - img [ref=e55]
+            - generic [ref=e57]: Classes
+          - link "Messages" [ref=e58] [cursor=pointer]:
+            - /url: /golf/dashboard/messages
+            - img [ref=e59]
+            - generic [ref=e62]: Messages
+        - generic [ref=e63]:
+          - paragraph [ref=e64]: Team
+          - link "Team Info" [ref=e65] [cursor=pointer]:
+            - /url: /golf/dashboard/team
+            - img [ref=e66]
+            - generic [ref=e71]: Team Info
+          - link "Announcements" [ref=e72] [cursor=pointer]:
+            - /url: /golf/dashboard/announcements
+            - img [ref=e73]
+            - generic [ref=e75]: Announcements
+      - generic [ref=e76]:
+        - link "Settings" [ref=e77] [cursor=pointer]:
+          - /url: /golf/dashboard/settings
+          - img [ref=e78]
+          - generic [ref=e81]: Settings
+        - button "Sign out" [ref=e82] [cursor=pointer]:
+          - img [ref=e83]
+          - generic [ref=e85]: Sign out
+    - main [ref=e86]:
+      - generic [ref=e90]:
+        - heading "New Round" [level=1] [ref=e91]
+        - paragraph [ref=e92]: Track your round shot-by-shot for comprehensive stats
+        - generic [ref=e93]:
+          - generic [ref=e94]:
+            - heading "Course Information" [level=2] [ref=e95]
+            - generic [ref=e96]:
+              - generic [ref=e97]:
+                - generic [ref=e98]: Course Name *
+                - textbox "Pebble Beach Golf Links" [ref=e99]
+              - generic [ref=e100]:
+                - generic [ref=e101]:
+                  - generic [ref=e102]: City
+                  - textbox "Pebble Beach" [ref=e103]
+                - generic [ref=e104]:
+                  - generic [ref=e105]: State
+                  - textbox "CA" [ref=e106]
+              - generic [ref=e107]:
+                - generic [ref=e108]:
+                  - generic [ref=e109]: Rating
+                  - spinbutton [ref=e110]
+                - generic [ref=e111]:
+                  - generic [ref=e112]: Slope
+                  - spinbutton [ref=e113]
+                - generic [ref=e114]:
+                  - generic [ref=e115]: Tees
+                  - combobox [ref=e116]:
+                    - option "Championship"
+                    - option "Black"
+                    - option "Blue"
+                    - option "White" [selected]
+                    - option "Gold"
+                    - option "Red"
+          - generic [ref=e117]:
+            - heading "Round Details" [level=2] [ref=e118]
+            - generic [ref=e119]:
+              - generic [ref=e120]:
+                - generic [ref=e121]: Round Type
+                - combobox [ref=e122]:
+                  - option "Practice" [selected]
+                  - option "Tournament"
+                  - option "Qualifier"
+              - generic [ref=e123]:
+                - generic [ref=e124]: Date
+                - textbox [ref=e125]: 2025-12-24
+          - generic [ref=e126]:
+            - heading "📊 Comprehensive Stats Tracking" [level=3] [ref=e127]
+            - paragraph [ref=e128]: This round will track 50+ statistics including driving distance, approach proximity, putting efficiency, scrambling, and more. Use your rangefinder for accurate distances.
+          - generic [ref=e129]:
+            - button "Cancel" [ref=e130] [cursor=pointer]
+            - 'button "Next: Configure Holes →" [ref=e131] [cursor=pointer]'
+```

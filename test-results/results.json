@@ -1,0 +1,567 @@
+{
+  "config": {
+    "configFile": "/Users/ricknini/Downloads/helmv3/playwright.config.ts",
+    "rootDir": "/Users/ricknini/Downloads/helmv3/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/ricknini/Downloads/helmv3/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/ricknini/Downloads/helmv3/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.57.0",
+    "workers": 4,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "golf-dashboard.spec.ts",
+      "file": "golf-dashboard.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Golf Dashboard - Player Flow",
+          "file": "golf-dashboard.spec.ts",
+          "line": 12,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load dashboard successfully",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 35354,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8",
+                        "location": {
+                          "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                          "column": 8,
+                          "line": 14
+                        },
+                        "snippet": "  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                            "column": 8,
+                            "line": 14
+                          },
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                            "column": 16,
+                            "line": 24
+                          },
+                          "message": "Error: page.waitForURL: Test timeout of 30000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n  22 |\n  23 |     // Wait for redirect to dashboard\n> 24 |     await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });\n     |                ^\n  25 |   });\n  26 |\n  27 |   test('should load dashboard successfully', async ({ page }) => {\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-24T17:35:07.573Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-79695-load-dashboard-successfully-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-79695-load-dashboard-successfully-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-79695-load-dashboard-successfully-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                        "column": 8,
+                        "line": 14
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "4faf91a0d792e46b6682-68e5d50e098287bba4b7",
+              "file": "golf-dashboard.spec.ts",
+              "line": 29,
+              "column": 3
+            },
+            {
+              "title": "should navigate to rounds page",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "timedOut",
+                      "duration": 35158,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8",
+                        "location": {
+                          "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                          "column": 8,
+                          "line": 14
+                        },
+                        "snippet": "  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                            "column": 8,
+                            "line": 14
+                          },
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                            "column": 16,
+                            "line": 24
+                          },
+                          "message": "Error: page.waitForURL: Test timeout of 30000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n  22 |\n  23 |     // Wait for redirect to dashboard\n> 24 |     await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });\n     |                ^\n  25 |   });\n  26 |\n  27 |   test('should load dashboard successfully', async ({ page }) => {\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-24T17:35:07.586Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-6389f-uld-navigate-to-rounds-page-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-6389f-uld-navigate-to-rounds-page-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-6389f-uld-navigate-to-rounds-page-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                        "column": 8,
+                        "line": 14
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "4faf91a0d792e46b6682-f6d0dd377b37fb3e315a",
+              "file": "golf-dashboard.spec.ts",
+              "line": 38,
+              "column": 3
+            },
+            {
+              "title": "should access new round page and see all steps",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "timedOut",
+                      "duration": 35061,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8",
+                        "location": {
+                          "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                          "column": 8,
+                          "line": 14
+                        },
+                        "snippet": "  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                            "column": 8,
+                            "line": 14
+                          },
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                            "column": 16,
+                            "line": 24
+                          },
+                          "message": "Error: page.waitForURL: Test timeout of 30000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n  22 |\n  23 |     // Wait for redirect to dashboard\n> 24 |     await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });\n     |                ^\n  25 |   });\n  26 |\n  27 |   test('should load dashboard successfully', async ({ page }) => {\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-24T17:35:07.540Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-f6f44-ound-page-and-see-all-steps-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-f6f44-ound-page-and-see-all-steps-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-f6f44-ound-page-and-see-all-steps-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                        "column": 8,
+                        "line": 14
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "4faf91a0d792e46b6682-d842e6c44e2456f05f7b",
+              "file": "golf-dashboard.spec.ts",
+              "line": 50,
+              "column": 3
+            },
+            {
+              "title": "should navigate to stats page",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "timedOut",
+                      "duration": 35188,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8",
+                        "location": {
+                          "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                          "column": 8,
+                          "line": 14
+                        },
+                        "snippet": "  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                            "column": 8,
+                            "line": 14
+                          },
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                            "column": 16,
+                            "line": 24
+                          },
+                          "message": "Error: page.waitForURL: Test timeout of 30000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n  22 |\n  23 |     // Wait for redirect to dashboard\n> 24 |     await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });\n     |                ^\n  25 |   });\n  26 |\n  27 |   test('should load dashboard successfully', async ({ page }) => {\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-24T17:35:07.546Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-d698c-ould-navigate-to-stats-page-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-d698c-ould-navigate-to-stats-page-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-d698c-ould-navigate-to-stats-page-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                        "column": 8,
+                        "line": 14
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "4faf91a0d792e46b6682-cc67a1d3cfb316224c2f",
+              "file": "golf-dashboard.spec.ts",
+              "line": 107,
+              "column": 3
+            },
+            {
+              "title": "should verify emerald color scheme throughout",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 2,
+                      "status": "timedOut",
+                      "duration": 31556,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
+                            "column": 27,
+                            "line": 121
+                          },
+                          "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('input[name=\"courseName\"]')\u001b[22m\n\n\n  119 |     // Check for emerald focus rings on inputs\n  120 |     const courseNameInput = page.locator('input[name=\"courseName\"]');\n> 121 |     await courseNameInput.click();\n      |                           ^\n  122 |\n  123 |     // Check button has emerald background\n  124 |     const nextButton = page.locator('button:has-text(\"Next: Configure Holes\")');\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:121:27"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-24T17:35:50.296Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-50ad3-ald-color-scheme-throughout-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-50ad3-ald-color-scheme-throughout-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/ricknini/Downloads/helmv3/test-results/golf-dashboard-Golf-Dashbo-50ad3-ald-color-scheme-throughout-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "4faf91a0d792e46b6682-f442127556b2cb6583ca",
+              "file": "golf-dashboard.spec.ts",
+              "line": 123,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Golf Dashboard - Route Consolidation",
+          "file": "golf-dashboard.spec.ts",
+          "line": 149,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should not have player-golf routes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6282,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-24T17:35:50.283Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4faf91a0d792e46b6682-0fb01a87516fec6631d2",
+              "file": "golf-dashboard.spec.ts",
+              "line": 150,
+              "column": 3
+            },
+            {
+              "title": "login should redirect to golf dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 4223,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-24T17:35:54.359Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4faf91a0d792e46b6682-9e3ed8db94803ef30286",
+              "file": "golf-dashboard.spec.ts",
+              "line": 161,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-12-24T17:35:04.293Z",
+    "duration": 78564.808,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 5,
+    "flaky": 0
+  }
+}

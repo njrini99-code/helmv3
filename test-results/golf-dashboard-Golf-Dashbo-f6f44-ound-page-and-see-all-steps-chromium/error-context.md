@@ -1,0 +1,42 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - img "GolfHelm" [ref=e5]
+      - heading "Welcome to GolfHelm" [level=1] [ref=e6]
+      - paragraph [ref=e7]: Sign in to your account
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: Email
+          - textbox "you@example.com" [ref=e13]: rinin376@gmail.com
+        - generic [ref=e14]:
+          - generic [ref=e15]:
+            - generic [ref=e16]: Password
+            - generic [ref=e17]:
+              - textbox "••••••••" [ref=e18]: Pirates#09!!
+              - button [ref=e19] [cursor=pointer]:
+                - img [ref=e20]
+          - link "Forgot password?" [ref=e24] [cursor=pointer]:
+            - /url: /golf/forgot-password
+        - button "Please wait..." [disabled] [ref=e25]:
+          - img [ref=e26]
+          - generic [ref=e29]: Please wait...
+      - paragraph [ref=e30]:
+        - text: Don't have an account?
+        - link "Sign up" [ref=e31] [cursor=pointer]:
+          - /url: /golf/signup
+    - paragraph [ref=e32]:
+      - link "← Back to HelmLabs" [ref=e33] [cursor=pointer]:
+        - /url: /
+  - button "Open Next.js Dev Tools" [ref=e39] [cursor=pointer]:
+    - generic [ref=e42]:
+      - text: Rendering
+      - generic [ref=e43]:
+        - generic [ref=e44]: .
+        - generic [ref=e45]: .
+        - generic [ref=e46]: .
+  - alert [ref=e47]
+```

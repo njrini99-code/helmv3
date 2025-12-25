@@ -11,17 +11,17 @@ export function HeroSection() {
       {/* Background */}
       <HeroBackground />
 
-      {/* Content Container */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 py-32">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+      {/* Content Container - Mobile-first responsive padding */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 py-24 sm:py-32 lg:py-40">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-8 items-center">
           {/* Left: Content */}
           <div>
             <HeroContent />
             <TrustBadges />
           </div>
 
-          {/* Right: Product Preview (THE hero moment) */}
-          <div className="relative lg:pl-8">
+          {/* Right: Product Preview - Hidden on mobile, shown on tablet+ */}
+          <div className="relative lg:pl-8 hidden sm:block">
             <ProductPreview />
           </div>
         </div>

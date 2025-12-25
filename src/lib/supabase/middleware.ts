@@ -29,6 +29,12 @@ export async function updateSession(request: NextRequest) {
                        pathname === '/baseball/signup' ||
                        pathname === '/golf/login' ||
                        pathname === '/golf/signup' ||
+                       pathname === '/baseball/coach-onboarding' ||  // Onboarding flows
+                       pathname === '/baseball/coach' ||
+                       pathname === '/baseball/player' ||
+                       pathname === '/golf/coach-onboarding' ||
+                       pathname === '/golf/coach' ||
+                       pathname === '/golf/player' ||
                        pathname.startsWith('/baseball/player/') ||  // Public player profiles
                        pathname.startsWith('/golf/player/');        // Public player profiles
 
@@ -80,13 +86,10 @@ export async function updateSession(request: NextRequest) {
                      pathname === '/baseball/signup' ||
                      pathname === '/golf/login' ||
                      pathname === '/golf/signup';
-  const isOnboardingRoute = pathname.startsWith('/baseball/coach') ||
-                            pathname.startsWith('/baseball/player') ||
-                            pathname.startsWith('/golf/coach') ||
-                            pathname.startsWith('/golf/player');
+  // Dashboard routes require full authentication (not onboarding routes)
   const isDashboardRoute = pathname.startsWith('/baseball/dashboard') ||
                            pathname.startsWith('/golf/dashboard');
-  const isProtectedRoute = isOnboardingRoute || isDashboardRoute;
+  const isProtectedRoute = isDashboardRoute;
 
   // Redirect to login if accessing protected route without auth
   if (!user && isProtectedRoute) {

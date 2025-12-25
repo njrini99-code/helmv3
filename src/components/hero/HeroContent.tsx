@@ -12,20 +12,20 @@ export function HeroContent() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full
-                   bg-emerald-500/10 border border-emerald-500/20 mb-6"
+                   bg-emerald-500/10 border border-emerald-500/20 mb-4 sm:mb-6"
       >
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-sm text-emerald-400 font-medium">
+        <span className="text-xs sm:text-sm text-emerald-400 font-medium">
           Built for recruiting weeks and real staff workflows
         </span>
       </motion.div>
 
-      {/* Main Headline */}
+      {/* Main Headline - Mobile-optimized sizing */}
       <motion.h1
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
-        className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.1] mb-6"
+        className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.1] mb-4 sm:mb-6"
       >
         Run recruiting and
         <br />
@@ -41,22 +41,22 @@ export function HeroContent() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
-        className="text-lg md:text-xl text-gray-400 leading-relaxed mb-8 max-w-xl"
+        className="text-base sm:text-lg md:text-xl text-gray-400 leading-relaxed mb-6 sm:mb-8 max-w-xl"
       >
         A clean command center for college staffs: recruiting pipelines,
         roster planning, and athlete development.
       </motion.p>
 
-      {/* CTAs */}
+      {/* CTAs - Mobile-first stacking */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.5 }}
-        className="flex flex-wrap items-center gap-4"
+        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4"
       >
-        {/* Primary CTA */}
+        {/* Primary CTA - WCAG 44px minimum touch target */}
         <motion.button
-          className="group relative px-6 py-3 text-base font-semibold text-white rounded-xl overflow-hidden"
+          className="group relative px-6 py-3 text-base font-semibold text-white rounded-xl overflow-hidden min-h-[44px]"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
@@ -76,21 +76,21 @@ export function HeroContent() {
           {/* Glow */}
           <div className="absolute -inset-1 bg-emerald-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-          <span className="relative flex items-center gap-2">
+          <span className="relative flex items-center justify-center gap-2">
             Book a demo
             <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
           </span>
         </motion.button>
 
-        {/* Secondary CTA */}
+        {/* Secondary CTA - WCAG 44px minimum */}
         <motion.button
           className="group px-6 py-3 text-base font-medium text-white rounded-xl
                      border border-white/10 hover:border-white/20 hover:bg-white/5
-                     transition-all duration-200"
+                     transition-all duration-200 min-h-[44px]"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
-          <span className="flex items-center gap-2">
+          <span className="flex items-center justify-center gap-2">
             Explore products
             <svg
               className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity"
