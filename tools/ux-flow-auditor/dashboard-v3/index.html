@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ship Command Hub v5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">🚢</span>
+          <div class="logo-text">
+            <h1>Ship Command</h1>
+            <span class="version-badge">v5</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-center">
+        <div class="ship-score-container">
+          <div class="ship-score-ring">
+            <svg viewBox="0 0 120 120">
+              <circle class="ring-bg" cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
+              <circle class="ring-progress" id="score-ring" cx="60" cy="60" r="54" fill="none" stroke="url(#scoreGradient)" stroke-width="8" stroke-linecap="round" stroke-dasharray="339.292" stroke-dashoffset="339.292" transform="rotate(-90 60 60)"/>
+              <defs>
+                <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#10b981"/>
+                  <stop offset="100%" stop-color="#34d399"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="ship-score-value">
+              <span id="ship-score">0</span>
+              <span class="score-label">Ship Score</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <!-- Mode Toggle -->
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="manual">Manual</button>
+          <button class="mode-btn" data-mode="hybrid">Hybrid</button>
+          <button class="mode-btn" data-mode="auto">Auto</button>
+        </div>
+        
+        <div class="connection-status" id="connection-status">
+          <span class="status-dot"></span>
+          <span class="status-text">Connecting...</span>
+        </div>
+        <button class="btn btn-primary" id="btn-scan">
+          <span>🔍</span> Scan
+        </button>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <!-- Left Panel - Agent Activity -->
+      <aside class="agent-panel">
+        <div class="panel-header">
+          <h2>🤖 Agent Activity</h2>
+          <button class="btn-icon-only" id="btn-clear-log" title="Clear log">🗑️</button>
+        </div>
+        
+        <div class="agent-flow">
+          <div class="agent-node" data-agent="visual-analysis">
+            <div class="agent-icon">👁️</div>
+            <div class="agent-info">
+              <span class="agent-name">Visual Analysis</span>
+              <span class="agent-status" id="status-visual">Idle</span>
+            </div>
+            <div class="agent-indicator"></div>
+          </div>
+          
+          <div class="agent-connector"></div>
+          
+          <div class="agent-node" data-agent="improvement">
+            <div class="agent-icon">🧠</div>
+            <div class="agent-info">
+              <span class="agent-name">Improvement</span>
+              <span class="agent-status" id="status-improvement">Idle</span>
+            </div>
+            <div class="agent-indicator"></div>
+          </div>
+          
+          <div class="agent-connector"></div>
+          
+          <div class="agent-node" data-agent="coordinator">
+            <div class="agent-icon">🎯</div>
+            <div class="agent-info">
+              <span class="agent-name">Coordinator</span>
+              <span class="agent-status" id="status-coordinator">Ready</span>
+            </div>
+            <div class="agent-indicator"></div>
+          </div>
+        </div>
+        
+        <div class="agent-log" id="agent-log">
+          <!-- Agent activity messages appear here -->
+        </div>
+        
+        <div class="panel-footer">
+          <span>💡 Insights</span>
+        </div>
+      </aside>
+
+      <!-- Center - Main Content -->
+      <main class="main-content">
+        <div class="content-grid">
+          <!-- Issues Panel -->
+          <div class="panel panel-issues">
+            <div class="panel-header">
+              <h2>🎯 Issues</h2>
+              <span class="badge" id="issue-count">0</span>
+            </div>
+            <div class="issue-list" id="issue-list">
+              <div class="empty-state">
+                <span>📋</span>
+                <p>Click Scan to find issues</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Routes Panel -->
+          <div class="panel panel-routes">
+            <div class="panel-header">
+              <h2>🗺️ Routes</h2>
+              <span class="badge" id="route-count">0</span>
+            </div>
+            <div class="route-list" id="route-list">
+              <div class="empty-state">
+                <span>🗺️</span>
+                <p>No routes scanned yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right Panel - Stats & Quick Actions -->
+      <aside class="stats-panel">
+        <div class="panel-header">
+          <h2>📊 Stats</h2>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-value" id="stat-routes">0</span>
+            <span class="stat-label">Routes</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="stat-issues">0</span>
+            <span class="stat-label">Issues</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="stat-fixed">0</span>
+            <span class="stat-label">Fixed</span>
+          </div>
+        </div>
+        
+        <div class="quick-actions">
+          <h3>Quick Actions</h3>
+          <button class="btn btn-outline" data-action="loading-states">
+            ⏳ Fix Loading States
+          </button>
+          <button class="btn btn-outline" data-action="error-handling">
+            🚨 Fix Error Handling
+          </button>
+          <button class="btn btn-outline" data-action="console-logs">
+            🧹 Remove Console Logs
+          </button>
+          <button class="btn btn-outline" data-action="navigation">
+            🔗 Fix Dead Paths
+          </button>
+        </div>
+        
+        <div class="ship-readiness">
+          <h3>Ship Readiness</h3>
+          <div class="readiness-checklist" id="readiness-checklist">
+            <div class="checklist-item" data-check="loading">
+              <span class="check-icon">⬜</span>
+              <span>All routes have loading states</span>
+            </div>
+            <div class="checklist-item" data-check="errors">
+              <span class="check-icon">⬜</span>
+              <span>Error boundaries in place</span>
+            </div>
+            <div class="checklist-item" data-check="console">
+              <span class="check-icon">⬜</span>
+              <span>No console.log statements</span>
+            </div>
+            <div class="checklist-item" data-check="types">
+              <span class="check-icon">⬜</span>
+              <span>No TypeScript errors</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Fix Modal -->
+    <div class="modal" id="fix-modal">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-title">Intelligence Brief</h2>
+          <button class="btn-close" id="btn-close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="fix-info">
+            <div class="fix-file" id="fix-file"></div>
+            <div class="fix-description" id="fix-description"></div>
+          </div>
+          <div class="prompt-container">
+            <div class="prompt-header">
+              <span>📋 Intelligence Brief</span>
+              <button class="btn btn-sm" id="btn-copy">📋 Copy</button>
+            </div>
+            <pre class="prompt-code" id="prompt-code">Loading...</pre>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="btn-skip">Skip</button>
+          <button class="btn btn-success" id="btn-mark-fixed">✅ Mark Fixed</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

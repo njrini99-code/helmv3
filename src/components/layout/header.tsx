@@ -94,7 +94,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 border-b border-slate-100 bg-white/80 backdrop-blur-xl sticky top-0 z-30">
+    <header className="h-16 glass-prominent border-b border-white/20 sticky top-0 z-30">
       <div className="h-full px-4 lg:px-6 flex items-center justify-between gap-4">
         {/* Left: Menu toggle + Back + Title */}
         <div className="flex items-center gap-3 min-w-0">
@@ -191,9 +191,9 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
 
             {/* User Dropdown */}
             {showUserMenu && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-fade-in">
+              <div className="absolute right-0 top-full mt-2 w-64 glass-standard rounded-2xl shadow-xl border border-white/30 overflow-hidden z-50 animate-fade-in">
                 {/* User info */}
-                <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                <div className="p-4 border-b border-white/20 bg-white/30">
                   <div className="flex items-center gap-3">
                     <Avatar name={name} size="md" src={avatarUrl} />
                     <div className="min-w-0 flex-1">
@@ -226,10 +226,10 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
                 </div>
 
                 {/* Sign out */}
-                <div className="p-2 border-t border-slate-100">
+                <div className="p-2 border-t border-white/20">
                   <button
                     onClick={handleSignOut}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-white/50 rounded-lg transition-colors"
                   >
                     <IconLogOut size={16} />
                     Sign out
@@ -259,7 +259,7 @@ function UserMenuItem({
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+      className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-white/50 rounded-lg transition-colors"
     >
       <Icon size={16} className="text-slate-400" />
       {label}

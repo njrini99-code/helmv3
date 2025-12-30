@@ -70,7 +70,14 @@ export function PlayerQuickCard({ player, children, className }: PlayerQuickCard
         isOpen && 'opacity-100 scale-100 pointer-events-auto',
         position === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'
       )}>
-        <div className="bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden">
+        <div className="relative glass-standard rounded-2xl overflow-hidden shadow-xl transition-all duration-300">
+          {/* Shine effect */}
+          <div
+            className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+            }}
+          />
           {/* Header */}
           <div className="p-4 bg-slate-50 border-b border-slate-100">
             <div className="flex items-center gap-3">

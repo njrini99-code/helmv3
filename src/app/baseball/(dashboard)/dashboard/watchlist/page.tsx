@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageLoading } from '@/components/ui/loading';
-import { TableRowSkeleton } from '@/components/ui/skeletons';
 import { Avatar } from '@/components/ui/avatar';
 import { IconTrash, IconUser } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
@@ -51,6 +51,7 @@ export default function WatchlistPage() {
   const { isAllowed, isLoading: routeLoading } = useRecruitingRouteProtection();
   const [watchlist, setWatchlist] = useState<WatchlistWithPlayer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [filterTab, setFilterTab] = useState('all');
   const [positionFilter, setPositionFilter] = useState('all');
@@ -80,34 +81,46 @@ export default function WatchlistPage() {
     if (!coach?.id) return;
 
     setLoading(true);
-    const supabase = createClient();
+    setError(null);
 
-    // Fetch watchlist with player details
-    const { data, error } = await supabase
-      .from('watchlists')
-      .select(`
-        id,
-        coach_id,
-        player_id,
-        pipeline_stage,
-        notes,
-        priority,
-        tags,
-        added_at,
-        created_at,
-        updated_at,
-        player:players (*)
-      `)
-      .eq('coach_id', coach.id)
-      .order('added_at', { ascending: false });
+    try {
+      const supabase = createClient();
 
-    if (error) {
+      // Fetch watchlist with player details
+      const { data, error: watchlistError } = await supabase
+        .from('watchlists')
+        .select(`
+          id,
+          coach_id,
+          player_id,
+          pipeline_stage,
+          notes,
+          priority,
+          tags,
+          added_at,
+          created_at,
+          updated_at,
+          player:players (*)
+        `)
+        .eq('coach_id', coach.id)
+        .order('added_at', { ascending: false });
+
+      if (watchlistError) {
+        console.error('Error fetching watchlist:', watchlistError);
+        setError('Failed to load watchlist. Please try again.');
+        setWatchlist([]);
+        setLoading(false);
+        return;
+      }
+
+      setWatchlist(data as WatchlistWithPlayer[]);
       setLoading(false);
-      return;
+    } catch (err) {
+      console.error('Unexpected error fetching watchlist:', err);
+      setError('An unexpected error occurred. Please try again.');
+      setWatchlist([]);
+      setLoading(false);
     }
-
-    setWatchlist(data as WatchlistWithPlayer[]);
-    setLoading(false);
   }
 
   const filteredWatchlist = watchlist.filter(item => {
@@ -251,8 +264,6 @@ export default function WatchlistPage() {
     }
   }
 
-  if (authLoading) return <PageLoading />;
-
   if (!coach) {
     return (
       <>
@@ -273,7 +284,20 @@ export default function WatchlistPage() {
         subtitle={`${filteredWatchlist.length} player${filteredWatchlist.length !== 1 ? 's' : ''}`}
       />
 
-      <div className="p-8">
+      <div className="p-6 lg:p-8">
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-600 hover:text-red-700 font-medium transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Filter Tabs */}
         <div className="flex items-center gap-2 mb-6 border-b border-slate-200" role="tablist" aria-label="Filter by status">
           {filterTabs.map(tab => (
@@ -336,35 +360,38 @@ export default function WatchlistPage() {
 
         {/* Bulk Actions Bar */}
         {selectedPlayers.size > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center justify-between">
-            <p className="text-sm font-medium text-green-900">
-              {selectedPlayers.size} player{selectedPlayers.size !== 1 ? 's' : ''} selected
-            </p>
-            <div className="flex items-center gap-3">
-              <Select
-                options={[{ value: '', label: 'Change status...' }, ...statusOptions]}
-                value=""
-                onChange={(value) => {
-                  if (value) {
-                    handleBulkStatusChange(value as PipelineStage);
-                  }
-                }}
-                className="w-48 text-sm"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setBulkRemoveConfirm(true)}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                Remove Selected
-              </Button>
-              <button
-                onClick={() => setSelectedPlayers(new Set())}
-                className="text-sm leading-relaxed text-slate-600 hover:text-slate-900 underline"
-              >
-                Clear selection
-              </button>
+          <div className="relative glass-standard rounded-2xl p-5 mb-6 overflow-hidden">
+            <ShineEffect />
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-green-700">
+                {selectedPlayers.size} player{selectedPlayers.size !== 1 ? 's' : ''} selected
+              </p>
+              <div className="flex items-center gap-3">
+                <Select
+                  options={[{ value: '', label: 'Change status...' }, ...statusOptions]}
+                  value=""
+                  onChange={(value) => {
+                    if (value) {
+                      handleBulkStatusChange(value as PipelineStage);
+                    }
+                  }}
+                  className="w-48 text-sm"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setBulkRemoveConfirm(true)}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  Remove Selected
+                </Button>
+                <button
+                  onClick={() => setSelectedPlayers(new Set())}
+                  className="text-sm leading-relaxed text-slate-600 hover:text-slate-900 underline"
+                >
+                  Clear selection
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -385,9 +412,15 @@ export default function WatchlistPage() {
                   <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-200">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <TableRowSkeleton key={i} columns={9} />
+                  <tr key={i}>
+                    {Array.from({ length: 9 }).map((_, j) => (
+                      <td key={j} className="px-6 py-4">
+                        <div className="h-4 bg-slate-200 rounded animate-pulse" />
+                      </td>
+                    ))}
+                  </tr>
                 ))}
               </tbody>
             </table>

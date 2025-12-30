@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-450",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The map at line 514 (`dayOrder.map`) now has proper empty state handling. When `classesByDay` has no entries (meaning no classes are scheduled for any day), it displays an empty state message instead of rendering an empty grid.\n",
+  "timestamp": "2025-12-29T10:13:11.561Z"
+}

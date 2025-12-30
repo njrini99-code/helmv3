@@ -229,11 +229,18 @@ interface EmptyStateCardProps extends EmptyStateProps {
 export function EmptyStateCard({ glass = false, ...props }: EmptyStateCardProps) {
   return (
     <div className={cn(
-      'rounded-xl border',
-      glass 
-        ? 'bg-white/70 backdrop-blur-sm border-white/20' 
-        : 'bg-white border-slate-200'
+      'relative rounded-2xl overflow-hidden transition-all duration-300',
+      glass
+        ? 'glass-standard'
+        : 'glass-standard'
     )}>
+      {/* Shine effect */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+        }}
+      />
       <EmptyState {...props} />
     </div>
   );

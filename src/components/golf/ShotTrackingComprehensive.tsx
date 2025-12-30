@@ -713,7 +713,14 @@ export default function ShotTrackingComprehensive({
 
           {/* Club Selection (Tee Shot Par 4/5) - Segmented Control */}
           {isTeeShot && currentHole.par !== 3 && (
-            <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+            <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
+              {/* Shine effect */}
+              <div
+                className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                }}
+              />
               <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Club Off Tee</p>
               <div className="inline-flex bg-slate-100 rounded-lg p-1 w-full">
                 <button onClick={() => setUsedDriver(true)}
@@ -774,7 +781,14 @@ export default function ShotTrackingComprehensive({
           )}
 
           {/* Shot Result - Context-Aware */}
-          <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
+            {/* Shine effect */}
+            <div
+              className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+              }}
+            />
             <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">
               {isPutting ? 'Putt Result' : 'Shot Result'}
             </p>
@@ -811,7 +825,14 @@ export default function ShotTrackingComprehensive({
           {((isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
             (isApproachOrAroundGreen && resultOfShot && !['green', 'hole', 'fairway'].includes(resultOfShot)) ||
             (isPutting && resultOfShot && resultOfShot !== 'hole')) && (
-            <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+            <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
+              {/* Shine effect */}
+              <div
+                className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                }}
+              />
               <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Miss Direction</p>
               {isTeeShot && (
                 <div className="inline-flex bg-slate-100 rounded-lg p-1 w-full">
@@ -928,7 +949,14 @@ export default function ShotTrackingComprehensive({
 
           {/* Shot History */}
           {shotHistory.length > 0 && (
-            <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+            <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
+              {/* Shine effect */}
+              <div
+                className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                }}
+              />
               <div className="flex items-center justify-between mb-4">
                 <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Shot History
@@ -1011,7 +1039,14 @@ export default function ShotTrackingComprehensive({
 
         {/* Right Sidebar - Mini Golf Course Visualization */}
         <div className="hidden xl:block w-44 p-4">
-          <div className="sticky top-32 bg-white rounded-lg p-5 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+          <div className="relative sticky top-32 glass-standard rounded-2xl overflow-hidden p-5 transition-all duration-300">
+            {/* Shine effect */}
+            <div
+              className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+              }}
+            />
             {/* Header */}
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Hole {currentHole.number}</p>
             <p className="text-2xl font-bold text-emerald-600 text-center mt-1">{currentShot} shot{currentShot > 1 ? 's' : ''}</p>

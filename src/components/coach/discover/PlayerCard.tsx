@@ -11,6 +11,7 @@ import {
   IconMapPin,
   IconGraduationCap,
   IconCheck,
+  IconVideo,
 } from '@/components/icons';
 
 export interface PlayerCardData {
@@ -27,12 +28,16 @@ export interface PlayerCardData {
   coverImage?: string | null;
   stats?: {
     velocity?: number;
+    exitVelo?: number;
+    sixtyYard?: number;
     gpa?: number;
     height?: string;
     weight?: number;
   };
   verified?: boolean;
   status?: 'watchlist' | 'high_priority' | 'offer_extended' | 'committed' | 'uninterested';
+  hasVideo?: boolean;
+  videoThumbnail?: string | null;
 }
 
 interface PlayerCardProps {
@@ -42,6 +47,10 @@ interface PlayerCardProps {
   onMessage?: () => void;
   onPlayerClick?: () => void;
   isOnWatchlist?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
+  showCheckbox?: boolean;
+  isFeatured?: boolean;
   className?: string;
   usePeekPanel?: boolean;
 }
@@ -53,6 +62,10 @@ const PlayerCardComponent = function PlayerCard({
   onMessage,
   onPlayerClick,
   isOnWatchlist = false,
+  isSelected = false,
+  onSelect,
+  showCheckbox = false,
+  isFeatured = false,
   className,
   usePeekPanel = true,
 }: PlayerCardProps) {
@@ -74,13 +87,29 @@ const PlayerCardComponent = function PlayerCard({
       <div
         onClick={handleClick}
         className={cn(
-          "flex items-center gap-3 p-3 rounded-xl cursor-pointer",
+          "flex items-center gap-3 p-3 rounded-xl cursor-pointer relative",
           "bg-white border border-slate-100",
           "transition-all duration-200",
           "hover:-translate-y-0.5 hover:shadow-md hover:border-slate-200",
+          isSelected && "ring-2 ring-green-500 ring-offset-2 border-green-200",
           className
         )}
       >
+        {/* Checkbox for compare mode */}
+        {showCheckbox && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
+            className={cn(
+              'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 flex-shrink-0',
+              isSelected
+                ? 'bg-green-600 border-green-600 text-white scale-110'
+                : 'border-slate-300 hover:border-green-500 bg-white'
+            )}
+          >
+            {isSelected && <IconCheck size={12} />}
+          </button>
+        )}
+        
         <PlayerAvatar player={player} size="sm" />
         <div className="flex-1 min-w-0">
           <div className="font-medium text-slate-900 truncate">
@@ -90,6 +119,11 @@ const PlayerCardComponent = function PlayerCard({
             {player.position} • {player.graduationYear}
           </div>
         </div>
+        {player.hasVideo && (
+          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">
+            <IconVideo size={10} />
+          </div>
+        )}
         {player.status && (
           <StatusDot variant={getStatusVariant(player.status)} />
         )}
@@ -104,8 +138,36 @@ const PlayerCardComponent = function PlayerCard({
         "bg-white border border-slate-100",
         "transition-all duration-200",
         "hover:-translate-y-1 hover:shadow-xl",
+        isSelected && "ring-2 ring-green-500 ring-offset-2 border-green-200",
+        isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",
         className
       )}>
+        {/* Checkbox for compare mode */}
+        {showCheckbox && (
+          <div className="absolute top-3 left-3 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
+              className={cn(
+                'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200',
+                isSelected
+                  ? 'bg-green-600 border-green-600 text-white scale-110'
+                  : 'border-slate-300 hover:border-green-500 bg-white/90 backdrop-blur-sm'
+              )}
+            >
+              {isSelected && <IconCheck size={14} />}
+            </button>
+          </div>
+        )}
+
+        {/* Video indicator badge */}
+        {player.hasVideo && (
+          <div className="absolute top-3 right-12 z-10 flex items-center gap-1 
+                          px-2 py-1 rounded-full bg-black/70 backdrop-blur-sm text-white text-xs">
+            <IconVideo size={12} />
+            <span>Video</span>
+          </div>
+        )}
+
         {/* Cover Image */}
         <div className="h-32 bg-gradient-to-br from-slate-200 to-slate-300 relative">
           {player.coverImage && (
@@ -193,9 +255,44 @@ const PlayerCardComponent = function PlayerCard({
       "transition-all duration-200",
       "hover:-translate-y-0.5 hover:shadow-lg hover:border-slate-200",
       "group",
+      isSelected && "ring-2 ring-green-500 ring-offset-2 border-green-200",
+      isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",
       className
     )}>
-      <div className="p-5">
+      {/* Checkbox for compare mode */}
+      {showCheckbox && (
+        <div className="absolute top-3 left-3 z-10">
+          <button
+            onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
+            className={cn(
+              'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200',
+              isSelected
+                ? 'bg-green-600 border-green-600 text-white scale-110'
+                : 'border-slate-300 hover:border-green-500 bg-white/90 backdrop-blur-sm'
+            )}
+          >
+            {isSelected && <IconCheck size={14} />}
+          </button>
+        </div>
+      )}
+
+      {/* Video indicator badge */}
+      {player.hasVideo && (
+        <div className="absolute top-3 right-14 z-10 flex items-center gap-1 
+                        px-2 py-1 rounded-full bg-black/70 backdrop-blur-sm text-white text-xs
+                        opacity-0 group-hover:opacity-100 transition-opacity">
+          <IconVideo size={12} />
+          <span>Video</span>
+        </div>
+      )}
+
+      {/* Featured indicator glow */}
+      {isFeatured && (
+        <div className="absolute inset-0 rounded-2xl pointer-events-none
+                        bg-gradient-to-br from-amber-50 to-transparent opacity-50" />
+      )}
+
+      <div className="p-5 relative">
         <div className="flex items-start gap-4">
           <PlayerAvatar player={player} size="md" />
 
@@ -206,6 +303,11 @@ const PlayerCardComponent = function PlayerCard({
                   {player.firstName} {player.lastName}
                 </h3>
                 {player.verified && <VerifiedBadge />}
+                {isFeatured && (
+                  <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                    Hot
+                  </span>
+                )}
               </div>
             </div>
 
@@ -236,6 +338,12 @@ const PlayerCardComponent = function PlayerCard({
             )}
             {player.stats.height && (
               <StatBadge label="Ht" value={player.stats.height} compact />
+            )}
+            {player.hasVideo && (
+              <div className="ml-auto flex items-center gap-1 text-xs text-slate-500">
+                <IconVideo size={12} />
+                <span>Video</span>
+              </div>
             )}
           </div>
         )}

@@ -1,9 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { CreateQualifierButton } from '@/components/golf/qualifiers/CreateQualifierButton';
 import type { GolfQualifier } from '@/lib/types/golf';
 import { IconFlag, IconCalendar, IconMapPin, IconChevronRight, IconGolf, IconUsers } from '@/components/icons';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Qualifiers | Helm Sports',
+  description: 'Track and manage team qualifiers for player selection and performance evaluation',
+};
 
 export default async function GolfQualifiersPage() {
   const supabase = await createClient();
@@ -94,7 +101,8 @@ export default async function GolfQualifiersPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {qualifiers.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
+            <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <IconFlag size={28} className="text-slate-400" />
             </div>
@@ -122,7 +130,8 @@ export default async function GolfQualifiersPage() {
                     opacity: 0,
                   }}
                 >
-                  <div className="bg-white rounded-2xl border border-slate-200/60 p-6 hover:border-slate-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-200">
+                  <div className="relative glass-standard rounded-2xl overflow-hidden p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+                    <ShineEffect />
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1 min-w-0 pr-4">

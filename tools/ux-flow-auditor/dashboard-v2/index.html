@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HelmDev Visual Intelligence</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">🖼️</span>
+          <div class="logo-text">
+            <h1>Visual Intelligence</h1>
+            <p class="logo-subtitle">Screenshot-first route analysis</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-center">
+        <!-- Stats -->
+        <div class="header-stats">
+          <div class="stat">
+            <span class="stat-value" id="stat-routes">0</span>
+            <span class="stat-label">Routes</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value stat-warning" id="stat-issues">0</span>
+            <span class="stat-label">Issues</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value stat-feature" id="stat-features">0</span>
+            <span class="stat-label">Ideas</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value stat-success" id="stat-score">0</span>
+            <span class="stat-label">Avg Score</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <!-- Mode Toggle -->
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="manual">Manual</button>
+          <button class="mode-btn" data-mode="hybrid">Hybrid</button>
+          <button class="mode-btn" data-mode="autonomous">Auto</button>
+        </div>
+        
+        <!-- Scan Button -->
+        <button class="btn btn-primary" id="btn-scan">
+          <span class="btn-icon">📸</span>
+          <span class="btn-text">Scan All</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+      <!-- Left Panel - Agent Flow -->
+      <aside class="agent-panel">
+        <div class="panel-header">
+          <h2>🤖 Agent Activity</h2>
+          <button class="btn-icon-only" id="btn-clear-log" title="Clear log">🗑️</button>
+        </div>
+        
+        <!-- Agent Flow Visualization -->
+        <div class="agent-flow">
+          <div class="agent-node" data-agent="visual-analysis">
+            <div class="agent-icon">👁️</div>
+            <div class="agent-info">
+              <span class="agent-name">Visual Analysis</span>
+              <span class="agent-status">Idle</span>
+            </div>
+            <div class="agent-pulse"></div>
+          </div>
+          
+          <div class="flow-connector">
+            <svg viewBox="0 0 40 60">
+              <path class="flow-path" d="M20 0 L20 60" />
+              <circle class="flow-dot" cx="20" cy="30" r="4" />
+            </svg>
+          </div>
+          
+          <div class="agent-node" data-agent="improvement">
+            <div class="agent-icon">🧠</div>
+            <div class="agent-info">
+              <span class="agent-name">Improvement</span>
+              <span class="agent-status">Idle</span>
+            </div>
+            <div class="agent-pulse"></div>
+          </div>
+          
+          <div class="flow-connector">
+            <svg viewBox="0 0 40 60">
+              <path class="flow-path" d="M20 0 L20 60" />
+              <circle class="flow-dot" cx="20" cy="30" r="4" />
+            </svg>
+          </div>
+          
+          <div class="agent-node" data-agent="coordinator">
+            <div class="agent-icon">🎯</div>
+            <div class="agent-info">
+              <span class="agent-name">Coordinator</span>
+              <span class="agent-status">Ready</span>
+            </div>
+            <div class="agent-pulse"></div>
+          </div>
+        </div>
+        
+        <!-- Activity Log -->
+        <div class="activity-log" id="activity-log">
+          <div class="activity-empty">
+            <span class="activity-empty-icon">📋</span>
+            <p>Agent activity will appear here</p>
+          </div>
+        </div>
+        
+        <!-- Insights -->
+        <div class="insights-section" id="insights-section">
+          <h3>💡 Insights</h3>
+          <div class="insights-list" id="insights-list"></div>
+        </div>
+      </aside>
+
+      <!-- Main Content - Route Grid -->
+      <main class="content">
+        <div class="content-header">
+          <div class="content-filters">
+            <select id="sort-by" class="select-input">
+              <option value="score-asc">Score ↑ (Needs Work)</option>
+              <option value="score-desc">Score ↓ (Best First)</option>
+              <option value="issues">Most Issues</option>
+              <option value="name">Name A-Z</option>
+            </select>
+            
+            <select id="filter-severity" class="select-input">
+              <option value="">All Severities</option>
+              <option value="error">🔴 Errors Only</option>
+              <option value="warning">🟡 Warnings Only</option>
+              <option value="enhancement">✨ Features Only</option>
+            </select>
+          </div>
+          
+          <div class="content-actions">
+            <button class="btn btn-ghost" id="btn-refresh">
+              <span>🔄</span> Refresh
+            </button>
+          </div>
+        </div>
+        
+        <!-- Route Grid -->
+        <div class="route-grid" id="route-grid">
+          <!-- Empty State -->
+          <div class="empty-state" id="empty-state">
+            <div class="empty-icon">📸</div>
+            <h3>No Routes Scanned Yet</h3>
+            <p>Click "Scan All" to capture screenshots and analyze your app</p>
+            <button class="btn btn-primary btn-large" id="btn-scan-empty">
+              <span>📸</span> Start Scanning
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Prompt Modal -->
+    <div class="modal" id="prompt-modal">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span class="modal-icon" id="modal-icon">🔧</span>
+            <div>
+              <h3 id="modal-title">Fix Issue</h3>
+              <p id="modal-subtitle" class="modal-subtitle">Generating prompt...</p>
+            </div>
+          </div>
+          <button class="btn-close" id="btn-close-modal">✕</button>
+        </div>
+        
+        <div class="modal-body">
+          <!-- Loading State -->
+          <div class="modal-loading" id="modal-loading">
+            <div class="spinner"></div>
+            <p>Generating prompt...</p>
+            <p class="modal-loading-sub">Analyzing code & visual context</p>
+          </div>
+          
+          <!-- Prompt Content -->
+          <div class="modal-prompt" id="modal-prompt" style="display: none;">
+            <pre class="prompt-code" id="prompt-code"></pre>
+          </div>
+        </div>
+        
+        <div class="modal-footer" id="modal-footer" style="display: none;">
+          <button class="btn btn-ghost" id="btn-copy-prompt">
+            <span>📋</span> Copy Prompt
+          </button>
+          <button class="btn btn-primary" id="btn-apply-fix">
+            <span>⚡</span> Apply Fix
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scanning Overlay -->
+    <div class="scanning-overlay" id="scanning-overlay">
+      <div class="scanning-content">
+        <div class="scanning-animation">
+          <div class="scanning-circle"></div>
+          <div class="scanning-icon">📸</div>
+        </div>
+        <h3>Scanning Routes</h3>
+        <p id="scanning-status">Initializing...</p>
+        <div class="scanning-progress">
+          <div class="scanning-progress-bar" id="scanning-progress-bar"></div>
+        </div>
+        <p class="scanning-detail" id="scanning-detail"></p>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

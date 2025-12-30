@@ -151,10 +151,17 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
 
   if (!open) return null;
 
-  
+
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="relative glass-prominent rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Shine effect */}
+        <div
+          className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+          }}
+        />
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">Create Development Plan</h2>

@@ -5,6 +5,12 @@ import { EventsList } from '@/components/golf/calendar/EventsList';
 import { CreateEventButton } from '@/components/golf/calendar/CreateEventButton';
 import { CalendarClassesList } from '@/components/golf/calendar/CalendarClassesList';
 import type { GolfEvent } from '@/lib/types/golf';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Calendar | Helm Sports',
+  description: 'View and manage your team events, practices, and class schedule',
+};
 
 export default async function GolfCalendarPage() {
   const supabase = await createClient();

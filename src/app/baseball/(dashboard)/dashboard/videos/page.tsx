@@ -158,10 +158,10 @@ export default function VideosPage() {
         )}
       </Header>
 
-      <div className="p-8">
+      <div className="p-6 lg:p-8">
         {/* Coach Search Bar */}
         {isCoach && videos.length > 0 && (
-          <Card className="mb-6">
+          <Card glass className="mb-6">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
                 <div className="flex-1 relative">
@@ -215,7 +215,7 @@ export default function VideosPage() {
           /* Video Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredVideos.map((video) => (
-              <Card key={video.id}>
+              <Card glass key={video.id}>
                 <CardContent className="p-4">
                   {video.url && <VideoPlayer src={video.url} thumbnail={video.thumbnail_url} title={video.title} />}
                   <div className="mt-4 space-y-3">

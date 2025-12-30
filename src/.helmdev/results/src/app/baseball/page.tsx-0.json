@@ -1,0 +1,7 @@
+{
+  "taskId": "seo-missing-metadata-../../src/app/baseball/page.tsx-0",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Added metadata export with appropriate title and description for the baseball landing page.\n",
+  "timestamp": "2025-12-29T11:56:54.113Z"
+}

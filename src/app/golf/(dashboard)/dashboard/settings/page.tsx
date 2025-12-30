@@ -1,22 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/toast';
-import { 
-  IconSettings, 
-  IconUser, 
-  IconBell, 
-  IconUsers, 
-  IconLogout, 
+import {
+  IconSettings,
+  IconUser,
+  IconBell,
+  IconUsers,
+  IconLogout,
   IconChevronRight,
   IconMail,
   IconMapPin,
   IconShield,
   IconPalette
 } from '@/components/icons';
+import { PersonalInfoModal } from '@/components/golf/settings/PersonalInfoModal';
+import { EmailModal } from '@/components/golf/settings/EmailModal';
+import { PasswordModal } from '@/components/golf/settings/PasswordModal';
+import { NotificationsModal } from '@/components/golf/settings/NotificationsModal';
+import { AppearanceModal } from '@/components/golf/settings/AppearanceModal';
+import { LocationModal } from '@/components/golf/settings/LocationModal';
+import { TeamSettingsModal } from '@/components/golf/settings/TeamSettingsModal';
+import { InviteSettingsModal } from '@/components/golf/settings/InviteSettingsModal';
 
 interface UserProfile {
   name: string;
@@ -29,6 +38,16 @@ export default function GolfSettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+
+  // Modal state
+  const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [teamSettingsOpen, setTeamSettingsOpen] = useState(false);
+  const [inviteSettingsOpen, setInviteSettingsOpen] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -105,10 +124,11 @@ export default function GolfSettingsPage() {
       <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
         {/* Profile Card */}
         {profile && (
-          <div 
-            className="bg-white rounded-2xl border border-slate-200/60 p-6"
+          <div
+            className="relative glass-standard rounded-2xl overflow-hidden p-6"
             style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0 }}
           >
+            <ShineEffect />
             <div className="flex items-center gap-4">
               <Avatar name={profile.name} size="lg" />
               <div className="flex-1 min-w-0">
@@ -133,24 +153,25 @@ export default function GolfSettingsPage() {
         {/* Account Section */}
         <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '50ms', opacity: 0 }}>
           <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Account</h3>
-          <div className="bg-white rounded-2xl border border-slate-200/60 overflow-hidden">
+          <div className="relative glass-standard rounded-2xl overflow-hidden">
+            <ShineEffect />
             <SettingsRow
               icon={<IconUser size={18} />}
               label="Personal Information"
               description="Update your name, email and profile picture"
-              comingSoon
+              onClick={() => setPersonalInfoOpen(true)}
             />
             <SettingsRow
               icon={<IconMail size={18} />}
               label="Email Address"
               description={profile?.email || 'Not set'}
-              comingSoon
+              onClick={() => setEmailOpen(true)}
             />
             <SettingsRow
               icon={<IconShield size={18} />}
               label="Password & Security"
               description="Change password and manage security"
-              comingSoon
+              onClick={() => setPasswordOpen(true)}
               isLast
             />
           </div>
@@ -159,24 +180,25 @@ export default function GolfSettingsPage() {
         {/* Preferences Section */}
         <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '100ms', opacity: 0 }}>
           <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Preferences</h3>
-          <div className="bg-white rounded-2xl border border-slate-200/60 overflow-hidden">
+          <div className="relative glass-standard rounded-2xl overflow-hidden">
+            <ShineEffect />
             <SettingsRow
               icon={<IconBell size={18} />}
               label="Notifications"
               description="Manage email and push notifications"
-              comingSoon
+              onClick={() => setNotificationsOpen(true)}
             />
             <SettingsRow
               icon={<IconPalette size={18} />}
               label="Appearance"
               description="Theme and display preferences"
-              comingSoon
+              onClick={() => setAppearanceOpen(true)}
             />
             <SettingsRow
               icon={<IconMapPin size={18} />}
               label="Location"
               description="Default course and location settings"
-              comingSoon
+              onClick={() => setLocationOpen(true)}
               isLast
             />
           </div>
@@ -186,18 +208,19 @@ export default function GolfSettingsPage() {
         {profile?.role === 'coach' && (
           <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '150ms', opacity: 0 }}>
             <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Team</h3>
-            <div className="bg-white rounded-2xl border border-slate-200/60 overflow-hidden">
+            <div className="relative glass-standard rounded-2xl overflow-hidden">
+              <ShineEffect />
               <SettingsRow
                 icon={<IconUsers size={18} />}
                 label="Team Settings"
                 description="Manage team name, logo and details"
-                comingSoon
+                onClick={() => setTeamSettingsOpen(true)}
               />
               <SettingsRow
                 icon={<IconSettings size={18} />}
                 label="Invite Settings"
                 description="Manage team invite codes and access"
-                comingSoon
+                onClick={() => setInviteSettingsOpen(true)}
                 isLast
               />
             </div>
@@ -208,8 +231,9 @@ export default function GolfSettingsPage() {
         <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '200ms', opacity: 0 }}>
           <button
             onClick={handleSignOut}
-            className="w-full bg-white rounded-2xl border border-slate-200/60 p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50 transition-all group"
+            className="relative w-full glass-standard rounded-2xl overflow-hidden p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50 transition-all group"
           >
+            <ShineEffect />
             <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
               <IconLogout size={18} className="text-red-600" />
             </div>
@@ -240,54 +264,89 @@ export default function GolfSettingsPage() {
           }
         }
       `}</style>
+
+      {/* Modals */}
+      {profile && (
+        <>
+          <PersonalInfoModal
+            isOpen={personalInfoOpen}
+            onClose={() => setPersonalInfoOpen(false)}
+            currentName={profile.name}
+            role={profile.role}
+            onUpdate={loadProfile}
+          />
+          <EmailModal
+            isOpen={emailOpen}
+            onClose={() => setEmailOpen(false)}
+            currentEmail={profile.email}
+            onUpdate={loadProfile}
+          />
+          <PasswordModal
+            isOpen={passwordOpen}
+            onClose={() => setPasswordOpen(false)}
+          />
+          <NotificationsModal
+            isOpen={notificationsOpen}
+            onClose={() => setNotificationsOpen(false)}
+          />
+          <AppearanceModal
+            isOpen={appearanceOpen}
+            onClose={() => setAppearanceOpen(false)}
+          />
+          <LocationModal
+            isOpen={locationOpen}
+            onClose={() => setLocationOpen(false)}
+          />
+          {profile.role === 'coach' && (
+            <>
+              <TeamSettingsModal
+                isOpen={teamSettingsOpen}
+                onClose={() => setTeamSettingsOpen(false)}
+                onUpdate={loadProfile}
+              />
+              <InviteSettingsModal
+                isOpen={inviteSettingsOpen}
+                onClose={() => setInviteSettingsOpen(false)}
+              />
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }
 
-function SettingsRow({ 
-  icon, 
-  label, 
-  description, 
+function SettingsRow({
+  icon,
+  label,
+  description,
   onClick,
-  comingSoon = false,
   isLast = false
-}: { 
+}: {
   icon: React.ReactNode;
   label: string;
   description?: string;
   onClick?: () => void;
-  comingSoon?: boolean;
   isLast?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      disabled={comingSoon}
       className={cn(
         'w-full flex items-center gap-4 p-4 text-left hover:bg-slate-50 transition-colors',
-        !isLast && 'border-b border-slate-100',
-        comingSoon && 'cursor-not-allowed opacity-70'
+        !isLast && 'border-b border-slate-100'
       )}
     >
       <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-600">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="font-medium text-slate-900">{label}</p>
-          {comingSoon && (
-            <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-slate-100 text-slate-500">
-              Soon
-            </span>
-          )}
-        </div>
+        <p className="font-medium text-slate-900">{label}</p>
         {description && (
           <p className="text-sm text-slate-500 truncate">{description}</p>
         )}
       </div>
-      {!comingSoon && (
-        <IconChevronRight size={18} className="text-slate-300 flex-shrink-0" />
-      )}
+      <IconChevronRight size={18} className="text-slate-300 flex-shrink-0" />
     </button>
   );
 }

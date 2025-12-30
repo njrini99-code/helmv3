@@ -88,7 +88,6 @@ export default function GolfCoachOnboarding() {
         .single();
 
       if (orgError) {
-        console.error('Org error:', orgError);
         setError(`Failed to create organization: ${orgError.message}`);
         setLoading(false);
         return;
@@ -106,7 +105,6 @@ export default function GolfCoachOnboarding() {
         .single();
 
       if (teamError) {
-        console.error('Team error:', teamError);
         setError(`Failed to create team: ${teamError.message}`);
         setLoading(false);
         return;
@@ -127,7 +125,6 @@ export default function GolfCoachOnboarding() {
         .eq('user_id', user.id);
 
       if (coachError) {
-        console.error('Coach error:', coachError);
         setError(`Failed to update coach: ${coachError.message}`);
         setLoading(false);
         return;
@@ -136,7 +133,6 @@ export default function GolfCoachOnboarding() {
       router.push('/golf/dashboard');
       router.refresh();
     } catch (err) {
-      console.error('Onboarding error:', err);
       setError('An error occurred. Please try again.');
       setLoading(false);
     }

@@ -72,8 +72,13 @@ export function VideoShowcase({
 
   if (loading) {
     return (
-      <div className={cn('bg-white rounded-2xl border border-slate-200 p-6', className)}>
-        <div className="animate-pulse space-y-4">
+      <div className={cn('relative glass-standard rounded-2xl overflow-hidden p-6', className)}>
+        <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+          }}
+        />
+        <div className="relative animate-pulse space-y-4">
           <div className="h-6 bg-slate-200 rounded w-1/3"></div>
           <div className="grid grid-cols-2 gap-4">
             {[...Array(2)].map((_, i) => (
@@ -87,25 +92,37 @@ export function VideoShowcase({
 
   if (videos.length === 0) {
     return (
-      <div className={cn('bg-slate-50 rounded-2xl border border-slate-200 p-8 text-center', className)}>
-        <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-          <IconVideo size={28} className="text-slate-400" />
+      <div className={cn('relative glass-subtle rounded-2xl overflow-hidden p-8 text-center', className)}>
+        <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+          }}
+        />
+        <div className="relative">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+            <IconVideo size={28} className="text-slate-400" />
+          </div>
+          <h3 className="text-sm font-semibold text-slate-700 mb-2">
+            No Videos Yet
+          </h3>
+          <p className="text-sm leading-relaxed text-slate-500">
+            This player hasn't uploaded any videos yet.
+          </p>
         </div>
-        <h3 className="text-sm font-semibold text-slate-700 mb-2">
-          No Videos Yet
-        </h3>
-        <p className="text-sm leading-relaxed text-slate-500">
-          This player hasn't uploaded any videos yet.
-        </p>
       </div>
     );
   }
 
   return (
     <>
-      <div className={cn('bg-white rounded-2xl border border-slate-200 overflow-hidden', className)}>
+      <div className={cn('relative glass-standard rounded-2xl overflow-hidden', className)}>
+        <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+          }}
+        />
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="relative px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
               <IconVideo size={20} className="text-green-600" />
@@ -126,7 +143,7 @@ export function VideoShowcase({
         </div>
 
         {/* Video Grid */}
-        <div className="p-6">
+        <div className="relative p-6">
           <div className="grid grid-cols-2 gap-4">
             {videos.map((video) => (
               <VideoCard
@@ -234,9 +251,15 @@ function VideoModal({ video, onClose }: VideoModalProps) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden"
+        className="relative glass-prominent rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+          }}
+        />
+        <div className="relative">
         {/* Video Player */}
         <div className="relative aspect-video bg-slate-900">
           {video.url ? (
@@ -256,6 +279,7 @@ function VideoModal({ video, onClose }: VideoModalProps) {
           )}
         </div>
 
+        </div>
         {/* Info */}
         <div className="p-6 border-t border-slate-100">
           <div className="flex items-start justify-between mb-4">

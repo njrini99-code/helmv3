@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
 import {
   calculateStatsFromShots,
@@ -92,7 +93,7 @@ export default function GolfStatsPage() {
           .eq('team_id', coach.team_id)
           .order('last_name');
 
-        if (teamPlayers) {
+        if (teamPlayers && teamPlayers.length > 0) {
           // Calculate basic stats for each player
           const playersWithStats = await Promise.all(
             teamPlayers.map(async (player) => {
@@ -196,20 +197,22 @@ export default function GolfStatsPage() {
       ? roundsData
       : roundsData.filter(r => r.id === selectedRoundId);
 
-    const roundsInfo: RoundInfo[] = filteredRoundsData.map(r => ({
+    const roundsInfo: RoundInfo[] = (filteredRoundsData || []).map(r => ({
       id: r.id,
       round_date: r.round_date,
       course_name: r.course_name,
       round_type: r.round_type as 'practice' | 'qualifying' | 'tournament',
     }));
 
-    const holesInfo: HoleInfo[] = (holesData || []).map(h => ({
-      id: h.id,
-      round_id: h.round_id,
-      hole_number: h.hole_number,
-      par: h.par,
-      yardage: h.yardage,
-    }));
+    const holesInfo: HoleInfo[] = holesData && holesData.length > 0
+      ? holesData.map(h => ({
+          id: h.id,
+          round_id: h.round_id,
+          hole_number: h.hole_number,
+          par: h.par,
+          yardage: h.yardage,
+        }))
+      : [];
 
     const shots: RawShot[] = (shotsData || [])
       .filter(s =>
@@ -276,7 +279,8 @@ export default function GolfStatsPage() {
 
         <div className="max-w-7xl mx-auto px-6 py-8">
           {players.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
+            <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
+              <ShineEffect />
               <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <IconUser size={28} className="text-slate-400" />
               </div>
@@ -289,13 +293,14 @@ export default function GolfStatsPage() {
                 <button
                   key={player.id}
                   onClick={() => handlePlayerClick(player.id)}
-                  className="w-full group bg-white rounded-xl border border-slate-200/60 hover:border-slate-300 hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all duration-200 text-left"
+                  className="w-full group relative glass-standard rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left"
                   style={{
                     animation: 'fadeInUp 0.4s ease-out forwards',
                     animationDelay: `${index * 30}ms`,
                     opacity: 0,
                   }}
                 >
+                  <ShineEffect />
                   <div className="flex items-center gap-4 p-4">
                     {/* Avatar */}
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-sm">

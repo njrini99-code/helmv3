@@ -1,0 +1,7 @@
+{
+  "taskId": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/travel/page.tsx-0",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Added metadata export with title and description for SEO.\n",
+  "timestamp": "2025-12-29T11:42:41.307Z"
+}

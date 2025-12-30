@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { IconChevronLeft } from '@/components/icons';
 import type { GolfQualifier, GolfQualifierEntry, GolfRound } from '@/lib/types/golf';
+import type { Metadata } from 'next';
 
 interface QualifierEntryWithPlayer extends GolfQualifierEntry {
   player: {
@@ -14,6 +16,21 @@ interface QualifierEntryWithPlayer extends GolfQualifierEntry {
 
 interface QualifierWithEntries extends GolfQualifier {
   entries: QualifierEntryWithPlayer[];
+}
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const supabase = await createClient();
+
+  const { data: qualifier } = await supabase
+    .from('golf_qualifiers')
+    .select('name, description')
+    .eq('id', params.id)
+    .single();
+
+  return {
+    title: qualifier?.name ? `${qualifier.name} | Helm Sports` : 'Qualifier Details | Helm Sports',
+    description: qualifier?.description || 'View live leaderboard and qualifier details for college golf recruiting',
+  };
 }
 
 export default async function QualifierDetailPage({ params }: { params: { id: string } }) {
@@ -39,8 +56,22 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
     notFound();
   }
 
-  // Type assertion needed due to Supabase's nested join type inference limitations
-  const qualifierData = qualifier as unknown as QualifierWithEntries;
+  // Validate and type the data properly
+  const qualifierData: QualifierWithEntries = {
+    ...qualifier,
+    entries: Array.isArray(qualifier.entries)
+      ? qualifier.entries.filter((entry): entry is QualifierEntryWithPlayer =>
+          entry !== null &&
+          typeof entry === 'object' &&
+          'player' in entry &&
+          entry.player !== null &&
+          typeof entry.player === 'object' &&
+          'id' in entry.player &&
+          'first_name' in entry.player &&
+          'last_name' in entry.player
+        )
+      : []
+  };
 
   // Get all rounds for this qualifier
   const { data: rounds } = await supabase
@@ -49,31 +80,33 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
     .eq('qualifier_id', params.id);
 
   // Calculate leaderboard
-  const leaderboard = qualifierData.entries.map(entry => {
-    const playerRounds = (rounds || []).filter(r => r.player_id === entry.player_id);
+  const leaderboard = qualifierData.entries && qualifierData.entries.length > 0
+    ? qualifierData.entries.map(entry => {
+        const playerRounds = (rounds || []).filter(r => r.player_id === entry.player_id);
 
-    const totalScore = playerRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
-    const totalToPar = playerRounds.reduce((sum, r) => sum + (r.total_to_par || 0), 0);
-    const roundsCompleted = playerRounds.length;
-    const averageScore = roundsCompleted > 0 ? totalScore / roundsCompleted : 0;
+        const totalScore = playerRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
+        const totalToPar = playerRounds.reduce((sum, r) => sum + (r.total_to_par || 0), 0);
+        const roundsCompleted = playerRounds.length;
+        const averageScore = roundsCompleted > 0 ? totalScore / roundsCompleted : 0;
 
-    return {
-      playerId: entry.player_id,
-      playerName: `${entry.player.first_name} ${entry.player.last_name}`,
-      roundsCompleted,
-      totalScore,
-      totalToPar,
-      averageScore,
-      isTied: entry.is_tied || false,
-    };
-  }).sort((a, b) => {
-    // Sort by total score (lower is better)
-    if (a.totalScore !== b.totalScore) {
-      return a.totalScore - b.totalScore;
-    }
-    // If tied, sort by rounds completed (more is better for tie-breaking)
-    return b.roundsCompleted - a.roundsCompleted;
-  });
+        return {
+          playerId: entry.player_id,
+          playerName: `${entry.player.first_name} ${entry.player.last_name}`,
+          roundsCompleted,
+          totalScore,
+          totalToPar,
+          averageScore,
+          isTied: entry.is_tied || false,
+        };
+      }).sort((a, b) => {
+        // Sort by total score (lower is better)
+        if (a.totalScore !== b.totalScore) {
+          return a.totalScore - b.totalScore;
+        }
+        // If tied, sort by rounds completed (more is better for tie-breaking)
+        return b.roundsCompleted - a.roundsCompleted;
+      })
+    : [];
 
   // Mark ties
   for (let i = 0; i < leaderboard.length; i++) {
@@ -117,7 +150,8 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
         </Link>
 
         {/* Qualifier Header */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-6">
+        <div className="relative glass-standard rounded-2xl overflow-hidden p-6 mb-6">
+          <ShineEffect />
           <div className="flex items-start justify-between mb-4">
             <div>
               <h1 className="text-2xl font-semibold text-slate-900 mb-2">
@@ -175,7 +209,8 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
         </div>
 
         {/* Leaderboard */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+          <ShineEffect />
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-slate-900">Leaderboard</h2>
             {qualifierData.show_live_leaderboard && (
@@ -189,7 +224,7 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
             )}
           </div>
 
-          {leaderboard.length === 0 ? (
+          {!leaderboard || leaderboard.length === 0 ? (
             <p className="text-center text-slate-400 py-8">No entries yet</p>
           ) : (
             <div className="overflow-x-auto">

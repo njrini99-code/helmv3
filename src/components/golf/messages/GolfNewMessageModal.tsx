@@ -143,6 +143,7 @@ export function GolfNewMessageModal({
       title="New Message"
       description={`Select a ${currentUserRole === 'coach' ? 'player' : 'coach'} to start a conversation`}
       size="md"
+      glass={true}
     >
       <div className="space-y-4">
         {/* Search Input */}

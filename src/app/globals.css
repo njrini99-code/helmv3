@@ -5,6 +5,31 @@
 
 /* ===== CSS CUSTOM PROPERTIES ===== */
 :root {
+  /* Landing Page - Golden Hour Warm Palette */
+  --warm-cream: 255 251 245;
+  --warm-stone: 247 243 237;
+
+  /* Warm grays */
+  --warm-900: 28 25 23;
+  --warm-800: 41 37 36;
+  --warm-700: 68 64 60;
+  --warm-600: 87 83 78;
+  --warm-500: 120 113 108;
+  --warm-400: 168 162 158;
+
+  /* Golden hour */
+  --golden-50: 255 251 235;
+  --golden-100: 254 243 199;
+  --golden-200: 253 230 138;
+  --golden-400: 251 191 36;
+  --golden-500: 245 158 11;
+  --golden-600: 217 119 6;
+  --golden-700: 180 83 9;
+
+  /* Sport greens */
+  --field: 22 101 52;
+  --fairway: 21 128 61;
+
   --aurora-green: rgba(22, 163, 74, 0.15);
   --aurora-blue: rgba(59, 130, 246, 0.15);
   --aurora-purple: rgba(147, 51, 234, 0.10);
@@ -67,6 +92,27 @@
   --glass-border-subtle: rgba(255, 255, 255, 0.06);
   --glass-border-medium: rgba(255, 255, 255, 0.1);
   --glass-border-strong: rgba(255, 255, 255, 0.15);
+
+  /* Premium Glass Material System - Dashboard Glassmorphism */
+  /* Glass Level 1: Subtle — for large surfaces, filter panels */
+  --glass-subtle-bg: rgba(255, 255, 255, 0.55);
+  --glass-subtle-border: rgba(255, 255, 255, 0.4);
+  --glass-subtle-blur: 12px;
+
+  /* Glass Level 2: Standard — for cards, panels, metrics */
+  --glass-standard-bg: rgba(255, 255, 255, 0.7);
+  --glass-standard-border: rgba(255, 255, 255, 0.5);
+  --glass-standard-blur: 16px;
+
+  /* Glass Level 3: Prominent — for navigation, overlays, modals */
+  --glass-prominent-bg: rgba(255, 255, 255, 0.8);
+  --glass-prominent-border: rgba(255, 255, 255, 0.6);
+  --glass-prominent-blur: 20px;
+
+  /* Premium shadows for glass surfaces */
+  --glass-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --glass-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
+  --glass-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
 }
 
 @layer base {
@@ -351,26 +397,47 @@
     @apply bg-slate-900 border-slate-800 text-white;
   }
 
-  /* ===== GLASS SYSTEM ===== */
+  /* ===== PREMIUM GLASS SYSTEM ===== */
+  /* Glass Level 1: Subtle - Large surfaces, filter panels, secondary UI */
+  .glass-subtle {
+    background: var(--glass-subtle-bg);
+    backdrop-filter: blur(var(--glass-subtle-blur));
+    -webkit-backdrop-filter: blur(var(--glass-subtle-blur));
+    border: 1px solid var(--glass-subtle-border);
+    box-shadow: var(--glass-shadow-sm);
+  }
+
+  /* Glass Level 2: Standard - Cards, panels, metrics (most common) */
+  .glass-standard {
+    background: var(--glass-standard-bg);
+    backdrop-filter: blur(var(--glass-standard-blur));
+    -webkit-backdrop-filter: blur(var(--glass-standard-blur));
+    border: 1px solid var(--glass-standard-border);
+    box-shadow: var(--glass-shadow-md);
+  }
+
+  /* Glass Level 3: Prominent - Navigation, modals, overlays */
+  .glass-prominent {
+    background: var(--glass-prominent-bg);
+    backdrop-filter: blur(var(--glass-prominent-blur));
+    -webkit-backdrop-filter: blur(var(--glass-prominent-blur));
+    border: 1px solid var(--glass-prominent-border);
+    box-shadow: var(--glass-shadow-lg);
+  }
+
+  /* Fallback for browsers without backdrop-filter support */
+  @supports not (backdrop-filter: blur(1px)) {
+    .glass-subtle { background: rgba(255, 255, 255, 0.92); }
+    .glass-standard { background: rgba(255, 255, 255, 0.95); }
+    .glass-prominent { background: rgba(255, 255, 255, 0.98); }
+  }
+
+  /* Legacy glass utilities (keep for backward compatibility) */
   .glass {
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(12px) saturate(180%);
     -webkit-backdrop-filter: blur(12px) saturate(180%);
     @apply border border-white/20;
-  }
-
-  .glass-subtle {
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(8px) saturate(150%);
-    -webkit-backdrop-filter: blur(8px) saturate(150%);
-    @apply border border-white/10;
-  }
-
-  .glass-strong {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px) saturate(200%);
-    -webkit-backdrop-filter: blur(20px) saturate(200%);
-    @apply border border-white/30;
   }
 
   .glass-dark {
@@ -382,8 +449,7 @@
 
   /* Glass card with shine effect */
   .glass-card {
-    @apply relative bg-white/70 backdrop-blur-md border border-white/20 rounded-2xl
-           transition-all duration-200 ease-out overflow-hidden;
+    @apply relative glass-standard rounded-2xl transition-all duration-200 ease-out overflow-hidden;
   }
 
   .glass-card::before {
@@ -393,8 +459,9 @@
   }
 
   .glass-card:hover {
-    @apply -translate-y-0.5 border-white/30;
-    box-shadow: var(--shadow-elevation-medium);
+    @apply -translate-y-0.5;
+    border-color: var(--glass-standard-border);
+    box-shadow: var(--glass-shadow-lg);
   }
 
   /* Mesh gradient backgrounds */
@@ -697,6 +764,22 @@
 }
 
 @layer utilities {
+  /* ===== PREMIUM DASHBOARD GRADIENT BACKGROUND ===== */
+  .bg-dashboard-gradient {
+    background: linear-gradient(
+      180deg,
+      #FFFEFA 0%,
+      #FFFEF7 15%,
+      #FFF9EC 32%,
+      #FFEDCF 48%,
+      #FBF3DC 58%,
+      #F0F6E4 68%,
+      #E8F5E8 80%,
+      #E2F2E2 100%
+    );
+    background-attachment: fixed;
+  }
+
   /* Text Utilities */
   .text-balance { text-wrap: balance; }
 
@@ -931,6 +1014,23 @@
     }
   }
 
+  /* Form error shake animation */
+  .animate-shake {
+    animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-8px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(8px);
+    }
+  }
+
   /* Cinematic Hero Utilities */
   .bg-noise {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
@@ -971,4 +1071,69 @@
       transform: translateX(100%);
     }
   }
+}
+
+/* Landing Page Utilities */
+@layer components {
+  .glass {
+    @apply backdrop-blur-lg bg-white/70 border border-white/20;
+  }
+
+  .glass-dark {
+    @apply backdrop-blur-lg bg-warm-900/70 border border-white/10;
+  }
+}
+
+@layer utilities {
+  /* Text gradient utility */
+  .text-gradient-golden {
+    @apply bg-gradient-to-r from-golden-500 to-golden-600 bg-clip-text text-transparent;
+  }
+
+  /* Glow utilities */
+  .glow-golden {
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.3);
+  }
+
+  .glow-field {
+    box-shadow: 0 0 40px rgba(22, 101, 52, 0.2);
+  }
+}
+
+/* Smooth scroll and reduced motion support */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: rgb(var(--warm-cream));
+  color: rgb(var(--warm-900));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Shimmer animation for product cards */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
 }

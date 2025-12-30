@@ -1,0 +1,7 @@
+{
+  "taskId": "a11y-input-no-label-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-278",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. I've added proper `htmlFor` attributes to all three labels (Rating, Slope, Tees) and corresponding `id` attributes to their input/select elements, resolving the accessibility issue.\n",
+  "timestamp": "2025-12-29T11:06:53.435Z"
+}

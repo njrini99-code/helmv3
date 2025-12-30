@@ -1,0 +1,7 @@
+{
+  "taskId": "auth-missing-../../src/app/golf/(dashboard)/dashboard/team/page.tsx-0",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Added auth check to golf team dashboard page at app/golf/(dashboard)/dashboard/team/page.tsx:13-17.\n",
+  "timestamp": "2025-12-29T10:50:42.562Z"
+}

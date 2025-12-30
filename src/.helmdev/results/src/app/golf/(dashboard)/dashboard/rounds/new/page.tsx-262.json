@@ -1,0 +1,7 @@
+{
+  "taskId": "a11y-input-no-label-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-262",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The label at line 261 (was 261, now properly connected) now has `htmlFor=\"courseState\"` and the input at line 264 now has `id=\"courseState\"`, properly linking the label to the input for accessibility.\n",
+  "timestamp": "2025-12-29T11:04:48.758Z"
+}

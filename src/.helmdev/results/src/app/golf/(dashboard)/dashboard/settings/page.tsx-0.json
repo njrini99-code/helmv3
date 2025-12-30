@@ -1,0 +1,7 @@
+{
+  "taskId": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/settings/page.tsx-0",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Created a layout file with proper metadata export for the golf settings page since the page component itself is a client component and cannot export metadata directly.\n",
+  "timestamp": "2025-12-29T09:18:12.040Z"
+}

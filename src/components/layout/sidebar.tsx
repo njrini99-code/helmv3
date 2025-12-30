@@ -224,7 +224,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'h-screen bg-white border-r border-slate-100 flex flex-col',
+        'h-screen glass-prominent rounded-r-2xl m-4 mr-0 flex flex-col',
         'transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         'will-change-[width]',
         isCollapsed ? 'w-[72px]' : 'w-60',
@@ -233,7 +233,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
     >
       {/* Logo */}
       <div className={cn(
-        'h-16 flex items-center border-b border-slate-100',
+        'h-16 flex items-center border-b border-white/30',
         'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         isCollapsed ? 'px-3 justify-center' : 'px-4'
       )}>
@@ -341,7 +341,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         {/* Team-specific navigation for Showcase Coaches */}
         {isShowcaseCoach && selectedTeam && teamNavigation.length > 0 && (
           <>
-            <div className="my-4 border-t border-slate-100" />
+            <div className="my-4 border-t border-white/30" />
             {!isCollapsed && (
               <p className="px-4 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider whitespace-nowrap overflow-hidden">
                 {selectedTeam.name}
@@ -428,7 +428,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
 
       {/* Bottom section */}
       <div className={cn(
-        'border-t border-slate-100 transition-[padding] duration-300',
+        'border-t border-white/30 transition-[padding] duration-300',
         isCollapsed ? 'p-2' : 'p-3'
       )}>
         {/* Pro badge (only when expanded) */}

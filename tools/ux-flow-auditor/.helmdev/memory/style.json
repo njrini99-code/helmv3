@@ -1,0 +1,7 @@
+{
+  "quotes": "double",
+  "semicolons": false,
+  "indentation": "tabs",
+  "indentSize": 4,
+  "trailingCommas": "es5"
+}

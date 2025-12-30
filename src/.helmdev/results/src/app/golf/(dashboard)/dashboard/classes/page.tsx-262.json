@@ -1,0 +1,7 @@
+{
+  "taskId": "ts-any-type-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-262",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Perfect! All three `any` type issues have been fixed:\n\n1. **Line 262**: Changed `error: any` to `error: unknown` \n2. **Line 229**: Changed `(cls as any).color` to properly typed `(cls as ParsedClass & { color?: string }).color`\n3. **Line 256**: Changed `(cls as any).color` to properly typed `(cls as ParsedClass & { color?: string }).color`\n\nThe fixes use TypeScript's intersection type to safely extend `ParsedClass` with an optional `color` property, which is safer than using `any` and provides proper type checking.\n",
+  "timestamp": "2025-12-29T10:03:21.879Z"
+}

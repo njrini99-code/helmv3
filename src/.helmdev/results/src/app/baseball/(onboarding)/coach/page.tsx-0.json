@@ -1,0 +1,7 @@
+{
+  "taskId": "seo-missing-metadata-../../src/app/baseball/(onboarding)/coach/page.tsx-0",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The file now:\n1. Uses server-side `redirect()` instead of client-side `useEffect` \n2. Includes proper SEO metadata export with title and description\n3. Remains functionally identical (still redirects to `/baseball/coach-onboarding`)\n",
+  "timestamp": "2025-12-29T12:04:51.542Z"
+}

@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx-200",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. I've added an explicit empty array check before the `.map()` call at line 185 and added an `else` clause to set tasks to an empty array when there's no data. This ensures that the empty state is properly handled and the TasksList component will display the appropriate empty state message.\n",
+  "timestamp": "2025-12-29T09:35:04.544Z"
+}

@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-498",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The code now checks if the `classes` array exists and has items before attempting to map and filter, preventing potential errors when the data is empty or loading.\n",
+  "timestamp": "2025-12-29T10:16:45.160Z"
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import { Header } from '@/components/layout/header';
 import { CollegeCard } from '@/components/features/college-card';
 import { Select } from '@/components/ui/select';
@@ -53,36 +54,39 @@ export default function CollegesPage() {
         title="Discover Colleges"
         subtitle={`${colleges.length} colleges${interestedCount > 0 ? ` • ${interestedCount} in your interests` : ''}`}
       />
-      <div className="p-8">
+      <div className="p-6 lg:p-8">
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-4 mb-6">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, city, or state..."
-              className="pl-9"
+        <div className="relative glass-standard rounded-2xl p-5 mb-6 overflow-hidden">
+          <ShineEffect />
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name, city, or state..."
+                className="pl-9"
+              />
+            </div>
+            <Select
+              options={divisions}
+              value={division}
+              onChange={(value) => setDivision(value)}
+              className="w-36"
+            />
+            <Select
+              options={stateOptions}
+              value={stateFilter}
+              onChange={(value) => setStateFilter(value)}
+              className="w-36"
+            />
+            <Select
+              options={conferenceOptions}
+              value={conferenceFilter}
+              onChange={(value) => setConferenceFilter(value)}
+              className="w-48"
             />
           </div>
-          <Select
-            options={divisions}
-            value={division}
-            onChange={(value) => setDivision(value)}
-            className="w-36"
-          />
-          <Select
-            options={stateOptions}
-            value={stateFilter}
-            onChange={(value) => setStateFilter(value)}
-            className="w-36"
-          />
-          <Select
-            options={conferenceOptions}
-            value={conferenceFilter}
-            onChange={(value) => setConferenceFilter(value)}
-            className="w-48"
-          />
         </div>
 
         {/* Results */}

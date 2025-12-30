@@ -76,7 +76,6 @@ export default function ActivateRecruitingPage() {
 
       // Redirect to recruiting dashboard
       router.push('/baseball/dashboard');
-      router.refresh();
     } catch (err) {
       setError('An error occurred. Please try again.');
       setActivating(false);
@@ -89,9 +88,9 @@ export default function ActivateRecruitingPage() {
         title="Activate Recruiting"
         subtitle="Get discovered by college coaches"
       />
-      <div className="p-8 max-w-4xl mx-auto">
+      <div className="p-6 lg:p-8 max-w-4xl mx-auto">
         {/* Hero Section */}
-        <Card className="mb-6 bg-gradient-to-br from-green-50 to-white border-green-200">
+        <Card glass className="mb-6 bg-gradient-to-br from-green-50 to-white border-green-200">
           <CardContent className="p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-green-600 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={32} className="text-white" />

@@ -10,7 +10,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-dashboard-gradient">
       {/* Command Palette */}
       <CommandPalette />
 
@@ -45,7 +45,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         className={cn(
           'min-h-screen flex flex-col',
           'transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          collapsed ? 'lg:ml-[72px]' : 'lg:ml-60'
+          collapsed ? 'lg:ml-[88px]' : 'lg:ml-64'
         )}
       >
         <main className="flex-1">

@@ -1,0 +1,7 @@
+{
+  "taskId": "a11y-button-no-label-../../src/app/golf/(dashboard)/dashboard/messages/page.tsx-224",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Added `aria-label=\"Back to conversations\"` to the icon-only button at line 224.\n",
+  "timestamp": "2025-12-29T09:36:41.206Z"
+}

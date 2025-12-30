@@ -56,9 +56,14 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
   };
 
   return (
-    <div className={cn('bg-white rounded-xl border border-border', className)}>
+    <div className={cn('relative glass-standard rounded-2xl overflow-hidden', className)}>
+      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+        }}
+      />
       {/* Tab Navigation */}
-      <div className="border-b border-border">
+      <div className="relative border-b border-border">
         <div className="flex gap-1 p-2">
           {TABS.map(tab => (
             <button
@@ -78,7 +83,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
       </div>
 
       {/* Tab Content */}
-      <div className="p-6">
+      <div className="relative p-6">
         {activeTab === 'personal' && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-900 mb-4">Personal Information</h3>

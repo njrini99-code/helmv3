@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/stats/page.tsx-207",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The `.map()` at line 207 now has proper empty state handling with a conditional check before mapping.\n",
+  "timestamp": "2025-12-29T11:52:59.464Z"
+}

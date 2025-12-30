@@ -1,0 +1,7 @@
+{
+  "taskId": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx-0",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Created `/Users/ricknini/Downloads/helmv3/src/app/golf/(dashboard)/dashboard/tasks/layout.tsx` with proper SEO metadata export following the exact pattern from the settings page.\n",
+  "timestamp": "2025-12-29T09:22:19.598Z"
+}

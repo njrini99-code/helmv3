@@ -1,0 +1,7 @@
+{
+  "taskId": "a11y-button-no-label-../../src/app/golf/(dashboard)/dashboard/roster/page.tsx-166",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Added `aria-label` attributes to all three icon-only buttons at line 166-177 to improve accessibility.\n",
+  "timestamp": "2025-12-29T09:46:48.202Z"
+}

@@ -1,0 +1,7 @@
+{
+  "taskId": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx-0",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Added `generateMetadata` function that fetches round data and creates dynamic SEO metadata with the course name, score, and date.\n",
+  "timestamp": "2025-12-29T11:24:50.541Z"
+}

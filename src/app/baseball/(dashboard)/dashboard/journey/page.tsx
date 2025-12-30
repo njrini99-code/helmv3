@@ -228,7 +228,7 @@ export default function JourneyPage() {
         </Link>
       </Header>
 
-      <div className="p-8">
+      <div className="p-6 lg:p-8">
         {/* Stats Overview */}
         {stats && stats.total_interests > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">

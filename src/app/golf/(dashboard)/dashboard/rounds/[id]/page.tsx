@@ -1,9 +1,40 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
+import { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { IconArrowLeft, IconMapPin, IconCalendar, IconCheck, IconChartBar } from '@/components/icons';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const { data: round } = await supabase
+    .from('golf_rounds')
+    .select('course_name, round_date, total_score, total_to_par')
+    .eq('id', id)
+    .single();
+
+  if (!round) {
+    return {
+      title: 'Round Details | Helm Sports',
+      description: 'View golf round details and scorecard',
+    };
+  }
+
+  const scoreToPar = round.total_to_par || 0;
+  const scoreDisplay = scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar;
+
+  return {
+    title: `${round.course_name} - ${round.total_score || '--'} (${scoreDisplay}) | Helm Sports`,
+    description: `Round details from ${round.course_name} on ${new Date(round.round_date).toLocaleDateString()} - Score: ${round.total_score || '--'} (${scoreDisplay})`,
+  };
+}
 
 interface RoundWithDetails {
   id: string;
@@ -115,7 +146,11 @@ export default async function RoundDetailPage({
     notFound();
   }
 
-  const roundData = round as unknown as RoundWithDetails;
+  const roundData: RoundWithDetails = {
+    ...round,
+    player: Array.isArray(round.player) ? round.player[0] : round.player,
+    holes: Array.isArray(round.holes) ? round.holes : [],
+  };
 
   // Check authorization
   const { data: coach } = await supabase
@@ -193,7 +228,7 @@ export default async function RoundDetailPage({
       </div>
 
       {/* Round Summary Card */}
-      <Card className="mb-6">
+      <Card glass className="mb-6">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -389,33 +424,34 @@ export default async function RoundDetailPage({
       </Card>
 
       {/* Scorecard */}
-      <Card>
+      <Card glass>
         <CardHeader>
           <CardTitle>Scorecard</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-3 font-medium text-slate-500">Hole</th>
-                  <th className="text-center py-3 px-3 font-medium text-slate-500">Par</th>
-                  <th className="text-center py-3 px-3 font-medium text-slate-500">Score</th>
-                  <th className="text-center py-3 px-3 font-medium text-slate-500">+/-</th>
-                  <th className="text-center py-3 px-3 font-medium text-slate-500">Putts</th>
-                  <th className="text-center py-3 px-3 font-medium text-slate-500">FIR</th>
-                  <th className="text-center py-3 px-3 font-medium text-slate-500">GIR</th>
-                  {hasComprehensiveStats && (
-                    <>
-                      <th className="text-center py-3 px-3 font-medium text-slate-500">Drive</th>
-                      <th className="text-center py-3 px-3 font-medium text-slate-500">Prox</th>
-                      <th className="text-center py-3 px-3 font-medium text-slate-500">Scramble</th>
-                    </>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {sortedHoles.map((hole) => {
+          {sortedHoles && sortedHoles.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3 px-3 font-medium text-slate-500">Hole</th>
+                    <th className="text-center py-3 px-3 font-medium text-slate-500">Par</th>
+                    <th className="text-center py-3 px-3 font-medium text-slate-500">Score</th>
+                    <th className="text-center py-3 px-3 font-medium text-slate-500">+/-</th>
+                    <th className="text-center py-3 px-3 font-medium text-slate-500">Putts</th>
+                    <th className="text-center py-3 px-3 font-medium text-slate-500">FIR</th>
+                    <th className="text-center py-3 px-3 font-medium text-slate-500">GIR</th>
+                    {hasComprehensiveStats && (
+                      <>
+                        <th className="text-center py-3 px-3 font-medium text-slate-500">Drive</th>
+                        <th className="text-center py-3 px-3 font-medium text-slate-500">Prox</th>
+                        <th className="text-center py-3 px-3 font-medium text-slate-500">Scramble</th>
+                      </>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedHoles.map((hole) => {
                   const holeToPar = hole.score_to_par || (hole.score !== null ? hole.score - hole.par : 0);
                   const holeScoreColor = holeToPar === 0
                     ? 'text-slate-900'
@@ -491,12 +527,25 @@ export default async function RoundDetailPage({
               </tbody>
             </table>
           </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                <IconChartBar className="h-6 w-6 text-slate-400" />
+              </div>
+              <h3 className="text-lg font-medium text-slate-900 mb-2">
+                No Scorecard Data
+              </h3>
+              <p className="text-sm text-slate-500 max-w-sm">
+                This round doesn't have hole-by-hole scorecard data yet.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Records / Highlights */}
       {(roundData.longest_hole_out || roundData.longest_drive) && (
-        <Card className="mt-6">
+        <Card glass className="mt-6">
           <CardHeader>
             <CardTitle>Round Highlights</CardTitle>
           </CardHeader>

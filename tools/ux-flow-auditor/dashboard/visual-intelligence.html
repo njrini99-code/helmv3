@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HelmDev Visual Intelligence</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    body {
+      background: #0a0a0f;
+      color: #fff;
+      min-height: 100vh;
+    }
+    
+    /* Glassmorphism */
+    .glass {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .glass-dark {
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+    
+    /* Animations */
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+      50% { box-shadow: 0 0 20px 5px rgba(59, 130, 246, 0.2); }
+    }
+    
+    @keyframes slide-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes flow-line {
+      0% { stroke-dashoffset: 100; }
+      100% { stroke-dashoffset: 0; }
+    }
+    
+    @keyframes agent-pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.15); opacity: 0.8; }
+    }
+    
+    @keyframes data-flow {
+      0% { offset-distance: 0%; opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { offset-distance: 100%; opacity: 0; }
+    }
+    
+    .animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
+    .agent-active { animation: agent-pulse 1s ease-in-out infinite; }
+    .flow-line { stroke-dasharray: 8 4; animation: flow-line 1s linear infinite; }
+    
+    /* Data particles */
+    .data-particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #3b82f6;
+      border-radius: 50%;
+      offset-path: path('M 130 30 L 130 75');
+      animation: data-flow 2s ease-in-out infinite;
+    }
+    
+    /* Grade colors */
+    .grade-a { background: linear-gradient(135deg, #10b981, #059669); }
+    .grade-b { background: linear-gradient(135deg, #3b82f6, #0ea5e9); }
+    .grade-c { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+    .grade-d { background: linear-gradient(135deg, #f97316, #ef4444); }
+    .grade-f { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    
+    /* Screenshot container */
+    .screenshot-container {
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+    }
+    
+    /* Modal */
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+    }
+    
+    /* Severity badges */
+    .severity-error { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .severity-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .severity-info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .severity-enhancement { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
+  </style>
+</head>
+<body class="antialiased">
+  <div id="app">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-dark border-b border-white/5">
+      <div class="max-w-[1900px] mx-auto px-6 py-3">
+        <div class="flex items-center justify-between">
+          <!-- Logo -->
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xl shadow-lg shadow-blue-500/20">
+              🧠
+            </div>
+            <div>
+              <h1 class="text-lg font-semibold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">HelmDev Visual Intelligence</h1>
+              <p class="text-xs text-white/40">Screenshot-first AI route analysis</p>
+            </div>
+          </div>
+          
+          <!-- Stats -->
+          <div id="stats-bar" class="flex items-center gap-6 px-6 py-2 glass rounded-xl">
+            <div class="text-center">
+              <div id="stat-routes" class="text-xl font-bold">0</div>
+              <div class="text-[10px] text-white/40 uppercase tracking-wide">Routes</div>
+            </div>
+            <div class="w-px h-8 bg-white/10"></div>
+            <div class="text-center">
+              <div id="stat-issues" class="text-xl font-bold text-amber-400">0</div>
+              <div class="text-[10px] text-white/40 uppercase tracking-wide">Issues</div>
+            </div>
+            <div class="w-px h-8 bg-white/10"></div>
+            <div class="text-center">
+              <div id="stat-features" class="text-xl font-bold text-purple-400">0</div>
+              <div class="text-[10px] text-white/40 uppercase tracking-wide">Ideas</div>
+            </div>
+            <div class="w-px h-8 bg-white/10"></div>
+            <div class="text-center">
+              <div id="stat-score" class="text-xl font-bold text-emerald-400">--</div>
+              <div class="text-[10px] text-white/40 uppercase tracking-wide">Avg Score</div>
+            </div>
+          </div>
+          
+          <!-- Actions -->
+          <div class="flex items-center gap-3">
+            <!-- Mode Toggle -->
+            <div id="mode-toggle" class="flex items-center gap-1 p-1 glass rounded-lg">
+              <button onclick="setMode('manual')" class="mode-btn px-3 py-1.5 rounded text-xs font-medium transition-all" data-mode="manual">
+                👆 Manual
+              </button>
+              <button onclick="setMode('hybrid')" class="mode-btn px-3 py-1.5 rounded text-xs font-medium transition-all" data-mode="hybrid">
+                ⚡ Hybrid
+              </button>
+              <button onclick="setMode('autonomous')" class="mode-btn px-3 py-1.5 rounded text-xs font-medium transition-all" data-mode="autonomous">
+                🤖 Auto
+              </button>
+            </div>
+            
+            <button id="scan-btn" onclick="scanAll()" class="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20">
+              <span>📸</span>
+              <span>Scan All Routes</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+    
+    <!-- Main Layout -->
+    <div class="pt-20 flex h-screen">
+      <!-- Left: Agent Flow Visualization -->
+      <aside id="agent-panel" class="w-80 border-r border-white/5 flex flex-col glass-dark overflow-hidden">
+        <div class="p-4 border-b border-white/5">
+          <h2 class="text-sm font-semibold flex items-center gap-2">
+            <span>🤖</span> Agent Flow
+          </h2>
+          <p class="text-xs text-white/40 mt-1">Watch AI agents work together</p>
+        </div>
+        
+        <!-- Agent Flow Diagram -->
+        <div class="p-4 flex-shrink-0">
+          <div class="relative bg-gradient-to-b from-white/5 to-transparent rounded-xl p-4">
+            <svg width="100%" height="200" viewBox="0 0 260 200" class="mb-2">
+              <!-- Glow filters -->
+              <defs>
+                <filter id="glow-blue" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="glow-pink" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              
+              <!-- Connection lines with animation -->
+              <path class="flow-line" d="M 130 35 L 130 65" stroke="rgba(59, 130, 246, 0.6)" stroke-width="2" fill="none"/>
+              <path class="flow-line" d="M 130 105 L 65 140" stroke="rgba(236, 72, 153, 0.6)" stroke-width="2" fill="none" style="animation-delay: 0.5s"/>
+              <path class="flow-line" d="M 130 105 L 195 140" stroke="rgba(16, 185, 129, 0.6)" stroke-width="2" fill="none" style="animation-delay: 1s"/>
+              <path class="flow-line" d="M 65 170 L 130 190" stroke="rgba(139, 92, 246, 0.6)" stroke-width="2" fill="none" style="animation-delay: 1.5s"/>
+              <path class="flow-line" d="M 195 170 L 130 190" stroke="rgba(139, 92, 246, 0.6)" stroke-width="2" fill="none" style="animation-delay: 2s"/>
+              
+              <!-- Screenshot Input Node -->
+              <g transform="translate(130, 20)">
+                <circle r="18" fill="rgba(139, 92, 246, 0.2)" stroke="rgba(139, 92, 246, 0.8)" stroke-width="2"/>
+                <text y="5" text-anchor="middle" fill="white" font-size="14">📸</text>
+              </g>
+              <text x="130" y="50" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="9">Screenshot</text>
+              
+              <!-- Coordinator Node -->
+              <g id="node-coordinator" transform="translate(130, 85)">
+                <circle r="22" fill="rgba(59, 130, 246, 0.2)" stroke="rgba(59, 130, 246, 0.8)" stroke-width="2" filter="url(#glow-blue)"/>
+                <text y="6" text-anchor="middle" fill="white" font-size="16">🧠</text>
+              </g>
+              <text x="130" y="118" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="9">Coordinator</text>
+              
+              <!-- Visual Agent Node -->
+              <g id="node-visual" transform="translate(65, 155)">
+                <circle r="18" fill="rgba(236, 72, 153, 0.2)" stroke="rgba(236, 72, 153, 0.8)" stroke-width="2"/>
+                <text y="5" text-anchor="middle" fill="white" font-size="14">👁️</text>
+              </g>
+              <text x="65" y="183" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="9">Vision AI</text>
+              
+              <!-- Improvement Agent Node -->
+              <g id="node-improvement" transform="translate(195, 155)">
+                <circle r="18" fill="rgba(16, 185, 129, 0.2)" stroke="rgba(16, 185, 129, 0.8)" stroke-width="2"/>
+                <text y="5" text-anchor="middle" fill="white" font-size="14">📈</text>
+              </g>
+              <text x="195" y="183" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="9">Learning</text>
+              
+              <!-- Output Node -->
+              <g transform="translate(130, 195)">
+                <rect x="-25" y="-10" width="50" height="20" rx="4" fill="rgba(139, 92, 246, 0.2)" stroke="rgba(139, 92, 246, 0.8)" stroke-width="2"/>
+                <text y="4" text-anchor="middle" fill="white" font-size="10">✨ Fix</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+        
+        <!-- Activity Log -->
+        <div class="flex-1 overflow-hidden flex flex-col min-h-0">
+          <div class="px-4 py-2 text-xs text-white/40 border-y border-white/5 flex items-center justify-between">
+            <span>Live Activity</span>
+            <span id="activity-count" class="text-white/20">0 events</span>
+          </div>
+          <div id="activity-log" class="flex-1 overflow-y-auto p-3 space-y-2">
+            <div class="text-xs text-white/30 text-center py-8">
+              <div class="text-2xl mb-2">🔌</div>
+              Connecting to server...
+            </div>
+          </div>
+        </div>
+        
+        <!-- Agent Status Footer -->
+        <div class="p-4 border-t border-white/5 space-y-3 flex-shrink-0">
+          <div class="flex items-center justify-between text-xs">
+            <span class="flex items-center gap-2">
+              <span id="status-visual-dot" class="w-2 h-2 rounded-full bg-white/20"></span>
+              Vision AI
+            </span>
+            <span id="status-visual" class="text-white/40">Offline</span>
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="flex items-center gap-2">
+              <span id="status-improvement-dot" class="w-2 h-2 rounded-full bg-white/20"></span>
+              Learning Agent
+            </span>
+            <span id="status-improvement" class="text-white/40">Offline</span>
+          </div>
+        </div>
+      </aside>
+      
+      <!-- Center: Route Grid -->
+      <main class="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-transparent via-blue-950/5 to-purple-950/5">
+        <div id="routes-grid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
+          <!-- Empty State -->
+          <div id="empty-state" class="col-span-full flex flex-col items-center justify-center py-24 text-center">
+            <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-5xl mb-6">
+              📸
+            </div>
+            <h2 class="text-2xl font-semibold mb-3">No Routes Scanned Yet</h2>
+            <p class="text-white/40 mb-8 max-w-md leading-relaxed">
+              Click "Scan All Routes" to capture screenshots and analyze your application with AI-powered visual intelligence.
+            </p>
+            <button onclick="scanAll()" class="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20 flex items-center gap-3">
+              <span class="text-xl">🚀</span>
+              Start Scanning
+            </button>
+          </div>
+        </div>
+      </main>
+      
+      <!-- Right: Detail Panel (hidden by default) -->
+      <aside id="detail-panel" class="w-[420px] border-l border-white/5 glass-dark overflow-y-auto hidden">
+        <div id="detail-content"></div>
+      </aside>
+    </div>
+    
+    <!-- Prompt Modal -->
+    <div id="prompt-modal" class="fixed inset-0 z-50 hidden">
+      <div class="modal-backdrop absolute inset-0" onclick="closePromptModal()"></div>
+      <div class="absolute inset-6 md:inset-12 flex items-center justify-center pointer-events-none">
+        <div class="glass rounded-2xl max-w-4xl w-full max-h-full overflow-hidden flex flex-col animate-slide-up pointer-events-auto shadow-2xl">
+          <div class="p-6 border-b border-white/10 flex items-center justify-between">
+            <div>
+              <h3 id="modal-title" class="text-lg font-semibold">Generated Prompt</h3>
+              <p id="modal-subtitle" class="text-sm text-white/40 mt-1"></p>
+            </div>
+            <button onclick="closePromptModal()" class="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/60 hover:text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div id="modal-body" class="flex-1 overflow-y-auto p-6"></div>
+          <div class="p-5 border-t border-white/10 flex justify-end gap-3 bg-black/20">
+            <button onclick="copyPrompt()" class="px-5 py-2.5 glass hover:bg-white/10 rounded-lg text-sm transition-colors flex items-center gap-2">
+              <span>📋</span> Copy Prompt
+            </button>
+            <button onclick="applyFix()" class="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20">
+              <span>⚡</span> Apply Fix
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // State
+    const state = {
+      mode: 'manual',
+      routes: new Map(),
+      analysisResults: new Map(),
+      selectedRoute: null,
+      isScanning: false,
+      connected: false,
+      activityCount: 0
+    };
+    
+    let ws = null;
+    const WS_URL = 'ws://localhost:3335';
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      connectWebSocket();
+      updateModeUI('manual');
+    });
+    
+    function connectWebSocket() {
+      ws = new WebSocket(WS_URL);
+      
+      ws.onopen = () => {
+        state.connected = true;
+        updateConnectionStatus(true);
+        addActivity('system', 'Connected to HelmDev server', 'success');
+        ws.send(JSON.stringify({ type: 'get-status' }));
+      };
+      
+      ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
+      
+      ws.onclose = () => {
+        state.connected = false;
+        updateConnectionStatus(false);
+        addActivity('system', 'Disconnected - reconnecting...', 'error');
+        setTimeout(connectWebSocket, 3000);
+      };
+      
+      ws.onerror = () => console.error('WebSocket error');
+    }
+    
+    function updateConnectionStatus(connected) {
+      const dots = ['status-visual-dot', 'status-improvement-dot'];
+      const statuses = ['status-visual', 'status-improvement'];
+      
+      dots.forEach(id => {
+        const el = document.getElementById(id);
+        el.className = `w-2 h-2 rounded-full ${connected ? 'bg-emerald-500' : 'bg-white/20'}`;
+      });
+      
+      statuses.forEach(id => {
+        document.getElementById(id).textContent = connected ? 'Ready' : 'Offline';
+      });
+    }
+    
+    function handleMessage(msg) {
+      switch (msg.type) {
+        case 'status':
+          if (msg.data?.mode) updateModeUI(msg.data.mode);
+          break;
+          
+        case 'routes':
+          msg.data.forEach(r => state.routes.set(r.path, r));
+          break;
+          
+        case 'route:analyzed':
+          state.analysisResults.set(msg.data.routePath, msg.data);
+          renderRoutes();
+          addActivity('vision', `Analyzed ${msg.data.routePath}`, 'success');
+          pulseAgent('node-visual');
+          break;
+          
+        case 'scan:start':
+          state.isScanning = true;
+          updateScanButton();
+          addActivity('system', 'Starting AI scan...', 'info');
+          pulseAgent('node-coordinator');
+          break;
+          
+        case 'scan:complete':
+          state.isScanning = false;
+          updateScanButton();
+          updateStats();
+          addActivity('system', `Scan complete: ${msg.data?.routeCount || 0} routes analyzed`, 'success');
+          break;
+          
+        case 'agent:activity':
+          addActivity(msg.data.agent, msg.data.message, msg.data.level);
+          break;
+          
+        case 'prompt:generated':
+          showPromptModal(msg.data);
+          addActivity('system', 'Prompt generated', 'success');
+          break;
+      }
+    }
+    
+    function scanAll() {
+      if (state.isScanning || !state.connected) return;
+      ws.send(JSON.stringify({ type: 'scan-all' }));
+    }
+    
+    function updateScanButton() {
+      const btn = document.getElementById('scan-btn');
+      btn.innerHTML = state.isScanning 
+        ? '<span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span><span>Scanning...</span>'
+        : '<span>📸</span><span>Scan All Routes</span>';
+      btn.disabled = state.isScanning;
+      btn.style.opacity = state.isScanning ? '0.6' : '1';
+    }
+    
+    function setMode(mode) {
+      if (!state.connected) return;
+      ws.send(JSON.stringify({ type: 'set-mode', data: { mode } }));
+      state.mode = mode;
+      updateModeUI(mode);
+    }
+    
+    function updateModeUI(mode) {
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        const isActive = btn.dataset.mode === mode;
+        btn.className = `mode-btn px-3 py-1.5 rounded text-xs font-medium transition-all ${
+          isActive ? 'bg-blue-500/30 text-blue-400' : 'text-white/50 hover:text-white/80'
+        }`;
+      });
+    }
+    
+    function renderRoutes() {
+      const grid = document.getElementById('routes-grid');
+      const empty = document.getElementById('empty-state');
+      const results = Array.from(state.analysisResults.values());
+      
+      if (!results.length) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      
+      empty.classList.add('hidden');
+      results.sort((a, b) => (a.scores?.overall || 0) - (b.scores?.overall || 0));
+      grid.innerHTML = results.map(createRouteCard).join('');
+      updateStats();
+    }
+    
+    function createRouteCard(result) {
+      const score = result.scores?.overall || 0;
+      const grade = result.scores?.grade || 'F';
+      const issues = result.suggestions?.filter(s => s.type === 'issue') || [];
+      const features = result.suggestions?.filter(s => s.type === 'feature') || [];
+      const scoreColor = score >= 80 ? 'text-emerald-400' : score >= 60 ? 'text-amber-400' : 'text-red-400';
+      
+      return `
+        <div class="glass rounded-xl overflow-hidden hover:border-blue-500/30 transition-all cursor-pointer group" onclick="selectRoute('${result.routePath}')">
+          <div class="p-4 flex items-center gap-3 border-b border-white/5">
+            <div class="w-12 h-12 rounded-xl grade-${grade.toLowerCase()} flex items-center justify-center text-xl font-bold shadow-lg">${grade}</div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-medium truncate">${result.routePath}</h3>
+              <div class="flex items-center gap-2 text-xs text-white/40">
+                <span class="${scoreColor} font-semibold">${score}/100</span>
+                <span>•</span>
+                <span>${issues.length} issues</span>
+                <span>•</span>
+                <span>${features.length} ideas</span>
+              </div>
+            </div>
+            <button onclick="event.stopPropagation(); refreshRoute('${result.routePath}')" class="p-2 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded-lg transition-all">🔄</button>
+          </div>
+          
+          <div class="screenshot-container aspect-video relative">
+            ${result.screenshot 
+              ? `<img src="data:image/png;base64,${result.screenshot}" class="w-full h-full object-cover object-top" alt="">`
+              : '<div class="absolute inset-0 flex items-center justify-center text-white/10 text-5xl">📸</div>'}
+            <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4">
+              <div class="flex gap-4">
+                ${Object.entries(result.scores?.breakdown || {}).slice(0, 4).map(([k, v]) => `
+                  <div class="text-center">
+                    <div class="text-sm font-semibold ${v >= 80 ? 'text-emerald-400' : v >= 60 ? 'text-amber-400' : 'text-red-400'}">${v}</div>
+                    <div class="text-[9px] text-white/50 capitalize">${k.slice(0,6)}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-3 space-y-2 max-h-36 overflow-y-auto">
+            ${(result.suggestions || []).slice(0, 4).map(s => `
+              <button onclick="event.stopPropagation(); openSuggestion('${result.routePath}', '${s.id}')" class="w-full text-left p-2.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group/item flex items-center gap-2">
+                <span class="text-sm">${getCategoryIcon(s.category)}</span>
+                <span class="severity-${s.severity} text-[10px] px-1.5 py-0.5 rounded">${s.severity}</span>
+                <span class="flex-1 text-xs truncate">${s.title}</span>
+                <span class="text-xs text-blue-400 opacity-0 group-hover/item:opacity-100 transition-opacity">Fix →</span>
+              </button>
+            `).join('')}
+            ${(result.suggestions?.length || 0) > 4 ? `<div class="text-center text-xs text-white/30 py-1">+${result.suggestions.length - 4} more</div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+    
+    function getCategoryIcon(cat) {
+      return { ui: '🎨', ux: '👆', a11y: '♿', perf: '⚡', code: '🔧', feature: '🚀' }[cat] || '📋';
+    }
+    
+    function selectRoute(path) {
+      state.selectedRoute = path;
+      const result = state.analysisResults.get(path);
+      if (!result) return;
+      
+      const panel = document.getElementById('detail-panel');
+      const content = document.getElementById('detail-content');
+      panel.classList.remove('hidden');
+      
+      const score = result.scores?.overall || 0;
+      const scoreColor = score >= 80 ? 'text-emerald-400' : score >= 60 ? 'text-amber-400' : 'text-red-400';
+      
+      content.innerHTML = `
+        <div class="p-5 border-b border-white/5 sticky top-0 glass-dark z-10">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-lg">${path}</h3>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="text-3xl font-bold ${scoreColor}">${score}</span>
+                <span class="text-white/40 text-lg">/100</span>
+                <span class="ml-2 px-2 py-0.5 rounded text-xs grade-${(result.scores?.grade || 'f').toLowerCase()}">${result.scores?.grade || 'F'}</span>
+              </div>
+            </div>
+            <button onclick="closeDetail()" class="p-2 hover:bg-white/10 rounded-lg transition-colors">✕</button>
+          </div>
+        </div>
+        
+        <div class="p-5 border-b border-white/5">
+          <h4 class="text-xs text-white/40 uppercase tracking-wide mb-3">Score Breakdown</h4>
+          <div class="grid grid-cols-2 gap-3">
+            ${Object.entries(result.scores?.breakdown || {}).map(([k, v]) => `
+              <div class="glass rounded-lg p-3">
+                <div class="text-2xl font-bold ${v >= 80 ? 'text-emerald-400' : v >= 60 ? 'text-amber-400' : 'text-red-400'}">${v}</div>
+                <div class="text-xs text-white/40 capitalize">${k}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        
+        <div class="p-5">
+          <h4 class="text-xs text-white/40 uppercase tracking-wide mb-3">Suggestions (${result.suggestions?.length || 0})</h4>
+          <div class="space-y-2">
+            ${(result.suggestions || []).map(s => `
+              <button onclick="openSuggestion('${path}', '${s.id}')" class="w-full text-left p-4 rounded-xl glass hover:bg-white/10 transition-colors group">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-lg">${getCategoryIcon(s.category)}</span>
+                  <span class="severity-${s.severity} text-xs px-2 py-0.5 rounded">${s.severity}</span>
+                  <span class="font-medium flex-1">${s.title}</span>
+                  <span class="text-sm text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">Generate Fix →</span>
+                </div>
+                <p class="text-sm text-white/50 leading-relaxed">${s.description}</p>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    function closeDetail() {
+      document.getElementById('detail-panel').classList.add('hidden');
+      state.selectedRoute = null;
+    }
+    
+    function openSuggestion(path, id) {
+      const result = state.analysisResults.get(path);
+      const suggestion = result?.suggestions?.find(s => s.id === id);
+      if (!suggestion) return;
+      
+      addActivity('router', `Generating fix: ${suggestion.title}`, 'info');
+      pulseAgent('node-coordinator');
+      
+      ws.send(JSON.stringify({ type: 'route-suggestion', data: { routePath: path, suggestion } }));
+    }
+    
+    function showPromptModal(data) {
+      const modal = document.getElementById('prompt-modal');
+      document.getElementById('modal-title').textContent = data.request?.suggestion?.title || 'Generated Prompt';
+      document.getElementById('modal-subtitle').textContent = `Route: ${data.request?.routePath || ''}`;
+      document.getElementById('modal-body').innerHTML = `
+        <div class="bg-black/50 rounded-xl p-5 font-mono text-sm leading-relaxed overflow-x-auto">
+          <pre class="whitespace-pre-wrap text-white/80">${escapeHtml(data.prompt || 'No prompt generated')}</pre>
+        </div>
+      `;
+      modal.dataset.prompt = data.prompt;
+      modal.classList.remove('hidden');
+    }
+    
+    function closePromptModal() {
+      document.getElementById('prompt-modal').classList.add('hidden');
+    }
+    
+    function copyPrompt() {
+      navigator.clipboard.writeText(document.getElementById('prompt-modal').dataset.prompt);
+      addActivity('system', 'Prompt copied to clipboard', 'success');
+    }
+    
+    function applyFix() {
+      addActivity('system', 'Applying fix...', 'info');
+      closePromptModal();
+    }
+    
+    function refreshRoute(path) {
+      ws.send(JSON.stringify({ type: 'refresh-route', data: { routePath: path } }));
+      addActivity('system', `Refreshing ${path}...`, 'info');
+    }
+    
+    function addActivity(agent, message, level = 'info') {
+      state.activityCount++;
+      document.getElementById('activity-count').textContent = `${state.activityCount} events`;
+      
+      const log = document.getElementById('activity-log');
+      const colors = { info: 'border-blue-500/30', success: 'border-emerald-500/30', warn: 'border-amber-500/30', error: 'border-red-500/30' };
+      const icons = { info: 'ℹ️', success: '✅', warn: '⚠️', error: '❌' };
+      const agentBg = {
+        vision: 'bg-pink-500/20 text-pink-400',
+        improvement: 'bg-emerald-500/20 text-emerald-400',
+        router: 'bg-blue-500/20 text-blue-400',
+        system: 'bg-purple-500/20 text-purple-400',
+        coordinator: 'bg-cyan-500/20 text-cyan-400'
+      };
+      
+      const el = document.createElement('div');
+      el.className = `p-3 rounded-lg glass border-l-2 ${colors[level]} animate-slide-up`;
+      el.innerHTML = `
+        <div class="flex items-center gap-2 mb-1">
+          <span class="${agentBg[agent] || 'bg-white/10 text-white/60'} px-2 py-0.5 rounded text-[10px] font-medium">${agent}</span>
+          <span class="text-[10px] text-white/30">${new Date().toLocaleTimeString()}</span>
+        </div>
+        <div class="text-xs text-white/70 flex items-center gap-1.5">
+          <span>${icons[level]}</span>
+          <span>${message}</span>
+        </div>
+      `;
+      
+      log.insertBefore(el, log.firstChild);
+      while (log.children.length > 50) log.removeChild(log.lastChild);
+    }
+    
+    function pulseAgent(nodeId) {
+      const node = document.getElementById(nodeId);
+      if (!node) return;
+      node.classList.add('agent-active');
+      setTimeout(() => node.classList.remove('agent-active'), 2000);
+    }
+    
+    function updateStats() {
+      const results = Array.from(state.analysisResults.values());
+      let issues = 0, features = 0, totalScore = 0;
+      
+      results.forEach(r => {
+        issues += (r.suggestions?.filter(s => s.type === 'issue') || []).length;
+        features += (r.suggestions?.filter(s => s.type === 'feature') || []).length;
+        totalScore += r.scores?.overall || 0;
+      });
+      
+      document.getElementById('stat-routes').textContent = results.length;
+      document.getElementById('stat-issues').textContent = issues;
+      document.getElementById('stat-features').textContent = features;
+      document.getElementById('stat-score').textContent = results.length ? Math.round(totalScore / results.length) : '--';
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

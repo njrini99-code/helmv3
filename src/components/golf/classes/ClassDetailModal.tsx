@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconX, IconClock, IconMapPin, IconUser } from '@/components/icons';
 import { formatTimeDisplay, formatDaysDisplay } from '@/lib/utils/schedule-parser';
 
@@ -30,19 +31,29 @@ interface ClassDetailModalProps {
 
 export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData }: ClassDetailModalProps) {
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   if (!isOpen || !classData) return null;
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this class?')) return;
-    
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
     setDeleting(true);
     try {
       await onDelete();
+      setShowDeleteConfirm(false);
       onClose();
+    } catch (error) {
+      console.error('Error deleting class:', error);
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -54,7 +65,14 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-md mx-4 glass-prominent rounded-2xl shadow-2xl overflow-hidden">
+        {/* Shine effect */}
+        <div
+          className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+          }}
+        />
         {/* Color header */}
         <div 
           className="h-3"
@@ -149,10 +167,10 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
 
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50">
-          <Button 
-            variant="secondary" 
-            onClick={handleDelete}
-            loading={deleting}
+          <Button
+            variant="secondary"
+            onClick={handleDeleteClick}
+            disabled={deleting}
             className="text-red-600 hover:bg-red-50"
           >
             Delete
@@ -162,6 +180,19 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           </Button>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Delete Class"
+        message={`Are you sure you want to delete ${classData.course_code}? This will remove the class and all associated calendar events. This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </div>
   );
 }

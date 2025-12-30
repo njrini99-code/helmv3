@@ -5,6 +5,29 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Landing page golden hour colors
+        'warm-cream': 'rgb(var(--warm-cream) / <alpha-value>)',
+        'warm-stone': 'rgb(var(--warm-stone) / <alpha-value>)',
+        'warm': {
+          900: 'rgb(var(--warm-900) / <alpha-value>)',
+          800: 'rgb(var(--warm-800) / <alpha-value>)',
+          700: 'rgb(var(--warm-700) / <alpha-value>)',
+          600: 'rgb(var(--warm-600) / <alpha-value>)',
+          500: 'rgb(var(--warm-500) / <alpha-value>)',
+          400: 'rgb(var(--warm-400) / <alpha-value>)',
+        },
+        'golden': {
+          50: 'rgb(var(--golden-50) / <alpha-value>)',
+          100: 'rgb(var(--golden-100) / <alpha-value>)',
+          200: 'rgb(var(--golden-200) / <alpha-value>)',
+          400: 'rgb(var(--golden-400) / <alpha-value>)',
+          500: 'rgb(var(--golden-500) / <alpha-value>)',
+          600: 'rgb(var(--golden-600) / <alpha-value>)',
+          700: 'rgb(var(--golden-700) / <alpha-value>)',
+        },
+        'field': 'rgb(var(--field) / <alpha-value>)',
+        'fairway': 'rgb(var(--fairway) / <alpha-value>)',
+
         // Onboarding spec-compliant colors (exact from design spec)
         onboarding: {
           'kelly-green': '#169B45',
@@ -56,7 +79,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
+        sans: ['var(--font-sans)', 'DM Sans', 'Inter', 'system-ui', 'sans-serif'],
         'sf-pro': ['"SF Pro Display"', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
       },
       fontSize: {
@@ -80,22 +104,27 @@ const config: Config = {
         tighter: '-0.025em',
         tight: '-0.02em',
       },
+      spacing: {
+        '18': '4.5rem',   // 72px
+        '22': '5.5rem',   // 88px
+      },
       borderRadius: {
-        sm: '6px',
-        DEFAULT: '8px',
-        md: '10px',
-        lg: '12px',
-        xl: '14px',
-        '2xl': '18px',
-        '3xl': '24px',
-        '4xl': '32px',
+        'sm': '8px',      // inputs, small elements
+        'md': '12px',     // buttons, chips
+        'lg': '16px',     // cards
+        'xl': '20px',     // large cards
+        '2xl': '24px',    // sections, modals (STANDARD for all cards)
+        '3xl': '32px',    // hero elements
       },
       boxShadow: {
-        xs: '0 1px 2px rgba(0,0,0,0.04)',
-        sm: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
-        md: '0 4px 6px -1px rgba(0,0,0,0.04), 0 2px 4px -1px rgba(0,0,0,0.02)',
-        lg: '0 10px 15px -3px rgba(0,0,0,0.04), 0 4px 6px -2px rgba(0,0,0,0.02)',
-        xl: '0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
+        'subtle': '0 1px 2px rgba(0,0,0,0.04)',
+        'sm': '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+        'md': '0 4px 6px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04)',
+        'lg': '0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.04)',
+        'xl': '0 20px 25px rgba(0,0,0,0.10), 0 8px 10px rgba(0,0,0,0.04)',
+        'glow-amber': '0 0 30px rgba(217,119,6,0.15)',
+        'glow-emerald': '0 0 30px rgba(16,185,129,0.15)',
+        'xs': '0 1px 2px rgba(0,0,0,0.04)',
         '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
         'elevation-1': '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
         'elevation-2': '0 4px 8px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03)',
@@ -124,6 +153,7 @@ const config: Config = {
         'hero-glow': 'radial-gradient(ellipse at center, rgba(22, 163, 74, 0.15), transparent 70%)',
       },
       animation: {
+        shake: 'shake 0.4s ease-in-out',
         'fade-in': 'fade-in 0.3s ease-out',
         'fade-in-slow': 'fade-in 0.6s ease-out',
         'fade-up': 'fade-up 0.4s ease-out',
@@ -150,6 +180,15 @@ const config: Config = {
         'check-bounce': 'check-bounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
       },
       keyframes: {
+        shake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '20%, 60%': { transform: 'translateX(-4px)' },
+          '40%, 80%': { transform: 'translateX(4px)' },
+        },
+        pulse: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+        },
         'fade-in': {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
@@ -230,14 +269,46 @@ const config: Config = {
           '50%': { transform: 'scale(1.2)' },
           '100%': { transform: 'scale(1)' },
         },
+        'float-complex': {
+          '0%, 100%': { transform: 'translate(0, 0) rotate(0deg)' },
+          '25%': { transform: 'translate(10px, -10px) rotate(1deg)' },
+          '50%': { transform: 'translate(-5px, -15px) rotate(-1deg)' },
+          '75%': { transform: 'translate(-10px, -5px) rotate(0.5deg)' },
+        },
+        'float-delayed': {
+          '0%, 100%': { transform: 'translate(0, 0)' },
+          '33%': { transform: 'translate(-10px, 10px)' },
+          '66%': { transform: 'translate(10px, -5px)' },
+        },
+        'glowPulse': {
+          '0%': { boxShadow: '0 0 20px rgba(251, 191, 36, 0.2)' },
+          '100%': { boxShadow: '0 0 40px rgba(251, 191, 36, 0.4)' },
+        },
+        'fadeUp': {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fadeIn': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'slideUp': {
+          '0%': { opacity: '0', transform: 'translateY(30px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       backdropBlur: {
         xs: '2px',
       },
       transitionDuration: {
+        'fast': '150ms',
+        'base': '220ms',
+        'slow': '320ms',
         '400': '400ms',
       },
       transitionTimingFunction: {
+        'out': 'cubic-bezier(0.33, 1, 0.68, 1)',
+        'smooth': 'cubic-bezier(0.16, 1, 0.3, 1)',
         'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
         'in-out-expo': 'cubic-bezier(0.87, 0, 0.13, 1)',
       },

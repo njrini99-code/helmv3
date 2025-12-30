@@ -1,0 +1,7 @@
+{
+  "taskId": "a11y-input-no-label-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-291",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. All input and select elements now have proper labels with `htmlFor` attributes connecting them to their inputs via `id` attributes.\n",
+  "timestamp": "2025-12-29T11:09:01.337Z"
+}

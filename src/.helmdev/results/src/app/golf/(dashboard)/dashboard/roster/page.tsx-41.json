@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/roster/page.tsx-41",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Done. I've fixed the empty state handling by adding a proper conditional check around the `.map()` operation. The code now explicitly checks if `players` exists and has items before attempting to map over it, returning an empty array if not. This ensures that `playersWithStats` is always an array and prevents any potential issues with undefined/null values.\n",
+  "timestamp": "2025-12-29T09:54:55.537Z"
+}

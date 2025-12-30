@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-436",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The `.map()` at line 520 now has proper empty state handling with a ternary check that renders \"No classes\" when the array is empty.\n",
+  "timestamp": "2025-12-29T10:10:59.674Z"
+}

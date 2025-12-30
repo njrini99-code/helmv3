@@ -253,21 +253,26 @@ export function PrivacySettingsForm({
   return (
     <div className="space-y-6">
       {SETTING_GROUPS.map((group) => (
-        <Card key={group.title} className="overflow-hidden">
-          <div className="p-6 border-b border-slate-200 bg-white">
+        <Card key={group.title} glass className="overflow-hidden">
+          <div className="relative p-6 border-b border-slate-200">
             <h3 className="text-lg font-semibold text-slate-900 mb-1">
               {group.title}
             </h3>
             <p className="text-sm leading-relaxed text-slate-500">{group.description}</p>
           </div>
 
-          <div className="p-6 space-y-4 bg-slate-50">
+          <div className="relative p-6 space-y-4 bg-slate-50/50">
             {group.settings.map((setting) => (
               <div
                 key={setting.key}
-                className="flex items-start justify-between gap-4 p-4 bg-white rounded-lg border border-slate-200"
+                className="relative flex items-start justify-between gap-4 p-4 glass-subtle rounded-lg overflow-hidden"
               >
-                <div className="flex-1">
+                <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
+                  }}
+                />
+                <div className="relative flex-1">
                   <label
                     htmlFor={setting.key}
                     className="text-sm font-medium text-slate-900 block mb-1 cursor-pointer"
@@ -278,6 +283,7 @@ export function PrivacySettingsForm({
                 </div>
 
                 {/* Toggle Switch */}
+                <div className="relative">
                 <button
                   id={setting.key}
                   type="button"
@@ -298,6 +304,7 @@ export function PrivacySettingsForm({
                     `}
                   />
                 </button>
+                </div>
               </div>
             ))}
           </div>

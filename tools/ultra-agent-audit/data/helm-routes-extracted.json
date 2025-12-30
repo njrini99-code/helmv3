@@ -1,0 +1,1701 @@
+[
+  {
+    "filePath": "golf/(onboarding)/coach/page.tsx",
+    "urlPath": "/golf/coach",
+    "title": "\n                    Welcome to GolfHelm!\n                  ",
+    "description": "Coach page",
+    "userRoles": [
+      "coach"
+    ],
+    "features": [
+      "calendar",
+      "messages",
+      "videos"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "button",
+      "input",
+      "select",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(onboarding)/player/page.tsx",
+    "urlPath": "/golf/player",
+    "title": "\n                    Welcome to GolfHelm!\n                  ",
+    "description": "Player page",
+    "userRoles": [
+      "player"
+    ],
+    "features": [
+      "calendar",
+      "messages",
+      "videos"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "button",
+      "input",
+      "select",
+      "loading",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(auth)/signup/page.tsx",
+    "urlPath": "/golf/signup",
+    "title": "\n                    Welcome to GolfHelm\n                  ",
+    "description": "Signup page",
+    "userRoles": [],
+    "features": [
+      "calendar",
+      "messages"
+    ],
+    "domain": "golf",
+    "type": "auth",
+    "icon": "✍️",
+    "imports": [
+      "button",
+      "input",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(auth)/forgot-password/page.tsx",
+    "urlPath": "/golf/forgot-password",
+    "title": "Check your email",
+    "description": "Forgot-password page",
+    "userRoles": [],
+    "features": [
+      "calendar",
+      "messages"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "button",
+      "input"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(auth)/reset-password/page.tsx",
+    "urlPath": "/golf/reset-password",
+    "title": "Reset password",
+    "description": "Reset-password page",
+    "userRoles": [],
+    "features": [
+      "calendar",
+      "messages"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "button",
+      "input"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(auth)/login/page.tsx",
+    "urlPath": "/golf/login",
+    "title": "Welcome to GolfHelm",
+    "description": "Login page",
+    "userRoles": [],
+    "features": [
+      "search",
+      "calendar",
+      "messages",
+      "url-params"
+    ],
+    "domain": "golf",
+    "type": "auth",
+    "icon": "🔐",
+    "imports": [
+      "button",
+      "input",
+      "shine-effect"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/settings/page.tsx",
+    "urlPath": "/golf/dashboard/settings",
+    "title": "Settings",
+    "description": "Account and preferences settings",
+    "userRoles": [],
+    "features": [],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "⚙️",
+    "imports": [
+      "shine-effect",
+      "avatar",
+      "toast",
+      "icons",
+      "PersonalInfoModal",
+      "EmailModal",
+      "PasswordModal",
+      "NotificationsModal",
+      "AppearanceModal",
+      "LocationModal"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/tasks/page.tsx",
+    "urlPath": "/golf/dashboard/tasks",
+    "title": "Tasks",
+    "description": "Tasks page",
+    "userRoles": [],
+    "features": [
+      "search"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "button",
+      "icons",
+      "CreateTaskModal",
+      "TasksList",
+      "TaskSkeleton"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/messages/page.tsx",
+    "urlPath": "/golf/dashboard/messages",
+    "title": "Messages",
+    "description": "Send and receive messages",
+    "userRoles": [],
+    "features": [
+      "calendar",
+      "messages"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "💬",
+    "imports": [
+      "avatar",
+      "button",
+      "icons",
+      "toast",
+      "GolfNewMessageModal"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/calendar/page.tsx",
+    "urlPath": "/golf/dashboard/calendar",
+    "title": "Calendar",
+    "description": "View and manage events",
+    "userRoles": [],
+    "features": [
+      "search",
+      "calendar"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📅",
+    "imports": [
+      "CalendarContainer",
+      "EventsList",
+      "CreateEventButton",
+      "CalendarClassesList"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/roster/page.tsx",
+    "urlPath": "/golf/dashboard/roster",
+    "title": "Team Roster",
+    "description": "View and manage team roster",
+    "userRoles": [
+      "hs-coach",
+      "juco-coach-team",
+      "showcase-coach"
+    ],
+    "features": [
+      "search",
+      "messages",
+      "analytics",
+      "roster"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "👥",
+    "imports": [
+      "InvitePlayerButton",
+      "PlayerStatusBadge",
+      "shine-effect",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/classes/page.tsx",
+    "urlPath": "/golf/dashboard/classes",
+    "title": "My Classes",
+    "description": "Classes page",
+    "userRoles": [],
+    "features": [
+      "search",
+      "comparison",
+      "calendar",
+      "messages",
+      "analytics",
+      "videos"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "card",
+      "button",
+      "icons",
+      "AddClassModal",
+      "UploadScheduleModal",
+      "ConfirmClassesModal",
+      "ClassDetailModal"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx",
+    "urlPath": "/golf/dashboard/qualifiers/[id]",
+    "title": "\n                {qualifierData.name}\n              ",
+    "description": "[id] page",
+    "userRoles": [],
+    "features": [
+      "search"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "shine-effect",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/qualifiers/page.tsx",
+    "urlPath": "/golf/dashboard/qualifiers",
+    "title": "Qualifiers",
+    "description": "Qualifiers page",
+    "userRoles": [],
+    "features": [
+      "search",
+      "calendar"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "shine-effect",
+      "CreateQualifierButton",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/announcements/page.tsx",
+    "urlPath": "/golf/dashboard/announcements",
+    "title": "Announcements",
+    "description": "Announcements page",
+    "userRoles": [],
+    "features": [
+      "search"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "shine-effect",
+      "CreateAnnouncementButton",
+      "AnnouncementCard",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/team/page.tsx",
+    "urlPath": "/golf/dashboard/team",
+    "title": "Team Info",
+    "description": "Team hub and information",
+    "userRoles": [
+      "player"
+    ],
+    "features": [
+      "roster"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "🏆",
+    "imports": [
+      "card",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "urlPath": "/golf/dashboard/rounds/new",
+    "title": null,
+    "description": "New page",
+    "userRoles": [],
+    "features": [],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/rounds/[id]/page.tsx",
+    "urlPath": "/golf/dashboard/rounds/[id]",
+    "title": "\n            {roundData.course_name}\n          ",
+    "description": "[id] page",
+    "userRoles": [],
+    "features": [
+      "calendar",
+      "analytics"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "button",
+      "card",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/rounds/page.tsx",
+    "urlPath": "/golf/dashboard/rounds",
+    "title": "Rounds",
+    "description": "Rounds page",
+    "userRoles": [],
+    "features": [
+      "calendar",
+      "analytics"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "shine-effect",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/documents/page.tsx",
+    "urlPath": "/golf/dashboard/documents",
+    "title": "Documents",
+    "description": "Documents page",
+    "userRoles": [],
+    "features": [
+      "videos"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "shine-effect",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/page.tsx",
+    "urlPath": "/golf/dashboard",
+    "title": "\n                {greeting}, {firstName}\n              ",
+    "description": "Dashboard page",
+    "userRoles": [],
+    "features": [
+      "search",
+      "calendar",
+      "messages",
+      "analytics",
+      "roster"
+    ],
+    "domain": "golf",
+    "type": "dashboard",
+    "icon": "📄",
+    "imports": [
+      "EmptyState",
+      "RecentActivityFeed",
+      "loading",
+      "shine-effect",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/travel/page.tsx",
+    "urlPath": "/golf/dashboard/travel",
+    "title": "Travel",
+    "description": "Travel page",
+    "userRoles": [],
+    "features": [],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "shine-effect",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/(dashboard)/dashboard/stats/page.tsx",
+    "urlPath": "/golf/dashboard/stats",
+    "title": "Team Stats",
+    "description": "Stats page",
+    "userRoles": [],
+    "features": [
+      "search",
+      "analytics",
+      "roster"
+    ],
+    "domain": "golf",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "shine-effect",
+      "GolfStatsDisplay",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "golf/page.tsx",
+    "urlPath": "/golf",
+    "title": null,
+    "description": "Golf page",
+    "userRoles": [],
+    "features": [
+      "analytics",
+      "roster"
+    ],
+    "domain": "golf",
+    "type": "entry",
+    "icon": "⛳",
+    "imports": [],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(onboarding)/coach-onboarding/page.tsx",
+    "urlPath": "/baseball/coach-onboarding",
+    "title": null,
+    "description": "Coach-onboarding page",
+    "userRoles": [
+      "coach"
+    ],
+    "features": [
+      "messages"
+    ],
+    "domain": "baseball",
+    "type": "onboarding",
+    "icon": "📄",
+    "imports": [],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(onboarding)/coach/page.tsx",
+    "urlPath": "/baseball/coach",
+    "title": null,
+    "description": "Coach page",
+    "userRoles": [
+      "coach"
+    ],
+    "features": [],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(onboarding)/player/page.tsx",
+    "urlPath": "/baseball/player",
+    "title": "\n                    Let's build your profile\n                  ",
+    "description": "Player page",
+    "userRoles": [
+      "player"
+    ],
+    "features": [
+      "calendar",
+      "messages",
+      "videos"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "button",
+      "input",
+      "select",
+      "loading",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(public)/program/[id]/page.tsx",
+    "urlPath": "/baseball/program/[id]",
+    "title": "\n                      {organization.name}\n                    ",
+    "description": "[id] page",
+    "userRoles": [],
+    "features": [
+      "search"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "🏫",
+    "imports": [
+      "card",
+      "badge",
+      "button",
+      "avatar",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(public)/player/[id]/page.tsx",
+    "urlPath": "/baseball/player/[id]",
+    "title": null,
+    "description": "[id] page",
+    "userRoles": [
+      "player"
+    ],
+    "features": [
+      "watchlist",
+      "calendar",
+      "messages",
+      "analytics",
+      "videos"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "PlayerCard",
+      "card",
+      "badge",
+      "button",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(auth)/signup/page.tsx",
+    "urlPath": "/baseball/signup",
+    "title": null,
+    "description": "Signup page",
+    "userRoles": [],
+    "features": [],
+    "domain": "baseball",
+    "type": "auth",
+    "icon": "✍️",
+    "imports": [],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(auth)/complete-signup/page.tsx",
+    "urlPath": "/baseball/complete-signup",
+    "title": "Email Verified!",
+    "description": "Complete-signup page",
+    "userRoles": [],
+    "features": [
+      "messages"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "✍️",
+    "imports": [
+      "button",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(auth)/forgot-password/page.tsx",
+    "urlPath": "/baseball/forgot-password",
+    "title": "Check your email",
+    "description": "Forgot-password page",
+    "userRoles": [],
+    "features": [
+      "calendar",
+      "messages"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "button",
+      "input"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(auth)/reset-password/page.tsx",
+    "urlPath": "/baseball/reset-password",
+    "title": "Set new password",
+    "description": "Reset-password page",
+    "userRoles": [],
+    "features": [
+      "calendar",
+      "messages"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "button",
+      "input"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(auth)/login/page.tsx",
+    "urlPath": "/baseball/login",
+    "title": "Welcome back",
+    "description": "Login page",
+    "userRoles": [],
+    "features": [
+      "search",
+      "calendar",
+      "messages",
+      "url-params"
+    ],
+    "domain": "baseball",
+    "type": "auth",
+    "icon": "🔐",
+    "imports": [
+      "button",
+      "input",
+      "shine-effect"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/academics/page.tsx",
+    "urlPath": "/baseball/dashboard/academics",
+    "title": "Track student-athlete academic progress",
+    "description": "Academics page",
+    "userRoles": [
+      "coach-team",
+      "juco-coach-team"
+    ],
+    "features": [
+      "search",
+      "analytics",
+      "roster"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "header",
+      "card",
+      "button",
+      "badge",
+      "avatar",
+      "loading",
+      "empty-state",
+      "input",
+      "select",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": true
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/settings/privacy/page.tsx",
+    "urlPath": "/baseball/dashboard/settings/privacy",
+    "title": "\n            Privacy Settings\n          ",
+    "description": "Privacy page",
+    "userRoles": [],
+    "features": [],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "⚙️",
+    "imports": [
+      "PrivacySettingsForm"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/settings/page.tsx",
+    "urlPath": "/baseball/dashboard/settings",
+    "title": "Manage your account settings",
+    "description": "Account and preferences settings",
+    "userRoles": [],
+    "features": [
+      "calendar",
+      "messages"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "⚙️",
+    "imports": [
+      "header",
+      "card",
+      "input",
+      "button",
+      "loading",
+      "toast",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/pipeline/page.tsx",
+    "urlPath": "/baseball/dashboard/pipeline",
+    "title": "Manage your recruiting pipeline",
+    "description": "Drag-and-drop recruiting pipeline management",
+    "userRoles": [
+      "coach-recruiting",
+      "college-coach",
+      "juco-coach-recruiting"
+    ],
+    "features": [
+      "search",
+      "watchlist",
+      "pipeline",
+      "calendar",
+      "drag-drop"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📊",
+    "imports": [
+      "shine-effect",
+      "header",
+      "pipeline-column",
+      "pipeline-card",
+      "empty-state",
+      "loading",
+      "skeleton-loader",
+      "button",
+      "select",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": true
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/messages/[id]/page.tsx",
+    "urlPath": "/baseball/dashboard/messages/[id]",
+    "title": null,
+    "description": "[id] page",
+    "userRoles": [],
+    "features": [
+      "calendar",
+      "messages"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "💬",
+    "imports": [
+      "header",
+      "avatar",
+      "button",
+      "loading",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/messages/page.tsx",
+    "urlPath": "/baseball/dashboard/messages",
+    "title": null,
+    "description": "Send and receive messages",
+    "userRoles": [],
+    "features": [
+      "search",
+      "messages",
+      "url-params"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "💬",
+    "imports": [
+      "loading",
+      "EmptyChatState",
+      "NewMessageModal",
+      "toast"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/discover/page.tsx",
+    "urlPath": "/baseball/dashboard/discover",
+    "title": "Coach access required",
+    "description": "Search and filter players with advanced criteria",
+    "userRoles": [
+      "coach-recruiting",
+      "college-coach",
+      "juco-coach-recruiting"
+    ],
+    "features": [
+      "search",
+      "watchlist",
+      "videos",
+      "filtering",
+      "preview",
+      "url-params"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "🔍",
+    "imports": [
+      "FilterPanel",
+      "DiscoverResults",
+      "PlayerPeekPanel",
+      "header",
+      "loading",
+      "skeleton-loader"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": true
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/calendar/page.tsx",
+    "urlPath": "/baseball/dashboard/calendar",
+    "title": "Calendar",
+    "description": "View and manage events",
+    "userRoles": [
+      "coach-team"
+    ],
+    "features": [
+      "search",
+      "calendar",
+      "messages",
+      "analytics"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📅",
+    "imports": [
+      "header",
+      "card",
+      "button",
+      "badge",
+      "loading",
+      "skeleton-loader",
+      "icons",
+      "EventModal",
+      "CalendarView",
+      "toast"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/comparisons/page.tsx",
+    "urlPath": "/baseball/dashboard/comparisons",
+    "title": "Saved Comparisons",
+    "description": "Comparisons page",
+    "userRoles": [
+      "college-coach",
+      "juco-coach-recruiting"
+    ],
+    "features": [
+      "comparison"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "saved-comparisons-list",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/roster/page.tsx",
+    "urlPath": "/baseball/dashboard/roster",
+    "title": "Roster",
+    "description": "View and manage team roster",
+    "userRoles": [
+      "coach-team",
+      "hs-coach",
+      "juco-coach-team",
+      "showcase-coach"
+    ],
+    "features": [
+      "search",
+      "roster"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "👥",
+    "imports": [
+      "header",
+      "card",
+      "button",
+      "input",
+      "badge",
+      "avatar",
+      "loading",
+      "skeleton-loader",
+      "icons",
+      "InviteModal"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/players/[id]/profile/page.tsx",
+    "urlPath": "/baseball/dashboard/players/[id]/profile",
+    "title": null,
+    "description": "Edit your profile information",
+    "userRoles": [
+      "player"
+    ],
+    "features": [
+      "watchlist",
+      "messages",
+      "analytics"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "👤",
+    "imports": [
+      "PlayerCard",
+      "button",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/players/[id]/page.tsx",
+    "urlPath": "/baseball/dashboard/players/[id]",
+    "title": "Player Profile",
+    "description": "[id] page",
+    "userRoles": [
+      "player"
+    ],
+    "features": [
+      "search",
+      "watchlist",
+      "messages",
+      "analytics",
+      "videos"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "header",
+      "button",
+      "avatar",
+      "loading",
+      "bento-grid",
+      "filter-chips",
+      "VideoShowcase",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/colleges/page.tsx",
+    "urlPath": "/baseball/dashboard/colleges",
+    "title": "Discover Colleges",
+    "description": "Discover and research colleges",
+    "userRoles": [
+      "player-recruiting"
+    ],
+    "features": [
+      "search"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "🎓",
+    "imports": [
+      "shine-effect",
+      "header",
+      "college-card",
+      "select",
+      "input",
+      "empty-state",
+      "loading",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/journey/page.tsx",
+    "urlPath": "/baseball/dashboard/journey",
+    "title": "Track your recruiting progress",
+    "description": "Track your recruiting journey and milestones",
+    "userRoles": [
+      "player-recruiting"
+    ],
+    "features": [
+      "search",
+      "watchlist",
+      "calendar",
+      "messages",
+      "analytics",
+      "videos"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "🗺️",
+    "imports": [
+      "header",
+      "card",
+      "badge",
+      "button",
+      "select",
+      "loading",
+      "empty-state",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/camps/page.tsx",
+    "urlPath": "/baseball/dashboard/camps",
+    "title": null,
+    "description": "Browse and register for camps",
+    "userRoles": [
+      "college-coach"
+    ],
+    "features": [
+      "search",
+      "calendar",
+      "messages"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "⛺",
+    "imports": [
+      "header",
+      "card",
+      "button",
+      "badge",
+      "loading",
+      "empty-state",
+      "confirm-dialog",
+      "icons",
+      "CreateCampModal",
+      "toast"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/videos/page.tsx",
+    "urlPath": "/baseball/dashboard/videos",
+    "title": "Videos",
+    "description": "Upload and manage videos",
+    "userRoles": [
+      "coach-team",
+      "hs-coach",
+      "juco-coach-team",
+      "showcase-coach"
+    ],
+    "features": [
+      "search",
+      "messages",
+      "videos",
+      "roster"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "🎥",
+    "imports": [
+      "header",
+      "video-upload",
+      "video-player",
+      "card",
+      "button",
+      "badge",
+      "input",
+      "avatar",
+      "icons",
+      "loading"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/profile/page.tsx",
+    "urlPath": "/baseball/dashboard/profile",
+    "title": "Update your information and showcase your talents",
+    "description": "Edit your profile information",
+    "userRoles": [
+      "player"
+    ],
+    "features": [],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "👤",
+    "imports": [
+      "header",
+      "button",
+      "loading",
+      "profile-editor",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/team/high-school/page.tsx",
+    "urlPath": "/baseball/dashboard/team/high-school",
+    "title": "High School Team Overview",
+    "description": "High-school page",
+    "userRoles": [
+      "player"
+    ],
+    "features": [
+      "search",
+      "watchlist",
+      "calendar",
+      "analytics",
+      "videos",
+      "roster",
+      "devPlans"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "🏆",
+    "imports": [
+      "header",
+      "stat-card",
+      "card",
+      "avatar",
+      "badge",
+      "button",
+      "loading",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/team/page.tsx",
+    "urlPath": "/baseball/dashboard/team",
+    "title": "Team Dashboard",
+    "description": "Team hub and information",
+    "userRoles": [
+      "coach-team",
+      "player"
+    ],
+    "features": [
+      "search",
+      "calendar",
+      "analytics",
+      "videos",
+      "roster",
+      "devPlans"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "🏆",
+    "imports": [
+      "header",
+      "stat-card",
+      "card",
+      "avatar",
+      "badge",
+      "button",
+      "loading",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/compare/page.tsx",
+    "urlPath": "/baseball/dashboard/compare",
+    "title": "Side-by-side player comparison",
+    "description": "Side-by-side player comparison tool",
+    "userRoles": [
+      "coach-recruiting",
+      "college-coach",
+      "juco-coach-recruiting"
+    ],
+    "features": [
+      "search",
+      "comparison",
+      "url-params"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "⚖️",
+    "imports": [
+      "header",
+      "card",
+      "button",
+      "input",
+      "avatar",
+      "loading",
+      "empty-state",
+      "player-comparison",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": true
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/teams/page.tsx",
+    "urlPath": "/baseball/dashboard/teams",
+    "title": "Showcase coach access required",
+    "description": "Teams page",
+    "userRoles": [
+      "showcase-coach"
+    ],
+    "features": [
+      "calendar",
+      "analytics",
+      "videos",
+      "roster",
+      "devPlans"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "🏆",
+    "imports": [
+      "header",
+      "loading",
+      "button",
+      "input",
+      "select",
+      "badge",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": true
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/program/page.tsx",
+    "urlPath": "/baseball/dashboard/program",
+    "title": "Coach access required",
+    "description": "Program profile and settings",
+    "userRoles": [],
+    "features": [
+      "calendar",
+      "messages",
+      "videos"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "🏫",
+    "imports": [
+      "header",
+      "card",
+      "button",
+      "input",
+      "loading",
+      "toast",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/dev-plan/page.tsx",
+    "urlPath": "/baseball/dashboard/dev-plan",
+    "title": "Track your progress and complete goals set by your coach",
+    "description": "Create and track development plans",
+    "userRoles": [
+      "hs-coach",
+      "juco-coach-team",
+      "showcase-coach"
+    ],
+    "features": [
+      "devPlans"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📋",
+    "imports": [
+      "header",
+      "card",
+      "loading",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/activate/page.tsx",
+    "urlPath": "/baseball/dashboard/activate",
+    "title": "Get discovered by college coaches",
+    "description": "Activate recruiting features",
+    "userRoles": [
+      "player"
+    ],
+    "features": [
+      "search",
+      "watchlist",
+      "messages",
+      "analytics",
+      "videos"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "header",
+      "card",
+      "button",
+      "badge",
+      "loading",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/college-interest/page.tsx",
+    "urlPath": "/baseball/dashboard/college-interest",
+    "title": "Track which colleges are viewing your players",
+    "description": "College-interest page",
+    "userRoles": [
+      "hs-coach",
+      "juco-coach-team"
+    ],
+    "features": [
+      "search",
+      "comparison",
+      "watchlist",
+      "calendar",
+      "analytics",
+      "videos",
+      "roster"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "🎓",
+    "imports": [
+      "header",
+      "card",
+      "button",
+      "badge",
+      "avatar",
+      "loading",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/events/page.tsx",
+    "urlPath": "/baseball/dashboard/events",
+    "title": "Showcase coach access required",
+    "description": "Events page",
+    "userRoles": [],
+    "features": [
+      "search",
+      "calendar"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "header",
+      "loading",
+      "button",
+      "input",
+      "select",
+      "badge",
+      "icons"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": true
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/page.tsx",
+    "urlPath": "/baseball/dashboard",
+    "title": "Dashboard",
+    "description": "Dashboard page",
+    "userRoles": [],
+    "features": [
+      "search",
+      "watchlist",
+      "pipeline",
+      "calendar",
+      "messages",
+      "analytics",
+      "videos"
+    ],
+    "domain": "baseball",
+    "type": "dashboard",
+    "icon": "📄",
+    "imports": [
+      "header",
+      "avatar",
+      "badge",
+      "button",
+      "loading",
+      "icons",
+      "EngagementChart",
+      "USAMap",
+      "shine-effect"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/watchlist/page.tsx",
+    "urlPath": "/baseball/dashboard/watchlist",
+    "title": "Coach access required",
+    "description": "Manage your recruiting watchlist and pipeline",
+    "userRoles": [
+      "coach-recruiting",
+      "college-coach",
+      "juco-coach-recruiting"
+    ],
+    "features": [
+      "search",
+      "watchlist",
+      "pipeline",
+      "messages",
+      "modals",
+      "preview"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "⭐",
+    "imports": [
+      "shine-effect",
+      "header",
+      "button",
+      "select",
+      "empty-state",
+      "loading",
+      "avatar",
+      "icons",
+      "PlayerDetailModal",
+      "PlayerPeekPanel"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": true
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/analytics/page.tsx",
+    "urlPath": "/baseball/dashboard/analytics",
+    "title": "Track your recruiting activity",
+    "description": "Recruiting analytics and insights",
+    "userRoles": [
+      "player-recruiting"
+    ],
+    "features": [
+      "watchlist",
+      "calendar",
+      "messages",
+      "analytics",
+      "videos"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📈",
+    "imports": [
+      "header",
+      "card",
+      "loading",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/(dashboard)/dashboard/dev-plans/page.tsx",
+    "urlPath": "/baseball/dashboard/dev-plans",
+    "title": "Create and track player development",
+    "description": "Create and track development plans",
+    "userRoles": [
+      "coach-team",
+      "hs-coach",
+      "juco-coach-team",
+      "showcase-coach"
+    ],
+    "features": [
+      "search",
+      "analytics",
+      "videos",
+      "devPlans"
+    ],
+    "domain": "baseball",
+    "type": "feature",
+    "icon": "📋",
+    "imports": [
+      "header",
+      "card",
+      "button",
+      "badge",
+      "avatar",
+      "loading",
+      "icons",
+      "CreateDevPlanModal"
+    ],
+    "hasAuth": true,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "baseball/page.tsx",
+    "urlPath": "/baseball",
+    "title": null,
+    "description": "Baseball page",
+    "userRoles": [],
+    "features": [
+      "pipeline",
+      "videos"
+    ],
+    "domain": "baseball",
+    "type": "entry",
+    "icon": "⚾",
+    "imports": [],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "about/page.tsx",
+    "urlPath": "/about",
+    "title": null,
+    "description": "About page",
+    "userRoles": [],
+    "features": [
+      "search",
+      "analytics"
+    ],
+    "domain": null,
+    "type": "feature",
+    "icon": "📄",
+    "imports": [],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "player-golf/page.tsx",
+    "urlPath": "/player-golf",
+    "title": "Dashboard",
+    "description": "Player-golf page",
+    "userRoles": [],
+    "features": [
+      "analytics"
+    ],
+    "domain": null,
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "card",
+      "button",
+      "icons"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "page.tsx",
+    "urlPath": "/page.tsx",
+    "title": null,
+    "description": "Page.tsx page",
+    "userRoles": [],
+    "features": [
+      "analytics"
+    ],
+    "domain": null,
+    "type": "feature",
+    "icon": "📄",
+    "imports": [
+      "Navigation",
+      "Hero",
+      "ProductShowcases",
+      "Features",
+      "SocialProof",
+      "FinalCTA",
+      "Footer",
+      "ScrollProgress"
+    ],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  },
+  {
+    "filePath": "help/page.tsx",
+    "urlPath": "/help",
+    "title": "Help Center",
+    "description": "Help page",
+    "userRoles": [],
+    "features": [
+      "search",
+      "watchlist",
+      "pipeline",
+      "calendar",
+      "messages",
+      "analytics",
+      "videos",
+      "roster"
+    ],
+    "domain": null,
+    "type": "feature",
+    "icon": "📄",
+    "imports": [],
+    "hasAuth": false,
+    "hasRouteProtection": false
+  }
+]

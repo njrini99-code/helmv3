@@ -1,0 +1,27 @@
+{
+  "summary": {
+    "total_routes": 0,
+    "total_elements": 0,
+    "total_edges": 0,
+    "average_completion_score": 0,
+    "issues": {
+      "errors": 1,
+      "warnings": 0,
+      "info": 0
+    }
+  },
+  "routes": {},
+  "route_intelligence": {},
+  "edges": [],
+  "issues": [
+    {
+      "severity": "error",
+      "type": "missing-app-dir",
+      "message": "App directory not found: /Users/ricknini/Downloads/helmv3/tools/ux-flow-auditor/src/app",
+      "file_path": "/Users/ricknini/Downloads/helmv3/tools/ux-flow-auditor/src/app",
+      "line_number": 0,
+      "suggestion": ""
+    }
+  ],
+  "mermaid": "graph LR"
+}

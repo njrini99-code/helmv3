@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ship Command Hub v6 - Path Scanner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">🚢</span>
+          <div class="logo-text">
+            <h1>Ship Command</h1>
+            <span class="version-badge">v6 Path Scanner</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-center">
+        <div class="scan-status" id="scan-status">
+          <span class="status-icon">⏳</span>
+          <span class="status-text">Ready to scan</span>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <div class="connection-status" id="connection-status">
+          <span class="status-dot"></span>
+          <span class="status-text">Connecting...</span>
+        </div>
+        <button class="btn btn-primary" id="btn-full-scan">
+          <span>🔍</span> Full Project Scan
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+      
+      <!-- Left: Path Browser -->
+      <aside class="path-browser">
+        <div class="panel-header">
+          <h2>📁 All Paths</h2>
+          <span class="badge" id="path-count">0</span>
+        </div>
+        
+        <div class="path-filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="issues">🔴 Issues</button>
+          <button class="filter-btn" data-filter="ui">🟡 UI</button>
+          <button class="filter-btn" data-filter="features">🟢 Features</button>
+        </div>
+        
+        <div class="path-list" id="path-list">
+          <div class="empty-state">
+            <span>📂</span>
+            <p>Click "Full Project Scan" to discover all paths</p>
+          </div>
+        </div>
+        
+        <div class="path-stats" id="path-stats">
+          <div class="stat">
+            <span class="stat-value" id="stat-total">0</span>
+            <span class="stat-label">Paths</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value stat-issues" id="stat-issues">0</span>
+            <span class="stat-label">Issues</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value stat-ui" id="stat-ui">0</span>
+            <span class="stat-label">UI</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value stat-features" id="stat-features">0</span>
+            <span class="stat-label">Features</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center: Path Detail View -->
+      <main class="path-detail" id="path-detail">
+        <div class="detail-empty" id="detail-empty">
+          <div class="detail-empty-icon">🎯</div>
+          <h3>Select a Path</h3>
+          <p>Click on any path to see issues, UI enhancements, and feature opportunities</p>
+        </div>
+        
+        <!-- This gets populated when a path is selected -->
+        <div class="detail-content" id="detail-content" style="display: none;">
+          <div class="detail-header">
+            <div class="detail-path">
+              <span class="path-icon">📄</span>
+              <h2 id="detail-path-name">/dashboard</h2>
+            </div>
+            <div class="detail-actions">
+              <button class="btn btn-secondary" id="btn-upload-screenshot">
+                📸 Upload Screenshot
+              </button>
+              <button class="btn btn-accent" id="btn-continuous-improvement">
+                🔄 Continuous Improvement
+              </button>
+            </div>
+          </div>
+          
+          <!-- Screenshot Preview -->
+          <div class="screenshot-section">
+            <div class="screenshot-container" id="screenshot-container">
+              <div class="screenshot-placeholder" id="screenshot-placeholder">
+                <span>📷</span>
+                <p>No screenshot yet</p>
+                <button class="btn btn-small" id="btn-capture-screenshot">Capture</button>
+              </div>
+              <img id="screenshot-image" class="screenshot-image" style="display: none;" />
+            </div>
+            <div class="screenshot-meta" id="screenshot-meta">
+              <span>Last captured: Never</span>
+            </div>
+          </div>
+          
+          <!-- Issue Categories -->
+          <div class="issue-categories">
+            <!-- Issues (Red) -->
+            <div class="category-panel category-issues">
+              <div class="category-header">
+                <h3><span class="category-dot issues"></span> Issues</h3>
+                <span class="category-count" id="count-issues">0</span>
+              </div>
+              <div class="category-list" id="list-issues">
+                <div class="category-empty">No issues found</div>
+              </div>
+            </div>
+            
+            <!-- UI Enhancements (Yellow/Amber) -->
+            <div class="category-panel category-ui">
+              <div class="category-header">
+                <h3><span class="category-dot ui"></span> UI Enhancements</h3>
+                <span class="category-count" id="count-ui">0</span>
+              </div>
+              <div class="category-list" id="list-ui">
+                <div class="category-empty">No UI enhancements</div>
+              </div>
+            </div>
+            
+            <!-- Feature Enhancements (Green) -->
+            <div class="category-panel category-features">
+              <div class="category-header">
+                <h3><span class="category-dot features"></span> Feature Enhancements</h3>
+                <span class="category-count" id="count-features">0</span>
+              </div>
+              <div class="category-list" id="list-features">
+                <div class="category-empty">No feature enhancements</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right: Neural Network + MD Queue -->
+      <aside class="agent-panel">
+        <div class="panel-header">
+          <h2>🤖 Agent Network</h2>
+          <span class="live-indicator"><span class="live-dot"></span>Live</span>
+        </div>
+        
+        <!-- Neural Wire Visualization -->
+        <div class="neural-wire" id="neural-wire">
+          <svg viewBox="0 0 280 320" class="wire-svg">
+            <defs>
+              <linearGradient id="wireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.3"/>
+                <stop offset="50%" style="stop-color:#a855f7;stop-opacity:0.8"/>
+                <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0.3"/>
+              </linearGradient>
+              <linearGradient id="issueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#ef4444;stop-opacity:0.3"/>
+                <stop offset="50%" style="stop-color:#f87171;stop-opacity:0.8"/>
+                <stop offset="100%" style="stop-color:#ef4444;stop-opacity:0.3"/>
+              </linearGradient>
+              <linearGradient id="uiGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:0.3"/>
+                <stop offset="50%" style="stop-color:#fbbf24;stop-opacity:0.8"/>
+                <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:0.3"/>
+              </linearGradient>
+              <linearGradient id="featureGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.3"/>
+                <stop offset="50%" style="stop-color:#34d399;stop-opacity:0.8"/>
+                <stop offset="100%" style="stop-color:#10b981;stop-opacity:0.3"/>
+              </linearGradient>
+              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            
+            <!-- Wire Paths -->
+            <g class="wire-paths">
+              <path id="wire-coord-code" class="wire-path" d="M 140 60 Q 60 100 40 160" />
+              <path id="wire-coord-design" class="wire-path" d="M 140 60 L 140 160" />
+              <path id="wire-coord-route" class="wire-path" d="M 140 60 Q 220 100 240 160" />
+              <path id="wire-code-ui" class="wire-path" d="M 40 200 Q 60 260 100 280" />
+              <path id="wire-route-ui" class="wire-path" d="M 240 200 Q 220 260 180 280" />
+              <path id="wire-design-improve" class="wire-path" d="M 140 200 L 140 280" />
+            </g>
+            
+            <!-- Agent Nodes -->
+            <g class="agent-nodes">
+              <g class="agent-node node-coordinator" id="node-coordinator" transform="translate(140, 40)">
+                <circle class="node-bg" r="28"/>
+                <circle class="node-ring" r="32"/>
+                <text class="node-icon" y="6">🎯</text>
+                <text class="node-label" y="48">Coordinator</text>
+              </g>
+              
+              <g class="agent-node node-knowledge" id="node-code-quality" transform="translate(40, 180)">
+                <circle class="node-bg" r="22"/>
+                <circle class="node-ring" r="26"/>
+                <text class="node-icon" y="5">🔍</text>
+                <text class="node-label" y="38">Code</text>
+              </g>
+              
+              <g class="agent-node node-knowledge" id="node-design-system" transform="translate(140, 180)">
+                <circle class="node-bg" r="22"/>
+                <circle class="node-ring" r="26"/>
+                <text class="node-icon" y="5">🎨</text>
+                <text class="node-label" y="38">Design</text>
+              </g>
+              
+              <g class="agent-node node-knowledge" id="node-route-context" transform="translate(240, 180)">
+                <circle class="node-bg" r="22"/>
+                <circle class="node-ring" r="26"/>
+                <text class="node-icon" y="5">🗺️</text>
+                <text class="node-label" y="38">Routes</text>
+              </g>
+              
+              <g class="agent-node" id="node-ui-review" transform="translate(80, 290)">
+                <circle class="node-bg" r="22"/>
+                <circle class="node-ring" r="26"/>
+                <text class="node-icon" y="5">📸</text>
+                <text class="node-label" y="38">UI</text>
+              </g>
+              
+              <g class="agent-node" id="node-improvement" transform="translate(140, 290)">
+                <circle class="node-bg" r="22"/>
+                <circle class="node-ring" r="26"/>
+                <text class="node-icon" y="5">🧠</text>
+                <text class="node-label" y="38">Learn</text>
+              </g>
+              
+              <g class="agent-node" id="node-continuous" transform="translate(200, 290)">
+                <circle class="node-bg" r="22"/>
+                <circle class="node-ring" r="26"/>
+                <text class="node-icon" y="5">🔄</text>
+                <text class="node-label" y="38">CI</text>
+              </g>
+            </g>
+            
+            <g class="data-particles" id="data-particles"></g>
+          </svg>
+        </div>
+        
+        <!-- Live Feed -->
+        <div class="live-feed" id="live-feed">
+          <div class="feed-empty">Waiting for agent activity...</div>
+        </div>
+        
+        <!-- MD Queue -->
+        <div class="md-queue-section">
+          <div class="queue-header">
+            <h3>📋 MD Queue</h3>
+            <span class="badge" id="md-queue-count">0</span>
+          </div>
+          <div class="md-queue" id="md-queue">
+            <div class="queue-empty">
+              <span>📝</span>
+              <p>No MDs ready</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Issue Detail Modal -->
+    <div class="modal" id="issue-modal">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-type" id="modal-type">
+            <span class="type-dot"></span>
+            <span class="type-label">Issue</span>
+          </div>
+          <button class="modal-close" id="modal-close">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <h2 id="modal-title">Issue Title</h2>
+          
+          <div class="modal-section">
+            <h4>📋 Summary</h4>
+            <p id="modal-summary">This is a summary of the issue...</p>
+          </div>
+          
+          <div class="modal-section">
+            <h4>❓ Why It's an Issue</h4>
+            <p id="modal-why">Explanation of why this matters...</p>
+          </div>
+          
+          <div class="modal-section">
+            <h4>✅ Result of Fixing</h4>
+            <p id="modal-result">What happens when this is fixed...</p>
+          </div>
+          
+          <div class="modal-section" id="modal-screenshot-section" style="display: none;">
+            <h4>📸 Screenshot Reference</h4>
+            <img id="modal-screenshot" class="modal-screenshot" />
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-skip">Skip</button>
+          <button class="btn btn-primary" id="btn-send-to-agents">
+            <span>🚀</span> Send to Agents
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MD Preview Modal -->
+    <div class="modal" id="md-modal">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h3>📝 Generated Implementation Guide</h3>
+          <button class="modal-close" id="md-modal-close">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="md-preview" id="md-preview">
+            <pre id="md-content"></pre>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-copy-md">
+            📋 Copy to Clipboard
+          </button>
+          <button class="btn btn-primary" id="btn-done-md">
+            ✅ Done - Next
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Continuous Improvement Modal -->
+    <div class="modal" id="ci-modal">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>🔄 Continuous Improvement Agent</h3>
+          <button class="modal-close" id="ci-modal-close">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="ci-scanning" id="ci-scanning">
+            <div class="ci-spinner"></div>
+            <p>Analyzing path for improvements...</p>
+          </div>
+          
+          <div class="ci-result" id="ci-result" style="display: none;">
+            <div class="ci-type" id="ci-type">
+              <span class="type-dot"></span>
+              <span class="type-label">Improvement</span>
+            </div>
+            <h4 id="ci-title">Improvement Title</h4>
+            <p id="ci-description">Description of the improvement...</p>
+            <div class="ci-impact">
+              <span>Impact:</span>
+              <div class="impact-bar">
+                <div class="impact-fill" id="ci-impact-fill"></div>
+              </div>
+              <span id="ci-impact-label">High</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-ci-skip">
+            ⏭️ Skip - Find Another
+          </button>
+          <button class="btn btn-primary" id="btn-ci-send">
+            🚀 Send to Agents
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="screenshot-input" accept="image/*" style="display: none;" />
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -235,7 +235,14 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-xl mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-xl mx-4 glass-prominent rounded-2xl shadow-2xl overflow-hidden">
+        {/* Shine effect */}
+        <div
+          className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+          }}
+        />
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div className="flex items-center gap-3">

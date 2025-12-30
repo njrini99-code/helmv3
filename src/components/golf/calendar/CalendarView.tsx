@@ -139,7 +139,14 @@ export function CalendarView({ events, classes = [], onClassClick, onEventClick 
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
+      {/* Shine effect */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+        }}
+      />
       {/* Calendar Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-slate-900">

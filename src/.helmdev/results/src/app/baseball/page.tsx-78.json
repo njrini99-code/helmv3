@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/baseball/page.tsx-78",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Added empty state handling to the `.map()` call with a conditional that checks if the array has content before mapping, and displays an empty state message if not.\n",
+  "timestamp": "2025-12-29T11:58:58.738Z"
+}

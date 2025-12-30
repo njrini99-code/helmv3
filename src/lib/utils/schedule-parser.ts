@@ -16,6 +16,7 @@ export interface ParsedClass {
   room: string;
   credits: number | null;
   semester: string;
+  color?: string;
 }
 
 // Common day patterns

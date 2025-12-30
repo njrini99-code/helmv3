@@ -103,10 +103,15 @@ export function NotificationCenter({
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl border border-border shadow-elevation-4 overflow-hidden animate-fade-in z-50"
+          className="absolute right-0 top-full mt-2 w-96 glass-prominent rounded-xl shadow-2xl overflow-hidden animate-fade-in z-50"
         >
+          <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+            }}
+          />
           {/* Header */}
-          <div className="p-4 border-b border-border-light">
+          <div className="relative p-4 border-b border-border-light">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-slate-900 flex items-center gap-2">
                 Notifications
@@ -157,9 +162,9 @@ export function NotificationCenter({
           </div>
 
           {/* Notifications List */}
-          <div className="max-h-[480px] overflow-y-auto custom-scrollbar">
+          <div className="relative max-h-[480px] overflow-y-auto custom-scrollbar">
             {filteredNotifications.length === 0 ? (
-              <div className="p-8 text-center">
+              <div className="relative p-8 text-center">
                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <IconBell size={24} className="text-slate-400" />
                 </div>
@@ -252,7 +257,7 @@ export function NotificationCenter({
 
           {/* Footer */}
           {filteredNotifications.length > 0 && (
-            <div className="p-3 border-t border-border-light bg-cream-50">
+            <div className="relative p-3 border-t border-border-light bg-cream-50/50">
               <Button
                 variant="ghost"
                 size="sm"

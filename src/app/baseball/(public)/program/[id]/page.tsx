@@ -86,7 +86,15 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  const settings = (organization as any).organization_settings || {} as any;
+  type OrganizationSettings = {
+    show_description?: boolean;
+    show_staff_bios?: boolean;
+    show_staff_photos?: boolean;
+    show_facilities?: boolean;
+    show_commitments?: boolean;
+  };
+
+  const settings = ((organization as unknown as { organization_settings?: OrganizationSettings }).organization_settings || {}) as OrganizationSettings;
   const showDescription = settings.show_description !== false;
   const showStaffBios = settings.show_staff_bios !== false;
   const showStaffPhotos = settings.show_staff_photos !== false;
@@ -94,17 +102,52 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
   const showCommitments = settings.show_commitments !== false;
 
   // Sort staff by display order
-  const staff = ((organization as any).organization_staff || [])
-    .filter((s: any) => s.is_public)
-    .sort((a: any, b: any) => a.display_order - b.display_order);
+  type OrganizationStaff = {
+    id: string;
+    name: string;
+    title: string;
+    bio: string | null;
+    headshot_url: string | null;
+    email: string | null;
+    phone: string | null;
+    display_order: number;
+    is_public: boolean;
+  };
+
+  const staff = ((organization as unknown as { organization_staff?: OrganizationStaff[] }).organization_staff || [])
+    .filter((s: OrganizationStaff) => s.is_public)
+    .sort((a: OrganizationStaff, b: OrganizationStaff) => a.display_order - b.display_order);
 
   // Sort facilities by display order
-  const facilities = ((organization as any).organization_facilities || [])
-    .sort((a: any, b: any) => a.display_order - b.display_order);
+  type OrganizationFacility = {
+    id: string;
+    name: string;
+    facility_type: string | null;
+    description: string | null;
+    capacity: number | null;
+    image_url: string | null;
+    display_order: number;
+  };
+
+  const facilities = ((organization as unknown as { organization_facilities?: OrganizationFacility[] }).organization_facilities || [])
+    .sort((a: OrganizationFacility, b: OrganizationFacility) => a.display_order - b.display_order);
 
   // Filter public commitments
-  const commitments = ((organization as any).program_commitments || [])
-    .filter((c: any) => c.is_public);
+  type ProgramCommitment = {
+    id: string;
+    player_name: string;
+    position: string;
+    grad_year: number;
+    high_school: string;
+    city: string;
+    state: string;
+    commitment_date: string;
+    is_signed: boolean;
+    is_public?: boolean;
+  };
+
+  const commitments = ((organization as unknown as { program_commitments?: ProgramCommitment[] }).program_commitments || [])
+    .filter((c: ProgramCommitment) => c.is_public);
 
   return (
     <div className="min-h-screen bg-[#FAF6F1]">
@@ -186,7 +229,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                 </div>
                 <div className="p-6 bg-slate-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {staff.map((member: any) => (
+                    {staff.map((member: OrganizationStaff) => (
                       <div
                         key={member.id}
                         className="bg-white rounded-lg border border-slate-200 p-4"
@@ -232,7 +275,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                 </div>
                 <div className="p-6 bg-slate-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {facilities.map((facility: any) => (
+                    {facilities.map((facility: OrganizationFacility) => (
                       <div
                         key={facility.id}
                         className="bg-white rounded-lg border border-slate-200 overflow-hidden"
@@ -283,7 +326,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                 </div>
                 <div className="p-6 bg-white">
                   <div className="divide-y divide-slate-200">
-                    {commitments.slice(0, 10).map((commit: any) => (
+                    {commitments.slice(0, 10).map((commit: ProgramCommitment) => (
                       <div key={commit.id} className="py-3 first:pt-0 last:pb-0">
                         <div className="flex items-center justify-between">
                           <div>

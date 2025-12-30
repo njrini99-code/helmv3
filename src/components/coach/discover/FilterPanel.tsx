@@ -62,10 +62,10 @@ export function FilterPanel({ currentFilters }: FilterPanelProps) {
   const hasActiveFilters = Object.values(currentFilters).some(v => v !== undefined && v !== '');
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl saturate-150 rounded-2xl border border-white/20 shadow-lg p-6 sticky top-6 overflow-hidden">
+    <div className="glass-subtle rounded-2xl p-6 sticky top-6 overflow-hidden relative">
       {/* Shine effect */}
       <div
-        className="absolute inset-x-0 top-0 h-px pointer-events-none"
+        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{
           background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
         }}

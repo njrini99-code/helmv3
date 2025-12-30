@@ -39,13 +39,20 @@ function CompareContent() {
       }
 
       setLoading(true);
-      const { data } = await supabase
-        .from('players')
-        .select('*')
-        .in('id', playerIds);
+      try {
+        const { data, error } = await supabase
+          .from('players')
+          .select('*')
+          .in('id', playerIds);
 
-      setPlayers(data || []);
-      setLoading(false);
+        if (error) throw error;
+        setPlayers(data || []);
+      } catch (error) {
+        console.error('Error fetching players:', error);
+        setPlayers([]);
+      } finally {
+        setLoading(false);
+      }
     }
 
     fetchPlayers();
@@ -68,23 +75,29 @@ function CompareContent() {
     }
 
     setSearching(true);
+    try {
+      let queryBuilder = supabase
+        .from('players')
+        .select('*')
+        .eq('recruiting_activated', true)
+        .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,high_school_name.ilike.%${query}%`)
+        .limit(10);
 
-    let queryBuilder = supabase
-      .from('players')
-      .select('*')
-      .eq('recruiting_activated', true)
-      .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,high_school_name.ilike.%${query}%`)
-      .limit(10);
+      // Only add NOT IN filter if there are playerIds
+      if (playerIds.length > 0) {
+        queryBuilder = queryBuilder.not('id', 'in', `(${playerIds.join(',')})`);
+      }
 
-    // Only add NOT IN filter if there are playerIds
-    if (playerIds.length > 0) {
-      queryBuilder = queryBuilder.not('id', 'in', `(${playerIds.join(',')})`);
+      const { data, error } = await queryBuilder;
+
+      if (error) throw error;
+      setSearchResults(data || []);
+    } catch (error) {
+      console.error('Error searching players:', error);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
     }
-
-    const { data } = await queryBuilder;
-
-    setSearchResults(data || []);
-    setSearching(false);
   };
 
   const addPlayer = (player: Player) => {

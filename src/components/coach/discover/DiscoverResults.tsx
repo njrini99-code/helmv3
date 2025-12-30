@@ -6,9 +6,14 @@ import { cn } from '@/lib/utils';
 import { PlayerCardData } from './PlayerCard';
 import { PlayerCardGrid } from './PlayerCardGrid';
 import { USAMap } from './USAMap';
+import { ActiveFiltersBar } from './ActiveFiltersBar';
+import { CompareBar } from './CompareBar';
+import { SmartEmptyState } from './SmartEmptyState';
+import { PlayerHoverPreview } from './PlayerHoverPreview';
 import { ViewToggle, ViewMode } from '@/components/ui/view-toggle';
 import { Button } from '@/components/ui/button';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
+import { useDiscoverPreferences } from '@/hooks/use-local-storage';
 import { addToWatchlist, removeFromWatchlist } from '@/app/baseball/actions/watchlist';
 
 interface DiscoverResultsProps {
@@ -19,7 +24,30 @@ interface DiscoverResultsProps {
   currentPage: number;
   totalPages: number;
   onPlayerClick?: (playerId: string) => void;
+  filters?: {
+    gradYear?: number;
+    position?: string;
+    state?: string;
+    minVelo?: number;
+    maxVelo?: number;
+    minExit?: number;
+    maxExit?: number;
+    hasVideo?: boolean;
+    search?: string;
+  };
+  // For smart empty state suggestions
+  stateCounts?: Record<string, number>;
+  totalPlayersUnfiltered?: number;
 }
+
+const SORT_OPTIONS = [
+  { value: 'updated', label: 'Recently Updated' },
+  { value: 'velo_desc', label: 'Velocity (High → Low)' },
+  { value: 'velo_asc', label: 'Velocity (Low → High)' },
+  { value: 'gpa_desc', label: 'GPA (High → Low)' },
+  { value: 'grad_year_asc', label: 'Grad Year (Earliest)' },
+  { value: 'grad_year_desc', label: 'Grad Year (Latest)' },
+];
 
 export function DiscoverResults({
   players,
@@ -29,11 +57,25 @@ export function DiscoverResults({
   currentPage,
   totalPages,
   onPlayerClick,
+  filters = {},
+  stateCounts = {},
+  totalPlayersUnfiltered = 0,
 }: DiscoverResultsProps) {
   const router = useRouter();
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const searchParams = useSearchParams();
+  
+  // Persisted preferences
+  const { viewMode, sortBy, setViewMode, setSortBy } = useDiscoverPreferences();
+  
   const [watchlistIds, setWatchlistIds] = useState<string[]>(initialWatchlistIds);
   const [, setLoadingIds] = useState<string[]>([]);
+  
+  // Compare mode state
+  const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
+  
+  // Hover preview state
+  const [hoveredPlayer, setHoveredPlayer] = useState<PlayerCardData | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Transform database players to PlayerCardData format
   const transformedPlayers: PlayerCardData[] = players.map((p) => ({
@@ -50,6 +92,8 @@ export function DiscoverResults({
     coverImage: null,
     stats: {
       velocity: p.pitch_velo,
+      exitVelo: p.exit_velo,
+      sixtyYard: p.sixty_yard,
       gpa: p.gpa,
       height: p.height_feet && p.height_inches 
         ? `${p.height_feet}'${p.height_inches}"` 
@@ -58,7 +102,37 @@ export function DiscoverResults({
     },
     verified: p.recruiting_activated,
     status: watchlistIds.includes(p.id) ? 'watchlist' : undefined,
+    hasVideo: p.has_video || false,
+    videoThumbnail: p.player_videos?.[0]?.thumbnail_url,
   }));
+
+  // Sort players
+  const sortedPlayers = useMemo(() => {
+    const sorted = [...transformedPlayers];
+    switch (sortBy) {
+      case 'velo_desc':
+        return sorted.sort((a, b) => (b.stats?.velocity || 0) - (a.stats?.velocity || 0));
+      case 'velo_asc':
+        return sorted.sort((a, b) => (a.stats?.velocity || 0) - (b.stats?.velocity || 0));
+      case 'gpa_desc':
+        return sorted.sort((a, b) => (b.stats?.gpa || 0) - (a.stats?.gpa || 0));
+      case 'grad_year_asc':
+        return sorted.sort((a, b) => a.graduationYear - b.graduationYear);
+      case 'grad_year_desc':
+        return sorted.sort((a, b) => b.graduationYear - a.graduationYear);
+      default:
+        return sorted;
+    }
+  }, [transformedPlayers, sortBy]);
+
+  // Identify featured players (top 3 by velocity)
+  const featuredIds = useMemo(() => {
+    return [...transformedPlayers]
+      .filter(p => p.stats?.velocity)
+      .sort((a, b) => (b.stats?.velocity || 0) - (a.stats?.velocity || 0))
+      .slice(0, 3)
+      .map(p => p.id);
+  }, [transformedPlayers]);
 
   const handleWatchlist = async (playerId: string) => {
     setLoadingIds((prev) => [...prev, playerId]);
@@ -86,6 +160,46 @@ export function DiscoverResults({
     const params = new URLSearchParams(window.location.search);
     params.set('page', page.toString());
     router.push(`?${params.toString()}`);
+  };
+
+  // Compare mode handlers
+  const toggleCompareSelection = (playerId: string) => {
+    setSelectedForCompare(prev => {
+      if (prev.includes(playerId)) {
+        return prev.filter(id => id !== playerId);
+      }
+      if (prev.length >= 4) return prev; // Max 4 players
+      return [...prev, playerId];
+    });
+  };
+
+  const clearCompareSelection = () => {
+    setSelectedForCompare([]);
+  };
+
+  const handleAddAllToWatchlist = async () => {
+    for (const playerId of selectedForCompare) {
+      if (!watchlistIds.includes(playerId)) {
+        await addToWatchlist(coachId, playerId);
+        setWatchlistIds(prev => [...prev, playerId]);
+      }
+    }
+    clearCompareSelection();
+  };
+
+  // Hover preview handlers
+  const handleCardHover = (player: PlayerCardData, event: React.MouseEvent) => {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    setHoveredPlayer(player);
+    setHoverPosition({
+      x: rect.right + 12,
+      y: rect.top,
+    });
+  };
+
+  const handleCardLeave = () => {
+    setHoveredPlayer(null);
+    setHoverPosition(null);
   };
 
   // Compute state data for map view
@@ -122,8 +236,6 @@ export function DiscoverResults({
     return data;
   }, [players]);
 
-  const searchParams = useSearchParams();
-
   const handleStateClick = (stateCode: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('state', stateCode);
@@ -131,57 +243,118 @@ export function DiscoverResults({
     router.push(`?${params.toString()}`);
   };
 
+  const handleClearState = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('state');
+    params.delete('page');
+    router.push(`?${params.toString()}`);
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = Object.values(filters).some(v => v !== undefined && v !== '');
+
+  // Handle view mode change with persistence
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+  };
+
+  // Handle sort change with persistence
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Active Filters Bar */}
+      {hasActiveFilters && (
+        <ActiveFiltersBar 
+          filters={filters} 
+          totalCount={totalCount}
+        />
+      )}
+
       {/* Results Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm leading-relaxed text-slate-500">
-            {totalCount > 0 ? (
-              <>
-                Showing <span className="font-medium text-slate-900">{(currentPage - 1) * 24 + 1}</span>
-                {' - '}
-                <span className="font-medium text-slate-900">
-                  {Math.min(currentPage * 24, totalCount)}
-                </span>
-                {' of '}
-                <span className="font-medium text-slate-900">{totalCount}</span>
-                {' players'}
-              </>
-            ) : (
-              'No results'
-            )}
-          </p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-4">
+          {!hasActiveFilters && (
+            <p className="text-sm text-slate-500">
+              <span className="font-semibold text-slate-900">{totalCount.toLocaleString()}</span>
+              {' '}players found
+            </p>
+          )}
+          
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-2">
+            <label htmlFor="sort" className="text-sm text-slate-500">Sort:</label>
+            <select
+              id="sort"
+              value={sortBy}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="text-sm border border-slate-200 rounded-lg px-3 py-1.5
+                         focus:border-green-500 focus:ring-2 focus:ring-green-100
+                         focus:outline-none bg-white cursor-pointer"
+            >
+              {SORT_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
-        <ViewToggle value={viewMode} onChange={setViewMode} />
+        
+        <ViewToggle value={viewMode} onChange={handleViewModeChange} />
       </div>
 
       {/* Map View */}
       {viewMode === 'map' ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-8">
-          <div className="mb-4">
+        <div className="relative glass-standard rounded-2xl overflow-hidden p-8">
+          <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+            }}
+          />
+          <div className="relative mb-4">
             <h3 className="text-lg font-semibold text-slate-900 mb-2">Player Distribution by State</h3>
             <p className="text-sm leading-relaxed text-slate-500">Click a state to filter players by location</p>
           </div>
-          <USAMap stateData={stateData} onStateClick={handleStateClick} />
+          <div className="relative">
+            <USAMap 
+              stateData={stateData} 
+              onStateClick={handleStateClick}
+              onClearState={handleClearState}
+              selectedState={filters.state || null}
+            />
+          </div>
         </div>
+      ) : sortedPlayers.length === 0 ? (
+        /* Smart Empty State */
+        <SmartEmptyState
+          filters={filters}
+          stateCounts={stateCounts}
+          totalPlayersUnfiltered={totalPlayersUnfiltered}
+        />
       ) : (
         /* Results Grid */
         <PlayerCardGrid
-          players={transformedPlayers}
+          players={sortedPlayers}
           variant={viewMode === 'list' ? 'compact' : 'default'}
           columns={viewMode === 'list' ? 2 : 3}
           onWatchlist={handleWatchlist}
           onMessage={handleMessage}
           onPlayerClick={onPlayerClick}
           watchlistIds={watchlistIds}
+          showCheckbox={true}
+          selectedIds={selectedForCompare}
+          onSelect={toggleCompareSelection}
+          featuredIds={featuredIds}
           emptyTitle="No players found"
           emptyMessage="Try adjusting your filters or search criteria to find more players."
+          onCardHover={handleCardHover}
+          onCardLeave={handleCardLeave}
         />
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {totalPages > 1 && viewMode !== 'map' && sortedPlayers.length > 0 && (
         <div className="flex items-center justify-center gap-2 pt-6">
           <Button
             variant="secondary"
@@ -233,6 +406,36 @@ export function DiscoverResults({
             <IconChevronRight size={16} />
           </Button>
         </div>
+      )}
+
+      {/* Compare Bar */}
+      {selectedForCompare.length > 0 && (
+        <CompareBar
+          selectedPlayers={transformedPlayers
+            .filter(p => selectedForCompare.includes(p.id))
+            .map(p => ({
+              id: p.id,
+              firstName: p.firstName,
+              lastName: p.lastName,
+              avatar: p.avatar,
+              position: p.position,
+            }))}
+          onRemove={toggleCompareSelection}
+          onClear={clearCompareSelection}
+          onAddAllToWatchlist={handleAddAllToWatchlist}
+        />
+      )}
+
+      {/* Hover Preview Panel */}
+      {hoveredPlayer && hoverPosition && (
+        <PlayerHoverPreview
+          player={hoveredPlayer}
+          position={hoverPosition}
+          onWatchlist={() => handleWatchlist(hoveredPlayer.id)}
+          onMessage={() => handleMessage(hoveredPlayer.id)}
+          onView={() => onPlayerClick?.(hoveredPlayer.id)}
+          isOnWatchlist={watchlistIds.includes(hoveredPlayer.id)}
+        />
       )}
     </div>
   );

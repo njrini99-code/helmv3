@@ -128,7 +128,7 @@ export default function GolfMessagesPage() {
     <div className="h-[calc(100vh-64px)] flex">
       {/* Conversation List */}
       <div className={cn(
-        'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-slate-200 bg-white flex flex-col',
+        'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-slate-200/60 glass-standard flex flex-col',
         mobileShowChat && 'hidden lg:flex'
       )}>
         {/* Header */}
@@ -149,7 +149,7 @@ export default function GolfMessagesPage() {
 
         {/* Conversation List */}
         <div className="flex-1 overflow-y-auto">
-          {conversations.length === 0 ? (
+          {!conversations || conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
                 <IconMail size={20} className="text-slate-400" />
@@ -220,10 +220,11 @@ export default function GolfMessagesPage() {
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b border-slate-200 bg-white flex items-center gap-3">
+            <div className="p-4 border-b border-slate-200/60 glass-standard flex items-center gap-3">
               <button
                 onClick={handleBack}
                 className="lg:hidden p-2 -ml-2 text-slate-400 hover:text-slate-600"
+                aria-label="Back to conversations"
               >
                 <IconArrowLeft size={20} />
               </button>
@@ -248,7 +249,7 @@ export default function GolfMessagesPage() {
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
                 </div>
-              ) : messages.length === 0 ? (
+              ) : !messages || messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center mb-3">
                     <IconMessageSquare size={20} className="text-slate-400" />
@@ -285,7 +286,7 @@ export default function GolfMessagesPage() {
                           'max-w-[70%] rounded-2xl px-4 py-2',
                           isOwn
                             ? 'bg-green-600 text-white rounded-br-md'
-                            : 'bg-white text-slate-900 rounded-bl-md shadow-sm'
+                            : 'glass-standard text-slate-900 rounded-bl-md shadow-sm'
                         )}
                       >
                         <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
@@ -360,7 +361,7 @@ function MessageInput({ onSend }: { onSend: (content: string) => Promise<boolean
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 bg-white border-t border-slate-200">
+    <form onSubmit={handleSubmit} className="p-4 glass-standard border-t border-slate-200/60">
       <div className="flex items-end gap-2">
         <textarea
           value={message}

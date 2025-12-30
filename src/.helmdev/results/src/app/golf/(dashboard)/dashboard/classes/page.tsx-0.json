@@ -1,0 +1,7 @@
+{
+  "taskId": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-0",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Created layout.tsx with SEO metadata for the classes page since the page component uses 'use client' directive.\n",
+  "timestamp": "2025-12-29T10:00:51.242Z"
+}

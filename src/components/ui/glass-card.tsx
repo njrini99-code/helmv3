@@ -3,21 +3,21 @@
 import { cn } from '@/lib/utils';
 
 interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  intensity?: 'subtle' | 'medium' | 'strong';
+  variant?: 'subtle' | 'standard' | 'prominent';
   hover?: boolean;
   shine?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-const intensityStyles = {
-  subtle: 'bg-white/50 backdrop-blur-md border-white/10',
-  medium: 'bg-white/70 backdrop-blur-lg border-white/20',
-  strong: 'bg-white/85 backdrop-blur-xl border-white/30',
+const variantStyles = {
+  subtle: 'glass-subtle',
+  standard: 'glass-standard',
+  prominent: 'glass-prominent',
 };
 
 export function GlassCard({
   className,
-  intensity = 'medium',
+  variant = 'standard',
   hover = false,
   shine = true,
   padding = 'md',
@@ -27,10 +27,10 @@ export function GlassCard({
   return (
     <div
       className={cn(
-        'relative rounded-2xl border overflow-hidden',
+        'relative rounded-2xl overflow-hidden',
         'transition-all duration-200 ease-out',
-        intensityStyles[intensity],
-        hover && 'hover:-translate-y-0.5 hover:shadow-xl hover:border-white/40 cursor-pointer',
+        variantStyles[variant],
+        hover && 'hover:-translate-y-0.5 hover:shadow-lg cursor-pointer',
         padding === 'sm' && 'p-4',
         padding === 'md' && 'p-6',
         padding === 'lg' && 'p-8',
@@ -42,7 +42,7 @@ export function GlassCard({
       {/* Shine effect - subtle gradient on top edge */}
       {shine && (
         <div
-          className="absolute top-0 left-0 right-0 h-px pointer-events-none"
+          className="absolute top-0 left-0 right-0 h-px pointer-events-none z-10"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
           }}
@@ -95,7 +95,7 @@ interface GlassStatCardProps {
 
 export function GlassStatCard({ label, value, icon, trend }: GlassStatCardProps) {
   return (
-    <GlassCard className="group" intensity="medium">
+    <GlassCard className="group" variant="standard">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-slate-500">{label}</p>

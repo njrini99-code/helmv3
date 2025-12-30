@@ -3,8 +3,15 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { InvitePlayerButton } from '@/components/golf/roster/InvitePlayerButton';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import type { GolfPlayer } from '@/lib/types/golf';
 import { IconUsers, IconSearch, IconChartBar, IconMessage, IconChevronRight } from '@/components/icons';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Team Roster | Helm Golf',
+  description: 'Manage your golf team roster, view player stats, and track team performance',
+};
 
 interface PlayerWithStats extends GolfPlayer {
   rounds_count?: number;
@@ -36,8 +43,9 @@ export default async function GolfRosterPage() {
     .order('last_name', { ascending: true });
 
   // Get rounds to calculate stats for each player
-  const playersWithStats: PlayerWithStats[] = await Promise.all(
-    (players || []).map(async (player) => {
+  const playersWithStats: PlayerWithStats[] = players && players.length > 0
+    ? await Promise.all(
+      players.map(async (player) => {
       const { data: rounds } = await supabase
         .from('golf_rounds')
         .select('total_score')
@@ -49,13 +57,14 @@ export default async function GolfRosterPage() {
         ? rounds!.reduce((sum, r) => sum + (r.total_score || 0), 0) / roundsCount
         : 0;
 
-      return {
-        ...player,
-        rounds_count: roundsCount,
-        avg_score: avgScore,
-      };
-    })
-  );
+        return {
+          ...player,
+          rounds_count: roundsCount,
+          avg_score: avgScore,
+        };
+      })
+    )
+    : [];
 
   const teamName = typeof coach.team === 'object' && coach.team ? coach.team.name : 'Team';
   const inviteCode = typeof coach.team === 'object' && coach.team ? coach.team.invite_code : null;
@@ -80,8 +89,9 @@ export default async function GolfRosterPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {playersWithStats.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
+            <ShineEffect />
+            <div className="relative w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <IconUsers size={28} className="text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">No Players Yet</h3>
@@ -95,14 +105,15 @@ export default async function GolfRosterPage() {
             {playersWithStats.map((player, index) => (
               <div
                 key={player.id}
-                className="group bg-white rounded-xl border border-slate-200/60 hover:border-slate-300 hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all duration-200"
+                className="group relative glass-standard rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                 style={{
                   animation: 'fadeInUp 0.4s ease-out forwards',
                   animationDelay: `${index * 30}ms`,
                   opacity: 0,
                 }}
               >
-                <div className="flex items-center gap-4 p-4">
+                <ShineEffect />
+                <div className="relative flex items-center gap-4 p-4">
                   {/* Avatar */}
                   <div className="relative">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -160,17 +171,17 @@ export default async function GolfRosterPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Link href={`/golf/dashboard/stats?player=${player.id}`}>
-                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="View Stats">
+                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" aria-label="View Stats">
                         <IconChartBar size={18} className="text-slate-500" />
                       </button>
                     </Link>
                     <Link href={`/golf/dashboard/messages?player=${player.id}`}>
-                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="Send Message">
+                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" aria-label="Send Message">
                         <IconMessage size={18} className="text-slate-500" />
                       </button>
                     </Link>
                     <Link href={`/golf/dashboard/roster/${player.id}`}>
-                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="View Profile">
+                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" aria-label="View Profile">
                         <IconChevronRight size={18} className="text-slate-400" />
                       </button>
                     </Link>

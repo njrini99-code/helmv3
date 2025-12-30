@@ -34,6 +34,7 @@ import { useCoachStats, usePlayerStats } from '@/hooks/use-stats';
 import { useActivityFeed, useUpcomingEvents, useEngagementChart, useSavedSearches, usePlayersByState } from '@/hooks/use-dashboard';
 import { EngagementChart } from '@/components/dashboard/EngagementChart';
 import { USAMap } from '@/components/coach/discover/USAMap';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import { getFullName, formatHeight, getPipelineStageLabel, pluralize, formatRelativeTime } from '@/lib/utils';
 
 // Animated number component
@@ -64,14 +65,8 @@ function BentoStatCard({
   href?: string;
 }) {
   const content = (
-    <div className={`relative group rounded-2xl bg-white/70 backdrop-blur-xl saturate-150 border border-white/20 shadow-card overflow-hidden transition-all duration-300 hover:shadow-card-hover hover:border-slate-200/50 ${size === 'large' ? 'p-6' : 'p-5'}`}>
-      {/* Shine effect */}
-      <div
-        className="absolute inset-x-0 top-0 h-px pointer-events-none"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-        }}
-      />
+    <div className={`relative group glass-standard rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${size === 'large' ? 'p-6' : 'p-5'}`}>
+      <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm leading-relaxed text-slate-500 font-medium">{label}</p>
@@ -235,14 +230,8 @@ export default function DashboardPage() {
           {/* Second Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Recent Players - Large Card */}
-            <div className="lg:col-span-2 relative bg-white/70 backdrop-blur-xl saturate-150 rounded-2xl border border-white/20 shadow-card overflow-hidden">
-              {/* Shine effect */}
-              <div
-                className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-                }}
-              />
+            <div className="lg:col-span-2 relative glass-standard rounded-2xl overflow-hidden">
+              <ShineEffect />
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
@@ -313,13 +302,8 @@ export default function DashboardPage() {
             {/* Quick Actions + Upcoming Events */}
             <div className="space-y-4">
               {/* Quick Actions */}
-              <div className="relative bg-white/70 backdrop-blur-xl saturate-150 rounded-2xl border border-white/20 shadow-card p-5 overflow-hidden">
-                <div
-                  className="absolute inset-x-0 top-0 h-px pointer-events-none"
-                  style={{
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-                  }}
-                />
+              <div className="relative glass-standard rounded-2xl p-5 overflow-hidden">
+                <ShineEffect />
                 <h3 className="font-semibold text-slate-900 tracking-tight mb-4">Quick Actions</h3>
                 <div className="space-y-2">
                   <Link href="/baseball/dashboard/discover">
@@ -346,13 +330,8 @@ export default function DashboardPage() {
               </div>
 
               {/* Upcoming Events Widget */}
-              <div className="relative bg-white/70 backdrop-blur-xl saturate-150 rounded-2xl border border-white/20 shadow-card p-5 overflow-hidden">
-                <div
-                  className="absolute inset-x-0 top-0 h-px pointer-events-none"
-                  style={{
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-                  }}
-                />
+              <div className="relative glass-standard rounded-2xl p-5 overflow-hidden">
+                <ShineEffect />
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <IconCalendar size={16} className="text-green-500" />
@@ -431,13 +410,8 @@ export default function DashboardPage() {
           {/* Third Row - Analytics Chart + Activity Feed + Saved Searches */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Engagement Chart */}
-            <div className="lg:col-span-2 relative bg-white/70 backdrop-blur-xl saturate-150 rounded-2xl border border-white/20 shadow-card overflow-hidden">
-              <div
-                className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-                }}
-              />
+            <div className="lg:col-span-2 relative glass-standard rounded-2xl overflow-hidden">
+              <ShineEffect />
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
@@ -455,13 +429,8 @@ export default function DashboardPage() {
             </div>
 
             {/* Activity Feed */}
-            <div className="relative bg-white/70 backdrop-blur-xl saturate-150 rounded-2xl border border-white/20 shadow-card overflow-hidden">
-              <div
-                className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-                }}
-              />
+            <div className="relative glass-standard rounded-2xl overflow-hidden">
+              <ShineEffect />
               <div className="px-5 py-4 border-b border-slate-100/50">
                 <div className="flex items-center gap-2">
                   <IconActivity size={16} className="text-green-500" />
@@ -525,13 +494,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Fourth Row - Player Distribution Map */}
-          <div className="relative bg-white/70 backdrop-blur-xl saturate-150 rounded-2xl border border-white/20 shadow-card overflow-hidden">
-            <div
-              className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-              }}
-            />
+          <div className="relative glass-standard rounded-2xl overflow-hidden">
+            <ShineEffect />
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
@@ -581,13 +545,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Fifth Row - Saved Searches */}
-          <div className="relative bg-white/70 backdrop-blur-xl saturate-150 rounded-2xl border border-white/20 shadow-card p-5 overflow-hidden">
-            <div
-              className="absolute inset-x-0 top-0 h-px pointer-events-none"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-              }}
-            />
+          <div className="relative glass-standard rounded-2xl p-5 overflow-hidden">
+            <ShineEffect />
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <IconSearch size={16} className="text-slate-500" />
@@ -645,7 +604,7 @@ export default function DashboardPage() {
           <div className="relative bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl border border-slate-700/50 p-6 overflow-hidden">
             <div className="absolute top-0 right-0 w-96 h-96 bg-slate-700/20 rounded-full blur-3xl" />
             <div className="relative z-10 flex items-center gap-6">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center flex-shrink-0">
+              <div className="w-14 h-14 rounded-2xl glass-subtle flex items-center justify-center flex-shrink-0">
                 <IconTarget size={28} className="text-white" strokeWidth={1.5} />
               </div>
               <div className="flex-1">
@@ -666,13 +625,8 @@ export default function DashboardPage() {
         )}
 
         {/* Profile Card */}
-        <div className="relative bg-white/70 backdrop-blur-xl saturate-150 rounded-2xl border border-white/20 shadow-card p-6 overflow-hidden">
-          <div
-            className="absolute inset-x-0 top-0 h-px pointer-events-none"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-            }}
-          />
+        <div className="relative glass-standard rounded-2xl p-6 overflow-hidden">
+          <ShineEffect />
           <div className="flex items-center gap-6">
             <Avatar name={getFullName(player?.first_name, player?.last_name)} size="2xl" src={player?.avatar_url} />
             <div className="flex-1">
@@ -743,13 +697,8 @@ export default function DashboardPage() {
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Your Stats */}
-          <div className="relative bg-white/70 backdrop-blur-xl saturate-150 rounded-2xl border border-white/20 shadow-card overflow-hidden">
-            <div
-              className="absolute inset-x-0 top-0 h-px pointer-events-none"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-              }}
-            />
+          <div className="relative glass-standard rounded-2xl overflow-hidden">
+            <ShineEffect />
             <div className="px-6 py-4 border-b border-slate-100/50">
               <h2 className="font-semibold text-slate-900 tracking-tight">Your Stats</h2>
             </div>
@@ -771,13 +720,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="relative bg-white/70 backdrop-blur-xl saturate-150 rounded-2xl border border-white/20 shadow-card overflow-hidden">
-            <div
-              className="absolute inset-x-0 top-0 h-px pointer-events-none"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-              }}
-            />
+          <div className="relative glass-standard rounded-2xl overflow-hidden">
+            <ShineEffect />
             <div className="px-6 py-4 border-b border-slate-100/50">
               <h2 className="font-semibold text-slate-900 tracking-tight">Quick Actions</h2>
             </div>

@@ -65,16 +65,23 @@ export function EventsList({ events, isCoach }: EventsListProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Events</h2>
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+      {/* Shine effect */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+        }}
+      />
+      <h2 className="relative text-lg font-semibold text-slate-900 mb-4">Upcoming Events</h2>
 
       {upcomingEvents.length === 0 ? (
-        <div className="text-center py-8">
+        <div className="relative text-center py-8">
           <IconCalendar size={48} className="mx-auto text-slate-300 mb-4" />
           <p className="text-slate-500 text-sm">No upcoming events</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="relative space-y-4">
           {upcomingEvents.map(event => (
             <div
               key={event.id}

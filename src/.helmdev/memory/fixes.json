@@ -1,0 +1,765 @@
+[
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(onboarding)/coach/page.tsx-317",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(onboarding)/coach/page.tsx",
+    "completed_at": "2025-12-29T07:58:38.825Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(onboarding)/player/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(onboarding)/player/page.tsx",
+    "completed_at": "2025-12-29T08:10:45.884Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(onboarding)/player/page.tsx-443",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(onboarding)/player/page.tsx",
+    "completed_at": "2025-12-29T08:16:56.812Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(onboarding)/player/page.tsx-459",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(onboarding)/player/page.tsx",
+    "completed_at": "2025-12-29T08:17:56.983Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/page.tsx",
+    "completed_at": "2025-12-29T08:39:36.088Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-any-type-../../src/app/golf/(dashboard)/dashboard/page.tsx-792",
+    "type": "ts-any-type",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/page.tsx",
+    "completed_at": "2025-12-29T08:41:09.505Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-any-type-../../src/app/golf/(dashboard)/dashboard/page.tsx-868",
+    "type": "ts-any-type",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/page.tsx",
+    "completed_at": "2025-12-29T08:45:16.689Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-any-type-../../src/app/golf/(dashboard)/dashboard/page.tsx-896",
+    "type": "ts-any-type",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/page.tsx",
+    "completed_at": "2025-12-29T08:47:20.091Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/page.tsx-453",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/page.tsx",
+    "completed_at": "2025-12-29T08:50:20.093Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/page.tsx-498",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/page.tsx",
+    "completed_at": "2025-12-29T08:53:20.094Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/page.tsx-670",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/page.tsx",
+    "completed_at": "2025-12-29T08:56:20.086Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/page.tsx-781",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/page.tsx",
+    "completed_at": "2025-12-29T09:02:20.896Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/page.tsx-792",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/page.tsx",
+    "completed_at": "2025-12-29T09:10:09.883Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/page.tsx-802",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/page.tsx",
+    "completed_at": "2025-12-29T09:13:09.872Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/page.tsx-896",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/page.tsx",
+    "completed_at": "2025-12-29T09:15:43.220Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/settings/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/settings/page.tsx",
+    "completed_at": "2025-12-29T09:17:43.197Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "missing-loading-state-../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx-0",
+    "type": "missing-loading-state",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx",
+    "completed_at": "2025-12-29T09:19:43.177Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx",
+    "completed_at": "2025-12-29T09:21:43.179Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-any-type-../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx-169",
+    "type": "ts-any-type",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx",
+    "completed_at": "2025-12-29T09:24:22.596Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-as-any-../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx-113",
+    "type": "ts-as-any",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx",
+    "completed_at": "2025-12-29T09:26:22.596Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-as-any-../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx-133",
+    "type": "ts-as-any",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx",
+    "completed_at": "2025-12-29T09:28:22.597Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-as-any-../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx-149",
+    "type": "ts-as-any",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx",
+    "completed_at": "2025-12-29T09:30:22.597Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx-169",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx",
+    "completed_at": "2025-12-29T09:32:22.599Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx-200",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/tasks/page.tsx",
+    "completed_at": "2025-12-29T09:34:22.587Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "a11y-button-no-label-../../src/app/golf/(dashboard)/dashboard/messages/page.tsx-224",
+    "type": "a11y-button-no-label",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/messages/page.tsx",
+    "completed_at": "2025-12-29T09:36:22.584Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/messages/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/messages/page.tsx",
+    "completed_at": "2025-12-29T09:38:22.585Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/messages/page.tsx-164",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/messages/page.tsx",
+    "completed_at": "2025-12-29T09:40:22.591Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/messages/page.tsx-260",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/messages/page.tsx",
+    "completed_at": "2025-12-29T09:42:22.583Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/calendar/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/calendar/page.tsx",
+    "completed_at": "2025-12-29T09:44:22.586Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "a11y-button-no-label-../../src/app/golf/(dashboard)/dashboard/roster/page.tsx-166",
+    "type": "a11y-button-no-label",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/roster/page.tsx",
+    "completed_at": "2025-12-29T09:46:22.583Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "a11y-button-no-label-../../src/app/golf/(dashboard)/dashboard/roster/page.tsx-171",
+    "type": "a11y-button-no-label",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/roster/page.tsx",
+    "completed_at": "2025-12-29T09:48:22.580Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "a11y-button-no-label-../../src/app/golf/(dashboard)/dashboard/roster/page.tsx-176",
+    "type": "a11y-button-no-label",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/roster/page.tsx",
+    "completed_at": "2025-12-29T09:50:22.585Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/roster/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/roster/page.tsx",
+    "completed_at": "2025-12-29T09:52:22.582Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/roster/page.tsx-41",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/roster/page.tsx",
+    "completed_at": "2025-12-29T09:54:22.569Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/roster/page.tsx-97",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/roster/page.tsx",
+    "completed_at": "2025-12-29T09:56:22.569Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "todo-comment-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-269",
+    "type": "todo-comment",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T09:58:22.577Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:00:22.567Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-any-type-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-262",
+    "type": "ts-any-type",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:02:22.570Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-as-any-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-228",
+    "type": "ts-as-any",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:04:22.568Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-as-any-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-254",
+    "type": "ts-as-any",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:06:22.568Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-213",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:08:22.559Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-436",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:10:22.560Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-450",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:12:22.570Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-456",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:14:22.551Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-498",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:16:22.549Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "nav-delete-no-confirm-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-171",
+    "type": "nav-delete-no-confirm",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:18:22.550Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "nav-delete-no-confirm-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-177",
+    "type": "nav-delete-no-confirm",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:20:22.594Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "nav-delete-no-confirm-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-577",
+    "type": "nav-delete-no-confirm",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:22:22.593Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "nav-delete-no-confirm-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-577",
+    "type": "nav-delete-no-confirm",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+    "completed_at": "2025-12-29T10:24:22.549Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "missing-loading-state-../../src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx-0",
+    "type": "missing-loading-state",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx",
+    "completed_at": "2025-12-29T10:26:22.549Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx",
+    "completed_at": "2025-12-29T10:28:22.549Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx-113",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx",
+    "completed_at": "2025-12-29T10:30:22.542Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "missing-loading-state-../../src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx-0",
+    "type": "missing-loading-state",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx",
+    "completed_at": "2025-12-29T10:32:22.547Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx",
+    "completed_at": "2025-12-29T10:34:22.535Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-double-assertion-../../src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx-44",
+    "type": "ts-double-assertion",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx",
+    "completed_at": "2025-12-29T10:36:22.533Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx-53",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx",
+    "completed_at": "2025-12-29T10:38:22.539Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx-211",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx",
+    "completed_at": "2025-12-29T10:40:22.547Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "missing-loading-state-../../src/app/golf/(dashboard)/dashboard/announcements/page.tsx-0",
+    "type": "missing-loading-state",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/announcements/page.tsx",
+    "completed_at": "2025-12-29T10:42:22.542Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/announcements/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/announcements/page.tsx",
+    "completed_at": "2025-12-29T10:44:22.546Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/announcements/page.tsx-111",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/announcements/page.tsx",
+    "completed_at": "2025-12-29T10:46:22.541Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/team/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/team/page.tsx",
+    "completed_at": "2025-12-29T10:48:22.539Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "auth-missing-../../src/app/golf/(dashboard)/dashboard/team/page.tsx-0",
+    "type": "auth-missing",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/team/page.tsx",
+    "completed_at": "2025-12-29T10:50:22.536Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/rounds/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/page.tsx",
+    "completed_at": "2025-12-29T10:52:22.517Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/rounds/page.tsx-131",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/page.tsx",
+    "completed_at": "2025-12-29T10:54:22.525Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/rounds/page.tsx-137",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/page.tsx",
+    "completed_at": "2025-12-29T10:56:22.525Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "missing-loading-state-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-0",
+    "type": "missing-loading-state",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T10:58:22.524Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "a11y-input-no-label-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-235",
+    "type": "a11y-input-no-label",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T11:00:22.526Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "a11y-input-no-label-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-250",
+    "type": "a11y-input-no-label",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T11:02:22.526Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "a11y-input-no-label-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-262",
+    "type": "a11y-input-no-label",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T11:04:22.526Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "a11y-input-no-label-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-278",
+    "type": "a11y-input-no-label",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T11:06:22.520Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "a11y-input-no-label-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-291",
+    "type": "a11y-input-no-label",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T11:08:22.520Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "a11y-input-no-label-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-342",
+    "type": "a11y-input-no-label",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T11:10:22.530Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T11:12:22.492Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-as-any-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-330",
+    "type": "ts-as-any",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T11:14:22.541Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "auth-missing-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-0",
+    "type": "auth-missing",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T11:16:22.526Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-80",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T11:18:22.523Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-101",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+    "completed_at": "2025-12-29T11:20:22.492Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "missing-loading-state-../../src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx-0",
+    "type": "missing-loading-state",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx",
+    "completed_at": "2025-12-29T11:22:22.525Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx",
+    "completed_at": "2025-12-29T11:24:22.482Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-double-assertion-../../src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx-118",
+    "type": "ts-double-assertion",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx",
+    "completed_at": "2025-12-29T11:26:22.508Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx-418",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx",
+    "completed_at": "2025-12-29T11:28:22.508Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "placeholder-content-../../src/app/golf/(dashboard)/dashboard/documents/page.tsx-26",
+    "type": "placeholder-content",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/documents/page.tsx",
+    "completed_at": "2025-12-29T11:30:22.509Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "missing-loading-state-../../src/app/golf/(dashboard)/dashboard/documents/page.tsx-0",
+    "type": "missing-loading-state",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/documents/page.tsx",
+    "completed_at": "2025-12-29T11:32:22.506Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/documents/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/documents/page.tsx",
+    "completed_at": "2025-12-29T11:34:22.481Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "placeholder-content-../../src/app/golf/(dashboard)/dashboard/travel/page.tsx-20",
+    "type": "placeholder-content",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/travel/page.tsx",
+    "completed_at": "2025-12-29T11:36:22.519Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "placeholder-content-../../src/app/golf/(dashboard)/dashboard/travel/page.tsx-40",
+    "type": "placeholder-content",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/travel/page.tsx",
+    "completed_at": "2025-12-29T11:38:22.490Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "missing-loading-state-../../src/app/golf/(dashboard)/dashboard/travel/page.tsx-0",
+    "type": "missing-loading-state",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/travel/page.tsx",
+    "completed_at": "2025-12-29T11:40:22.507Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/travel/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/travel/page.tsx",
+    "completed_at": "2025-12-29T11:42:22.511Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/travel/page.tsx-51",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/travel/page.tsx",
+    "completed_at": "2025-12-29T11:44:22.514Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/stats/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/stats/page.tsx",
+    "completed_at": "2025-12-29T11:46:22.499Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/stats/page.tsx-99",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/stats/page.tsx",
+    "completed_at": "2025-12-29T11:48:22.512Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/stats/page.tsx-200",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/stats/page.tsx",
+    "completed_at": "2025-12-29T11:50:22.477Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/stats/page.tsx-207",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/stats/page.tsx",
+    "completed_at": "2025-12-29T11:52:22.504Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/stats/page.tsx-290",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/golf/(dashboard)/dashboard/stats/page.tsx",
+    "completed_at": "2025-12-29T11:54:22.488Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/baseball/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/baseball/page.tsx",
+    "completed_at": "2025-12-29T11:56:22.488Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/baseball/page.tsx-78",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/baseball/page.tsx",
+    "completed_at": "2025-12-29T11:58:22.487Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "missing-loading-state-../../src/app/baseball/(onboarding)/coach-onboarding/page.tsx-0",
+    "type": "missing-loading-state",
+    "file_path": "../../src/app/baseball/(onboarding)/coach-onboarding/page.tsx",
+    "completed_at": "2025-12-29T12:00:22.483Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/baseball/(onboarding)/coach-onboarding/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/baseball/(onboarding)/coach-onboarding/page.tsx",
+    "completed_at": "2025-12-29T12:02:22.453Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/baseball/(onboarding)/coach/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/baseball/(onboarding)/coach/page.tsx",
+    "completed_at": "2025-12-29T12:04:22.453Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "seo-missing-metadata-../../src/app/baseball/(onboarding)/player/page.tsx-0",
+    "type": "seo-missing-metadata",
+    "file_path": "../../src/app/baseball/(onboarding)/player/page.tsx",
+    "completed_at": "2025-12-29T12:06:22.443Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/baseball/(onboarding)/player/page.tsx-291",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/baseball/(onboarding)/player/page.tsx",
+    "completed_at": "2025-12-29T12:08:22.443Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/baseball/(onboarding)/player/page.tsx-382",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/baseball/(onboarding)/player/page.tsx",
+    "completed_at": "2025-12-29T12:10:22.438Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/baseball/(onboarding)/player/page.tsx-401",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/baseball/(onboarding)/player/page.tsx",
+    "completed_at": "2025-12-29T12:12:22.487Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/baseball/(onboarding)/player/page.tsx-421",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/baseball/(onboarding)/player/page.tsx",
+    "completed_at": "2025-12-29T12:14:22.438Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/baseball/(onboarding)/player/page.tsx-433",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/baseball/(onboarding)/player/page.tsx",
+    "completed_at": "2025-12-29T12:16:22.438Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "empty-state-map-no-check-../../src/app/baseball/(onboarding)/player/page.tsx-502",
+    "type": "empty-state-map-no-check",
+    "file_path": "../../src/app/baseball/(onboarding)/player/page.tsx",
+    "completed_at": "2025-12-29T12:18:22.441Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "missing-loading-state-../../src/app/baseball/(public)/program/[id]/page.tsx-0",
+    "type": "missing-loading-state",
+    "file_path": "../../src/app/baseball/(public)/program/[id]/page.tsx",
+    "completed_at": "2025-12-29T12:20:22.439Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-any-type-../../src/app/baseball/(public)/program/[id]/page.tsx-98",
+    "type": "ts-any-type",
+    "file_path": "../../src/app/baseball/(public)/program/[id]/page.tsx",
+    "completed_at": "2025-12-29T12:22:22.423Z",
+    "approach": "unknown"
+  },
+  {
+    "task_id": "ts-any-type-../../src/app/baseball/(public)/program/[id]/page.tsx-99",
+    "type": "ts-any-type",
+    "file_path": "../../src/app/baseball/(public)/program/[id]/page.tsx",
+    "completed_at": "2025-12-29T12:24:22.468Z",
+    "approach": "unknown"
+  }
+]

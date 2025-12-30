@@ -23,6 +23,7 @@ function DiscoverContent() {
   const [watchlistIds, setWatchlistIds] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   // Parse filters from URL
@@ -34,7 +35,7 @@ function DiscoverContent() {
     maxVelo: searchParams.get('maxVelo') ? parseInt(searchParams.get('maxVelo')!) : undefined,
     minExit: searchParams.get('minExit') ? parseInt(searchParams.get('minExit')!) : undefined,
     maxExit: searchParams.get('maxExit') ? parseInt(searchParams.get('maxExit')!) : undefined,
-    hasVideo: searchParams.get('hasVideo') === 'true',
+    hasVideo: searchParams.get('hasVideo') === 'true' || undefined,
     search: searchParams.get('search') || undefined,
   }), [searchParams]);
 
@@ -51,62 +52,90 @@ function DiscoverContent() {
       }
 
       setLoading(true);
-      const supabase = createClient();
-      const offset = (page - 1) * perPage;
+      setError(null);
 
-      // Build query
-      let query = supabase
-        .from('players')
-        .select(`
-          *,
-          player_videos(id, thumbnail_url, is_primary)
-        `, { count: 'exact' })
-        .eq('recruiting_activated', true);
+      try {
+        const supabase = createClient();
+        const offset = (page - 1) * perPage;
 
-      // Apply filters
-      if (filters.gradYear) {
-        query = query.eq('grad_year', filters.gradYear);
-      }
-      if (filters.position) {
-        query = query.or(`primary_position.eq.${filters.position},secondary_position.eq.${filters.position}`);
-      }
-      if (filters.state) {
-        query = query.eq('state', filters.state);
-      }
-      if (filters.minVelo) {
-        query = query.gte('pitch_velo', filters.minVelo);
-      }
-      if (filters.maxVelo) {
-        query = query.lte('pitch_velo', filters.maxVelo);
-      }
-      if (filters.minExit) {
-        query = query.gte('exit_velo', filters.minExit);
-      }
-      if (filters.maxExit) {
-        query = query.lte('exit_velo', filters.maxExit);
-      }
-      if (filters.hasVideo) {
-        query = query.eq('has_video', true);
-      }
-      if (filters.search) {
-        query = query.or(`first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,high_school_name.ilike.%${filters.search}%`);
-      }
+        // Build query
+        let query = supabase
+          .from('players')
+          .select(`
+            *,
+            player_videos(id, thumbnail_url, is_primary)
+          `, { count: 'exact' })
+          .eq('recruiting_activated', true);
 
-      // Execute query
-      const { data: playersData, count } = await query
-        .order('updated_at', { ascending: false })
-        .range(offset, offset + perPage - 1);
+        // Apply filters
+        if (filters.gradYear) {
+          query = query.eq('grad_year', filters.gradYear);
+        }
+        if (filters.position) {
+          query = query.or(`primary_position.eq.${filters.position},secondary_position.eq.${filters.position}`);
+        }
+        if (filters.state) {
+          query = query.eq('state', filters.state);
+        }
+        if (filters.minVelo) {
+          query = query.gte('pitch_velo', filters.minVelo);
+        }
+        if (filters.maxVelo) {
+          query = query.lte('pitch_velo', filters.maxVelo);
+        }
+        if (filters.minExit) {
+          query = query.gte('exit_velo', filters.minExit);
+        }
+        if (filters.maxExit) {
+          query = query.lte('exit_velo', filters.maxExit);
+        }
+        if (filters.hasVideo) {
+          query = query.eq('has_video', true);
+        }
+        if (filters.search) {
+          query = query.or(`first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,high_school_name.ilike.%${filters.search}%`);
+        }
 
-      // Get watchlist
-      const { data: watchlist } = await supabase
-        .from('watchlists')
-        .select('player_id')
-        .eq('coach_id', coach.id);
+        // Execute query
+        const { data: playersData, count, error: playersError } = await query
+          .order('updated_at', { ascending: false })
+          .range(offset, offset + perPage - 1);
 
-      setPlayers(playersData || []);
-      setTotalCount(count || 0);
-      setWatchlistIds(watchlist?.map(w => w.player_id) || []);
-      setLoading(false);
+        if (playersError) {
+          console.error('Error fetching players:', playersError);
+          setError('Failed to load players. Please try again.');
+          setPlayers([]);
+          setTotalCount(0);
+          setWatchlistIds([]);
+          setLoading(false);
+          return;
+        }
+
+        // Get watchlist
+        const { data: watchlist, error: watchlistError } = await supabase
+          .from('watchlists')
+          .select('player_id')
+          .eq('coach_id', coach.id);
+
+        if (watchlistError) {
+          console.error('Error fetching watchlist:', watchlistError);
+          // Don't fail the whole page for watchlist errors, just log it
+          setWatchlistIds([]);
+        } else {
+          setWatchlistIds(watchlist?.map(w => w.player_id) || []);
+        }
+
+        setPlayers(playersData || []);
+        setTotalCount(count || 0);
+        setLoading(false);
+      } catch (err) {
+        console.error('Unexpected error fetching players:', err);
+        setError('An unexpected error occurred. Please try again.');
+        setPlayers([]);
+        setTotalCount(0);
+        setWatchlistIds([]);
+        setLoading(false);
+      }
     }
 
     fetchPlayers();
@@ -140,7 +169,20 @@ function DiscoverContent() {
         subtitle="Search and filter to find your next recruit"
       />
 
-      <div className="p-6">
+      <div className="p-6 lg:p-8">
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-600 hover:text-red-700 font-medium transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         <div className="flex gap-6">
           {/* Filters Sidebar */}
           <div className="w-64 flex-shrink-0">
@@ -160,6 +202,7 @@ function DiscoverContent() {
                 currentPage={page}
                 totalPages={totalPages}
                 onPlayerClick={(id) => setSelectedPlayerId(id)}
+                filters={filters}
               />
             )}
           </div>

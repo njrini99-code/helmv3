@@ -1,0 +1,28 @@
+{
+  "name": "ultra-agent-audit",
+  "version": "7.0.0",
+  "description": "Ultra Agent Audit - Multi-agent UX auditing with NO paid API calls",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "audit": "node -e \"fetch('http://localhost:3333/api/audit', {method:'POST'}).then(r=>r.json()).then(console.log)\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "puppeteer": "^21.6.1",
+    "ws": "^8.14.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "ux-audit",
+    "multi-agent",
+    "ui-review",
+    "helm-sports",
+    "no-api-costs"
+  ],
+  "author": "Helm Sports Labs"
+}

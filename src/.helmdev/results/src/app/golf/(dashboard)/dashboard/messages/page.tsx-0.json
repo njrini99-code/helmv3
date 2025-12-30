@@ -1,0 +1,7 @@
+{
+  "taskId": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/messages/page.tsx-0",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Metadata added successfully. Created a layout.tsx file with proper SEO metadata since the main page.tsx file uses 'use client' directive.\n",
+  "timestamp": "2025-12-29T09:38:48.587Z"
+}

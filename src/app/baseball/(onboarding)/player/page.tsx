@@ -288,11 +288,15 @@ export default function PlayerOnboarding() {
                         onChange={(e) => setGradYear(parseInt(e.target.value))}
                         required
                       >
-                        {gradYears.map((year) => (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        ))}
+                        {gradYears && gradYears.length > 0 ? (
+                          gradYears.map((year) => (
+                            <option key={year} value={year}>
+                              {year}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No years available</option>
+                        )}
                       </NativeSelect>
                     </motion.div>
 
@@ -379,11 +383,15 @@ export default function PlayerOnboarding() {
                         required
                       >
                         <option value="">Select position</option>
-                        {positions.map((pos) => (
-                          <option key={pos} value={pos}>
-                            {pos}
-                          </option>
-                        ))}
+                        {positions && positions.length > 0 ? (
+                          positions.map((pos) => (
+                            <option key={pos} value={pos}>
+                              {pos}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No positions available</option>
+                        )}
                       </NativeSelect>
                     </motion.div>
 
@@ -398,11 +406,15 @@ export default function PlayerOnboarding() {
                         onChange={(e) => setSecondaryPosition(e.target.value)}
                       >
                         <option value="">None</option>
-                        {positions.map((pos) => (
-                          <option key={pos} value={pos}>
-                            {pos}
-                          </option>
-                        ))}
+                        {positions && positions.length > 0 ? (
+                          positions.map((pos) => (
+                            <option key={pos} value={pos}>
+                              {pos}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No positions available</option>
+                        )}
                       </NativeSelect>
                     </motion.div>
 
@@ -430,11 +442,15 @@ export default function PlayerOnboarding() {
                         onChange={(e) => setThrows(e.target.value)}
                       >
                         <option value="">Select</option>
-                        {handedness.map((h) => (
-                          <option key={h} value={h}>
-                            {h}
-                          </option>
-                        ))}
+                        {handedness && handedness.length > 0 ? (
+                          handedness.map((h) => (
+                            <option key={h} value={h}>
+                              {h}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No options available</option>
+                        )}
                       </NativeSelect>
                     </motion.div>
                   </div>

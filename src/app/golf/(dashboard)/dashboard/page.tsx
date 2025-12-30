@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/golf/EmptyState';
 import { RecentActivityFeed } from '@/components/golf/RecentActivityFeed';
 import { PageLoading } from '@/components/ui/loading';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import {
   IconUsers,
   IconCalendar,
@@ -78,19 +79,19 @@ interface PlayerDashboardData {
 // REUSABLE COMPONENTS
 // ============================================================================
 
-function MetricCard({ 
-  icon, 
+function MetricCard({
+  icon,
   iconColor,
-  label, 
-  value, 
+  label,
+  value,
   subValue,
   trend,
   href,
-  delay = 0 
-}: { 
-  icon: React.ReactNode; 
+  delay = 0
+}: {
+  icon: React.ReactNode;
   iconColor: string;
-  label: string; 
+  label: string;
   value: string | number;
   subValue?: string;
   trend?: { value: number; positive: boolean } | null;
@@ -98,22 +99,20 @@ function MetricCard({
   delay?: number;
 }) {
   const content = (
-    <div 
+    <div
       className={cn(
-        "group relative bg-white rounded-2xl p-5 transition-all duration-200",
-        "border border-slate-200/60 hover:border-slate-300/80",
-        "hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+        "group relative glass-standard rounded-2xl p-5 overflow-hidden transition-all duration-300",
+        "hover:shadow-lg hover:-translate-y-0.5",
         href && "cursor-pointer"
       )}
-      style={{ 
+      style={{
         animationDelay: `${delay}ms`,
         animation: 'fadeInUp 0.5s ease-out forwards',
         opacity: 0,
       }}
     >
-      {/* Subtle gradient overlay on hover */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      
+      <ShineEffect />
+
       <div className="relative flex items-start justify-between">
         <div className="flex-1">
           <p className="text-[13px] font-medium text-slate-500 mb-1">{label}</p>
@@ -157,15 +156,15 @@ function MetricCard({
   return content;
 }
 
-function QuickActionCard({ 
-  icon, 
-  label, 
+function QuickActionCard({
+  icon,
+  label,
   description,
-  href, 
+  href,
   variant = 'default',
-  delay = 0 
-}: { 
-  icon: React.ReactNode; 
+  delay = 0
+}: {
+  icon: React.ReactNode;
   label: string;
   description?: string;
   href: string;
@@ -174,19 +173,21 @@ function QuickActionCard({
 }) {
   return (
     <Link href={href}>
-      <div 
+      <div
         className={cn(
-          'group relative flex items-center gap-4 p-4 rounded-xl transition-all duration-200',
-          variant === 'primary' 
-            ? 'bg-slate-900 text-white hover:bg-slate-800' 
-            : 'bg-white border border-slate-200/60 hover:border-slate-300 hover:shadow-sm'
+          'group relative flex items-center gap-4 p-4 rounded-xl overflow-hidden transition-all duration-300',
+          variant === 'primary'
+            ? 'bg-slate-900 text-white hover:bg-slate-800'
+            : 'glass-standard hover:shadow-lg hover:-translate-y-0.5'
         )}
-        style={{ 
+        style={{
           animationDelay: `${delay}ms`,
           animation: 'fadeInUp 0.5s ease-out forwards',
           opacity: 0,
         }}
       >
+        {/* Shine effect for default variant */}
+        {variant === 'default' && <ShineEffect />}
         <div className={cn(
           'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105',
           variant === 'primary' ? 'bg-white/10' : 'bg-slate-100'
@@ -444,14 +445,15 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
             </div>
 
             {/* Top Performers */}
-            {topPlayers.length > 0 && (
-              <div>
-                <SectionHeader title="Top Performers" action={{ label: 'View All', href: '/golf/dashboard/stats' }} />
-                <div className="bg-white rounded-2xl border border-slate-200/60 overflow-hidden">
-                  {topPlayers.slice(0, 3).map((player, i) => (
+            <div>
+              <SectionHeader title="Top Performers" action={{ label: 'View All', href: '/golf/dashboard/stats' }} />
+              <div className="relative glass-standard rounded-2xl overflow-hidden">
+                <ShineEffect />
+                {topPlayers.length > 0 ? (
+                  topPlayers.slice(0, 3).map((player, i) => (
                     <div key={player.id} className={cn(
                       'flex items-center gap-3 px-4 py-3',
-                      i !== topPlayers.length - 1 && 'border-b border-slate-100'
+                      i !== topPlayers.slice(0, 3).length - 1 && 'border-b border-slate-100'
                     )}>
                       <div className={cn(
                         'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold',
@@ -470,19 +472,22 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
                         <p className="text-xs text-slate-400">avg</p>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <EmptyState type="stats" compact />
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Right Column - Recent Rounds */}
           <div className="lg:col-span-2">
-            <SectionHeader 
-              title="Recent Rounds" 
+            <SectionHeader
+              title="Recent Rounds"
               action={{ label: 'View All', href: '/golf/dashboard/stats' }}
             />
-            <div className="bg-white rounded-2xl border border-slate-200/60 overflow-hidden">
+            <div className="relative glass-standard rounded-2xl overflow-hidden">
+              <ShineEffect />
               {recentRounds.length === 0 ? (
                 <EmptyState 
                   type="rounds" 
@@ -511,8 +516,11 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
             {team && (
               <div className="mt-6">
                 <SectionHeader title="Recent Activity" />
-                <div className="bg-white rounded-2xl border border-slate-200/60 p-4">
-                  <RecentActivityFeed teamId={team.id} limit={5} />
+                <div className="relative glass-standard rounded-2xl overflow-hidden p-4">
+                  <ShineEffect />
+                  <div className="relative">
+                    <RecentActivityFeed teamId={team.id} limit={5} />
+                  </div>
                 </div>
               </div>
             )}
@@ -647,18 +655,13 @@ function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
 
           {/* Right Column - Recent Rounds */}
           <div className="lg:col-span-2">
-            <SectionHeader 
-              title="My Recent Rounds" 
+            <SectionHeader
+              title="My Recent Rounds"
               action={{ label: 'View All', href: '/golf/dashboard/rounds' }}
             />
-            <div className="bg-white rounded-2xl border border-slate-200/60 overflow-hidden">
-              {recentRounds.length === 0 ? (
-                <EmptyState 
-                  type="rounds" 
-                  compact
-                  action={{ label: 'Submit First Round', href: '/golf/dashboard/rounds' }}
-                />
-              ) : (
+            <div className="relative glass-standard rounded-2xl overflow-hidden">
+              <ShineEffect />
+              {recentRounds.length > 0 ? (
                 <div className="divide-y divide-slate-100">
                   {recentRounds.map((round, i) => (
                     <RoundRow
@@ -672,6 +675,12 @@ function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                     />
                   ))}
                 </div>
+              ) : (
+                <EmptyState
+                  type="rounds"
+                  compact
+                  action={{ label: 'Submit First Round', href: '/golf/dashboard/rounds' }}
+                />
               )}
             </div>
           </div>
@@ -782,14 +791,16 @@ export default function GolfDashboardPage() {
               .order('round_date', { ascending: false })
               .limit(6);
 
-            recentRounds = (rounds || []).map((r: any) => ({
-              id: r.id,
-              player_name: `${r.player?.first_name || ''} ${r.player?.last_name || ''}`.trim() || 'Unknown',
-              course_name: r.course_name,
-              total_score: r.total_score || 0,
-              total_to_par: r.total_to_par || 0,
-              round_date: r.round_date,
-            }));
+            if (rounds && rounds.length > 0) {
+              recentRounds = rounds.map((r: any) => ({
+                id: r.id,
+                player_name: `${r.player?.first_name || ''} ${r.player?.last_name || ''}`.trim() || 'Unknown',
+                course_name: r.course_name,
+                total_score: r.total_score || 0,
+                total_to_par: r.total_to_par || 0,
+                round_date: r.round_date,
+              }));
+            }
 
             // Calculate team average and top players
             const playerStats = await Promise.all(players.map(async (p) => {
@@ -886,13 +897,15 @@ export default function GolfDashboardPage() {
             handicap: player.handicap,
             recentTrend,
           },
-          recentRounds: playerRounds.slice(0, 5).map((r: any) => ({
-            id: r.id,
-            course_name: r.course_name,
-            total_score: r.total_score || 0,
-            total_to_par: r.total_to_par || 0,
-            round_date: r.round_date,
-          })),
+          recentRounds: playerRounds && playerRounds.length > 0
+            ? playerRounds.slice(0, 5).map((r) => ({
+                id: r.id,
+                course_name: r.course_name,
+                total_score: r.total_score || 0,
+                total_to_par: r.total_to_par || 0,
+                round_date: r.round_date,
+              }))
+            : [],
         });
 
         setLoading(false);

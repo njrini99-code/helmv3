@@ -1,0 +1,7 @@
+{
+  "taskId": "ts-double-assertion-../../src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx-118",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The double assertion has been replaced with a properly typed object construction that handles the Supabase response structure correctly.\n",
+  "timestamp": "2025-12-29T11:26:46.972Z"
+}

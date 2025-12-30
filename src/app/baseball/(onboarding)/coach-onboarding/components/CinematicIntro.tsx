@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 
 interface CinematicIntroProps {
@@ -9,6 +9,7 @@ interface CinematicIntroProps {
 
 export function CinematicIntro({ onComplete }: CinematicIntroProps) {
   const [phase, setPhase] = useState<'tagline' | 'logo-form' | 'transition' | 'complete'>('tagline');
+  const [showSkip, setShowSkip] = useState(false);
 
   useEffect(() => {
     const taglineTimer = setTimeout(() => setPhase('logo-form'), 5500);
@@ -24,6 +25,12 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
       clearTimeout(transitionTimer);
     };
   }, [onComplete]);
+
+  // Show skip button after 2 seconds
+  useEffect(() => {
+    const skipTimer = setTimeout(() => setShowSkip(true), 2000);
+    return () => clearTimeout(skipTimer);
+  }, []);
 
   const isTagline = phase === 'tagline';
   const isLogoPhase = phase === 'logo-form' || phase === 'transition';
@@ -173,6 +180,22 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
           style={{ zIndex: 200 }}
         />
       )}
+
+      {/* Skip button - appears after 2 seconds */}
+      <AnimatePresence>
+        {showSkip && phase !== 'transition' && phase !== 'complete' && (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={onComplete}
+            className="fixed bottom-8 right-8 text-white/60 hover:text-white text-sm flex items-center gap-1 transition-colors z-50"
+          >
+            Skip <span className="text-xs">→</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

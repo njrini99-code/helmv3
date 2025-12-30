@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { PlayerCard, PlayerCardData } from './PlayerCard';
 import { IconUsers } from '@/components/icons';
@@ -16,6 +17,15 @@ interface PlayerCardGridProps {
   emptyMessage?: string;
   emptyTitle?: string;
   className?: string;
+  // Compare mode props
+  showCheckbox?: boolean;
+  selectedIds?: string[];
+  onSelect?: (playerId: string) => void;
+  // Featured players (top prospects)
+  featuredIds?: string[];
+  // Hover preview props
+  onCardHover?: (player: PlayerCardData, event: React.MouseEvent) => void;
+  onCardLeave?: () => void;
 }
 
 export function PlayerCardGrid({
@@ -30,12 +40,44 @@ export function PlayerCardGrid({
   emptyTitle = 'No players found',
   emptyMessage = 'Try adjusting your filters or search criteria',
   className,
+  showCheckbox = false,
+  selectedIds = [],
+  onSelect,
+  featuredIds = [],
+  onCardHover,
+  onCardLeave,
 }: PlayerCardGridProps) {
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const gridCols = {
     2: 'grid-cols-1 md:grid-cols-2',
     3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
     4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
   };
+
+  // Hover handlers with 300ms delay
+  const handleMouseEnter = useCallback((player: PlayerCardData, event: React.MouseEvent) => {
+    if (!onCardHover) return;
+    
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    // Set new timeout for 300ms delay
+    hoverTimeoutRef.current = setTimeout(() => {
+      onCardHover(player, event);
+    }, 300);
+  }, [onCardHover]);
+
+  const handleMouseLeave = useCallback(() => {
+    // Clear timeout if mouse leaves before delay completes
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    onCardLeave?.();
+  }, [onCardLeave]);
 
   // Loading state
   if (loading) {
@@ -72,11 +114,13 @@ export function PlayerCardGrid({
         {players.map((player, index) => (
           <div
             key={player.id}
-            className="animate-fade-up"
+            className="animate-fade-up opacity-0"
             style={{
               animationDelay: `${Math.min(index * 30, 300)}ms`,
-              animationFillMode: 'both'
+              animationFillMode: 'forwards'
             }}
+            onMouseEnter={(e) => handleMouseEnter(player, e)}
+            onMouseLeave={handleMouseLeave}
           >
             <PlayerCard
               player={player}
@@ -85,6 +129,10 @@ export function PlayerCardGrid({
               onMessage={onMessage ? () => onMessage(player.id) : undefined}
               onPlayerClick={onPlayerClick ? () => onPlayerClick(player.id) : undefined}
               isOnWatchlist={watchlistIds.includes(player.id)}
+              showCheckbox={showCheckbox}
+              isSelected={selectedIds.includes(player.id)}
+              onSelect={onSelect ? () => onSelect(player.id) : undefined}
+              isFeatured={featuredIds.includes(player.id)}
             />
           </div>
         ))}
@@ -98,11 +146,13 @@ export function PlayerCardGrid({
       {players.map((player, index) => (
         <div
           key={player.id}
-          className="animate-fade-up"
+          className="animate-fade-up opacity-0"
           style={{
             animationDelay: `${Math.min(index * 50, 500)}ms`,
-            animationFillMode: 'both'
+            animationFillMode: 'forwards'
           }}
+          onMouseEnter={(e) => handleMouseEnter(player, e)}
+          onMouseLeave={handleMouseLeave}
         >
           <PlayerCard
             player={player}
@@ -111,6 +161,10 @@ export function PlayerCardGrid({
             onMessage={onMessage ? () => onMessage(player.id) : undefined}
             onPlayerClick={onPlayerClick ? () => onPlayerClick(player.id) : undefined}
             isOnWatchlist={watchlistIds.includes(player.id)}
+            showCheckbox={showCheckbox}
+            isSelected={selectedIds.includes(player.id)}
+            onSelect={onSelect ? () => onSelect(player.id) : undefined}
+            isFeatured={featuredIds.includes(player.id)}
           />
         </div>
       ))}

@@ -1,0 +1,7 @@
+{
+  "taskId": "ts-as-any-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-254",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The `as any` assertion has been removed by explicitly mapping all properties from `ParsedClass` to `ClassFormData`, ensuring type safety without bypassing the type checker.\n",
+  "timestamp": "2025-12-29T10:06:47.987Z"
+}

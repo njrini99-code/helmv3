@@ -1,0 +1,7 @@
+{
+  "taskId": "ts-as-any-../../src/app/golf/(dashboard)/dashboard/classes/page.tsx-228",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Perfect! I've fixed the type assertion issue. The problem was that the `ParsedClass` interface didn't include the `color` property, which was being used in the code. Instead of using `as any` or type assertions like `as ParsedClass & { color?: string }`, I:\n\n1. **Added the `color?: string` property to the `ParsedClass` interface** in `/Users/ricknini/Downloads/helmv3/src/lib/utils/schedule-parser.ts` (line 19)\n\n2. **Removed the unnecessary type assertions** from the classes page (lines 214 and 253), allowing TypeScript to properly type-check the code\n\nThis fix maintains type safety while eliminating the need for type assertions that bypass TypeScript's type checking.\n",
+  "timestamp": "2025-12-29T10:05:24.183Z"
+}

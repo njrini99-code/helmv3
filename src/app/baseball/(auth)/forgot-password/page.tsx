@@ -19,8 +19,10 @@ export default function ForgotPasswordPage() {
     setError('');
 
     try {
+      // Get the origin safely for SSR compatibility
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/baseball/reset-password`,
+        redirectTo: `${origin}/baseball/reset-password`,
       });
 
       if (resetError) {
@@ -88,7 +90,7 @@ export default function ForgotPasswordPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="Enter your email address"
               required
               autoFocus
             />

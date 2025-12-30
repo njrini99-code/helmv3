@@ -27,17 +27,25 @@ export function OnboardingCard({
         text-lg font-medium font-sf-pro
         ${
           selected
-            ? 'border-onboarding-kelly-green bg-onboarding-kelly-green-muted text-onboarding-kelly-green'
-            : 'border-onboarding-border-light text-onboarding-text-primary hover:border-onboarding-kelly-green hover:shadow-focus-ring'
+            ? 'border-onboarding-kelly-green bg-onboarding-kelly-green-muted text-onboarding-kelly-green shadow-md'
+            : 'border-onboarding-border-light text-onboarding-text-primary hover:border-onboarding-kelly-green hover:shadow-lg hover:-translate-y-0.5'
         }
         ${className}
       `}
       onClick={onClick}
-      whileHover={{ scale: 1.01 }}
+      whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
     >
-      {icon && <span className="text-2xl">{icon}</span>}
+      {icon && (
+        <motion.span
+          className="text-2xl"
+          whileHover={{ scale: 1.1 }}
+          transition={{ duration: 0.2 }}
+        >
+          {icon}
+        </motion.span>
+      )}
       {children}
     </motion.button>
   );

@@ -75,7 +75,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Card glass={true} className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="border-b border-slate-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageLoading } from '@/components/ui/loading';
+import { SkeletonCalendar } from '@/components/ui/skeleton-loader';
 import { IconCalendar, IconPlus, IconClock, IconMapPin, IconTrash, IconEdit } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
@@ -104,6 +105,28 @@ export default function CalendarPage() {
 
   if (authLoading) return <PageLoading />;
 
+  // Show skeleton while loading events
+  if (loading) {
+    return (
+      <>
+        <Header
+          title="Calendar"
+          subtitle={isCoach ? 'Manage team schedule and events' : 'View your team schedule'}
+        >
+          {isCoach && (
+            <Button disabled>
+              <IconPlus size={16} className="mr-2" />
+              Add Event
+            </Button>
+          )}
+        </Header>
+        <div className="p-6 lg:p-8">
+          <SkeletonCalendar />
+        </div>
+      </>
+    );
+  }
+
   const getEventColor = (type: string) => {
     switch (type) {
       case 'practice':
@@ -179,9 +202,9 @@ export default function CalendarPage() {
           </Button>
         )}
       </Header>
-      <div className="p-8">
+      <div className="p-6 lg:p-8">
         {/* View Selector */}
-        <Card className="mb-6">
+        <Card glass className="mb-6">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div role="tablist" aria-label="Calendar view options" className="flex items-center gap-2">
@@ -275,31 +298,7 @@ export default function CalendarPage() {
                   <h2 className="font-semibold text-slate-900">Schedule</h2>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
-                    <div className="space-y-3 py-4">
-                      {[1, 2, 3, 4].map(i => (
-                        <div
-                          key={i}
-                          className="border border-slate-200 rounded-lg p-4 animate-pulse"
-                          style={{ animationDelay: `${i * 100}ms` }}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="w-1 h-14 rounded-full bg-slate-200" />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="h-5 bg-slate-200 rounded w-32" />
-                                <div className="h-5 bg-slate-200 rounded-full w-16" />
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <div className="h-4 bg-slate-200 rounded w-24" />
-                                <div className="h-4 bg-slate-200 rounded w-20" />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : events.length === 0 ? (
+                  {events.length === 0 ? (
                   /* Empty State */
                   <div className="text-center py-16">
                     <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">

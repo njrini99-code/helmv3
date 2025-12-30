@@ -38,7 +38,7 @@ export function DashboardHeader({ title, children }: DashboardHeaderProps) {
   const { collapsed, toggle, toggleMobile, mobileOpen } = useSidebar();
 
   return (
-    <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-100">
+    <header className="sticky top-0 z-30 glass-prominent border-b border-white/20">
       <div className="h-16 px-4 lg:px-6 flex items-center gap-4">
         {/* Menu Toggle Button - Always visible */}
         <button

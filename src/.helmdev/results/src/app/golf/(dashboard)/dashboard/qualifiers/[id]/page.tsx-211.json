@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx-211",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. I added a null check to the empty state condition at line 227, changing it from `leaderboard.length === 0` to `!leaderboard || leaderboard.length === 0`. This ensures proper handling if the leaderboard array is undefined or null, preventing potential runtime errors.\n",
+  "timestamp": "2025-12-29T10:41:10.276Z"
+}

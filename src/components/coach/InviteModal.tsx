@@ -76,7 +76,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
+      <Card glass={true} className="w-full max-w-lg">
         <CardHeader className="border-b border-slate-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -160,7 +160,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
                     className="flex-1 font-mono text-sm"
                   />
                   <Button
-                    variant={copied ? 'success' : 'secondary'}
+                    variant={copied ? 'primary' : 'secondary'}
                     onClick={copyToClipboard}
                   >
                     {copied ? (

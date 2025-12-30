@@ -51,11 +51,18 @@ export function AnnouncementCard({ announcement, isCoach, playerId }: Announceme
 
   return (
     <div
-      className={`bg-white rounded-2xl border ${
-        isUrgent ? 'border-red-200' : 'border-slate-200'
-      } p-6 shadow-sm`}
+      className={`relative glass-standard rounded-2xl overflow-hidden p-6 ${
+        isUrgent ? 'border border-red-200' : ''
+      }`}
     >
-      <div className="flex items-start gap-4">
+      {/* Shine effect */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+        }}
+      />
+      <div className="relative flex items-start gap-4">
         <div
           className={`w-10 h-10 rounded-full ${
             isUrgent ? 'bg-red-100' : 'bg-green-100'

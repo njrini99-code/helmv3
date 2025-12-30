@@ -1,0 +1,7 @@
+{
+  "taskId": "ts-any-type-../../src/app/baseball/(public)/program/[id]/page.tsx-99",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. All `any` types have been replaced with proper typed interfaces using `unknown` as an intermediate type for the organization object, which is safer than `any` and allows proper type checking.\n",
+  "timestamp": "2025-12-29T12:25:15.248Z"
+}

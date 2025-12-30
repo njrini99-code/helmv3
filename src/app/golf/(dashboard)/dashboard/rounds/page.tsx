@@ -1,9 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { IconPlus, IconGolf, IconCalendar, IconMapPin, IconCheck, IconChevronRight } from '@/components/icons';
 import type { GolfRound } from '@/lib/types/golf';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Rounds | Helm Golf',
+  description: 'View and manage all golf rounds for your team. Track scores, stats, and player performance over time.',
+};
 
 interface RoundWithPlayer extends GolfRound {
   player: {
@@ -105,13 +112,14 @@ export default async function RoundsPage() {
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-6 py-8">
         {rounds.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
+            <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <IconGolf size={28} className="text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">No Rounds Yet</h3>
             <p className="text-slate-500 mb-6 max-w-sm mx-auto">
-              {userRole === 'coach' 
+              {userRole === 'coach'
                 ? "Your players haven't submitted any rounds yet."
                 : 'Start tracking your golf rounds to see stats and improvement over time.'}
             </p>
@@ -141,14 +149,15 @@ export default async function RoundsPage() {
 
                     return (
                       <Link key={round.id} href={`/golf/dashboard/rounds/${round.id}`}>
-                        <div 
-                          className="group bg-white rounded-xl border border-slate-200/60 hover:border-slate-300 hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all duration-200"
+                        <div
+                          className="group relative glass-standard rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                           style={{
                             animation: 'fadeInUp 0.4s ease-out forwards',
                             animationDelay: `${(groupIndex * 100) + (index * 30)}ms`,
                             opacity: 0,
                           }}
                         >
+                          <ShineEffect />
                           <div className="flex items-center gap-4 p-4">
                             {/* Score Badge */}
                             <div className={cn(

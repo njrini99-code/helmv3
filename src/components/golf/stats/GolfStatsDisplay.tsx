@@ -46,7 +46,14 @@ function StatCard({
   large?: boolean;
 }) {
   return (
-    <div className={`p-4 rounded-xl border ${highlight ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`}>
+    <div className={`relative ${highlight ? 'glass-standard' : 'glass-standard'} rounded-xl overflow-hidden p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5`}>
+      {/* Shine effect */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+        }}
+      />
       <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
         {label}
       </div>
@@ -71,7 +78,14 @@ function StatRow({ label, value }: { label: string; value: string }) {
 
 function StatSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-4 mb-4 transition-all duration-300">
+      {/* Shine effect */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+        }}
+      />
       <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">{title}</h3>
       {children}
     </div>

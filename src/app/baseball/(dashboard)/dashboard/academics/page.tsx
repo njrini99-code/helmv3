@@ -55,6 +55,7 @@ export default function AcademicsPage() {
 
   const [students, setStudents] = useState<StudentAthlete[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<StudentAthlete>>({});
   const supabase = createClient();
@@ -71,57 +72,66 @@ export default function AcademicsPage() {
     if (!selectedTeamId) return;
 
     setLoading(true);
+    setError(null);
 
-    // Get team members with player details and academic info
-    const { data: membersData, error } = await supabase
-      .from('team_members')
-      .select(`
-        id,
-        player_id,
-        players (
+    try {
+      // Get team members with player details and academic info
+      const { data: membersData, error: fetchError } = await supabase
+        .from('team_members')
+        .select(`
           id,
-          first_name,
-          last_name,
-          avatar_url,
-          primary_position,
-          grad_year,
-          gpa,
-          credits_completed,
-          credits_required,
-          academic_standing,
-          eligibility_status
-        )
-      `)
-      .eq('team_id', selectedTeamId);
+          player_id,
+          players (
+            id,
+            first_name,
+            last_name,
+            avatar_url,
+            primary_position,
+            grad_year,
+            gpa,
+            credits_completed,
+            credits_required,
+            academic_standing,
+            eligibility_status
+          )
+        `)
+        .eq('team_id', selectedTeamId);
 
-    if (error) {
-      console.error('Error fetching students:', error);
+      if (fetchError) {
+        console.error('Error fetching students:', fetchError);
+        setError('Failed to load student data. Please try again.');
+        setStudents([]);
+        setLoading(false);
+        return;
+      }
+
+      // Transform data with real academic information
+      const transformedStudents: StudentAthlete[] = (membersData || []).map((member) => {
+        const player = member.players as any;
+        return {
+          id: member.id,
+          player_id: member.player_id,
+          first_name: player?.first_name || null,
+          last_name: player?.last_name || null,
+          avatar_url: player?.avatar_url || null,
+          primary_position: player?.primary_position || null,
+          grad_year: player?.grad_year || null,
+          gpa: player?.gpa || null,
+          credits_completed: player?.credits_completed || 0,
+          credits_required: player?.credits_required || 60,
+          academic_standing: player?.academic_standing || 'good',
+          eligibility_status: player?.eligibility_status || 'eligible',
+        };
+      });
+
+      setStudents(transformedStudents);
+      setLoading(false);
+    } catch (err) {
+      console.error('Unexpected error fetching students:', err);
+      setError('An unexpected error occurred. Please try again.');
       setStudents([]);
       setLoading(false);
-      return;
     }
-
-    // Transform data with real academic information
-    const transformedStudents: StudentAthlete[] = (membersData || []).map((member) => {
-      const player = member.players as any;
-      return {
-        id: member.id,
-        player_id: member.player_id,
-        first_name: player?.first_name || null,
-        last_name: player?.last_name || null,
-        avatar_url: player?.avatar_url || null,
-        primary_position: player?.primary_position || null,
-        grad_year: player?.grad_year || null,
-        gpa: player?.gpa || null,
-        credits_completed: player?.credits_completed || 0,
-        credits_required: player?.credits_required || 60,
-        academic_standing: player?.academic_standing || 'good',
-        eligibility_status: player?.eligibility_status || 'eligible',
-      };
-    });
-
-    setStudents(transformedStudents);
-    setLoading(false);
   }
 
   const startEditing = (student: StudentAthlete) => {
@@ -140,30 +150,35 @@ export default function AcademicsPage() {
     const student = students.find(s => s.id === editingId);
     if (!student) return;
 
-    // Update player record with academic information
-    const { error } = await supabase
-      .from('players')
-      .update({
-        gpa: editValues.gpa !== undefined ? editValues.gpa : student.gpa,
-        credits_completed: editValues.credits_completed !== undefined ? editValues.credits_completed : student.credits_completed,
-        academic_standing: editValues.academic_standing !== undefined ? editValues.academic_standing : student.academic_standing,
-        eligibility_status: editValues.eligibility_status !== undefined ? editValues.eligibility_status : student.eligibility_status,
-      })
-      .eq('id', student.player_id);
+    try {
+      // Update player record with academic information
+      const { error: updateError } = await supabase
+        .from('players')
+        .update({
+          gpa: editValues.gpa !== undefined ? editValues.gpa : student.gpa,
+          credits_completed: editValues.credits_completed !== undefined ? editValues.credits_completed : student.credits_completed,
+          academic_standing: editValues.academic_standing !== undefined ? editValues.academic_standing : student.academic_standing,
+          eligibility_status: editValues.eligibility_status !== undefined ? editValues.eligibility_status : student.eligibility_status,
+        })
+        .eq('id', student.player_id);
 
-    if (error) {
-      console.error('Error saving academic data:', error);
-      // Show error to user (in a real app, use toast notification)
-      alert('Failed to save academic data');
-      return;
+      if (updateError) {
+        console.error('Error saving academic data:', updateError);
+        setError('Failed to save academic data. Please try again.');
+        return;
+      }
+
+      // Update local state
+      setStudents(students.map(s =>
+        s.id === editingId ? { ...s, ...editValues } : s
+      ));
+      setEditingId(null);
+      setEditValues({});
+      setError(null);
+    } catch (err) {
+      console.error('Unexpected error saving academic data:', err);
+      setError('An unexpected error occurred while saving. Please try again.');
     }
-
-    // Update local state
-    setStudents(students.map(s =>
-      s.id === editingId ? { ...s, ...editValues } : s
-    ));
-    setEditingId(null);
-    setEditValues({});
   };
 
   const cancelEditing = () => {
@@ -214,6 +229,18 @@ export default function AcademicsPage() {
       />
 
       <div className="p-8 space-y-6">
+        {/* Error Alert */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-600 hover:text-red-700 font-medium"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         {/* Summary Cards */}
         <div className="grid grid-cols-4 gap-4">
           <Card glass>

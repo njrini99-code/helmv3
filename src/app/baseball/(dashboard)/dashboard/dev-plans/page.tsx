@@ -151,7 +151,7 @@ export default function DevPlansPage() {
           Create Plan
         </Button>
       </Header>
-      <div className="p-8">
+      <div className="p-6 lg:p-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-4 gap-4 mb-6">
           <Card glass>

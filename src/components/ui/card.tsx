@@ -7,12 +7,37 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function Card({ className, hover, glass, padding = 'md', children, ...props }: CardProps) {
+  if (glass) {
+    return (
+      <div
+        className={cn(
+          'relative glass-standard rounded-2xl overflow-hidden transition-all duration-300',
+          hover && 'hover:shadow-lg hover:-translate-y-0.5 cursor-pointer',
+          padding === 'sm' && 'p-4',
+          padding === 'md' && 'p-6',
+          padding === 'lg' && 'p-8',
+          padding === 'none' && 'p-0',
+          className
+        )}
+        {...props}
+      >
+        {/* Shine effect */}
+        <div
+          className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+          }}
+        />
+        <div className="relative">{children}</div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
         'bg-white border border-slate-100 rounded-xl transition-all duration-200 ease-out',
         hover && 'hover:border-slate-200 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer',
-        glass && 'glass-card',
         padding === 'sm' && 'p-4',
         padding === 'md' && 'p-6',
         padding === 'lg' && 'p-8',

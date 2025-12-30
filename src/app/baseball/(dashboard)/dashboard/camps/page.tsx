@@ -64,7 +64,7 @@ function CampCard({
   const isFull = camp.capacity ? registrationCount >= camp.capacity : false;
 
   return (
-    <Card className="overflow-hidden">
+    <Card glass className="overflow-hidden">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -342,7 +342,7 @@ export default function CampsPage() {
           </Button>
         )}
       </Header>
-      <div className="p-8">
+      <div className="p-6 lg:p-8">
         {camps.length === 0 ? (
           <EmptyState
             icon={<IconCalendar size={24} />}

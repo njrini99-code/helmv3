@@ -1,0 +1,30 @@
+{
+  "tasks": [
+    [
+      "648efd1a44c3",
+      {
+        "id": "648efd1a44c3",
+        "type": "missing-app-dir",
+        "severity": "error",
+        "title": "App directory not found: /Users/ricknini/Downloads/helmv3/to",
+        "description": "App directory not found: /Users/ricknini/Downloads/helmv3/tools/ux-flow-auditor/src/app",
+        "file_path": "/Users/ricknini/Downloads/helmv3/tools/ux-flow-auditor/src/app",
+        "line_number": 0,
+        "suggestion": "",
+        "priority": 80,
+        "estimated_time": "15-30 minutes",
+        "fix_steps": [
+          "Fix the issue as described"
+        ],
+        "problem_explanation": "App directory not found: /Users/ricknini/Downloads/helmv3/tools/ux-flow-auditor/src/app",
+        "user_impact": "This issue affects user experience",
+        "status": "pending",
+        "attempts": 0,
+        "createdAt": "2025-12-29T06:09:56.431Z"
+      }
+    ]
+  ],
+  "completed": [],
+  "skipped": [],
+  "savedAt": "2025-12-29T06:09:56.431Z"
+}

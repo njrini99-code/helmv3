@@ -24,7 +24,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
   const isCoach = userData.role === 'coach';
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen bg-dashboard-gradient">
       {/* Command Palette (Cmd+K) */}
       <CommandPalette isCoach={isCoach} />
       

@@ -133,3 +133,42 @@ npm run db:types     # Regenerate Supabase types
 ---
 
 **Read this. Follow these rules. Don't deviate.**
+
+---
+
+## 🧠 HelmDev - Autonomous Development System
+
+This project includes **HelmDev**, an autonomous development orchestration system that sends tasks to Claude Code with comprehensive context.
+
+### If You See a HelmDev Task
+
+When asked to read `.helmdev/tasks/current-task.md`:
+
+1. **Read ALL context files first:**
+   ```
+   .helmdev/context/task-context.md      # Task details
+   .helmdev/context/patterns.md          # CRITICAL - Match these
+   .helmdev/context/memory.md            # What worked/failed
+   .helmdev/context/style-guide.md       # Code style
+   ```
+
+2. **Follow the patterns exactly** - The context shows how code is written in this codebase
+
+3. **Learn from memory** - Avoid approaches that have failed before
+
+4. **Make the fix** following all context
+
+5. **Verify:** `npx tsc --noEmit`
+
+6. **Create result file:** `.helmdev/results/[TASK_ID].json`
+
+### Running HelmDev
+
+```bash
+cd tools/ux-flow-auditor
+npm install
+npm run helmdev          # Start in supervised mode
+npm run megathink        # Run improvement analysis
+```
+
+See `tools/ux-flow-auditor/CLAUDE.md` for detailed instructions.

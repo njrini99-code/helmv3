@@ -40,7 +40,7 @@ export function GolfHeader({ title, subtitle, children, backHref }: GolfHeaderPr
   };
 
   return (
-    <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-xl sticky top-0 z-30">
+    <header className="h-16 glass-prominent border-b border-white/20 sticky top-0 z-30">
       <div className="h-full px-4 lg:px-6 flex items-center justify-between gap-4">
         {/* Left: Menu toggle + Back + Title */}
         <div className="flex items-center gap-3 min-w-0">

@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/stats/page.tsx-200",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Added null/empty check before .map() at line 200 to prevent rendering nothing when data is empty.\n",
+  "timestamp": "2025-12-29T11:50:57.290Z"
+}

@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx-418",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The `.map()` on line 453 (originally around line 418 in context) now has proper empty state handling. When `sortedHoles` is empty, users will see a clear message explaining there's no scorecard data instead of a blank table.\n",
+  "timestamp": "2025-12-29T11:29:04.545Z"
+}

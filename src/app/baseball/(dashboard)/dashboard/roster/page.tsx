@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,12 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { PageLoading } from '@/components/ui/loading';
-import { IconUsers, IconSearch, IconFilter, IconLink } from '@/components/icons';
+import { SkeletonTable } from '@/components/ui/skeleton-loader';
+import { IconUsers, IconSearch, IconFilter, IconLink, IconClipboardList } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName } from '@/lib/utils';
 import { InviteModal } from '@/components/coach/InviteModal';
+import { LineupBuilder } from '@/components/coach/lineup/LineupBuilder';
 
 interface TeamMember {
   id: string;
@@ -35,6 +38,7 @@ interface TeamMember {
 }
 
 export default function RosterPage() {
+  const router = useRouter();
   const { user, coach, loading: authLoading } = useAuth();
   const { selectedTeamId, getSelectedTeam } = useTeamStore();
   const selectedTeam = getSelectedTeam();
@@ -42,6 +46,7 @@ export default function RosterPage() {
   const [roster, setRoster] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [activeView, setActiveView] = useState<'roster' | 'lineup'>('roster');
 
   useEffect(() => {
     if (selectedTeamId) {
@@ -124,9 +129,42 @@ export default function RosterPage() {
           Invite Players
         </Button>
       </Header>
-      <div className="p-8">
-        {/* Filters and Search */}
-        <Card className="mb-6">
+      <div className="p-6 lg:p-8">
+        {/* View Tabs */}
+        <div className="flex items-center gap-2 mb-6">
+          <button
+            onClick={() => setActiveView('roster')}
+            className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
+              activeView === 'roster'
+                ? 'bg-green-50 text-green-700'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <IconUsers size={18} />
+              <span>Roster</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveView('lineup')}
+            className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
+              activeView === 'lineup'
+                ? 'bg-green-50 text-green-700'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <IconClipboardList size={18} />
+              <span>Lineup Builder</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Roster View */}
+        {activeView === 'roster' && (
+          <>
+            {/* Filters and Search */}
+            <Card glass className="mb-6">
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               <div className="flex-1 relative">
@@ -161,9 +199,7 @@ export default function RosterPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full mx-auto"></div>
-              </div>
+              <SkeletonTable rows={5} columns={7} />
             ) : roster.length === 0 ? (
               /* Empty State */
               <div className="text-center py-12">
@@ -235,7 +271,11 @@ export default function RosterPage() {
                           )}
                         </td>
                         <td className="py-4 px-4">
-                          <Button variant="secondary" size="sm">
+                          <Button 
+                            variant="secondary" 
+                            size="sm"
+                            onClick={() => router.push(`/baseball/player/${member.player.id}`)}
+                          >
                             View Profile
                           </Button>
                         </td>
@@ -248,44 +288,64 @@ export default function RosterPage() {
           </CardContent>
         </Card>
 
-        {/* Team Invite Instructions - Only show when there's no roster */}
-        {roster.length === 0 && (
-          <Card className="mt-6">
-            <CardHeader>
-              <h2 className="font-semibold text-slate-900">How to add players</h2>
-            </CardHeader>
-            <CardContent>
-              <ol className="space-y-3 text-sm text-slate-600">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
-                    1
-                  </span>
-                  <div>
-                    <span className="font-medium text-slate-900">Generate an invite link</span>
-                    <p className="text-slate-500 mt-1">Create a unique link that players can use to join your team.</p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
-                    2
-                  </span>
-                  <div>
-                    <span className="font-medium text-slate-900">Share with your players</span>
-                    <p className="text-slate-500 mt-1">Send the link via email, text, or team messaging platform.</p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
-                    3
-                  </span>
-                  <div>
-                    <span className="font-medium text-slate-900">Players join automatically</span>
-                    <p className="text-slate-500 mt-1">When players sign up using your link, they'll be added to your roster.</p>
-                  </div>
-                </li>
-              </ol>
-            </CardContent>
-          </Card>
+            {/* Team Invite Instructions - Only show when there's no roster */}
+            {roster.length === 0 && (
+              <Card glass className="mt-6">
+                <CardHeader>
+                  <h2 className="font-semibold text-slate-900">How to add players</h2>
+                </CardHeader>
+                <CardContent>
+                  <ol className="space-y-3 text-sm text-slate-600">
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
+                        1
+                      </span>
+                      <div>
+                        <span className="font-medium text-slate-900">Generate an invite link</span>
+                        <p className="text-slate-500 mt-1">Create a unique link that players can use to join your team.</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
+                        2
+                      </span>
+                      <div>
+                        <span className="font-medium text-slate-900">Share with your players</span>
+                        <p className="text-slate-500 mt-1">Send the link via email, text, or team messaging platform.</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
+                        3
+                      </span>
+                      <div>
+                        <span className="font-medium text-slate-900">Players join automatically</span>
+                        <p className="text-slate-500 mt-1">When players sign up using your link, they'll be added to your roster.</p>
+                      </div>
+                    </li>
+                  </ol>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
+        {/* Lineup Builder View */}
+        {activeView === 'lineup' && (
+          <LineupBuilder
+            roster={roster.map((m) => ({
+              id: m.player.id,
+              first_name: m.player.first_name,
+              last_name: m.player.last_name,
+              primary_position: m.player.primary_position,
+              jersey_number: m.jersey_number,
+              avatar_url: m.player.avatar_url,
+            }))}
+            onSave={(lineup) => {
+              console.log('Saving lineup:', lineup);
+              // TODO: Implement save lineup functionality
+            }}
+          />
         )}
       </div>
 

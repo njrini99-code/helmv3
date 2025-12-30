@@ -1,0 +1,7 @@
+{
+  "taskId": "ts-any-type-../../src/app/baseball/(public)/program/[id]/page.tsx-98",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Good! No TypeScript errors for this file. The fix is complete. I've replaced all `any` types on line 98 and related code with proper TypeScript types:\n\n1. Created `OrganizationStaff` type based on the Supabase query\n2. Created `OrganizationFacility` type \n3. Created `ProgramCommitment` type\n4. Updated all map callbacks to use the proper types instead of `any`\n\nThe file now has full type safety for the organization staff, facilities, and commitments data.\n",
+  "timestamp": "2025-12-29T12:24:27.675Z"
+}

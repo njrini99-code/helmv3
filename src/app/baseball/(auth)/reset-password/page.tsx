@@ -16,11 +16,26 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     // Check if user has a valid session (from email link)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        setError('Invalid or expired reset link. Please request a new one.');
+    async function checkSession() {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error('Error checking session:', sessionError);
+          setError('Unable to verify reset link. Please try again.');
+          return;
+        }
+
+        if (!session) {
+          setError('Invalid or expired reset link. Please request a new one.');
+        }
+      } catch (err) {
+        console.error('Unexpected error checking session:', err);
+        setError('An unexpected error occurred. Please try again.');
       }
-    });
+    }
+
+    checkSession();
   }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,7 +94,7 @@ export default function ResetPasswordPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Enter your new password"
               required
               minLength={6}
               autoFocus
@@ -90,7 +105,7 @@ export default function ResetPasswordPage() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Confirm your new password"
               required
               minLength={6}
             />

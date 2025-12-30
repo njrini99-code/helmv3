@@ -73,7 +73,7 @@ export default function SettingsPage() {
   return (
     <>
       <Header title="Settings" subtitle="Manage your account settings" />
-      <div className="p-8 max-w-2xl mx-auto space-y-6">
+      <div className="p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
         {/* Program Profile Link (Coaches Only) */}
         {user?.role === 'coach' && (
           <Link href="/baseball/dashboard/program">

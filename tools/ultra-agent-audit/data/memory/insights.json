@@ -1,0 +1,3381 @@
+[
+  {
+    "id": "insight-1767079529332",
+    "timestamp": 1767079529332,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/player-golf",
+      "count": 13,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529324",
+    "timestamp": 1767079529324,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/player-golf",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529312",
+    "timestamp": 1767079529312,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/player-golf",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529302",
+    "timestamp": 1767079529302,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/player-golf",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529294",
+    "timestamp": 1767079529294,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/player-golf",
+      "issueCount": 1,
+      "categories": [
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529273",
+    "timestamp": 1767079529273,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/",
+      "count": 19,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529264",
+    "timestamp": 1767079529264,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529255",
+    "timestamp": 1767079529255,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529249",
+    "timestamp": 1767079529249,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529227",
+    "timestamp": 1767079529227,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/help",
+      "count": 2,
+      "categories": [
+        "placeholder-content",
+        "accessibility-incomplete"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529219",
+    "timestamp": 1767079529219,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/help",
+      "count": 10,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529211",
+    "timestamp": 1767079529211,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/help",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529203",
+    "timestamp": 1767079529203,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/help",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529194",
+    "timestamp": 1767079529194,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/help",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529185",
+    "timestamp": 1767079529185,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/help",
+      "issueCount": 1,
+      "categories": [
+        "color"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529165",
+    "timestamp": 1767079529165,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf",
+      "count": 14,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529157",
+    "timestamp": 1767079529157,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529148",
+    "timestamp": 1767079529148,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529138",
+    "timestamp": 1767079529138,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529129",
+    "timestamp": 1767079529129,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf",
+      "issueCount": 1,
+      "categories": [
+        "glass"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529111",
+    "timestamp": 1767079529111,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/player",
+      "count": 5,
+      "categories": [
+        "placeholder-content",
+        "missing-error-handling",
+        "dev-leftover",
+        "dead-code",
+        "accessibility-incomplete"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529103",
+    "timestamp": 1767079529103,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/player",
+      "count": 8,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529096",
+    "timestamp": 1767079529096,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/player",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529081",
+    "timestamp": 1767079529081,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/player",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529073",
+    "timestamp": 1767079529073,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/player",
+      "completeness": 33,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529066",
+    "timestamp": 1767079529066,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/player",
+      "issueCount": 3,
+      "categories": [
+        "color",
+        "glass",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529056",
+    "timestamp": 1767079529056,
+    "type": "agent-discovery",
+    "summary": "code-issues-found",
+    "details": {
+      "filePath": "/golf/player",
+      "issueCount": 1,
+      "severity": "warning",
+      "topIssues": [
+        "Console statements"
+      ]
+    },
+    "source": "code-quality",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529036",
+    "timestamp": 1767079529036,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/coach",
+      "count": 2,
+      "categories": [
+        "placeholder-content",
+        "accessibility-incomplete"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529026",
+    "timestamp": 1767079529026,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/coach",
+      "count": 8,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529019",
+    "timestamp": 1767079529019,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/coach",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529011",
+    "timestamp": 1767079529011,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/coach",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079529003",
+    "timestamp": 1767079529003,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/coach",
+      "completeness": 33,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528996",
+    "timestamp": 1767079528996,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/coach",
+      "issueCount": 3,
+      "categories": [
+        "color",
+        "glass",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528979",
+    "timestamp": 1767079528979,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/travel",
+      "count": 3,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528972",
+    "timestamp": 1767079528972,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/travel",
+      "count": 15,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528961",
+    "timestamp": 1767079528961,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/travel",
+      "count": 3,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528947",
+    "timestamp": 1767079528947,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/travel",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528935",
+    "timestamp": 1767079528935,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/travel",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528928",
+    "timestamp": 1767079528928,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/travel",
+      "issueCount": 1,
+      "categories": [
+        "glass"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528904",
+    "timestamp": 1767079528904,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/team",
+      "count": 2,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528894",
+    "timestamp": 1767079528894,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/team",
+      "count": 15,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528889",
+    "timestamp": 1767079528889,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/team",
+      "count": 3,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528880",
+    "timestamp": 1767079528880,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/team",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528874",
+    "timestamp": 1767079528874,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/team",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528852",
+    "timestamp": 1767079528852,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/tasks",
+      "count": 2,
+      "categories": [
+        "missing-error-handling",
+        "dev-leftover"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528844",
+    "timestamp": 1767079528844,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/tasks",
+      "count": 10,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528837",
+    "timestamp": 1767079528837,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/tasks",
+      "count": 3,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528828",
+    "timestamp": 1767079528828,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/tasks",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528820",
+    "timestamp": 1767079528820,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/tasks",
+      "completeness": 33,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528802",
+    "timestamp": 1767079528802,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/tasks",
+      "issueCount": 1,
+      "categories": [
+        "color"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528796",
+    "timestamp": 1767079528796,
+    "type": "agent-discovery",
+    "summary": "code-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/tasks",
+      "issueCount": 1,
+      "severity": "warning",
+      "topIssues": [
+        "Console statements"
+      ]
+    },
+    "source": "code-quality",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528778",
+    "timestamp": 1767079528778,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/stats",
+      "count": 2,
+      "categories": [
+        "missing-error-handling",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528768",
+    "timestamp": 1767079528768,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/stats",
+      "count": 8,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528758",
+    "timestamp": 1767079528758,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/stats",
+      "count": 4,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528746",
+    "timestamp": 1767079528746,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/stats",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528738",
+    "timestamp": 1767079528738,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/stats",
+      "completeness": 33,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "error"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528726",
+    "timestamp": 1767079528726,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/stats",
+      "issueCount": 3,
+      "categories": [
+        "color",
+        "glass",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528713",
+    "timestamp": 1767079528713,
+    "type": "agent-discovery",
+    "summary": "code-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/stats",
+      "issueCount": 1,
+      "severity": "warning",
+      "topIssues": [
+        "Direct DOM access"
+      ]
+    },
+    "source": "code-quality",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528690",
+    "timestamp": 1767079528690,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/settings",
+      "count": 2,
+      "categories": [
+        "missing-error-handling",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528683",
+    "timestamp": 1767079528683,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/settings",
+      "count": 13,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528673",
+    "timestamp": 1767079528673,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/settings",
+      "count": 3,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528662",
+    "timestamp": 1767079528662,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/settings",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528653",
+    "timestamp": 1767079528653,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/settings",
+      "completeness": 29,
+      "missing": [
+        "Form",
+        "save",
+        "Save",
+        "success",
+        "confirm"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528643",
+    "timestamp": 1767079528643,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/settings",
+      "issueCount": 3,
+      "categories": [
+        "glass",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528635",
+    "timestamp": 1767079528635,
+    "type": "agent-discovery",
+    "summary": "code-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/settings",
+      "issueCount": 1,
+      "severity": "warning",
+      "topIssues": [
+        "Direct DOM access"
+      ]
+    },
+    "source": "code-quality",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528619",
+    "timestamp": 1767079528619,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/rounds",
+      "count": 3,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528611",
+    "timestamp": 1767079528611,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/rounds",
+      "count": 12,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528606",
+    "timestamp": 1767079528606,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/rounds",
+      "count": 4,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528597",
+    "timestamp": 1767079528597,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/rounds",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528586",
+    "timestamp": 1767079528586,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/rounds",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528575",
+    "timestamp": 1767079528575,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/rounds",
+      "issueCount": 3,
+      "categories": [
+        "glass",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528553",
+    "timestamp": 1767079528553,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/rounds/new",
+      "count": 2,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528546",
+    "timestamp": 1767079528546,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/rounds/new",
+      "count": 18,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528539",
+    "timestamp": 1767079528539,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/rounds/new",
+      "count": 5,
+      "highImpact": 3
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528519",
+    "timestamp": 1767079528519,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/rounds/new",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528511",
+    "timestamp": 1767079528511,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/rounds/new",
+      "completeness": 0,
+      "missing": [
+        "form",
+        "Form",
+        "input",
+        "Input",
+        "submit",
+        "Submit",
+        "loading",
+        "error",
+        "validation"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528489",
+    "timestamp": 1767079528489,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/rounds/[id]",
+      "count": 3,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528479",
+    "timestamp": 1767079528479,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/rounds/[id]",
+      "count": 11,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528471",
+    "timestamp": 1767079528471,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/rounds/[id]",
+      "count": 5,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528458",
+    "timestamp": 1767079528458,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/rounds/[id]",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528442",
+    "timestamp": 1767079528442,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/rounds/[id]",
+      "completeness": 33,
+      "missing": [
+        "header",
+        "content",
+        "loading",
+        "edit"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528431",
+    "timestamp": 1767079528431,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/rounds/[id]",
+      "issueCount": 1,
+      "categories": [
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528408",
+    "timestamp": 1767079528408,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/roster",
+      "count": 3,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528392",
+    "timestamp": 1767079528392,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/roster",
+      "count": 11,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528381",
+    "timestamp": 1767079528381,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/roster",
+      "count": 4,
+      "highImpact": 3
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528374",
+    "timestamp": 1767079528374,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/roster",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528364",
+    "timestamp": 1767079528364,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/roster",
+      "completeness": 0,
+      "missing": [
+        "table",
+        "Table",
+        "grid",
+        "Grid",
+        "list",
+        "List",
+        "loading",
+        "skeleton",
+        "Skeleton",
+        "empty",
+        "pagination",
+        "filter"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528357",
+    "timestamp": 1767079528357,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/roster",
+      "issueCount": 3,
+      "categories": [
+        "glass",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528336",
+    "timestamp": 1767079528336,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/qualifiers",
+      "count": 3,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528328",
+    "timestamp": 1767079528328,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/qualifiers",
+      "count": 12,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528317",
+    "timestamp": 1767079528317,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/qualifiers",
+      "count": 3,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528305",
+    "timestamp": 1767079528305,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/qualifiers",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528297",
+    "timestamp": 1767079528297,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/qualifiers",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528289",
+    "timestamp": 1767079528289,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/qualifiers",
+      "issueCount": 2,
+      "categories": [
+        "glass",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528268",
+    "timestamp": 1767079528268,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/qualifiers/[id]",
+      "count": 3,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528260",
+    "timestamp": 1767079528260,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/qualifiers/[id]",
+      "count": 11,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528254",
+    "timestamp": 1767079528254,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/qualifiers/[id]",
+      "count": 4,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528244",
+    "timestamp": 1767079528244,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/qualifiers/[id]",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528228",
+    "timestamp": 1767079528228,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/qualifiers/[id]",
+      "completeness": 33,
+      "missing": [
+        "header",
+        "content",
+        "loading",
+        "edit"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528220",
+    "timestamp": 1767079528220,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/qualifiers/[id]",
+      "issueCount": 2,
+      "categories": [
+        "color",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528201",
+    "timestamp": 1767079528201,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard",
+      "count": 2,
+      "categories": [
+        "missing-error-handling",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528192",
+    "timestamp": 1767079528192,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard",
+      "count": 10,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528185",
+    "timestamp": 1767079528185,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard",
+      "count": 2,
+      "highImpact": 1
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528175",
+    "timestamp": 1767079528175,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528162",
+    "timestamp": 1767079528162,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard",
+      "completeness": 33,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "error"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528152",
+    "timestamp": 1767079528152,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard",
+      "issueCount": 3,
+      "categories": [
+        "glass",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528144",
+    "timestamp": 1767079528144,
+    "type": "agent-discovery",
+    "summary": "code-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard",
+      "issueCount": 1,
+      "severity": "warning",
+      "topIssues": [
+        "TypeScript \"any\" type"
+      ]
+    },
+    "source": "code-quality",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528122",
+    "timestamp": 1767079528122,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/messages",
+      "count": 4,
+      "categories": [
+        "placeholder-content",
+        "missing-error-handling",
+        "dev-leftover",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528114",
+    "timestamp": 1767079528114,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/messages",
+      "count": 11,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528106",
+    "timestamp": 1767079528106,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/messages",
+      "count": 4,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528094",
+    "timestamp": 1767079528094,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/messages",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528080",
+    "timestamp": 1767079528080,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/messages",
+      "completeness": 17,
+      "missing": [
+        "table",
+        "Table",
+        "grid",
+        "Grid",
+        "list",
+        "skeleton",
+        "Skeleton",
+        "empty",
+        "pagination",
+        "filter"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528070",
+    "timestamp": 1767079528070,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/messages",
+      "issueCount": 2,
+      "categories": [
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528059",
+    "timestamp": 1767079528059,
+    "type": "agent-discovery",
+    "summary": "code-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/messages",
+      "issueCount": 1,
+      "severity": "warning",
+      "topIssues": [
+        "Console statements"
+      ]
+    },
+    "source": "code-quality",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528043",
+    "timestamp": 1767079528043,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/documents",
+      "count": 2,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528036",
+    "timestamp": 1767079528036,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/documents",
+      "count": 13,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528028",
+    "timestamp": 1767079528028,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/documents",
+      "count": 3,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528020",
+    "timestamp": 1767079528020,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/documents",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528012",
+    "timestamp": 1767079528012,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/documents",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079528005",
+    "timestamp": 1767079528005,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/documents",
+      "issueCount": 1,
+      "categories": [
+        "color"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527987",
+    "timestamp": 1767079527987,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/classes",
+      "count": 2,
+      "categories": [
+        "dev-leftover",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527978",
+    "timestamp": 1767079527978,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/classes",
+      "count": 8,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527963",
+    "timestamp": 1767079527963,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/classes",
+      "count": 3,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527953",
+    "timestamp": 1767079527953,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/classes",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527942",
+    "timestamp": 1767079527942,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/classes",
+      "completeness": 50,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527929",
+    "timestamp": 1767079527929,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/classes",
+      "issueCount": 2,
+      "categories": [
+        "color",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527919",
+    "timestamp": 1767079527919,
+    "type": "agent-discovery",
+    "summary": "code-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/classes",
+      "issueCount": 1,
+      "severity": "warning",
+      "topIssues": [
+        "Console statements"
+      ]
+    },
+    "source": "code-quality",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527901",
+    "timestamp": 1767079527901,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/calendar",
+      "count": 3,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527893",
+    "timestamp": 1767079527893,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/calendar",
+      "count": 15,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527886",
+    "timestamp": 1767079527886,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/calendar",
+      "count": 2,
+      "highImpact": 1
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527877",
+    "timestamp": 1767079527877,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/calendar",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527867",
+    "timestamp": 1767079527867,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/calendar",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527858",
+    "timestamp": 1767079527858,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/calendar",
+      "issueCount": 1,
+      "categories": [
+        "glass"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527848",
+    "timestamp": 1767079527848,
+    "type": "agent-discovery",
+    "summary": "code-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/calendar",
+      "issueCount": 1,
+      "severity": "warning",
+      "topIssues": [
+        "TypeScript \"any\" type"
+      ]
+    },
+    "source": "code-quality",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527831",
+    "timestamp": 1767079527831,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/dashboard/announcements",
+      "count": 3,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527823",
+    "timestamp": 1767079527823,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/dashboard/announcements",
+      "count": 12,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527814",
+    "timestamp": 1767079527814,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/announcements",
+      "count": 3,
+      "highImpact": 2
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527804",
+    "timestamp": 1767079527804,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/dashboard/announcements",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527795",
+    "timestamp": 1767079527795,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/dashboard/announcements",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527785",
+    "timestamp": 1767079527785,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/dashboard/announcements",
+      "issueCount": 2,
+      "categories": [
+        "glass",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527768",
+    "timestamp": 1767079527768,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/signup",
+      "count": 3,
+      "categories": [
+        "placeholder-content",
+        "dead-code",
+        "accessibility-incomplete"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527758",
+    "timestamp": 1767079527758,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/signup",
+      "count": 8,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527748",
+    "timestamp": 1767079527748,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/signup",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527735",
+    "timestamp": 1767079527735,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/signup",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527724",
+    "timestamp": 1767079527724,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/signup",
+      "completeness": 33,
+      "missing": [
+        "validation"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527715",
+    "timestamp": 1767079527715,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/signup",
+      "issueCount": 2,
+      "categories": [
+        "color",
+        "glass"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527695",
+    "timestamp": 1767079527695,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/reset-password",
+      "count": 2,
+      "categories": [
+        "placeholder-content",
+        "accessibility-incomplete"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527687",
+    "timestamp": 1767079527687,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/reset-password",
+      "count": 13,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527680",
+    "timestamp": 1767079527680,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/reset-password",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527672",
+    "timestamp": 1767079527672,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/reset-password",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527662",
+    "timestamp": 1767079527662,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/reset-password",
+      "completeness": 33,
+      "missing": [
+        "validation"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527647",
+    "timestamp": 1767079527647,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/reset-password",
+      "issueCount": 1,
+      "categories": [
+        "color"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527622",
+    "timestamp": 1767079527622,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/login",
+      "count": 3,
+      "categories": [
+        "placeholder-content",
+        "missing-error-handling",
+        "accessibility-incomplete"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527614",
+    "timestamp": 1767079527614,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/login",
+      "count": 11,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527598",
+    "timestamp": 1767079527598,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/login",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527590",
+    "timestamp": 1767079527590,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/login",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527579",
+    "timestamp": 1767079527579,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/login",
+      "completeness": 33,
+      "missing": [
+        "validation"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527567",
+    "timestamp": 1767079527567,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/login",
+      "issueCount": 1,
+      "categories": [
+        "color"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527545",
+    "timestamp": 1767079527545,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/golf/forgot-password",
+      "count": 2,
+      "categories": [
+        "placeholder-content",
+        "accessibility-incomplete"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527540",
+    "timestamp": 1767079527540,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/golf/forgot-password",
+      "count": 14,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527531",
+    "timestamp": 1767079527531,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/golf/forgot-password",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527523",
+    "timestamp": 1767079527523,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/golf/forgot-password",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527514",
+    "timestamp": 1767079527514,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/golf/forgot-password",
+      "completeness": 33,
+      "missing": [
+        "validation"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527506",
+    "timestamp": 1767079527506,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/golf/forgot-password",
+      "issueCount": 1,
+      "categories": [
+        "color"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527497",
+    "timestamp": 1767079527497,
+    "type": "agent-discovery",
+    "summary": "code-issues-found",
+    "details": {
+      "filePath": "/golf/forgot-password",
+      "issueCount": 1,
+      "severity": "warning",
+      "topIssues": [
+        "Direct DOM access"
+      ]
+    },
+    "source": "code-quality",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527475",
+    "timestamp": 1767079527475,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/baseball",
+      "count": 14,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527468",
+    "timestamp": 1767079527468,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/baseball",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527459",
+    "timestamp": 1767079527459,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/baseball",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527450",
+    "timestamp": 1767079527450,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/baseball",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527444",
+    "timestamp": 1767079527444,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/baseball",
+      "issueCount": 1,
+      "categories": [
+        "glass"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527422",
+    "timestamp": 1767079527422,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/baseball/program/[id]",
+      "count": 2,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527412",
+    "timestamp": 1767079527412,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/baseball/program/[id]",
+      "count": 10,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527405",
+    "timestamp": 1767079527405,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/baseball/program/[id]",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527390",
+    "timestamp": 1767079527390,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/baseball/program/[id]",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527377",
+    "timestamp": 1767079527377,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/baseball/program/[id]",
+      "completeness": 17,
+      "missing": [
+        "header",
+        "content",
+        "loading",
+        "back",
+        "edit"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527366",
+    "timestamp": 1767079527366,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/baseball/program/[id]",
+      "issueCount": 2,
+      "categories": [
+        "color",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527346",
+    "timestamp": 1767079527346,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/baseball/player/[id]",
+      "count": 2,
+      "categories": [
+        "missing-error-handling",
+        "missing-loading-state"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527340",
+    "timestamp": 1767079527340,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/baseball/player/[id]",
+      "count": 10,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527331",
+    "timestamp": 1767079527331,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/baseball/player/[id]",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527324",
+    "timestamp": 1767079527324,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/baseball/player/[id]",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527314",
+    "timestamp": 1767079527314,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/baseball/player/[id]",
+      "completeness": 17,
+      "missing": [
+        "header",
+        "content",
+        "loading",
+        "back",
+        "edit"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527307",
+    "timestamp": 1767079527307,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/baseball/player/[id]",
+      "issueCount": 3,
+      "categories": [
+        "color",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527290",
+    "timestamp": 1767079527290,
+    "type": "agent-discovery",
+    "summary": "code-issues-found",
+    "details": {
+      "filePath": "/baseball/player/[id]",
+      "issueCount": 1,
+      "severity": "warning",
+      "topIssues": [
+        "TypeScript \"any\" type"
+      ]
+    },
+    "source": "code-quality",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527271",
+    "timestamp": 1767079527271,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/baseball/player",
+      "count": 3,
+      "categories": [
+        "placeholder-content",
+        "dead-code",
+        "accessibility-incomplete"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527261",
+    "timestamp": 1767079527261,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/baseball/player",
+      "count": 8,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527254",
+    "timestamp": 1767079527254,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/baseball/player",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527243",
+    "timestamp": 1767079527243,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/baseball/player",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527232",
+    "timestamp": 1767079527232,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/baseball/player",
+      "completeness": 50,
+      "missing": [
+        "StatsCard",
+        "activity",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527223",
+    "timestamp": 1767079527223,
+    "type": "agent-discovery",
+    "summary": "design-issues-found",
+    "details": {
+      "filePath": "/baseball/player",
+      "issueCount": 3,
+      "categories": [
+        "color",
+        "glass",
+        "typography"
+      ]
+    },
+    "source": "design-system",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527203",
+    "timestamp": 1767079527203,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/baseball/coach-onboarding",
+      "count": 3,
+      "categories": [
+        "missing-error-handling",
+        "dev-leftover",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527195",
+    "timestamp": 1767079527195,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/baseball/coach-onboarding",
+      "count": 14,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527189",
+    "timestamp": 1767079527189,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/baseball/coach-onboarding",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527179",
+    "timestamp": 1767079527179,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/baseball/coach-onboarding",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527169",
+    "timestamp": 1767079527169,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/baseball/coach-onboarding",
+      "completeness": 33,
+      "missing": [
+        "form",
+        "Form",
+        "input",
+        "Input",
+        "submit",
+        "validation"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527160",
+    "timestamp": 1767079527160,
+    "type": "agent-discovery",
+    "summary": "code-issues-found",
+    "details": {
+      "filePath": "/baseball/coach-onboarding",
+      "issueCount": 1,
+      "severity": "warning",
+      "topIssues": [
+        "Console statements"
+      ]
+    },
+    "source": "code-quality",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527138",
+    "timestamp": 1767079527138,
+    "type": "agent-discovery",
+    "summary": "premium-ui-opportunities",
+    "details": {
+      "routePath": "/baseball/coach",
+      "count": 18,
+      "categories": [
+        "premium-ui"
+      ]
+    },
+    "source": "premium-ui",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527130",
+    "timestamp": 1767079527130,
+    "type": "agent-discovery",
+    "summary": "strategic-proposals-generated",
+    "details": {
+      "routePath": "/baseball/coach",
+      "count": 0,
+      "highImpact": 0
+    },
+    "source": "smart-megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527118",
+    "timestamp": 1767079527118,
+    "type": "agent-discovery",
+    "summary": "proposals-generated",
+    "details": {
+      "routePath": "/baseball/coach",
+      "count": 3,
+      "types": [
+        "ux",
+        "polish"
+      ]
+    },
+    "source": "megathink",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527112",
+    "timestamp": 1767079527112,
+    "type": "agent-discovery",
+    "summary": "route-incomplete",
+    "details": {
+      "routePath": "/baseball/coach",
+      "completeness": 0,
+      "missing": [
+        "StatsCard",
+        "metrics",
+        "activity",
+        "loading",
+        "error",
+        "empty"
+      ]
+    },
+    "source": "route-context",
+    "confidence": 0.5,
+    "tags": []
+  },
+  {
+    "id": "insight-1767079527092",
+    "timestamp": 1767079527092,
+    "type": "agent-discovery",
+    "summary": "unfinished-work-found",
+    "details": {
+      "filePath": "/baseball/dashboard/watchlist",
+      "count": 3,
+      "categories": [
+        "placeholder-content",
+        "missing-error-handling",
+        "dead-code"
+      ]
+    },
+    "source": "unfinished-detector",
+    "confidence": 0.5,
+    "tags": []
+  }
+]

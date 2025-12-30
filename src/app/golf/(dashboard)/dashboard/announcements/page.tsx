@@ -1,9 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import { redirect } from 'next/navigation';
 import { CreateAnnouncementButton } from '@/components/golf/announcements/CreateAnnouncementButton';
 import { AnnouncementCard } from '@/components/golf/announcements/AnnouncementCard';
 import type { GolfAnnouncement } from '@/lib/types/golf';
 import { IconBell } from '@/components/icons';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Team Announcements | Helm Sports',
+  description: 'View team news, updates, and important announcements from your golf coaching staff',
+};
 
 export default async function GolfAnnouncementsPage() {
   const supabase = await createClient();
@@ -87,14 +94,14 @@ export default async function GolfAnnouncementsPage() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-6 py-8">
         {announcements.length === 0 ? (
-          <div 
-            className="bg-white rounded-2xl border border-slate-200/60 p-16 text-center"
+          <div
+            className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center"
             style={{
               animation: 'fadeInUp 0.4s ease-out forwards',
               opacity: 0,
             }}
-          >
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+          ><ShineEffect />
+            <div className="relative w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <IconBell size={28} className="text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">No Announcements</h3>

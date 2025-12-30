@@ -32,7 +32,7 @@ export default function ProfilePage() {
           </Button>
         </Link>
       </Header>
-      <div className="p-8 max-w-6xl mx-auto">
+      <div className="p-6 lg:p-8 max-w-6xl mx-auto">
         <ProfileEditor player={player} onUpdate={handleUpdate} />
       </div>
     </>

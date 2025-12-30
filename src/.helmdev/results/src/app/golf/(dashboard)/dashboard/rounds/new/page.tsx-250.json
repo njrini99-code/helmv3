@@ -1,0 +1,7 @@
+{
+  "taskId": "a11y-input-no-label-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-250",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Added `htmlFor=\"courseCity\"` to the label and `id=\"courseCity\"` to the input field at line 250.\n",
+  "timestamp": "2025-12-29T11:02:55.495Z"
+}

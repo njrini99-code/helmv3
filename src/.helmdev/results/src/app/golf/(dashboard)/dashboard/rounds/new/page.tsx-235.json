@@ -1,0 +1,7 @@
+{
+  "taskId": "a11y-input-no-label-../../src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx-235",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The input now has `id=\"courseName\"` and the label has `htmlFor=\"courseName\"` to properly associate them for accessibility.\n",
+  "timestamp": "2025-12-29T11:01:00.552Z"
+}

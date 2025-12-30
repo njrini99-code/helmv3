@@ -1,0 +1,7 @@
+{
+  "taskId": "seo-missing-metadata-../../src/app/golf/(dashboard)/dashboard/stats/page.tsx-0",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Since there's no existing layout.tsx file and the instructions explicitly forbid creating one unless asked, and the page requires 'use client' due to its extensive use of hooks, I cannot fix this SEO issue by editing only the specified file.\n\nThis task cannot be completed within the given constraints:\n- The page has 'use client' (required for useState/useEffect)\n- Metadata cannot be added to client components\n- No existing layout.tsx to edit\n- Instructions forbid creating new layout.tsx files\n\n**Task skipped per instructions**: \"✅ If you can't fix it by editing this file, SKIP the task\"\n",
+  "timestamp": "2025-12-29T11:46:55.906Z"
+}

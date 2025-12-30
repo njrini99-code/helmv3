@@ -94,7 +94,14 @@ export function LiveScorecard({
 
   if (compact) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-3">
+      <div className="relative glass-standard rounded-xl overflow-hidden p-3">
+        {/* Shine effect */}
+        <div
+          className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+          }}
+        />
         {/* Compact Stats Row */}
         <div className="flex items-center justify-between mb-3">
           <div className="text-center">
@@ -147,7 +154,14 @@ export function LiveScorecard({
 
   // Full scorecard view
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div className="relative glass-standard rounded-2xl overflow-hidden">
+      {/* Shine effect */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+        }}
+      />
       {/* Live Stats Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-700 p-4">
         <div className="grid grid-cols-5 gap-2 text-center text-white">

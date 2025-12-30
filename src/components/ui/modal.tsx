@@ -54,17 +54,19 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
       {/* Modal */}
       <div
         className={cn(
-          'relative w-full animate-scale-in',
+          'relative w-full animate-scale-in rounded-2xl',
           glass
-            ? 'bg-white/90 backdrop-blur-xl border border-white/20 shadow-2xl'
-            : 'bg-white shadow-xl',
-          'rounded-2xl',
+            ? 'glass-prominent shadow-2xl'
+            : 'bg-white shadow-xl border border-slate-200',
           sizes[size]
         )}
       >
         {/* Header */}
         {(title || description) && (
-          <div className="flex items-start justify-between px-6 py-4 border-b border-slate-100">
+          <div className={cn(
+            "flex items-start justify-between px-6 py-4",
+            glass ? "border-b border-white/20" : "border-b border-slate-100"
+          )}>
             <div>
               {title && (
                 <h2 className="text-lg font-semibold text-slate-900 tracking-tight">{title}</h2>
@@ -75,8 +77,10 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100
-                         transition-colors duration-200 -mr-1.5"
+              className={cn(
+                "p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors duration-200 -mr-1.5",
+                glass ? "hover:bg-white/50" : "hover:bg-slate-100"
+              )}
             >
               <IconX size={18} />
             </button>
@@ -91,9 +95,13 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
 }
 
 // Modal footer for action buttons
-export function ModalFooter({ children, className }: { children: React.ReactNode; className?: string }) {
+export function ModalFooter({ children, className, glass }: { children: React.ReactNode; className?: string; glass?: boolean }) {
   return (
-    <div className={cn('flex items-center justify-end gap-3 pt-4 mt-4 border-t border-slate-100', className)}>
+    <div className={cn(
+      'flex items-center justify-end gap-3 pt-4 mt-4',
+      glass ? 'border-t border-white/20' : 'border-t border-slate-100',
+      className
+    )}>
       {children}
     </div>
   );

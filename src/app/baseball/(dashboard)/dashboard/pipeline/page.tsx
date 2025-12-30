@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { ShineEffect } from '@/components/ui/shine-effect';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Header } from '@/components/layout/header';
 import { PipelineColumn } from '@/components/features/pipeline-column';
 import { PipelineCard } from '@/components/features/pipeline-card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Loading, PageLoading } from '@/components/ui/loading';
+import { PageLoading } from '@/components/ui/loading';
+import { SkeletonPipeline } from '@/components/ui/skeleton-loader';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { IconUsers } from '@/components/icons';
@@ -31,6 +33,7 @@ export default function PipelinePage() {
   const { watchlist, loading, updateStage } = useWatchlist();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [gradYearFilter, setGradYearFilter] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -64,7 +67,13 @@ export default function PipelinePage() {
     const newStage = over.id as PipelineStage;
 
     if (activeItem && activeItem.pipeline_stage !== newStage) {
-      await updateStage(activeItem.player_id, newStage);
+      try {
+        await updateStage(activeItem.player_id, newStage);
+        setError(null); // Clear any previous errors on success
+      } catch (err) {
+        console.error('Error updating pipeline stage:', err);
+        setError('Failed to update player stage. Please try again.');
+      }
     }
 
     setActiveId(null);
@@ -75,7 +84,14 @@ export default function PipelinePage() {
     return <PageLoading />;
   }
 
-  if (loading) return <><Header title="Pipeline" /><Loading /></>;
+  if (loading) return (
+    <>
+      <Header title="Pipeline" subtitle="Manage your recruiting pipeline" />
+      <div className="p-6 lg:p-8">
+        <SkeletonPipeline />
+      </div>
+    </>
+  );
 
   return (
     <>
@@ -83,10 +99,24 @@ export default function PipelinePage() {
         title="Pipeline"
         subtitle={watchlist.length === 0 ? 'Manage your recruiting pipeline' : `${filteredWatchlist.length} player${filteredWatchlist.length !== 1 ? 's' : ''} in pipeline`}
       />
-      <div className="p-8">
+      <div className="p-6 lg:p-8">
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-600 hover:text-red-700 font-medium transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Empty State Banner */}
         {watchlist.length === 0 && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+          <div className="relative glass-standard rounded-2xl p-8 mb-6 text-center overflow-hidden">
+            <ShineEffect />
             <IconUsers size={32} className="mx-auto mb-3 text-green-600" />
             <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">Your pipeline is empty</h3>
             <p className="text-sm leading-relaxed text-slate-600 mb-4">
@@ -100,23 +130,26 @@ export default function PipelinePage() {
 
         {/* Grad Year Filter */}
         {watchlist.length > 0 && (
-          <div className="mb-6 flex items-center gap-3">
-            <label className="text-sm font-medium text-slate-700">Filter by Grad Year:</label>
-            <Select
-              options={gradYearOptions}
-              value={gradYearFilter}
-              onChange={(value) => setGradYearFilter(value)}
-              className="w-36"
-            />
-            {gradYearFilter && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setGradYearFilter('')}
-              >
-                Clear Filter
-              </Button>
-            )}
+          <div className="relative glass-standard rounded-2xl p-4 mb-6 overflow-hidden">
+            <ShineEffect />
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-slate-700">Filter by Grad Year:</label>
+              <Select
+                options={gradYearOptions}
+                value={gradYearFilter}
+                onChange={(value) => setGradYearFilter(value)}
+                className="w-36"
+              />
+              {gradYearFilter && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setGradYearFilter('')}
+                >
+                  Clear Filter
+                </Button>
+              )}
+            </div>
           </div>
         )}
 

@@ -38,7 +38,14 @@ function TrendLine({ data, label, color = 'emerald' }: { data: number[]; label: 
   const colors = colorClasses[color as keyof typeof colorClasses] || colorClasses.emerald;
 
   return (
-    <div className={`rounded-xl border border-slate-200 p-4 ${colors.bg}`}>
+    <div className={`relative glass-standard rounded-2xl overflow-hidden p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5`}>
+      {/* Shine effect */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+        }}
+      />
       <h3 className="text-sm font-semibold text-slate-700 mb-3">{label}</h3>
       <div className="relative h-32 bg-white rounded-lg p-2">
         <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
@@ -88,7 +95,14 @@ function ScoreDistributionChart({ stats }: { stats: GolfStats }) {
   ].filter(d => d.count > 0);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6">
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
+      {/* Shine effect */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+        }}
+      />
       <h3 className="text-sm font-semibold text-slate-700 mb-4">Score Distribution</h3>
 
       {/* Horizontal Bar */}
@@ -139,7 +153,14 @@ function RecentRounds({ rounds }: { rounds: RoundData[] }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6">
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
+      {/* Shine effect */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+        }}
+      />
       <h3 className="text-sm font-semibold text-slate-700 mb-4">Recent Rounds</h3>
       <div className="space-y-2">
         {recentRounds.map((round, i) => (
@@ -176,7 +197,14 @@ function ProgressMetrics({ stats }: { stats: GolfStats }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
       {metrics.map((m, i) => (
-        <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 text-center">
+        <div key={i} className="relative glass-standard rounded-xl overflow-hidden p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
+          {/* Shine effect */}
+          <div
+            className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+            }}
+          />
           <p className="text-2xl font-bold text-emerald-600">{m.value}</p>
           <p className="text-xs font-medium text-slate-700 mt-1">{m.label}</p>
           <p className="text-xs text-slate-400">{m.subtext}</p>
@@ -222,7 +250,14 @@ export default function ProgressStats({ stats, rounds }: ProgressStatsProps) {
 
       {/* Empty State */}
       {stats.roundsPlayed < 3 && (
-        <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
+        <div className="relative text-center py-12 glass-standard rounded-2xl overflow-hidden transition-all duration-300">
+          {/* Shine effect */}
+          <div
+            className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+            }}
+          />
           <p className="text-slate-500">Play more rounds to see trend visualizations</p>
         </div>
       )}

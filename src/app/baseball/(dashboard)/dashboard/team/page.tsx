@@ -225,7 +225,7 @@ export default function TeamDashboardPage() {
           title="Team Dashboard"
           subtitle={`${coach?.school_name || 'Your Team'} - ${coach?.coach_type?.replace('_', ' ').toUpperCase()}`}
         />
-        <div className="p-8">
+        <div className="p-6 lg:p-8">
           <div className="grid grid-cols-4 gap-4 mb-8">
             <StatCard
               label="Roster Size"
@@ -379,7 +379,7 @@ export default function TeamDashboardPage() {
         subtitle={`${player?.high_school_name || player?.showcase_team_name || 'Your Team'}`}
       />
       <div className="p-8">
-        <Card className="mb-6">
+        <Card glass className="mb-6">
           <CardContent className="p-6">
             <div className="flex items-center gap-6">
               <Avatar name={getFullName(player?.first_name, player?.last_name)} size="2xl" src={player?.avatar_url} />

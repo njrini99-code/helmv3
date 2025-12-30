@@ -37,7 +37,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-[#FAF6F1]">
       {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#FAF6F1]/80 backdrop-blur-xl border-b border-slate-200/50">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#FAF6F1] supports-[backdrop-filter]:bg-[#FAF6F1]/80 supports-[backdrop-filter]:backdrop-blur-xl border-b border-slate-200/50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <img

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultra Agent Audit | Helm Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">🤖</span>
+          <span class="logo-text">Ultra Agent Audit</span>
+        </div>
+        <div class="status-badge" id="connection-status">
+          <span class="status-dot"></span>
+          <span>Connecting...</span>
+        </div>
+      </div>
+      
+      <div class="header-center">
+        <!-- Main Navigation Tabs -->
+        <div class="main-tabs" id="main-tabs">
+          <button class="main-tab active" data-tab="audit">
+            <span>🔍</span>
+            <span>Route Audit</span>
+          </button>
+          <button class="main-tab" data-tab="visualizer">
+            <span>🗺️</span>
+            <span>Flow Visualizer</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <button class="action-btn pipeline-btn" id="pipeline-btn" onclick="dashboard.runPipeline()">
+          <span>🚀</span>
+          <span>Run Pipeline</span>
+        </button>
+        <button class="action-btn" id="audit-btn">
+          <span>📊</span>
+          <span>Full Audit</span>
+        </button>
+        <div class="stats-mini">
+          <div class="stat-mini">
+            <span class="stat-value" id="total-routes">0</span>
+            <span class="stat-label">Routes</span>
+          </div>
+          <div class="stat-mini">
+            <span class="stat-value" id="md-count">0</span>
+            <span class="stat-label">MDs</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============================================ -->
+    <!-- TAB 1: Route Audit (existing functionality) -->
+    <!-- ============================================ -->
+    <main class="main tab-content active" id="tab-audit">
+      <!-- Left Panel: Route List -->
+      <aside class="sidebar left-sidebar">
+        <div class="panel routes-panel">
+          <div class="panel-header">
+            <h2>Routes</h2>
+          </div>
+
+          <!-- Role Filters -->
+          <div class="route-filters">
+            <div class="filter-section">
+              <div class="filter-section-label">⚾ Baseball Coaches</div>
+              <div class="filter-btn-group">
+                <button class="filter-btn active" data-role="college-coach">College Coach</button>
+                <button class="filter-btn" data-role="hs-coach">HS Coach</button>
+                <button class="filter-btn" data-role="juco-coach">JUCO Coach</button>
+                <button class="filter-btn" data-role="showcase-coach">Showcase Coach</button>
+              </div>
+            </div>
+            <div class="filter-section">
+              <div class="filter-section-label">⚾ Baseball Players</div>
+              <div class="filter-btn-group">
+                <button class="filter-btn" data-role="hs-player">HS Player</button>
+                <button class="filter-btn" data-role="showcase-player">Showcase Player</button>
+                <button class="filter-btn" data-role="juco-player">JUCO Player</button>
+                <button class="filter-btn" data-role="college-player">College Player</button>
+              </div>
+            </div>
+            <div class="filter-section">
+              <div class="filter-section-label">⛳ Golf</div>
+              <div class="filter-btn-group">
+                <button class="filter-btn" data-role="golf">All Golf</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="route-list" id="route-list">
+            <!-- Routes rendered by JS -->
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center: Route Analysis -->
+      <section class="content">
+        <div class="route-detail" id="route-detail">
+          <div class="empty-state">
+            <span class="empty-icon">👈</span>
+            <p>Select a route to analyze</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: MD Queue + Agents -->
+      <aside class="sidebar right-sidebar">
+        <div class="panel agent-panel">
+          <div class="panel-header">
+            <h2>Agents</h2>
+            <span class="badge" id="active-agents">0 active</span>
+          </div>
+          <div class="agent-grid" id="agent-grid">
+            <!-- Agents rendered by JS -->
+          </div>
+        </div>
+        
+        <div class="panel md-queue-panel">
+          <div class="panel-header">
+            <h2>📝 MD Queue</h2>
+            <span class="badge" id="queue-count">0</span>
+          </div>
+          <div class="md-queue" id="md-queue">
+            <div class="queue-empty">
+              <p>No MDs generated yet</p>
+              <p class="hint">Click "Send to Agents" on any issue</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- ============================================ -->
+    <!-- TAB 2: Flow Visualizer (NEW)                -->
+    <!-- ============================================ -->
+    <main class="main tab-content" id="tab-visualizer">
+      <div class="visualizer-container">
+        <!-- Visualizer Header -->
+        <div class="visualizer-header">
+          <div class="visualizer-title">
+            <h2>🗺️ Application Flow Map</h2>
+            <p>Select a user type to see their journey</p>
+          </div>
+          <div class="visualizer-controls">
+            <div class="control-section">
+              <div class="section-label">⚾ Baseball Coaches</div>
+              <div class="btn-group">
+                <button class="viz-btn active" data-flow="college-coach">College Coach</button>
+                <button class="viz-btn" data-flow="hs-coach">HS Coach</button>
+                <button class="viz-btn" data-flow="juco-coach">JUCO Coach</button>
+                <button class="viz-btn" data-flow="showcase-coach">Showcase Coach</button>
+              </div>
+            </div>
+            <div class="control-section">
+              <div class="section-label">⚾ Baseball Players</div>
+              <div class="btn-group">
+                <button class="viz-btn" data-flow="hs-player">HS Player</button>
+                <button class="viz-btn" data-flow="showcase-player">Showcase Player</button>
+                <button class="viz-btn" data-flow="juco-player">JUCO Player</button>
+                <button class="viz-btn" data-flow="college-player">College Player</button>
+              </div>
+            </div>
+          </div>
+          <div class="visualizer-legend">
+            <div class="legend-item">
+              <span class="legend-dot entry"></span>
+              <span>Entry Point</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot dashboard"></span>
+              <span>Dashboard</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot feature"></span>
+              <span>Feature Page</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-wire"></span>
+              <span>User Flow</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flow Canvas -->
+        <div class="flow-canvas" id="flow-canvas">
+          <svg class="flow-wires" id="flow-wires">
+            <!-- Animated wires rendered by JS -->
+          </svg>
+          <div class="flow-nodes" id="flow-nodes">
+            <!-- Nodes rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Route Details Sidebar -->
+        <div class="visualizer-sidebar" id="visualizer-sidebar">
+          <div class="viz-sidebar-header">
+            <h3>Route Details</h3>
+            <button class="icon-btn viz-sidebar-close" id="viz-sidebar-close">✕</button>
+          </div>
+          <div class="viz-sidebar-content" id="viz-sidebar-content">
+            <div class="viz-empty">
+              <span>👆</span>
+              <p>Click a node to see details</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Issue Modal -->
+    <div class="modal" id="issue-modal">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="issue-title">Issue Title</h3>
+          <button class="icon-btn modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="issue-meta">
+            <span class="issue-badge" id="issue-severity">warning</span>
+            <span class="issue-badge" id="issue-category">code</span>
+          </div>
+          
+          <div class="issue-section">
+            <div class="section-label">📋 What's Wrong</div>
+            <p id="issue-description">Description here...</p>
+          </div>
+          
+          <div class="issue-section">
+            <div class="section-label">⚠️ Why It Matters</div>
+            <p id="issue-why">Why explanation here...</p>
+          </div>
+          
+          <div class="issue-section">
+            <div class="section-label">✅ After Fixing</div>
+            <p id="issue-result">Expected result here...</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn secondary modal-close">Cancel</button>
+          <button class="btn primary" id="btn-send-agents">
+            <span>🚀</span>
+            <span>Send to Agents</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MD Preview Modal -->
+    <div class="modal" id="md-modal">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content modal-lg">
+        <div class="modal-header">
+          <h3>📝 Implementation Guide</h3>
+          <button class="icon-btn modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <pre class="md-content" id="md-content"></pre>
+        </div>
+        <div class="modal-footer">
+          <button class="btn secondary" id="btn-remove-md">Remove</button>
+          <button class="btn success" id="btn-mark-completed">
+            <span>✅</span>
+            <span>Mark as Completed</span>
+          </button>
+          <button class="btn primary" id="btn-copy-md">
+            <span>📋</span>
+            <span>Copy to Clipboard</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,5267 @@
+{
+  "routes": {
+    "/baseball/complete-signup": {
+      "filePath": "/src/app/baseball/(auth)/complete-signup/page.tsx",
+      "routePath": "/baseball/complete-signup",
+      "domain": "baseball",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "@/lib/supabase/client",
+        "@/components/ui/button",
+        "@/lib/utils",
+        "@/components/icons",
+        "@/lib/types"
+      ],
+      "components": [
+        "Role",
+        "CoachType",
+        "PlayerType",
+        "IconUsers",
+        "IconUser",
+        "Button"
+      ],
+      "hooks": [
+        "useState",
+        "useRouter",
+        "useEffect"
+      ]
+    },
+    "/baseball/forgot-password": {
+      "filePath": "/src/app/baseball/(auth)/forgot-password/page.tsx",
+      "routePath": "/baseball/forgot-password",
+      "domain": "baseball",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/link",
+        "@/lib/supabase/client",
+        "@/components/ui/button",
+        "@/components/ui/input"
+      ],
+      "components": [
+        "Link",
+        "Button",
+        "Input"
+      ],
+      "hooks": [
+        "useState"
+      ]
+    },
+    "/baseball/login": {
+      "filePath": "/src/app/baseball/(auth)/login/page.tsx",
+      "routePath": "/baseball/login",
+      "domain": "baseball",
+      "routeType": "auth",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/link",
+        "next/navigation",
+        "framer-motion",
+        "@/lib/supabase/client",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/shine-effect"
+      ],
+      "components": [
+        "ShineEffect",
+        "Input",
+        "Link",
+        "Button",
+        "Suspense",
+        "LoginForm"
+      ],
+      "hooks": [
+        "useState",
+        "useRouter",
+        "useSearchParams"
+      ]
+    },
+    "/baseball/reset-password": {
+      "filePath": "/src/app/baseball/(auth)/reset-password/page.tsx",
+      "routePath": "/baseball/reset-password",
+      "domain": "baseball",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "@/lib/supabase/client",
+        "@/components/ui/button",
+        "@/components/ui/input"
+      ],
+      "components": [
+        "Input",
+        "Button"
+      ],
+      "hooks": [
+        "useState",
+        "useRouter",
+        "useEffect"
+      ]
+    },
+    "/baseball/signup": {
+      "filePath": "/src/app/baseball/(auth)/signup/page.tsx",
+      "routePath": "/baseball/signup",
+      "domain": "baseball",
+      "routeType": "auth",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation"
+      ],
+      "components": [],
+      "hooks": [
+        "useRouter",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/academics": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/academics/page.tsx",
+      "routePath": "/baseball/dashboard/academics",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/avatar",
+        "@/components/ui/loading",
+        "@/components/ui/empty-state",
+        "@/components/ui/input",
+        "@/components/ui/select",
+        "@/components/icons",
+        "@/hooks/use-auth",
+        "@/hooks/use-route-protection",
+        "@/stores/team-store",
+        "@/lib/supabase/client",
+        "@/lib/utils"
+      ],
+      "components": [
+        "StudentAthlete",
+        "Partial",
+        "PageLoading",
+        "Header",
+        "EmptyState",
+        "IconGraduationCap",
+        "Button",
+        "Card",
+        "CardContent",
+        "IconUsers",
+        "IconCheck",
+        "CardHeader",
+        "Avatar",
+        "Badge",
+        "Input",
+        "Select",
+        "IconEdit"
+      ],
+      "hooks": [
+        "useAuth",
+        "useTeamStore",
+        "useRouteProtection",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/activate": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/activate/page.tsx",
+      "routePath": "/baseball/dashboard/activate",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/loading",
+        "@/components/icons",
+        "@/hooks/use-auth",
+        "@/lib/supabase/client"
+      ],
+      "components": [
+        "PageLoading",
+        "Card",
+        "CardContent",
+        "Header",
+        "IconTarget",
+        "Badge",
+        "CardHeader",
+        "IconEye",
+        "IconCheck",
+        "IconUsers",
+        "IconChart",
+        "Button"
+      ],
+      "hooks": [
+        "useAuth",
+        "useRouter",
+        "useState"
+      ]
+    },
+    "/baseball/dashboard/analytics": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/analytics/page.tsx",
+      "routePath": "/baseball/dashboard/analytics",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/loading",
+        "@/components/icons",
+        "@/hooks/use-analytics",
+        "recharts"
+      ],
+      "components": [
+        "Header",
+        "PageLoading",
+        "Card",
+        "CardContent",
+        "IconEye",
+        "IconStar",
+        "IconVideo",
+        "IconMessage",
+        "CardHeader",
+        "IconTrendingUp",
+        "ResponsiveContainer",
+        "LineChart",
+        "CartesianGrid",
+        "XAxis",
+        "YAxis",
+        "Tooltip",
+        "Line",
+        "IconCalendar"
+      ],
+      "hooks": [
+        "useAnalytics"
+      ]
+    },
+    "/baseball/dashboard/calendar": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/calendar/page.tsx",
+      "routePath": "/baseball/dashboard/calendar",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/loading",
+        "@/components/ui/skeleton-loader",
+        "@/components/icons",
+        "@/hooks/use-auth",
+        "@/stores/team-store",
+        "@/lib/supabase/client",
+        "@/components/coach/EventModal",
+        "@/components/shared/CalendarView",
+        "@/components/ui/toast",
+        "@/components/ui/confirm-dialog"
+      ],
+      "components": [
+        "Event",
+        "PageLoading",
+        "Header",
+        "Button",
+        "IconPlus",
+        "SkeletonCalendar",
+        "Card",
+        "CardContent",
+        "CalendarView",
+        "CardHeader",
+        "IconCalendar",
+        "Badge",
+        "IconClock",
+        "IconMapPin",
+        "IconEdit",
+        "IconTrash",
+        "EventModal",
+        "ConfirmDialog"
+      ],
+      "hooks": [
+        "useAuth",
+        "useTeamStore",
+        "useToast",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/camps": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/camps/page.tsx",
+      "routePath": "/baseball/dashboard/camps",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/loading",
+        "@/components/ui/empty-state",
+        "@/components/ui/confirm-dialog",
+        "@/components/icons",
+        "@/components/coach/CreateCampModal",
+        "@/lib/supabase/client",
+        "@/hooks/use-auth",
+        "@/components/ui/toast"
+      ],
+      "components": [
+        "Card",
+        "CardContent",
+        "IconCalendar",
+        "IconMapPin",
+        "IconUsers",
+        "Badge",
+        "Button",
+        "IconHeartFilled",
+        "IconHeart",
+        "IconEdit",
+        "IconTrash",
+        "Camp",
+        "Set",
+        "Header",
+        "PageLoading",
+        "IconPlus",
+        "EmptyState",
+        "CampCard",
+        "CreateCampModal",
+        "ConfirmDialog"
+      ],
+      "hooks": [
+        "useAuth",
+        "useToast",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/college-interest": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/college-interest/page.tsx",
+      "routePath": "/baseball/dashboard/college-interest",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/avatar",
+        "@/components/ui/loading",
+        "@/components/icons",
+        "@/hooks/use-auth",
+        "@/lib/supabase/client",
+        "@/lib/utils"
+      ],
+      "components": [
+        "PlayerInterest",
+        "PageLoading",
+        "Card",
+        "CardContent",
+        "IconEye",
+        "IconStar",
+        "Header",
+        "IconTrendingUp",
+        "CardHeader",
+        "Button",
+        "Avatar",
+        "Badge"
+      ],
+      "hooks": [
+        "useAuth",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/colleges": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/colleges/page.tsx",
+      "routePath": "/baseball/dashboard/colleges",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/ui/shine-effect",
+        "@/components/layout/header",
+        "@/components/features/college-card",
+        "@/components/ui/select",
+        "@/components/ui/input",
+        "@/components/ui/empty-state",
+        "@/components/ui/loading",
+        "@/components/icons",
+        "@/hooks/use-colleges"
+      ],
+      "components": [
+        "Header",
+        "ShineEffect",
+        "IconSearch",
+        "Input",
+        "Select",
+        "Loading",
+        "EmptyState",
+        "IconBuilding",
+        "CollegeCard"
+      ],
+      "hooks": [
+        "useState",
+        "useColleges",
+        "useStates",
+        "useConferences",
+        "useMemo"
+      ]
+    },
+    "/baseball/dashboard/compare": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/compare/page.tsx",
+      "routePath": "/baseball/dashboard/compare",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/avatar",
+        "@/components/ui/loading",
+        "@/components/ui/empty-state",
+        "@/components/features/player-comparison",
+        "@/components/icons",
+        "@/lib/supabase/client",
+        "@/lib/utils",
+        "@/hooks/use-route-protection",
+        "@/lib/types"
+      ],
+      "components": [
+        "Player",
+        "PageLoading",
+        "Header",
+        "Card",
+        "CardContent",
+        "IconSearch",
+        "Input",
+        "Avatar",
+        "IconPlus",
+        "IconX",
+        "IconTarget",
+        "Button",
+        "IconUsers",
+        "PlayerComparison",
+        "Suspense",
+        "CompareContent"
+      ],
+      "hooks": [
+        "useRouter",
+        "useSearchParams",
+        "useRecruitingRouteProtection",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/comparisons": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/comparisons/page.tsx",
+      "routePath": "/baseball/dashboard/comparisons",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "react",
+        "../compare/actions",
+        "@/components/features/saved-comparisons-list",
+        "@/components/icons"
+      ],
+      "components": [
+        "IconBookmark",
+        "Suspense",
+        "ComparisonsLoadingSkeleton",
+        "SavedComparisonsList"
+      ],
+      "hooks": []
+    },
+    "/baseball/dashboard/dev-plan": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/dev-plan/page.tsx",
+      "routePath": "/baseball/dashboard/dev-plan",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/loading",
+        "@/components/icons",
+        "@/hooks/use-auth"
+      ],
+      "components": [
+        "PageLoading",
+        "Card",
+        "CardContent",
+        "Header",
+        "IconTarget",
+        "IconCheck",
+        "IconClock",
+        "IconNote",
+        "CardHeader"
+      ],
+      "hooks": [
+        "useAuth"
+      ]
+    },
+    "/baseball/dashboard/dev-plans": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/dev-plans/page.tsx",
+      "routePath": "/baseball/dashboard/dev-plans",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/avatar",
+        "@/components/ui/loading",
+        "@/components/icons",
+        "@/components/coach/CreateDevPlanModal",
+        "@/hooks/use-auth",
+        "@/stores/team-store",
+        "@/lib/supabase/client",
+        "@/lib/utils"
+      ],
+      "components": [
+        "DevPlan",
+        "PageLoading",
+        "Card",
+        "CardContent",
+        "Header",
+        "Button",
+        "IconPlus",
+        "IconNote",
+        "IconUsers",
+        "IconTarget",
+        "IconCheck",
+        "CardHeader",
+        "Avatar",
+        "Badge",
+        "IconClock",
+        "CreateDevPlanModal"
+      ],
+      "hooks": [
+        "useRouter",
+        "useAuth",
+        "useTeamStore",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/discover": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/discover/page.tsx",
+      "routePath": "/baseball/dashboard/discover",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": true,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "@/lib/supabase/client",
+        "@/components/coach/discover/FilterPanel",
+        "@/components/coach/discover/DiscoverResults",
+        "@/components/panels/PlayerPeekPanel",
+        "@/components/layout/header",
+        "@/components/ui/loading",
+        "@/components/ui/skeleton-loader",
+        "@/hooks/use-auth",
+        "@/hooks/use-route-protection",
+        "@/lib/queries/performance",
+        "@/lib/types"
+      ],
+      "components": [
+        "Player",
+        "PageLoading",
+        "Header",
+        "FilterPanel",
+        "SkeletonDiscover",
+        "DiscoverResults",
+        "PlayerPeekPanel",
+        "Suspense",
+        "DiscoverContent"
+      ],
+      "hooks": [
+        "useSearchParams",
+        "useAuth",
+        "useRecruitingRouteProtection",
+        "useState",
+        "useMemo",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/events": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/events/page.tsx",
+      "routePath": "/baseball/dashboard/events",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "date-fns",
+        "@/lib/supabase/client",
+        "@/components/layout/header",
+        "@/components/ui/loading",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/select",
+        "@/components/ui/badge",
+        "@/hooks/use-auth",
+        "@/hooks/use-route-protection",
+        "@/hooks/use-teams",
+        "@/components/icons"
+      ],
+      "components": [
+        "Event",
+        "PageLoading",
+        "Header",
+        "Button",
+        "IconPlus",
+        "Select",
+        "IconCalendar",
+        "IconClock",
+        "IconMapPin",
+        "Badge",
+        "IconTrash",
+        "Input"
+      ],
+      "hooks": [
+        "useAuth",
+        "useRouteProtection",
+        "useTeams",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/journey": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/journey/page.tsx",
+      "routePath": "/baseball/dashboard/journey",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/link",
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/badge",
+        "@/components/ui/button",
+        "@/components/ui/select",
+        "@/components/ui/loading",
+        "@/components/ui/empty-state",
+        "@/components/icons",
+        "@/hooks/use-journey",
+        "@/lib/utils"
+      ],
+      "components": [
+        "IconEye",
+        "IconStar",
+        "IconVideo",
+        "IconMessage",
+        "IconPlus",
+        "IconTarget",
+        "Card",
+        "CardContent",
+        "Badge",
+        "Select",
+        "Link",
+        "IconChevronRight",
+        "JourneySchool",
+        "Header",
+        "PageLoading",
+        "Button",
+        "SchoolCard",
+        "IconCalendar",
+        "TimelineEvent"
+      ],
+      "hooks": [
+        "useJourney"
+      ]
+    },
+    "/baseball/dashboard/messages/:id": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/messages/[id]/page.tsx",
+      "routePath": "/baseball/dashboard/messages/:id",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "@/components/layout/header",
+        "@/components/ui/avatar",
+        "@/components/ui/button",
+        "@/components/ui/loading",
+        "@/components/icons",
+        "@/hooks/use-messages",
+        "@/hooks/use-auth",
+        "@/lib/utils"
+      ],
+      "components": [
+        "HTMLDivElement",
+        "PageLoading",
+        "Header",
+        "Avatar",
+        "Button",
+        "IconSend"
+      ],
+      "hooks": [
+        "useParams",
+        "useAuth",
+        "useConversations",
+        "useMessages",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/messages": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/messages/page.tsx",
+      "routePath": "/baseball/dashboard/messages",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": true,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "@/lib/utils",
+        "@/components/ui/loading",
+        "@/lib/lazy-components",
+        "@/components/messages/EmptyChatState",
+        "@/components/messages/NewMessageModal",
+        "@/hooks/use-messages",
+        "@/stores/auth-store",
+        "@/components/ui/toast",
+        "@/app/baseball/actions/messages",
+        "@/lib/types/messages",
+        "@/lib/types/messages"
+      ],
+      "components": [
+        "Loading",
+        "LazyConversationList",
+        "LazyChatWindow",
+        "EmptyChatState",
+        "NewMessageModal",
+        "Suspense",
+        "MessagesContent"
+      ],
+      "hooks": [
+        "useSearchParams",
+        "useToast",
+        "useAuthStore",
+        "useConversations",
+        "useState",
+        "useMessages",
+        "useEffect",
+        "useMemo"
+      ]
+    },
+    "/baseball/dashboard": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/page.tsx",
+      "routePath": "/baseball/dashboard",
+      "domain": "baseball",
+      "routeType": "dashboard-home",
+      "hasLoading": true,
+      "hasError": true,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "next/link",
+        "date-fns",
+        "@/components/layout/header",
+        "@/components/ui/avatar",
+        "@/components/ui/badge",
+        "@/components/ui/button",
+        "@/components/ui/loading",
+        "@/components/icons",
+        "@/hooks/use-auth",
+        "@/hooks/use-watchlist",
+        "@/hooks/use-players",
+        "@/hooks/use-stats",
+        "@/hooks/use-dashboard",
+        "@/components/dashboard/EngagementChart",
+        "@/components/coach/discover/USAMap",
+        "@/components/ui/shine-effect",
+        "@/lib/utils"
+      ],
+      "components": [
+        "ShineEffect",
+        "AnimatedStat",
+        "Icon",
+        "IconChevronRight",
+        "Link",
+        "PageLoading",
+        "Header",
+        "IconTarget",
+        "IconArrowRight",
+        "BentoStatCard",
+        "IconUsers",
+        "Button",
+        "IconSearch",
+        "Avatar",
+        "Badge",
+        "IconMessage",
+        "IconCalendar",
+        "IconBuilding",
+        "IconClock",
+        "IconChart",
+        "EngagementChart",
+        "IconActivity",
+        "IconMapPin",
+        "USAMap",
+        "IconEdit"
+      ],
+      "hooks": [
+        "useRouter",
+        "usePathname",
+        "useAuth",
+        "useWatchlist",
+        "usePlayers",
+        "useCoachStats",
+        "usePlayerStats",
+        "useActivityFeed",
+        "useUpcomingEvents",
+        "useEngagementChart",
+        "useSavedSearches",
+        "usePlayersByState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/pipeline": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/pipeline/page.tsx",
+      "routePath": "/baseball/dashboard/pipeline",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": true,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/ui/shine-effect",
+        "@dnd-kit/core",
+        "@/components/layout/header",
+        "@/components/features/pipeline-column",
+        "@/components/features/pipeline-card",
+        "@/components/ui/empty-state",
+        "@/components/ui/loading",
+        "@/components/ui/skeleton-loader",
+        "@/components/ui/button",
+        "@/components/ui/select",
+        "@/components/icons",
+        "@/hooks/use-watchlist",
+        "@/hooks/use-route-protection",
+        "next/link",
+        "@/lib/types"
+      ],
+      "components": [
+        "PageLoading",
+        "Header",
+        "SkeletonPipeline",
+        "ShineEffect",
+        "IconUsers",
+        "Link",
+        "Button",
+        "Select",
+        "DndContext",
+        "PipelineColumn",
+        "DragOverlay",
+        "PipelineCard"
+      ],
+      "hooks": [
+        "useRecruitingRouteProtection",
+        "useWatchlist",
+        "useState",
+        "useSensors",
+        "useSensor",
+        "useMemo"
+      ]
+    },
+    "/baseball/dashboard/players/:id": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/players/[id]/page.tsx",
+      "routePath": "/baseball/dashboard/players/:id",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": true,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "@/components/layout/header",
+        "@/components/ui/button",
+        "@/components/ui/avatar",
+        "@/components/ui/loading",
+        "@/components/ui/bento-grid",
+        "@/components/ui/filter-chips",
+        "@/components/player/VideoShowcase",
+        "@/components/icons",
+        "@/hooks/use-players",
+        "@/hooks/use-watchlist",
+        "@/hooks/use-auth",
+        "@/lib/utils",
+        "@/app/baseball/actions/engagement"
+      ],
+      "components": [
+        "Header",
+        "Loading",
+        "IconTarget",
+        "Button",
+        "IconArrowLeft",
+        "Avatar",
+        "IconCheck",
+        "BadgeChip",
+        "IconSchool",
+        "IconMapPin",
+        "IconPlus",
+        "IconMessage",
+        "QuickStat",
+        "BentoGrid",
+        "BentoCard",
+        "BentoStatCard",
+        "IconActivity",
+        "IconRuler",
+        "IconMail",
+        "IconPhone",
+        "IconInstagram",
+        "IconTwitter",
+        "InfoRow",
+        "VideoShowcase"
+      ],
+      "hooks": [
+        "useParams",
+        "useRouter",
+        "useRef",
+        "useAuth",
+        "usePlayer",
+        "useWatchlist",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/players/:id/profile": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/players/[id]/profile/page.tsx",
+      "routePath": "/baseball/dashboard/players/:id/profile",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "next/navigation",
+        "@/components/player/profile/PlayerCard",
+        "@/components/ui/button",
+        "@/components/icons",
+        "next/link"
+      ],
+      "components": [
+        "Link",
+        "Button",
+        "IconArrowLeft",
+        "PlayerCard",
+        "IconMessage"
+      ],
+      "hooks": []
+    },
+    "/baseball/dashboard/profile": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/profile/page.tsx",
+      "routePath": "/baseball/dashboard/profile",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "next/link",
+        "@/components/layout/header",
+        "@/components/ui/button",
+        "@/components/ui/loading",
+        "@/components/features/profile-editor",
+        "@/hooks/use-auth",
+        "@/components/icons",
+        "@/lib/types"
+      ],
+      "components": [
+        "PageLoading",
+        "Player",
+        "Header",
+        "Link",
+        "Button",
+        "IconGlobe",
+        "ProfileEditor"
+      ],
+      "hooks": [
+        "useAuth"
+      ]
+    },
+    "/baseball/dashboard/program": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/program/page.tsx",
+      "routePath": "/baseball/dashboard/program",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/loading",
+        "@/hooks/use-auth",
+        "@/components/ui/toast",
+        "@/lib/supabase/client",
+        "@/lib/utils",
+        "@/components/icons",
+        "next/link"
+      ],
+      "components": [
+        "OrganizationData",
+        "HTMLInputElement",
+        "Partial",
+        "PageLoading",
+        "Header",
+        "Card",
+        "CardContent",
+        "IconBuilding",
+        "Link",
+        "Button",
+        "IconGlobe",
+        "IconUpload",
+        "Input",
+        "IconCheck"
+      ],
+      "hooks": [
+        "useAuth",
+        "useToast",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/roster": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/roster/page.tsx",
+      "routePath": "/baseball/dashboard/roster",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/badge",
+        "@/components/ui/avatar",
+        "@/components/ui/loading",
+        "@/components/ui/skeleton-loader",
+        "@/components/icons",
+        "@/hooks/use-auth",
+        "@/stores/team-store",
+        "@/lib/supabase/client",
+        "@/lib/utils",
+        "@/components/coach/InviteModal"
+      ],
+      "components": [
+        "TeamMember",
+        "PageLoading",
+        "Card",
+        "CardContent",
+        "Header",
+        "Button",
+        "IconLink",
+        "IconSearch",
+        "Input",
+        "IconFilter",
+        "CardHeader",
+        "SkeletonTable",
+        "IconUsers",
+        "Avatar",
+        "Badge",
+        "InviteModal"
+      ],
+      "hooks": [
+        "useRouter",
+        "useAuth",
+        "useTeamStore",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/settings": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/settings/page.tsx",
+      "routePath": "/baseball/dashboard/settings",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/layout/header",
+        "@/components/ui/card",
+        "@/components/ui/input",
+        "@/components/ui/button",
+        "@/components/ui/loading",
+        "@/hooks/use-auth",
+        "@/components/ui/toast",
+        "@/lib/supabase/client",
+        "@/components/icons",
+        "next/link"
+      ],
+      "components": [
+        "PageLoading",
+        "Header",
+        "Link",
+        "Card",
+        "CardContent",
+        "IconBuilding",
+        "IconChevronRight",
+        "IconShield",
+        "CardHeader",
+        "IconBell",
+        "IconMail",
+        "Input",
+        "Button"
+      ],
+      "hooks": [
+        "useAuth",
+        "useToast",
+        "useState"
+      ]
+    },
+    "/baseball/dashboard/settings/privacy": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/settings/privacy/page.tsx",
+      "routePath": "/baseball/dashboard/settings/privacy",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "next/navigation",
+        "@/components/player/settings/PrivacySettingsForm"
+      ],
+      "components": [
+        "PrivacySettingsForm"
+      ],
+      "hooks": []
+    },
+    "/baseball/dashboard/team/high-school": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/team/high-school/page.tsx",
+      "routePath": "/baseball/dashboard/team/high-school",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/link",
+        "@/components/layout/header",
+        "@/components/features/stat-card",
+        "@/components/ui/card",
+        "@/components/ui/avatar",
+        "@/components/ui/badge",
+        "@/components/ui/button",
+        "@/components/ui/loading",
+        "@/components/icons",
+        "@/hooks/use-auth",
+        "@/lib/supabase/client",
+        "@/lib/utils"
+      ],
+      "components": [
+        "TeamMember",
+        "CollegeInterest",
+        "DevPlanProgress",
+        "PageLoading",
+        "Header",
+        "StatCard",
+        "Card",
+        "CardHeader",
+        "Link",
+        "Button",
+        "IconChevronRight",
+        "CardContent",
+        "IconEye",
+        "Badge",
+        "IconGraduationCap",
+        "Avatar",
+        "IconNote",
+        "IconUsers",
+        "IconCalendar"
+      ],
+      "hooks": [
+        "useAuth",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/team": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/team/page.tsx",
+      "routePath": "/baseball/dashboard/team",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/link",
+        "@/components/layout/header",
+        "@/components/features/stat-card",
+        "@/components/ui/card",
+        "@/components/ui/avatar",
+        "@/components/ui/badge",
+        "@/components/ui/button",
+        "@/components/ui/loading",
+        "@/components/icons",
+        "@/hooks/use-auth",
+        "@/stores/team-store",
+        "@/lib/supabase/client",
+        "@/lib/utils"
+      ],
+      "components": [
+        "TeamMember",
+        "Event",
+        "PageLoading",
+        "Header",
+        "StatCard",
+        "Card",
+        "CardHeader",
+        "Link",
+        "IconChevronRight",
+        "CardContent",
+        "IconUsers",
+        "Button",
+        "Avatar",
+        "Badge",
+        "IconVideo",
+        "IconNote",
+        "IconCalendar",
+        "IconBuilding"
+      ],
+      "hooks": [
+        "useAuth",
+        "useTeamStore",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/teams": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/teams/page.tsx",
+      "routePath": "/baseball/dashboard/teams",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "@/lib/supabase/client",
+        "@/components/layout/header",
+        "@/components/ui/loading",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/select",
+        "@/components/ui/badge",
+        "@/hooks/use-auth",
+        "@/hooks/use-route-protection",
+        "@/components/icons"
+      ],
+      "components": [
+        "Team",
+        "Map",
+        "PageLoading",
+        "Header",
+        "Button",
+        "IconPlus",
+        "IconUsers",
+        "Badge",
+        "IconCalendar",
+        "IconCheck",
+        "IconCopy",
+        "IconVideo",
+        "Input",
+        "Select"
+      ],
+      "hooks": [
+        "useRouter",
+        "useAuth",
+        "useRouteProtection",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/videos": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/videos/page.tsx",
+      "routePath": "/baseball/dashboard/videos",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/layout/header",
+        "@/components/features/video-upload",
+        "@/components/features/video-player",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/input",
+        "@/components/ui/avatar",
+        "@/components/icons",
+        "@/hooks/use-auth",
+        "@/stores/team-store",
+        "@/lib/supabase/client",
+        "@/lib/utils",
+        "@/lib/types",
+        "@/components/ui/loading",
+        "@/components/ui/skeleton-loader",
+        "@/components/ui/confirm-dialog",
+        "@/components/ui/toast"
+      ],
+      "components": [
+        "VideoWithPlayer",
+        "PageLoading",
+        "Header",
+        "SkeletonVideos",
+        "Button",
+        "IconPlus",
+        "Card",
+        "CardContent",
+        "IconSearch",
+        "Input",
+        "IconFilter",
+        "VideoUpload",
+        "IconVideo",
+        "VideoPlayer",
+        "Avatar",
+        "Badge",
+        "IconStar",
+        "IconTrash",
+        "ConfirmDialog"
+      ],
+      "hooks": [
+        "useAuth",
+        "useTeamStore",
+        "useState",
+        "useToast",
+        "useEffect"
+      ]
+    },
+    "/baseball/dashboard/watchlist": {
+      "filePath": "/src/app/baseball/(dashboard)/dashboard/watchlist/page.tsx",
+      "routePath": "/baseball/dashboard/watchlist",
+      "domain": "baseball",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": true,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/ui/shine-effect",
+        "@/components/layout/header",
+        "@/components/ui/button",
+        "@/components/ui/select",
+        "@/components/ui/empty-state",
+        "@/components/ui/loading",
+        "@/components/ui/avatar",
+        "@/components/icons",
+        "@/lib/supabase/client",
+        "@/components/coach/PlayerDetailModal",
+        "@/components/panels/PlayerPeekPanel",
+        "@/hooks/use-auth",
+        "@/hooks/use-route-protection",
+        "@/lib/utils",
+        "@/app/baseball/actions/watchlist",
+        "@/lib/types",
+        "next/navigation",
+        "@/components/ui/toast",
+        "@/components/ui/confirm-dialog"
+      ],
+      "components": [
+        "WatchlistWithPlayer",
+        "Player",
+        "Set",
+        "PageLoading",
+        "Header",
+        "Select",
+        "ShineEffect",
+        "Button",
+        "EmptyState",
+        "IconUser",
+        "Avatar",
+        "IconTrash",
+        "PlayerDetailModal",
+        "ConfirmDialog",
+        "PlayerPeekPanel"
+      ],
+      "hooks": [
+        "useRouter",
+        "useToast",
+        "useAuth",
+        "useRecruitingRouteProtection",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/baseball/coach": {
+      "filePath": "/src/app/baseball/(onboarding)/coach/page.tsx",
+      "routePath": "/baseball/coach",
+      "domain": "baseball",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "next/navigation",
+        "next"
+      ],
+      "components": [],
+      "hooks": []
+    },
+    "/baseball/coach-onboarding": {
+      "filePath": "/src/app/baseball/(onboarding)/coach-onboarding/page.tsx",
+      "routePath": "/baseball/coach-onboarding",
+      "domain": "baseball",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "framer-motion",
+        "next/navigation",
+        "@/lib/supabase/client",
+        "./hooks/useOnboardingFlow",
+        "./components/SignUpAs",
+        "./components/CinematicIntro",
+        "./components/TeamLevel",
+        "./components/Division",
+        "./components/SchoolInfo",
+        "./components/AccountInfo",
+        "./components/PlanSelection",
+        "./components/WelcomeTransition"
+      ],
+      "components": [
+        "AnimatePresence",
+        "SignUpAs",
+        "CinematicIntro",
+        "TeamLevel",
+        "Division",
+        "SchoolInfo",
+        "AccountInfo",
+        "PlanSelection",
+        "WelcomeTransition"
+      ],
+      "hooks": [
+        "useRouter",
+        "useState",
+        "useOnboardingFlow"
+      ]
+    },
+    "/baseball/player": {
+      "filePath": "/src/app/baseball/(onboarding)/player/page.tsx",
+      "routePath": "/baseball/player",
+      "domain": "baseball",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "framer-motion",
+        "@/lib/supabase/client",
+        "@/hooks/use-auth",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/select",
+        "@/components/ui/loading",
+        "@/components/icons"
+      ],
+      "components": [
+        "Step",
+        "PageLoading",
+        "AnimatePresence",
+        "Button",
+        "IconArrowRight",
+        "Input",
+        "NativeSelect",
+        "IconUser",
+        "IconUpload",
+        "IconCheck"
+      ],
+      "hooks": [
+        "useRouter",
+        "useAuth",
+        "useState"
+      ]
+    },
+    "/baseball/player/:id": {
+      "filePath": "/src/app/baseball/(public)/player/[id]/page.tsx",
+      "routePath": "/baseball/player/:id",
+      "domain": "baseball",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "next/navigation",
+        "@/components/player/profile/PlayerCard",
+        "@/components/ui/card",
+        "@/components/ui/badge",
+        "@/components/ui/button",
+        "@/components/icons",
+        "next"
+      ],
+      "components": [
+        "Metadata",
+        "PlayerCard",
+        "Card",
+        "IconVideo",
+        "IconTrendingUp",
+        "Badge",
+        "Button",
+        "IconMail",
+        "IconStar"
+      ],
+      "hooks": []
+    },
+    "/baseball/program/:id": {
+      "filePath": "/src/app/baseball/(public)/program/[id]/page.tsx",
+      "routePath": "/baseball/program/:id",
+      "domain": "baseball",
+      "routeType": "page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "next/navigation",
+        "@/components/ui/card",
+        "@/components/ui/badge",
+        "@/components/ui/button",
+        "@/components/ui/avatar",
+        "@/components/icons",
+        "next"
+      ],
+      "components": [
+        "Metadata",
+        "Card",
+        "IconBuilding",
+        "Badge",
+        "IconMapPin",
+        "IconUsers",
+        "Avatar",
+        "IconStar",
+        "Button",
+        "IconMail"
+      ],
+      "hooks": []
+    },
+    "/baseball": {
+      "filePath": "/src/app/baseball/page.tsx",
+      "routePath": "/baseball",
+      "domain": "baseball",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "next/link",
+        "next/image",
+        "lucide-react",
+        "next"
+      ],
+      "components": [
+        "Link",
+        "Image",
+        "ArrowRight"
+      ],
+      "hooks": []
+    },
+    "/golf/forgot-password": {
+      "filePath": "/src/app/golf/(auth)/forgot-password/page.tsx",
+      "routePath": "/golf/forgot-password",
+      "domain": "golf",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/link",
+        "@/lib/supabase/client",
+        "@/components/ui/button",
+        "@/components/ui/input"
+      ],
+      "components": [
+        "Link",
+        "Button",
+        "Input"
+      ],
+      "hooks": [
+        "useState"
+      ]
+    },
+    "/golf/login": {
+      "filePath": "/src/app/golf/(auth)/login/page.tsx",
+      "routePath": "/golf/login",
+      "domain": "golf",
+      "routeType": "auth",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/link",
+        "next/navigation",
+        "framer-motion",
+        "@/lib/supabase/client",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/shine-effect"
+      ],
+      "components": [
+        "ShineEffect",
+        "Input",
+        "Link",
+        "Button",
+        "Suspense",
+        "GolfLoginForm"
+      ],
+      "hooks": [
+        "useState",
+        "useRouter",
+        "useSearchParams"
+      ]
+    },
+    "/golf/reset-password": {
+      "filePath": "/src/app/golf/(auth)/reset-password/page.tsx",
+      "routePath": "/golf/reset-password",
+      "domain": "golf",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/link",
+        "next/navigation",
+        "@/lib/supabase/client",
+        "@/components/ui/button",
+        "@/components/ui/input"
+      ],
+      "components": [
+        "Input",
+        "Button",
+        "Link"
+      ],
+      "hooks": [
+        "useState",
+        "useRouter"
+      ]
+    },
+    "/golf/signup": {
+      "filePath": "/src/app/golf/(auth)/signup/page.tsx",
+      "routePath": "/golf/signup",
+      "domain": "golf",
+      "routeType": "auth",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/link",
+        "next/navigation",
+        "framer-motion",
+        "@/lib/supabase/client",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/icons"
+      ],
+      "components": [
+        "Step",
+        "Role",
+        "AnimatePresence",
+        "IconUsers",
+        "IconArrowRight",
+        "IconUser",
+        "Link",
+        "Input",
+        "Button"
+      ],
+      "hooks": [
+        "useState",
+        "useRouter"
+      ]
+    },
+    "/golf/dashboard/announcements": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/announcements/page.tsx",
+      "routePath": "/golf/dashboard/announcements",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "@/components/ui/shine-effect",
+        "next/navigation",
+        "@/components/golf/announcements/CreateAnnouncementButton",
+        "@/components/golf/announcements/AnnouncementCard",
+        "@/lib/types/golf",
+        "@/components/icons",
+        "next"
+      ],
+      "components": [
+        "CreateAnnouncementButton",
+        "ShineEffect",
+        "IconBell",
+        "AnnouncementCard"
+      ],
+      "hooks": []
+    },
+    "/golf/dashboard/calendar": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/calendar/page.tsx",
+      "routePath": "/golf/dashboard/calendar",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "next/navigation",
+        "@/components/golf/calendar/CalendarContainer",
+        "@/components/golf/calendar/EventsList",
+        "@/components/golf/calendar/CreateEventButton",
+        "@/components/golf/calendar/CalendarClassesList",
+        "@/lib/types/golf",
+        "next"
+      ],
+      "components": [
+        "CreateEventButton",
+        "CalendarContainer",
+        "EventsList",
+        "CalendarClassesList"
+      ],
+      "hooks": []
+    },
+    "/golf/dashboard/classes": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/classes/page.tsx",
+      "routePath": "/golf/dashboard/classes",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/icons",
+        "@/lib/supabase/client",
+        "@/components/golf/classes/AddClassModal",
+        "@/components/golf/classes/UploadScheduleModal",
+        "@/components/golf/classes/ConfirmClassesModal",
+        "@/components/golf/classes/ClassDetailModal",
+        "@/lib/utils/schedule-parser"
+      ],
+      "components": [
+        "PlayerClass",
+        "ParsedClass",
+        "ClassFormData",
+        "Button",
+        "IconUpload",
+        "IconPlus",
+        "Card",
+        "CardContent",
+        "IconBook",
+        "IconCalendar",
+        "IconClock",
+        "IconMapPin",
+        "AddClassModal",
+        "UploadScheduleModal",
+        "ConfirmClassesModal",
+        "ClassDetailModal"
+      ],
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/golf/dashboard/documents": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/documents/page.tsx",
+      "routePath": "/golf/dashboard/documents",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "@/components/ui/shine-effect",
+        "next/navigation",
+        "@/components/icons",
+        "next"
+      ],
+      "components": [
+        "ShineEffect",
+        "IconFolder"
+      ],
+      "hooks": []
+    },
+    "/golf/dashboard/messages": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/messages/page.tsx",
+      "routePath": "/golf/dashboard/messages",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": true,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/lib/utils",
+        "@/components/ui/avatar",
+        "@/components/ui/button",
+        "@/components/icons",
+        "@/components/ui/toast",
+        "@/hooks/golf/use-golf-messages",
+        "@/app/golf/actions/messages",
+        "@/components/golf/messages/GolfNewMessageModal",
+        "@/lib/supabase/client"
+      ],
+      "components": [
+        "Button",
+        "IconPlus",
+        "IconMail",
+        "Avatar",
+        "IconArrowLeft",
+        "IconMessageSquare",
+        "MessageInput",
+        "GolfNewMessageModal",
+        "IconSend"
+      ],
+      "hooks": [
+        "useToast",
+        "useGolfConversations",
+        "useState",
+        "useGolfMessages",
+        "useEffect",
+        "useMemo"
+      ]
+    },
+    "/golf/dashboard": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/page.tsx",
+      "routePath": "/golf/dashboard",
+      "domain": "golf",
+      "routeType": "dashboard-home",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/link",
+        "@/lib/supabase/client",
+        "@/lib/utils",
+        "@/components/golf/EmptyState",
+        "@/components/golf/RecentActivityFeed",
+        "@/components/ui/loading",
+        "@/components/ui/shine-effect",
+        "@/components/icons",
+        "@/lib/types/golf"
+      ],
+      "components": [
+        "ShineEffect",
+        "IconTrendingUp",
+        "IconTrendingDown",
+        "IconArrowRight",
+        "Link",
+        "MetricCard",
+        "IconUsers",
+        "IconCalendar",
+        "IconFlag",
+        "IconChartBar",
+        "SectionHeader",
+        "QuickActionCard",
+        "IconPlus",
+        "IconBook",
+        "IconMessage",
+        "EmptyState",
+        "RoundRow",
+        "RecentActivityFeed",
+        "IconGolf",
+        "IconSparkles",
+        "CoachDashboardData",
+        "PlayerDashboardData",
+        "PageLoading",
+        "CoachDashboard",
+        "PlayerDashboard"
+      ],
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/golf/dashboard/qualifiers/:id": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx",
+      "routePath": "/golf/dashboard/qualifiers/:id",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "@/components/ui/shine-effect",
+        "next/navigation",
+        "next/link",
+        "@/components/icons",
+        "@/lib/types/golf",
+        "next"
+      ],
+      "components": [
+        "Metadata",
+        "Link",
+        "IconChevronLeft",
+        "ShineEffect"
+      ],
+      "hooks": []
+    },
+    "/golf/dashboard/qualifiers": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx",
+      "routePath": "/golf/dashboard/qualifiers",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "@/components/ui/shine-effect",
+        "next/navigation",
+        "next/link",
+        "@/components/golf/qualifiers/CreateQualifierButton",
+        "@/lib/types/golf",
+        "@/components/icons",
+        "next"
+      ],
+      "components": [
+        "CreateQualifierButton",
+        "ShineEffect",
+        "IconFlag",
+        "Link",
+        "IconCalendar",
+        "IconGolf",
+        "IconMapPin",
+        "IconChevronRight"
+      ],
+      "hooks": []
+    },
+    "/golf/dashboard/roster": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/roster/page.tsx",
+      "routePath": "/golf/dashboard/roster",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "next/navigation",
+        "next/link",
+        "@/components/golf/roster/InvitePlayerButton",
+        "@/components/golf/roster/PlayerStatusBadge",
+        "@/components/ui/shine-effect",
+        "@/lib/types/golf",
+        "@/components/icons",
+        "next"
+      ],
+      "components": [
+        "InvitePlayerButton",
+        "ShineEffect",
+        "IconUsers",
+        "PlayerStatusBadge",
+        "Link",
+        "IconChartBar",
+        "IconMessage",
+        "IconChevronRight"
+      ],
+      "hooks": []
+    },
+    "/golf/dashboard/rounds/:id": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx",
+      "routePath": "/golf/dashboard/rounds/:id",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "next/navigation",
+        "next/link",
+        "next",
+        "@/components/ui/button",
+        "@/components/ui/card",
+        "@/components/icons"
+      ],
+      "components": [
+        "Metadata",
+        "Link",
+        "Button",
+        "IconArrowLeft",
+        "IconChartBar",
+        "Card",
+        "CardContent",
+        "IconCheck",
+        "IconCalendar",
+        "IconMapPin",
+        "StatBox",
+        "CardHeader",
+        "CardTitle"
+      ],
+      "hooks": []
+    },
+    "/golf/dashboard/rounds/new": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+      "routePath": "/golf/dashboard/rounds/new",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "next/navigation",
+        "./new-round-client"
+      ],
+      "components": [
+        "NewRoundClient"
+      ],
+      "hooks": []
+    },
+    "/golf/dashboard/rounds": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/rounds/page.tsx",
+      "routePath": "/golf/dashboard/rounds",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "@/components/ui/shine-effect",
+        "next/navigation",
+        "next/link",
+        "@/lib/utils",
+        "@/components/icons",
+        "@/lib/types/golf",
+        "next"
+      ],
+      "components": [
+        "Link",
+        "IconPlus",
+        "ShineEffect",
+        "IconGolf",
+        "IconCheck",
+        "IconCalendar",
+        "IconMapPin",
+        "IconChevronRight"
+      ],
+      "hooks": []
+    },
+    "/golf/dashboard/settings": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/settings/page.tsx",
+      "routePath": "/golf/dashboard/settings",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/ui/shine-effect",
+        "@/lib/supabase/client",
+        "@/lib/utils",
+        "@/components/ui/avatar",
+        "@/components/ui/toast",
+        "@/components/icons",
+        "@/components/golf/settings/PersonalInfoModal",
+        "@/components/golf/settings/EmailModal",
+        "@/components/golf/settings/PasswordModal",
+        "@/components/golf/settings/NotificationsModal",
+        "@/components/golf/settings/AppearanceModal",
+        "@/components/golf/settings/LocationModal",
+        "@/components/golf/settings/TeamSettingsModal",
+        "@/components/golf/settings/InviteSettingsModal"
+      ],
+      "components": [
+        "UserProfile",
+        "ShineEffect",
+        "Avatar",
+        "SettingsRow",
+        "IconUser",
+        "IconMail",
+        "IconShield",
+        "IconBell",
+        "IconPalette",
+        "IconMapPin",
+        "IconUsers",
+        "IconSettings",
+        "IconLogout",
+        "PersonalInfoModal",
+        "EmailModal",
+        "PasswordModal",
+        "NotificationsModal",
+        "AppearanceModal",
+        "LocationModal",
+        "TeamSettingsModal",
+        "InviteSettingsModal",
+        "IconChevronRight"
+      ],
+      "hooks": [
+        "useState",
+        "useToast",
+        "useEffect"
+      ]
+    },
+    "/golf/dashboard/stats": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/stats/page.tsx",
+      "routePath": "/golf/dashboard/stats",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "@/components/ui/shine-effect",
+        "@/lib/supabase/client",
+        "@/lib/utils/golf-stats-calculator-shots",
+        "@/components/golf/stats/GolfStatsDisplay",
+        "@/components/icons"
+      ],
+      "components": [
+        "GolfStats",
+        "ShineEffect",
+        "IconUser",
+        "IconChevronLeft",
+        "GolfStatsDisplay"
+      ],
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/golf/dashboard/tasks": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/tasks/page.tsx",
+      "routePath": "/golf/dashboard/tasks",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": true,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "framer-motion",
+        "@/lib/supabase/client",
+        "next/navigation",
+        "@/components/ui/button",
+        "@/components/icons",
+        "@/components/golf/tasks/CreateTaskModal",
+        "@/components/golf/tasks/TasksList",
+        "@/components/golf/tasks/TaskSkeleton",
+        "@/lib/utils",
+        "@/lib/motion"
+      ],
+      "components": [
+        "FilterType",
+        "Task",
+        "Player",
+        "TaskListSkeleton",
+        "Button",
+        "IconPlus",
+        "TasksList",
+        "CreateTaskModal"
+      ],
+      "hooks": [
+        "useRouter",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/golf/dashboard/team": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/team/page.tsx",
+      "routePath": "/golf/dashboard/team",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "next",
+        "@/components/ui/card",
+        "@/components/icons",
+        "@/lib/supabase/server",
+        "next/navigation"
+      ],
+      "components": [
+        "Card",
+        "CardContent",
+        "IconUsers"
+      ],
+      "hooks": []
+    },
+    "/golf/dashboard/travel": {
+      "filePath": "/src/app/golf/(dashboard)/dashboard/travel/page.tsx",
+      "routePath": "/golf/dashboard/travel",
+      "domain": "golf",
+      "routeType": "dashboard-page",
+      "hasLoading": true,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "@/lib/supabase/server",
+        "@/components/ui/shine-effect",
+        "next/navigation",
+        "@/components/icons",
+        "next"
+      ],
+      "components": [
+        "ShineEffect",
+        "IconAirplane"
+      ],
+      "hooks": []
+    },
+    "/golf/coach": {
+      "filePath": "/src/app/golf/(onboarding)/coach/page.tsx",
+      "routePath": "/golf/coach",
+      "domain": "golf",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "framer-motion",
+        "@/lib/supabase/client",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/select",
+        "@/components/icons"
+      ],
+      "components": [
+        "Step",
+        "AnimatePresence",
+        "Button",
+        "IconArrowRight",
+        "Input",
+        "NativeSelect",
+        "IconUser",
+        "IconUpload",
+        "IconCheck"
+      ],
+      "hooks": [
+        "useRouter",
+        "useState"
+      ]
+    },
+    "/golf/player": {
+      "filePath": "/src/app/golf/(onboarding)/player/page.tsx",
+      "routePath": "/golf/player",
+      "domain": "golf",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "react",
+        "next/navigation",
+        "framer-motion",
+        "@/lib/supabase/client",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/select",
+        "@/components/ui/loading",
+        "@/components/icons",
+        "@/lib/types/golf"
+      ],
+      "components": [
+        "Step",
+        "GolfPlayerYear",
+        "PageLoading",
+        "AnimatePresence",
+        "Button",
+        "IconArrowRight",
+        "Input",
+        "NativeSelect",
+        "IconUser",
+        "IconUpload",
+        "IconCheck"
+      ],
+      "hooks": [
+        "useRouter",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "/golf": {
+      "filePath": "/src/app/golf/page.tsx",
+      "routePath": "/golf",
+      "domain": "golf",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": false,
+      "imports": [
+        "next/link",
+        "next/image",
+        "lucide-react"
+      ],
+      "components": [
+        "Link",
+        "Image",
+        "ArrowRight"
+      ],
+      "hooks": []
+    },
+    "/about": {
+      "filePath": "/src/app/about/page.tsx",
+      "routePath": "/about",
+      "domain": "baseball",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "next/link",
+        "lucide-react"
+      ],
+      "components": [
+        "Link",
+        "Trophy",
+        "Heart",
+        "ArrowRight"
+      ],
+      "hooks": []
+    },
+    "/help": {
+      "filePath": "/src/app/help/page.tsx",
+      "routePath": "/help",
+      "domain": "baseball",
+      "routeType": "page",
+      "hasLoading": false,
+      "hasError": false,
+      "hasLayout": false,
+      "isClientComponent": true,
+      "imports": [
+        "next/link",
+        "react",
+        "lucide-react"
+      ],
+      "components": [
+        "ChevronDown",
+        "ChevronRight",
+        "Link",
+        "ArrowLeft",
+        "Search",
+        "FAQItem",
+        "Mail",
+        "MessageCircle"
+      ],
+      "hooks": [
+        "useState"
+      ]
+    }
+  },
+  "components": {
+    "GlassNav": {
+      "filePath": "/src/components/ui/GlassNav.tsx",
+      "name": "GlassNav",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "animated-number": {
+      "filePath": "/src/components/ui/animated-number.tsx",
+      "name": "animated-number",
+      "isClientComponent": true,
+      "props": {
+        "value": "number",
+        "duration": "number",
+        "suffix": "string",
+        "prefix": "string",
+        "decimals": "number",
+        "className": "string"
+      },
+      "hooks": [
+        "useState",
+        "useRef",
+        "useEffect"
+      ]
+    },
+    "avatar": {
+      "filePath": "/src/components/ui/avatar.tsx",
+      "name": "avatar",
+      "isClientComponent": true,
+      "props": {
+        "children": "React.ReactNode",
+        "max": "number",
+        "size": "'sm' | 'md' | 'lg'"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "badge": {
+      "filePath": "/src/components/ui/badge.tsx",
+      "name": "badge",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "bento-grid": {
+      "filePath": "/src/components/ui/bento-grid.tsx",
+      "name": "bento-grid",
+      "isClientComponent": false,
+      "props": {
+        "children": "React.ReactNode",
+        "className": "string",
+        "cols": "2 | 3 | 4"
+      },
+      "hooks": []
+    },
+    "button": {
+      "filePath": "/src/components/ui/button.tsx",
+      "name": "button",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "card": {
+      "filePath": "/src/components/ui/card.tsx",
+      "name": "card",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "confirm-dialog": {
+      "filePath": "/src/components/ui/confirm-dialog.tsx",
+      "name": "confirm-dialog",
+      "isClientComponent": true,
+      "props": {
+        "open": "boolean",
+        "title": "string",
+        "message": "string",
+        "confirmLabel": "string",
+        "cancelLabel": "string",
+        "variant": "'danger' | 'warning' | 'default'",
+        "loading": "boolean",
+        "onConfirm": "() => void",
+        "onCancel": "() => void"
+      },
+      "hooks": []
+    },
+    "data-table": {
+      "filePath": "/src/components/ui/data-table.tsx",
+      "name": "data-table",
+      "isClientComponent": true,
+      "props": {
+        "headers": "string[]",
+        "rows": "React.ReactNode[][]",
+        "className": "string"
+      },
+      "hooks": [
+        "useMemo"
+      ]
+    },
+    "empty-state": {
+      "filePath": "/src/components/ui/empty-state.tsx",
+      "name": "empty-state",
+      "isClientComponent": false,
+      "props": {
+        "icon": "React.ReactNode",
+        "title": "string",
+        "description": "string",
+        "action": "React.ReactNode",
+        "suggestion": "string",
+        "className": "string",
+        "variant": "'default' | 'card' | 'minimal'"
+      },
+      "hooks": []
+    },
+    "filter-chips": {
+      "filePath": "/src/components/ui/filter-chips.tsx",
+      "name": "filter-chips",
+      "isClientComponent": true,
+      "props": {
+        "filters": "FilterChip[]",
+        "onRemove": "(key: string) => void",
+        "onClearAll": "() => void",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "filter-panel": {
+      "filePath": "/src/components/ui/filter-panel.tsx",
+      "name": "filter-panel",
+      "isClientComponent": true,
+      "props": {
+        "filters": "FilterGroup[]",
+        "activeFilters": "Record<string, any>",
+        "onFilterChange": "(filterId: string, value: any) => void",
+        "onClearAll": "() => void",
+        "className": "string"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "form-field": {
+      "filePath": "/src/components/ui/form-field.tsx",
+      "name": "form-field",
+      "isClientComponent": true,
+      "props": {
+        "label": "string",
+        "htmlFor": "string",
+        "required": "boolean",
+        "error": "string",
+        "hint": "string",
+        "children": "React.ReactNode",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "glass-card": {
+      "filePath": "/src/components/ui/glass-card.tsx",
+      "name": "glass-card",
+      "isClientComponent": true,
+      "props": {
+        "label": "string",
+        "value": "string | number",
+        "icon": "React.ReactNode",
+        "trend": "{\n    value: number",
+        "direction": "'up' | 'down' | 'neutral'"
+      },
+      "hooks": []
+    },
+    "index": {
+      "filePath": "/src/components/icons/index.tsx",
+      "name": "index",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "input": {
+      "filePath": "/src/components/ui/input.tsx",
+      "name": "input",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useState"
+      ]
+    },
+    "loading": {
+      "filePath": "/src/components/ui/loading.tsx",
+      "name": "loading",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "modal": {
+      "filePath": "/src/components/ui/modal.tsx",
+      "name": "modal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "title": "string",
+        "description": "string",
+        "children": "React.ReactNode",
+        "size": "'sm' | 'md' | 'lg' | 'xl' | 'full'",
+        "glass": "boolean"
+      },
+      "hooks": [
+        "useCallback",
+        "useEffect"
+      ]
+    },
+    "pagination": {
+      "filePath": "/src/components/ui/pagination.tsx",
+      "name": "pagination",
+      "isClientComponent": true,
+      "props": {
+        "currentPage": "number",
+        "totalPages": "number",
+        "onPageChange": "(page: number) => void",
+        "className": "string",
+        "showFirstLast": "boolean",
+        "siblingCount": "number"
+      },
+      "hooks": []
+    },
+    "player-row": {
+      "filePath": "/src/components/ui/player-row.tsx",
+      "name": "player-row",
+      "isClientComponent": true,
+      "props": {
+        "player": "Player",
+        "onClick": "() => void",
+        "onStar": "() => void",
+        "isStarred": "boolean",
+        "showStats": "boolean",
+        "showVideo": "boolean",
+        "compact": "boolean",
+        "className": "string",
+        "actions": "React.ReactNode"
+      },
+      "hooks": []
+    },
+    "progress-ring": {
+      "filePath": "/src/components/ui/progress-ring.tsx",
+      "name": "progress-ring",
+      "isClientComponent": false,
+      "props": {
+        "value": "number",
+        "max": "number",
+        "size": "'sm' | 'md' | 'lg'",
+        "showLabel": "boolean",
+        "color": "'brand' | 'green' | 'amber' | 'red' | 'blue'",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "progress": {
+      "filePath": "/src/components/ui/progress.tsx",
+      "name": "progress",
+      "isClientComponent": true,
+      "props": {
+        "value": "number",
+        "max": "number",
+        "showLabel": "boolean",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "search-autocomplete": {
+      "filePath": "/src/components/ui/search-autocomplete.tsx",
+      "name": "search-autocomplete",
+      "isClientComponent": true,
+      "props": {
+        "value": "string",
+        "onChange": "(value: string) => void",
+        "onSelect": "(player: Player) => void",
+        "onSubmit": "(value: string) => void",
+        "placeholder": "string",
+        "className": "string"
+      },
+      "hooks": [
+        "useState",
+        "useCallback",
+        "useEffect"
+      ]
+    },
+    "search-bar": {
+      "filePath": "/src/components/ui/search-bar.tsx",
+      "name": "search-bar",
+      "isClientComponent": true,
+      "props": {
+        "value": "string",
+        "onChange": "(value: string) => void",
+        "onSearch": "(value: string) => void",
+        "placeholder": "string",
+        "className": "string",
+        "showFilterButton": "boolean",
+        "filterCount": "number",
+        "onFilterClick": "() => void",
+        "autoFocus": "boolean",
+        "debounceMs": "number"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "search-input": {
+      "filePath": "/src/components/ui/search-input.tsx",
+      "name": "search-input",
+      "isClientComponent": true,
+      "props": {
+        "placeholder": "string",
+        "className": "string",
+        "onSearch": "(query: string) => void",
+        "suggestions": "SearchSuggestion[]",
+        "showTrending": "boolean"
+      },
+      "hooks": [
+        "useState",
+        "useRouter",
+        "useEffect",
+        "useCallback"
+      ]
+    },
+    "select": {
+      "filePath": "/src/components/ui/select.tsx",
+      "name": "select",
+      "isClientComponent": true,
+      "props": {
+        "options": "SelectOption[]",
+        "value": "string",
+        "onChange": "(value: string) => void",
+        "placeholder": "string",
+        "label": "string",
+        "error": "string",
+        "hint": "string",
+        "disabled": "boolean",
+        "className": "string",
+        "searchable": "boolean"
+      },
+      "hooks": [
+        "useState",
+        "useEffect",
+        "useCallback"
+      ]
+    },
+    "separator": {
+      "filePath": "/src/components/ui/separator.tsx",
+      "name": "separator",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "shine-effect": {
+      "filePath": "/src/components/ui/shine-effect.tsx",
+      "name": "shine-effect",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "skeleton-loader": {
+      "filePath": "/src/components/ui/skeleton-loader.tsx",
+      "name": "skeleton-loader",
+      "isClientComponent": true,
+      "props": {
+        "className": "string",
+        "variant": "'text' | 'circular' | 'rectangular'",
+        "width": "string | number",
+        "height": "string | number",
+        "animation": "'pulse' | 'shimmer'"
+      },
+      "hooks": []
+    },
+    "skeleton": {
+      "filePath": "/src/components/ui/skeleton.tsx",
+      "name": "skeleton",
+      "isClientComponent": false,
+      "props": {
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "sparkline": {
+      "filePath": "/src/components/ui/sparkline.tsx",
+      "name": "sparkline",
+      "isClientComponent": true,
+      "props": {
+        "data": "number[]",
+        "color": "string",
+        "width": "number",
+        "height": "number",
+        "className": "string"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "stat-bar": {
+      "filePath": "/src/components/ui/stat-bar.tsx",
+      "name": "stat-bar",
+      "isClientComponent": true,
+      "props": {
+        "label": "string",
+        "value": "number",
+        "max": "number",
+        "color": "'brand' | 'amber' | 'red' | 'blue' | 'green'",
+        "showPercentage": "boolean",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "stat-card": {
+      "filePath": "/src/components/features/stat-card.tsx",
+      "name": "stat-card",
+      "isClientComponent": true,
+      "props": {
+        "label": "string",
+        "value": "string | number",
+        "change": "string",
+        "changeType": "'positive' | 'negative' | 'neutral'",
+        "icon": "React.ComponentType<{ size?: number",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "status-dot": {
+      "filePath": "/src/components/ui/status-dot.tsx",
+      "name": "status-dot",
+      "isClientComponent": false,
+      "props": {
+        "variant": "StatusDotVariant",
+        "pulse": "boolean",
+        "className": "string",
+        "label": "string",
+        "size": "'sm' | 'md'"
+      },
+      "hooks": []
+    },
+    "tabs": {
+      "filePath": "/src/components/ui/tabs.tsx",
+      "name": "tabs",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useState",
+        "useContext"
+      ]
+    },
+    "textarea": {
+      "filePath": "/src/components/ui/textarea.tsx",
+      "name": "textarea",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "toast-notification": {
+      "filePath": "/src/components/ui/toast-notification.tsx",
+      "name": "toast-notification",
+      "isClientComponent": true,
+      "props": {
+        "toast": "Toast",
+        "onClose": "(id: string) => void"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "toast": {
+      "filePath": "/src/components/ui/toast.tsx",
+      "name": "toast",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useToast"
+      ]
+    },
+    "tooltip": {
+      "filePath": "/src/components/ui/tooltip.tsx",
+      "name": "tooltip",
+      "isClientComponent": true,
+      "props": {
+        "content": "string",
+        "children": "React.ReactNode",
+        "position": "'top' | 'bottom' | 'left' | 'right'",
+        "delay": "number",
+        "className": "string"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "validated-input": {
+      "filePath": "/src/components/ui/validated-input.tsx",
+      "name": "validated-input",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useState"
+      ]
+    },
+    "view-toggle": {
+      "filePath": "/src/components/ui/view-toggle.tsx",
+      "name": "view-toggle",
+      "isClientComponent": true,
+      "props": {
+        "value": "ViewMode",
+        "onChange": "(value: ViewMode) => void",
+        "className": "string",
+        "showMap": "boolean"
+      },
+      "hooks": []
+    },
+    "college-card": {
+      "filePath": "/src/components/features/college-card.tsx",
+      "name": "college-card",
+      "isClientComponent": true,
+      "props": {
+        "college": "College",
+        "isInterested": "boolean",
+        "onInterestToggle": "(collegeId: string, isInterested: boolean) => void",
+        "showInterestButton": "boolean"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "message-preview": {
+      "filePath": "/src/components/features/message-preview.tsx",
+      "name": "message-preview",
+      "isClientComponent": false,
+      "props": {
+        "conversation": "ConversationWithMeta"
+      },
+      "hooks": []
+    },
+    "notification-center": {
+      "filePath": "/src/components/features/notification-center.tsx",
+      "name": "notification-center",
+      "isClientComponent": true,
+      "props": {
+        "notifications": "Notification[]",
+        "onMarkAsRead": "(id: string) => void",
+        "onMarkAllAsRead": "() => void",
+        "onDelete": "(id: string) => void",
+        "className": "string"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "pipeline-card": {
+      "filePath": "/src/components/features/pipeline-card.tsx",
+      "name": "pipeline-card",
+      "isClientComponent": true,
+      "props": {
+        "item": "WatchlistItem",
+        "isDragging": "boolean"
+      },
+      "hooks": [
+        "useDraggable",
+        "useWatchlist"
+      ]
+    },
+    "pipeline-column": {
+      "filePath": "/src/components/features/pipeline-column.tsx",
+      "name": "pipeline-column",
+      "isClientComponent": true,
+      "props": {
+        "stage": "PipelineStage",
+        "items": "WatchlistItem[]"
+      },
+      "hooks": [
+        "useDroppable"
+      ]
+    },
+    "player-card": {
+      "filePath": "/src/components/features/player-card.tsx",
+      "name": "player-card",
+      "isClientComponent": true,
+      "props": {
+        "player": "Player",
+        "showWatchlistButton": "boolean",
+        "usePeekPanel": "boolean"
+      },
+      "hooks": [
+        "usePeekPanelStore",
+        "useAuth",
+        "useWatchlist"
+      ]
+    },
+    "player-comparison": {
+      "filePath": "/src/components/features/player-comparison.tsx",
+      "name": "player-comparison",
+      "isClientComponent": true,
+      "props": {
+        "players": "Player[]",
+        "onRemovePlayer": "(playerId: string) => void",
+        "onClose": "() => void",
+        "className": "string"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "profile-editor": {
+      "filePath": "/src/components/features/profile-editor.tsx",
+      "name": "profile-editor",
+      "isClientComponent": true,
+      "props": {
+        "player": "Player",
+        "onUpdate": "(updates: Partial<Player>) => Promise<void>",
+        "className": "string"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "save-comparison-modal": {
+      "filePath": "/src/components/features/save-comparison-modal.tsx",
+      "name": "save-comparison-modal",
+      "isClientComponent": true,
+      "props": {
+        "open": "boolean",
+        "onClose": "() => void",
+        "onSave": "(data: { name: string",
+        "description": "string"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "saved-comparisons-list": {
+      "filePath": "/src/components/features/saved-comparisons-list.tsx",
+      "name": "saved-comparisons-list",
+      "isClientComponent": true,
+      "props": {
+        "comparisons": "PlayerComparison[]"
+      },
+      "hooks": [
+        "useRouter"
+      ]
+    },
+    "video-player": {
+      "filePath": "/src/components/features/video-player.tsx",
+      "name": "video-player",
+      "isClientComponent": true,
+      "props": {
+        "src": "string",
+        "thumbnail": "string | null",
+        "title": "string",
+        "autoPlay": "boolean",
+        "className": "string",
+        "onView": "() => void",
+        "onError": "() => void"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "video-upload": {
+      "filePath": "/src/components/features/video-upload.tsx",
+      "name": "video-upload",
+      "isClientComponent": true,
+      "props": {
+        "onUploadComplete": "(video: any) => void",
+        "onCancel": "() => void"
+      },
+      "hooks": [
+        "useAuthStore",
+        "useState",
+        "useCallback"
+      ]
+    },
+    "CreateCampModal": {
+      "filePath": "/src/components/coach/CreateCampModal.tsx",
+      "name": "CreateCampModal",
+      "isClientComponent": true,
+      "props": {
+        "open": "boolean",
+        "onClose": "() => void",
+        "camp": "Camp | null"
+      },
+      "hooks": [
+        "useRouter",
+        "useAuth",
+        "useToast",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "CreateDevPlanModal": {
+      "filePath": "/src/components/coach/CreateDevPlanModal.tsx",
+      "name": "CreateDevPlanModal",
+      "isClientComponent": true,
+      "props": {
+        "open": "boolean",
+        "onClose": "() => void",
+        "teamId": "string | null"
+      },
+      "hooks": [
+        "useRouter",
+        "useAuth",
+        "useToast",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "EventModal": {
+      "filePath": "/src/components/coach/EventModal.tsx",
+      "name": "EventModal",
+      "isClientComponent": true,
+      "props": {
+        "teamId": "string",
+        "coachId": "string",
+        "event": "any | null",
+        "onClose": "() => void",
+        "onSuccess": "() => void"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "InviteModal": {
+      "filePath": "/src/components/coach/InviteModal.tsx",
+      "name": "InviteModal",
+      "isClientComponent": true,
+      "props": {
+        "teamId": "string",
+        "teamName": "string",
+        "coachId": "string",
+        "onClose": "() => void"
+      },
+      "hooks": [
+        "useToast",
+        "useState"
+      ]
+    },
+    "NewConversationModal": {
+      "filePath": "/src/components/coach/NewConversationModal.tsx",
+      "name": "NewConversationModal",
+      "isClientComponent": true,
+      "props": {
+        "open": "boolean",
+        "onClose": "() => void",
+        "preselectedUserId": "string"
+      },
+      "hooks": [
+        "useRouter",
+        "useToast",
+        "useState"
+      ]
+    },
+    "PlayerDetailModal": {
+      "filePath": "/src/components/coach/PlayerDetailModal.tsx",
+      "name": "PlayerDetailModal",
+      "isClientComponent": true,
+      "props": {
+        "player": "Player",
+        "coachId": "string",
+        "onClose": "() => void"
+      },
+      "hooks": [
+        "useRouter",
+        "useToast",
+        "useState"
+      ]
+    },
+    "ActiveFiltersBar": {
+      "filePath": "/src/components/coach/discover/ActiveFiltersBar.tsx",
+      "name": "ActiveFiltersBar",
+      "isClientComponent": true,
+      "props": {
+        "filters": "{\n    gradYear?: number",
+        "position": "string",
+        "state": "string",
+        "minVelo": "number",
+        "maxVelo": "number",
+        "minExit": "number",
+        "maxExit": "number",
+        "hasVideo": "boolean",
+        "search": "string"
+      },
+      "hooks": [
+        "useRouter",
+        "useSearchParams"
+      ]
+    },
+    "CompareBar": {
+      "filePath": "/src/components/coach/discover/CompareBar.tsx",
+      "name": "CompareBar",
+      "isClientComponent": true,
+      "props": {
+        "selectedPlayers": "Array<{\n    id: string",
+        "firstName": "string",
+        "lastName": "string",
+        "avatar": "string | null",
+        "position": "string"
+      },
+      "hooks": [
+        "useRouter"
+      ]
+    },
+    "DiscoverResults": {
+      "filePath": "/src/components/coach/discover/DiscoverResults.tsx",
+      "name": "DiscoverResults",
+      "isClientComponent": true,
+      "props": {
+        "players": "any[]",
+        "watchlistIds": "string[]",
+        "coachId": "string",
+        "totalCount": "number",
+        "currentPage": "number",
+        "totalPages": "number",
+        "onPlayerClick": "(playerId: string) => void",
+        "filters": "{\n    gradYear?: number",
+        "position": "string",
+        "state": "string",
+        "minVelo": "number",
+        "maxVelo": "number",
+        "minExit": "number",
+        "maxExit": "number",
+        "hasVideo": "boolean",
+        "search": "string"
+      },
+      "hooks": [
+        "useRouter",
+        "useSearchParams",
+        "useDiscoverPreferences",
+        "useMemo"
+      ]
+    },
+    "FilterPanel": {
+      "filePath": "/src/components/coach/discover/FilterPanel.tsx",
+      "name": "FilterPanel",
+      "isClientComponent": true,
+      "props": {
+        "currentFilters": "{\n    gradYear?: number",
+        "position": "string",
+        "state": "string",
+        "minVelo": "number",
+        "maxVelo": "number",
+        "minExit": "number",
+        "maxExit": "number",
+        "hasVideo": "boolean",
+        "search": "string"
+      },
+      "hooks": [
+        "useRouter",
+        "useSearchParams",
+        "useTransition",
+        "useState"
+      ]
+    },
+    "PlayerCard": {
+      "filePath": "/src/components/player/profile/PlayerCard.tsx",
+      "name": "PlayerCard",
+      "isClientComponent": true,
+      "props": {
+        "player": "Player",
+        "isPublic": "boolean"
+      },
+      "hooks": []
+    },
+    "PlayerCardGrid": {
+      "filePath": "/src/components/coach/discover/PlayerCardGrid.tsx",
+      "name": "PlayerCardGrid",
+      "isClientComponent": true,
+      "props": {
+        "players": "PlayerCardData[]",
+        "variant": "'default' | 'compact' | 'featured'",
+        "columns": "2 | 3 | 4",
+        "onWatchlist": "(playerId: string) => void",
+        "onMessage": "(playerId: string) => void",
+        "onPlayerClick": "(playerId: string) => void",
+        "watchlistIds": "string[]",
+        "loading": "boolean",
+        "emptyMessage": "string",
+        "emptyTitle": "string",
+        "className": "string",
+        "showCheckbox": "boolean",
+        "selectedIds": "string[]",
+        "onSelect": "(playerId: string) => void",
+        "featuredIds": "string[]",
+        "onCardHover": "(player: PlayerCardData, event: React.MouseEvent) => void",
+        "onCardLeave": "() => void"
+      },
+      "hooks": [
+        "useCallback"
+      ]
+    },
+    "PlayerHoverPreview": {
+      "filePath": "/src/components/coach/discover/PlayerHoverPreview.tsx",
+      "name": "PlayerHoverPreview",
+      "isClientComponent": true,
+      "props": {
+        "player": "PlayerCardData",
+        "position": "{ x: number",
+        "y": "number"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "SmartEmptyState": {
+      "filePath": "/src/components/coach/discover/SmartEmptyState.tsx",
+      "name": "SmartEmptyState",
+      "isClientComponent": true,
+      "props": {
+        "filters": "{\n    gradYear?: number",
+        "position": "string",
+        "state": "string",
+        "minVelo": "number",
+        "maxVelo": "number",
+        "minExit": "number",
+        "maxExit": "number",
+        "hasVideo": "boolean",
+        "search": "string"
+      },
+      "hooks": [
+        "useRouter",
+        "useSearchParams",
+        "useMemo"
+      ]
+    },
+    "USAMap": {
+      "filePath": "/src/components/coach/discover/USAMap.tsx",
+      "name": "USAMap",
+      "isClientComponent": true,
+      "props": {
+        "stateData": "Record<string, StateData>",
+        "onStateClick": "(state: string) => void",
+        "onClearState": "() => void",
+        "selectedState": "string | null",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "VideoShowcase": {
+      "filePath": "/src/components/player/VideoShowcase.tsx",
+      "name": "VideoShowcase",
+      "isClientComponent": true,
+      "props": {
+        "playerId": "string",
+        "maxVideos": "number",
+        "showViewAll": "boolean",
+        "onViewAll": "() => void",
+        "className": "string"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "DreamSchoolsManager": {
+      "filePath": "/src/components/player/dream-schools/DreamSchoolsManager.tsx",
+      "name": "DreamSchoolsManager",
+      "isClientComponent": true,
+      "props": {
+        "playerId": "string",
+        "initialSchools": "DreamSchool[]"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "PrivacySettingsForm": {
+      "filePath": "/src/components/player/settings/PrivacySettingsForm.tsx",
+      "name": "PrivacySettingsForm",
+      "isClientComponent": true,
+      "props": {
+        "playerId": "string",
+        "initialSettings": "PlayerSettings",
+        "onSave": "(settings: PlayerSettings) => void"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "CommandPalette": {
+      "filePath": "/src/components/golf/CommandPalette.tsx",
+      "name": "CommandPalette",
+      "isClientComponent": true,
+      "props": {
+        "isCoach": "boolean"
+      },
+      "hooks": [
+        "useState",
+        "useRouter",
+        "useEffect",
+        "useCallback"
+      ]
+    },
+    "CourseSelector": {
+      "filePath": "/src/components/golf/CourseSelector.tsx",
+      "name": "CourseSelector",
+      "isClientComponent": true,
+      "props": {
+        "onSelectCourse": "(course: GolfCourse | null) => void",
+        "onCreateNew": "() => void",
+        "selectedCourseId": "string"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "EmptyState": {
+      "filePath": "/src/components/golf/EmptyState.tsx",
+      "name": "EmptyState",
+      "isClientComponent": true,
+      "props": {
+        "type": "EmptyStateType",
+        "title": "string",
+        "description": "string",
+        "action": "EmptyStateConfig['action']",
+        "secondaryAction": "EmptyStateConfig['secondaryAction']",
+        "className": "string",
+        "compact": "boolean"
+      },
+      "hooks": []
+    },
+    "GolfNav": {
+      "filePath": "/src/components/golf/GolfNav.tsx",
+      "name": "GolfNav",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "usePathname"
+      ]
+    },
+    "GolfSkeletons": {
+      "filePath": "/src/components/golf/GolfSkeletons.tsx",
+      "name": "GolfSkeletons",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "HoleConfigurationForm": {
+      "filePath": "/src/components/golf/HoleConfigurationForm.tsx",
+      "name": "HoleConfigurationForm",
+      "isClientComponent": true,
+      "props": {
+        "initialHoles": "HoleConfig[]",
+        "onSave": "(holes: HoleConfig[]) => void",
+        "onBack": "() => void",
+        "courseName": "string"
+      },
+      "hooks": []
+    },
+    "KeyboardShortcutHint": {
+      "filePath": "/src/components/golf/KeyboardShortcutHint.tsx",
+      "name": "KeyboardShortcutHint",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "LiveScorecard": {
+      "filePath": "/src/components/golf/LiveScorecard.tsx",
+      "name": "LiveScorecard",
+      "isClientComponent": true,
+      "props": {
+        "holes": "HoleConfig[]",
+        "scores": "HoleScore[]",
+        "currentHole": "number",
+        "onHoleSelect": "(holeNumber: number) => void",
+        "compact": "boolean"
+      },
+      "hooks": [
+        "useMemo"
+      ]
+    },
+    "MobileBottomNav": {
+      "filePath": "/src/components/golf/MobileBottomNav.tsx",
+      "name": "MobileBottomNav",
+      "isClientComponent": true,
+      "props": {
+        "isCoach": "boolean"
+      },
+      "hooks": [
+        "usePathname"
+      ]
+    },
+    "PageTransition": {
+      "filePath": "/src/components/golf/PageTransition.tsx",
+      "name": "PageTransition",
+      "isClientComponent": true,
+      "props": {
+        "children": "React.ReactNode",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "PlayerQuickCard": {
+      "filePath": "/src/components/golf/PlayerQuickCard.tsx",
+      "name": "PlayerQuickCard",
+      "isClientComponent": true,
+      "props": {
+        "player": "{\n    id: string",
+        "first_name": "string | null",
+        "last_name": "string | null",
+        "avatar_url": "string | null",
+        "year": "string | null",
+        "handicap": "number | null",
+        "scoring_average": "number | null"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "PremiumUI": {
+      "filePath": "/src/components/golf/PremiumUI.tsx",
+      "name": "PremiumUI",
+      "isClientComponent": true,
+      "props": {
+        "title": "string",
+        "description": "string",
+        "badge": "{\n    label: string",
+        "variant": "'default' | 'success' | 'warning' | 'info'"
+      },
+      "hooks": []
+    },
+    "RecentActivityFeed": {
+      "filePath": "/src/components/golf/RecentActivityFeed.tsx",
+      "name": "RecentActivityFeed",
+      "isClientComponent": true,
+      "props": {
+        "teamId": "string",
+        "playerId": "string",
+        "limit": "number",
+        "className": "string"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "RoundCompletionSummary": {
+      "filePath": "/src/components/golf/RoundCompletionSummary.tsx",
+      "name": "RoundCompletionSummary",
+      "isClientComponent": true,
+      "props": {
+        "summary": "RoundSummaryData",
+        "onClose": "() => void"
+      },
+      "hooks": [
+        "useRouter"
+      ]
+    },
+    "ShotTrackingComprehensive": {
+      "filePath": "/src/components/golf/ShotTrackingComprehensive.tsx",
+      "name": "ShotTrackingComprehensive",
+      "isClientComponent": true,
+      "props": {
+        "holes": "Hole[]",
+        "currentHoleIndex": "number",
+        "onHoleComplete": "(holeIndex: number, stats: HoleStats) => void",
+        "onSaveShot": "(shot: ShotRecord) => void"
+      },
+      "hooks": [
+        "useState",
+        "useEffect",
+        "useCallback"
+      ]
+    },
+    "AnnouncementCard": {
+      "filePath": "/src/components/golf/announcements/AnnouncementCard.tsx",
+      "name": "AnnouncementCard",
+      "isClientComponent": true,
+      "props": {
+        "announcement": "GolfAnnouncement",
+        "isCoach": "boolean",
+        "playerId": "string | null"
+      },
+      "hooks": []
+    },
+    "CreateAnnouncementButton": {
+      "filePath": "/src/components/golf/announcements/CreateAnnouncementButton.tsx",
+      "name": "CreateAnnouncementButton",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useRouter",
+        "useState"
+      ]
+    },
+    "CalendarClassesList": {
+      "filePath": "/src/components/golf/calendar/CalendarClassesList.tsx",
+      "name": "CalendarClassesList",
+      "isClientComponent": true,
+      "props": {
+        "classes": "CalendarClass[]"
+      },
+      "hooks": []
+    },
+    "CalendarContainer": {
+      "filePath": "/src/components/golf/calendar/CalendarContainer.tsx",
+      "name": "CalendarContainer",
+      "isClientComponent": true,
+      "props": {
+        "events": "GolfEvent[]",
+        "classes": "CalendarClass[]"
+      },
+      "hooks": []
+    },
+    "CalendarView": {
+      "filePath": "/src/components/shared/CalendarView.tsx",
+      "name": "CalendarView",
+      "isClientComponent": true,
+      "props": {
+        "events": "CalendarEvent[]",
+        "onEventClick": "(event: CalendarEvent) => void",
+        "onDateClick": "(date: Date) => void",
+        "onAddEvent": "() => void",
+        "canAddEvents": "boolean",
+        "view": "'month' | 'week'",
+        "currentDate": "Date",
+        "onDateChange": "(date: Date) => void"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "CreateEventButton": {
+      "filePath": "/src/components/golf/calendar/CreateEventButton.tsx",
+      "name": "CreateEventButton",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useRouter",
+        "useState"
+      ]
+    },
+    "EventsList": {
+      "filePath": "/src/components/golf/calendar/EventsList.tsx",
+      "name": "EventsList",
+      "isClientComponent": true,
+      "props": {
+        "events": "GolfEvent[]",
+        "isCoach": "boolean"
+      },
+      "hooks": []
+    },
+    "WeeklyScheduleView": {
+      "filePath": "/src/components/golf/calendar/WeeklyScheduleView.tsx",
+      "name": "WeeklyScheduleView",
+      "isClientComponent": true,
+      "props": {
+        "events": "GolfEvent[]",
+        "classes": "CalendarClass[]",
+        "onClassClick": "(cls: CalendarClass) => void",
+        "onEventClick": "(event: GolfEvent) => void"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "AddClassModal": {
+      "filePath": "/src/components/golf/classes/AddClassModal.tsx",
+      "name": "AddClassModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "onSave": "(classData: ClassFormData) => Promise<void>",
+        "editingClass": "ClassFormData | null"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "ClassDetailModal": {
+      "filePath": "/src/components/golf/classes/ClassDetailModal.tsx",
+      "name": "ClassDetailModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "onEdit": "() => void",
+        "onDelete": "() => Promise<void>",
+        "classData": "{\n    id: string",
+        "course_code": "string",
+        "course_name": "string",
+        "instructor": "string",
+        "days": "string[]",
+        "start_time": "string",
+        "end_time": "string",
+        "location": "string",
+        "building": "string",
+        "room": "string",
+        "credits": "number | null",
+        "semester": "string",
+        "color": "string",
+        "notes": "string"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "ConfirmClassesModal": {
+      "filePath": "/src/components/golf/classes/ConfirmClassesModal.tsx",
+      "name": "ConfirmClassesModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "onConfirm": "(classes: ParsedClass[]) => Promise<void>",
+        "parsedClasses": "ParsedClass[]"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "UploadScheduleModal": {
+      "filePath": "/src/components/golf/classes/UploadScheduleModal.tsx",
+      "name": "UploadScheduleModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "onParsed": "(classes: ParsedClass[]) => void"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "GolfHeader": {
+      "filePath": "/src/components/golf/layout/GolfHeader.tsx",
+      "name": "GolfHeader",
+      "isClientComponent": true,
+      "props": {
+        "title": "string",
+        "subtitle": "string",
+        "children": "React.ReactNode",
+        "backHref": "string"
+      },
+      "hooks": [
+        "useSidebar"
+      ]
+    },
+    "GolfSidebar": {
+      "filePath": "/src/components/golf/layout/GolfSidebar.tsx",
+      "name": "GolfSidebar",
+      "isClientComponent": true,
+      "props": {
+        "userRole": "'coach' | 'player'",
+        "userName": "string",
+        "teamName": "string",
+        "avatarUrl": "string",
+        "isMobile": "boolean"
+      },
+      "hooks": [
+        "usePathname",
+        "useRouter",
+        "useSidebar",
+        "useState"
+      ]
+    },
+    "GolfChatWindow": {
+      "filePath": "/src/components/golf/messages/GolfChatWindow.tsx",
+      "name": "GolfChatWindow",
+      "isClientComponent": true,
+      "props": {
+        "messages": "Message[]",
+        "participant": "GolfConversationParticipant",
+        "currentUserId": "string",
+        "loading": "boolean",
+        "onSend": "(content: string) => Promise<boolean>",
+        "onBack": "() => void",
+        "className": "string"
+      },
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "GolfConversationList": {
+      "filePath": "/src/components/golf/messages/GolfConversationList.tsx",
+      "name": "GolfConversationList",
+      "isClientComponent": true,
+      "props": {
+        "conversations": "GolfConversationWithMeta[]",
+        "selectedId": "string | null",
+        "onSelect": "(id: string) => void",
+        "onNewConversation": "() => void",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "GolfNewMessageModal": {
+      "filePath": "/src/components/golf/messages/GolfNewMessageModal.tsx",
+      "name": "GolfNewMessageModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "onSelect": "(userId: string) => void",
+        "currentUserRole": "'coach' | 'player'",
+        "teamId": "string"
+      },
+      "hooks": [
+        "useState",
+        "useCallback",
+        "useEffect"
+      ]
+    },
+    "CreateQualifierButton": {
+      "filePath": "/src/components/golf/qualifiers/CreateQualifierButton.tsx",
+      "name": "CreateQualifierButton",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useRouter",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "InvitePlayerButton": {
+      "filePath": "/src/components/golf/roster/InvitePlayerButton.tsx",
+      "name": "InvitePlayerButton",
+      "isClientComponent": true,
+      "props": {
+        "teamName": "string",
+        "existingCode": "string | null"
+      },
+      "hooks": [
+        "useRouter",
+        "useState"
+      ]
+    },
+    "PlayerStatusBadge": {
+      "filePath": "/src/components/golf/roster/PlayerStatusBadge.tsx",
+      "name": "PlayerStatusBadge",
+      "isClientComponent": true,
+      "props": {
+        "playerId": "string",
+        "currentStatus": "string | null"
+      },
+      "hooks": [
+        "useRouter",
+        "useState"
+      ]
+    },
+    "AppearanceModal": {
+      "filePath": "/src/components/golf/settings/AppearanceModal.tsx",
+      "name": "AppearanceModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void"
+      },
+      "hooks": [
+        "useState",
+        "useToast",
+        "useEffect"
+      ]
+    },
+    "EmailModal": {
+      "filePath": "/src/components/golf/settings/EmailModal.tsx",
+      "name": "EmailModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "currentEmail": "string",
+        "onUpdate": "() => void"
+      },
+      "hooks": [
+        "useState",
+        "useToast"
+      ]
+    },
+    "InviteSettingsModal": {
+      "filePath": "/src/components/golf/settings/InviteSettingsModal.tsx",
+      "name": "InviteSettingsModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void"
+      },
+      "hooks": [
+        "useState",
+        "useToast",
+        "useEffect"
+      ]
+    },
+    "LocationModal": {
+      "filePath": "/src/components/golf/settings/LocationModal.tsx",
+      "name": "LocationModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void"
+      },
+      "hooks": [
+        "useState",
+        "useToast",
+        "useEffect"
+      ]
+    },
+    "NotificationsModal": {
+      "filePath": "/src/components/golf/settings/NotificationsModal.tsx",
+      "name": "NotificationsModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void"
+      },
+      "hooks": [
+        "useState",
+        "useToast",
+        "useEffect"
+      ]
+    },
+    "PasswordModal": {
+      "filePath": "/src/components/golf/settings/PasswordModal.tsx",
+      "name": "PasswordModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void"
+      },
+      "hooks": [
+        "useState",
+        "useToast"
+      ]
+    },
+    "PersonalInfoModal": {
+      "filePath": "/src/components/golf/settings/PersonalInfoModal.tsx",
+      "name": "PersonalInfoModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "currentName": "string",
+        "role": "'coach' | 'player'",
+        "onUpdate": "() => void"
+      },
+      "hooks": [
+        "useState",
+        "useToast"
+      ]
+    },
+    "TeamSettingsModal": {
+      "filePath": "/src/components/golf/settings/TeamSettingsModal.tsx",
+      "name": "TeamSettingsModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "onUpdate": "() => void"
+      },
+      "hooks": [
+        "useState",
+        "useToast",
+        "useEffect"
+      ]
+    },
+    "GolfStatsDisplay": {
+      "filePath": "/src/components/golf/stats/GolfStatsDisplay.tsx",
+      "name": "GolfStatsDisplay",
+      "isClientComponent": true,
+      "props": {
+        "stats": "GolfStats",
+        "playerName": "string",
+        "rounds": "RoundOption[]",
+        "selectedRoundId": "string | 'overall'",
+        "onRoundChange": "(roundId: string | 'overall') => void"
+      },
+      "hooks": []
+    },
+    "ProgressStats": {
+      "filePath": "/src/components/golf/stats/ProgressStats.tsx",
+      "name": "ProgressStats",
+      "isClientComponent": true,
+      "props": {
+        "stats": "GolfStats",
+        "rounds": "RoundData[]"
+      },
+      "hooks": []
+    },
+    "CreateTaskModal": {
+      "filePath": "/src/components/golf/tasks/CreateTaskModal.tsx",
+      "name": "CreateTaskModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "onTaskCreated": "() => void",
+        "teamId": "string",
+        "players": "Array<{ id: string",
+        "first_name": "string | null",
+        "last_name": "string | null"
+      },
+      "hooks": [
+        "useState",
+        "useToast"
+      ]
+    },
+    "TaskCard": {
+      "filePath": "/src/components/golf/tasks/TaskCard.tsx",
+      "name": "TaskCard",
+      "isClientComponent": true,
+      "props": {
+        "task": "Task"
+      },
+      "hooks": [
+        "useState"
+      ]
+    },
+    "TaskSkeleton": {
+      "filePath": "/src/components/golf/tasks/TaskSkeleton.tsx",
+      "name": "TaskSkeleton",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "TasksList": {
+      "filePath": "/src/components/golf/tasks/TasksList.tsx",
+      "name": "TasksList",
+      "isClientComponent": true,
+      "props": {
+        "tasks": "Task[]",
+        "filter": "'all' | 'active' | 'completed'"
+      },
+      "hooks": []
+    },
+    "breadcrumbs": {
+      "filePath": "/src/components/layout/breadcrumbs.tsx",
+      "name": "breadcrumbs",
+      "isClientComponent": false,
+      "props": {
+        "items": "BreadcrumbItem[]",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "dashboard-header": {
+      "filePath": "/src/components/layout/dashboard-header.tsx",
+      "name": "dashboard-header",
+      "isClientComponent": true,
+      "props": {
+        "title": "string",
+        "children": "React.ReactNode"
+      },
+      "hooks": [
+        "useSidebar"
+      ]
+    },
+    "header": {
+      "filePath": "/src/components/layout/header.tsx",
+      "name": "header",
+      "isClientComponent": true,
+      "props": {
+        "title": "string",
+        "subtitle": "string",
+        "children": "React.ReactNode",
+        "backHref": "string"
+      },
+      "hooks": [
+        "useRouter",
+        "useAuth",
+        "useNotifications",
+        "useSidebar",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "mode-toggle": {
+      "filePath": "/src/components/layout/mode-toggle.tsx",
+      "name": "mode-toggle",
+      "isClientComponent": true,
+      "props": {
+        "currentMode": "Mode",
+        "onModeChange": "(mode: Mode) => void"
+      },
+      "hooks": []
+    },
+    "page-header": {
+      "filePath": "/src/components/layout/page-header.tsx",
+      "name": "page-header",
+      "isClientComponent": false,
+      "props": {
+        "title": "string",
+        "description": "string",
+        "breadcrumbs": "BreadcrumbItem[]",
+        "actions": "React.ReactNode",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "sidebar": {
+      "filePath": "/src/components/layout/sidebar.tsx",
+      "name": "sidebar",
+      "isClientComponent": true,
+      "props": {
+        "isMobile": "boolean"
+      },
+      "hooks": [
+        "usePathname",
+        "useRouter",
+        "useAuth",
+        "useUnreadCount",
+        "useSidebar",
+        "useTeams",
+        "usePlayerTeams"
+      ]
+    },
+    "team-switcher": {
+      "filePath": "/src/components/layout/team-switcher.tsx",
+      "name": "team-switcher",
+      "isClientComponent": true,
+      "props": {
+        "collapsed": "boolean"
+      },
+      "hooks": [
+        "useRouter",
+        "useTeamStore",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "nav-item": {
+      "filePath": "/src/components/navigation/nav-item.tsx",
+      "name": "nav-item",
+      "isClientComponent": true,
+      "props": {
+        "href": "string",
+        "icon": "LucideIcon",
+        "label": "string"
+      },
+      "hooks": [
+        "usePathname"
+      ]
+    },
+    "chart-tooltip": {
+      "filePath": "/src/components/charts/chart-tooltip.tsx",
+      "name": "chart-tooltip",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": []
+    },
+    "metric-card": {
+      "filePath": "/src/components/charts/metric-card.tsx",
+      "name": "metric-card",
+      "isClientComponent": true,
+      "props": {
+        "value": "number",
+        "label": "string",
+        "prefix": "string",
+        "suffix": "string"
+      },
+      "hooks": [
+        "useSpring",
+        "useTransform",
+        "useEffect"
+      ]
+    },
+    "ChatWindow": {
+      "filePath": "/src/components/messages/ChatWindow.tsx",
+      "name": "ChatWindow",
+      "isClientComponent": true,
+      "props": {
+        "messages": "Message[]",
+        "participant": "ParticipantDetails | null",
+        "currentUserId": "string",
+        "loading": "boolean",
+        "onSend": "(message: string) => Promise<boolean>",
+        "onBack": "() => void",
+        "className": "string"
+      },
+      "hooks": [
+        "useState",
+        "useCallback",
+        "useEffect",
+        "useMemo"
+      ]
+    },
+    "ConversationList": {
+      "filePath": "/src/components/messages/ConversationList.tsx",
+      "name": "ConversationList",
+      "isClientComponent": true,
+      "props": {
+        "conversations": "ConversationWithMeta[]",
+        "selectedId": "string | null",
+        "currentUserId": "string",
+        "onSelect": "(id: string) => void",
+        "onNewConversation": "() => void",
+        "className": "string"
+      },
+      "hooks": [
+        "useState",
+        "useMemo"
+      ]
+    },
+    "EmptyChatState": {
+      "filePath": "/src/components/messages/EmptyChatState.tsx",
+      "name": "EmptyChatState",
+      "isClientComponent": true,
+      "props": {
+        "onNewConversation": "() => void",
+        "className": "string"
+      },
+      "hooks": []
+    },
+    "NewMessageModal": {
+      "filePath": "/src/components/messages/NewMessageModal.tsx",
+      "name": "NewMessageModal",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "onSelect": "(userId: string) => void",
+        "currentUserRole": "'coach' | 'player'"
+      },
+      "hooks": [
+        "useState",
+        "useCallback",
+        "useEffect"
+      ]
+    },
+    "EngagementChart": {
+      "filePath": "/src/components/dashboard/EngagementChart.tsx",
+      "name": "EngagementChart",
+      "isClientComponent": true,
+      "props": {
+        "data": "ChartDataPoint[]",
+        "loading": "boolean"
+      },
+      "hooks": [
+        "useMemo"
+      ]
+    },
+    "PeekPanelRoot": {
+      "filePath": "/src/components/panels/PeekPanelRoot.tsx",
+      "name": "PeekPanelRoot",
+      "isClientComponent": true,
+      "props": {
+        "isOpen": "boolean",
+        "onClose": "() => void",
+        "children": "React.ReactNode",
+        "width": "'sm' | 'md' | 'lg' | 'xl'",
+        "title": "string",
+        "className": "string"
+      },
+      "hooks": [
+        "useCallback",
+        "useEffect"
+      ]
+    },
+    "PlayerPeekPanel": {
+      "filePath": "/src/components/panels/PlayerPeekPanel.tsx",
+      "name": "PlayerPeekPanel",
+      "isClientComponent": true,
+      "props": {
+        "playerId": "string | null",
+        "onClose": "() => void"
+      },
+      "hooks": [
+        "useRouter",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "SchoolPeekPanel": {
+      "filePath": "/src/components/panels/SchoolPeekPanel.tsx",
+      "name": "SchoolPeekPanel",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "usePeekPanelStore",
+        "useState",
+        "useEffect"
+      ]
+    },
+    "Features": {
+      "filePath": "/src/components/landing/Features.tsx",
+      "name": "Features",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useState",
+        "useInView",
+        "useScroll",
+        "useRef",
+        "useEffect"
+      ]
+    },
+    "FinalCTA": {
+      "filePath": "/src/components/landing/FinalCTA.tsx",
+      "name": "FinalCTA",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useRef",
+        "useInView"
+      ]
+    },
+    "Footer": {
+      "filePath": "/src/components/landing/Footer.tsx",
+      "name": "Footer",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": []
+    },
+    "Hero": {
+      "filePath": "/src/components/landing/Hero.tsx",
+      "name": "Hero",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useScroll",
+        "useTransform"
+      ]
+    },
+    "MobileNav": {
+      "filePath": "/src/components/landing/MobileNav.tsx",
+      "name": "MobileNav",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    "Navigation": {
+      "filePath": "/src/components/landing/Navigation.tsx",
+      "name": "Navigation",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useState"
+      ]
+    },
+    "ProductShowcases": {
+      "filePath": "/src/components/landing/ProductShowcases.tsx",
+      "name": "ProductShowcases",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useInView",
+        "useScroll",
+        "useTransform"
+      ]
+    },
+    "ProductSplit": {
+      "filePath": "/src/components/landing/ProductSplit.tsx",
+      "name": "ProductSplit",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useRef",
+        "useInView"
+      ]
+    },
+    "ScrollProgress": {
+      "filePath": "/src/components/landing/ScrollProgress.tsx",
+      "name": "ScrollProgress",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useScroll",
+        "useSpring"
+      ]
+    },
+    "SocialProof": {
+      "filePath": "/src/components/landing/SocialProof.tsx",
+      "name": "SocialProof",
+      "isClientComponent": true,
+      "props": {},
+      "hooks": [
+        "useState",
+        "useInView",
+        "useRef",
+        "useEffect"
+      ]
+    },
+    "HeroBackground": {
+      "filePath": "/src/components/hero/HeroBackground.tsx",
+      "name": "HeroBackground",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "HeroContent": {
+      "filePath": "/src/components/hero/HeroContent.tsx",
+      "name": "HeroContent",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "HeroSection": {
+      "filePath": "/src/components/hero/HeroSection.tsx",
+      "name": "HeroSection",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    },
+    "ProductPreview": {
+      "filePath": "/src/components/hero/ProductPreview.tsx",
+      "name": "ProductPreview",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": [
+        "useMousePosition",
+        "useSpring",
+        "useTransform"
+      ]
+    },
+    "TrustBadges": {
+      "filePath": "/src/components/hero/TrustBadges.tsx",
+      "name": "TrustBadges",
+      "isClientComponent": false,
+      "props": {},
+      "hooks": []
+    }
+  },
+  "hooks": {
+    "use-analytics": {
+      "filePath": "src/hooks/use-analytics.ts",
+      "name": "use-analytics",
+      "returns": [
+        "data",
+        "loading"
+      ]
+    },
+    "use-auth": {
+      "filePath": "src/hooks/use-auth.ts",
+      "name": "use-auth",
+      "returns": [
+        "data",
+        "error"
+      ]
+    },
+    "use-colleges": {
+      "filePath": "src/hooks/use-colleges.ts",
+      "name": "use-colleges",
+      "returns": [
+        "colleges",
+        "interests",
+        "loading",
+        "refetch",
+        "toggleInterest"
+      ]
+    },
+    "use-dashboard": {
+      "filePath": "src/hooks/use-dashboard.ts",
+      "name": "use-dashboard",
+      "returns": [
+        "activities",
+        "loading"
+      ]
+    },
+    "use-journey": {
+      "filePath": "src/hooks/use-journey.ts",
+      "name": "use-journey",
+      "returns": [
+        "id",
+        "school_name",
+        "division",
+        "conference",
+        "status",
+        "interest_level",
+        "notes",
+        "coach_name",
+        "last_contact_at",
+        "created_at",
+        "organization_id",
+        "profile_views",
+        "watchlist_added",
+        "last_engagement_at"
+      ]
+    },
+    "use-local-storage": {
+      "filePath": "src/hooks/use-local-storage.ts",
+      "name": "use-local-storage",
+      "returns": [
+        "viewMode",
+        "sortBy",
+        "setViewMode",
+        "setSortBy"
+      ]
+    },
+    "use-messages": {
+      "filePath": "src/hooks/use-messages.ts",
+      "name": "use-messages",
+      "returns": [
+        "messages",
+        "loading",
+        "sendMessage",
+        "refetch"
+      ]
+    },
+    "use-notifications": {
+      "filePath": "src/hooks/use-notifications.ts",
+      "name": "use-notifications",
+      "returns": [
+        "notifications",
+        "loading",
+        "markAsRead",
+        "markAllAsRead",
+        "deleteNotification",
+        "refetch"
+      ]
+    },
+    "use-peek-panel": {
+      "filePath": "src/hooks/use-peek-panel.ts",
+      "name": "use-peek-panel",
+      "returns": [
+        "isOpen",
+        "panelType",
+        "selectedId",
+        "openPlayer",
+        "openSchool",
+        "close"
+      ]
+    },
+    "use-player-teams": {
+      "filePath": "src/hooks/use-player-teams.ts",
+      "name": "use-player-teams",
+      "returns": [
+        "teams",
+        "selectedTeamId",
+        "selectedTeam",
+        "setSelectedTeamId",
+        "isLoading",
+        "hasMultipleTeams"
+      ]
+    },
+    "use-players": {
+      "filePath": "src/hooks/use-players.ts",
+      "name": "use-players",
+      "returns": [
+        "players",
+        "loading",
+        "error",
+        "refetch"
+      ]
+    },
+    "use-route-protection": {
+      "filePath": "src/hooks/use-route-protection.ts",
+      "name": "use-route-protection",
+      "returns": [
+        "isAllowed",
+        "isLoading"
+      ]
+    },
+    "use-search": {
+      "filePath": "src/hooks/use-search.ts",
+      "name": "use-search",
+      "returns": [
+        "searchQuery",
+        "setSearchQuery",
+        "results",
+        "loading",
+        "search",
+        "clear"
+      ]
+    },
+    "use-stats": {
+      "filePath": "src/hooks/use-stats.ts",
+      "name": "use-stats",
+      "returns": [
+        "stats",
+        "loading"
+      ]
+    },
+    "use-teams": {
+      "filePath": "src/hooks/use-teams.ts",
+      "name": "use-teams",
+      "returns": [
+        "teams",
+        "selectedTeamId",
+        "selectedTeam",
+        "setSelectedTeamId",
+        "isLoading",
+        "hasMultipleTeams"
+      ]
+    },
+    "use-toast": {
+      "filePath": "src/hooks/use-toast.tsx",
+      "name": "use-toast",
+      "returns": [
+        "toasts",
+        "addToast",
+        "removeToast",
+        "success",
+        "error",
+        "info",
+        "warning",
+        "clearAll"
+      ]
+    },
+    "use-unread-count": {
+      "filePath": "src/hooks/use-unread-count.ts",
+      "name": "use-unread-count",
+      "returns": [
+        "unreadCount",
+        "loading",
+        "refetch"
+      ]
+    },
+    "use-watchlist": {
+      "filePath": "src/hooks/use-watchlist.ts",
+      "name": "use-watchlist",
+      "returns": [
+        "watchlist",
+        "loading",
+        "addToWatchlist",
+        "removeFromWatchlist",
+        "updateStage",
+        "updateNotes",
+        "isOnWatchlist",
+        "getWatchlistItem",
+        "refetch"
+      ]
+    }
+  },
+  "types": {
+    "interfaces": {
+      "PlayerComparison": {
+        "name": "PlayerComparison"
+      },
+      "PlayerComparisonInsert": {
+        "name": "PlayerComparisonInsert"
+      }
+    },
+    "exports": [
+      "Tables",
+      "Enums",
+      "User",
+      "Coach",
+      "Player",
+      "Organization",
+      "Team",
+      "TeamMember",
+      "TeamInvitation",
+      "TeamCoachStaff",
+      "PlayerSettings",
+      "PlayerMetric",
+      "PlayerAchievement",
+      "RecruitingInterest",
+      "PlayerEngagementEvent",
+      "CoachNote",
+      "CoachCalendarEvent",
+      "DevelopmentalPlan",
+      "Event",
+      "Camp",
+      "CampRegistration",
+      "College",
+      "HighSchool",
+      "Watchlist",
+      "Video",
+      "PlayerComparison",
+      "PlayerComparisonInsert",
+      "Message",
+      "Conversation",
+      "ConversationParticipant",
+      "Notification",
+      "UserInsert",
+      "CoachInsert",
+      "PlayerInsert",
+      "OrganizationInsert",
+      "TeamInsert",
+      "TeamMemberInsert",
+      "UserUpdate",
+      "CoachUpdate",
+      "PlayerUpdate",
+      "OrganizationUpdate",
+      "TeamUpdate",
+      "UserRole",
+      "CoachType",
+      "PlayerType",
+      "PipelineStage",
+      "TeamType",
+      "PlayerProfile",
+      "CoachProfile",
+      "TeamWithMembers",
+      "DiscoverPlayer",
+      "WatchlistWithPlayer",
+      "CampWithDetails",
+      "EventWithDetails",
+      "isPlayer",
+      "isCoach",
+      "isCollegeCoach",
+      "isHighSchoolCoach",
+      "isJUCOCoach",
+      "isShowcaseCoach",
+      "isHighSchoolPlayer",
+      "isShowcasePlayer",
+      "isJUCOPlayer",
+      "isCollegePlayer",
+      "isRecruitingActivated",
+      "canCoachRecruit",
+      "canPlayerRecruit",
+      "ApiResponse",
+      "PaginationParams",
+      "DiscoverFilters",
+      "DiscoverSortOption",
+      "WatchlistFilters",
+      "OnboardingStep",
+      "DashboardStats",
+      "FormErrors",
+      "POSITIONS",
+      "DIVISIONS",
+      "STATES",
+      "GRAD_YEARS",
+      "calculateProfileCompletion",
+      "formatPlayerName",
+      "formatCoachName",
+      "formatGPA",
+      "formatVelocity",
+      "formatTime",
+      "getGradYearLabel",
+      "canHaveMultipleTeams",
+      "getOrgTypeLabel"
+    ]
+  },
+  "designSystem": {
+    "hasFile": true,
+    "cssVars": {
+      "warm-cream": "255 251 245",
+      "warm-stone": "247 243 237",
+      "warm-900": "28 25 23",
+      "warm-800": "41 37 36",
+      "warm-700": "68 64 60",
+      "warm-600": "87 83 78",
+      "warm-500": "120 113 108",
+      "warm-400": "168 162 158",
+      "golden-50": "255 251 235",
+      "golden-100": "254 243 199",
+      "golden-200": "253 230 138",
+      "golden-400": "251 191 36",
+      "golden-500": "245 158 11",
+      "golden-600": "217 119 6",
+      "golden-700": "180 83 9",
+      "field": "22 101 52",
+      "fairway": "21 128 61",
+      "aurora-green": "rgba(22, 163, 74, 0.15)",
+      "aurora-blue": "rgba(59, 130, 246, 0.15)",
+      "aurora-purple": "rgba(147, 51, 234, 0.10)",
+      "aurora-pink": "rgba(236, 72, 153, 0.08)",
+      "shadow-color": "220 3% 15%",
+      "shadow-elevation-low": "0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.34),\n    0.4px 0.8px 1px -1.2px hsl(var(--shadow-color) / 0.34),\n    1px 2px 2.5px -2.5px hsl(var(--shadow-color) / 0.34)",
+      "shadow-elevation-medium": "0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.36),\n    0.8px 1.6px 2px -0.8px hsl(var(--shadow-color) / 0.36),\n    2.1px 4.1px 5.2px -1.7px hsl(var(--shadow-color) / 0.36),\n    5px 10px 12.6px -2.5px hsl(var(--shadow-color) / 0.36)",
+      "shadow-elevation-high": "0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.34),\n    1.5px 2.9px 3.7px -0.4px hsl(var(--shadow-color) / 0.34),\n    2.7px 5.4px 6.8px -0.7px hsl(var(--shadow-color) / 0.34),\n    4.5px 8.9px 11.2px -1.1px hsl(var(--shadow-color) / 0.34),\n    7.1px 14.3px 18px -1.4px hsl(var(--shadow-color) / 0.34),\n    11.2px 22.3px 28.1px -1.8px hsl(var(--shadow-color) / 0.34),\n    17px 33.9px 42.7px -2.1px hsl(var(--shadow-color) / 0.34),\n    25px 50px 62.9px -2.5px hsl(var(--shadow-color) / 0.34)",
+      "space-1": "4px",
+      "space-2": "8px",
+      "space-3": "12px",
+      "space-4": "16px",
+      "space-6": "24px",
+      "space-8": "32px",
+      "space-12": "48px",
+      "space-16": "64px",
+      "space-24": "96px",
+      "radius-sm": "8px",
+      "radius-md": "12px",
+      "radius-lg": "16px",
+      "radius-xl": "24px",
+      "radius-2xl": "32px",
+      "shadow-sm": "0 1px 2px rgba(0, 0, 0, 0.05)",
+      "shadow-md": "0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05)",
+      "shadow-lg": "0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05)",
+      "shadow-xl": "0 20px 25px rgba(0, 0, 0, 0.15), 0 10px 10px rgba(0, 0, 0, 0.04)",
+      "shadow-glow": "0 0 60px rgba(16, 185, 129, 0.15)",
+      "duration-fast": "150ms",
+      "duration-base": "220ms",
+      "duration-slow": "320ms",
+      "duration-slower": "500ms",
+      "ease-out": "cubic-bezier(0.16, 1, 0.3, 1)",
+      "ease-in-out": "cubic-bezier(0.65, 0, 0.35, 1)",
+      "glass-bg-nav": "rgba(255, 255, 255, 0.03)",
+      "glass-bg-panel": "rgba(255, 255, 255, 0.02)",
+      "glass-bg-product": "rgba(255, 255, 255, 0.05)",
+      "glass-border-subtle": "rgba(255, 255, 255, 0.06)",
+      "glass-border-medium": "rgba(255, 255, 255, 0.1)",
+      "glass-border-strong": "rgba(255, 255, 255, 0.15)",
+      "glass-subtle-bg": "rgba(255, 255, 255, 0.55)",
+      "glass-subtle-border": "rgba(255, 255, 255, 0.4)",
+      "glass-subtle-blur": "12px",
+      "glass-standard-bg": "rgba(255, 255, 255, 0.7)",
+      "glass-standard-border": "rgba(255, 255, 255, 0.5)",
+      "glass-standard-blur": "16px",
+      "glass-prominent-bg": "rgba(255, 255, 255, 0.8)",
+      "glass-prominent-border": "rgba(255, 255, 255, 0.6)",
+      "glass-prominent-blur": "20px",
+      "glass-shadow-sm": "0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)",
+      "glass-shadow-md": "0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03)",
+      "glass-shadow-lg": "0 8px 32px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)"
+    },
+    "customClasses": [
+      "aurora-bg",
+      "aurora-blob",
+      "aurora-blob-1",
+      "aurora-blob-2",
+      "aurora-blob-3",
+      "dark-mesh-bg",
+      "gradient-text",
+      "gradient-text-hero",
+      "bento-grid",
+      "bento-item",
+      "bento-item-lg",
+      "bento-item-wide",
+      "bento-item-tall",
+      "btn",
+      "btn-press",
+      "btn-primary",
+      "btn-cta",
+      "btn-secondary",
+      "btn-ghost",
+      "btn-outline-light",
+      "btn-danger",
+      "btn-success",
+      "btn-sm",
+      "btn-lg",
+      "btn-xl",
+      "card",
+      "card-lift",
+      "card-interactive",
+      "card-glass",
+      "card-dark",
+      "glass-subtle",
+      "glass-standard",
+      "glass-prominent",
+      "glass",
+      "glass-dark",
+      "glass-card",
+      "mesh-bg",
+      "mesh-bg-cream",
+      "input",
+      "input-dark",
+      "input-lg",
+      "input-error",
+      "textarea",
+      "label",
+      "checkbox",
+      "link",
+      "link-primary",
+      "badge",
+      "badge-default",
+      "badge-primary",
+      "badge-secondary",
+      "badge-success",
+      "badge-warning",
+      "badge-error",
+      "badge-info",
+      "badge-outline",
+      "badge-glow",
+      "skeleton",
+      "skeleton-shimmer",
+      "skeleton-text",
+      "skeleton-title",
+      "skeleton-avatar",
+      "skeleton-card",
+      "skeleton-button",
+      "focus-ring",
+      "focus-ring-inset",
+      "table-premium",
+      "row-actions",
+      "avatar",
+      "avatar-initials",
+      "avatar-sm",
+      "avatar-md",
+      "avatar-lg",
+      "avatar-xl",
+      "avatar-2xl",
+      "truncate-2",
+      "truncate-3",
+      "progress-bar",
+      "progress-bar-fill",
+      "trend-up",
+      "trend-down",
+      "trend-neutral",
+      "stat-number",
+      "stat-label",
+      "logo-cloud-item",
+      "testimonial-card",
+      "testimonial-quote",
+      "pricing-card",
+      "pricing-card-popular",
+      "kbd",
+      "kbd-dark",
+      "cmdk-overlay",
+      "cmdk-dialog",
+      "cmdk-input-wrapper",
+      "cmdk-list",
+      "cmdk-group-heading",
+      "cmdk-item",
+      "cmdk-item-shortcut",
+      "scroll-indicator",
+      "scroll-indicator-dot",
+      "divider",
+      "divider-dark",
+      "tooltip",
+      "bg-dashboard-gradient",
+      "text-balance",
+      "tracking-tighter",
+      "tracking-display",
+      "animation-delay-50",
+      "animation-delay-100",
+      "animation-delay-150",
+      "animation-delay-200",
+      "animation-delay-250",
+      "animation-delay-300",
+      "animation-delay-400",
+      "animation-delay-500",
+      "animation-delay-700",
+      "animation-delay-1000",
+      "no-scrollbar",
+      "hover-lift",
+      "hover-scale",
+      "active-scale",
+      "scroll-fade-up",
+      "visible",
+      "scroll-fade-in",
+      "scroll-scale-in",
+      "glow-green",
+      "glow-green-sm",
+      "gradient-border",
+      "aspect-bento",
+      "aspect-bento-wide",
+      "aspect-bento-tall",
+      "z-dropdown",
+      "z-sticky",
+      "z-modal-backdrop",
+      "z-modal",
+      "z-popover",
+      "z-tooltip",
+      "z-notification",
+      "z-command",
+      "animate-page-enter",
+      "animate-fade-in",
+      "animate-fade-in-up",
+      "animate-slide-in-up",
+      "animate-scale-in",
+      "animate-pulse-subtle",
+      "safe-area-bottom",
+      "animate-slide-up",
+      "animate-shake",
+      "bg-noise",
+      "glass-nav",
+      "glass-panel",
+      "glass-product",
+      "text-gradient-golden",
+      "glow-golden",
+      "glow-field",
+      "animate-shimmer"
+    ]
+  },
+  "database": {
+    "tables": {
+      "camp_registrations": {
+        "name": "camp_registrations"
+      },
+      "camps": {
+        "name": "camps"
+      },
+      "coach_calendar_events": {
+        "name": "coach_calendar_events"
+      },
+      "coach_notes": {
+        "name": "coach_notes"
+      },
+      "coaches": {
+        "name": "coaches"
+      },
+      "colleges": {
+        "name": "colleges"
+      },
+      "conversation_participants": {
+        "name": "conversation_participants"
+      },
+      "conversations": {
+        "name": "conversations"
+      },
+      "demo_requests": {
+        "name": "demo_requests"
+      },
+      "developmental_plans": {
+        "name": "developmental_plans"
+      },
+      "events": {
+        "name": "events"
+      },
+      "golf_announcement_acknowledgements": {
+        "name": "golf_announcement_acknowledgements"
+      },
+      "golf_announcements": {
+        "name": "golf_announcements"
+      },
+      "golf_coach_notes": {
+        "name": "golf_coach_notes"
+      },
+      "golf_coaches": {
+        "name": "golf_coaches"
+      },
+      "golf_course_holes": {
+        "name": "golf_course_holes"
+      },
+      "golf_course_tees": {
+        "name": "golf_course_tees"
+      },
+      "golf_courses": {
+        "name": "golf_courses"
+      },
+      "golf_documents": {
+        "name": "golf_documents"
+      },
+      "golf_event_attendance": {
+        "name": "golf_event_attendance"
+      },
+      "golf_events": {
+        "name": "golf_events"
+      },
+      "golf_hole_shots": {
+        "name": "golf_hole_shots"
+      },
+      "golf_holes": {
+        "name": "golf_holes"
+      },
+      "golf_organizations": {
+        "name": "golf_organizations"
+      },
+      "golf_player_classes": {
+        "name": "golf_player_classes"
+      },
+      "golf_player_stats": {
+        "name": "golf_player_stats"
+      },
+      "golf_players": {
+        "name": "golf_players"
+      },
+      "golf_qualifier_entries": {
+        "name": "golf_qualifier_entries"
+      },
+      "golf_qualifiers": {
+        "name": "golf_qualifiers"
+      },
+      "golf_rounds": {
+        "name": "golf_rounds"
+      },
+      "golf_shots": {
+        "name": "golf_shots"
+      },
+      "golf_task_completions": {
+        "name": "golf_task_completions"
+      },
+      "golf_tasks": {
+        "name": "golf_tasks"
+      },
+      "golf_teams": {
+        "name": "golf_teams"
+      },
+      "golf_travel_itineraries": {
+        "name": "golf_travel_itineraries"
+      },
+      "high_schools": {
+        "name": "high_schools"
+      },
+      "messages": {
+        "name": "messages"
+      },
+      "notifications": {
+        "name": "notifications"
+      },
+      "organizations": {
+        "name": "organizations"
+      },
+      "player_achievements": {
+        "name": "player_achievements"
+      },
+      "player_comparisons": {
+        "name": "player_comparisons"
+      },
+      "player_engagement_events": {
+        "name": "player_engagement_events"
+      },
+      "player_metrics": {
+        "name": "player_metrics"
+      },
+      "player_settings": {
+        "name": "player_settings"
+      },
+      "players": {
+        "name": "players"
+      },
+      "profile_views": {
+        "name": "profile_views"
+      },
+      "recruiting_interests": {
+        "name": "recruiting_interests"
+      },
+      "round_holes": {
+        "name": "round_holes"
+      },
+      "team_coach_staff": {
+        "name": "team_coach_staff"
+      },
+      "team_invitations": {
+        "name": "team_invitations"
+      },
+      "team_members": {
+        "name": "team_members"
+      },
+      "teams": {
+        "name": "teams"
+      },
+      "users": {
+        "name": "users"
+      },
+      "video_views": {
+        "name": "video_views"
+      },
+      "videos": {
+        "name": "videos"
+      },
+      "watchlists": {
+        "name": "watchlists"
+      }
+    },
+    "enums": {
+      "coach_type": "\"college\" | \"high_school\" | \"juco\" | \"showcase\"",
+      "golf_attendance_status": "| \"attending\"",
+      "golf_event_type": "| \"practice\"",
+      "golf_player_status": "\"active\" | \"injured\" | \"redshirt\" | \"inactive\"",
+      "golf_player_year": "| \"freshman\"",
+      "golf_qualifier_status": "\"upcoming\" | \"in_progress\" | \"completed\"",
+      "golf_round_type": "\"tournament\" | \"qualifier\" | \"practice\" | \"casual\"",
+      "golf_task_status": "\"pending\" | \"completed\" | \"overdue\"",
+      "golf_transportation_type": "\"bus\" | \"van\" | \"fly\" | \"carpool\"",
+      "golf_urgency_level": "\"low\" | \"normal\" | \"high\" | \"urgent\"",
+      "pipeline_stage": "| \"watchlist\"",
+      "player_type": "\"high_school\" | \"showcase\" | \"juco\" | \"college\"",
+      "user_role": "\"player\" | \"coach\" | \"admin\""
+    }
+  },
+  "scannedAt": "2025-12-29T23:26:56.019Z"
+}

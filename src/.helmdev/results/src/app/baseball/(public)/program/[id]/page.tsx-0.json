@@ -1,0 +1,7 @@
+{
+  "taskId": "missing-loading-state-../../src/app/baseball/(public)/program/[id]/page.tsx-0",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. Created `loading.tsx` in the same directory with skeleton loaders matching the page structure.\n",
+  "timestamp": "2025-12-29T12:21:04.672Z"
+}

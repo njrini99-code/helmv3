@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/page.tsx-453",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The `.map()` at line 453 now has proper empty state handling with a ternary operator that shows `<EmptyState type=\"stats\" compact />` if the array is empty.\n",
+  "timestamp": "2025-12-29T08:51:03.480Z"
+}

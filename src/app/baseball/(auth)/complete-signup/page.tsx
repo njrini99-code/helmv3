@@ -26,38 +26,60 @@ export default function CompleteSignupPage() {
   // Check if user is logged in and doesn't have a profile
   useEffect(() => {
     async function checkUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.push('/baseball/login');
-        return;
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError) {
+          console.error('Error getting user:', userError);
+          router.push('/baseball/login');
+          return;
+        }
+
+        if (!user) {
+          router.push('/baseball/login');
+          return;
+        }
+
+        // Check if profile already exists
+        const { data: coach, error: coachError } = await supabase
+          .from('coaches')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        // Ignore "not found" errors, only handle real errors
+        if (coachError && coachError.code !== 'PGRST116') {
+          console.error('Error checking coach profile:', coachError);
+        }
+
+        if (coach) {
+          router.push('/baseball/coach');
+          return;
+        }
+
+        const { data: player, error: playerError } = await supabase
+          .from('players')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        // Ignore "not found" errors, only handle real errors
+        if (playerError && playerError.code !== 'PGRST116') {
+          console.error('Error checking player profile:', playerError);
+        }
+
+        if (player) {
+          router.push('/baseball/player');
+          return;
+        }
+
+        // User has no profile - show role selection
+        setChecking(false);
+      } catch (err) {
+        console.error('Unexpected error checking user:', err);
+        // Show the form anyway - user can try to proceed
+        setChecking(false);
       }
-
-      // Check if profile already exists
-      const { data: coach } = await supabase
-        .from('coaches')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (coach) {
-        router.push('/baseball/coach');
-        return;
-      }
-
-      const { data: player } = await supabase
-        .from('players')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (player) {
-        router.push('/baseball/player');
-        return;
-      }
-
-      // User has no profile - show role selection
-      setChecking(false);
     }
 
     checkUser();
@@ -112,6 +134,7 @@ export default function CompleteSignupPage() {
         }
 
         router.push('/baseball/coach');
+        return;
       } else {
         const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Player';
         const [firstName, ...lastParts] = fullName.split(' ');
@@ -133,6 +156,7 @@ export default function CompleteSignupPage() {
         }
 
         router.push('/baseball/player');
+        return;
       }
     } catch (err) {
       setError('An unexpected error occurred');

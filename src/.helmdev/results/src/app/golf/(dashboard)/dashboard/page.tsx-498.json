@@ -1,0 +1,7 @@
+{
+  "taskId": "empty-state-map-no-check-../../src/app/golf/(dashboard)/dashboard/page.tsx-498",
+  "status": "completed",
+  "exitCode": 0,
+  "output": "Fixed. The issue has been resolved:\n\n**What was wrong:**\n- Line 448-480 had redundant conditional wrapping `{topPlayers.length > 0 && (...)}` around the entire section\n- Inside, line 453 had another check `topPlayers.slice(0, 3).length > 0 ? ... map() : <EmptyState />`\n- This created unnecessary nesting and the outer conditional would hide the empty state entirely\n\n**What I fixed:**\n- Removed the outer conditional wrapper\n- Kept only the inner ternary that properly handles empty state: `{topPlayers.length > 0 ? topPlayers.slice(0, 3).map(...) : <EmptyState />}`\n- Now the Top Performers section always shows, displaying either player data or an empty state component\n\nThe `.map()` is now properly guarded with an empty state fallback.\n",
+  "timestamp": "2025-12-29T08:54:07.618Z"
+}
