@@ -146,11 +146,11 @@ export default async function RoundDetailPage({
     notFound();
   }
 
-  const roundData: RoundWithDetails = {
+  const roundData = {
     ...round,
     player: Array.isArray(round.player) ? round.player[0] : round.player,
-    holes: Array.isArray(round.holes) ? round.holes : [],
-  };
+    holes: (Array.isArray(round.holes) ? round.holes : []) as unknown as RoundWithDetails['holes'],
+  } as unknown as RoundWithDetails;
 
   // Check authorization
   const { data: coach } = await supabase

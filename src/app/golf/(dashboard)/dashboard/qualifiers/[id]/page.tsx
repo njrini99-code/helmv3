@@ -57,20 +57,23 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
   }
 
   // Validate and type the data properly
+  const validEntries = Array.isArray(qualifier.entries)
+    ? qualifier.entries.filter((entry) =>
+        entry !== null &&
+        typeof entry === 'object' &&
+        'player' in entry &&
+        entry.player !== null &&
+        typeof entry.player === 'object' &&
+        !('error' in entry.player) &&
+        'id' in entry.player &&
+        'first_name' in entry.player &&
+        'last_name' in entry.player
+      )
+    : [];
+
   const qualifierData: QualifierWithEntries = {
     ...qualifier,
-    entries: Array.isArray(qualifier.entries)
-      ? qualifier.entries.filter((entry): entry is QualifierEntryWithPlayer =>
-          entry !== null &&
-          typeof entry === 'object' &&
-          'player' in entry &&
-          entry.player !== null &&
-          typeof entry.player === 'object' &&
-          'id' in entry.player &&
-          'first_name' in entry.player &&
-          'last_name' in entry.player
-        )
-      : []
+    entries: validEntries as unknown as QualifierEntryWithPlayer[]
   };
 
   // Get all rounds for this qualifier
