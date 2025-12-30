@@ -36,7 +36,8 @@ export default function GolfClassesPage() {
   const [classes, setClasses] = useState<PlayerClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [playerId, setPlayerId] = useState<string | null>(null);
-  
+  const [teamId, setTeamId] = useState<string | null>(null);
+
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -45,7 +46,7 @@ export default function GolfClassesPage() {
   const [parsedClasses, setParsedClasses] = useState<ParsedClass[]>([]);
   const [selectedClass, setSelectedClass] = useState<PlayerClass | null>(null);
   const [editingClass, setEditingClass] = useState<ClassFormData | null>(null);
-  
+
   const supabase = createClient();
 
   // Fetch classes on load
@@ -60,15 +61,16 @@ export default function GolfClassesPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get player ID
+      // Get player ID and team ID
       const { data: player } = await supabase
         .from('golf_players')
-        .select('id')
+        .select('id, team_id')
         .eq('user_id', user.id)
         .single();
 
       if (!player) return;
       setPlayerId(player.id);
+      setTeamId(player.team_id);
 
       // Fetch classes
       const { data, error } = await supabase
@@ -277,61 +279,9 @@ export default function GolfClassesPage() {
   };
 
   const syncClassToCalendar = async (classData: ClassFormData) => {
-    if (!playerId) return;
-
-    try {
-      // Create recurring calendar events for each class meeting
-      const semester = classData.semester || 'Fall 2025';
-      const semesterStart = new Date('2025-08-25'); // Fall semester start
-      const semesterEnd = new Date('2025-12-15');   // Fall semester end
-
-      const dayMap: Record<string, number> = {
-        'M': 1,  // Monday
-        'T': 2,  // Tuesday
-        'W': 3,  // Wednesday
-        'Th': 4, // Thursday
-        'F': 5,  // Friday
-      };
-
-      // For each day the class meets
-      for (const day of classData.days) {
-        const targetDayOfWeek = dayMap[day];
-        if (!targetDayOfWeek) continue;
-
-        // Find first occurrence of this day
-        const current = new Date(semesterStart);
-        while (current.getDay() !== targetDayOfWeek) {
-          current.setDate(current.getDate() + 1);
-        }
-
-        // Create events for each week until semester end
-        while (current <= semesterEnd) {
-          const eventDate = current.toISOString().split('T')[0];
-
-          await supabase.from('golf_events').insert({
-            player_id: playerId,
-            title: `${classData.course_code}: ${classData.course_name}`,
-            description: classData.instructor ? `Instructor: ${classData.instructor}` : null,
-            event_date: eventDate,
-            start_time: classData.start_time || '00:00',
-            end_time: classData.end_time || '00:00',
-            location: classData.location || classData.building || null,
-            event_type: 'academic',
-            color: classData.color,
-            is_recurring: true,
-            recurrence_pattern: 'weekly',
-          });
-
-          // Move to next week
-          current.setDate(current.getDate() + 7);
-        }
-      }
-
-      console.log('Class synced to calendar:', classData.course_code);
-    } catch (error) {
-      console.error('Error syncing class to calendar:', error);
-      // Don't throw - calendar sync is supplementary
-    }
+    // Skip calendar sync for now - will implement later when calendar system is ready
+    // TODO: Implement calendar sync when golf_events table structure is finalized
+    return;
   };
 
   const handleClassClick = (cls: PlayerClass) => {
