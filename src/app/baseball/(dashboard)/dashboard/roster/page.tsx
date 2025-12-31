@@ -17,6 +17,8 @@ import { createClient } from '@/lib/supabase/client';
 import { getFullName } from '@/lib/utils';
 import { InviteModal } from '@/components/coach/InviteModal';
 import { LineupBuilder } from '@/components/coach/lineup/LineupBuilder';
+import { saveLineup } from '@/app/baseball/actions/lineups';
+import { useToast } from '@/components/ui/toast';
 
 interface TeamMember {
   id: string;
@@ -47,6 +49,8 @@ export default function RosterPage() {
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [activeView, setActiveView] = useState<'roster' | 'lineup'>('roster');
+  const [savingLineup, setSavingLineup] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (selectedTeamId) {
@@ -86,9 +90,13 @@ export default function RosterPage() {
       .order('joined_at', { ascending: false });
 
     if (error) {
-    } else {
-      setRoster(data || []);
+      console.error('[Roster] Failed to fetch roster:', error);
+      setRoster([]);
+      setLoading(false);
+      return;
     }
+
+    setRoster(data || []);
     setLoading(false);
   }
 
@@ -341,9 +349,41 @@ export default function RosterPage() {
               jersey_number: m.jersey_number,
               avatar_url: m.player.avatar_url,
             }))}
-            onSave={(lineup) => {
-              console.log('Saving lineup:', lineup);
-              // TODO: Implement save lineup functionality
+            onSave={async (lineup, name) => {
+              if (!selectedTeamId) {
+                showToast('No team selected', 'error');
+                return;
+              }
+
+              // Filter out empty slots and map to the format expected by saveLineup
+              const positions = lineup
+                .filter(slot => slot.player !== null)
+                .map(slot => ({
+                  order: slot.order,
+                  playerId: slot.player!.id,
+                }));
+
+              if (positions.length === 0) {
+                showToast('Please add at least one player to the lineup', 'error');
+                return;
+              }
+
+              setSavingLineup(true);
+              try {
+                await saveLineup({
+                  teamId: selectedTeamId,
+                  name: name || 'Untitled Lineup',
+                  positions,
+                });
+                showToast('Lineup saved successfully', 'success');
+              } catch (error) {
+                showToast(
+                  error instanceof Error ? error.message : 'Failed to save lineup',
+                  'error'
+                );
+              } finally {
+                setSavingLineup(false);
+              }
             }}
           />
         )}

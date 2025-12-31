@@ -10,6 +10,7 @@ import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleMod
 import { ConfirmClassesModal } from '@/components/golf/classes/ConfirmClassesModal';
 import { ClassDetailModal } from '@/components/golf/classes/ClassDetailModal';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
+import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
 
 interface PlayerClass {
   id: string;
@@ -97,10 +98,10 @@ export default function GolfClassesPage() {
   };
 
   const handleAddClass = async (formData: ClassFormData) => {
-    if (!playerId) return;
+    if (!playerId || !teamId) return;
 
     try {
-      const { error } = await supabase
+      const { data: newClass, error } = await supabase
         .from('golf_player_classes')
         .insert({
           player_id: playerId,
@@ -118,13 +119,17 @@ export default function GolfClassesPage() {
           semester: formData.semester,
           color: formData.color,
           notes: formData.notes || null,
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
       // Sync to calendar
-      await syncClassToCalendar(formData);
-      
+      if (newClass) {
+        await syncClassToCalendar(formData, newClass.id, playerId, teamId);
+      }
+
       await fetchClasses();
       setShowAddModal(false);
       setEditingClass(null);
@@ -135,7 +140,7 @@ export default function GolfClassesPage() {
   };
 
   const handleUpdateClass = async (formData: ClassFormData) => {
-    if (!formData.id) return;
+    if (!formData.id || !playerId || !teamId) return;
 
     try {
       const { error } = await supabase
@@ -160,6 +165,9 @@ export default function GolfClassesPage() {
 
       if (error) throw error;
 
+      // Re-sync to calendar (deletes old events and creates new ones)
+      await syncClassToCalendar(formData, formData.id, playerId, teamId);
+
       await fetchClasses();
       setShowAddModal(false);
       setEditingClass(null);
@@ -174,6 +182,10 @@ export default function GolfClassesPage() {
     if (!selectedClass) return;
 
     try {
+      // Remove from calendar first
+      await removeClassFromCalendar(selectedClass.id);
+
+      // Then delete the class
       const { error } = await supabase
         .from('golf_player_classes')
         .delete()
@@ -250,23 +262,30 @@ export default function GolfClassesPage() {
       console.log('[Classes] Successfully inserted:', data?.length, 'classes');
 
       // Sync all classes to calendar
-      for (const cls of confirmed) {
-        await syncClassToCalendar({
-          id: undefined,
-          course_code: cls.course_code || '',
-          course_name: cls.course_name || cls.course_code || 'Untitled Class',
-          instructor: cls.instructor || '',
-          days: cls.days || [],
-          start_time: cls.start_time || '',
-          end_time: cls.end_time || '',
-          location: cls.location || '',
-          building: cls.building || '',
-          room: cls.room || '',
-          credits: cls.credits,
-          semester: cls.semester || 'Fall 2025',
-          color: cls.color || generateClassColor(),
-          notes: '',
-        });
+      if (data && teamId) {
+        for (let i = 0; i < data.length; i++) {
+          const insertedClass = data[i];
+          const confirmedClass = confirmed[i];
+
+          if (insertedClass && confirmedClass) {
+            await syncClassToCalendar({
+              id: insertedClass.id,
+              course_code: confirmedClass.course_code || '',
+              course_name: confirmedClass.course_name || confirmedClass.course_code || 'Untitled Class',
+              instructor: confirmedClass.instructor || '',
+              days: confirmedClass.days || [],
+              start_time: confirmedClass.start_time || '',
+              end_time: confirmedClass.end_time || '',
+              location: confirmedClass.location || '',
+              building: confirmedClass.building || '',
+              room: confirmedClass.room || '',
+              credits: confirmedClass.credits,
+              semester: confirmedClass.semester || 'Fall 2025',
+              color: confirmedClass.color || generateClassColor(),
+              notes: '',
+            }, insertedClass.id, playerId, teamId);
+          }
+        }
       }
 
       await fetchClasses();
@@ -276,12 +295,6 @@ export default function GolfClassesPage() {
       console.error('[Classes] Error saving classes:', error);
       // Don't re-throw, the error is already handled with alert
     }
-  };
-
-  const syncClassToCalendar = async (classData: ClassFormData) => {
-    // Skip calendar sync for now - will implement later when calendar system is ready
-    // TODO: Implement calendar sync when golf_events table structure is finalized
-    return;
   };
 
   const handleClassClick = (cls: PlayerClass) => {
@@ -417,8 +430,8 @@ export default function GolfClassesPage() {
             </Card>
             <Card glass className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <IconCalendar size={20} className="text-blue-600" />
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center">
+                  <IconCalendar size={20} className="text-slate-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-semibold text-slate-900">{totalCredits}</p>
@@ -428,8 +441,8 @@ export default function GolfClassesPage() {
             </Card>
             <Card glass className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                  <IconClock size={20} className="text-purple-600" />
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center">
+                  <IconClock size={20} className="text-slate-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-semibold text-slate-900">

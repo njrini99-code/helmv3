@@ -48,7 +48,11 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
 
     const { data, error } = await supabase
       .from('players')
-      .select('*')
+      .select(`
+        *,
+        high_school_org:organizations!players_high_school_org_id_fkey(id, name, location_city, location_state),
+        committed_to_org:organizations!players_committed_to_org_id_fkey(id, name, division, conference)
+      `)
       .eq('id', id)
       .single();
 
@@ -178,7 +182,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
                 {getFullName(player.first_name, player.last_name)}
               </h2>
               <p className="text-sm leading-relaxed text-slate-500 mt-1">
-                {player.high_school_name} • {player.city}, {player.state}
+                {(player as any).high_school_org?.name || player.high_school_name || 'Unknown School'} • {player.city}, {player.state}
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="primary">{player.primary_position}</Badge>

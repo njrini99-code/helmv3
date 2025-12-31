@@ -22,10 +22,13 @@ interface FilterGroup {
   step?: number;
 }
 
+// Union type for all possible filter values
+type FilterValue = string | string[] | number | undefined;
+
 interface FilterPanelProps {
   filters: FilterGroup[];
-  activeFilters: Record<string, any>;
-  onFilterChange: (filterId: string, value: any) => void;
+  activeFilters: Record<string, FilterValue>;
+  onFilterChange: (filterId: string, value: FilterValue) => void;
   onClearAll: () => void;
   className?: string;
 }
@@ -128,7 +131,8 @@ export function FilterPanel({
                     {group.type === 'checkbox' && group.options && (
                       <div className="space-y-2">
                         {group.options.map(option => {
-                          const isChecked = activeFilters[group.id]?.includes(option.value);
+                          const filterValue = activeFilters[group.id];
+                          const isChecked = Array.isArray(filterValue) && filterValue.includes(option.value);
                           return (
                             <label
                               key={option.value}
@@ -138,10 +142,10 @@ export function FilterPanel({
                                 type="checkbox"
                                 checked={isChecked}
                                 onChange={(e) => {
-                                  const current = activeFilters[group.id] || [];
+                                  const current = (activeFilters[group.id] as string[]) || [];
                                   const next = e.target.checked
                                     ? [...current, option.value]
-                                    : current.filter((v: string) => v !== option.value);
+                                    : current.filter((v) => v !== option.value);
                                   onFilterChange(group.id, next.length > 0 ? next : undefined);
                                 }}
                                 className="w-4 h-4 text-brand-600 bg-white border-slate-300 rounded focus:ring-2 focus:ring-brand-100 transition-colors cursor-pointer"

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import type { Player } from '@/lib/types';
 import { PlayerCardData } from './PlayerCard';
 import { PlayerCardGrid } from './PlayerCardGrid';
 import { USAMap } from './USAMap';
@@ -16,8 +17,14 @@ import { IconChevronLeft, IconChevronRight } from '@/components/icons';
 import { useDiscoverPreferences } from '@/hooks/use-local-storage';
 import { addToWatchlist, removeFromWatchlist } from '@/app/baseball/actions/watchlist';
 
+// Extended player type with joined data from discover query
+interface DiscoverPlayer extends Player {
+  high_school_org?: { name: string } | null;
+  player_videos?: Array<{ thumbnail_url: string | null }> | null;
+}
+
 interface DiscoverResultsProps {
-  players: any[];
+  players: DiscoverPlayer[];
   watchlistIds: string[];
   coachId: string;
   totalCount: number;
@@ -80,30 +87,30 @@ export function DiscoverResults({
   // Transform database players to PlayerCardData format
   const transformedPlayers: PlayerCardData[] = players.map((p) => ({
     id: p.id,
-    firstName: p.first_name,
-    lastName: p.last_name,
+    firstName: p.first_name || '',
+    lastName: p.last_name || '',
     position: p.primary_position || 'Player',
-    secondaryPosition: p.secondary_position,
-    graduationYear: p.grad_year,
-    highSchool: p.high_school_name || '',
+    secondaryPosition: p.secondary_position || undefined,
+    graduationYear: p.grad_year || 0,
+    highSchool: p.high_school_org?.name || p.high_school_name || '',
     city: p.city || '',
     state: p.state || '',
-    avatar: p.avatar_url,
+    avatar: p.avatar_url || undefined,
     coverImage: null,
     stats: {
-      velocity: p.pitch_velo,
-      exitVelo: p.exit_velo,
-      sixtyYard: p.sixty_yard,
-      gpa: p.gpa,
-      height: p.height_feet && p.height_inches 
-        ? `${p.height_feet}'${p.height_inches}"` 
+      velocity: p.pitch_velo || undefined,
+      exitVelo: p.exit_velo || undefined,
+      sixtyYard: p.sixty_time || undefined,
+      gpa: p.gpa || undefined,
+      height: p.height_feet && p.height_inches
+        ? `${p.height_feet}'${p.height_inches}"`
         : undefined,
-      weight: p.weight_lbs,
+      weight: p.weight_lbs || undefined,
     },
-    verified: p.recruiting_activated,
+    verified: p.recruiting_activated || false,
     status: watchlistIds.includes(p.id) ? 'watchlist' : undefined,
     hasVideo: p.has_video || false,
-    videoThumbnail: p.player_videos?.[0]?.thumbnail_url,
+    videoThumbnail: p.player_videos?.[0]?.thumbnail_url || undefined,
   }));
 
   // Sort players

@@ -7,6 +7,7 @@ import { GolfSidebar } from '@/components/golf/layout/GolfSidebar';
 import { PageLoading } from '@/components/ui/loading';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { ToastProvider } from '@/components/ui/toast';
+import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { CommandPalette } from '@/components/golf/CommandPalette';
 import { MobileBottomNav } from '@/components/golf/MobileBottomNav';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
@@ -161,9 +162,11 @@ export default function GolfDashboardLayout({
   return (
     <SidebarProvider>
       <ToastProvider>
-        <GolfDashboardContent userData={userData}>
-          {children}
-        </GolfDashboardContent>
+        <SessionActivityProvider>
+          <GolfDashboardContent userData={userData}>
+            {children}
+          </GolfDashboardContent>
+        </SessionActivityProvider>
       </ToastProvider>
     </SidebarProvider>
   );

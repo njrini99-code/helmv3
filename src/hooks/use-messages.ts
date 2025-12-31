@@ -207,6 +207,7 @@ export function useConversations() {
         supabase.removeChannel(channel);
       };
     }
+    return undefined;
   }, [user, fetchConversations]);
 
   return { conversations, loading, refetch: fetchConversations };

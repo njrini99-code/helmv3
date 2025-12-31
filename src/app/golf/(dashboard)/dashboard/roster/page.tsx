@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { InvitePlayerButton } from '@/components/golf/roster/InvitePlayerButton';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
+import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import type { GolfPlayer } from '@/lib/types/golf';
 import { IconUsers, IconSearch, IconChartBar, IconMessage, IconChevronRight } from '@/components/icons';
@@ -116,13 +117,13 @@ export default async function GolfRosterPage() {
                 <div className="relative flex items-center gap-4 p-4">
                   {/* Avatar */}
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                       <span className="text-white font-semibold text-sm">
                         {player.first_name?.[0] || '?'}{player.last_name?.[0] || '?'}
                       </span>
                     </div>
                     {/* Status indicator */}
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-emerald-500" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-green-500" />
                   </div>
 
                   {/* Player Info */}
@@ -185,6 +186,10 @@ export default async function GolfRosterPage() {
                         <IconChevronRight size={18} className="text-slate-400" />
                       </button>
                     </Link>
+                    <PlayerActionsMenu
+                      playerId={player.id}
+                      playerName={`${player.first_name} ${player.last_name}`}
+                    />
                   </div>
                 </div>
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
+import { toast } from '@/components/ui/toast';
 import type { WatchlistWithPlayer, PipelineStage } from '@/lib/types';
 
 export function useWatchlist() {
@@ -45,35 +46,95 @@ export function useWatchlist() {
   }, [fetchWatchlist]);
 
   const addToWatchlist = async (playerId: string, notes?: string) => {
-    if (!coach) return false;
+    if (!coach) {
+      toast.error('Authentication required', 'Please sign in to add players to your watchlist');
+      return false;
+    }
+
     const { error } = await supabase.from('watchlists').insert({
       coach_id: coach.id,
       player_id: playerId,
       notes: notes || null,
     });
-    if (!error) fetchWatchlist();
-    return !error;
+
+    if (error) {
+      console.error('[Watchlist] Failed to add player:', error);
+      toast.error('Failed to add player', 'Could not add player to watchlist. Please try again.');
+      return false;
+    }
+
+    toast.success('Player added', 'Successfully added to your watchlist');
+    fetchWatchlist();
+    return true;
   };
 
   const removeFromWatchlist = async (playerId: string) => {
-    if (!coach) return false;
-    const { error } = await supabase.from('watchlists').delete().eq('coach_id', coach.id).eq('player_id', playerId);
-    if (!error) fetchWatchlist();
-    return !error;
+    if (!coach) {
+      toast.error('Authentication required', 'Please sign in to manage your watchlist');
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('watchlists')
+      .delete()
+      .eq('coach_id', coach.id)
+      .eq('player_id', playerId);
+
+    if (error) {
+      console.error('[Watchlist] Failed to remove player:', error);
+      toast.error('Failed to remove player', 'Could not remove player from watchlist. Please try again.');
+      return false;
+    }
+
+    toast.success('Player removed', 'Successfully removed from your watchlist');
+    fetchWatchlist();
+    return true;
   };
 
   const updateStage = async (playerId: string, stage: PipelineStage) => {
-    if (!coach) return false;
-    const { error } = await supabase.from('watchlists').update({ pipeline_stage: stage }).eq('coach_id', coach.id).eq('player_id', playerId);
-    if (!error) fetchWatchlist();
-    return !error;
+    if (!coach) {
+      toast.error('Authentication required', 'Please sign in to update pipeline stages');
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('watchlists')
+      .update({ pipeline_stage: stage })
+      .eq('coach_id', coach.id)
+      .eq('player_id', playerId);
+
+    if (error) {
+      console.error('[Watchlist] Failed to update stage:', error);
+      toast.error('Failed to update stage', 'Could not update pipeline stage. Please try again.');
+      return false;
+    }
+
+    toast.success('Stage updated', `Moved player to ${stage.replace('_', ' ')}`);
+    fetchWatchlist();
+    return true;
   };
 
   const updateNotes = async (playerId: string, notes: string) => {
-    if (!coach) return false;
-    const { error } = await supabase.from('watchlists').update({ notes }).eq('coach_id', coach.id).eq('player_id', playerId);
-    if (!error) fetchWatchlist();
-    return !error;
+    if (!coach) {
+      toast.error('Authentication required', 'Please sign in to update notes');
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('watchlists')
+      .update({ notes })
+      .eq('coach_id', coach.id)
+      .eq('player_id', playerId);
+
+    if (error) {
+      console.error('[Watchlist] Failed to update notes:', error);
+      toast.error('Failed to update notes', 'Could not save notes. Please try again.');
+      return false;
+    }
+
+    toast.success('Notes saved', 'Successfully updated player notes');
+    fetchWatchlist();
+    return true;
   };
 
   const isOnWatchlist = (playerId: string) => watchlist.some(w => w.player_id === playerId);

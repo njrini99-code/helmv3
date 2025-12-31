@@ -49,7 +49,9 @@ export function PlayerCard({ player, showWatchlistButton = true, usePeekPanel = 
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="font-semibold text-slate-900 truncate">{name}</h3>
-                  <p className="text-sm leading-relaxed text-slate-500 truncate">{player.high_school_name}</p>
+                  <p className="text-sm leading-relaxed text-slate-500 truncate">
+                    {(player as any).high_school_org?.name || player.high_school_name || 'Unknown School'}
+                  </p>
                   <p className="text-xs text-slate-400">{player.city}, {player.state}</p>
                 </div>
                 {player.has_video && <IconVideo size={16} className="text-brand-600 flex-shrink-0" />}

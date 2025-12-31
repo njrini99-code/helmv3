@@ -1125,7 +1125,7 @@ body {
 }
 
 /* Shimmer animation for product cards */
-@keyframes shimmer {
+@keyframes shimmer-product {
   0% {
     background-position: -200% 0;
   }
@@ -1135,5 +1135,5 @@ body {
 }
 
 .animate-shimmer {
-  animation: shimmer 2s infinite;
+  animation: shimmer-product 2s infinite;
 }

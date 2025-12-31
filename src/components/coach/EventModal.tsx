@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconX, IconCalendar } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
+import type { Event } from '@/lib/types';
 
 interface EventModalProps {
   teamId: string;
   coachId: string;
-  event?: any | null;
+  event?: Event | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -65,9 +66,9 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
 
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error saving event:', err);
-      setError(err.message || 'Failed to save event');
+      setError(err instanceof Error ? err.message : 'Failed to save event');
     } finally {
       setLoading(false);
     }

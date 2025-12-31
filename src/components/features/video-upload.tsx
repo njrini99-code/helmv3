@@ -10,9 +10,10 @@ import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { IconVideo, IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import type { Video } from '@/lib/types';
 
 interface VideoUploadProps {
-  onUploadComplete?: (video: any) => void;
+  onUploadComplete?: (video: Video) => void;
   onCancel?: () => void;
 }
 
@@ -153,9 +154,9 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
 
       if (preview) URL.revokeObjectURL(preview);
       onUploadComplete?.(insertResult.data);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Upload error:', err);
-      setError(err.message || 'Upload failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }

@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useSpring, useTransform } from "framer-motion";
-import { useMousePosition } from "@/lib/hooks/useMousePosition";
+import { useMousePosition } from "@/hooks/useMousePosition";
 
 export function ProductPreview() {
   const containerRef = useRef<HTMLDivElement>(null);

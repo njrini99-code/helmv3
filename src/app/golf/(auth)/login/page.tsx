@@ -4,10 +4,10 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ShineEffect } from '@/components/ui/shine-effect';
+import { loginAction } from '@/app/golf/actions/auth';
 
 function GolfLoginForm() {
   const [email, setEmail] = useState('');
@@ -17,29 +17,35 @@ function GolfLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const successMessage = searchParams.get('message');
-  const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const result = await loginAction(email, password);
 
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      // Redirect to golf dashboard for all users
-      router.push('/golf/dashboard');
+      if (!result.success) {
+        setError(result.error || 'Login failed');
+        setLoading(false);
+        return;
+      }
+
+      // Redirect to appropriate page
+      router.push(result.redirectTo || '/golf/dashboard');
       router.refresh();
+    } catch (err) {
+      console.error('Unexpected error during sign in:', err);
+      setError('An unexpected error occurred. Please try again.');
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Atmospheric gradient orbs */}
-      <div className="absolute top-1/4 -right-32 w-96 h-96 bg-emerald-300/20 rounded-full blur-3xl" />
+      <div className="absolute top-1/4 -right-32 w-96 h-96 bg-green-300/20 rounded-full blur-3xl" />
       <div className="absolute bottom-1/4 -left-32 w-96 h-96 bg-green-300/15 rounded-full blur-3xl" />
 
       <div className="w-full max-w-md relative z-10">

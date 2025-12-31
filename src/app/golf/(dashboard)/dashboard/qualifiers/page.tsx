@@ -61,9 +61,9 @@ export default async function GolfQualifiersPage() {
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'upcoming':
-        return { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' };
+        return { bg: 'bg-slate-50', text: 'text-slate-700', dot: 'bg-slate-500' };
       case 'in_progress':
-        return { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', pulse: true };
+        return { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500', pulse: true };
       case 'completed':
         return { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' };
       default:
@@ -135,7 +135,7 @@ export default async function GolfQualifiersPage() {
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1 min-w-0 pr-4">
-                        <h3 className="text-lg font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors truncate">
+                        <h3 className="text-lg font-semibold text-slate-900 group-hover:text-green-600 transition-colors truncate">
                           {qualifier.name}
                         </h3>
                         {qualifier.description && (
@@ -181,17 +181,17 @@ export default async function GolfQualifiersPage() {
                     {/* Footer */}
                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
                       {qualifier.show_live_leaderboard ? (
-                        <span className="inline-flex items-center gap-2 text-sm font-medium text-emerald-600">
+                        <span className="inline-flex items-center gap-2 text-sm font-medium text-green-600">
                           <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
                           </span>
                           Live Leaderboard
                         </span>
                       ) : (
                         <span />
                       )}
-                      <span className="flex items-center gap-1 text-sm text-slate-400 group-hover:text-emerald-600 transition-colors">
+                      <span className="flex items-center gap-1 text-sm text-slate-400 group-hover:text-green-600 transition-colors">
                         View Details
                         <IconChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                       </span>

@@ -3,6 +3,15 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { PipelineStage } from '@/lib/types';
+import {
+  requireCoach,
+  verifyWatchlistOwnership
+} from '@/lib/auth/ownership';
+import {
+  formatSafeErrorResponse,
+  logSecurityEvent
+} from '@/lib/validation/server-action-validator';
+import { WatchlistSchemas } from '@/lib/validation/action-schemas';
 
 export async function addToWatchlist(coachId: string, playerId: string) {
   const supabase = await createClient();
@@ -60,7 +69,7 @@ export async function addToWatchlist(coachId: string, playerId: string) {
       engagement_type: 'watchlist_add',
       engagement_date: new Date().toISOString(),
       is_anonymous: false,
-      metadata: { source: 'discover' },
+      metametadata: { source: 'discover' },
     });
 
   revalidatePath('/baseball/dashboard/discover');
@@ -107,78 +116,139 @@ export async function removeFromWatchlist(coachId: string, playerId: string) {
   return { success: true };
 }
 
-export async function updateWatchlistStatus(watchlistId: string, status: PipelineStage) {
-  const supabase = await createClient();
+export async function updateWatchlistStatus(
+  watchlistId: string,
+  status: PipelineStage
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { supabase, coach } = await requireCoach();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('Unauthorized');
+    // Validate input with centralized schema
+    const validatedData = WatchlistSchemas.updateStatus.parse({
+      watchlist_id: watchlistId,
+      status
+    });
+
+    // Verify ownership
+    await verifyWatchlistOwnership(supabase, validatedData.watchlist_id, coach.id);
+
+    // Log security event
+    await logSecurityEvent({
+      event: 'watchlist_update',
+      action: 'watchlist_action',
+      userId: coach.user_id,
+      metadata: { watchlistId: validatedData.watchlist_id, newStatus: validatedData.status }
+    });
+
+    const { error } = await supabase
+      .from('watchlists')
+      .update({
+        pipeline_stage: validatedData.status as any,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', validatedData.watchlist_id)
+      .eq('coach_id', coach.id); // Belt and suspenders
+
+    if (error) {
+      console.error('[Security] Watchlist update failed:', { watchlistId, coachId: coach.id, error: error.message });
+      return { success: false, error: 'Failed to update status' };
+    }
+
+    revalidatePath('/baseball/dashboard/watchlist');
+    revalidatePath('/baseball/dashboard/pipeline');
+    return { success: true };
+
+  } catch (err) {
+    return formatSafeErrorResponse(err);
   }
-
-  const { error } = await supabase
-    .from('watchlists')
-    .update({
-      pipeline_stage: status as any, // Type assertion for new enum values
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', watchlistId);
-
-  if (error) {
-    throw new Error('Failed to update status');
-  }
-
-  revalidatePath('/baseball/dashboard/watchlist');
-  revalidatePath('/baseball/dashboard/pipeline');
-
-  return { success: true };
 }
 
-export async function updateWatchlistPriority(watchlistId: string, isHighPriority: boolean) {
-  const supabase = await createClient();
+export async function updateWatchlistPriority(
+  watchlistId: string,
+  isHighPriority: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { supabase, coach } = await requireCoach();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('Unauthorized');
+    // Validate input with centralized schema
+    const validatedData = WatchlistSchemas.updatePriority.parse({
+      watchlist_id: watchlistId,
+      is_high_priority: isHighPriority
+    });
+
+    await verifyWatchlistOwnership(supabase, validatedData.watchlist_id, coach.id);
+
+    // Log security event
+    await logSecurityEvent({
+      event: 'watchlist_update',
+      action: 'watchlist_action',
+      userId: coach.user_id,
+      metadata: { watchlistId: validatedData.watchlist_id, isHighPriority: validatedData.is_high_priority }
+    });
+
+    const { error } = await supabase
+      .from('watchlists')
+      .update({
+        priority: validatedData.is_high_priority ? 1 : 0,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', validatedData.watchlist_id)
+      .eq('coach_id', coach.id);
+
+    if (error) {
+      console.error('[Security] Watchlist priority update failed:', { watchlistId, coachId: coach.id, error: error.message });
+      return { success: false, error: 'Failed to update priority' };
+    }
+
+    revalidatePath('/baseball/dashboard/watchlist');
+    return { success: true };
+
+  } catch (err) {
+    return formatSafeErrorResponse(err);
   }
-
-  const { error } = await supabase
-    .from('watchlists')
-    .update({
-      priority: isHighPriority ? 1 : 0,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', watchlistId);
-
-  if (error) {
-    throw new Error('Failed to update priority');
-  }
-
-  revalidatePath('/baseball/dashboard/watchlist');
-
-  return { success: true };
 }
 
-export async function addWatchlistNote(watchlistId: string, note: string) {
-  const supabase = await createClient();
+export async function addWatchlistNote(
+  watchlistId: string,
+  note: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { supabase, coach } = await requireCoach();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('Unauthorized');
+    // Validate input with centralized schema
+    const validatedData = WatchlistSchemas.addNote.parse({
+      watchlist_id: watchlistId,
+      note
+    });
+
+    await verifyWatchlistOwnership(supabase, validatedData.watchlist_id, coach.id);
+
+    // Log security event
+    await logSecurityEvent({
+      event: 'watchlist_update',
+      action: 'watchlist_action',
+      userId: coach.user_id,
+      metadata: { watchlistId: validatedData.watchlist_id, noteLength: validatedData.note.length }
+    });
+
+    const { error } = await supabase
+      .from('watchlists')
+      .update({
+        notes: validatedData.note,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', validatedData.watchlist_id)
+      .eq('coach_id', coach.id);
+
+    if (error) {
+      console.error('[Security] Watchlist note update failed:', { watchlistId, coachId: coach.id, error: error.message });
+      return { success: false, error: 'Failed to add note' };
+    }
+
+    revalidatePath('/baseball/dashboard/watchlist');
+    return { success: true };
+
+  } catch (err) {
+    return formatSafeErrorResponse(err);
   }
-
-  const { error } = await supabase
-    .from('watchlists')
-    .update({
-      notes: note,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', watchlistId);
-
-  if (error) {
-    throw new Error('Failed to add note');
-  }
-
-  revalidatePath('/baseball/dashboard/watchlist');
-
-  return { success: true };
 }

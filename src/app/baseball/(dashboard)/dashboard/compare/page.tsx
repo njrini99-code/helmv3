@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { PageLoading } from '@/components/ui/loading';
-import { EmptyState } from '@/components/ui/empty-state';
 import { PlayerComparison } from '@/components/features/player-comparison';
 import { IconSearch, IconPlus, IconX, IconTarget, IconUsers } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';

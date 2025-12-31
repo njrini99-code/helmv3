@@ -162,17 +162,17 @@ export default async function RoundsPage() {
                             {/* Score Badge */}
                             <div className={cn(
                               'w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0',
-                              scoreToPar < 0 ? 'bg-emerald-50' : scoreToPar === 0 ? 'bg-slate-100' : 'bg-amber-50'
+                              scoreToPar < 0 ? 'bg-green-50' : scoreToPar === 0 ? 'bg-slate-100' : 'bg-amber-50'
                             )}>
                               <span className={cn(
                                 'text-xl font-bold',
-                                scoreToPar < 0 ? 'text-emerald-600' : scoreToPar === 0 ? 'text-slate-700' : 'text-amber-600'
+                                scoreToPar < 0 ? 'text-green-600' : scoreToPar === 0 ? 'text-slate-700' : 'text-amber-600'
                               )}>
                                 {round.total_score || '--'}
                               </span>
                               <span className={cn(
                                 'text-[10px] font-medium',
-                                scoreToPar < 0 ? 'text-emerald-500' : scoreToPar === 0 ? 'text-slate-500' : 'text-amber-500'
+                                scoreToPar < 0 ? 'text-green-500' : scoreToPar === 0 ? 'text-slate-500' : 'text-amber-500'
                               )}>
                                 {scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar}
                               </span>
@@ -181,11 +181,11 @@ export default async function RoundsPage() {
                             {/* Details */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">
+                                <h3 className="font-semibold text-slate-900 truncate group-hover:text-green-600 transition-colors">
                                   {round.course_name}
                                 </h3>
                                 {round.is_verified && (
-                                  <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-emerald-100 text-emerald-700">
+                                  <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-green-100 text-green-700">
                                     <IconCheck size={10} />
                                     Verified
                                   </span>
@@ -228,7 +228,7 @@ export default async function RoundsPage() {
                               </span>
                             </div>
 
-                            <IconChevronRight size={18} className="text-slate-300 group-hover:text-emerald-500 transition-colors flex-shrink-0" />
+                            <IconChevronRight size={18} className="text-slate-300 group-hover:text-green-500 transition-colors flex-shrink-0" />
                           </div>
                         </div>
                       </Link>

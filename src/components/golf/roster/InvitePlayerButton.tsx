@@ -26,9 +26,13 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
 
     try {
       const result = await invitePlayerToTeam('');
-      setInviteCode(result.inviteCode);
-      setInviteLink(`${window.location.origin}${result.inviteLink}`);
-      router.refresh();
+      if (result.success) {
+        setInviteCode(result.data.inviteCode);
+        setInviteLink(`${window.location.origin}${result.data.inviteLink}`);
+        router.refresh();
+      } else {
+        console.error('Failed to generate invite:', result.error);
+      }
     } catch (err) {
       console.error('Failed to generate invite:', err);
     } finally {

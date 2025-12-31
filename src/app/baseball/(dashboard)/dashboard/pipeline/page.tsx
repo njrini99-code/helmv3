@@ -6,7 +6,6 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners, 
 import { Header } from '@/components/layout/header';
 import { PipelineColumn } from '@/components/features/pipeline-column';
 import { PipelineCard } from '@/components/features/pipeline-card';
-import { EmptyState } from '@/components/ui/empty-state';
 import { PageLoading } from '@/components/ui/loading';
 import { SkeletonPipeline } from '@/components/ui/skeleton-loader';
 import { Button } from '@/components/ui/button';

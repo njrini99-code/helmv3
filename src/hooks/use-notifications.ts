@@ -75,6 +75,7 @@ export function useNotifications() {
         supabase.removeChannel(channel);
       };
     }
+    return undefined;
   }, [user, fetchNotifications]);
 
   const markAsRead = async (id: string) => {

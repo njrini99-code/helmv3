@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { getSavedComparisons } from '../compare/actions';
 import { SavedComparisonsList } from '@/components/features/saved-comparisons-list';
-import { IconBookmark, IconLayoutGrid } from '@/components/icons';
+import { IconBookmark } from '@/components/icons';
 
 export default async function SavedComparisonsPage() {
   const { comparisons, error } = await getSavedComparisons();

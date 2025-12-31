@@ -10,11 +10,22 @@ import { updateSession } from '@/lib/supabase/middleware';
  *
  * The updateSession function is defined in lib/supabase/middleware.ts
  * and handles all auth logic including role-based redirects.
+ *
+ * SECURITY: Development mode bypass has been removed for security.
+ * Use proper authentication even in development.
  */
 export async function middleware(request: NextRequest) {
-  // DEV MODE: Bypass auth for testing
-  if (process.env.NODE_ENV === 'development') {
-    return NextResponse.next();
+  // Only bypass auth for specific dev design system routes if explicitly enabled
+  const DEV_BYPASS_ROUTES = ['/dev/design-system', '/dev/components'];
+
+  if (process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true') {
+    const isDevRoute = DEV_BYPASS_ROUTES.some(route =>
+      request.nextUrl.pathname.startsWith(route)
+    );
+    if (isDevRoute) {
+      console.warn('⚠️ DEV MODE: Auth bypassed for', request.nextUrl.pathname);
+      return NextResponse.next();
+    }
   }
 
   return await updateSession(request);

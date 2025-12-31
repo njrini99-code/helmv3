@@ -37,7 +37,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
-  const handleInputChange = (field: keyof Player, value: any) => {
+  const handleInputChange = (field: keyof Player, value: string | number | boolean | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

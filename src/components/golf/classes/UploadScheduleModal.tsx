@@ -172,11 +172,11 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
         setLoading(false);
         return;
       }
-      
+
       onParsed(classes);
-    } catch (err: any) {
+    } catch (err) {
       console.error('[Process] Error:', err);
-      setError(err.message || 'Failed to process file. Try pasting your schedule text instead.');
+      setError(err instanceof Error ? err.message : 'Failed to process file. Try pasting your schedule text instead.');
     } finally {
       setLoading(false);
     }

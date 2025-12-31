@@ -86,6 +86,7 @@ export function useUnreadCount() {
         supabase.removeChannel(channel);
       };
     }
+    return undefined;
   }, [user, fetchUnreadCount, supabase]);
 
   return { unreadCount, loading, refetch: fetchUnreadCount };

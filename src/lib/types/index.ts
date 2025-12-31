@@ -11,7 +11,9 @@ export type Enums = Database['public']['Enums'];
 // Row types (what you get when querying)
 export type User = Tables['users']['Row'];
 export type Coach = Tables['coaches']['Row'];
+// NOTE: After migration 031, Coach has new field: organization_id (replaces college_id)
 export type Player = Tables['players']['Row'];
+// NOTE: After migration 031, Player has new fields: high_school_org_id, committed_to_org_id (replaces high_school_id, committed_to)
 export type Organization = Tables['organizations']['Row'];
 export type Team = Tables['teams']['Row'];
 export type TeamMember = Tables['team_members']['Row'];
@@ -44,13 +46,36 @@ export type Watchlist = Tables['watchlists']['Row'];
 export type Video = Tables['videos']['Row'];
 
 // Player Comparisons (manually added until types are regenerated)
+export interface ComparisonData {
+  players: PlayerComparisonItem[];
+  metrics: ComparisonMetric[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlayerComparisonItem {
+  playerId: string;
+  name: string;
+  position: string;
+  gradYear: number;
+  stats: Record<string, number | string>;
+  notes?: string;
+}
+
+export interface ComparisonMetric {
+  key: string;
+  label: string;
+  values: Record<string, number | string>; // playerId -> value
+  unit?: string;
+}
+
 export interface PlayerComparison {
   id: string;
   coach_id: string;
   name: string;
   description: string | null;
   player_ids: string[];
-  comparison_data: Record<string, any>;
+  comparison_data: ComparisonData;
   created_at: string;
   updated_at: string;
 }
@@ -60,7 +85,7 @@ export interface PlayerComparisonInsert {
   name: string;
   description?: string | null;
   player_ids: string[];
-  comparison_data?: Record<string, any>;
+  comparison_data?: ComparisonData;
 }
 
 // Messaging (using generated types from database)

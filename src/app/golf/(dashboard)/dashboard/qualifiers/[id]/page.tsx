@@ -122,7 +122,7 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'upcoming':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-slate-100 text-slate-700';
       case 'in_progress':
         return 'bg-green-100 text-green-700';
       case 'completed':

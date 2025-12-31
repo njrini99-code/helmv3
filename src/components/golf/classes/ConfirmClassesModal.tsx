@@ -49,8 +49,8 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
     setClasses(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleFieldChange = (index: number, field: keyof ParsedClass, value: any) => {
-    setClasses(prev => prev.map((c, i) => 
+  const handleFieldChange = (index: number, field: keyof ParsedClass, value: string | string[] | number | null) => {
+    setClasses(prev => prev.map((c, i) =>
       i === index ? { ...c, [field]: value } : c
     ));
   };

@@ -552,9 +552,9 @@ export default async function RoundDetailPage({
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {roundData.longest_drive && (
-                <div className="bg-blue-50 rounded-xl p-4 text-center">
-                  <p className="text-sm text-blue-600 font-medium mb-1">Longest Drive</p>
-                  <p className="text-2xl font-bold text-blue-700">{roundData.longest_drive} yds</p>
+                <div className="bg-slate-50 rounded-xl p-4 text-center">
+                  <p className="text-sm text-slate-600 font-medium mb-1">Longest Drive</p>
+                  <p className="text-2xl font-bold text-slate-700">{roundData.longest_drive} yds</p>
                 </div>
               )}
               {roundData.longest_putt_made && (
@@ -570,9 +570,9 @@ export default async function RoundDetailPage({
                 </div>
               )}
               {roundData.eagles && roundData.eagles > 0 && (
-                <div className="bg-purple-50 rounded-xl p-4 text-center">
-                  <p className="text-sm text-purple-600 font-medium mb-1">Eagles</p>
-                  <p className="text-2xl font-bold text-purple-700">{roundData.eagles}</p>
+                <div className="bg-slate-50 rounded-xl p-4 text-center">
+                  <p className="text-sm text-slate-600 font-medium mb-1">Eagles</p>
+                  <p className="text-2xl font-bold text-slate-700">{roundData.eagles}</p>
                 </div>
               )}
             </div>

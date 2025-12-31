@@ -74,6 +74,7 @@ export function CommandPalette() {
       document.addEventListener('keydown', handleEscape);
       return () => document.removeEventListener('keydown', handleEscape);
     }
+    return undefined;
   }, [open]);
 
   // Search players when search query changes

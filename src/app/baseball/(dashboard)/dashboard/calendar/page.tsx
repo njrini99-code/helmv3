@@ -15,22 +15,7 @@ import { EventModal } from '@/components/coach/EventModal';
 import { CalendarView } from '@/components/shared/CalendarView';
 import { useToast } from '@/components/ui/toast';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-
-interface Event {
-  id: string;
-  name: string;
-  description: string | null;
-  event_type: string;
-  start_time: string;
-  end_time: string | null;
-  location_venue: string | null;
-  location_city: string | null;
-  location_state: string | null;
-  opponent: string | null;
-  home_away: string | null;
-  notes: string | null;
-  created_at: string;
-}
+import type { Event } from '@/lib/types';
 
 export default function CalendarPage() {
   const { user, coach, player, loading: authLoading } = useAuth();

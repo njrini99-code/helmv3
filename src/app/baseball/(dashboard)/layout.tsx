@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { CommandPalette } from '@/components/CommandPalette';
 import { ToastProvider } from '@/components/ui/toast';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
+import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { cn } from '@/lib/utils';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -60,7 +61,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <SidebarProvider>
       <ToastProvider>
-        <DashboardContent>{children}</DashboardContent>
+        <SessionActivityProvider>
+          <DashboardContent>{children}</DashboardContent>
+        </SessionActivityProvider>
       </ToastProvider>
     </SidebarProvider>
   );

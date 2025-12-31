@@ -2538,6 +2538,42 @@ export type Database = {
         }
         Relationships: []
       }
+      login_attempts: {
+        Row: {
+          created_at: string
+          email: string
+          failed_attempts: number
+          id: string
+          last_attempt: string
+          last_ip: string | null
+          last_user_agent: string | null
+          locked_until: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          failed_attempts?: number
+          id?: string
+          last_attempt?: string
+          last_ip?: string | null
+          last_user_agent?: string | null
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          failed_attempts?: number
+          id?: string
+          last_attempt?: string
+          last_ip?: string | null
+          last_user_agent?: string | null
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -2546,6 +2582,7 @@ export type Database = {
           read: boolean | null
           sender_id: string
           sent_at: string | null
+          updated_at: string | null
         }
         Insert: {
           content: string
@@ -2554,6 +2591,7 @@ export type Database = {
           read?: boolean | null
           sender_id: string
           sent_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           content?: string
@@ -2562,6 +2600,7 @@ export type Database = {
           read?: boolean | null
           sender_id?: string
           sent_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -2589,6 +2628,7 @@ export type Database = {
           read: boolean | null
           title: string
           type: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -2599,6 +2639,7 @@ export type Database = {
           read?: boolean | null
           title: string
           type: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -2609,6 +2650,7 @@ export type Database = {
           read?: boolean | null
           title?: string
           type?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -3578,6 +3620,7 @@ export type Database = {
           player_id: string
           thumbnail_url: string | null
           title: string
+          updated_at: string | null
           url: string | null
           video_type: string | null
           view_count: number | null
@@ -3591,6 +3634,7 @@ export type Database = {
           player_id: string
           thumbnail_url?: string | null
           title: string
+          updated_at?: string | null
           url?: string | null
           video_type?: string | null
           view_count?: number | null
@@ -3604,6 +3648,7 @@ export type Database = {
           player_id?: string
           thumbnail_url?: string | null
           title?: string
+          updated_at?: string | null
           url?: string | null
           video_type?: string | null
           view_count?: number | null
@@ -3694,6 +3739,7 @@ export type Database = {
             Returns: number
           }
         | { Args: { player_id_param: string }; Returns: number }
+      cleanup_old_login_attempts: { Args: never; Returns: undefined }
       get_active_dev_plans: {
         Args: { p_player_id: string }
         Returns: {
@@ -3851,6 +3897,19 @@ export type Database = {
       golf_task_status: "pending" | "completed" | "overdue"
       golf_transportation_type: "bus" | "van" | "fly" | "carpool"
       golf_urgency_level: "low" | "normal" | "high" | "urgent"
+      notification_type:
+        | "message"
+        | "watchlist_add"
+        | "profile_view"
+        | "interest"
+        | "offer"
+        | "system"
+      organization_type:
+        | "college"
+        | "high_school"
+        | "juco"
+        | "showcase_org"
+        | "travel_ball"
       pipeline_stage:
         | "watchlist"
         | "high_priority"
@@ -3860,7 +3919,17 @@ export type Database = {
         | "committed"
         | "uninterested"
       player_type: "high_school" | "showcase" | "juco" | "college"
+      team_type: "high_school" | "showcase" | "juco" | "college" | "travel_ball"
       user_role: "player" | "coach" | "admin"
+      video_type:
+        | "highlight"
+        | "game"
+        | "practice"
+        | "skills"
+        | "pitching"
+        | "hitting"
+        | "fielding"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4017,6 +4086,21 @@ export const Constants = {
       golf_task_status: ["pending", "completed", "overdue"],
       golf_transportation_type: ["bus", "van", "fly", "carpool"],
       golf_urgency_level: ["low", "normal", "high", "urgent"],
+      notification_type: [
+        "message",
+        "watchlist_add",
+        "profile_view",
+        "interest",
+        "offer",
+        "system",
+      ],
+      organization_type: [
+        "college",
+        "high_school",
+        "juco",
+        "showcase_org",
+        "travel_ball",
+      ],
       pipeline_stage: [
         "watchlist",
         "high_priority",
@@ -4027,7 +4111,18 @@ export const Constants = {
         "uninterested",
       ],
       player_type: ["high_school", "showcase", "juco", "college"],
+      team_type: ["high_school", "showcase", "juco", "college", "travel_ball"],
       user_role: ["player", "coach", "admin"],
+      video_type: [
+        "highlight",
+        "game",
+        "practice",
+        "skills",
+        "pitching",
+        "hitting",
+        "fielding",
+        "other",
+      ],
     },
   },
 } as const

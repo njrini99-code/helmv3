@@ -4,10 +4,10 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ShineEffect } from '@/components/ui/shine-effect';
+import { loginAction } from '@/app/baseball/actions/auth';
 
 function LoginForm() {
   const [email, setEmail] = useState('');
@@ -17,7 +17,6 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const successMessage = searchParams.get('message');
-  const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,15 +24,17 @@ function LoginForm() {
     setError('');
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const result = await loginAction(email, password);
 
-      if (signInError) {
-        setError(signInError.message);
+      if (!result.success) {
+        setError(result.error || 'Login failed');
         setLoading(false);
         return;
       }
 
-      router.push('/baseball/dashboard');
+      // Redirect to appropriate page
+      router.push(result.redirectTo || '/baseball/dashboard');
+      router.refresh();
     } catch (err) {
       console.error('Unexpected error during sign in:', err);
       setError('An unexpected error occurred. Please try again.');

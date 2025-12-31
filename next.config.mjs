@@ -138,12 +138,20 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
+          // HTTP Strict Transport Security (HSTS)
+          // Forces HTTPS connections and prevents SSL stripping attacks
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
           // Content Security Policy
+          // SECURITY: Removed unsafe-eval and unsafe-inline from script-src
+          // TODO: Migrate to nonce-based CSP for style-src to remove unsafe-inline
           {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:;
+              script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:;
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               img-src 'self' data: https: blob:;
               font-src 'self' data: https://fonts.gstatic.com;

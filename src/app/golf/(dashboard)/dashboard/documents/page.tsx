@@ -1,11 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { redirect } from 'next/navigation';
-import { IconFolder } from '@/components/icons';
 import { Metadata } from 'next';
+import { DocumentsClient } from './documents-client';
 
 export const metadata: Metadata = {
-  title: 'Documents | Helm Sports',
+  title: 'Documents | Helm Golf',
   description: 'Access and manage your team files, resources, and important documents',
 };
 
@@ -15,30 +14,67 @@ export default async function GolfDocumentsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/golf/login');
 
-  return (
-    <div className="min-h-screen bg-[#FAF6F1]">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Documents</h1>
-            <p className="text-slate-500 mt-1">Team files and resources</p>
-          </div>
-        </div>
+  // Determine user role
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id, team_id')
+    .eq('user_id', user.id)
+    .single();
 
-        <div className="relative glass-standard rounded-2xl overflow-hidden p-12 text-center">
-          <ShineEffect />
-          <IconFolder size={48} className="mx-auto text-slate-300 mb-4" />
-          <h3 className="text-lg font-medium text-slate-900 mb-2">
-            No Documents Yet
-          </h3>
-          <p className="text-slate-500 mb-4">
-            Your team's files and resources will appear here
-          </p>
-          <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-            Upload Document
-          </button>
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id, team_id')
+    .eq('user_id', user.id)
+    .single();
+
+  const isCoach = !!coach;
+  const teamId = coach?.team_id || player?.team_id;
+
+  if (!teamId) {
+    return (
+      <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-xl font-semibold text-slate-900 mb-2">No Team Found</h1>
+          <p className="text-slate-600">You must be on a team to access documents.</p>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  // Fetch documents
+  let query = supabase
+    .from('golf_documents')
+    .select(`
+      id,
+      title,
+      description,
+      file_url,
+      file_type,
+      file_size,
+      category,
+      player_visible,
+      created_at,
+      uploaded_by,
+      uploader:golf_coaches!golf_documents_uploaded_by_fkey (
+        full_name
+      )
+    `)
+    .eq('team_id', teamId)
+    .order('created_at', { ascending: false });
+
+  // Players can only see player-visible documents
+  if (!isCoach) {
+    query = query.eq('player_visible', true);
+  }
+
+  const { data: documents } = await query;
+
+  return (
+    <DocumentsClient
+      documents={documents || []}
+      coachId={coach?.id || ''}
+      teamId={teamId}
+      isCoach={isCoach}
+    />
   );
 }

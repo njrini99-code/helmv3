@@ -2,13 +2,13 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import type { PlayerComparisonInsert } from '@/lib/types';
+import type { PlayerComparisonInsert, ComparisonData, PlayerComparison } from '@/lib/types';
 
 interface SaveComparisonParams {
   name: string;
   description?: string;
   playerIds: string[];
-  comparisonData?: Record<string, any>;
+  comparisonData?: ComparisonData;
 }
 
 export async function saveComparison(params: SaveComparisonParams) {
@@ -51,13 +51,16 @@ export async function saveComparison(params: SaveComparisonParams) {
     name: params.name.trim(),
     description: params.description?.trim() || null,
     player_ids: params.playerIds,
-    comparison_data: params.comparisonData || {},
+    comparison_data: params.comparisonData,
   };
 
   // Insert into database
   const { data: comparison, error: insertError } = await supabase
     .from('player_comparisons')
-    .insert(comparisonInsert)
+    .insert({
+      ...comparisonInsert,
+      comparison_data: comparisonInsert.comparison_data as unknown as any,
+    })
     .select()
     .single();
 
@@ -147,8 +150,8 @@ export async function getSavedComparisons() {
   // Transform to match PlayerComparison type
   const typedComparisons = (comparisons || []).map(comp => ({
     ...comp,
-    comparison_data: comp.comparison_data as Record<string, any>
+    comparison_data: comp.comparison_data as unknown as ComparisonData
   }));
 
-  return { comparisons: typedComparisons };
+  return { comparisons: typedComparisons as PlayerComparison[] };
 }

@@ -303,7 +303,7 @@ export default function GolfStatsPage() {
                   <ShineEffect />
                   <div className="flex items-center gap-4 p-4">
                     {/* Avatar */}
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                       <span className="text-white font-semibold text-sm">
                         {player.first_name?.[0] || '?'}{player.last_name?.[0] || '?'}
                       </span>
@@ -311,7 +311,7 @@ export default function GolfStatsPage() {
 
                     {/* Player Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                      <p className="font-semibold text-slate-900 group-hover:text-green-600 transition-colors">
                         {player.first_name} {player.last_name}
                       </p>
                       <p className="text-sm text-slate-500 capitalize">
@@ -334,7 +334,7 @@ export default function GolfStatsPage() {
                       </div>
                       <div className="text-center px-3">
                         <p className="text-xs text-slate-400 mb-0.5">Best</p>
-                        <p className="font-semibold text-emerald-600 tabular-nums">
+                        <p className="font-semibold text-green-600 tabular-nums">
                           {player.stats?.best_round || '--'}
                         </p>
                       </div>

@@ -11,6 +11,57 @@ function getSportFromPath(pathname: string): 'baseball' | 'golf' | null {
 }
 
 /**
+ * Coach types that can access recruiting features
+ */
+type CoachType = 'college' | 'juco' | 'high_school' | 'showcase';
+const RECRUITING_ROUTES = [
+  '/baseball/dashboard/discover',
+  '/baseball/dashboard/watchlist',
+  '/baseball/dashboard/pipeline',
+  '/baseball/dashboard/compare',
+  '/baseball/dashboard/camps',
+];
+const RECRUITING_ALLOWED_COACH_TYPES: CoachType[] = ['college', 'juco'];
+
+/**
+ * Check if user is authorized to access the requested route based on their role
+ */
+async function checkRouteAuthorization(
+  supabase: any,
+  user: any,
+  pathname: string
+): Promise<{ authorized: boolean; redirectTo?: string }> {
+  // Check if route requires recruiting access
+  const isRecruitingRoute = RECRUITING_ROUTES.some(route =>
+    pathname.startsWith(route)
+  );
+
+  if (!isRecruitingRoute) {
+    return { authorized: true };
+  }
+
+  // Fetch coach type
+  const { data: coach, error } = await supabase
+    .from('coaches')
+    .select('coach_type')
+    .eq('user_id', user.id)
+    .single();
+
+  if (error || !coach) {
+    return { authorized: false, redirectTo: '/baseball/dashboard/team' };
+  }
+
+  if (!RECRUITING_ALLOWED_COACH_TYPES.includes(coach.coach_type as CoachType)) {
+    return {
+      authorized: false,
+      redirectTo: '/baseball/dashboard/team'
+    };
+  }
+
+  return { authorized: true };
+}
+
+/**
  * Create a Supabase client for use in Middleware
  * This refreshes the user's session and is called on every route
  */
@@ -18,13 +69,8 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const sport = getSportFromPath(pathname);
 
-  // Check if dev mode is enabled - must be in development AND have explicit flag
-  const isDevMode = process.env.NODE_ENV === 'development' &&
-                    process.env.NEXT_PUBLIC_DEV_MODE === 'true';
-
   // Public routes that should always be accessible
   const isPublicRoute = pathname === '/' ||
-                       pathname.startsWith('/dev') ||
                        pathname === '/baseball/login' ||
                        pathname === '/baseball/signup' ||
                        pathname === '/golf/login' ||
@@ -38,9 +84,8 @@ export async function updateSession(request: NextRequest) {
                        pathname.startsWith('/baseball/player/') ||  // Public player profiles
                        pathname.startsWith('/golf/player/');        // Public player profiles
 
-  // In dev mode, allow all routes without authentication
-  // Also allow public routes even in production
-  if (isDevMode || isPublicRoute) {
+  // Allow public routes even in production
+  if (isPublicRoute) {
     return NextResponse.next({
       request,
     });
@@ -98,6 +143,16 @@ export async function updateSession(request: NextRequest) {
     url.pathname = sport ? `/${sport}/login` : '/baseball/login';
     url.searchParams.set('redirect', pathname);
     return NextResponse.redirect(url);
+  }
+
+  // Check role-based authorization for authenticated users
+  if (user && isDashboardRoute) {
+    const authResult = await checkRouteAuthorization(supabase, user, pathname);
+    if (!authResult.authorized && authResult.redirectTo) {
+      return NextResponse.redirect(
+        new URL(authResult.redirectTo, request.url)
+      );
+    }
   }
 
   // Redirect authenticated users from auth pages to their onboarding or dashboard

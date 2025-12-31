@@ -76,6 +76,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [showUserMenu]);
 
   // Close on escape

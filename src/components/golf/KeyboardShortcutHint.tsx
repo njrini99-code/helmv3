@@ -14,7 +14,7 @@ export function KeyboardShortcutHint() {
     // Check if user has dismissed this hint
     const wasDismissed = localStorage.getItem(STORAGE_KEY) === 'true';
     setDismissed(wasDismissed);
-    
+
     if (!wasDismissed) {
       // Show after a short delay
       const timer = setTimeout(() => setVisible(true), 2000);
@@ -25,6 +25,7 @@ export function KeyboardShortcutHint() {
         clearTimeout(hideTimer);
       };
     }
+    return undefined;
   }, []);
 
   const handleDismiss = () => {

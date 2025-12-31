@@ -25,7 +25,7 @@ interface LineupSlot {
 
 interface LineupBuilderProps {
   roster: Player[];
-  onSave?: (lineup: LineupSlot[]) => void;
+  onSave?: (lineup: LineupSlot[], name: string) => void;
 }
 
 const BATTING_ORDER_SIZE = 9;
@@ -101,7 +101,7 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
 
   const handleSaveLineup = () => {
     if (onSave) {
-      onSave(lineup);
+      onSave(lineup, lineupName);
     }
   };
 

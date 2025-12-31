@@ -2,11 +2,31 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import {
+  formatSafeErrorResponse,
+  logSecurityEvent
+} from '@/lib/validation/server-action-validator';
+import { TeamSchemas } from '@/lib/validation/action-schemas';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface TeamInfo {
+  id: string;
+  name: string;
+  team_type: string;
+}
+
+interface TeamMembershipWithTeam {
+  team_id: string;
+  teams: TeamInfo;
+}
 
 export interface TeamValidationResult {
   canJoin: boolean;
   reason?: string;
-  currentTeams?: Array<{ id: string; name: string; team_type: string }>;
+  currentTeams?: TeamInfo[];
 }
 
 /**
@@ -63,7 +83,7 @@ export async function validatePlayerCanJoinTeam(
     `)
     .eq('player_id', playerId);
 
-  const currentTeams = (currentMemberships || []).map((m: any) => ({
+  const currentTeams: TeamInfo[] = (currentMemberships as TeamMembershipWithTeam[] || []).map((m) => ({
     id: m.teams.id,
     name: m.teams.name,
     team_type: m.teams.team_type,
@@ -243,64 +263,86 @@ export async function joinTeam(playerId: string, teamId: string) {
  * Process a team invitation code
  */
 export async function processTeamInvitation(inviteCode: string, playerId: string) {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  // Find the invitation
-  const { data: invitation, error: inviteError } = await supabase
-    .from('team_invitations')
-    .select(`
-      id,
-      team_id,
-      expires_at,
-      is_active,
-      max_uses,
-      teams!inner (
+    // Validate input with centralized schema
+    const validatedData = TeamSchemas.join.parse({
+      invite_code: inviteCode,
+      player_id: playerId
+    });
+
+    // Log security event
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await logSecurityEvent({
+        event: 'team_join_attempt',
+        action: 'team_invitation_process',
+        userId: user.id,
+        metadata: { inviteCode: validatedData.invite_code, playerId: validatedData.player_id },
+      });
+    }
+
+    // Find the invitation
+    const { data: invitation, error: inviteError } = await supabase
+      .from('team_invitations')
+      .select(`
         id,
-        name,
-        team_type
-      )
-    `)
-    .eq('invite_code', inviteCode)
-    .single();
+        team_id,
+        expires_at,
+        is_active,
+        max_uses,
+        teams!inner (
+          id,
+          name,
+          team_type
+        )
+      `)
+      .eq('invite_code', validatedData.invite_code)
+      .single();
 
-  if (inviteError || !invitation) {
-    return {
-      success: false,
-      error: 'Invalid invitation code',
-    };
-  }
-
-  // Check if invitation is active
-  if (!invitation.is_active) {
-    return {
-      success: false,
-      error: 'This invitation is no longer active',
-    };
-  }
-
-  // Check if invitation has expired
-  if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
-    return {
-      success: false,
-      error: 'This invitation has expired',
-    };
-  }
-
-  // Check max uses (if applicable)
-  if (invitation.max_uses) {
-    const { count } = await supabase
-      .from('team_members')
-      .select('*', { count: 'exact', head: true })
-      .eq('team_id', invitation.team_id);
-
-    if (count && count >= invitation.max_uses) {
+    if (inviteError || !invitation) {
+      console.warn('[Security] Invalid team invitation attempt:', { inviteCode: validatedData.invite_code, playerId: validatedData.player_id });
       return {
         success: false,
-        error: 'This invitation has reached its maximum number of uses',
+        error: 'Invalid invitation code',
       };
     }
-  }
 
-  // Join the team
-  return await joinTeam(playerId, invitation.team_id);
+    // Check if invitation is active
+    if (!invitation.is_active) {
+      return {
+        success: false,
+        error: 'This invitation is no longer active',
+      };
+    }
+
+    // Check if invitation has expired
+    if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
+      return {
+        success: false,
+        error: 'This invitation has expired',
+      };
+    }
+
+    // Check max uses (if applicable)
+    if (invitation.max_uses) {
+      const { count } = await supabase
+        .from('team_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('team_id', invitation.team_id);
+
+      if (count && count >= invitation.max_uses) {
+        return {
+          success: false,
+          error: 'This invitation has reached its maximum number of uses',
+        };
+      }
+    }
+
+    // Join the team
+    return await joinTeam(validatedData.player_id, invitation.team_id);
+  } catch (err) {
+    return formatSafeErrorResponse(err);
+  }
 }

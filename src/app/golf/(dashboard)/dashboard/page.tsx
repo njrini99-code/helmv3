@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import { EmptyState } from '@/components/golf/EmptyState';
+import { EmptyState } from '@/components/ui/empty-state';
 import { RecentActivityFeed } from '@/components/golf/RecentActivityFeed';
 import { PageLoading } from '@/components/ui/loading';
 import { ShineEffect } from '@/components/ui/shine-effect';
@@ -121,8 +121,8 @@ function MetricCard({
             {trend && (
               <span className={cn(
                 'flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded-full',
-                trend.positive 
-                  ? 'text-emerald-700 bg-emerald-50' 
+                trend.positive
+                  ? 'text-green-700 bg-green-50'
                   : 'text-red-600 bg-red-50'
               )}>
                 {trend.positive ? <IconTrendingUp size={12} /> : <IconTrendingDown size={12} />}
@@ -275,17 +275,17 @@ function RoundRow({
       {/* Score badge */}
       <div className={cn(
         'w-12 h-12 rounded-xl flex flex-col items-center justify-center flex-shrink-0',
-        toPar < 0 ? 'bg-emerald-50' : toPar === 0 ? 'bg-slate-100' : 'bg-amber-50'
+        toPar < 0 ? 'bg-green-50' : toPar === 0 ? 'bg-slate-100' : 'bg-amber-50'
       )}>
         <span className={cn(
           'text-lg font-bold',
-          toPar < 0 ? 'text-emerald-600' : toPar === 0 ? 'text-slate-700' : 'text-amber-600'
+          toPar < 0 ? 'text-green-600' : toPar === 0 ? 'text-slate-700' : 'text-amber-600'
         )}>
           {score}
         </span>
         <span className={cn(
           'text-[10px] font-medium',
-          toPar < 0 ? 'text-emerald-500' : toPar === 0 ? 'text-slate-500' : 'text-amber-500'
+          toPar < 0 ? 'text-green-500' : toPar === 0 ? 'text-slate-500' : 'text-amber-500'
         )}>
           {toPar > 0 ? '+' : ''}{toPar}
         </span>
@@ -340,7 +340,7 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
                 {greeting}, {firstName}
               </h1>
               <p className="text-slate-500 mt-0.5 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="w-2 h-2 rounded-full bg-green-500" />
                 {team?.name || 'Golf Team'}
               </p>
             </div>
@@ -359,18 +359,18 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <MetricCard 
-            icon={<IconUsers size={20} className="text-emerald-600" />}
-            iconColor="bg-emerald-50"
+          <MetricCard
+            icon={<IconUsers size={20} className="text-green-600" />}
+            iconColor="bg-green-50"
             label="Roster Size"
             value={stats.rosterSize}
             subValue="Active players"
             href="/golf/dashboard/roster"
             delay={0}
           />
-          <MetricCard 
-            icon={<IconCalendar size={20} className="text-blue-600" />}
-            iconColor="bg-blue-50"
+          <MetricCard
+            icon={<IconCalendar size={20} className="text-slate-600" />}
+            iconColor="bg-slate-50"
             label="Upcoming Events"
             value={stats.upcomingEvents}
             subValue="This month"
@@ -474,7 +474,7 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
                     </div>
                   ))
                 ) : (
-                  <EmptyState type="stats" compact />
+                  <EmptyState type="stats" variant="compact" />
                 )}
               </div>
             </div>
@@ -489,9 +489,9 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
             <div className="relative glass-standard rounded-2xl overflow-hidden">
               <ShineEffect />
               {recentRounds.length === 0 ? (
-                <EmptyState 
-                  type="rounds" 
-                  compact 
+                <EmptyState
+                  type="rounds"
+                  variant="compact"
                   description="Players can submit rounds from their dashboard"
                   action={undefined}
                 />
@@ -564,7 +564,7 @@ function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                 {greeting}, {player.first_name}
               </h1>
               <p className="text-slate-500 mt-0.5 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="w-2 h-2 rounded-full bg-green-500" />
                 {team?.name || 'Golf Team'}
                 <span className="text-slate-300">•</span>
                 <span className="capitalize">{player.year?.replace('_', ' ') || 'Player'}</span>
@@ -578,17 +578,17 @@ function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <MetricCard 
-            icon={<IconGolf size={20} className="text-emerald-600" />}
-            iconColor="bg-emerald-50"
+          <MetricCard
+            icon={<IconGolf size={20} className="text-green-600" />}
+            iconColor="bg-green-50"
             label="Rounds Played"
             value={stats.roundsPlayed}
             href="/golf/dashboard/rounds"
             delay={0}
           />
-          <MetricCard 
-            icon={<IconChartBar size={20} className="text-blue-600" />}
-            iconColor="bg-blue-50"
+          <MetricCard
+            icon={<IconChartBar size={20} className="text-slate-600" />}
+            iconColor="bg-slate-50"
             label="Scoring Average"
             value={stats.scoringAverage ? stats.scoringAverage.toFixed(1) : '--'}
             trend={stats.recentTrend === 'up' 
@@ -678,7 +678,7 @@ function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
               ) : (
                 <EmptyState
                   type="rounds"
-                  compact
+                  variant="compact"
                   action={{ label: 'Submit First Round', href: '/golf/dashboard/rounds' }}
                 />
               )}

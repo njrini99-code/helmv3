@@ -79,7 +79,7 @@ export default async function GolfAnnouncementsPage() {
               <div className="flex items-center gap-2.5">
                 <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Announcements</h1>
                 {recentCount > 0 && (
-                  <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 text-blue-700">
+                  <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-700">
                     {recentCount} new
                   </span>
                 )}

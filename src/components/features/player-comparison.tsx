@@ -25,7 +25,7 @@ interface PlayerComparisonProps {
 interface StatComparison {
   label: string;
   getValue: (player: Player) => string | number | null;
-  format?: (value: any) => string;
+  format?: (value: string | number | null) => string;
   higherIsBetter?: boolean;
 }
 
@@ -34,8 +34,10 @@ const statComparisons: StatComparison[] = [
     label: 'Height',
     getValue: (p) => p.height_feet && p.height_inches ? `${p.height_feet}-${p.height_inches}` : null,
     format: (v) => {
-      if (!v) return '—';
-      const [feet, inches] = v.split('-');
+      if (!v || typeof v !== 'string') return '—';
+      const parts = v.split('-');
+      const feet = parts[0] || '0';
+      const inches = parts[1] || '0';
       return formatHeight(parseInt(feet), parseInt(inches));
     },
   },
@@ -48,22 +50,22 @@ const statComparisons: StatComparison[] = [
   {
     label: 'Grad Year',
     getValue: (p) => p.grad_year,
-    format: (v) => v || '—',
+    format: (v) => v !== null && v !== undefined ? String(v) : '—',
   },
   {
     label: 'Position',
     getValue: (p) => p.primary_position,
-    format: (v) => v || '—',
+    format: (v) => v !== null && v !== undefined ? String(v) : '—',
   },
   {
     label: 'Bats',
     getValue: (p) => p.bats,
-    format: (v) => v || '—',
+    format: (v) => v !== null && v !== undefined ? String(v) : '—',
   },
   {
     label: 'Throws',
     getValue: (p) => p.throws,
-    format: (v) => v || '—',
+    format: (v) => v !== null && v !== undefined ? String(v) : '—',
   },
   {
     label: 'Pitch Velo',
@@ -86,19 +88,19 @@ const statComparisons: StatComparison[] = [
   {
     label: 'GPA',
     getValue: (p) => p.gpa,
-    format: (v) => v ? v.toFixed(2) : '—',
+    format: (v) => (v && typeof v === 'number') ? v.toFixed(2) : '—',
     higherIsBetter: true,
   },
   {
     label: 'SAT',
     getValue: (p) => p.sat_score,
-    format: (v) => v || '—',
+    format: (v) => v !== null && v !== undefined ? String(v) : '—',
     higherIsBetter: true,
   },
   {
     label: 'ACT',
     getValue: (p) => p.act_score,
-    format: (v) => v || '—',
+    format: (v) => v !== null && v !== undefined ? String(v) : '—',
     higherIsBetter: true,
   },
 ];
@@ -138,7 +140,7 @@ export function PlayerComparison({
       : Math.min(...(numericValues as number[]));
   };
 
-  const isValueBest = (stat: StatComparison, value: any, formattedValue: string) => {
+  const isValueBest = (stat: StatComparison, value: string | number | null, formattedValue: string) => {
     if (formattedValue === '—') return false;
     if (stat.higherIsBetter === undefined) return false;
 
@@ -162,7 +164,7 @@ export function PlayerComparison({
     ];
 
     return radarMetrics.map(metric => {
-      const dataPoint: any = { metric: metric.label };
+      const dataPoint: Record<string, string | number> = { metric: metric.label };
 
       players.forEach((player, index) => {
         let value = 0;
@@ -214,7 +216,7 @@ export function PlayerComparison({
         name: data.name,
         description: data.description,
         playerIds,
-        comparisonData,
+        comparisonData: comparisonData as any,
       });
 
       if (result.error) {

@@ -2,7 +2,19 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 
-export function ChartTooltip({ active, payload, label }: any) {
+interface TooltipPayloadEntry {
+  name?: string;
+  value?: string | number;
+  color?: string;
+}
+
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadEntry[];
+  label?: string;
+}
+
+export function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
   if (!active || !payload?.length) return null;
 
   return (
@@ -14,7 +26,7 @@ export function ChartTooltip({ active, payload, label }: any) {
         className="bg-slate-900 text-white px-3 py-2 rounded-lg shadow-lg text-sm"
       >
         <p className="font-medium">{label}</p>
-        {payload.map((entry: any, i: number) => (
+        {payload.map((entry, i) => (
           <p key={i} className="text-slate-300">
             {entry.name}:{' '}
             <span className="text-white font-medium">{entry.value}</span>

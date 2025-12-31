@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive, { type HoleStats } from '@/components/golf/ShotTrackingComprehensive';
@@ -8,6 +8,7 @@ import { submitGolfRoundComprehensive } from '@/app/golf/actions/golf';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
 import type { HoleConfig } from '@/lib/types/golf-course';
+import { useRoundDraft } from '@/hooks/use-round-draft';
 
 interface Hole {
   number: number;
@@ -57,6 +58,8 @@ interface RoundSummary {
 
 export default function NewRoundClient() {
   const router = useRouter();
+  const { saveDraftDebounced, loadDraft, clearDraft, hasDraft, getDraftAge } = useRoundDraft();
+
   const [step, setStep] = useState<'setup' | 'holes' | 'tracking' | 'submitting'>('setup');
   const [setupData, setSetupData] = useState<RoundSetupForm>({
     courseName: '',
@@ -74,6 +77,8 @@ export default function NewRoundClient() {
   const [error, setError] = useState('');
   const [showSummary, setShowSummary] = useState(false);
   const [summaryData, setSummaryData] = useState<RoundSummary | null>(null);
+  const [showDraftRecovery, setShowDraftRecovery] = useState(false);
+  const [draftAge, setDraftAge] = useState<number | null>(null);
 
   // Initialize 18 holes with default pars/yardages
   const initializeHoles = () => {
@@ -89,6 +94,58 @@ export default function NewRoundClient() {
     }));
     setHoles(initialHoles);
     setCompletedHoleStats([]);
+  };
+
+  // Check for draft on mount
+  useEffect(() => {
+    if (hasDraft()) {
+      const age = getDraftAge();
+      setDraftAge(age);
+      setShowDraftRecovery(true);
+    }
+  }, [hasDraft, getDraftAge]);
+
+  // Auto-save draft whenever state changes
+  useEffect(() => {
+    // Don't save if we haven't started (still on setup with no data)
+    if (step === 'setup' && !setupData.courseName) {
+      return;
+    }
+
+    // Don't save while submitting
+    if (step === 'submitting') {
+      return;
+    }
+
+    // Save draft
+    saveDraftDebounced({
+      step,
+      setupData,
+      holes,
+      completedHoleStats,
+      currentHoleIndex,
+    });
+  }, [step, setupData, holes, completedHoleStats, currentHoleIndex, saveDraftDebounced]);
+
+  const handleRestoreDraft = () => {
+    const draft = loadDraft();
+    if (!draft) {
+      setShowDraftRecovery(false);
+      return;
+    }
+
+    // Restore all state from draft
+    setStep(draft.step);
+    setSetupData(draft.setupData);
+    setHoles(draft.holes);
+    setCompletedHoleStats(draft.completedHoleStats);
+    setCurrentHoleIndex(draft.currentHoleIndex);
+    setShowDraftRecovery(false);
+  };
+
+  const handleStartFresh = () => {
+    clearDraft();
+    setShowDraftRecovery(false);
   };
 
   const handleSetupSubmit = (e: React.FormEvent) => {
@@ -183,9 +240,12 @@ export default function NewRoundClient() {
         else doublePlus++;
       });
 
+      // Clear draft after successful submission
+      clearDraft();
+
       // Show summary modal
       setSummaryData({
-        id: result.id,
+        id: result.success ? result.data.roundId : '',
         courseName: setupData.courseName,
         roundDate: setupData.roundDate,
         totalScore,
@@ -241,7 +301,7 @@ export default function NewRoundClient() {
                       type="text"
                       value={setupData.courseName}
                       onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
                       placeholder="Pebble Beach Golf Links"
                       required
                     />
@@ -257,7 +317,7 @@ export default function NewRoundClient() {
                         type="text"
                         value={setupData.courseCity}
                         onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
                         placeholder="Pebble Beach"
                       />
                     </div>
@@ -270,7 +330,7 @@ export default function NewRoundClient() {
                         type="text"
                         value={setupData.courseState}
                         onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
                         placeholder="CA"
                         maxLength={2}
                       />
@@ -288,7 +348,7 @@ export default function NewRoundClient() {
                         step="0.1"
                         value={setupData.courseRating}
                         onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
                         placeholder="72.1"
                       />
                     </div>
@@ -301,7 +361,7 @@ export default function NewRoundClient() {
                         type="number"
                         value={setupData.courseSlope}
                         onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
                         placeholder="133"
                         aria-label="Course slope rating"
                       />
@@ -314,7 +374,7 @@ export default function NewRoundClient() {
                         id="teesPlayed"
                         value={setupData.teesPlayed}
                         onChange={(e) => setSetupData({ ...setupData, teesPlayed: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
                       >
                         <option>Championship</option>
                         <option>Black</option>
@@ -340,7 +400,7 @@ export default function NewRoundClient() {
                       id="roundType"
                       value={setupData.roundType}
                       onChange={(e) => setSetupData({ ...setupData, roundType: e.target.value as 'practice' | 'tournament' | 'qualifier' })}
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
                     >
                       <option value="practice">Practice</option>
                       <option value="tournament">Tournament</option>
@@ -356,7 +416,7 @@ export default function NewRoundClient() {
                       type="date"
                       value={setupData.roundDate}
                       onChange={(e) => setSetupData({ ...setupData, roundDate: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
                       required
                     />
                   </div>
@@ -364,9 +424,9 @@ export default function NewRoundClient() {
               </div>
 
               {/* Stats Info Box */}
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                <h3 className="font-medium text-emerald-800 mb-2">📊 Comprehensive Stats Tracking</h3>
-                <p className="text-sm text-emerald-700">
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <h3 className="font-medium text-green-800 mb-2">📊 Comprehensive Stats Tracking</h3>
+                <p className="text-sm text-green-700">
                   This round will track 50+ statistics including driving distance, approach proximity,
                   putting efficiency, scrambling, and more. Use your rangefinder for accurate distances.
                 </p>
@@ -388,7 +448,7 @@ export default function NewRoundClient() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-emerald-600 font-medium text-white hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700"
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-green-600 font-medium text-white hover:bg-green-700 transition-colors shadow-sm shadow-green-950/10 ring-1 ring-green-700"
                 >
                   Next: Configure Holes →
                 </button>
@@ -460,6 +520,43 @@ export default function NewRoundClient() {
           summary={summaryData}
           onClose={() => setShowSummary(false)}
         />
+      )}
+
+      {/* Draft Recovery Modal */}
+      {showDraftRecovery && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="mb-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 text-center mb-2">
+                Resume Your Round?
+              </h3>
+              <p className="text-sm text-slate-600 text-center">
+                We found a saved draft from {draftAge !== null && draftAge < 60 ? `${draftAge} minutes ago` : draftAge !== null ? `${Math.floor(draftAge / 60)} hours ago` : 'earlier'}.
+                Would you like to continue where you left off?
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleStartFresh}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Start Fresh
+              </button>
+              <button
+                onClick={handleRestoreDraft}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-green-600 font-medium text-white hover:bg-green-700 transition-colors shadow-sm shadow-green-950/10 ring-1 ring-green-700"
+              >
+                Resume Draft
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
