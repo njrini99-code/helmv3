@@ -381,7 +381,7 @@ export default function GolfClassesPage() {
       </div>
 
       {loading ? (
-        <Card glass>
+        <Card variant="glass">
           <CardContent className="py-12 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto" />
             <p className="text-slate-500 mt-4">Loading classes...</p>
@@ -389,7 +389,7 @@ export default function GolfClassesPage() {
         </Card>
       ) : classes.length === 0 ? (
         /* Empty State */
-        <Card glass>
+        <Card variant="glass">
           <CardContent className="py-12 text-center">
             <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <IconBook size={32} className="text-slate-300" />
@@ -417,7 +417,7 @@ export default function GolfClassesPage() {
         <div className="space-y-6">
           {/* Quick Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Card glass className="p-4">
+            <Card variant="glass" className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
                   <IconBook size={20} className="text-green-600" />
@@ -428,7 +428,7 @@ export default function GolfClassesPage() {
                 </div>
               </div>
             </Card>
-            <Card glass className="p-4">
+            <Card variant="glass" className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center">
                   <IconCalendar size={20} className="text-slate-600" />
@@ -439,7 +439,7 @@ export default function GolfClassesPage() {
                 </div>
               </div>
             </Card>
-            <Card glass className="p-4">
+            <Card variant="glass" className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center">
                   <IconClock size={20} className="text-slate-600" />
@@ -452,7 +452,7 @@ export default function GolfClassesPage() {
                 </div>
               </div>
             </Card>
-            <Card glass className="p-4">
+            <Card variant="glass" className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
                   <IconMapPin size={20} className="text-amber-600" />
@@ -470,7 +470,7 @@ export default function GolfClassesPage() {
           </div>
 
           {/* Schedule Grid */}
-          <Card glass>
+          <Card variant="glass">
             <div className="p-6">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">Weekly Schedule</h2>
 
@@ -528,7 +528,7 @@ export default function GolfClassesPage() {
           </Card>
 
           {/* All Classes List */}
-          <Card glass>
+          <Card variant="glass">
             <div className="p-6">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">All Classes</h2>
 

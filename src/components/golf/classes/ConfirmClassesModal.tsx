@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { IconX, IconCheck, IconPencil, IconTrash, IconPlus } from '@/components/icons';
+import { IconX, IconCheck, IconPencil, IconTrash } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
 
@@ -300,7 +300,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
             </Button>
             <Button 
               onClick={handleConfirm} 
-              loading={loading}
+              isLoading={loading}
               disabled={classes.length === 0}
               className="gap-2"
             >

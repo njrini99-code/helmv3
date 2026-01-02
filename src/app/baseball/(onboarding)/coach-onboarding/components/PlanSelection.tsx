@@ -16,7 +16,7 @@ interface PlanSelectionProps {
 }
 
 export function PlanSelection({ onSelect, onBack, currentProgress, totalSteps }: PlanSelectionProps) {
-  const [selectedPlan, setSelectedPlan] = useState<'free' | 'elite' | null>(null);
+  const [_selectedPlan, setSelectedPlan] = useState<'free' | 'elite' | null>(null);
   const [showComparison, setShowComparison] = useState(false);
 
   const handleSelect = (plan: 'free' | 'elite') => {

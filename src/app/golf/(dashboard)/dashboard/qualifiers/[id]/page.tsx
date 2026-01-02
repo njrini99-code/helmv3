@@ -3,7 +3,7 @@ import { ShineEffect } from '@/components/ui/shine-effect';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { IconChevronLeft } from '@/components/icons';
-import type { GolfQualifier, GolfQualifierEntry, GolfRound } from '@/lib/types/golf';
+import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 
 interface QualifierEntryWithPlayer extends GolfQualifierEntry {

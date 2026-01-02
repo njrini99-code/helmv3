@@ -8,6 +8,9 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { RecentActivityFeed } from '@/components/golf/RecentActivityFeed';
 import { PageLoading } from '@/components/ui/loading';
 import { ShineEffect } from '@/components/ui/shine-effect';
+import { GlassCard } from '@/components/ui/glass-card';
+import { CalendarWidget } from '@/components/dashboard/calendar-widget';
+import type { CalendarEvent } from '@/lib/types/calendar';
 import {
   IconUsers,
   IconCalendar,
@@ -21,6 +24,7 @@ import {
   IconSparkles,
   IconTrendingUp,
   IconTrendingDown,
+  IconSettings,
 } from '@/components/icons';
 import type { GolfCoach, GolfPlayer, GolfTeam } from '@/lib/types/golf';
 
@@ -54,6 +58,7 @@ interface CoachDashboardData {
     avg_score: number;
     rounds: number;
   }>;
+  calendarEvents: CalendarEvent[];
 }
 
 interface PlayerDashboardData {
@@ -99,20 +104,17 @@ function MetricCard({
   delay?: number;
 }) {
   const content = (
-    <div
-      className={cn(
-        "group relative glass-standard rounded-2xl p-5 overflow-hidden transition-all duration-300",
-        "hover:shadow-lg hover:-translate-y-0.5",
-        href && "cursor-pointer"
-      )}
+    <GlassCard
+      className="group"
+      variant="primary"
+      padding="md"
+      glow="subtle"
       style={{
         animationDelay: `${delay}ms`,
         animation: 'fadeInUp 0.5s ease-out forwards',
         opacity: 0,
       }}
     >
-      <ShineEffect />
-
       <div className="relative flex items-start justify-between">
         <div className="flex-1">
           <p className="text-[13px] font-medium text-slate-500 mb-1">{label}</p>
@@ -147,7 +149,7 @@ function MetricCard({
           <IconArrowRight size={14} className="text-slate-400" />
         </div>
       )}
-    </div>
+    </GlassCard>
   );
 
   if (href) {
@@ -173,21 +175,19 @@ function QuickActionCard({
 }) {
   return (
     <Link href={href}>
-      <div
+      <GlassCard
         className={cn(
-          'group relative flex items-center gap-4 p-4 rounded-xl overflow-hidden transition-all duration-300',
-          variant === 'primary'
-            ? 'bg-slate-900 text-white hover:bg-slate-800'
-            : 'glass-standard hover:shadow-lg hover:-translate-y-0.5'
+          'group flex items-center gap-4',
+          variant === 'primary' && 'bg-slate-900 text-white hover:bg-slate-800 border-slate-700'
         )}
+        variant={variant === 'primary' ? 'primary' : 'secondary'}
+        padding="sm"
         style={{
           animationDelay: `${delay}ms`,
           animation: 'fadeInUp 0.5s ease-out forwards',
           opacity: 0,
         }}
       >
-        {/* Shine effect for default variant */}
-        {variant === 'default' && <ShineEffect />}
         <div className={cn(
           'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105',
           variant === 'primary' ? 'bg-white/10' : 'bg-slate-100'
@@ -210,14 +210,14 @@ function QuickActionCard({
             </p>
           )}
         </div>
-        <IconArrowRight 
-          size={16} 
+        <IconArrowRight
+          size={16}
           className={cn(
             'flex-shrink-0 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all',
             variant === 'primary' ? 'text-white/60' : 'text-slate-400'
-          )} 
+          )}
         />
-      </div>
+      </GlassCard>
     </Link>
   );
 }
@@ -321,11 +321,57 @@ function RoundRow({
 }
 
 // ============================================================================
+// JOIN TEAM BANNER (for players without team)
+// ============================================================================
+
+function JoinTeamBanner() {
+  return (
+    <div
+      className="mb-6"
+      style={{
+        animation: 'fadeInUp 0.5s ease-out forwards',
+        opacity: 0,
+      }}
+    >
+      <div className="relative overflow-hidden bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 shadow-lg shadow-green-900/20">
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute -right-8 -top-8 w-40 h-40 bg-white rounded-full" />
+          <div className="absolute -right-4 bottom-0 w-24 h-24 bg-white rounded-full" />
+        </div>
+
+        <div className="relative flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+            <IconUsers size={24} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-white mb-1">
+              Join Your Team
+            </h3>
+            <p className="text-green-100 text-sm mb-4">
+              You haven't joined a team yet. Get your invite code from your coach to access team features like schedules, qualifiers, and messages.
+            </p>
+            <Link
+              href="/golf/dashboard/settings"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-green-700 font-medium text-sm rounded-lg hover:bg-green-50 transition-colors"
+            >
+              <IconSettings size={16} />
+              Enter Invite Code
+              <IconArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // COACH DASHBOARD
 // ============================================================================
 
 function CoachDashboard({ data }: { data: CoachDashboardData }) {
-  const { coach, team, stats, recentRounds, topPlayers } = data;
+  const { coach, team, stats, recentRounds, topPlayers, calendarEvents } = data;
   const greeting = getGreeting();
   const firstName = coach.full_name?.split(' ')[0] || 'Coach';
 
@@ -478,6 +524,14 @@ function CoachDashboard({ data }: { data: CoachDashboardData }) {
                 )}
               </div>
             </div>
+
+            {/* Calendar Widget */}
+            <div>
+              <CalendarWidget
+                events={calendarEvents}
+                calendarUrl="/golf/dashboard/calendar"
+              />
+            </div>
           </div>
 
           {/* Right Column - Recent Rounds */}
@@ -576,6 +630,9 @@ function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Join Team Banner - show if player has no team */}
+        {!team && <JoinTeamBanner />}
+
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <MetricCard
@@ -734,7 +791,7 @@ export default function GolfDashboardPage() {
       // Check if coach
       const { data: coach } = await supabase
         .from('golf_coaches')
-        .select('*, team:golf_teams(*), organization:golf_organizations(*)')
+        .select('*')
         .eq('user_id', user.id)
         .single();
 
@@ -748,8 +805,18 @@ export default function GolfDashboardPage() {
         let recentRounds: any[] = [];
         let teamScoringAverage: number | null = null;
         let topPlayers: any[] = [];
+        let team: GolfTeam | null = null;
+        let eventsData: any[] | null = null;
 
         if (teamId) {
+          // Get team details
+          const { data: teamData } = await supabase
+            .from('golf_teams')
+            .select('*')
+            .eq('id', teamId)
+            .single();
+          team = teamData as GolfTeam;
+
           // Get roster size
           const { count: rosterCount } = await supabase
             .from('golf_players')
@@ -757,12 +824,15 @@ export default function GolfDashboardPage() {
             .eq('team_id', teamId);
           rosterSize = rosterCount || 0;
 
-          // Get upcoming events
-          const { count: eventsCount } = await supabase
+          // Get upcoming events (fetch actual data for calendar widget)
+          const { data: fetchedEvents, count: eventsCount } = await supabase
             .from('golf_events')
-            .select('*', { count: 'exact', head: true })
+            .select('*', { count: 'exact' })
             .eq('team_id', teamId)
-            .gte('start_date', new Date().toISOString().split('T')[0]);
+            .gte('start_date', new Date().toISOString().split('T')[0])
+            .order('start_date', { ascending: true })
+            .limit(20);
+          eventsData = fetchedEvents;
           upcomingEvents = eventsCount || 0;
 
           // Get active qualifiers
@@ -833,9 +903,23 @@ export default function GolfDashboardPage() {
           }
         }
 
+        // Transform golf_events to CalendarEvent format
+        const calendarEvents = (eventsData || []).map(event => ({
+          id: event.id,
+          title: event.title,
+          event_type: event.event_type,
+          start_time: event.start_date, // Transform start_date to start_time
+          end_time: event.end_date || event.start_date, // Use start_date as fallback if end_date is null
+          location: event.location,
+          created_by_id: coach?.user_id || '',
+          is_recurring: false,
+          created_at: event.created_at || new Date().toISOString(),
+          updated_at: event.updated_at || new Date().toISOString(),
+        }));
+
         setCoachData({
           coach: coach as GolfCoach,
-          team: coach.team as GolfTeam,
+          team,
           stats: {
             rosterSize,
             upcomingEvents,
@@ -844,6 +928,7 @@ export default function GolfDashboardPage() {
           },
           recentRounds,
           topPlayers,
+          calendarEvents,
         });
 
         setLoading(false);
@@ -853,12 +938,23 @@ export default function GolfDashboardPage() {
       // Check if player
       const { data: player } = await supabase
         .from('golf_players')
-        .select('*, team:golf_teams(*)')
+        .select('*')
         .eq('user_id', user.id)
         .single();
 
       if (player) {
         setUserRole('player');
+
+        // Get team details if player has a team
+        let team: GolfTeam | null = null;
+        if (player.team_id) {
+          const { data: teamData } = await supabase
+            .from('golf_teams')
+            .select('*')
+            .eq('id', player.team_id)
+            .single();
+          team = teamData as GolfTeam;
+        }
 
         const { data: rounds } = await supabase
           .from('golf_rounds')
@@ -889,7 +985,7 @@ export default function GolfDashboardPage() {
 
         setPlayerData({
           player: player as GolfPlayer,
-          team: player.team as GolfTeam,
+          team,
           stats: {
             roundsPlayed,
             scoringAverage,

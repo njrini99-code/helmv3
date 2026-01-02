@@ -128,7 +128,7 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
               <Button
                 variant="secondary"
                 onClick={() => generateNewCode()}
-                loading={loading}
+                isLoading={loading}
                 className="px-3"
               >
                 <IconRefresh size={18} />

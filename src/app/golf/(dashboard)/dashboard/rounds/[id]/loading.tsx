@@ -15,7 +15,7 @@ export default function Loading() {
       </div>
 
       {/* Round Summary Card */}
-      <Card glass className="mb-6">
+      <Card variant="glass" className="mb-6">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex-1">
@@ -53,7 +53,7 @@ export default function Loading() {
       </Card>
 
       {/* Scorecard */}
-      <Card glass>
+      <Card variant="glass">
         <CardHeader>
           <Skeleton className="h-6 w-32" />
         </CardHeader>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { removePlayerFromTeam, updatePlayerStatus } from '@/app/golf/actions/roster';
+import { removePlayerFromTeam } from '@/app/golf/actions/roster';
 import { useToast } from '@/components/ui/toast';
 import {
   IconMoreVertical,

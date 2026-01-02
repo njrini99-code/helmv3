@@ -145,6 +145,7 @@ export default function GolfStatsPage() {
   }
 
   async function loadPlayerStats(playerId: string) {
+    console.log('🔵 loadPlayerStats called for playerId:', playerId);
     setLoadingStats(true);
     const supabase = createClient();
 
@@ -162,11 +163,14 @@ export default function GolfStatsPage() {
       .eq('player_id', playerId)
       .order('round_date', { ascending: false });
 
+    console.log('🔵 Fetched rounds:', roundsData?.length || 0, roundsData);
+
     // Store rounds for selector
     setRounds(roundsData || []);
 
     // Initialize empty stats if no rounds
     if (!roundsData || roundsData.length === 0) {
+      console.log('⚠️ No rounds found, initializing empty stats');
       const stats = calculateStatsFromShots([], [], []);
       setComprehensiveStats(stats);
       setLoadingStats(false);
@@ -184,6 +188,8 @@ export default function GolfStatsPage() {
       .select('id, round_id, hole_number, par, yardage')
       .in('round_id', roundIds);
 
+    console.log('🔵 Fetched holes:', holesData?.length || 0);
+
     // Fetch ALL shots (source of truth)
     const { data: shotsData } = await supabase
       .from('golf_shots')
@@ -191,6 +197,8 @@ export default function GolfStatsPage() {
       .in('round_id', roundIds)
       .order('hole_number')
       .order('shot_number');
+
+    console.log('🔵 Fetched shots (raw):', shotsData?.length || 0);
 
     // Transform to types expected by calculator (only filtered rounds)
     const filteredRoundsData = selectedRoundId === 'overall'
@@ -242,9 +250,28 @@ export default function GolfStatsPage() {
         penalty_type: s.penalty_type,
       }));
 
+    console.log('🔵 Valid shots (after filter):', shots.length);
+    console.log('🔵 Rounds info:', roundsInfo.length);
+    console.log('🔵 Holes info:', holesInfo.length);
+    console.log('🔵 Sample shot types:', shots.slice(0, 5).map(s => ({ type: s.shot_type, club: s.club_type })));
+
     // Calculate stats from raw shots ONLY (pure shot-based approach)
+    console.log('🔵 Calling calculateStatsFromShots...');
     const stats = calculateStatsFromShots(shots, holesInfo, roundsInfo);
+    console.log('✅ Stats calculated!', stats);
+    console.log('📊 Key stats:', {
+      roundsPlayed: stats.roundsPlayed,
+      scoringAverage: stats.scoringAverage,
+      drivingDistanceAvg: stats.drivingDistanceAvg,
+      fairwayPercentage: stats.fairwayPercentage,
+      girPercentage: stats.girPercentage,
+      approachProximityAvg: stats.approachProximityAvg,
+      scramblingPercentage: stats.scramblingPercentage,
+      puttsPerRound: stats.puttsPerRound
+    });
+
     setComprehensiveStats(stats);
+    console.log('✅ comprehensiveStats state set!');
     setLoadingStats(false);
   }
 
@@ -357,6 +384,8 @@ export default function GolfStatsPage() {
   }
 
   // Player stats view
+  console.log('🎨 RENDER - loadingStats:', loadingStats, 'comprehensiveStats:', comprehensiveStats ? 'EXISTS' : 'NULL');
+
   return (
     <div className="relative">
       {/* Floating Back Button for Coaches */}
@@ -377,14 +406,25 @@ export default function GolfStatsPage() {
           <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
         </div>
       ) : comprehensiveStats ? (
-        <GolfStatsDisplay
-          stats={comprehensiveStats}
-          playerName={playerName}
-          rounds={rounds}
-          selectedRoundId={selectedRoundId}
-          onRoundChange={setSelectedRoundId}
-        />
-      ) : null}
+        <>
+          {console.log('✅ RENDERING GolfStatsDisplay with stats:', {
+            roundsPlayed: comprehensiveStats.roundsPlayed,
+            drivingDistanceAvg: comprehensiveStats.drivingDistanceAvg
+          })}
+          <GolfStatsDisplay
+            stats={comprehensiveStats}
+            playerName={playerName}
+            rounds={rounds}
+            selectedRoundId={selectedRoundId}
+            onRoundChange={setSelectedRoundId}
+          />
+        </>
+      ) : (
+        <>
+          {console.log('⚠️ NOT RENDERING - comprehensiveStats is null/undefined')}
+          {null}
+        </>
+      )}
     </div>
   );
 }

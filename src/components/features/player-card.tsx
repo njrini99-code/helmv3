@@ -40,7 +40,7 @@ export function PlayerCard({ player, showWatchlistButton = true, usePeekPanel = 
 
   return (
     <div onClick={handleCardClick} className={usePeekPanel ? 'cursor-pointer' : ''}>
-      <Card hover className="overflow-hidden h-full group relative">
+      <Card variant="interactive" className="overflow-hidden h-full group relative">
         <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/5 rounded-full blur-3xl pointer-events-none" />
         <CardContent className="p-5 relative">
           <div className="flex items-start gap-4">

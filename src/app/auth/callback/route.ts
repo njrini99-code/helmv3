@@ -125,7 +125,59 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
 
-      // Check if user has a coach or player profile
+      // Get user's sport from metadata or users table
+      const userSport = data.user.user_metadata?.sport;
+
+      // Check users table to get sport if not in metadata
+      const { data: userRecord } = await supabase
+        .from('users')
+        .select('id, role, sport')
+        .eq('id', data.user.id)
+        .single();
+
+      // Determine sport: prefer metadata, then users table, default to baseball
+      const sport = userSport || userRecord?.sport || 'baseball';
+
+      console.info('[OAuth] User sport detected:', {
+        userId: data.user.id,
+        sport,
+        fromMetadata: !!userSport,
+        fromUsersTable: !!userRecord?.sport
+      });
+
+      // Check for GOLF profiles first if sport is golf
+      if (sport === 'golf') {
+        const { data: golfCoach } = await supabase
+          .from('golf_coaches')
+          .select('id, onboarding_completed')
+          .eq('user_id', data.user.id)
+          .single();
+
+        const { data: golfPlayer } = await supabase
+          .from('golf_players')
+          .select('id, onboarding_completed')
+          .eq('user_id', data.user.id)
+          .single();
+
+        if (golfCoach) {
+          const destination = !golfCoach.onboarding_completed ? '/golf/coach' : '/golf/dashboard';
+          console.info('[OAuth] Redirecting golf coach to:', { destination, userId: data.user.id });
+          return NextResponse.redirect(new URL(destination, requestUrl.origin));
+        }
+
+        if (golfPlayer) {
+          const destination = !golfPlayer.onboarding_completed ? '/golf/player' : '/golf/dashboard';
+          console.info('[OAuth] Redirecting golf player to:', { destination, userId: data.user.id });
+          return NextResponse.redirect(new URL(destination, requestUrl.origin));
+        }
+
+        // No golf profile exists - redirect to golf signup to create profile
+        console.info('[OAuth] Golf user needs profile:', { userId: data.user.id, email: data.user.email });
+        // Redirect to golf player onboarding by default (user can pick role there)
+        return NextResponse.redirect(new URL('/golf/player', requestUrl.origin));
+      }
+
+      // Check for BASEBALL profiles
       const { data: coach } = await supabase
         .from('coaches')
         .select('id, onboarding_completed')

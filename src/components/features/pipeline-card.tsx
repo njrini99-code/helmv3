@@ -51,15 +51,15 @@ export function PipelineCard({ item, isDragging = false }: PipelineCardProps) {
       )}
     >
       <div className={cn(
-        'relative bg-white/80 backdrop-blur-sm rounded-xl border border-white/30 shadow-sm overflow-hidden',
-        'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200',
-        isActuallyDragging && 'rotate-2 shadow-xl'
+        'relative bg-white/70 backdrop-blur-md rounded-[20px] border border-white/40 shadow-sm overflow-hidden',
+        'hover:shadow-lg hover:-translate-y-1 transition-all duration-200',
+        isActuallyDragging && 'rotate-2 shadow-xl scale-105'
       )}>
         {/* Shine effect */}
         <div
           className="absolute inset-x-0 top-0 h-px pointer-events-none"
           style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent)',
           }}
         />
         <div className="p-3">

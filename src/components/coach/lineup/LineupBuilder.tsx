@@ -7,7 +7,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { getFullName } from '@/lib/utils';
-import { IconMoreVertical, IconX, IconCheck, IconSend, IconDownload } from '@/components/icons';
+import { IconMoreVertical, IconX, IconCheck, IconSend } from '@/components/icons';
 
 interface Player {
   id: string;
@@ -110,7 +110,7 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
   return (
     <div className="space-y-6">
       {/* Lineup Header */}
-      <Card glass>
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -218,7 +218,7 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
         {/* Available Players */}
         <div className="space-y-3">
           <h3 className="font-medium text-slate-700">Available Players</h3>
-          <Card glass>
+          <Card>
             <CardContent className="p-4 space-y-2 max-h-[600px] overflow-y-auto">
               {availablePlayers.length === 0 ? (
                 <div className="text-center py-8">

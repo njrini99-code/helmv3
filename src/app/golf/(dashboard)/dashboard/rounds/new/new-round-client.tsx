@@ -28,16 +28,6 @@ interface RoundSetupForm {
   roundDate: string;
 }
 
-// Default course layout (can be customized per course later)
-const DEFAULT_HOLES: { par: number; yardage: number }[] = [
-  { par: 4, yardage: 385 }, { par: 5, yardage: 520 }, { par: 3, yardage: 175 },
-  { par: 4, yardage: 410 }, { par: 4, yardage: 395 }, { par: 4, yardage: 425 },
-  { par: 3, yardage: 185 }, { par: 5, yardage: 545 }, { par: 4, yardage: 440 },
-  { par: 4, yardage: 405 }, { par: 4, yardage: 380 }, { par: 3, yardage: 160 },
-  { par: 5, yardage: 530 }, { par: 4, yardage: 420 }, { par: 4, yardage: 390 },
-  { par: 3, yardage: 195 }, { par: 4, yardage: 435 }, { par: 5, yardage: 555 },
-];
-
 interface RoundSummary {
   id: string;
   courseName: string;
@@ -79,22 +69,6 @@ export default function NewRoundClient() {
   const [summaryData, setSummaryData] = useState<RoundSummary | null>(null);
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
   const [draftAge, setDraftAge] = useState<number | null>(null);
-
-  // Initialize 18 holes with default pars/yardages
-  const initializeHoles = () => {
-    if (!DEFAULT_HOLES || DEFAULT_HOLES.length === 0) {
-      setError('Unable to initialize course holes. Please refresh the page.');
-      return;
-    }
-    const initialHoles: Hole[] = DEFAULT_HOLES.map((h, i) => ({
-      number: i + 1,
-      par: h.par,
-      yardage: h.yardage,
-      score: null,
-    }));
-    setHoles(initialHoles);
-    setCompletedHoleStats([]);
-  };
 
   // Check for draft on mount
   useEffect(() => {

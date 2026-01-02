@@ -347,7 +347,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               
               <Button
                 onClick={handlePasteSubmit}
-                loading={loading}
+                isLoading={loading}
                 className="w-full mt-4 gap-2"
               >
                 <IconSparkles size={18} />

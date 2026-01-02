@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -25,6 +24,8 @@ import {
   IconHelp,
   IconGraduationCap,
   IconLayers,
+  IconChevronLeft,
+  IconChevronRight,
 } from '@/components/icons';
 import { TeamSwitcher } from './team-switcher';
 import { useTeams } from '@/hooks/use-teams';
@@ -50,16 +51,6 @@ const hsCoachTeamNav = [
   { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
   { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
   { name: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconEye },
-  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
-  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
-];
-
-// Showcase Coach - Team Mode
-const showcaseCoachTeamNav = [
-  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
-  { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
-  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
-  { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
 ];
@@ -135,17 +126,15 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
   const router = useRouter();
   const { user, coach, player, signOut, coachMode, setCoachMode } = useAuth();
   const { unreadCount } = useUnreadCount();
-  const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
+  const { collapsed, setCollapsed, setMobileOpen } = useSidebar();
 
   // Use appropriate teams hook based on user role
   const coachTeams = useTeams();
   const playerTeams = usePlayerTeams();
   const { hasMultipleTeams, selectedTeam } = user?.role === 'coach' ? coachTeams : playerTeams;
 
-  // Determine sport-specific logo based on pathname
+  // Determine sport-specific dashboard href based on pathname
   const isGolf = pathname.startsWith('/golf');
-  const logoSrc = isGolf ? '/helm-golf-logo.png' : '/helm-baseball-logo.png';
-  const logoAlt = isGolf ? 'GolfHelm' : 'BaseballHelm';
   const dashboardHref = isGolf ? '/golf/dashboard' : '/baseball/dashboard';
 
   // Determine if user should see mode toggle
@@ -224,45 +213,69 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'h-screen glass-prominent rounded-r-2xl m-4 mr-0 flex flex-col',
+        // Dark sidebar per Batch 3 spec
+        'bg-[rgba(28,25,23,0.97)] backdrop-blur-xl',
+        'h-screen flex flex-col relative',
         'transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         'will-change-[width]',
-        isCollapsed ? 'w-[72px]' : 'w-60',
+        isCollapsed ? 'w-[72px]' : 'w-64',
         !isMobile && 'fixed left-0 top-0 z-40'
       )}
     >
+      {/* Collapse Toggle Button (desktop only) */}
+      {!isMobile && (
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn(
+            'absolute -right-3 top-7 z-50',
+            'w-6 h-6 rounded-full bg-[#1C1917] border border-white/20',
+            'flex items-center justify-center',
+            'shadow-lg hover:bg-white/10 hover:border-white/30',
+            'transition-all duration-200',
+            'focus:outline-none focus:ring-2 focus:ring-green-500/40'
+          )}
+        >
+          {isCollapsed ? (
+            <IconChevronRight size={14} className="text-white/70" />
+          ) : (
+            <IconChevronLeft size={14} className="text-white/70" />
+          )}
+        </button>
+      )}
       {/* Logo */}
       <div className={cn(
-        'h-16 flex items-center border-b border-white/30',
+        'h-16 flex items-center border-b border-white/10',
         'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-        isCollapsed ? 'px-3 justify-center' : 'px-4'
+        isCollapsed ? 'px-3 justify-center' : 'px-5'
       )}>
         <Link
           href={dashboardHref}
-          className="flex items-center group overflow-hidden"
+          className="flex items-center gap-3"
           onClick={handleNavClick}
         >
-          {/* Show "H" badge when collapsed, full logo when expanded */}
           <div className="relative h-9 flex items-center">
-            {/* Icon badge - visible when collapsed */}
+            {/* Icon version (shown when collapsed) */}
             <div
               className={cn(
-                'w-9 h-9 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center',
+                'w-9 h-9 rounded-[10px] bg-green-600 flex items-center justify-center',
                 'shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 absolute'
               )}
             >
               <span className="text-white font-bold text-lg">H</span>
             </div>
-            {/* Full logo - visible when expanded */}
-            <img
-              src={logoSrc}
-              alt={logoAlt}
+            {/* Full logo + text (shown when expanded) */}
+            <div
               className={cn(
-                'h-9 w-auto transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                'flex items-center gap-3 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-0 scale-75 absolute' : 'opacity-100 scale-100'
               )}
-            />
+            >
+              <div className="w-9 h-9 rounded-[10px] bg-green-600 flex items-center justify-center">
+                <span className="text-white font-bold text-lg">H</span>
+              </div>
+              <span className="text-white font-bold text-base">BaseballHelm</span>
+            </div>
           </div>
         </Link>
       </div>
@@ -284,7 +297,14 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
           <TeamSwitcher collapsed={isCollapsed} />
         )}
 
-        <ul className="space-y-1">
+        {/* Section Label */}
+        {!isCollapsed && (
+          <p className="px-3 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
+            {user?.role === 'coach' ? 'Recruiting' : 'Dashboard'}
+          </p>
+        )}
+
+        <ul className="space-y-0.5">
           {navigation.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/baseball/dashboard' && item.href !== '/baseball/dashboard/team' && pathname.startsWith(item.href));
             return (
@@ -294,20 +314,20 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   onClick={handleNavClick}
                   title={isCollapsed ? item.name : undefined}
                   className={cn(
-                    'relative flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium',
+                    'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
                     'transition-all duration-150 ease-out will-change-transform',
                     'active:scale-[0.98]',
                     isActive
-                      ? 'bg-green-50 text-green-700'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                      ? 'bg-white/10 text-green-400 border-l-[3px] border-green-500'
+                      : 'text-white/60 hover:bg-white/5 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
                 >
                   <item.icon
-                    size={20}
+                    size={18}
                     className={cn(
                       'flex-shrink-0 transition-colors duration-150',
-                      isActive ? 'text-green-600' : 'text-slate-400'
+                      isActive ? 'text-green-400' : 'text-white/50'
                     )}
                   />
                   {/* Text - animates out */}
@@ -323,10 +343,10 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   {item.badge && unreadCount > 0 && (
                     <span
                       className={cn(
-                        'flex items-center justify-center text-xs font-medium bg-green-500 text-white rounded-full transition-all duration-300',
+                        'flex items-center justify-center text-[10px] font-semibold bg-green-600 text-white rounded-full transition-all duration-300',
                         isCollapsed
-                          ? 'absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-[10px]'
-                          : 'min-w-[20px] h-5 px-1.5'
+                          ? 'absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1'
+                          : 'ml-auto px-1.5 py-0.5'
                       )}
                     >
                       {unreadCount > 99 ? '99+' : unreadCount}
@@ -341,13 +361,14 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         {/* Team-specific navigation for Showcase Coaches */}
         {isShowcaseCoach && selectedTeam && teamNavigation.length > 0 && (
           <>
-            <div className="my-4 border-t border-white/30" />
+            {/* Divider */}
+            <div className="my-4 mx-3 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
             {!isCollapsed && (
-              <p className="px-4 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider whitespace-nowrap overflow-hidden">
+              <p className="px-3 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap overflow-hidden">
                 {selectedTeam.name}
               </p>
             )}
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {teamNavigation.map((item) => {
                 const isActive = pathname.startsWith(item.href);
                 return (
@@ -357,24 +378,24 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                       onClick={handleNavClick}
                       title={isCollapsed ? item.name : undefined}
                       className={cn(
-                        'relative flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium',
+                        'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
                         'transition-all duration-150 ease-out',
                         isActive
-                          ? 'bg-green-50 text-green-700'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                          ? 'bg-white/10 text-green-400 border-l-[3px] border-green-500'
+                          : 'text-white/60 hover:bg-white/5 hover:text-white/90',
                         isCollapsed ? 'justify-center px-2' : 'px-3'
                       )}
                     >
                       <item.icon
-                        size={20}
+                        size={18}
                         className={cn(
                           'flex-shrink-0 transition-colors',
-                          isActive ? 'text-green-600' : 'text-slate-400'
+                          isActive ? 'text-green-400' : 'text-white/50'
                         )}
                       />
                       <span
                         className={cn(
-                          'flex-1 whitespace-nowrap transition-all duration-300',
+                          'whitespace-nowrap transition-all duration-300',
                           isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
                         )}
                       >
@@ -389,10 +410,15 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         )}
 
         {/* Divider */}
-        <div className="my-4 border-t border-slate-100" />
+        <div className="my-4 mx-3 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
         {/* Secondary Navigation */}
-        <ul className="space-y-1">
+        {!isCollapsed && (
+          <p className="px-3 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
+            More
+          </p>
+        )}
+        <ul className="space-y-0.5">
           {secondaryNav.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
@@ -402,15 +428,15 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   onClick={handleNavClick}
                   title={isCollapsed ? item.name : undefined}
                   className={cn(
-                    'flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium',
+                    'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
                     'transition-all duration-150 ease-out',
                     isActive
-                      ? 'bg-slate-100 text-slate-900'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700',
+                      ? 'bg-white/10 text-green-400'
+                      : 'text-white/60 hover:bg-white/5 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
                 >
-                  <item.icon size={20} className="flex-shrink-0 text-slate-400" />
+                  <item.icon size={18} className="flex-shrink-0 text-white/50" />
                   <span
                     className={cn(
                       'whitespace-nowrap transition-all duration-300',
@@ -428,33 +454,34 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
 
       {/* Bottom section */}
       <div className={cn(
-        'border-t border-white/30 transition-[padding] duration-300',
+        'border-t border-white/10 space-y-0.5',
+        'transition-[padding] duration-300',
         isCollapsed ? 'p-2' : 'p-3'
       )}>
         {/* Pro badge (only when expanded) */}
         <div
           className={cn(
-            'rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 overflow-hidden',
+            'rounded-xl bg-white/5 border border-white/10 overflow-hidden',
             'transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-            isCollapsed ? 'h-0 opacity-0 p-0 mb-0 border-0' : 'h-auto opacity-100 p-4 mb-3'
+            isCollapsed ? 'h-0 opacity-0 p-0 mb-0 border-0' : 'h-auto opacity-100 p-3 mb-3'
           )}
         >
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-medium text-slate-900">Free Plan</span>
-            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-100 text-green-700 rounded">BETA</span>
+            <span className="text-sm font-medium text-white">Free Plan</span>
+            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-600 text-white rounded">BETA</span>
           </div>
-          <div className="text-xs text-slate-500">Pro plans coming soon</div>
+          <div className="text-xs text-white/50">Pro plans coming soon</div>
         </div>
 
         {/* User info */}
         <div
           className={cn(
-            'rounded-xl bg-slate-50 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+            'rounded-xl bg-white/5 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
             isCollapsed ? 'h-0 opacity-0 p-0 mb-0' : 'h-auto opacity-100 px-3 py-2.5 mb-2'
           )}
         >
-          <p className="text-sm font-medium text-slate-900 truncate">{displayName}</p>
-          <p className="text-xs text-slate-500 truncate">{subtitle}</p>
+          <p className="text-sm font-medium text-white truncate">{displayName}</p>
+          <p className="text-xs text-white/50 truncate">{subtitle}</p>
         </div>
 
         {/* Sign out */}
@@ -462,13 +489,13 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
           onClick={handleSignOut}
           title={isCollapsed ? 'Sign out' : undefined}
           className={cn(
-            'w-full flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium',
-            'text-slate-500 hover:bg-slate-50 hover:text-slate-700',
+            'w-full flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
+            'text-white/60 hover:bg-red-500/10 hover:text-red-400',
             'transition-all duration-150 ease-out active:scale-[0.98]',
             isCollapsed ? 'justify-center px-2' : 'px-3'
           )}
         >
-          <IconLogOut size={20} className="flex-shrink-0 text-slate-400" />
+          <IconLogOut size={18} className="flex-shrink-0 text-white/50" />
           <span
             className={cn(
               'whitespace-nowrap transition-all duration-300',

@@ -1,6 +1,6 @@
 'use client';
 
-import type { Message, Conversation, Coach, Player, User } from '@/lib/types';
+import type { Message, Conversation, Coach, Player } from '@/lib/types';
 
 // Message status for UI display
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
@@ -53,7 +53,7 @@ export interface ConversationWithParticipant extends ConversationWithMeta {
 // Helper to extract participant details from conversation
 export function getParticipantDetails(
   conversation: ConversationWithMeta,
-  currentUserId: string
+  _currentUserId: string
 ): ParticipantDetails | null {
   const otherUser = conversation.other_user;
 

@@ -340,7 +340,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} loading={loading} className="gap-2">
+          <Button onClick={handleSubmit} isLoading={loading} className="gap-2">
             {editingClass ? (
               <>
                 <IconCheck size={18} />

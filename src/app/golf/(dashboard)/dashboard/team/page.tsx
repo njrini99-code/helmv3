@@ -23,7 +23,7 @@ export default async function GolfTeamInfoPage() {
         <p className="text-slate-500 mt-1">Your team and roster</p>
       </div>
 
-      <Card glass padding="none">
+      <Card variant="glass" padding="none">
         <CardContent className="py-12 text-center">
           <IconUsers size={48} className="mx-auto text-slate-300 mb-4" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">

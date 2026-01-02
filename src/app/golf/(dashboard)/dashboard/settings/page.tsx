@@ -26,18 +26,28 @@ import { AppearanceModal } from '@/components/golf/settings/AppearanceModal';
 import { LocationModal } from '@/components/golf/settings/LocationModal';
 import { TeamSettingsModal } from '@/components/golf/settings/TeamSettingsModal';
 import { InviteSettingsModal } from '@/components/golf/settings/InviteSettingsModal';
+import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 
 interface UserProfile {
   name: string;
   email: string;
   role: 'coach' | 'player';
   teamName?: string;
+  // Player-specific
+  playerId?: string;
+  currentTeam?: {
+    id: string;
+    name: string;
+    organization?: {
+      name: string;
+    } | null;
+  } | null;
 }
 
 export default function GolfSettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const { showToast } = useToast();
+  const { showToast: _showToast } = useToast();
 
   // Modal state
   const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
@@ -62,16 +72,27 @@ export default function GolfSettingsPage() {
     // Check if coach
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('full_name, team:golf_teams(name)')
+      .select('full_name, team_id')
       .eq('user_id', user.id)
       .single();
 
     if (coach) {
+      // Get team name if team_id exists
+      let teamName: string | undefined;
+      if (coach.team_id) {
+        const { data: team } = await supabase
+          .from('golf_teams')
+          .select('name')
+          .eq('id', coach.team_id)
+          .single();
+        teamName = team?.name;
+      }
+
       setProfile({
         name: coach.full_name || 'Coach',
         email: user.email || '',
         role: 'coach',
-        teamName: typeof coach.team === 'object' && coach.team ? coach.team.name : undefined,
+        teamName,
       });
       setLoading(false);
       return;
@@ -80,16 +101,42 @@ export default function GolfSettingsPage() {
     // Check if player
     const { data: player } = await supabase
       .from('golf_players')
-      .select('first_name, last_name, team:golf_teams(name)')
+      .select('id, first_name, last_name, team_id')
       .eq('user_id', user.id)
       .single();
 
     if (player) {
+      // Get team with organization if team_id exists
+      let teamName: string | undefined;
+      let currentTeam: UserProfile['currentTeam'] = null;
+
+      if (player.team_id) {
+        const { data: team } = await supabase
+          .from('golf_teams')
+          .select('id, name, organization:golf_organizations(name)')
+          .eq('id', player.team_id)
+          .single();
+
+        if (team) {
+          teamName = team.name;
+          const org = Array.isArray(team.organization)
+            ? team.organization[0]
+            : team.organization;
+          currentTeam = {
+            id: team.id,
+            name: team.name,
+            organization: org ? { name: org.name } : null,
+          };
+        }
+      }
+
       setProfile({
         name: `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Player',
         email: user.email || '',
         role: 'player',
-        teamName: typeof player.team === 'object' && player.team ? player.team.name : undefined,
+        teamName,
+        playerId: player.id,
+        currentTeam,
       });
     }
 
@@ -204,10 +251,12 @@ export default function GolfSettingsPage() {
           </div>
         </div>
 
-        {/* Team Section (for coaches) */}
-        {profile?.role === 'coach' && (
-          <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '150ms', opacity: 0 }}>
-            <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Team</h3>
+        {/* Team Section */}
+        <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '150ms', opacity: 0 }}>
+          <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Team</h3>
+
+          {/* For Coaches: Team Settings */}
+          {profile?.role === 'coach' && (
             <div className="relative glass-standard rounded-2xl overflow-hidden">
               <ShineEffect />
               <SettingsRow
@@ -224,8 +273,16 @@ export default function GolfSettingsPage() {
                 isLast
               />
             </div>
-          </div>
-        )}
+          )}
+
+          {/* For Players: Join Team Section */}
+          {profile?.role === 'player' && profile.playerId && (
+            <JoinTeamSection
+              playerId={profile.playerId}
+              currentTeam={profile.currentTeam}
+            />
+          )}
+        </div>
 
         {/* Sign Out */}
         <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '200ms', opacity: 0 }}>

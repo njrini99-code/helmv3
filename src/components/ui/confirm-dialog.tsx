@@ -10,7 +10,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'danger' | 'warning' | 'default';
-  loading?: boolean;
+  isLoading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -22,7 +22,7 @@ export function ConfirmDialog({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   variant = 'default',
-  loading = false,
+  isLoading = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -78,15 +78,15 @@ export function ConfirmDialog({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
-          <Button variant="secondary" onClick={onCancel} disabled={loading}>
+          <Button variant="secondary" onClick={onCancel} disabled={isLoading}>
             {cancelLabel}
           </Button>
           <button
             onClick={onConfirm}
-            disabled={loading}
+            disabled={isLoading}
             className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 ${styles.button}`}
           >
-            {loading ? 'Please wait...' : confirmLabel}
+            {isLoading ? 'Please wait...' : confirmLabel}
           </button>
         </div>
       </div>

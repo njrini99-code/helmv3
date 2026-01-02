@@ -465,7 +465,7 @@ export default function TeamsPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1" loading={creating}>
+                <Button type="submit" className="flex-1" isLoading={creating}>
                   Create Team
                 </Button>
               </div>

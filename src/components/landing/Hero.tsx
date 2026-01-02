@@ -36,19 +36,6 @@ export function Hero() {
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-32 grid lg:grid-cols-2 gap-16 items-center">
         {/* Left: Content */}
         <div>
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full
-                       bg-white/60 backdrop-blur-sm border border-golden-200/50
-                       text-warm-700 text-sm font-medium mb-8"
-          >
-            <span className="w-2 h-2 rounded-full bg-field animate-pulse" />
-            Built for recruiting weeks and real staff workflows
-          </motion.div>
-
           {/* Headline */}
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
@@ -92,7 +79,7 @@ export function Hero() {
             </Link>
 
             <Link
-              href="/baseball"
+              href="/baseball/signup"
               className="px-8 py-4 rounded-2xl border-2 border-warm-300 text-warm-700 font-medium
                          hover:bg-warm-100 hover:border-warm-400 transition-all duration-200
                          flex items-center gap-2"

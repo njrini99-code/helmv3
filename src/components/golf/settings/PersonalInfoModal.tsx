@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
-import { IconX } from '@/components/icons';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -97,7 +96,7 @@ export function PersonalInfoModal({ isOpen, onClose, currentName, role, onUpdate
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} loading={loading}>
+          <Button onClick={handleSave} isLoading={loading}>
             Save Changes
           </Button>
         </div>

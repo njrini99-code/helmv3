@@ -6,7 +6,7 @@ import { Modal, ModalFooter } from '@/components/ui/modal';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { IconCheck, IconSearch, IconUsers } from '@/components/icons';
+import { IconCheck, IconUsers } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 
 interface SearchResult {
@@ -143,7 +143,7 @@ export function GolfNewMessageModal({
       title="New Message"
       description={`Select a ${currentUserRole === 'coach' ? 'player' : 'coach'} to start a conversation`}
       size="md"
-      glass={true}
+     
     >
       <div className="space-y-4">
         {/* Search Input */}

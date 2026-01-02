@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShineEffect } from '@/components/ui/shine-effect';
-import { IconFolder, IconFile, IconDownload, IconTrash, IconUpload, IconX } from '@/components/icons';
+import { IconFolder, IconDownload, IconTrash, IconUpload, IconX } from '@/components/icons';
 import { uploadGolfDocument, createGolfDocument, deleteGolfDocument } from '@/app/golf/actions/documents';
 
 interface Document {

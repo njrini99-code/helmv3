@@ -267,7 +267,7 @@ export function CreateQualifierButton() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" loading={loading}>
+                <Button type="submit" isLoading={loading}>
                   Create Qualifier
                 </Button>
               </div>

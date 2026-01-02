@@ -107,42 +107,63 @@ export default function GolfDashboardLayout({
         return;
       }
 
-      const { data: coach } = await supabase
+      // TEMPORARY: Simplified queries without joins + bypass onboarding for development
+      console.log('🔍 DEBUG: Querying golf_coaches with simplified query (no joins)');
+      const { data: coach, error: coachError } = await supabase
         .from('golf_coaches')
-        .select('*, team:golf_teams(name)')
+        .select('id, full_name, avatar_url, team_id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
+      console.log('🔍 DEBUG: Coach query result:', { coach, error: coachError });
 
       if (coach) {
-        if (!coach.onboarding_completed) {
-          router.push('/golf/coach');
-          return;
+        // Get team name if team_id exists
+        let teamName: string | undefined;
+        if (coach.team_id) {
+          const { data: team } = await supabase
+            .from('golf_teams')
+            .select('name')
+            .eq('id', coach.team_id)
+            .single();
+          teamName = team?.name;
         }
+
         setUserData({
           role: 'coach',
           name: coach.full_name || 'Coach',
-          teamName: coach.team?.name,
+          teamName,
           avatarUrl: coach.avatar_url || undefined,
         });
         setLoading(false);
         return;
       }
 
-      const { data: player } = await supabase
+      console.log('🔍 DEBUG: Querying golf_players with simplified query (no joins)');
+      const { data: player, error: playerError } = await supabase
         .from('golf_players')
-        .select('*, team:golf_teams(name)')
+        .select('id, first_name, last_name, avatar_url, team_id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
+      console.log('🔍 DEBUG: Player query result:', { player, error: playerError });
 
       if (player) {
-        if (!player.onboarding_completed) {
-          router.push('/golf/player');
-          return;
+        // Get team name if team_id exists
+        let teamName: string | undefined;
+        if (player.team_id) {
+          const { data: team } = await supabase
+            .from('golf_teams')
+            .select('name')
+            .eq('id', player.team_id)
+            .single();
+          teamName = team?.name;
         }
+
         setUserData({
           role: 'player',
           name: `${player.first_name} ${player.last_name}`,
-          teamName: player.team?.name,
+          teamName,
           avatarUrl: player.avatar_url || undefined,
         });
         setLoading(false);

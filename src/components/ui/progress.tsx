@@ -1,34 +1,28 @@
-'use client';
-
-import { motion } from 'framer-motion';
+import { HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
-interface ProgressProps {
+interface ProgressProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
   value: number;
   max?: number;
-  showLabel?: boolean;
-  className?: string;
+  label?: string;
+  showPercentage?: boolean;
 }
 
-export function Progress({ value, max = 100, showLabel, className }: ProgressProps) {
-  const percent = Math.min(Math.max((value / max) * 100, 0), 100);
+export function Progress({ className, value, max = 100, label, showPercentage = true, ...props }: ProgressProps) {
+  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 
   return (
-    <div className={cn('space-y-1', className)}>
-      {showLabel && (
-        <div className="flex justify-between text-sm">
-          <span className="text-slate-600">Progress</span>
-          <span className="font-medium text-slate-900 tabular-nums">
-            {Math.round(percent)}%
-          </span>
+    <div className={cn('w-full', className)} {...props}>
+      {(label || showPercentage) && (
+        <div className="flex justify-between mb-1.5">
+          {label && <span className="text-sm font-medium text-warm-700">{label}</span>}
+          {showPercentage && <span className="text-sm text-warm-500">{Math.round(percentage)}%</span>}
         </div>
       )}
-      <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-        <motion.div
-          className="h-full bg-green-500 rounded-full"
-          initial={{ width: 0 }}
-          animate={{ width: `${percent}%` }}
-          transition={{ duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
+      <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-300 ease-out"
+          style={{ width: `${percentage}%` }}
         />
       </div>
     </div>

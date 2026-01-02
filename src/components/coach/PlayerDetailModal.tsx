@@ -61,7 +61,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <Card glass={true} className="w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between z-10">
           <h2 className="text-xl font-semibold text-slate-900">Player Profile</h2>
           <button

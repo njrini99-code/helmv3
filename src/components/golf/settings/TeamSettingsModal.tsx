@@ -14,23 +14,6 @@ interface TeamSettingsModalProps {
   onUpdate: () => void;
 }
 
-interface TeamData {
-  id: string;
-  name: string;
-  season: string | null;
-  organization_id: string | null;
-}
-
-interface OrganizationData {
-  id: string;
-  name: string;
-  city: string | null;
-  state: string | null;
-  division: string | null;
-  conference: string | null;
-  logo_url: string | null;
-}
-
 export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsModalProps) {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -137,7 +120,7 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
       const fileName = `org-logos/${organizationId}-${Date.now()}.${fileExt}`;
 
       // Upload to Supabase storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('golf-assets')
         .upload(fileName, file, {
           cacheControl: '3600',
@@ -337,7 +320,7 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSave} loading={loading}>
+            <Button onClick={handleSave} isLoading={loading}>
               Save Changes
             </Button>
           </div>

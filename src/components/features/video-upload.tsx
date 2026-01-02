@@ -264,7 +264,7 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
                   Cancel
                 </Button>
               )}
-              <Button onClick={handleUpload} loading={uploading} disabled={!form.title.trim()}>
+              <Button onClick={handleUpload} isLoading={uploading} disabled={!form.title.trim()}>
                 {uploading ? 'Uploading...' : 'Upload Video'}
               </Button>
             </div>

@@ -77,7 +77,7 @@ export default function SettingsPage() {
         {/* Program Profile Link (Coaches Only) */}
         {user?.role === 'coach' && (
           <Link href="/baseball/dashboard/program">
-            <Card hover className="cursor-pointer transition-all hover:border-green-200">
+            <Card variant="interactive" className="cursor-pointer transition-all hover:border-green-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -99,7 +99,7 @@ export default function SettingsPage() {
         {/* Privacy Settings Link (Players Only) */}
         {user?.role === 'player' && (
           <Link href="/baseball/dashboard/settings/privacy">
-            <Card hover className="cursor-pointer transition-all hover:border-green-200">
+            <Card variant="interactive" className="cursor-pointer transition-all hover:border-green-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -120,7 +120,7 @@ export default function SettingsPage() {
 
         {/* Notification Settings (Coaches) */}
         {user?.role === 'coach' && (
-          <Card glass>
+          <Card variant="glass">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <IconBell size={20} className="text-slate-600" />
@@ -170,7 +170,7 @@ export default function SettingsPage() {
           </Card>
         )}
 
-        <Card glass>
+        <Card variant="glass">
           <CardHeader>
             <div className="flex items-center gap-2">
               <IconMail size={20} className="text-slate-600" />
@@ -183,7 +183,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card glass>
+        <Card variant="glass">
           <CardHeader><h2 className="font-semibold text-slate-900">Change Password</h2></CardHeader>
           <CardContent>
             <form onSubmit={handlePasswordChange} className="space-y-4">
@@ -214,7 +214,7 @@ export default function SettingsPage() {
                 autoComplete="new-password"
               />
               <div className="flex justify-end pt-4">
-                <Button type="submit" loading={saving}>Update Password</Button>
+                <Button type="submit" isLoading={saving}>Update Password</Button>
               </div>
             </form>
           </CardContent>

@@ -25,23 +25,23 @@ export function PipelineColumn({ stage, items }: PipelineColumnProps) {
     <div
       ref={setNodeRef}
       className={cn(
-        'relative rounded-2xl p-4 min-h-[500px] transition-all duration-200 overflow-hidden',
-        'bg-white/50 backdrop-blur-sm border border-white/30',
-        isOver && 'ring-2 ring-slate-900 ring-offset-2 bg-slate-50/80'
+        'relative rounded-[20px] p-5 min-h-[500px] transition-all duration-200 overflow-hidden',
+        'bg-white/60 backdrop-blur-md border border-white/40',
+        isOver && 'ring-2 ring-green-600 ring-offset-2 bg-green-50/30'
       )}
     >
       {/* Shine effect */}
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent)',
         }}
       />
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-slate-900 tracking-tight text-sm">{getPipelineStageLabel(stage)}</h3>
         <Badge variant="secondary" className={cn(
           'tabular-nums',
-          isOver && 'bg-slate-900 text-white'
+          isOver && 'bg-green-600 text-white'
         )}>{items.length}</Badge>
       </div>
       <div className="space-y-3">
@@ -57,7 +57,7 @@ export function PipelineColumn({ stage, items }: PipelineColumnProps) {
         {items.length === 0 && (
           <p className={cn(
             'text-sm text-center py-8 transition-colors',
-            isOver ? 'text-slate-900 font-medium' : 'text-slate-400'
+            isOver ? 'text-green-700 font-semibold' : 'text-slate-400'
           )}>
             {isOver ? 'Drop here' : 'No players'}
           </p>

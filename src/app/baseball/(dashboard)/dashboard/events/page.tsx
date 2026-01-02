@@ -446,7 +446,7 @@ export default function EventsPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1" loading={creating}>
+                <Button type="submit" className="flex-1" isLoading={creating}>
                   Create Event
                 </Button>
               </div>

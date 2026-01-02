@@ -64,7 +64,7 @@ function CampCard({
   const isFull = camp.capacity ? registrationCount >= camp.capacity : false;
 
   return (
-    <Card glass className="overflow-hidden">
+    <Card variant="glass" className="overflow-hidden">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -412,7 +412,7 @@ export default function CampsPage() {
         message="Are you sure you want to delete this camp? All registrations will also be removed. This action cannot be undone."
         confirmLabel="Delete"
         variant="danger"
-        loading={deleting}
+        isLoading={deleting}
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirm(null)}
       />

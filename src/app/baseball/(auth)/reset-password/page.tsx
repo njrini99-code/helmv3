@@ -114,7 +114,7 @@ export default function ResetPasswordPage() {
                 {error}
               </div>
             )}
-            <Button type="submit" className="w-full" loading={loading}>
+            <Button type="submit" className="w-full" isLoading={loading}>
               Update password
             </Button>
           </form>

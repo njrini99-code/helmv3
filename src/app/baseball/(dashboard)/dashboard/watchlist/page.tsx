@@ -614,7 +614,7 @@ export default function WatchlistPage() {
         message="Are you sure you want to remove this player from your watchlist?"
         confirmLabel="Remove"
         variant="danger"
-        loading={removing}
+        isLoading={removing}
         onConfirm={handleRemoveConfirm}
         onCancel={() => setRemoveConfirm(null)}
       />
@@ -626,7 +626,7 @@ export default function WatchlistPage() {
         message={`Are you sure you want to remove ${selectedPlayers.size} player(s) from your watchlist?`}
         confirmLabel="Remove All"
         variant="danger"
-        loading={removing}
+        isLoading={removing}
         onConfirm={handleBulkRemoveConfirm}
         onCancel={() => setBulkRemoveConfirm(false)}
       />

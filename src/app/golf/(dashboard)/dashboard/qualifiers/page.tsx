@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { CreateQualifierButton } from '@/components/golf/qualifiers/CreateQualifierButton';
 import type { GolfQualifier } from '@/lib/types/golf';
-import { IconFlag, IconCalendar, IconMapPin, IconChevronRight, IconGolf, IconUsers } from '@/components/icons';
+import { IconFlag, IconCalendar, IconMapPin, IconChevronRight, IconGolf } from '@/components/icons';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {

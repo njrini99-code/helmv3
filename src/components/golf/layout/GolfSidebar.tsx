@@ -20,7 +20,6 @@ import {
   IconSettings,
   IconLogout,
   IconGolf,
-  IconUser,
   IconBook,
   IconChevronLeft,
   IconChevronRight,
@@ -109,7 +108,9 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
   return (
     <aside
       className={cn(
-        'bg-slate-50 border-r border-slate-200/80 h-screen flex flex-col relative',
+        // Dark sidebar per Batch 3 spec
+        'bg-[rgba(28,25,23,0.97)] backdrop-blur-xl',
+        'h-screen flex flex-col relative',
         'transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         'will-change-[width]',
         isCollapsed ? 'w-[72px]' : 'w-64',
@@ -122,49 +123,51 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
             'absolute -right-3 top-7 z-50',
-            'w-6 h-6 rounded-full bg-white border border-slate-200',
+            'w-6 h-6 rounded-full bg-[#1C1917] border border-white/20',
             'flex items-center justify-center',
-            'shadow-sm hover:shadow-md hover:border-slate-300',
+            'shadow-lg hover:bg-white/10 hover:border-white/30',
             'transition-all duration-200',
-            'opacity-0 hover:opacity-100 group-hover:opacity-100',
-            'focus:outline-none focus:ring-2 focus:ring-emerald-500/40'
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/40'
           )}
-          style={{ opacity: 1 }}
         >
           {isCollapsed ? (
-            <IconChevronRight size={14} className="text-slate-500" />
+            <IconChevronRight size={14} className="text-white/70" />
           ) : (
-            <IconChevronLeft size={14} className="text-slate-500" />
+            <IconChevronLeft size={14} className="text-white/70" />
           )}
         </button>
       )}
 
       {/* Logo */}
       <div className={cn(
-        'h-16 flex items-center border-b border-slate-200/80',
+        'h-16 flex items-center border-b border-white/10',
         'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         isCollapsed ? 'px-3 justify-center' : 'px-5'
       )}>
-        <Link href="/golf/dashboard" className="flex items-center gap-2" onClick={handleNavClick}>
-          <div className="relative h-8 flex items-center">
+        <Link href="/golf/dashboard" className="flex items-center gap-3" onClick={handleNavClick}>
+          <div className="relative h-9 flex items-center">
+            {/* Icon version (shown when collapsed OR as fallback) */}
             <div
               className={cn(
-                'w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center',
+                'w-9 h-9 rounded-[10px] bg-primary-600 flex items-center justify-center',
                 'shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 absolute'
               )}
             >
               <span className="text-white font-bold text-lg">G</span>
             </div>
-            <img
-              src="/helm-golf-logo.png"
-              alt="GolfHelm"
+            {/* Full logo + text (shown when expanded) */}
+            <div
               className={cn(
-                'h-8 w-auto transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                'flex items-center gap-3 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-0 scale-75 absolute' : 'opacity-100 scale-100'
               )}
-              style={{ mixBlendMode: 'multiply' }}
-            />
+            >
+              <div className="w-9 h-9 rounded-[10px] bg-primary-600 flex items-center justify-center">
+                <span className="text-white font-bold text-lg">G</span>
+              </div>
+              <span className="text-white font-bold text-base">GolfHelm</span>
+            </div>
           </div>
         </Link>
       </div>
@@ -172,12 +175,12 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       {/* Team/User Info */}
       <div
         className={cn(
-          'border-b border-slate-200/80 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          'border-b border-white/10 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
           isCollapsed ? 'h-0 p-0 border-0' : 'h-auto px-5 py-4'
         )}
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center flex-shrink-0 shadow-sm">
             {avatarUrl ? (
               <img src={avatarUrl} alt={userName} className="w-9 h-9 rounded-lg object-cover" />
             ) : (
@@ -187,11 +190,11 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-slate-900 truncate">
+            <p className="text-sm font-semibold text-white truncate">
               {userName || 'User'}
             </p>
-            <p className="text-xs text-slate-500 truncate flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <p className="text-xs text-white/50 truncate flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
               {teamName || 'Golf Team'}
             </p>
           </div>
@@ -207,7 +210,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         {/* Primary Navigation */}
         <div className="space-y-0.5">
           {!isCollapsed && (
-            <p className="px-3 py-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+            <p className="px-3 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
               {userRole === 'coach' ? 'Team Management' : 'My Golf'}
             </p>
           )}
@@ -221,16 +224,16 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 onClick={handleNavClick}
                 title={isCollapsed ? item.name : undefined}
                 className={cn(
-                  'flex items-center gap-3 py-2 rounded-lg text-[13px] font-medium',
+                  'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
                   'transition-all duration-150 ease-out will-change-transform',
                   'active:scale-[0.98]',
                   active
-                    ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/80'
-                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900',
+                    ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
+                    : 'text-white/60 hover:bg-white/5 hover:text-white/90',
                   isCollapsed ? 'justify-center px-2' : 'px-3'
                 )}
               >
-                <Icon size={18} className={cn('flex-shrink-0', active ? 'text-emerald-600' : 'text-slate-400')} />
+                <Icon size={18} className={cn('flex-shrink-0', active ? 'text-primary-400' : 'text-white/50')} />
                 <span
                   className={cn(
                     'whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
@@ -240,7 +243,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                   {item.name}
                 </span>
                 {item.badge && !isCollapsed && (
-                  <span className="ml-auto px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-700">
+                  <span className="ml-auto px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-primary-600 text-white">
                     {item.badge}
                   </span>
                 )}
@@ -249,10 +252,13 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           })}
         </div>
 
+        {/* Divider */}
+        <div className="my-4 mx-3 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
         {/* Secondary Navigation */}
-        <div className="mt-6 space-y-0.5">
+        <div className="space-y-0.5">
           {!isCollapsed && (
-            <p className="px-3 py-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+            <p className="px-3 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
               {userRole === 'coach' ? 'More' : 'Team'}
             </p>
           )}
@@ -266,15 +272,15 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 onClick={handleNavClick}
                 title={isCollapsed ? item.name : undefined}
                 className={cn(
-                  'flex items-center gap-3 py-2 rounded-lg text-[13px] font-medium',
+                  'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
                   'transition-all duration-150 ease-out',
                   active
-                    ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/80'
-                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900',
+                    ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
+                    : 'text-white/60 hover:bg-white/5 hover:text-white/90',
                   isCollapsed ? 'justify-center px-2' : 'px-3'
                 )}
               >
-                <Icon size={18} className={cn('flex-shrink-0', active ? 'text-emerald-600' : 'text-slate-400')} />
+                <Icon size={18} className={cn('flex-shrink-0', active ? 'text-primary-400' : 'text-white/50')} />
                 <span
                   className={cn(
                     'whitespace-nowrap transition-all duration-300',
@@ -291,7 +297,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
 
       {/* Bottom Section */}
       <div className={cn(
-        'border-t border-slate-200/80 space-y-0.5',
+        'border-t border-white/10 space-y-0.5',
         'transition-[padding] duration-300',
         isCollapsed ? 'p-2' : 'p-3'
       )}>
@@ -300,15 +306,15 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           onClick={handleNavClick}
           title={isCollapsed ? 'Settings' : undefined}
           className={cn(
-            'flex items-center gap-3 py-2 rounded-lg text-[13px] font-medium',
+            'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
             'transition-all duration-150 ease-out',
             pathname === '/golf/dashboard/settings'
-              ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/80'
-              : 'text-slate-600 hover:bg-white/60 hover:text-slate-900',
+              ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
+              : 'text-white/60 hover:bg-white/5 hover:text-white/90',
             isCollapsed ? 'justify-center px-2' : 'px-3'
           )}
         >
-          <IconSettings size={18} className="flex-shrink-0 text-slate-400" />
+          <IconSettings size={18} className="flex-shrink-0 text-white/50" />
           <span
             className={cn(
               'whitespace-nowrap transition-all duration-300',
@@ -323,13 +329,13 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           disabled={isSigningOut}
           title={isCollapsed ? 'Sign out' : undefined}
           className={cn(
-            'w-full flex items-center gap-3 py-2 rounded-lg text-[13px] font-medium',
-            'text-slate-600 hover:bg-red-50 hover:text-red-600',
+            'w-full flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
+            'text-white/60 hover:bg-red-500/10 hover:text-red-400',
             'transition-all duration-150 ease-out disabled:opacity-50 active:scale-[0.98]',
             isCollapsed ? 'justify-center px-2' : 'px-3'
           )}
         >
-          <IconLogout size={18} className="flex-shrink-0 text-slate-400" />
+          <IconLogout size={18} className="flex-shrink-0 text-white/50" />
           <span
             className={cn(
               'whitespace-nowrap transition-all duration-300',

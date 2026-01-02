@@ -1,354 +1,279 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useCallback } from 'react';
+import {
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { IconChevronUp, IconChevronDown } from '@/components/icons';
+import { RowActionsMenu } from './row-actions-menu';
+import { Checkbox } from './checkbox';
+import { Pagination } from './pagination';
+import { TableSkeleton } from './table-skeleton';
+import type { Column, TableProps } from '@/types/table';
 
-export interface Column<T> {
-  key: string;
-  header: string;
-  width?: string;
-  sortable?: boolean;
-  align?: 'left' | 'center' | 'right';
-  render?: (item: T, index: number) => React.ReactNode;
-}
-
-export interface DataTableProps<T> {
-  data: T[];
-  columns: Column<T>[];
-  keyExtractor: (item: T) => string;
-  isLoading?: boolean;
-  loadingRows?: number;
-  emptyMessage?: string;
-  emptyIcon?: React.ReactNode;
-  onRowClick?: (item: T) => void;
-  selectedKeys?: Set<string>;
-  onSelectionChange?: (keys: Set<string>) => void;
-  selectable?: boolean;
-  stickyHeader?: boolean;
-  className?: string;
-  rowClassName?: string | ((item: T) => string);
-}
-
-type SortDirection = 'asc' | 'desc' | null;
-
-export function DataTable<T>({
+export function DataTable<T extends Record<string, any>>({
   data,
   columns,
-  keyExtractor,
-  isLoading = false,
-  loadingRows = 5,
-  emptyMessage = 'No data found',
-  emptyIcon,
-  onRowClick,
-  selectedKeys,
-  onSelectionChange,
   selectable = false,
-  stickyHeader = false,
+  selectedIds = [],
+  onSelectionChange,
+  getRowId,
+  sortColumn,
+  sortDirection,
+  onSort,
+  page = 1,
+  pageSize = 10,
+  totalCount,
+  onPageChange,
+  onRowClick,
+  rowActions,
+  isLoading = false,
+  emptyState,
   className,
-  rowClassName,
-}: DataTableProps<T>) {
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  compact = false,
+}: TableProps<T>) {
 
-  const handleSort = (key: string) => {
-    const column = columns.find((c) => c.key === key);
-    if (!column?.sortable) return;
+  // ============================================
+  // SELECTION LOGIC
+  // ============================================
 
-    if (sortKey === key) {
+  const allSelected = data.length > 0 && data.every(row => selectedIds.includes(getRowId(row)));
+  const someSelected = selectedIds.length > 0 && !allSelected;
+
+  const handleSelectAll = useCallback(() => {
+    if (allSelected) {
+      onSelectionChange?.([]);
+    } else {
+      onSelectionChange?.(data.map(row => getRowId(row)));
+    }
+  }, [allSelected, data, getRowId, onSelectionChange]);
+
+  const handleSelectRow = useCallback((rowId: string) => {
+    if (selectedIds.includes(rowId)) {
+      onSelectionChange?.(selectedIds.filter(id => id !== rowId));
+    } else {
+      onSelectionChange?.([...selectedIds, rowId]);
+    }
+  }, [selectedIds, onSelectionChange]);
+
+  // ============================================
+  // SORTING LOGIC
+  // ============================================
+
+  const handleSort = useCallback((columnId: string) => {
+    if (!onSort) return;
+
+    if (sortColumn === columnId) {
+      // Toggle direction or clear
       if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortKey(null);
-        setSortDirection(null);
+        onSort(columnId, 'desc');
+      } else {
+        onSort(columnId, 'asc');
       }
     } else {
-      setSortKey(key);
-      setSortDirection('asc');
+      // New column, default to asc
+      onSort(columnId, 'asc');
     }
-  };
+  }, [sortColumn, sortDirection, onSort]);
 
-  const sortedData = useMemo(() => {
-    if (!sortKey || !sortDirection) return data;
-
-    return [...data].sort((a, b) => {
-      const aValue = (a as Record<string, unknown>)[sortKey];
-      const bValue = (b as Record<string, unknown>)[sortKey];
-
-      if (aValue === null || aValue === undefined) return 1;
-      if (bValue === null || bValue === undefined) return -1;
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        const comparison = aValue.localeCompare(bValue);
-        return sortDirection === 'asc' ? comparison : -comparison;
-      }
-
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-
-      return 0;
-    });
-  }, [data, sortKey, sortDirection]);
-
-  const handleSelectAll = () => {
-    if (!onSelectionChange) return;
-
-    const allKeys = new Set(data.map(keyExtractor));
-    const allSelected = data.length > 0 && allKeys.size === selectedKeys?.size;
-
-    onSelectionChange(allSelected ? new Set() : allKeys);
-  };
-
-  const handleSelectRow = (item: T) => {
-    if (!onSelectionChange) return;
-
-    const key = keyExtractor(item);
-    const newKeys = new Set(selectedKeys);
-
-    if (newKeys.has(key)) {
-      newKeys.delete(key);
-    } else {
-      newKeys.add(key);
+  const getSortIcon = (columnId: string) => {
+    if (sortColumn !== columnId) {
+      return <ChevronsUpDown className="w-4 h-4 text-warm-300" />;
     }
-
-    onSelectionChange(newKeys);
-  };
-
-  const getRowClassName = (item: T) => {
-    if (typeof rowClassName === 'function') {
-      return rowClassName(item);
+    if (sortDirection === 'asc') {
+      return <ChevronUp className="w-4 h-4 text-primary-600" />;
     }
-    return rowClassName;
+    return <ChevronDown className="w-4 h-4 text-primary-600" />;
   };
 
-  // Loading skeleton
+  // ============================================
+  // CELL VALUE GETTER
+  // ============================================
+
+  const getCellValue = (row: T, column: Column<T>) => {
+    if (column.cell) {
+      return column.cell(row, data.indexOf(row));
+    }
+    if (typeof column.accessor === 'function') {
+      return column.accessor(row);
+    }
+    return row[column.accessor];
+  };
+
+  // ============================================
+  // RENDER
+  // ============================================
+
   if (isLoading) {
-    return (
-      <div className={cn('bg-white rounded-2xl border border-slate-200 overflow-hidden', className)}>
-        <table className="w-full">
-          <thead className="bg-slate-50">
-            <tr>
-              {selectable && (
-                <th className="w-12 px-4 py-3">
-                  <div className="w-4 h-4 rounded bg-slate-200 animate-pulse" />
-                </th>
-              )}
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider"
-                  style={{ width: col.width }}
-                >
-                  {col.header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {Array.from({ length: loadingRows }).map((_, i) => (
-              <tr key={i}>
-                {selectable && (
-                  <td className="px-4 py-4">
-                    <div className="w-4 h-4 rounded bg-slate-200 animate-pulse" />
-                  </td>
-                )}
-                {columns.map((col) => (
-                  <td key={col.key} className="px-4 py-4">
-                    <div className="h-4 bg-slate-200 rounded animate-pulse" style={{ width: '60%' }} />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
+    return <TableSkeleton columns={columns.length} rows={pageSize} selectable={selectable} />;
   }
 
-  // Empty state
-  if (data.length === 0) {
-    return (
-      <div className={cn('bg-white rounded-2xl border border-slate-200 overflow-hidden', className)}>
-        <table className="w-full">
-          <thead className="bg-slate-50">
-            <tr>
-              {selectable && (
-                <th className="w-12 px-4 py-3" />
-              )}
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider"
-                  style={{ width: col.width }}
-                >
-                  {col.header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-        </table>
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          {emptyIcon && (
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-              {emptyIcon}
-            </div>
-          )}
-          <p className="text-sm leading-relaxed text-slate-500">{emptyMessage}</p>
+  if (data.length === 0 && emptyState) {
+    return <>{emptyState}</>;
+  }
+
+  return (
+    <div className={cn("w-full", className)}>
+      {/* ============================================ */}
+      {/* BULK ACTIONS BAR (when items selected) */}
+      {/* ============================================ */}
+      {selectedIds.length > 0 && (
+        <div className="
+          flex items-center justify-between
+          px-4 py-3 mb-3
+          bg-primary-50 border border-primary-200
+          rounded-[14px]
+        ">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-primary-800">
+              {selectedIds.length} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Bulk action buttons passed via prop */}
+            <button
+              onClick={() => onSelectionChange?.([])}
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+            >
+              Clear selection
+            </button>
+          </div>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  return (
-    <div className={cn('bg-white rounded-2xl border border-slate-200 overflow-hidden', className)}>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className={cn('bg-slate-50', stickyHeader && 'sticky top-0 z-10')}>
-            <tr>
-              {selectable && (
-                <th className="w-12 px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={data.length > 0 && selectedKeys?.size === data.length}
-                    onChange={handleSelectAll}
-                    className="w-4 h-4 rounded border-slate-300 text-green-600
-                               focus:ring-green-500 focus:ring-offset-0"
-                  />
-                </th>
+      {/* ============================================ */}
+      {/* TABLE HEADER */}
+      {/* ============================================ */}
+      <div className="
+        sticky top-0 z-10
+        flex items-center gap-3
+        px-4 py-3
+        bg-warm-50/80 backdrop-blur-sm
+        border-b border-warm-200
+        rounded-t-[14px]
+      ">
+        {/* Select All Checkbox */}
+        {selectable && (
+          <div className="w-6 flex-shrink-0">
+            <Checkbox
+              checked={allSelected || someSelected}
+              onChange={handleSelectAll}
+              aria-label="Select all rows"
+            />
+          </div>
+        )}
+
+        {/* Column Headers */}
+        {columns.map(column => (
+          <div
+            key={column.id}
+            className={cn(
+              "flex items-center gap-1.5",
+              column.width || 'flex-1',
+              column.align === 'center' && 'justify-center',
+              column.align === 'right' && 'justify-end',
+              column.sortable && 'cursor-pointer select-none hover:text-warm-900',
+            )}
+            onClick={() => column.sortable && handleSort(column.id)}
+          >
+            <span className="text-xs font-semibold text-warm-500 uppercase tracking-wide">
+              {column.header}
+            </span>
+            {column.sortable && getSortIcon(column.id)}
+          </div>
+        ))}
+
+        {/* Actions Column Header */}
+        {rowActions && (
+          <div className="w-10 flex-shrink-0" />
+        )}
+      </div>
+
+      {/* ============================================ */}
+      {/* TABLE ROWS (Card Style) */}
+      {/* ============================================ */}
+      <div className="flex flex-col gap-2 mt-2">
+        {data.map((row) => {
+          const rowId = getRowId(row);
+          const isSelected = selectedIds.includes(rowId);
+          const actions = rowActions?.(row) || [];
+
+          return (
+            <div
+              key={rowId}
+              className={cn(
+                "flex items-center gap-3",
+                compact ? "px-4 py-2.5" : "px-4 py-3",
+                "bg-white",
+                "border rounded-[14px]",
+                "transition-all duration-200",
+                isSelected
+                  ? "border-primary-300 bg-primary-50/30 ring-1 ring-primary-200"
+                  : "border-warm-100 hover:border-warm-200 hover:shadow-sm",
+                onRowClick && "cursor-pointer"
               )}
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  onClick={() => handleSort(col.key)}
-                  className={cn(
-                    'px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider',
-                    col.align === 'center' && 'text-center',
-                    col.align === 'right' && 'text-right',
-                    col.align !== 'center' && col.align !== 'right' && 'text-left',
-                    col.sortable && 'cursor-pointer select-none hover:text-slate-700 transition-colors'
-                  )}
-                  style={{ width: col.width }}
+              onClick={() => onRowClick?.(row)}
+            >
+              {/* Row Checkbox */}
+              {selectable && (
+                <div
+                  className="w-6 flex-shrink-0"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <div className={cn(
-                    'flex items-center gap-1',
-                    col.align === 'center' && 'justify-center',
-                    col.align === 'right' && 'justify-end'
-                  )}>
-                    <span>{col.header}</span>
-                    {col.sortable && (
-                      <span className="flex flex-col">
-                        <IconChevronUp
-                          size={12}
-                          className={cn(
-                            '-mb-1 transition-colors',
-                            sortKey === col.key && sortDirection === 'asc'
-                              ? 'text-green-600'
-                              : 'text-slate-300'
-                          )}
-                        />
-                        <IconChevronDown
-                          size={12}
-                          className={cn(
-                            'transition-colors',
-                            sortKey === col.key && sortDirection === 'desc'
-                              ? 'text-green-600'
-                              : 'text-slate-300'
-                          )}
-                        />
-                      </span>
-                    )}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {sortedData.map((item, index) => {
-              const key = keyExtractor(item);
-              const isSelected = selectedKeys?.has(key);
+                  <Checkbox
+                    checked={isSelected}
+                    onChange={() => handleSelectRow(rowId)}
+                    aria-label={`Select row ${getRowId(row)}`}
+                  />
+                </div>
+              )}
 
-              return (
-                <tr
-                  key={key}
-                  onClick={() => onRowClick?.(item)}
+              {/* Cell Values */}
+              {columns.map(column => (
+                <div
+                  key={column.id}
                   className={cn(
-                    'transition-colors',
-                    onRowClick && 'cursor-pointer hover:bg-slate-50',
-                    isSelected && 'bg-green-50',
-                    getRowClassName(item)
+                    "min-w-0", // Allow truncation
+                    column.width || 'flex-1',
+                    column.align === 'center' && 'text-center',
+                    column.align === 'right' && 'text-right',
                   )}
                 >
-                  {selectable && (
-                    <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleSelectRow(item)}
-                        className="w-4 h-4 rounded border-slate-300 text-green-600
-                                   focus:ring-green-500 focus:ring-offset-0"
-                      />
-                    </td>
-                  )}
-                  {columns.map((col) => (
-                    <td
-                      key={col.key}
-                      className={cn(
-                        'px-4 py-4 text-sm text-slate-700',
-                        col.align === 'center' && 'text-center',
-                        col.align === 'right' && 'text-right'
-                      )}
-                    >
-                      {col.render
-                        ? col.render(item, index)
-                        : (item as Record<string, unknown>)[col.key] as React.ReactNode}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  {getCellValue(row, column)}
+                </div>
+              ))}
+
+              {/* Row Actions Menu */}
+              {rowActions && actions.length > 0 && (
+                <div
+                  className="w-10 flex-shrink-0 flex justify-end"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <RowActionsMenu actions={actions} />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-    </div>
-  );
-}
 
-// Simple table for basic use cases
-interface SimpleTableProps {
-  headers: string[];
-  rows: React.ReactNode[][];
-  className?: string;
-}
-
-export function SimpleTable({ headers, rows, className }: SimpleTableProps) {
-  return (
-    <div className={cn('bg-white rounded-2xl border border-slate-200 overflow-hidden', className)}>
-      <table className="w-full">
-        <thead className="bg-slate-50">
-          <tr>
-            {headers.map((header, i) => (
-              <th
-                key={i}
-                className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400 tracking-wider"
-              >
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {rows.map((row, i) => (
-            <tr key={i} className="hover:bg-slate-50 transition-colors">
-              {row.map((cell, j) => (
-                <td key={j} className="px-4 py-4 text-sm text-slate-700">
-                  {cell}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* ============================================ */}
+      {/* PAGINATION */}
+      {/* ============================================ */}
+      {onPageChange && totalCount && totalCount > pageSize && (
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-warm-100">
+          <span className="text-sm text-warm-500">
+            Showing {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, totalCount)} of {totalCount}
+          </span>
+          <Pagination
+            currentPage={page}
+            totalPages={Math.ceil(totalCount / pageSize)}
+            onPageChange={onPageChange}
+          />
+        </div>
+      )}
     </div>
   );
 }

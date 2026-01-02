@@ -138,7 +138,7 @@ function MessagesContent() {
             messages={messages}
             participant={selectedParticipant}
             currentUserId={user?.id || ''}
-            loading={messagesLoading}
+            isLoading={messagesLoading}
             onSend={handleSendMessage}
             onBack={handleBack}
             className="h-full"

@@ -130,28 +130,39 @@ export async function loginAction(
     .eq('id', data.user.id)
     .single();
 
+  // For LOGIN (not signup), always redirect to dashboard
+  // Onboarding is handled separately and is optional for existing users
+  // The dashboard will show a banner to complete onboarding if needed
   let redirectTo = '/golf/dashboard';
 
+  // Check if user has a profile record - if not, they need onboarding
   if (userData?.role === 'coach') {
-    const { data: coachData } = await supabase
+    const { error: coachError } = await supabase
       .from('golf_coaches')
-      .select('onboarding_completed')
+      .select('id, onboarding_completed')
       .eq('user_id', data.user.id)
       .single();
 
-    redirectTo = coachData?.onboarding_completed
-      ? '/golf/dashboard'
-      : '/golf/coach-onboarding';
+    // Only redirect to onboarding if NO profile exists at all
+    // (this handles edge case of trigger failure)
+    if (coachError && coachError.code === 'PGRST116') {
+      // No record found - need onboarding
+      redirectTo = '/golf/coach';
+    }
+    // If record exists (even with onboarding_completed=false), go to dashboard
   } else if (userData?.role === 'player') {
-    const { data: playerData } = await supabase
+    const { error: playerError } = await supabase
       .from('golf_players')
-      .select('onboarding_completed')
+      .select('id, onboarding_completed')
       .eq('user_id', data.user.id)
       .single();
 
-    redirectTo = playerData?.onboarding_completed
-      ? '/golf/dashboard'
-      : '/golf/player-onboarding';
+    // Only redirect to onboarding if NO profile exists at all
+    if (playerError && playerError.code === 'PGRST116') {
+      // No record found - need onboarding
+      redirectTo = '/golf/player';
+    }
+    // If record exists (even with onboarding_completed=false), go to dashboard
   }
 
   revalidatePath('/golf/dashboard');
@@ -174,7 +185,9 @@ export type SignupResult = {
 export async function signupAction(
   email: string,
   password: string,
-  role: 'player' | 'coach'
+  role: 'player' | 'coach',
+  firstName?: string,
+  lastName?: string
 ): Promise<SignupResult> {
   const normalizedEmail = email.toLowerCase().trim();
 
@@ -210,6 +223,8 @@ export async function signupAction(
       data: {
         role,
         sport: 'golf',
+        first_name: firstName || '',
+        last_name: lastName || '',
       },
     },
   });
@@ -241,8 +256,10 @@ export async function signupAction(
     ip,
   });
 
-  const redirectTo =
-    role === 'coach' ? '/golf/coach-onboarding' : '/golf/player-onboarding';
+  // Redirect based on role - coaches go to coach onboarding, players go to player onboarding
+  const redirectTo = role === 'coach'
+    ? '/golf/coach'
+    : '/golf/player';
 
   return {
     success: true,

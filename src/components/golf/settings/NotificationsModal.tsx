@@ -150,7 +150,7 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSave} loading={loading}>
+            <Button onClick={handleSave} isLoading={loading}>
               Save Preferences
             </Button>
           </div>

@@ -1,0 +1,125 @@
+/**
+ * Design Tokens - Batch 1
+ * CSS custom properties for Helm Sports Labs
+ * These can be used outside of Tailwind utility classes
+ */
+
+:root {
+  /* ===== COLORS ===== */
+
+  /* Primary Brand */
+  --color-primary: #16A34A;
+  --color-primary-light: #22c55e;
+  --color-primary-dark: #15803D;
+
+  /* Cream Background */
+  --color-cream: #FFFEFA;
+
+  /* Warm Neutrals */
+  --color-warm-50: #fafaf9;
+  --color-warm-100: #f5f5f4;
+  --color-warm-200: #e7e5e4;
+  --color-warm-300: #d6d3d1;
+  --color-warm-400: #a8a29e;
+  --color-warm-500: #78716c;
+  --color-warm-600: #57534e;
+  --color-warm-700: #44403c;
+  --color-warm-800: #292524;
+  --color-warm-900: #1c1917;
+
+  /* Semantic Colors */
+  --color-success: #16A34A;
+  --color-warning: #F59E0B;
+  --color-danger: #DC2626;
+  --color-info: #3B82F6;
+
+  /* ===== TYPOGRAPHY ===== */
+
+  /* Font Family */
+  --font-family: 'DM Sans', system-ui, sans-serif;
+
+  /* Font Sizes */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-h3: 24px;
+  --font-size-h2: 28px;
+  --font-size-h1: 30px;
+  --font-size-display: 36px;
+
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ===== SPACING ===== */
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ===== BORDER RADIUS ===== */
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-full: 9999px;
+
+  /* ===== SHADOWS ===== */
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-default: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0 12px 24px rgba(0, 0, 0, 0.12);
+
+  /* ===== MOTION/ANIMATION ===== */
+
+  /* Duration */
+  --duration-fast: 150ms;
+  --duration-default: 200ms;
+  --duration-slow: 300ms;
+
+  /* Easing */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* ===== GLASS EFFECTS ===== */
+
+  /* Glass Card (Primary - for content cards) */
+  --glass-card-bg: rgba(255, 255, 255, 0.7);
+  --glass-card-border: rgba(255, 255, 255, 0.3);
+  --glass-card-blur: 16px;
+
+  /* Glass Card Strong (for auth pages, modals) */
+  --glass-strong-bg: rgba(255, 255, 255, 0.85);
+  --glass-strong-border: rgba(255, 255, 255, 0.4);
+  --glass-strong-blur: 20px;
+  --glass-strong-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+
+  /* Glass Navigation (for sidebar, headers) */
+  --glass-nav-bg: rgba(28, 25, 23, 0.97);
+  --glass-nav-blur: 12px;
+
+  /* Glass Input (for search, select) */
+  --glass-input-bg: rgba(255, 255, 255, 0.6);
+  --glass-input-bg-focus: rgba(255, 255, 255, 0.8);
+  --glass-input-border: rgba(255, 255, 255, 0.3);
+  --glass-input-blur: 8px;
+  --glass-input-shadow-focus: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}

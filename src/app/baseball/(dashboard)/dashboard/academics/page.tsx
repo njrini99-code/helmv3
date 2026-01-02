@@ -45,7 +45,7 @@ const eligibilityColors = {
 };
 
 export default function AcademicsPage() {
-  const { coach, loading: authLoading } = useAuth();
+  const { coach: _coach, loading: authLoading } = useAuth();
   const { selectedTeamId } = useTeamStore();
   // Only JUCO coaches can access this page
   const { isAllowed, isLoading: routeLoading } = useRouteProtection({
@@ -243,7 +243,7 @@ export default function AcademicsPage() {
         )}
         {/* Summary Cards */}
         <div className="grid grid-cols-4 gap-4">
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
@@ -257,7 +257,7 @@ export default function AcademicsPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
@@ -271,7 +271,7 @@ export default function AcademicsPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
@@ -285,7 +285,7 @@ export default function AcademicsPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
@@ -301,7 +301,7 @@ export default function AcademicsPage() {
         </div>
 
         {/* Student Table */}
-        <Card glass>
+        <Card variant="glass">
           <CardHeader>
             <h2 className="font-semibold text-slate-900">Student-Athletes</h2>
           </CardHeader>

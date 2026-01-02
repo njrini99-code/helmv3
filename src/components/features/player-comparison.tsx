@@ -280,7 +280,7 @@ export function PlayerComparison({
   return (
     <>
       <div ref={comparisonRef}>
-        <Card className={cn('overflow-hidden', className)}>
+        <Card variant="glass" className={cn('overflow-hidden border-white/40', className)}>
           {onClose && (
         <CardHeader className="flex flex-row items-center justify-between border-b border-border-light">
           <h2 className="text-lg font-semibold text-slate-900">Player Comparison</h2>

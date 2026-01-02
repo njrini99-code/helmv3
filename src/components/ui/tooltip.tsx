@@ -1,38 +1,39 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { cn } from '@/lib/utils';
 
 interface TooltipProps {
-  content: string;
+  content: React.ReactNode;
   children: React.ReactNode;
-  position?: 'top' | 'bottom' | 'left' | 'right';
-  delay?: number;
-  className?: string;
+  side?: 'top' | 'bottom' | 'left' | 'right';
+  delayMs?: number;
 }
 
 export function Tooltip({
   content,
   children,
-  position = 'top',
-  delay = 200,
-  className
+  side = 'top',
+  delayMs = 200
 }: TooltipProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [open, setOpen] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const handleMouseEnter = () => {
-    timeoutRef.current = setTimeout(() => setIsVisible(true), delay);
+    timeoutRef.current = setTimeout(() => setOpen(true), delayMs);
   };
 
   const handleMouseLeave = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setIsVisible(false);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setOpen(false);
   };
 
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
   }, []);
 
@@ -43,31 +44,44 @@ export function Tooltip({
     right: 'left-full top-1/2 -translate-y-1/2 ml-2',
   };
 
+  const arrowClasses = {
+    top: 'top-full left-1/2 -translate-x-1/2 border-t-warm-900',
+    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-b-warm-900',
+    left: 'left-full top-1/2 -translate-y-1/2 border-l-warm-900',
+    right: 'right-full top-1/2 -translate-y-1/2 border-r-warm-900',
+  };
+
   return (
-    <div 
+    <div
       className="relative inline-block"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {children}
-      {isVisible && (
-        <div
-          className={cn(
-            'absolute z-50 px-3 py-2 text-xs font-medium text-white bg-slate-900 rounded-lg shadow-elevation-3 whitespace-nowrap animate-fade-in pointer-events-none',
-            positionClasses[position],
-            className
-          )}
-        >
-          {content}
-          <div 
-            className={cn(
-              'absolute w-2 h-2 bg-slate-900 transform rotate-45',
-              position === 'top' && 'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2',
-              position === 'bottom' && 'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2',
-              position === 'left' && 'right-0 top-1/2 -translate-y-1/2 translate-x-1/2',
-              position === 'right' && 'left-0 top-1/2 -translate-y-1/2 -translate-x-1/2'
-            )}
-          />
+
+      {open && (
+        <div className={`
+          absolute z-50
+          ${positionClasses[side]}
+          animate-in fade-in zoom-in-95
+          duration-150
+        `}>
+          <div className="
+            px-3 py-2
+            bg-warm-900 text-white
+            text-xs font-medium
+            rounded-lg
+            shadow-lg
+            whitespace-nowrap
+          ">
+            {content}
+          </div>
+          {/* Arrow */}
+          <div className={`
+            absolute w-0 h-0
+            border-4 border-transparent
+            ${arrowClasses[side]}
+          `} />
         </div>
       )}
     </div>

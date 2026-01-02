@@ -733,6 +733,13 @@ export type Database = {
             referencedRelation: "golf_announcements"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "golf_announcement_acknowledgements_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
         ]
       }
       golf_announcements: {
@@ -841,6 +848,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coach_notes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
             referencedColumns: ["id"]
           },
         ]
@@ -1132,6 +1146,13 @@ export type Database = {
             referencedRelation: "golf_events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "golf_event_attendance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
         ]
       }
       golf_events: {
@@ -1139,7 +1160,7 @@ export type Database = {
           all_day: boolean | null
           course_name: string | null
           created_at: string | null
-          created_by: string
+          created_by: string | null
           description: string | null
           end_date: string | null
           end_time: string | null
@@ -1149,7 +1170,7 @@ export type Database = {
           location: string | null
           start_date: string
           start_time: string | null
-          team_id: string
+          team_id: string | null
           title: string
           updated_at: string | null
         }
@@ -1157,7 +1178,7 @@ export type Database = {
           all_day?: boolean | null
           course_name?: string | null
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           description?: string | null
           end_date?: string | null
           end_time?: string | null
@@ -1167,7 +1188,7 @@ export type Database = {
           location?: string | null
           start_date: string
           start_time?: string | null
-          team_id: string
+          team_id?: string | null
           title: string
           updated_at?: string | null
         }
@@ -1175,7 +1196,7 @@ export type Database = {
           all_day?: boolean | null
           course_name?: string | null
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           description?: string | null
           end_date?: string | null
           end_time?: string | null
@@ -1185,7 +1206,7 @@ export type Database = {
           location?: string | null
           start_date?: string
           start_time?: string | null
-          team_id?: string
+          team_id?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -1250,7 +1271,6 @@ export type Database = {
           approach_result: string | null
           created_at: string | null
           drive_miss_direction: string | null
-          drive_result: string | null
           driving_distance: number | null
           fairway_hit: boolean | null
           first_putt_break: string | null
@@ -1287,7 +1307,6 @@ export type Database = {
           approach_result?: string | null
           created_at?: string | null
           drive_miss_direction?: string | null
-          drive_result?: string | null
           driving_distance?: number | null
           fairway_hit?: boolean | null
           first_putt_break?: string | null
@@ -1324,7 +1343,6 @@ export type Database = {
           approach_result?: string | null
           created_at?: string | null
           drive_miss_direction?: string | null
-          drive_result?: string | null
           driving_distance?: number | null
           fairway_hit?: boolean | null
           first_putt_break?: string | null
@@ -1460,7 +1478,15 @@ export type Database = {
           start_time?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_classes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       golf_player_stats: {
         Row: {
@@ -1875,12 +1901,15 @@ export type Database = {
           gpa: number | null
           graduation_year: number | null
           handicap: number | null
+          handicap_index: number | null
           hometown: string | null
           id: string
           last_name: string | null
           major: string | null
           onboarding_completed: boolean | null
           phone: string | null
+          player_year: string | null
+          profile_complete: boolean | null
           scholarship_percentage: number | null
           state: string | null
           status: Database["public"]["Enums"]["golf_player_status"] | null
@@ -1897,12 +1926,15 @@ export type Database = {
           gpa?: number | null
           graduation_year?: number | null
           handicap?: number | null
+          handicap_index?: number | null
           hometown?: string | null
           id?: string
           last_name?: string | null
           major?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          player_year?: string | null
+          profile_complete?: boolean | null
           scholarship_percentage?: number | null
           state?: string | null
           status?: Database["public"]["Enums"]["golf_player_status"] | null
@@ -1919,12 +1951,15 @@ export type Database = {
           gpa?: number | null
           graduation_year?: number | null
           handicap?: number | null
+          handicap_index?: number | null
           hometown?: string | null
           id?: string
           last_name?: string | null
           major?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          player_year?: string | null
+          profile_complete?: boolean | null
           scholarship_percentage?: number | null
           state?: string | null
           status?: Database["public"]["Enums"]["golf_player_status"] | null
@@ -2061,7 +2096,6 @@ export type Database = {
           birdies: number | null
           bogeys: number | null
           course_city: string | null
-          course_id: string | null
           course_name: string
           course_rating: number | null
           course_slope: number | null
@@ -2102,7 +2136,6 @@ export type Database = {
           birdies?: number | null
           bogeys?: number | null
           course_city?: string | null
-          course_id?: string | null
           course_name: string
           course_rating?: number | null
           course_slope?: number | null
@@ -2143,7 +2176,6 @@ export type Database = {
           birdies?: number | null
           bogeys?: number | null
           course_city?: string | null
-          course_id?: string | null
           course_name?: string
           course_rating?: number | null
           course_slope?: number | null
@@ -2181,13 +2213,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "golf_rounds_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "golf_courses"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "golf_rounds_player_id_fkey"
             columns: ["player_id"]
@@ -2268,13 +2293,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "golf_shots_hole_id_fkey"
-            columns: ["hole_id"]
-            isOneToOne: false
-            referencedRelation: "golf_holes"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "golf_shots_round_id_fkey"
             columns: ["round_id"]
@@ -3015,6 +3033,7 @@ export type Database = {
           pop_time: number | null
           primary_goal: string | null
           primary_position: string | null
+          profile_complete: boolean | null
           profile_completion_percent: number | null
           recruiting_activated: boolean | null
           recruiting_activated_at: string | null
@@ -3068,6 +3087,7 @@ export type Database = {
           pop_time?: number | null
           primary_goal?: string | null
           primary_position?: string | null
+          profile_complete?: boolean | null
           profile_completion_percent?: number | null
           recruiting_activated?: boolean | null
           recruiting_activated_at?: string | null
@@ -3121,6 +3141,7 @@ export type Database = {
           pop_time?: number | null
           primary_goal?: string | null
           primary_position?: string | null
+          profile_complete?: boolean | null
           profile_completion_percent?: number | null
           recruiting_activated?: boolean | null
           recruiting_activated_at?: string | null
@@ -3318,15 +3339,7 @@ export type Database = {
           round_id?: string
           yardage?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "round_holes_round_id_fkey"
-            columns: ["round_id"]
-            isOneToOne: false
-            referencedRelation: "golf_rounds"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       team_coach_staff: {
         Row: {
@@ -3556,6 +3569,7 @@ export type Database = {
           email: string
           id: string
           role: Database["public"]["Enums"]["user_role"]
+          sport: string | null
           updated_at: string | null
         }
         Insert: {
@@ -3563,6 +3577,7 @@ export type Database = {
           email: string
           id: string
           role?: Database["public"]["Enums"]["user_role"]
+          sport?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -3570,6 +3585,7 @@ export type Database = {
           email?: string
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
+          sport?: string | null
           updated_at?: string | null
         }
         Relationships: []

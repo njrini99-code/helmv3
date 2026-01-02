@@ -75,12 +75,13 @@ export async function updateSession(request: NextRequest) {
                        pathname === '/baseball/signup' ||
                        pathname === '/golf/login' ||
                        pathname === '/golf/signup' ||
-                       pathname === '/baseball/coach-onboarding' ||  // Onboarding flows
-                       pathname === '/baseball/coach' ||
-                       pathname === '/baseball/player' ||
-                       pathname === '/golf/coach-onboarding' ||
-                       pathname === '/golf/coach' ||
-                       pathname === '/golf/player' ||
+                       // TEMPORARY: Onboarding routes commented out for development
+                       // pathname === '/baseball/coach-onboarding' ||
+                       // pathname === '/baseball/coach' ||
+                       // pathname === '/baseball/player' ||
+                       // pathname === '/golf/coach-onboarding' ||
+                       // pathname === '/golf/coach' ||
+                       // pathname === '/golf/player' ||
                        pathname.startsWith('/baseball/player/') ||  // Public player profiles
                        pathname.startsWith('/golf/player/');        // Public player profiles
 
@@ -104,7 +105,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({
@@ -136,8 +137,20 @@ export async function updateSession(request: NextRequest) {
                            pathname.startsWith('/golf/dashboard');
   const isProtectedRoute = isDashboardRoute;
 
+  // Check if this is a hard refresh (navigation request with no referer from same origin)
+  const referer = request.headers.get('referer');
+  const isHardRefresh = !referer || !referer.includes(request.nextUrl.origin);
+
+  // ALLOW onboarding pages for authenticated users to create their records
+  // if (user && isOnboardingPage && sport) {
+  //   const url = request.nextUrl.clone();
+  //   url.pathname = `/${sport}/dashboard`;
+  //   return NextResponse.redirect(url);
+  // }
+
   // Redirect to login if accessing protected route without auth
-  if (!user && isProtectedRoute) {
+  // BUT: Skip redirect on hard refreshes to allow the page to load and client-side auth to handle it
+  if (!user && isProtectedRoute && !isHardRefresh) {
     const url = request.nextUrl.clone();
     // Redirect to the sport-specific login page
     url.pathname = sport ? `/${sport}/login` : '/baseball/login';
@@ -155,42 +168,10 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // Redirect authenticated users from auth pages to their onboarding or dashboard
+  // Redirect authenticated users from auth pages straight to dashboard
   if (user && isAuthPage && sport) {
-    // Get user role and onboarding status from database
-    const { data: userData } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
     const url = request.nextUrl.clone();
-
-    if (userData?.role === 'coach') {
-      // Check if coach has completed onboarding
-      const { data: coachData } = await supabase
-        .from('coaches')
-        .select('onboarding_completed')
-        .eq('user_id', user.id)
-        .single();
-
-      url.pathname = coachData?.onboarding_completed
-        ? `/${sport}/dashboard`
-        : `/${sport}/coach`;
-    } else if (userData?.role === 'player') {
-      // Check if player has completed onboarding
-      const { data: playerData } = await supabase
-        .from('players')
-        .select('onboarding_completed')
-        .eq('user_id', user.id)
-        .single();
-
-      url.pathname = playerData?.onboarding_completed
-        ? `/${sport}/dashboard`
-        : `/${sport}/player`;
-    } else {
-      url.pathname = '/';
-    }
+    url.pathname = `/${sport}/dashboard`;
     return NextResponse.redirect(url);
   }
 

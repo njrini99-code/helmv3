@@ -5,7 +5,7 @@ export { Button } from './button';
 export { ValidatedInput } from './validated-input';
 export { Skeleton, TableSkeleton, CardSkeleton } from './skeleton';
 export { Progress } from './progress';
-export { ToastContainer, useToast, toast, ToastProvider } from './toast';
+export { useToast, toast, ToastProvider, ToastContainer } from './toast';
 
 // Navigation
 export { NavItem } from '../navigation/nav-item';

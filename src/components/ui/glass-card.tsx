@@ -1,57 +1,90 @@
 'use client';
 
+import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'subtle' | 'standard' | 'prominent';
-  hover?: boolean;
-  shine?: boolean;
+  variant?: 'primary' | 'secondary' | 'subtle' | 'accent';
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  hover?: boolean;
+  glow?: 'none' | 'green' | 'subtle';
 }
 
-const variantStyles = {
-  subtle: 'glass-subtle',
-  standard: 'glass-standard',
-  prominent: 'glass-prominent',
+const variants = {
+  primary: cn(
+    "bg-white/70 backdrop-blur-[12px]",
+    "border border-white/40",
+    "rounded-[20px]",
+    "shadow-[0_1px_2px_rgba(0,0,0,0.02),0_4px_8px_rgba(0,0,0,0.02),0_8px_16px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.6)]"
+  ),
+  secondary: cn(
+    "bg-white/50 backdrop-blur-[8px]",
+    "border border-white/30",
+    "rounded-[14px]",
+    "shadow-[0_1px_3px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.4)]"
+  ),
+  subtle: cn(
+    "bg-white/60 backdrop-blur-[4px]",
+    "border border-white/25",
+    "rounded-[10px]"
+  ),
+  accent: cn(
+    "bg-white/70 backdrop-blur-[12px]",
+    "border border-white/40 border-l-[3px] border-l-primary-600",
+    "rounded-[20px]",
+    "shadow-[0_4px_12px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.6)]"
+  ),
 };
 
-export function GlassCard({
-  className,
-  variant = 'standard',
-  hover = false,
-  shine = true,
-  padding = 'md',
-  children,
-  ...props
-}: GlassCardProps) {
-  return (
-    <div
-      className={cn(
-        'relative rounded-2xl overflow-hidden',
-        'transition-all duration-200 ease-out',
-        variantStyles[variant],
-        hover && 'hover:-translate-y-0.5 hover:shadow-lg cursor-pointer',
-        padding === 'sm' && 'p-4',
-        padding === 'md' && 'p-6',
-        padding === 'lg' && 'p-8',
-        padding === 'none' && 'p-0',
-        className
-      )}
-      {...props}
-    >
-      {/* Shine effect - subtle gradient on top edge */}
-      {shine && (
-        <div
-          className="absolute top-0 left-0 right-0 h-px pointer-events-none z-10"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-          }}
-        />
-      )}
-      {children}
-    </div>
-  );
-}
+const paddings = {
+  none: "",
+  sm: "p-4",
+  md: "p-6",
+  lg: "p-8",
+};
+
+const hoverEffect = cn(
+  "transition-all duration-300",
+  "hover:bg-white/75",
+  "hover:border-white/50",
+  "hover:-translate-y-0.5",
+  "hover:shadow-[0_2px_4px_rgba(0,0,0,0.02),0_8px_16px_rgba(0,0,0,0.03),0_16px_32px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]"
+);
+
+export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
+  (
+    {
+      className,
+      variant = 'primary',
+      padding = 'md',
+      hover = true,
+      glow = 'none',
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "relative",
+          variants[variant],
+          paddings[padding],
+          hover && hoverEffect,
+          glow === 'green' && "before:absolute before:inset-0 before:-z-10 before:rounded-[24px] before:bg-primary-500/8 before:blur-2xl",
+          glow === 'subtle' && "before:absolute before:inset-0 before:-z-10 before:rounded-[24px] before:bg-white/30 before:blur-xl",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
+
+GlassCard.displayName = 'GlassCard';
 
 // Glass card header
 export function GlassCardHeader({
@@ -95,7 +128,7 @@ interface GlassStatCardProps {
 
 export function GlassStatCard({ label, value, icon, trend }: GlassStatCardProps) {
   return (
-    <GlassCard className="group" variant="standard">
+    <GlassCard className="group" variant="primary">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-slate-500">{label}</p>

@@ -10,7 +10,6 @@ import {
   IconExternalLink,
   IconGlobe,
   IconMail,
-  IconPhone,
   IconUsers,
   IconSchool,
   IconBuilding,

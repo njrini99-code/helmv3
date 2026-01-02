@@ -157,28 +157,39 @@ export async function loginAction(
     .eq('id', data.user.id)
     .single();
 
+  // For LOGIN (not signup), always redirect to dashboard
+  // Onboarding is handled separately and is optional for existing users
+  // The dashboard will show a banner to complete onboarding if needed
   let redirectTo = '/baseball/dashboard';
 
+  // Check if user has a profile record - if not, they need onboarding
   if (userData?.role === 'coach') {
-    const { data: coachData } = await supabase
+    const { error: coachError } = await supabase
       .from('coaches')
-      .select('onboarding_completed')
+      .select('id, onboarding_completed')
       .eq('user_id', data.user.id)
       .single();
 
-    redirectTo = coachData?.onboarding_completed
-      ? '/baseball/dashboard'
-      : '/baseball/coach-onboarding';
+    // Only redirect to onboarding if NO profile exists at all
+    // (this handles edge case of trigger failure)
+    if (coachError && coachError.code === 'PGRST116') {
+      // No record found - need onboarding
+      redirectTo = '/baseball/coach-onboarding';
+    }
+    // If record exists (even with onboarding_completed=false), go to dashboard
   } else if (userData?.role === 'player') {
-    const { data: playerData } = await supabase
+    const { error: playerError } = await supabase
       .from('players')
-      .select('onboarding_completed')
+      .select('id, onboarding_completed')
       .eq('user_id', data.user.id)
       .single();
 
-    redirectTo = playerData?.onboarding_completed
-      ? '/baseball/dashboard'
-      : '/baseball/player-onboarding';
+    // Only redirect to onboarding if NO profile exists at all
+    if (playerError && playerError.code === 'PGRST116') {
+      // No record found - need onboarding
+      redirectTo = '/baseball/player';
+    }
+    // If record exists (even with onboarding_completed=false), go to dashboard
   }
 
   revalidatePath('/baseball/dashboard');
@@ -250,6 +261,7 @@ export async function signupAction(
     options: {
       data: {
         role,
+        sport: 'baseball',  // IMPORTANT: Tells trigger to create baseball-only records
       },
     },
   });
@@ -282,9 +294,10 @@ export async function signupAction(
     ip,
   });
 
-  // Determine redirect based on role
-  const redirectTo =
-    role === 'coach' ? '/baseball/coach-onboarding' : '/baseball/player-onboarding';
+  // Redirect based on role - coaches go to onboarding, players go to player onboarding
+  const redirectTo = role === 'coach'
+    ? '/baseball/coach-onboarding'
+    : '/baseball/player';
 
   return {
     success: true,
@@ -322,8 +335,6 @@ export async function requestPasswordResetAction(
   );
 
   if (!rateLimit.allowed) {
-    const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
-
     console.warn('[Security] Password reset rate limit exceeded:', {
       email: normalizedEmail,
       ip,

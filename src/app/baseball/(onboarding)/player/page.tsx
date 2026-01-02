@@ -790,7 +790,7 @@ export default function PlayerOnboarding() {
                   <Button
                     size="lg"
                     onClick={handleComplete}
-                    loading={loading}
+                    isLoading={loading}
                     className="px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
                   >
                     Go to Dashboard

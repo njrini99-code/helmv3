@@ -55,15 +55,50 @@ export default function CoachOnboarding() {
     setError(null);
 
     try {
-      // Step 1: Create auth user account
+      // Determine coach_type early for metadata
+      let coachType: 'college' | 'juco' | 'high_school' | 'showcase' = 'college';
+      if (data.teamLevel === 'high-school') {
+        coachType = 'high_school';
+      } else if (data.teamLevel === 'showcase') {
+        coachType = 'showcase';
+      } else if (data.division === 'JUCO') {
+        coachType = 'juco';
+      }
+
+      // Step 1: Create auth user account WITH METADATA
+      // This ensures the trigger creates the correct record type
+      console.log('🔍 DEBUG: Attempting signup with email:', data.email);
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
+        email: data.email?.trim(),
         password: data.password,
+        options: {
+          data: {
+            role: 'coach',
+            sport: 'baseball',
+            coach_type: coachType,
+            first_name: data.fullName?.split(' ')[0] || '',
+            last_name: data.fullName?.split(' ').slice(1).join(' ') || '',
+          },
+        },
       });
 
       if (authError) {
-        console.error('Auth signup error:', authError);
-        setError(`Failed to create account: ${authError.message}`);
+        console.error('❌ Auth signup error:', authError);
+        console.error('❌ Error name:', authError.name);
+        console.error('❌ Error status:', authError.status);
+        console.error('❌ Full error:', JSON.stringify(authError, null, 2));
+
+        // Check if this is an auth hook error
+        if (authError.message.includes('validate email') || authError.message.includes('invalid format')) {
+          setError(
+            'Email validation failed. This is likely due to a Supabase Auth Hook. ' +
+            'Please go to Supabase Dashboard > Authentication > Hooks and disable any email validation hooks, ' +
+            'or try a different email address.'
+          );
+        } else {
+          setError(`Failed to create account: ${authError.message}`);
+        }
         setIsSubmitting(false);
         return;
       }
@@ -113,18 +148,7 @@ export default function CoachOnboarding() {
       }
 
       // Continue with coach setup
-      // Determine coach_type based on teamLevel and division
-      let coachType: 'college' | 'juco' | 'high_school' | 'showcase';
-
-      if (data.teamLevel === 'high-school') {
-        coachType = 'high_school';
-      } else if (data.teamLevel === 'showcase') {
-        coachType = 'showcase';
-      } else if (data.division === 'JUCO') {
-        coachType = 'juco';
-      } else {
-        coachType = 'college';
-      }
+      // coachType already determined above for metadata
 
       // Determine organization type
       const orgType = coachType === 'college' ? 'college'

@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
-import { Avatar } from '@/components/ui/avatar';
 import {
   IconGolf, IconFlag, IconBook, IconCalendar, IconUser,
-  IconTrendingUp, IconAward, IconChevronRight
+  IconAward
 } from '@/components/icons';
 
 interface ActivityItem {

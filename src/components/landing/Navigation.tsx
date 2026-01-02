@@ -18,33 +18,35 @@ export function Navigation() {
       className="absolute top-0 left-0 right-0 z-50 bg-transparent"
     >
       {/* Top bar with centered navigation links and auth buttons */}
-      <div className="flex justify-between items-center pt-4 pb-2 max-w-7xl mx-auto px-6">
+      <div className="flex items-center pt-4 pb-2 max-w-7xl mx-auto px-6">
+        {/* Left spacer */}
+        <div className="flex-1" />
+
         {/* Centered navigation links */}
-        <div className="flex-1 flex justify-center">
-          <div className="hidden md:flex items-center gap-12">
-            <Link
-              href="/baseball"
-              className="text-stone-700 hover:text-stone-900 transition-colors font-medium text-lg tracking-wide"
-            >
-              BaseballHelm
-            </Link>
-            <Link
-              href="/golf"
-              className="text-stone-700 hover:text-stone-900 transition-colors font-medium text-lg tracking-wide"
-            >
-              GolfHelm
-            </Link>
-            <Link
-              href="/about"
-              className="text-stone-700 hover:text-stone-900 transition-colors font-medium text-lg tracking-wide"
-            >
-              About
-            </Link>
-          </div>
+        <div className="hidden md:flex items-center gap-12">
+          <Link
+            href="/baseball/signup"
+            className="text-stone-700 hover:text-stone-900 transition-colors font-medium text-lg tracking-wide"
+          >
+            BaseballHelm
+          </Link>
+          <Link
+            href="/golf/signup"
+            className="text-stone-700 hover:text-stone-900 transition-colors font-medium text-lg tracking-wide"
+          >
+            GolfHelm
+          </Link>
+          <Link
+            href="/about"
+            className="text-stone-700 hover:text-stone-900 transition-colors font-medium text-lg tracking-wide"
+          >
+            About
+          </Link>
         </div>
 
         {/* Auth buttons - right side */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="flex-1 flex justify-end">
+          <div className="hidden md:flex items-center gap-3">
           {/* Login Dropdown */}
           <div className="relative">
             <button
@@ -120,6 +122,7 @@ export function Navigation() {
               )}
             </AnimatePresence>
           </div>
+        </div>
         </div>
       </div>
 

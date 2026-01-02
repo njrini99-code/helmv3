@@ -11,14 +11,11 @@ import { Button } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
 import {
   IconUsers,
-  IconVideo,
   IconCalendar,
   IconNote,
   IconChevronRight,
   IconGraduationCap,
   IconEye,
-  IconTrendingUp,
-  IconTarget,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { createClient } from '@/lib/supabase/client';
@@ -60,7 +57,7 @@ interface DevPlanProgress {
 export default function HSCoachDashboardPage() {
   const { coach, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [teamId, setTeamId] = useState<string | null>(null);
+  const [_teamId, setTeamId] = useState<string | null>(null);
 
   // Stats
   const [rosterCount, setRosterCount] = useState(0);
@@ -255,7 +252,7 @@ export default function HSCoachDashboardPage() {
           {/* Main Content - Left 2 columns */}
           <div className="lg:col-span-2 space-y-6">
             {/* College Interest Feed */}
-            <Card glass>
+            <Card variant="glass">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <h2 className="font-semibold text-slate-900">College Interest Feed</h2>
@@ -308,7 +305,7 @@ export default function HSCoachDashboardPage() {
             </Card>
 
             {/* Academic Overview */}
-            <Card glass>
+            <Card variant="glass">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <h2 className="font-semibold text-slate-900">Academic Overview</h2>
@@ -343,7 +340,7 @@ export default function HSCoachDashboardPage() {
                         {avgGPA?.toFixed(2) || 'N/A'}
                       </p>
                       {avgGPA && (
-                        <Badge variant={avgGPA >= 3.0 ? 'success' : avgGPA >= 2.5 ? 'warning' : 'error'}>
+                        <Badge variant={avgGPA >= 3.0 ? 'success' : avgGPA >= 2.5 ? 'warning' : 'danger'}>
                           {avgGPA >= 3.0 ? 'Excellent' : avgGPA >= 2.5 ? 'Good' : 'Needs Attention'}
                         </Badge>
                       )}
@@ -389,7 +386,7 @@ export default function HSCoachDashboardPage() {
             </Card>
 
             {/* Player Development Progress */}
-            <Card glass>
+            <Card variant="glass">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <h2 className="font-semibold text-slate-900">Player Development</h2>
@@ -437,7 +434,7 @@ export default function HSCoachDashboardPage() {
           {/* Sidebar - Right column */}
           <div className="space-y-6">
             {/* Recent Roster Additions */}
-            <Card glass>
+            <Card variant="glass">
               <CardHeader className="flex flex-row items-center justify-between">
                 <h2 className="font-semibold text-slate-900">Recent Additions</h2>
                 <Link href="/baseball/dashboard/roster">
@@ -479,7 +476,7 @@ export default function HSCoachDashboardPage() {
             </Card>
 
             {/* Quick Actions */}
-            <Card glass>
+            <Card variant="glass">
               <CardHeader>
                 <h2 className="font-semibold text-slate-900">Quick Actions</h2>
               </CardHeader>

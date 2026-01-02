@@ -6,7 +6,7 @@ import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
 import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import type { GolfPlayer } from '@/lib/types/golf';
-import { IconUsers, IconSearch, IconChartBar, IconMessage, IconChevronRight } from '@/components/icons';
+import { IconUsers, IconChartBar, IconMessage, IconChevronRight } from '@/components/icons';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -25,16 +25,23 @@ export default async function GolfRosterPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/golf/login');
 
-  // Get coach and team
+  // Get coach
   const { data: coach } = await supabase
     .from('golf_coaches')
-    .select('id, team_id, team:golf_teams(name, invite_code)')
+    .select('id, team_id')
     .eq('user_id', user.id)
     .single();
 
   if (!coach?.team_id) {
     return <div className="p-6">No team found</div>;
   }
+
+  // Get team details
+  const { data: team } = await supabase
+    .from('golf_teams')
+    .select('name, invite_code')
+    .eq('id', coach.team_id)
+    .single();
 
   // Get players
   const { data: players } = await supabase
@@ -67,8 +74,8 @@ export default async function GolfRosterPage() {
     )
     : [];
 
-  const teamName = typeof coach.team === 'object' && coach.team ? coach.team.name : 'Team';
-  const inviteCode = typeof coach.team === 'object' && coach.team ? coach.team.invite_code : null;
+  const teamName = team?.name || 'Team';
+  const inviteCode = team?.invite_code || null;
 
   return (
     <div className="min-h-screen">

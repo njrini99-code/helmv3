@@ -102,7 +102,7 @@ export function LocationModal({ isOpen, onClose }: LocationModalProps) {
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSave} loading={loading}>
+            <Button onClick={handleSave} isLoading={loading}>
               Save Preferences
             </Button>
           </div>

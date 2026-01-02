@@ -1,102 +1,109 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ShineEffect } from '@/components/ui/shine-effect';
-import { loginAction } from '@/app/baseball/actions/auth';
+import { BaseballSignInForm } from '@/components/auth/baseball-sign-in-form';
 
-function LoginForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+function LoginContent() {
   const searchParams = useSearchParams();
   const successMessage = searchParams.get('message');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const result = await loginAction(email, password);
-
-      if (!result.success) {
-        setError(result.error || 'Login failed');
-        setLoading(false);
-        return;
-      }
-
-      // Redirect to appropriate page
-      router.push(result.redirectTo || '/baseball/dashboard');
-      router.refresh();
-    } catch (err) {
-      console.error('Unexpected error during sign in:', err);
-      setError('An unexpected error occurred. Please try again.');
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Atmospheric gradient orb */}
-      <div className="absolute top-1/4 -right-32 w-96 h-96 bg-amber-300/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 -left-32 w-96 h-96 bg-green-300/15 rounded-full blur-3xl" />
+    <div
+      className="
+        min-h-screen
+        flex items-center justify-center
+        bg-cover bg-center bg-no-repeat
+        relative
+        p-4
+      "
+      style={{
+        backgroundImage: "url('/images/auth-bg-baseball.jpg')",
+        backgroundColor: '#0F172A', // Fallback while image loads
+      }}
+    >
+      {/* Dark gradient overlay */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'conic-gradient(from 0deg at 50% 50%, rgba(22, 162, 108, 1) 8%, rgba(235, 220, 178, 1) 100%)',
+          border: '1px solid rgba(0, 0, 0, 1)',
+          boxShadow: 'inset 0px 4px 12px 0px rgba(0, 0, 0, 0.15)',
+        }}
+      />
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="text-center mb-8">
-          <motion.img
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            src="/helm-baseball-logo.png"
-            alt="BaseballHelm"
-            className="h-16 w-auto mx-auto mb-4"
-          />
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Welcome back</h1>
-          <p className="text-slate-500 mt-1">Sign in to your account</p>
-        </div>
+      {/* Decorative elements - subtle */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary-600/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary-600/5 rounded-full blur-3xl" />
+      </div>
 
-        <div className="relative glass-standard rounded-2xl p-8 shadow-lg overflow-hidden">
-          <ShineEffect />
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email address" required autoFocus />
-            <div>
-              <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required />
-              <div className="text-right mt-2">
-                <Link href="/baseball/forgot-password" className="text-sm text-green-600 hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
+      {/* Glass card */}
+      <div className="relative z-10 w-full max-w-[420px]">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="
+            bg-white/85
+            backdrop-blur-xl
+            border border-white/40
+            rounded-[24px]
+            p-10
+            shadow-2xl
+          "
+        >
+          {/* Logo */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-12 h-12 rounded-[12px] bg-primary-600 flex items-center justify-center mb-4 overflow-hidden">
+              <img
+                src="/helm-baseball-logo.png"
+                alt="BaseballHelm"
+                className="w-full h-full object-cover"
+              />
             </div>
-            {successMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm"
-              >
-                {successMessage}
-              </motion.div>
-            )}
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm animate-shake">
-                {error}
-              </div>
-            )}
-            <Button type="submit" className="w-full" loading={loading}>Sign in</Button>
-          </form>
-          <p className="text-center text-sm text-slate-500 mt-6">
-            Don't have an account? <Link href="/baseball/signup" className="text-green-600 font-medium hover:underline">Sign up</Link>
-          </p>
-        </div>
+            <h1 className="text-xl font-bold text-warm-900">BaseballHelm</h1>
+          </div>
 
-        <p className="text-center text-sm text-slate-400 mt-6">
-          <Link href="/" className="hover:text-slate-600 transition-colors">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-warm-900 mb-2">
+              Welcome back
+            </h2>
+            <p className="text-warm-500">Sign in to continue to your dashboard</p>
+          </div>
+
+          {/* Success message */}
+          {successMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-[10px] text-sm mb-6"
+            >
+              {successMessage}
+            </motion.div>
+          )}
+
+          {/* Form */}
+          <BaseballSignInForm />
+        </motion.div>
+
+        {/* Footer link outside card */}
+        <p className="text-center mt-6 text-white/80 text-sm">
+          Don't have an account?{' '}
+          <Link
+            href="/baseball/signup"
+            className="text-white font-medium hover:underline transition-all"
+          >
+            Sign up
+          </Link>
+        </p>
+
+        {/* Back to home */}
+        <p className="text-center mt-4 text-white/60 text-sm">
+          <Link href="/" className="hover:text-white/90 transition-colors">
             ← Back to HelmLabs
           </Link>
         </p>
@@ -107,12 +114,14 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
-      </div>
-    }>
-      <LoginForm />
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-warm-900 flex items-center justify-center">
+          <div className="animate-spin h-8 w-8 border-2 border-white border-t-transparent rounded-full" />
+        </div>
+      }
+    >
+      <LoginContent />
     </Suspense>
   );
 }

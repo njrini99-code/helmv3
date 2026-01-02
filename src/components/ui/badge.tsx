@@ -1,44 +1,33 @@
+import { HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
-interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
-  size?: 'sm' | 'md' | 'lg';
-  dot?: boolean;
+interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
+  variant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info';
+  showDot?: boolean;
 }
 
-export function Badge({ className, variant = 'default', size = 'md', dot, children, ...props }: BadgeProps) {
+export const Badge = ({ className, variant = 'default', showDot = false, children, ...props }: BadgeProps) => {
+  const variants = {
+    default: 'border-warm-300 text-warm-600',
+    primary: 'border-primary-300 text-primary-700 bg-primary-50/50',
+    secondary: 'border-warm-200 text-warm-500 bg-warm-50/50',
+    success: 'border-primary-300 text-primary-700 bg-primary-50/50',
+    warning: 'border-amber-300 text-amber-700 bg-amber-50/50',
+    danger: 'border-red-300 text-red-700 bg-red-50/50',
+    info: 'border-blue-300 text-blue-700 bg-blue-50/50',
+  };
+
   return (
     <span
       className={cn(
-        'badge',
-        variant === 'default' && 'bg-cream-200 text-slate-700',
-        variant === 'primary' && 'badge-primary',
-        variant === 'secondary' && 'badge-secondary',
-        variant === 'success' && 'badge-success',
-        variant === 'warning' && 'badge-warning',
-        variant === 'error' && 'badge-error',
-        variant === 'info' && 'bg-blue-50 text-blue-700 border border-blue-200',
-        size === 'sm' && 'px-2 py-0.5 text-2xs',
-        size === 'lg' && 'px-3 py-1.5 text-sm',
+        'inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium border rounded-full',
+        variants[variant],
         className
       )}
       {...props}
     >
-      {dot && (
-        <span
-          className={cn(
-            'w-1.5 h-1.5 rounded-full mr-1',
-            variant === 'default' && 'bg-slate-500',
-            variant === 'primary' && 'bg-brand-600',
-            variant === 'secondary' && 'bg-slate-500',
-            variant === 'success' && 'bg-green-600',
-            variant === 'warning' && 'bg-amber-600',
-            variant === 'error' && 'bg-red-600',
-            variant === 'info' && 'bg-blue-600'
-          )}
-        />
-      )}
+      {showDot && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
       {children}
     </span>
   );
-}
+};

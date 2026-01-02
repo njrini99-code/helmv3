@@ -201,7 +201,7 @@ export default function ProgramPage() {
       <>
         <Header title="Program Profile" subtitle="Coach access required" />
         <div className="p-6">
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-12 text-center">
               <p className="text-slate-500">This page is only available to coaches.</p>
             </CardContent>
@@ -216,7 +216,7 @@ export default function ProgramPage() {
       <>
         <Header title="Program Profile" subtitle="No organization found" />
         <div className="p-6">
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-12 text-center">
               <IconBuilding size={48} className="mx-auto text-slate-300 mb-4" />
               <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">No Program Found</h3>
@@ -243,7 +243,7 @@ export default function ProgramPage() {
       </Header>
 
       <div className="p-6 lg:p-8 max-w-3xl mx-auto">
-        <Card glass>
+        <Card variant="glass">
           <CardContent className="p-6">
             <div className="space-y-6">
               <div>
@@ -281,7 +281,7 @@ export default function ProgramPage() {
                     variant="secondary"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
-                    loading={uploadingLogo}
+                    isLoading={uploadingLogo}
                   >
                     {!uploadingLogo && <IconUpload size={14} className="mr-2" />}
                     {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
@@ -408,7 +408,7 @@ export default function ProgramPage() {
                   </p>
                 )}
                 <div className="ml-auto">
-                  <Button onClick={handleSaveBasicInfo} loading={saving}>
+                  <Button onClick={handleSaveBasicInfo} isLoading={saving}>
                     Save Changes
                   </Button>
                 </div>

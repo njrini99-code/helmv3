@@ -253,7 +253,7 @@ export function PrivacySettingsForm({
   return (
     <div className="space-y-6">
       {SETTING_GROUPS.map((group) => (
-        <Card key={group.title} glass className="overflow-hidden">
+        <Card key={group.title} className="overflow-hidden">
           <div className="relative p-6 border-b border-slate-200">
             <h3 className="text-lg font-semibold text-slate-900 mb-1">
               {group.title}

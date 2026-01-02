@@ -106,7 +106,7 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
   };
 
   return (
-    <Card glass>
+    <Card variant="glass">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -231,31 +231,31 @@ export default function JourneyPage() {
         {/* Stats Overview */}
         {stats && stats.total_interests > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-            <Card glass>
+            <Card variant="glass">
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-semibold tracking-tight text-slate-900">{stats.total_interests}</p>
                 <p className="text-xs text-slate-500">Total Schools</p>
               </CardContent>
             </Card>
-            <Card glass>
+            <Card variant="glass">
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-semibold tracking-tight text-slate-900">{stats.schools_interested}</p>
                 <p className="text-xs text-slate-500">Interested</p>
               </CardContent>
             </Card>
-            <Card glass>
+            <Card variant="glass">
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-semibold tracking-tight text-blue-600">{stats.schools_contacted}</p>
                 <p className="text-xs text-slate-500">Contacted</p>
               </CardContent>
             </Card>
-            <Card glass>
+            <Card variant="glass">
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-semibold tracking-tight text-purple-600">{stats.schools_visited}</p>
                 <p className="text-xs text-slate-500">Visited</p>
               </CardContent>
             </Card>
-            <Card glass>
+            <Card variant="glass">
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-semibold tracking-tight text-amber-600">{stats.schools_offered}</p>
                 <p className="text-xs text-slate-500">Offers</p>
@@ -269,7 +269,7 @@ export default function JourneyPage() {
           <div className="lg:col-span-2 space-y-4">
             <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-4">Your Schools</h2>
             {displaySchools.length === 0 ? (
-              <Card glass>
+              <Card variant="glass">
                 <CardContent className="p-8 text-center">
                   <IconTarget size={40} className="mx-auto mb-4 text-slate-400" />
                   <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">No schools in your journey</h3>
@@ -314,7 +314,7 @@ export default function JourneyPage() {
           {/* Activity Timeline */}
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-4">Recent Activity</h2>
-            <Card glass>
+            <Card variant="glass">
               <CardContent className="p-5">
                 {events.length === 0 ? (
                   <div className="text-center py-8">

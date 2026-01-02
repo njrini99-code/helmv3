@@ -23,7 +23,7 @@ interface DreamSchoolsManagerProps {
   initialSchools?: DreamSchool[];
 }
 
-export function DreamSchoolsManager({ playerId, initialSchools = [] }: DreamSchoolsManagerProps) {
+export function DreamSchoolsManager({ playerId: _playerId, initialSchools = [] }: DreamSchoolsManagerProps) {
   const [schools, setSchools] = useState<DreamSchool[]>(initialSchools);
   const [saving, setSaving] = useState(false);
 

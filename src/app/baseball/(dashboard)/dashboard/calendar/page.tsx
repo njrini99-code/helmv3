@@ -1,494 +1,149 @@
-'use client';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import { BaseballCalendarWrapper } from '@/components/baseball/calendar/BaseballCalendarWrapper';
+import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import type { Metadata } from 'next';
 
-import { useState, useEffect } from 'react';
-import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { PageLoading } from '@/components/ui/loading';
-import { SkeletonCalendar } from '@/components/ui/skeleton-loader';
-import { IconCalendar, IconPlus, IconClock, IconMapPin, IconTrash, IconEdit } from '@/components/icons';
-import { useAuth } from '@/hooks/use-auth';
-import { useTeamStore } from '@/stores/team-store';
-import { createClient } from '@/lib/supabase/client';
-import { EventModal } from '@/components/coach/EventModal';
-import { CalendarView } from '@/components/shared/CalendarView';
-import { useToast } from '@/components/ui/toast';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import type { Event } from '@/lib/types';
+export const metadata: Metadata = {
+  title: 'Calendar | Helm Sports',
+  description: 'View and manage your team events, practices, and game schedule',
+};
 
-export default function CalendarPage() {
-  const { user, coach, player, loading: authLoading } = useAuth();
-  const { selectedTeamId } = useTeamStore();
-  const { showToast } = useToast();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'month' | 'week' | 'list'>('list');
-  const [showEventModal, setShowEventModal] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+export default async function BaseballCalendarPage() {
+  const supabase = await createClient();
 
-  const isCoach = user?.role === 'coach';
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/baseball/login');
 
-  useEffect(() => {
-    if (selectedTeamId) {
-      fetchEvents();
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const userRole = userData?.role;
+  const isCoach = userRole === 'coach';
+
+  let teamId: string | null = null;
+  let events: CalendarEvent[] = [];
+  let teamMembers: { id: string; first_name: string; last_name: string; avatar_url?: string }[] = [];
+
+  if (isCoach) {
+    // Get coach and their team
+    const { data: coach } = await supabase
+      .from('coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (coach?.organization_id) {
+      const { data: team } = await supabase
+        .from('teams')
+        .select('id')
+        .eq('organization_id', coach.organization_id)
+        .single();
+
+      teamId = team?.id || null;
     }
-  }, [selectedTeamId]);
+  } else {
+    // Get player's team
+    const { data: teamMember } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('player_id', user.id)
+      .single();
 
-  async function fetchEvents() {
-    if (!selectedTeamId) return;
+    teamId = teamMember?.team_id || null;
+  }
 
-    setLoading(true);
-    const supabase = createClient();
-
-    const { data, error } = await supabase
+  if (teamId) {
+    // Fetch events from events table
+    const { data: eventsData } = await supabase
       .from('events')
       .select('*')
-      .eq('team_id', selectedTeamId)
+      .eq('team_id', teamId)
       .order('start_time', { ascending: true });
 
-    if (error) {
-    } else {
-      setEvents(data || []);
-    }
+    // Map events to CalendarEvent format
+    events = (eventsData || []).map(event => ({
+      id: event.id,
+      team_id: event.team_id || '',
+      title: event.name,
+      event_type: event.event_type || 'other',
+      start_date: event.start_time,
+      end_date: event.end_time || event.start_time,
+      location: event.location_venue || undefined,
+      description: event.description || undefined,
+    }));
 
-    setLoading(false);
+    // Fetch team members (players on this team)
+    const { data: playersData } = await supabase
+      .from('team_members')
+      .select(`
+        player_id,
+        players:player_id (
+          id,
+          first_name,
+          last_name,
+          avatar_url
+        )
+      `)
+      .eq('team_id', teamId);
+
+    // Get organization_id for coaches
+    const { data: teamData } = await supabase
+      .from('teams')
+      .select('organization_id')
+      .eq('id', teamId)
+      .single();
+
+    // Also fetch coaches on this team (coaches use full_name, not first_name/last_name)
+    const { data: coachesData } = teamData?.organization_id
+      ? await supabase
+          .from('coaches')
+          .select('id, full_name, avatar_url')
+          .eq('organization_id', teamData.organization_id)
+      : { data: [] };
+
+    // Combine players and coaches for team members display
+    teamMembers = [
+      // Coaches - parse full_name into first/last
+      ...(coachesData || []).map(c => {
+        const nameParts = (c.full_name || 'Coach').split(' ');
+        return {
+          id: c.id,
+          first_name: nameParts[0] || 'Coach',
+          last_name: nameParts.slice(1).join(' ') || '',
+          avatar_url: c.avatar_url || undefined,
+        };
+      }),
+      // Players
+      ...(playersData || [])
+        .filter(p => p.players)
+        .map(p => {
+          const player = p.players as { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null };
+          return {
+            id: player.id,
+            first_name: player.first_name || 'Player',
+            last_name: player.last_name || '',
+            avatar_url: player.avatar_url || undefined,
+          };
+        }),
+    ];
   }
-
-  async function handleDeleteConfirm() {
-    if (!deleteConfirm) return;
-    setDeleting(true);
-
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('events')
-      .delete()
-      .eq('id', deleteConfirm);
-
-    if (error) {
-      showToast('Failed to delete event', 'error');
-    } else {
-      showToast('Event deleted successfully', 'success');
-      fetchEvents();
-    }
-    setDeleting(false);
-    setDeleteConfirm(null);
-  }
-
-  function handleEditEvent(event: Event) {
-    setEditingEvent(event);
-    setShowEventModal(true);
-  }
-
-  function handleCloseModal() {
-    setShowEventModal(false);
-    setEditingEvent(null);
-  }
-
-  if (authLoading) return <PageLoading />;
-
-  // Show skeleton while loading events
-  if (loading) {
-    return (
-      <>
-        <Header
-          title="Calendar"
-          subtitle={isCoach ? 'Manage team schedule and events' : 'View your team schedule'}
-        >
-          {isCoach && (
-            <Button disabled>
-              <IconPlus size={16} className="mr-2" />
-              Add Event
-            </Button>
-          )}
-        </Header>
-        <div className="p-6 lg:p-8">
-          <SkeletonCalendar />
-        </div>
-      </>
-    );
-  }
-
-  const getEventColor = (type: string) => {
-    switch (type) {
-      case 'practice':
-        return 'bg-blue-500';
-      case 'game':
-        return 'bg-green-500';
-      case 'tournament':
-        return 'bg-purple-500';
-      case 'meeting':
-        return 'bg-amber-500';
-      default:
-        return 'bg-slate-400';
-    }
-  };
-
-  const getEventBadgeVariant = (type: string): 'default' | 'secondary' | 'success' => {
-    switch (type) {
-      case 'game':
-        return 'success';
-      case 'practice':
-        return 'default';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const formatEventType = (type: string) => {
-    return type.charAt(0).toUpperCase() + type.slice(1);
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const formatTime = (date: string) => {
-    return new Date(date).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
-
-  const now = new Date();
-  const upcomingEvents = events.filter(e => new Date(e.start_time) >= now).slice(0, 5);
-  const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-  const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-  const monthEvents = events.filter(e => {
-    const eventDate = new Date(e.start_time);
-    return eventDate >= monthStart && eventDate <= monthEnd;
-  });
-
-  const stats = {
-    practices: monthEvents.filter(e => e.event_type === 'practice').length,
-    games: monthEvents.filter(e => e.event_type === 'game').length,
-    total: monthEvents.length,
-  };
 
   return (
-    <>
-      <Header
-        title="Calendar"
-        subtitle={isCoach ? 'Manage team schedule and events' : 'View your team schedule'}
-      >
-        {isCoach && (
-          <Button onClick={() => setShowEventModal(true)}>
-            <IconPlus size={16} className="mr-2" />
-            Add Event
-          </Button>
-        )}
-      </Header>
-      <div className="p-6 lg:p-8">
-        {/* View Selector */}
-        <Card glass className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div role="tablist" aria-label="Calendar view options" className="flex items-center gap-2">
-                <Button
-                  role="tab"
-                  aria-selected={view === 'month'}
-                  variant={view === 'month' ? 'primary' : 'secondary'}
-                  size="sm"
-                  onClick={() => setView('month')}
-                >
-                  Month
-                </Button>
-                <Button
-                  role="tab"
-                  aria-selected={view === 'week'}
-                  variant={view === 'week' ? 'primary' : 'secondary'}
-                  size="sm"
-                  onClick={() => setView('week')}
-                >
-                  Week
-                </Button>
-                <Button
-                  role="tab"
-                  aria-selected={view === 'list'}
-                  variant={view === 'list' ? 'primary' : 'secondary'}
-                  size="sm"
-                  onClick={() => setView('list')}
-                >
-                  List
-                </Button>
-              </div>
-              <div className="flex items-center gap-3">
-                <p className="text-sm font-medium text-slate-900">{currentMonth}</p>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setCurrentDate(new Date())}
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Calendar Grid / List */}
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2">
-            {view === 'month' || view === 'week' ? (
-              <CalendarView
-                events={events.map(e => ({
-                  id: e.id,
-                  title: e.name,
-                  start_date: e.start_time,
-                  end_date: e.end_time || undefined,
-                  event_category: e.event_type as any,
-                  location: e.location_venue || undefined,
-                  description: e.description || undefined,
-                }))}
-                view={view}
-                currentDate={currentDate}
-                onDateChange={setCurrentDate}
-                canAddEvents={isCoach}
-                onEventClick={(event) => {
-                  const fullEvent = events.find(e => e.id === event.id);
-                  if (fullEvent && isCoach) {
-                    handleEditEvent(fullEvent);
-                  }
-                }}
-                onAddEvent={() => setShowEventModal(true)}
-              />
-            ) : (
-              <Card glass>
-                <CardHeader>
-                  <h2 className="font-semibold text-slate-900">Schedule</h2>
-                </CardHeader>
-                <CardContent>
-                  {events.length === 0 ? (
-                  /* Empty State */
-                  <div className="text-center py-16">
-                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                      <IconCalendar size={32} className="text-slate-400" />
-                    </div>
-                    <h3 className="text-lg font-medium text-slate-900 mb-2">No events scheduled</h3>
-                    <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
-                      {isCoach
-                        ? 'Add practices, games, and team events to keep everyone on the same page.'
-                        : 'Your team schedule will appear here once your coach adds events.'}
-                    </p>
-                    {isCoach && (
-                      <Button onClick={() => setShowEventModal(true)}>
-                        <IconPlus size={16} className="mr-2" />
-                        Add First Event
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  /* Events List */
-                  <div className="space-y-3">
-                    {events.map((event) => (
-                      <div
-                        key={event.id}
-                        className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 hover:shadow-sm transition-all"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-3 flex-1">
-                            <div className={`w-1 h-full rounded-full ${getEventColor(event.event_type)}`}></div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-slate-900">{event.name}</h3>
-                                <Badge variant={getEventBadgeVariant(event.event_type)}>
-                                  {formatEventType(event.event_type)}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-4 text-sm text-slate-600 mb-2">
-                                <span className="flex items-center gap-1">
-                                  <IconCalendar size={14} />
-                                  {formatDate(event.start_time)}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <IconClock size={14} />
-                                  {formatTime(event.start_time)}
-                                  {event.end_time && ` - ${formatTime(event.end_time)}`}
-                                </span>
-                              </div>
-                              {(event.location_venue || event.location_city) && (
-                                <p className="text-sm leading-relaxed text-slate-500 flex items-center gap-1 mb-2">
-                                  <IconMapPin size={14} />
-                                  {event.location_venue}
-                                  {event.location_city && `, ${event.location_city}`}
-                                  {event.location_state && `, ${event.location_state}`}
-                                </p>
-                              )}
-                              {event.opponent && (
-                                <p className="text-sm leading-relaxed text-slate-600 mb-2">
-                                  vs {event.opponent} {event.home_away && `(${event.home_away})`}
-                                </p>
-                              )}
-                              {event.description && (
-                                <p className="text-sm leading-relaxed text-slate-500 line-clamp-2">{event.description}</p>
-                              )}
-                            </div>
-                          </div>
-                          {isCoach && (
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleEditEvent(event)}
-                                aria-label={`Edit ${event.name}`}
-                              >
-                                <IconEdit size={14} />
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => setDeleteConfirm(event.id)}
-                                aria-label={`Delete ${event.name}`}
-                              >
-                                <IconTrash size={14} />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            )}
-          </div>
-
-          <div className="space-y-6">
-            {/* Event Types Legend */}
-            <Card glass>
-              <CardHeader>
-                <h2 className="font-semibold text-slate-900">Event Types</h2>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <span className="text-sm leading-relaxed text-slate-600">Practice</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="text-sm leading-relaxed text-slate-600">Game</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                  <span className="text-sm leading-relaxed text-slate-600">Tournament</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                  <span className="text-sm leading-relaxed text-slate-600">Team Meeting</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-slate-400"></div>
-                  <span className="text-sm leading-relaxed text-slate-600">Other</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Upcoming Events */}
-            <Card glass>
-              <CardHeader>
-                <h2 className="font-semibold text-slate-900">Upcoming</h2>
-              </CardHeader>
-              <CardContent>
-                {upcomingEvents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <IconCalendar size={32} className="text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm leading-relaxed text-slate-500">No upcoming events</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {upcomingEvents.map((event) => (
-                      <div key={event.id} className="pb-3 border-b border-slate-200 last:border-0 last:pb-0">
-                        <div className="flex items-start gap-2 mb-1">
-                          <div className={`w-2 h-2 rounded-full mt-1.5 ${getEventColor(event.event_type)}`}></div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate">{event.name}</p>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              {formatDate(event.start_time)} • {formatTime(event.start_time)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <Card glass>
-              <CardHeader>
-                <h2 className="font-semibold text-slate-900">This Month</h2>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm leading-relaxed text-slate-600">Practices</span>
-                  <span className="text-sm font-semibold text-slate-900">{stats.practices}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm leading-relaxed text-slate-600">Games</span>
-                  <span className="text-sm font-semibold text-slate-900">{stats.games}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm leading-relaxed text-slate-600">Total Events</span>
-                  <span className="text-sm font-semibold text-slate-900">{stats.total}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-
-      {/* Event Modal */}
-      {showEventModal && selectedTeamId && coach?.id && (
-        <EventModal
-          teamId={selectedTeamId}
-          coachId={coach.id}
-          event={editingEvent}
-          onClose={handleCloseModal}
-          onSuccess={() => {
-            fetchEvents();
-            handleCloseModal();
-          }}
-        />
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        open={!!deleteConfirm}
-        title="Delete Event"
-        message="Are you sure you want to delete this event? This action cannot be undone."
-        confirmLabel="Delete"
-        variant="danger"
-        loading={deleting}
-        onConfirm={handleDeleteConfirm}
-        onCancel={() => setDeleteConfirm(null)}
+    <div
+      className="h-[calc(100vh-64px)] p-6"
+      style={{
+        background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
+      }}
+    >
+      <BaseballCalendarWrapper
+        initialEvents={events}
+        teamMembers={teamMembers}
+        isCoach={isCoach}
       />
-    </>
+    </div>
   );
 }

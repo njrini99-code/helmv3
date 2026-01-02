@@ -85,7 +85,7 @@ export function EmailModal({ isOpen, onClose, currentEmail, onUpdate }: EmailMod
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleUpdateEmail} loading={loading}>
+          <Button onClick={handleUpdateEmail} isLoading={loading}>
             Send Confirmation
           </Button>
         </div>

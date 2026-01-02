@@ -87,10 +87,10 @@ const PlayerCardComponent = function PlayerCard({
       <div
         onClick={handleClick}
         className={cn(
-          "flex items-center gap-3 p-3 rounded-xl cursor-pointer relative",
-          "bg-white border border-slate-100",
+          "flex items-center gap-3 p-3 rounded-[16px] cursor-pointer relative",
+          "bg-white/70 backdrop-blur-md border border-white/40",
           "transition-all duration-200",
-          "hover:-translate-y-0.5 hover:shadow-md hover:border-slate-200",
+          "hover:-translate-y-0.5 hover:shadow-md hover:border-white/60",
           isSelected && "ring-2 ring-green-500 ring-offset-2 border-green-200",
           className
         )}
@@ -134,10 +134,10 @@ const PlayerCardComponent = function PlayerCard({
   if (variant === 'featured') {
     return (
       <div className={cn(
-        "relative overflow-hidden rounded-2xl",
-        "bg-white border border-slate-100",
+        "relative overflow-hidden rounded-[20px]",
+        "bg-white/70 backdrop-blur-md border border-white/40",
         "transition-all duration-200",
-        "hover:-translate-y-1 hover:shadow-xl",
+        "hover:-translate-y-1 hover:shadow-xl hover:border-white/60",
         isSelected && "ring-2 ring-green-500 ring-offset-2 border-green-200",
         isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",
         className
@@ -250,10 +250,10 @@ const PlayerCardComponent = function PlayerCard({
   // Default variant
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-2xl",
-      "bg-white border border-slate-100",
+      "relative overflow-hidden rounded-[20px]",
+      "bg-white/70 backdrop-blur-md border border-white/40",
       "transition-all duration-200",
-      "hover:-translate-y-0.5 hover:shadow-lg hover:border-slate-200",
+      "hover:-translate-y-1 hover:shadow-lg hover:border-white/60",
       "group",
       isSelected && "ring-2 ring-green-500 ring-offset-2 border-green-200",
       isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",

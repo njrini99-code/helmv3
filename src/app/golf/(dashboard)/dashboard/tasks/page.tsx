@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { IconPlus, IconFilter } from '@/components/icons';
+import { IconPlus } from '@/components/icons';
 import { CreateTaskModal } from '@/components/golf/tasks/CreateTaskModal';
 import { TasksList } from '@/components/golf/tasks/TasksList';
 import { TaskListSkeleton } from '@/components/golf/tasks/TaskSkeleton';

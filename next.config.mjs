@@ -145,17 +145,17 @@ const nextConfig = {
             value: 'max-age=63072000; includeSubDomains; preload',
           },
           // Content Security Policy
-          // SECURITY: Removed unsafe-eval and unsafe-inline from script-src
-          // TODO: Migrate to nonce-based CSP for style-src to remove unsafe-inline
+          // SECURITY: In development, we need 'unsafe-inline' and 'unsafe-eval' for Next.js hot reload
+          // TODO: Use nonce-based CSP in production
           {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:;
+              script-src 'self' ${process.env.NODE_ENV === 'development' ? "'unsafe-inline' 'unsafe-eval'" : ''} https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:;
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               img-src 'self' data: https: blob:;
               font-src 'self' data: https://fonts.gstatic.com;
-              connect-src 'self' https://*.supabase.co https://sentry.io https://cdnjs.cloudflare.com;
+              connect-src 'self' https://*.supabase.co https://sentry.io https://cdnjs.cloudflare.com ws://localhost:* ws://127.0.0.1:*;
               worker-src 'self' blob:;
               frame-ancestors 'none';
             `.replace(/\s{2,}/g, ' ').trim(),

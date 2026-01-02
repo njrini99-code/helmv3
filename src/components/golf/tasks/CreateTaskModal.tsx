@@ -7,8 +7,6 @@ import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { IconX } from '@/components/icons';
-import { scaleIn } from '@/lib/motion';
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -221,7 +219,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" loading={loading}>
+          <Button type="submit" isLoading={loading}>
             Create Task
           </Button>
         </div>

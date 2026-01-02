@@ -137,7 +137,7 @@ function CompareContent() {
       />
       <div className="p-8 space-y-6">
         {/* Add Players Section */}
-        <Card glass>
+        <Card variant="glass">
           <CardContent className="p-5">
             <div className="flex items-start gap-4">
               <div className="flex-1">
@@ -228,7 +228,7 @@ function CompareContent() {
 
         {/* Comparison Table */}
         {players.length < 2 ? (
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-8 text-center">
               <div className="max-w-lg mx-auto">
                 <IconTarget size={40} className="mx-auto mb-4 text-slate-400" />

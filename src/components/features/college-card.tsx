@@ -56,7 +56,7 @@ export function CollegeCard({
 
   return (
     <Link href={`/baseball/program/${college.id}`}>
-      <Card hover className="overflow-hidden h-full">
+      <Card variant="interactive" className="overflow-hidden h-full">
         <CardContent className="p-5">
           <div className="flex items-start gap-4">
             <Avatar name={college.name} size="lg" src={college.logo_url} />

@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useScroll, useTransform, useInView, AnimatePresence, MotionValue } from 'framer-motion'
+import { motion, useScroll, useInView, AnimatePresence } from 'framer-motion'
 import { useRef, useState, useEffect } from 'react'
 
 // Feature data with icons
@@ -277,7 +277,7 @@ function FeatureCarousel({
 
       {/* Progress dots */}
       <div className="flex justify-center gap-3 mt-8">
-        {features.map((feature, i) => (
+        {features.map((_feature, i) => (
           <div
             key={i}
             className="relative"
@@ -434,13 +434,6 @@ export function Features() {
           <div className="absolute inset-0 bg-gradient-to-b from-[#FFFBF5] via-amber-50/20 to-[#FFFBF5]" />
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px]
                           bg-amber-200/30 rounded-full blur-[100px] pointer-events-none" />
-          
-          {/* DEBUG INDICATOR */}
-          <div className="fixed top-20 right-4 bg-black/90 text-white px-4 py-2 rounded-lg text-xs font-mono z-[9999] shadow-xl">
-            <div>Progress: {debugProgress}%</div>
-            <div>Phase: {!showCarousel && !isExploding ? 'Text' : isExploding ? 'Explode' : 'Carousel'}</div>
-            <div>Feature: {activeIndex + 1}/{features.length}</div>
-          </div>
           
           {/* TEXT PHASE */}
           <div 

@@ -14,7 +14,7 @@ export default function PlayerDevPlanPage() {
   if (user?.role !== 'player') {
     return (
       <div className="p-8">
-        <Card glass>
+        <Card variant="glass">
           <CardContent className="p-12 text-center">
             <p className="text-slate-500">Only players can access this page.</p>
           </CardContent>
@@ -32,7 +32,7 @@ export default function PlayerDevPlanPage() {
       <div className="p-8">
         {/* Progress Overview */}
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -46,7 +46,7 @@ export default function PlayerDevPlanPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -60,7 +60,7 @@ export default function PlayerDevPlanPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -74,7 +74,7 @@ export default function PlayerDevPlanPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -90,7 +90,7 @@ export default function PlayerDevPlanPage() {
         </div>
 
         {/* Main Content */}
-        <Card glass>
+        <Card variant="glass">
           <CardHeader>
             <h2 className="font-semibold text-slate-900">Your Development Plan</h2>
           </CardHeader>

@@ -153,7 +153,7 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSave} loading={loading}>
+            <Button onClick={handleSave} isLoading={loading}>
               Save Preferences
             </Button>
           </div>

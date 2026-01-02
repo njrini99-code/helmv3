@@ -49,7 +49,7 @@ export default function RosterPage() {
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [activeView, setActiveView] = useState<'roster' | 'lineup'>('roster');
-  const [savingLineup, setSavingLineup] = useState(false);
+  const [_savingLineup, setSavingLineup] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -105,7 +105,7 @@ export default function RosterPage() {
   if (user?.role !== 'coach') {
     return (
       <div className="p-8">
-        <Card glass>
+        <Card variant="glass">
           <CardContent className="p-12 text-center">
             <p className="text-slate-500">Only coaches can access roster management.</p>
           </CardContent>
@@ -172,7 +172,7 @@ export default function RosterPage() {
         {activeView === 'roster' && (
           <>
             {/* Filters and Search */}
-            <Card glass className="mb-6">
+            <Card variant="glass" className="mb-6">
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               <div className="flex-1 relative">
@@ -194,7 +194,7 @@ export default function RosterPage() {
         </Card>
 
         {/* Roster Table */}
-        <Card glass>
+        <Card variant="glass">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -298,7 +298,7 @@ export default function RosterPage() {
 
             {/* Team Invite Instructions - Only show when there's no roster */}
             {roster.length === 0 && (
-              <Card glass className="mt-6">
+              <Card variant="glass" className="mt-6">
                 <CardHeader>
                   <h2 className="font-semibold text-slate-900">How to add players</h2>
                 </CardHeader>

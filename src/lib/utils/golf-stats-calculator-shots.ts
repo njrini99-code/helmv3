@@ -114,6 +114,21 @@ export interface GolfStats {
   girPctPar4: number | null;
   girPctPar5: number | null;
 
+  // GIR by distance
+  girPct50_75: number | null;
+  girPct75_100: number | null;
+  girPct100_125: number | null;
+  girPct125_150: number | null;
+  girPct150_175: number | null;
+  girPct175_200: number | null;
+  girPct200_225: number | null;
+  girPct225Plus: number | null;
+
+  // GIR by lie
+  girPctFromFairway: number | null;
+  girPctFromRough: number | null;
+  girPctFromSand: number | null;
+
   // Putting
   totalPutts: number;
   puttsPerRound: number | null;
@@ -156,9 +171,21 @@ export interface GolfStats {
   puttMissRightPct: number | null;
   puttMissShortPct: number | null;
   puttMissLongPct: number | null;
+  puttMissLowPct: number | null;   // Didn't break enough (amateur miss)
+  puttMissHighPct: number | null;  // Broke too much (pro miss)
+
+  // Putting stats by break type
+  puttingByBreak: {
+    left_to_right: PuttingBreakStats;
+    straight: PuttingBreakStats;
+    right_to_left: PuttingBreakStats;
+    multiple: PuttingBreakStats;
+  };
 
   // Approach
-  approachProximityAvg: number | null;
+  approachProximityAvg: number | null;  // ALL approach shots
+  approachProximityWhenHitGreen: number | null;  // Only when result was green
+  approachProximityWhenMissedGreen: number | null;  // When missed green
   approachProximityPar3: number | null;
   approachProximityPar4: number | null;
   approachProximityPar5: number | null;
@@ -223,6 +250,44 @@ export interface GolfStats {
   // Penalties
   totalPenalties: number;
   penaltiesPerRound: number | null;
+
+  // Strokes Gained (vs PGA Tour averages)
+  strokesGainedTotal: number | null;
+  strokesGainedTee: number | null;       // SG: Off the Tee
+  strokesGainedApproach: number | null;  // SG: Approach the Green
+  strokesGainedAroundGreen: number | null; // SG: Around the Green
+  strokesGainedPutting: number | null;   // SG: Putting
+
+  // Per round averages
+  sgTeePerRound: number | null;
+  sgApproachPerRound: number | null;
+  sgAroundGreenPerRound: number | null;
+  sgPuttingPerRound: number | null;
+  sgTotalPerRound: number | null;
+}
+
+// Putting stats by break type interface
+export interface PuttingBreakStats {
+  totalPutts: number;
+
+  // Make % by distance
+  makePct0_3: number | null;
+  makePct3_5: number | null;
+  makePct5_10: number | null;
+  makePct10_15: number | null;
+  makePct15_20: number | null;
+  makePct20_25: number | null;
+  makePct25_30: number | null;
+  makePct30_35: number | null;
+  makePct35Plus: number | null;
+
+  // Overall make %
+  overallMakePct: number | null;
+
+  // Miss direction %
+  missShortPct: number | null;
+  missLowPct: number | null;
+  missHighPct: number | null;
 }
 
 // ============================================================================
@@ -274,6 +339,110 @@ function getAtgDistanceBucket(distance: number): string {
   if (distance <= 10) return '0_10';
   if (distance <= 20) return '10_20';
   return '20_30';
+}
+
+// ============================================================================
+// STROKES GAINED - PGA TOUR BENCHMARKS
+// ============================================================================
+
+// PGA Tour benchmark data - average strokes to hole out from each position
+// Source: PGA Tour Strokes Gained methodology
+
+const STROKES_GAINED_BENCHMARKS = {
+  // From tee (by distance in yards)
+  tee: {
+    400: 4.08, 425: 4.17, 450: 4.27, 475: 4.37, 500: 4.47,
+    525: 4.57, 550: 4.68, 575: 4.79, 600: 4.91,
+  },
+
+  // From fairway (by distance in yards)
+  fairway: {
+    50: 2.59, 75: 2.70, 100: 2.80, 125: 2.90, 150: 2.99,
+    175: 3.08, 200: 3.19, 225: 3.32, 250: 3.45, 275: 3.58,
+  },
+
+  // From rough (by distance in yards)
+  rough: {
+    50: 2.76, 75: 2.86, 100: 2.95, 125: 3.05, 150: 3.15,
+    175: 3.26, 200: 3.39, 225: 3.53, 250: 3.68, 275: 3.84,
+  },
+
+  // From sand (by distance in yards)
+  sand: {
+    20: 2.53, 30: 2.60, 40: 2.73, 50: 2.90, 75: 3.20,
+    100: 3.40, 125: 3.60, 150: 3.80,
+  },
+
+  // From green (putting, by distance in feet)
+  green: {
+    1: 1.00, 2: 1.01, 3: 1.04, 4: 1.13, 5: 1.23,
+    6: 1.34, 7: 1.42, 8: 1.50, 9: 1.56, 10: 1.61,
+    15: 1.78, 20: 1.87, 25: 1.94, 30: 1.99, 40: 2.06,
+    50: 2.12, 60: 2.18,
+  },
+
+  // Recovery (from trouble)
+  recovery: 3.50,
+};
+
+// Helper to get expected strokes from position
+function getExpectedStrokes(lie: string, distanceYards: number, distanceFeet?: number): number {
+  if (lie === 'green' && distanceFeet !== undefined) {
+    // Putting - use feet
+    const distances = Object.keys(STROKES_GAINED_BENCHMARKS.green).map(Number).sort((a, b) => a - b);
+    const closest = distances.reduce((prev, curr) =>
+      Math.abs(curr - distanceFeet) < Math.abs(prev - distanceFeet) ? curr : prev
+    );
+    return STROKES_GAINED_BENCHMARKS.green[closest as keyof typeof STROKES_GAINED_BENCHMARKS.green] || 2.0;
+  }
+
+  const benchmarkTable = STROKES_GAINED_BENCHMARKS[lie as keyof typeof STROKES_GAINED_BENCHMARKS];
+  if (!benchmarkTable || typeof benchmarkTable !== 'object') {
+    return STROKES_GAINED_BENCHMARKS.recovery;
+  }
+
+  const distances = Object.keys(benchmarkTable).map(Number).sort((a, b) => a - b);
+  const closest = distances.reduce((prev, curr) =>
+    Math.abs(curr - distanceYards) < Math.abs(prev - distanceYards) ? curr : prev
+  );
+  return (benchmarkTable as Record<number, number>)[closest] || 3.5;
+}
+
+// Calculate Strokes Gained for a shot
+function calculateStrokesGainedForShot(shot: RawShot): number {
+  // Strokes Gained = Expected strokes BEFORE - (1 + Expected strokes AFTER)
+
+  const lieBefore = shot.lie_before;
+  const distBefore = normalizeToYards(shot.distance_to_hole_before, shot.distance_unit_before);
+  const distBeforeFeet = normalizeToFeet(shot.distance_to_hole_before, shot.distance_unit_before);
+
+  const lieAfter = shot.result === 'green' ? 'green' : shot.result;
+  const distAfter = normalizeToYards(shot.distance_to_hole_after, shot.distance_unit_after);
+  const distAfterFeet = normalizeToFeet(shot.distance_to_hole_after, shot.distance_unit_after);
+
+  // Get expected strokes before
+  const expectedBefore = lieBefore === 'green'
+    ? getExpectedStrokes('green', 0, distBeforeFeet)
+    : getExpectedStrokes(lieBefore, distBefore);
+
+  // Get expected strokes after (0 if holed)
+  let expectedAfter = 0;
+  if (shot.result !== 'hole') {
+    expectedAfter = lieAfter === 'green'
+      ? getExpectedStrokes('green', 0, distAfterFeet)
+      : getExpectedStrokes(lieAfter, distAfter);
+  }
+
+  // Strokes Gained = what was expected - what it cost (1 stroke + remaining expected)
+  return expectedBefore - (1 + expectedAfter);
+}
+
+// Categorize SG by shot type
+function getStrokesGainedCategory(shot: RawShot): 'tee' | 'approach' | 'around_green' | 'putting' {
+  if (shot.shot_type === 'putting') return 'putting';
+  if (shot.shot_type === 'tee') return 'tee';
+  if (shot.shot_type === 'around_green') return 'around_green';
+  return 'approach';
 }
 
 // ============================================================================
@@ -537,6 +706,17 @@ function aggregateRoundStats(rounds: Array<{
     girPctPar3: null,
     girPctPar4: null,
     girPctPar5: null,
+    girPct50_75: null,
+    girPct75_100: null,
+    girPct100_125: null,
+    girPct125_150: null,
+    girPct150_175: null,
+    girPct175_200: null,
+    girPct200_225: null,
+    girPct225Plus: null,
+    girPctFromFairway: null,
+    girPctFromRough: null,
+    girPctFromSand: null,
     totalPutts: 0,
     puttsPerRound: null,
     puttsPerHole: null,
@@ -570,7 +750,77 @@ function aggregateRoundStats(rounds: Array<{
     puttMissRightPct: null,
     puttMissShortPct: null,
     puttMissLongPct: null,
+    puttMissLowPct: null,
+    puttMissHighPct: null,
+    puttingByBreak: {
+      left_to_right: {
+        totalPutts: 0,
+        makePct0_3: null,
+        makePct3_5: null,
+        makePct5_10: null,
+        makePct10_15: null,
+        makePct15_20: null,
+        makePct20_25: null,
+        makePct25_30: null,
+        makePct30_35: null,
+        makePct35Plus: null,
+        overallMakePct: null,
+        missShortPct: null,
+        missLowPct: null,
+        missHighPct: null,
+      },
+      straight: {
+        totalPutts: 0,
+        makePct0_3: null,
+        makePct3_5: null,
+        makePct5_10: null,
+        makePct10_15: null,
+        makePct15_20: null,
+        makePct20_25: null,
+        makePct25_30: null,
+        makePct30_35: null,
+        makePct35Plus: null,
+        overallMakePct: null,
+        missShortPct: null,
+        missLowPct: null,
+        missHighPct: null,
+      },
+      right_to_left: {
+        totalPutts: 0,
+        makePct0_3: null,
+        makePct3_5: null,
+        makePct5_10: null,
+        makePct10_15: null,
+        makePct15_20: null,
+        makePct20_25: null,
+        makePct25_30: null,
+        makePct30_35: null,
+        makePct35Plus: null,
+        overallMakePct: null,
+        missShortPct: null,
+        missLowPct: null,
+        missHighPct: null,
+      },
+      multiple: {
+        totalPutts: 0,
+        makePct0_3: null,
+        makePct3_5: null,
+        makePct5_10: null,
+        makePct10_15: null,
+        makePct15_20: null,
+        makePct20_25: null,
+        makePct25_30: null,
+        makePct30_35: null,
+        makePct35Plus: null,
+        overallMakePct: null,
+        missShortPct: null,
+        missLowPct: null,
+        missHighPct: null,
+      },
+    },
     approachProximityAvg: null,
+    approachProximityWhenHitGreen: null,
+    approachProximityWhenMissedGreen: null,
     approachProximityPar3: null,
     approachProximityPar4: null,
     approachProximityPar5: null,
@@ -619,6 +869,16 @@ function aggregateRoundStats(rounds: Array<{
     sandSavePercentage: null,
     totalPenalties: 0,
     penaltiesPerRound: null,
+    strokesGainedTotal: null,
+    strokesGainedTee: null,
+    strokesGainedApproach: null,
+    strokesGainedAroundGreen: null,
+    strokesGainedPutting: null,
+    sgTeePerRound: null,
+    sgApproachPerRound: null,
+    sgAroundGreenPerRound: null,
+    sgPuttingPerRound: null,
+    sgTotalPerRound: null,
   };
 
   // Accumulators
@@ -629,15 +889,43 @@ function aggregateRoundStats(rounds: Array<{
 
   const drivingDistances: number[] = [];
   const drivingDistancesDriverOnly: number[] = [];
-  let fairwaysPar4 = { hit: 0, total: 0 };
-  let fairwaysPar5 = { hit: 0, total: 0 };
-  let fairwaysDriver = { hit: 0, total: 0 };
-  let fairwaysNonDriver = { hit: 0, total: 0 };
+  const fairwaysPar4 = { hit: 0, total: 0 };
+  const fairwaysPar5 = { hit: 0, total: 0 };
+  const fairwaysDriver = { hit: 0, total: 0 };
+  const fairwaysNonDriver = { hit: 0, total: 0 };
 
-  let girPar3 = { made: 0, total: 0 };
-  let girPar4 = { made: 0, total: 0 };
-  let girPar5 = { made: 0, total: 0 };
+  const girPar3 = { made: 0, total: 0 };
+  const girPar4 = { made: 0, total: 0 };
+  const girPar5 = { made: 0, total: 0 };
   let puttsOnGir = 0;
+
+  // GIR by distance and lie
+  const girByDistance: Record<string, { made: number; total: number }> = {};
+  const girByLie = {
+    fairway: { made: 0, total: 0 },
+    rough: { made: 0, total: 0 },
+    sand: { made: 0, total: 0 },
+  };
+
+  // Putting stats by break type
+  const puttStatsByBreak: Record<string, {
+    make: Record<string, { made: number; total: number }>;
+    missShort: number;
+    missLow: number;
+    missHigh: number;
+    missTotal: number;
+  }> = {
+    left_to_right: { make: {}, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
+    straight: { make: {}, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
+    right_to_left: { make: {}, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
+    multiple: { make: {}, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
+  };
+
+  // Strokes Gained accumulators
+  let sgTee = 0;
+  let sgApproach = 0;
+  let sgAroundGreen = 0;
+  let sgPutting = 0;
 
   const puttMake: Record<string, { made: number; total: number }> = {};
   const puttProximity: Record<string, number[]> = {};
@@ -647,25 +935,29 @@ function aggregateRoundStats(rounds: Array<{
   let puttMissRight = 0;
   let puttMissShort = 0;
   let puttMissLong = 0;
+  let puttMissLow = 0;  // New: Didn't break enough
+  let puttMissHigh = 0;  // New: Broke too much
   let puttMissTotal = 0;
 
-  let approachProximities: number[] = [];
-  let approachProxPar3: number[] = [];
-  let approachProxPar4: number[] = [];
-  let approachProxPar5: number[] = [];
-  let approachProxFairway: number[] = [];
-  let approachProxRough: number[] = [];
-  let approachProxSand: number[] = [];
+  const approachProximities: number[] = [];
+  const greenHitProximities: number[] = [];  // Proximity when hit green
+  const greenMissProximities: number[] = [];  // Proximity when missed green
+  const approachProxPar3: number[] = [];
+  const approachProxPar4: number[] = [];
+  const approachProxPar5: number[] = [];
+  const approachProxFairway: number[] = [];
+  const approachProxRough: number[] = [];
+  const approachProxSand: number[] = [];
 
   const approachProxByDistance: Record<string, number[]> = {};
   const approachEffByDistanceLie: Record<string, Record<string, number[]>> = {};
 
-  let scrambleFairway = { made: 0, total: 0 };
-  let scrambleRough = { made: 0, total: 0 };
-  let scrambleSand = { made: 0, total: 0 };
-  let scramble0_10 = { made: 0, total: 0 };
-  let scramble10_20 = { made: 0, total: 0 };
-  let scramble20_30 = { made: 0, total: 0 };
+  const scrambleFairway = { made: 0, total: 0 };
+  const scrambleRough = { made: 0, total: 0 };
+  const scrambleSand = { made: 0, total: 0 };
+  const scramble0_10 = { made: 0, total: 0 };
+  const scramble10_20 = { made: 0, total: 0 };
+  const scramble20_30 = { made: 0, total: 0 };
 
   const atgEff0_10: number[] = [];
   const atgEff10_20: number[] = [];
@@ -807,6 +1099,38 @@ function aggregateRoundStats(rounds: Array<{
         if (hole.greenInRegulation) girPar5.made++;
       }
 
+      // GIR by approach distance
+      if (hole.approachDistance !== null) {
+        const distYards = normalizeToYards(hole.approachDistance, 'yards');
+        let bucket = '';
+        if (distYards >= 50 && distYards < 75) bucket = '50_75';
+        else if (distYards >= 75 && distYards < 100) bucket = '75_100';
+        else if (distYards >= 100 && distYards < 125) bucket = '100_125';
+        else if (distYards >= 125 && distYards < 150) bucket = '125_150';
+        else if (distYards >= 150 && distYards < 175) bucket = '150_175';
+        else if (distYards >= 175 && distYards < 200) bucket = '175_200';
+        else if (distYards >= 200 && distYards < 225) bucket = '200_225';
+        else if (distYards >= 225) bucket = '225_plus';
+
+        if (bucket) {
+          if (!girByDistance[bucket]) {
+            girByDistance[bucket] = { made: 0, total: 0 };
+          }
+          girByDistance[bucket]!.total++;
+          if (hole.greenInRegulation) {
+            girByDistance[bucket]!.made++;
+          }
+        }
+      }
+
+      // GIR by approach lie
+      if (hole.approachLie && (hole.approachLie === 'fairway' || hole.approachLie === 'rough' || hole.approachLie === 'sand')) {
+        girByLie[hole.approachLie].total++;
+        if (hole.greenInRegulation) {
+          girByLie[hole.approachLie].made++;
+        }
+      }
+
       // Putts
       stats.totalPutts += hole.putts;
       if (hole.threePutts) stats.threePuttsTotal++;
@@ -845,13 +1169,52 @@ function aggregateRoundStats(rounds: Array<{
             if (firstPuttShot.miss_direction.includes('right')) puttMissRight++;
             if (firstPuttShot.miss_direction.includes('short')) puttMissShort++;
             if (firstPuttShot.miss_direction.includes('long')) puttMissLong++;
+            // New miss direction values for putting
+            if (firstPuttShot.miss_direction === 'low') puttMissLow++;
+            if (firstPuttShot.miss_direction === 'high') puttMissHigh++;
+          }
+        }
+
+        // Putting stats by break type
+        const firstPuttShot = hole.shots.find(s => s.shot_type === 'putting');
+        if (firstPuttShot?.putt_break && (firstPuttShot.putt_break === 'left_to_right' ||
+            firstPuttShot.putt_break === 'right_to_left' || firstPuttShot.putt_break === 'straight' ||
+            firstPuttShot.putt_break === 'multiple')) {
+          const breakType = firstPuttShot.putt_break;
+
+          if (!puttStatsByBreak[breakType]) {
+            puttStatsByBreak[breakType] = { make: {}, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 };
+          }
+
+          // Make % by distance for this break type
+          if (!puttStatsByBreak[breakType].make[bucket]) {
+            puttStatsByBreak[breakType].make[bucket] = { made: 0, total: 0 };
+          }
+          puttStatsByBreak[breakType].make[bucket].total++;
+          if (hole.putts === 1) {
+            puttStatsByBreak[breakType].make[bucket].made++;
+          }
+
+          // Miss direction for this break type
+          if (hole.putts > 1 && firstPuttShot.miss_direction) {
+            puttStatsByBreak[breakType].missTotal++;
+            if (firstPuttShot.miss_direction === 'short') puttStatsByBreak[breakType].missShort++;
+            if (firstPuttShot.miss_direction === 'low') puttStatsByBreak[breakType].missLow++;
+            if (firstPuttShot.miss_direction === 'high') puttStatsByBreak[breakType].missHigh++;
           }
         }
       }
 
-      // Approach proximity
+      // Approach proximity (ALL approach shots, split by hit/miss)
       if (hole.approachProximity !== null) {
         approachProximities.push(hole.approachProximity);
+
+        // Split proximity by green hit vs miss
+        if (hole.greenInRegulation) {
+          greenHitProximities.push(hole.approachProximity);
+        } else {
+          greenMissProximities.push(hole.approachProximity);
+        }
 
         if (hole.par === 3) approachProxPar3.push(hole.approachProximity);
         else if (hole.par === 4) approachProxPar4.push(hole.approachProximity);
@@ -947,6 +1310,21 @@ function aggregateRoundStats(rounds: Array<{
 
       // Penalties
       stats.totalPenalties += hole.penalties;
+
+      // Strokes Gained - process each shot
+      for (const shot of hole.shots) {
+        // Skip penalty shots
+        if (shot.result === 'penalty') continue;
+
+        const sg = calculateStrokesGainedForShot(shot);
+        const category = getStrokesGainedCategory(shot);
+
+        // Accumulate by category
+        if (category === 'tee') sgTee += sg;
+        else if (category === 'approach') sgApproach += sg;
+        else if (category === 'around_green') sgAroundGreen += sg;
+        else if (category === 'putting') sgPutting += sg;
+      }
     }
   }
 
@@ -1067,6 +1445,76 @@ function aggregateRoundStats(rounds: Array<{
   stats.puttMissRightPct = safePercent(puttMissRight, puttMissTotal);
   stats.puttMissShortPct = safePercent(puttMissShort, puttMissTotal);
   stats.puttMissLongPct = safePercent(puttMissLong, puttMissTotal);
+  stats.puttMissLowPct = safePercent(puttMissLow, puttMissTotal);
+  stats.puttMissHighPct = safePercent(puttMissHigh, puttMissTotal);
+
+  // GIR by distance
+  stats.girPct50_75 = safePercent(girByDistance['50_75']?.made || 0, girByDistance['50_75']?.total || 0);
+  stats.girPct75_100 = safePercent(girByDistance['75_100']?.made || 0, girByDistance['75_100']?.total || 0);
+  stats.girPct100_125 = safePercent(girByDistance['100_125']?.made || 0, girByDistance['100_125']?.total || 0);
+  stats.girPct125_150 = safePercent(girByDistance['125_150']?.made || 0, girByDistance['125_150']?.total || 0);
+  stats.girPct150_175 = safePercent(girByDistance['150_175']?.made || 0, girByDistance['150_175']?.total || 0);
+  stats.girPct175_200 = safePercent(girByDistance['175_200']?.made || 0, girByDistance['175_200']?.total || 0);
+  stats.girPct200_225 = safePercent(girByDistance['200_225']?.made || 0, girByDistance['200_225']?.total || 0);
+  stats.girPct225Plus = safePercent(girByDistance['225_plus']?.made || 0, girByDistance['225_plus']?.total || 0);
+
+  // GIR by lie
+  stats.girPctFromFairway = safePercent(girByLie.fairway.made, girByLie.fairway.total);
+  stats.girPctFromRough = safePercent(girByLie.rough.made, girByLie.rough.total);
+  stats.girPctFromSand = safePercent(girByLie.sand.made, girByLie.sand.total);
+
+  // Proximity split (hit vs miss)
+  stats.approachProximityWhenHitGreen = safeAverage(
+    greenHitProximities.reduce((a, b) => a + b, 0),
+    greenHitProximities.length
+  );
+  stats.approachProximityWhenMissedGreen = safeAverage(
+    greenMissProximities.reduce((a, b) => a + b, 0),
+    greenMissProximities.length
+  );
+
+  // Putting stats by break type
+  for (const breakType of ['left_to_right', 'right_to_left', 'straight', 'multiple'] as const) {
+    const breakData = puttStatsByBreak[breakType];
+    if (breakData) {
+      const totalPutts = Object.values(breakData.make).reduce((sum, bucket) => sum + bucket.total, 0);
+
+      stats.puttingByBreak[breakType] = {
+        totalPutts,
+        makePct0_3: safePercent(breakData.make['0_3']?.made || 0, breakData.make['0_3']?.total || 0),
+        makePct3_5: safePercent(breakData.make['3_5']?.made || 0, breakData.make['3_5']?.total || 0),
+        makePct5_10: safePercent(breakData.make['5_10']?.made || 0, breakData.make['5_10']?.total || 0),
+        makePct10_15: safePercent(breakData.make['10_15']?.made || 0, breakData.make['10_15']?.total || 0),
+        makePct15_20: safePercent(breakData.make['15_20']?.made || 0, breakData.make['15_20']?.total || 0),
+        makePct20_25: safePercent(breakData.make['20_25']?.made || 0, breakData.make['20_25']?.total || 0),
+        makePct25_30: safePercent(breakData.make['25_30']?.made || 0, breakData.make['25_30']?.total || 0),
+        makePct30_35: safePercent(breakData.make['30_35']?.made || 0, breakData.make['30_35']?.total || 0),
+        makePct35Plus: safePercent(breakData.make['35_plus']?.made || 0, breakData.make['35_plus']?.total || 0),
+        overallMakePct: safePercent(
+          Object.values(breakData.make).reduce((sum, bucket) => sum + bucket.made, 0),
+          totalPutts
+        ),
+        missShortPct: safePercent(breakData.missShort, breakData.missTotal),
+        missLowPct: safePercent(breakData.missLow, breakData.missTotal),
+        missHighPct: safePercent(breakData.missHigh, breakData.missTotal),
+      };
+    }
+  }
+
+  // Strokes Gained
+  const sgTotal = sgTee + sgApproach + sgAroundGreen + sgPutting;
+  stats.strokesGainedTotal = sgTotal;
+  stats.strokesGainedTee = sgTee;
+  stats.strokesGainedApproach = sgApproach;
+  stats.strokesGainedAroundGreen = sgAroundGreen;
+  stats.strokesGainedPutting = sgPutting;
+
+  // Strokes Gained per round
+  stats.sgTeePerRound = safeAverage(sgTee, rounds.length);
+  stats.sgApproachPerRound = safeAverage(sgApproach, rounds.length);
+  stats.sgAroundGreenPerRound = safeAverage(sgAroundGreen, rounds.length);
+  stats.sgPuttingPerRound = safeAverage(sgPutting, rounds.length);
+  stats.sgTotalPerRound = safeAverage(sgTotal, rounds.length);
 
   // Approach proximity
   stats.approachProximityAvg = safeAverage(

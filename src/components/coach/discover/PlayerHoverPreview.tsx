@@ -11,7 +11,6 @@ import {
   IconMessage,
   IconArrowRight,
   IconMapPin,
-  IconGraduationCap,
   IconPlay,
 } from '@/components/icons';
 

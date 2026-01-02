@@ -27,7 +27,7 @@ export default function ActivateRecruitingPage() {
   if (player?.player_type === 'college') {
     return (
       <div className="p-8">
-        <Card glass>
+        <Card variant="glass">
           <CardContent className="p-12 text-center">
             <h3 className="text-lg font-medium text-slate-900 mb-2">Not Available</h3>
             <p className="text-slate-500">Recruiting features are not available for college players.</p>
@@ -90,7 +90,7 @@ export default function ActivateRecruitingPage() {
       />
       <div className="p-6 lg:p-8 max-w-4xl mx-auto">
         {/* Hero Section */}
-        <Card glass className="mb-6 bg-gradient-to-br from-green-50 to-white border-green-200">
+        <Card variant="glass" className="mb-6 bg-gradient-to-br from-green-50 to-white border-green-200">
           <CardContent className="p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-green-600 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={32} className="text-white" />
@@ -110,7 +110,7 @@ export default function ActivateRecruitingPage() {
 
         {/* Features Grid */}
         <div className="grid grid-cols-2 gap-6 mb-6">
-          <Card glass>
+          <Card variant="glass">
             <CardHeader>
               <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-3">
                 <IconEye size={24} className="text-blue-600" />
@@ -138,7 +138,7 @@ export default function ActivateRecruitingPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardHeader>
               <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center mb-3">
                 <IconUsers size={24} className="text-purple-600" />
@@ -166,7 +166,7 @@ export default function ActivateRecruitingPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardHeader>
               <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3">
                 <IconTarget size={24} className="text-green-600" />
@@ -194,7 +194,7 @@ export default function ActivateRecruitingPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardHeader>
               <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mb-3">
                 <IconChart size={24} className="text-amber-600" />
@@ -251,7 +251,7 @@ export default function ActivateRecruitingPage() {
         </Card>
 
         {/* CTA */}
-        <Card glass>
+        <Card variant="glass">
           <CardContent className="p-8 text-center">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-6">
@@ -261,7 +261,7 @@ export default function ActivateRecruitingPage() {
             <Button
               size="lg"
               onClick={handleActivate}
-              loading={activating}
+              isLoading={activating}
               className="px-8"
             >
               Activate Recruiting

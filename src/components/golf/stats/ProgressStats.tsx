@@ -163,7 +163,7 @@ function RecentRounds({ rounds }: { rounds: RoundData[] }) {
       />
       <h3 className="text-sm font-semibold text-slate-700 mb-4">Recent Rounds</h3>
       <div className="space-y-2">
-        {recentRounds.map((round, i) => (
+        {recentRounds.map((round, _i) => (
           <div key={round.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-900 truncate">{round.course_name}</p>

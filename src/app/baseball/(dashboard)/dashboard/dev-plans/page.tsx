@@ -100,7 +100,7 @@ export default function DevPlansPage() {
   if (user?.role !== 'coach') {
     return (
       <div className="p-8">
-        <Card glass>
+        <Card variant="glass">
           <CardContent className="p-12 text-center">
             <p className="text-slate-500">Only coaches can access development plans.</p>
           </CardContent>
@@ -154,7 +154,7 @@ export default function DevPlansPage() {
       <div className="p-6 lg:p-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -168,7 +168,7 @@ export default function DevPlansPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -182,7 +182,7 @@ export default function DevPlansPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -196,7 +196,7 @@ export default function DevPlansPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -212,7 +212,7 @@ export default function DevPlansPage() {
         </div>
 
         {/* Plans List */}
-        <Card glass>
+        <Card variant="glass">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -322,7 +322,7 @@ export default function DevPlansPage() {
 
         {/* Info Cards */}
         <div className="grid grid-cols-2 gap-6 mt-6">
-          <Card glass>
+          <Card variant="glass">
             <CardHeader>
               <h2 className="font-semibold text-slate-900">What are Development Plans?</h2>
             </CardHeader>
@@ -351,7 +351,7 @@ export default function DevPlansPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardHeader>
               <h2 className="font-semibold text-slate-900">Best Practices</h2>
             </CardHeader>

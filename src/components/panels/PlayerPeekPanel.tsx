@@ -6,17 +6,16 @@ import { PeekPanelRoot } from './PeekPanelRoot';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  IconExternalLink, 
-  IconStar, 
+import {
+  IconExternalLink,
+  IconStar,
   IconStarFilled,
-  IconVideo,
   IconRuler,
   IconActivity,
   IconTarget,
   IconGraduationCap
 } from '@/components/icons';
-import { getFullName, formatHeight, cn } from '@/lib/utils';
+import { getFullName, formatHeight } from '@/lib/utils';
 import type { Player } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';

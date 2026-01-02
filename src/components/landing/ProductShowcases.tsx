@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Target, Users, Video, MessageCircle, Flag, BarChart3, Calendar, Clipboard } from 'lucide-react'
+import { ArrowRight, Target, Users, Video, MessageCircle, Flag, BarChart3, Calendar } from 'lucide-react'
 
 /**
  * CINEMATIC PRODUCT SHOWCASES
@@ -194,7 +194,7 @@ function ProductShowcase({
                         width={80}
                         height={80}
                         className="relative w-20 h-20"
-                        unoptimized
+                        style={{ boxShadow: '0px 4px 12px 0px rgba(0, 0, 0, 0.15)' }}
                       />
                     </div>
                   </motion.div>

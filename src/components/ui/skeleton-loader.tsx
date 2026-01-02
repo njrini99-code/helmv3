@@ -321,7 +321,7 @@ export function SkeletonWatchlist({ className }: { className?: string }) {
     <div className={cn('space-y-6', className)}>
       {/* Tabs */}
       <div className="flex items-center gap-2">
-        {['All', 'Pitchers', 'Catchers', 'Infielders', 'Outfielders'].map((tab, i) => (
+        {['All', 'Pitchers', 'Catchers', 'Infielders', 'Outfielders'].map((_, i) => (
           <Skeleton key={i} variant="rectangular" width={i === 0 ? 60 : 90} height={36} className="rounded-full" />
         ))}
       </div>
@@ -659,7 +659,7 @@ export function SkeletonCompare({ className }: { className?: string }) {
       </div>
       {/* Comparison table */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        {['Basic Info', 'Metrics', 'Stats', 'Academics'].map((section, sectionIndex) => (
+        {['Basic Info', 'Metrics', 'Stats', 'Academics'].map((section) => (
           <div key={section}>
             <div className="bg-slate-50 px-6 py-3 border-b border-slate-200">
               <Skeleton variant="text" width={100} />

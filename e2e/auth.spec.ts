@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { loginAsCoach, loginAsPlayer, logout, TEST_USERS } from './helpers/auth';
-import { waitForPageLoad, waitForElement } from './helpers/common';
+import { loginAsCoach, TEST_USERS } from './helpers/auth';
+import { waitForPageLoad } from './helpers/common';
 
 test.describe('Authentication', () => {
   test.describe('Login', () => {

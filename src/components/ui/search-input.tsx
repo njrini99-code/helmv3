@@ -25,7 +25,7 @@ export function SearchInput({
   className,
   onSearch,
   suggestions = [],
-  showTrending = true
+  showTrending: _showTrending = true
 }: SearchInputProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // ============================================================================
 // TYPES
@@ -25,7 +25,7 @@ export interface ShotRecord {
   distanceUnitAfter: 'yards' | 'feet';
   shotDistance: number;
   missDirection?: string;
-  puttBreak?: 'right_to_left' | 'left_to_right' | 'straight';
+  puttBreak?: 'right_to_left' | 'left_to_right' | 'straight' | 'multiple';
   puttSlope?: 'uphill' | 'downhill' | 'level' | 'severe';
   isPenalty: boolean;
   penaltyType?: 'ob' | 'water' | 'unplayable' | 'lost';
@@ -211,9 +211,9 @@ export default function ShotTrackingComprehensive({
       if (!distanceAfterShot || parseInt(distanceAfterShot) < 0) return false;
     }
     
-    // Putting always needs break and slope (filled before result)
+    // Putting always needs break (filled before result)
     if (isPutting) {
-      if (!puttBreak || !puttSlope) return false;
+      if (!puttBreak) return false;
     }
     
     // Miss direction required for misses
@@ -752,27 +752,13 @@ export default function ShotTrackingComprehensive({
               <div className="mb-6">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Break</p>
                 <div className="inline-flex bg-white rounded-lg p-1 w-full border border-emerald-200">
-                  {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}].map(b => (
+                  {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
                     <button key={b.v} onClick={() => setPuttBreak(b.v)}
                       className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                         puttBreak === b.v
                           ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
                           : 'text-slate-600 hover:text-slate-900'}`}>
                       {b.l}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Slope</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {['uphill', 'downhill', 'level', 'severe'].map(s => (
-                    <button key={s} onClick={() => setPuttSlope(s)}
-                      className={`py-2.5 rounded-lg font-semibold text-xs transition-all ${
-                        puttSlope === s
-                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                          : 'bg-white text-slate-700 ring-1 ring-emerald-200 hover:ring-emerald-300 hover:bg-slate-50'}`}>
-                      {s.charAt(0).toUpperCase() + s.slice(1)}
                     </button>
                   ))}
                 </div>
@@ -847,7 +833,7 @@ export default function ShotTrackingComprehensive({
                   ))}
                 </div>
               )}
-              {(isApproachOrAroundGreen || isPutting) && (
+              {isApproachOrAroundGreen && (
                 <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
                   {['long_left', 'long', 'long_right', 'left', null, 'right', 'short_left', 'short', 'short_right'].map((d, i) => (
                     d === null ? (
@@ -870,6 +856,29 @@ export default function ShotTrackingComprehensive({
                         {d === 'short_right' && '↘'}
                       </button>
                     )
+                  ))}
+                </div>
+              )}
+              {isPutting && (
+                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
+                  {[
+                    { v: 'short', l: 'Short', icon: '↓', desc: 'Came up short' },
+                    { v: 'low', l: 'Low', icon: '↘', desc: "Didn't break enough" },
+                    { v: 'high', l: 'High', icon: '↗', desc: 'Broke too much' },
+                  ].map(d => (
+                    <button
+                      key={d.v}
+                      onClick={() => setMissDirection(d.v)}
+                      className={`py-4 rounded-xl font-semibold text-sm transition-all flex flex-col items-center gap-1 ${
+                        missDirection === d.v
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                          : 'bg-white text-slate-700 ring-1 ring-emerald-200 hover:ring-emerald-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="text-xl">{d.icon}</span>
+                      <span>{d.l}</span>
+                      <span className="text-[10px] opacity-70 font-normal">{d.desc}</span>
+                    </button>
                   ))}
                 </div>
               )}

@@ -189,7 +189,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"
-        loading={deleting}
+        isLoading={deleting}
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
       />

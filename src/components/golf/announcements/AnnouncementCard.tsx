@@ -9,7 +9,7 @@ interface AnnouncementCardProps {
   playerId: string | null;
 }
 
-export function AnnouncementCard({ announcement, isCoach, playerId }: AnnouncementCardProps) {
+export function AnnouncementCard({ announcement, isCoach: _isCoach, playerId: _playerId }: AnnouncementCardProps) {
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
       case 'urgent':

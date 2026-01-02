@@ -11,7 +11,6 @@ import { PageLoading } from '@/components/ui/loading';
 import { SkeletonDiscover } from '@/components/ui/skeleton-loader';
 import { useAuth } from '@/hooks/use-auth';
 import { useRecruitingRouteProtection } from '@/hooks/use-route-protection';
-import { getPlayersOptimized } from '@/lib/queries/performance';
 import type { Player } from '@/lib/types';
 
 function DiscoverContent() {

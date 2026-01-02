@@ -144,12 +144,11 @@ export async function uploadGolfDocument(
 
   // Generate unique file name
   const timestamp = Date.now();
-  const fileExt = file.name.split('.').pop();
   const fileName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
   const filePath = `${teamId}/${fileName}`;
 
   // Upload to storage
-  const { data, error } = await supabase
+  const { error } = await supabase
     .storage
     .from('golf-documents')
     .upload(filePath, file, {

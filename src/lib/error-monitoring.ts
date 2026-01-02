@@ -32,11 +32,9 @@ export interface ErrorReport {
 
 class ErrorMonitoring {
   private enabled: boolean;
-  private environment: string;
 
   constructor() {
     this.enabled = process.env.NODE_ENV === 'production';
-    this.environment = process.env.NODE_ENV || 'development';
   }
 
   /**

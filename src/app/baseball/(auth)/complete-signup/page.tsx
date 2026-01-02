@@ -282,7 +282,7 @@ export default function CompleteSignupPage() {
           <Button
             onClick={handleSubmit}
             disabled={!role || (role === 'coach' ? !coachType : !playerType) || loading}
-            loading={loading}
+            isLoading={loading}
             className="w-full"
           >
             Complete Setup

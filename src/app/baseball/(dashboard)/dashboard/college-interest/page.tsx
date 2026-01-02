@@ -211,7 +211,7 @@ export default function CollegeInterestPage() {
   if (user?.role !== 'coach') {
     return (
       <div className="p-8">
-        <Card glass>
+        <Card variant="glass">
           <CardContent className="p-12 text-center">
             <p className="text-slate-500">Only coaches can access college interest tracking.</p>
           </CardContent>
@@ -264,7 +264,7 @@ export default function CollegeInterestPage() {
       <div className="p-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -278,7 +278,7 @@ export default function CollegeInterestPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -292,7 +292,7 @@ export default function CollegeInterestPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -306,7 +306,7 @@ export default function CollegeInterestPage() {
             </CardContent>
           </Card>
 
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -322,7 +322,7 @@ export default function CollegeInterestPage() {
         </div>
 
         {/* Interest List */}
-        <Card glass>
+        <Card variant="glass">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>

@@ -1,11 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { CalendarContainer } from '@/components/golf/calendar/CalendarContainer';
-import { EventsList } from '@/components/golf/calendar/EventsList';
-import { CreateEventButton } from '@/components/golf/calendar/CreateEventButton';
-import { CalendarClassesList } from '@/components/golf/calendar/CalendarClassesList';
-import type { GolfEvent } from '@/lib/types/golf';
-import { Metadata } from 'next';
+import { GolfCalendarWrapper } from '@/components/golf/calendar/GolfCalendarWrapper';
+import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Calendar | Helm Sports',
@@ -25,13 +22,13 @@ export default async function GolfCalendarPage() {
     .single();
 
   const userRole = userData?.role;
+  const isCoach = userRole === 'coach';
 
   let teamId: string | null = null;
-  let playerId: string | null = null;
-  let events: GolfEvent[] = [];
-  let classes: any[] = [];
+  let events: CalendarEvent[] = [];
+  let teamMembers: { id: string; first_name: string; last_name: string; avatar_url?: string }[] = [];
 
-  if (userRole === 'coach') {
+  if (isCoach) {
     const { data: coach } = await supabase
       .from('golf_coaches')
       .select('id, team_id')
@@ -47,97 +44,99 @@ export default async function GolfCalendarPage() {
       .single();
 
     teamId = player?.team_id || null;
-    playerId = player?.id || null;
-
-    if (playerId) {
-      const { data: classesData } = await supabase
-        .from('golf_player_classes')
-        .select('id, course_code, course_name, days, start_time, end_time, location, color, instructor')
-        .eq('player_id', playerId)
-        .order('start_time', { ascending: true });
-
-      classes = (classesData || []).map(cls => ({
-        ...cls,
-        days: Array.isArray(cls.days) ? cls.days : [],
-      }));
-    }
   }
+
+  // Fetch events from golf_events table
+  // Include both team events (if user has a team) and personal events (team_id = null)
+  let eventsQuery = supabase
+    .from('golf_events')
+    .select('*')
+    .order('start_date', { ascending: true });
 
   if (teamId) {
-    const { data: eventsData } = await supabase
-      .from('golf_events')
-      .select('*')
-      .eq('team_id', teamId)
-      .order('start_date', { ascending: true });
-
-    events = eventsData || [];
+    // User has a team: fetch team events OR personal events
+    eventsQuery = eventsQuery.or(`team_id.eq.${teamId},team_id.is.null`);
+  } else {
+    // User has no team: fetch only personal events
+    eventsQuery = eventsQuery.is('team_id', null);
   }
 
-  const isCoach = userRole === 'coach';
-  const isPlayer = userRole === 'player';
+  const { data: eventsData } = await eventsQuery;
 
-  // Count upcoming events
-  const upcomingCount = events.filter(e => new Date(e.start_date) >= new Date()).length;
+  // Map golf_events to CalendarEvent format
+  // Combine date and time fields into datetime strings for proper calendar positioning
+  events = (eventsData || []).map(event => {
+    // Combine date and time for start
+    const startDateTime = event.start_time
+      ? `${event.start_date}T${event.start_time}`
+      : event.start_date;
+
+    // Combine date and time for end (use start_date if end_date is null)
+    const endDateTime = event.end_time
+      ? `${event.end_date || event.start_date}T${event.end_time}`
+      : event.end_date || event.start_date;
+
+    return {
+      id: event.id,
+      team_id: event.team_id || '', // Convert null to empty string
+      title: event.title,
+      event_type: event.event_type,
+      start_date: startDateTime,
+      end_date: endDateTime,
+      location: event.location,
+      description: event.description,
+    };
+  });
+
+  // Fetch team members for avatar sidebar (only if user has a team)
+  if (teamId) {
+    const { data: playersData } = await supabase
+      .from('golf_players')
+      .select('id, first_name, last_name, avatar_url')
+      .eq('team_id', teamId)
+      .order('first_name', { ascending: true });
+
+    // Also fetch coaches on this team for the sidebar
+    // Note: golf_coaches uses full_name instead of first_name/last_name
+    const { data: coachesData } = await supabase
+      .from('golf_coaches')
+      .select('id, full_name, avatar_url')
+      .eq('team_id', teamId);
+
+    // Combine players and coaches for team members display
+    teamMembers = [
+      // Parse coach full_name into first/last name parts
+      ...(coachesData || []).map(c => {
+        const nameParts = (c.full_name || 'Coach').split(' ');
+        return {
+          id: c.id,
+          first_name: nameParts[0] || 'Coach',
+          last_name: nameParts.slice(1).join(' ') || '',
+          avatar_url: c.avatar_url || undefined,
+        };
+      }),
+      // Players already have first_name/last_name
+      ...(playersData || []).map(p => ({
+        id: p.id,
+        first_name: p.first_name || 'Player',
+        last_name: p.last_name || '',
+        avatar_url: p.avatar_url || undefined,
+      })),
+    ];
+  }
 
   return (
-    <div className="min-h-screen">
-      {/* Header Section */}
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Calendar</h1>
-              <p className="text-slate-500 mt-0.5">
-                {upcomingCount} upcoming event{upcomingCount !== 1 ? 's' : ''}
-                {isPlayer && classes.length > 0 && ` • ${classes.length} class${classes.length !== 1 ? 'es' : ''}`}
-              </p>
-            </div>
-            {isCoach && <CreateEventButton />}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar View */}
-          <div 
-            className="lg:col-span-2"
-            style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0 }}
-          >
-            <CalendarContainer events={events} classes={classes} />
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Events List */}
-            <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '100ms', opacity: 0 }}>
-              <EventsList events={events} isCoach={isCoach} />
-            </div>
-            
-            {/* Classes List (for players) */}
-            {isPlayer && classes.length > 0 && (
-              <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '200ms', opacity: 0 }}>
-                <CalendarClassesList classes={classes} />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* CSS Keyframes */}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+    <div
+      className="h-[calc(100vh-64px)] p-6"
+      style={{
+        background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
+      }}
+    >
+      <GolfCalendarWrapper
+        initialEvents={events}
+        teamMembers={teamMembers}
+        isCoach={isCoach}
+      />
     </div>
   );
 }

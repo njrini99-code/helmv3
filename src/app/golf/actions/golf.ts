@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
+import type { HoleStats } from '@/components/golf/ShotTrackingComprehensive';
 import { z } from 'zod';
 import {
   requireGolfCoach,
@@ -604,41 +604,100 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       return { success: false, error: 'You must be signed in to create events' };
     }
 
-    // Get coach and team
+    console.log('🔍 [DEBUG] Creating event for user:', {
+      userId: user.id,
+      userEmail: user.email,
+      userRole: user.role,
+    });
+
+    // Try to get coach profile first
     const { data: coach } = await supabase
       .from('golf_coaches')
       .select('id, team_id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (!coach?.team_id) {
-      return { success: false, error: 'Coach profile or team not found' };
+    console.log('🔍 [DEBUG] Coach profile query result:', coach);
+
+    // If not a coach, try to get player profile
+    let teamId: string | null = null;
+    let createdBy: string | null = null;
+
+    if (coach) {
+      // Coach - team_id is required for coaches
+      if (!coach.team_id) {
+        return { success: false, error: 'Coach not assigned to a team' };
+      }
+      teamId = coach.team_id;
+      createdBy = coach.id;
+      console.log('🔍 [DEBUG] User is COACH:', { coachId: coach.id, teamId });
+    } else {
+      // Check if user is a player
+      const { data: player } = await supabase
+        .from('golf_players')
+        .select('id, team_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      console.log('🔍 [DEBUG] Player profile query result:', player);
+
+      if (!player) {
+        return { success: false, error: 'User profile not found' };
+      }
+
+      // For players, team_id is optional (can be null for personal events)
+      teamId = player.team_id || null;
+      createdBy = null;
+      console.log('🔍 [DEBUG] User is PLAYER:', { playerId: player.id, teamId: teamId || 'NULL (personal event)' });
     }
+
+    // Build insert data - only include created_by if it's not null
+    const insertData: any = {
+      team_id: teamId,
+      title: validatedData.title,
+      event_type: validatedData.eventType,
+      start_date: validatedData.startDate,
+      end_date: validatedData.endDate || null,
+      start_time: validatedData.startTime || null,
+      end_time: validatedData.endTime || null,
+      all_day: validatedData.allDay ?? true,
+      location: validatedData.location || null,
+      course_name: validatedData.courseName || null,
+      description: validatedData.description || null,
+      is_mandatory: validatedData.isMandatory ?? false,
+    };
+
+    // Only add created_by if it's not null (coaches only)
+    if (createdBy) {
+      insertData.created_by = createdBy;
+    }
+
+    console.log('🔍 [DEBUG] Insert data to be sent:', JSON.stringify(insertData, null, 2));
 
     const { data: event, error } = await supabase
       .from('golf_events')
-      .insert({
-        team_id: coach.team_id,
-        title: validatedData.title,
-        event_type: validatedData.eventType,
-        start_date: validatedData.startDate,
-        end_date: validatedData.endDate || null,
-        start_time: validatedData.startTime || null,
-        end_time: validatedData.endTime || null,
-        all_day: validatedData.allDay ?? true,
-        location: validatedData.location || null,
-        course_name: validatedData.courseName || null,
-        description: validatedData.description || null,
-        is_mandatory: validatedData.isMandatory ?? false,
-        created_by: coach.id,
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) {
-      console.error('[Golf] Failed to create event:', error);
+      console.error('❌ [DEBUG] INSERT FAILED with error:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      console.error('❌ [DEBUG] Full error object:', error);
       return { success: false, error: 'Failed to create event. Please try again.' };
     }
+
+    console.log('✅ [DEBUG] INSERT SUCCEEDED!');
+    console.log('✅ [DEBUG] Created event:', {
+      id: event.id,
+      title: event.title,
+      eventType: event.event_type,
+      startDate: event.start_date,
+    });
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/calendar');
@@ -677,14 +736,58 @@ export async function updateGolfEvent(
   data: Partial<GolfEventInput>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { supabase, coach } = await requireGolfCoach();
+    const supabase = await createClient();
 
-    if (!coach.team_id) {
-      return { success: false, error: 'Coach not assigned to a team' };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in to update events' };
     }
 
-    // Verify ownership
-    await verifyGolfTeamOwnership(supabase, eventId, coach.team_id, 'golf_events');
+    // Try to get coach profile first
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, team_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    // If not a coach, try to get player profile
+    let teamId: string | null = null;
+
+    if (coach) {
+      if (!coach.team_id) {
+        return { success: false, error: 'Coach not assigned to a team' };
+      }
+      teamId = coach.team_id;
+    } else {
+      const { data: player } = await supabase
+        .from('golf_players')
+        .select('id, team_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!player) {
+        return { success: false, error: 'User profile not found' };
+      }
+
+      // For players, team_id is optional
+      teamId = player.team_id || null;
+    }
+
+    // Verify event belongs to user's team (or is a personal event if teamId is null)
+    const { data: existingEvent } = await supabase
+      .from('golf_events')
+      .select('team_id')
+      .eq('id', eventId)
+      .single();
+
+    if (!existingEvent) {
+      return { success: false, error: 'Event not found' };
+    }
+
+    // Check ownership: event's team_id must match user's team_id (both can be null for personal events)
+    if (existingEvent.team_id !== teamId) {
+      return { success: false, error: 'Access denied' };
+    }
 
     // Validate input
     const validatedData = golfEventUpdateSchema.parse(data);
@@ -703,11 +806,19 @@ export async function updateGolfEvent(
     if (validatedData.description) updateData.description = validatedData.description;
     if (validatedData.isMandatory !== undefined) updateData.is_mandatory = validatedData.isMandatory;
 
-    const { error } = await supabase
+    let query = supabase
       .from('golf_events')
       .update(updateData)
-      .eq('id', eventId)
-      .eq('team_id', coach.team_id);
+      .eq('id', eventId);
+
+    // Handle null team_id for personal events
+    if (teamId === null) {
+      query = query.is('team_id', null);
+    } else {
+      query = query.eq('team_id', teamId);
+    }
+
+    const { error } = await query;
 
     if (error) {
       return { success: false, error: 'Failed to update event' };
@@ -720,9 +831,6 @@ export async function updateGolfEvent(
     if (err instanceof z.ZodError) {
       return { success: false, error: 'Invalid input data' };
     }
-    if (err instanceof AuthorizationError || err instanceof NotFoundError) {
-      return { success: false, error: err.message };
-    }
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -731,20 +839,72 @@ export async function deleteGolfEvent(
   eventId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { supabase, coach } = await requireGolfCoach();
+    const supabase = await createClient();
 
-    if (!coach.team_id) {
-      return { success: false, error: 'Coach not assigned to a team' };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in to delete events' };
     }
 
-    // Verify ownership
-    await verifyGolfTeamOwnership(supabase, eventId, coach.team_id, 'golf_events');
+    // Try to get coach profile first
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, team_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    const { error } = await supabase
+    // If not a coach, try to get player profile
+    let teamId: string | null = null;
+
+    if (coach) {
+      if (!coach.team_id) {
+        return { success: false, error: 'Coach not assigned to a team' };
+      }
+      teamId = coach.team_id;
+    } else {
+      const { data: player } = await supabase
+        .from('golf_players')
+        .select('id, team_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!player) {
+        return { success: false, error: 'User profile not found' };
+      }
+
+      // For players, team_id is optional
+      teamId = player.team_id || null;
+    }
+
+    // Verify event belongs to user's team (or is a personal event if teamId is null)
+    const { data: existingEvent } = await supabase
+      .from('golf_events')
+      .select('team_id')
+      .eq('id', eventId)
+      .single();
+
+    if (!existingEvent) {
+      return { success: false, error: 'Event not found' };
+    }
+
+    // Check ownership: event's team_id must match user's team_id (both can be null for personal events)
+    if (existingEvent.team_id !== teamId) {
+      return { success: false, error: 'Access denied' };
+    }
+
+    let deleteQuery = supabase
       .from('golf_events')
       .delete()
-      .eq('id', eventId)
-      .eq('team_id', coach.team_id);
+      .eq('id', eventId);
+
+    // Handle null team_id for personal events
+    if (teamId === null) {
+      deleteQuery = deleteQuery.is('team_id', null);
+    } else {
+      deleteQuery = deleteQuery.eq('team_id', teamId);
+    }
+
+    const { error } = await deleteQuery;
 
     if (error) {
       return { success: false, error: 'Failed to delete event' };
@@ -754,9 +914,6 @@ export async function deleteGolfEvent(
     return { success: true };
 
   } catch (err) {
-    if (err instanceof AuthorizationError || err instanceof NotFoundError) {
-      return { success: false, error: err.message };
-    }
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -958,7 +1115,7 @@ export async function createAnnouncement(data: {
 // ============================================================================
 
 export async function invitePlayerToTeam(
-  email: string
+  _email: string
 ): Promise<ActionResult<{ inviteCode: string; inviteLink: string }>> {
   try {
     const supabase = await createClient();
@@ -968,10 +1125,10 @@ export async function invitePlayerToTeam(
       return { success: false, error: 'You must be signed in to invite players' };
     }
 
-    // Get coach and team
+    // Get coach
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, team_id, team:golf_teams(name, invite_code)')
+      .select('id, team_id')
       .eq('user_id', user.id)
       .single();
 
@@ -979,8 +1136,15 @@ export async function invitePlayerToTeam(
       return { success: false, error: 'Coach profile or team not found' };
     }
 
+    // Get team
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('name, invite_code')
+      .eq('id', coach.team_id)
+      .single();
+
     // Generate invite code if not exists
-    let inviteCode = coach.team?.invite_code;
+    let inviteCode = team?.invite_code;
     if (!inviteCode) {
       inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const { error: updateError } = await supabase

@@ -114,7 +114,7 @@ export function CreateAnnouncementButton() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" loading={loading}>
+                <Button type="submit" isLoading={loading}>
                   Post Announcement
                 </Button>
               </div>

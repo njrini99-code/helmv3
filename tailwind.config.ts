@@ -5,17 +5,58 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Landing page golden hour colors
+        // PRIMARY BRAND COLORS
+        primary: {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16A34A',  // PRIMARY BRAND COLOR
+          700: '#15803D',
+          800: '#166534',
+          900: '#14532d',
+        },
+
+        // WARM NEUTRALS (stone/warm tones - NOT cool grays)
+        warm: {
+          50: '#fafaf9',
+          100: '#f5f5f4',
+          200: '#e7e5e4',
+          300: '#d6d3d1',
+          400: '#a8a29e',
+          500: '#78716c',
+          600: '#57534e',
+          700: '#44403c',
+          800: '#292524',
+          900: '#1c1917',
+        },
+
+        // CREAM BACKGROUND
+        cream: '#FFFEFA',
+
+        // SEMANTIC COLORS
+        success: '#16A34A',  // Same as primary
+        warning: '#F59E0B',  // Amber
+        danger: '#DC2626',   // Red
+        info: '#3B82F6',     // Blue
+
+        // GLASS EFFECTS
+        glass: {
+          white: 'rgba(255, 255, 255, 0.7)',
+          'white-strong': 'rgba(255, 255, 255, 0.85)',
+          medium: 'rgba(255, 255, 255, 0.5)',
+          subtle: 'rgba(255, 255, 255, 0.3)',
+          dark: 'rgba(28, 25, 23, 0.97)',
+          border: 'rgba(255, 255, 255, 0.2)',
+          'border-strong': 'rgba(255, 255, 255, 0.3)',
+          input: 'rgba(255, 255, 255, 0.6)',
+        },
+
+        // Legacy colors for backward compatibility
         'warm-cream': 'rgb(var(--warm-cream) / <alpha-value>)',
         'warm-stone': 'rgb(var(--warm-stone) / <alpha-value>)',
-        'warm': {
-          900: 'rgb(var(--warm-900) / <alpha-value>)',
-          800: 'rgb(var(--warm-800) / <alpha-value>)',
-          700: 'rgb(var(--warm-700) / <alpha-value>)',
-          600: 'rgb(var(--warm-600) / <alpha-value>)',
-          500: 'rgb(var(--warm-500) / <alpha-value>)',
-          400: 'rgb(var(--warm-400) / <alpha-value>)',
-        },
         'golden': {
           50: 'rgb(var(--golden-50) / <alpha-value>)',
           100: 'rgb(var(--golden-100) / <alpha-value>)',
@@ -27,8 +68,6 @@ const config: Config = {
         },
         'field': 'rgb(var(--field) / <alpha-value>)',
         'fairway': 'rgb(var(--fairway) / <alpha-value>)',
-
-        // Onboarding spec-compliant colors (exact from design spec)
         onboarding: {
           'kelly-green': '#169B45',
           'kelly-green-hover': '#128A3D',
@@ -42,14 +81,6 @@ const config: Config = {
           'text-muted': '#9B9B9B',
           'border-light': 'rgba(0, 0, 0, 0.08)',
           'border-medium': 'rgba(0, 0, 0, 0.12)',
-        },
-        cream: {
-          50: '#FDFCFA',
-          100: '#F8F7F4',
-          200: '#F2F0EC',
-          300: '#EBE9E4',
-          400: '#E5E3DE',
-          500: '#DED9D3',
         },
         brand: {
           50: '#F0FDF4',
@@ -68,36 +99,38 @@ const config: Config = {
           DEFAULT: '#E0DED9',
           dark: '#D4D1CC'
         },
-        glass: {
-          white: 'rgba(255, 255, 255, 0.7)',
-          'white-strong': 'rgba(255, 255, 255, 0.85)',
-          medium: 'rgba(255, 255, 255, 0.5)',
-          subtle: 'rgba(255, 255, 255, 0.3)',
-          dark: 'rgba(15, 23, 42, 0.8)',
-          border: 'rgba(255, 255, 255, 0.2)',
-          'border-strong': 'rgba(255, 255, 255, 0.3)',
-        },
       },
       fontFamily: {
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
         serif: ['var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
-        sans: ['var(--font-sans)', 'DM Sans', 'Inter', 'system-ui', 'sans-serif'],
         'sf-pro': ['"SF Pro Display"', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
       },
       fontSize: {
+        'xs': '12px',
+        'sm': '14px',
+        'base': '16px',      // Body text
+        'lg': '18px',
+        'xl': '20px',
+        'h3': '24px',
+        'h2': '28px',
+        'h1': '30px',        // Dashboard H1 (text-3xl)
+        'display': '36px',
+        // Legacy sizes for backward compatibility
         '2xs': '11px',
-        xs: '13px',
-        sm: '14px',
-        base: '15px',
-        lg: '17px',
-        xl: '20px',
         '2xl': '24px',
         '3xl': '30px',
         '4xl': '36px',
         '5xl': '48px',
         '6xl': '60px',
         '7xl': '72px',
-        'display': ['72px', { lineHeight: '1', letterSpacing: '-0.03em' }],
         'display-sm': ['48px', { lineHeight: '1.1', letterSpacing: '-0.025em' }],
+        'display-lg': ['72px', { lineHeight: '1', letterSpacing: '-0.03em' }],
+      },
+      fontWeight: {
+        normal: '400',
+        medium: '500',
+        semibold: '600',
+        bold: '700',
       },
       letterSpacing: {
         tightest: '-0.03em',
@@ -105,23 +138,39 @@ const config: Config = {
         tight: '-0.02em',
       },
       spacing: {
+        '1': '4px',
+        '2': '8px',
+        '3': '12px',
+        '4': '16px',
+        '5': '20px',
+        '6': '24px',
+        '8': '32px',    // Card padding (p-8)
+        '10': '40px',
+        '12': '48px',
+        '16': '64px',
+        // Legacy spacing
         '18': '4.5rem',   // 72px
         '22': '5.5rem',   // 88px
       },
       borderRadius: {
-        'sm': '8px',      // inputs, small elements
-        'md': '12px',     // buttons, chips
-        'lg': '16px',     // cards
-        'xl': '20px',     // large cards
-        '2xl': '24px',    // sections, modals (STANDARD for all cards)
-        '3xl': '32px',    // hero elements
+        'sm': '8px',
+        'md': '10px',      // Buttons, inputs
+        'lg': '14px',
+        'xl': '16px',
+        '2xl': '20px',     // Cards (rounded-xl = 20px)
+        '3xl': '24px',
+        'full': '9999px',
       },
       boxShadow: {
+        'sm': '0 1px 2px rgba(0,0,0,0.05)',
+        'DEFAULT': '0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)',
+        'md': '0 4px 6px rgba(0,0,0,0.07)',
+        'lg': '0 10px 15px rgba(0,0,0,0.1)',
+        'xl': '0 20px 25px rgba(0,0,0,0.1)',
+        'glass': '0 8px 32px rgba(0,0,0,0.08)',
+        'card-hover': '0 12px 24px rgba(0,0,0,0.12)',
+        // Legacy shadows
         'subtle': '0 1px 2px rgba(0,0,0,0.04)',
-        'sm': '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-        'md': '0 4px 6px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04)',
-        'lg': '0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.04)',
-        'xl': '0 20px 25px rgba(0,0,0,0.10), 0 8px 10px rgba(0,0,0,0.04)',
         'glow-amber': '0 0 30px rgba(217,119,6,0.15)',
         'glow-emerald': '0 0 30px rgba(16,185,129,0.15)',
         'xs': '0 1px 2px rgba(0,0,0,0.04)',
@@ -135,10 +184,13 @@ const config: Config = {
         'glow-green-intense': '0 0 60px rgba(22, 163, 74, 0.5)',
         'inner-highlight': 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         'focus-ring': '0 0 0 3px rgba(22, 163, 74, 0.1)',
-        'glass': '0 8px 32px rgba(0, 0, 0, 0.08)',
         'glass-lg': '0 16px 48px rgba(0, 0, 0, 0.12)',
         'card': '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
-        'card-hover': '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.04)',
+        // BATCH 5: Premium Glass Shadow System
+        'glass-sm': '0 1px 2px rgba(0,0,0,0.02), 0 2px 4px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.6)',
+        'glass-md': '0 1px 2px rgba(0,0,0,0.02), 0 4px 8px rgba(0,0,0,0.02), 0 8px 16px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.6)',
+        'glass-lg-batch5': '0 2px 4px rgba(0,0,0,0.02), 0 8px 16px rgba(0,0,0,0.03), 0 16px 32px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.7)',
+        'glass-xl': '0 4px 8px rgba(0,0,0,0.02), 0 12px 24px rgba(0,0,0,0.04), 0 24px 48px rgba(0,0,0,0.06), 0 48px 96px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
@@ -151,6 +203,8 @@ const config: Config = {
         'gradient-green': 'linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%)',
         'gradient-dark': 'linear-gradient(to bottom, #0f172a, #020617)',
         'hero-glow': 'radial-gradient(ellipse at center, rgba(22, 163, 74, 0.15), transparent 70%)',
+        // BATCH 5: Premium Dashboard Background
+        'cream-gradient': 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 35%, #F5F0E6 70%, #EDE8DD 100%)',
       },
       animation: {
         shake: 'shake 0.4s ease-in-out',
@@ -302,11 +356,16 @@ const config: Config = {
       },
       transitionDuration: {
         'fast': '150ms',
+        'DEFAULT': '200ms',
+        'slow': '300ms',
+        // Legacy durations
         'base': '220ms',
-        'slow': '320ms',
         '400': '400ms',
       },
       transitionTimingFunction: {
+        'DEFAULT': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+        // Legacy timings
         'out': 'cubic-bezier(0.33, 1, 0.68, 1)',
         'smooth': 'cubic-bezier(0.16, 1, 0.3, 1)',
         'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',

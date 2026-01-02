@@ -213,7 +213,7 @@ function parseTableFormat(lines: string[], semester: string): ParsedClass[] {
   
   // Find header row to understand column order
   let headerIndex = -1;
-  let columnMap: Record<string, number> = {};
+  const columnMap: Record<string, number> = {};
   
   const headerKeywords = ['course', 'title', 'name', 'days', 'time', 'location', 'instructor', 'credits', 'room', 'building'];
   

@@ -32,7 +32,7 @@ interface VideoWithPlayer extends Video {
 }
 
 export default function VideosPage() {
-  const { user, player, coach, loading: authLoading } = useAuth();
+  const { user, player, coach: _coach, loading: authLoading } = useAuth();
   const { selectedTeamId } = useTeamStore();
   const [videos, setVideos] = useState<VideoWithPlayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,7 +161,7 @@ export default function VideosPage() {
       <div className="p-6 lg:p-8">
         {/* Coach Search Bar */}
         {isCoach && videos.length > 0 && (
-          <Card glass className="mb-6">
+          <Card variant="glass" className="mb-6">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
                 <div className="flex-1 relative">
@@ -192,7 +192,7 @@ export default function VideosPage() {
 
         {/* Empty State */}
         {videos.length === 0 && !showUpload ? (
-          <Card glass>
+          <Card variant="glass">
             <CardContent className="p-12 text-center">
               <IconVideo size={48} className="mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">
@@ -215,7 +215,7 @@ export default function VideosPage() {
           /* Video Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredVideos.map((video) => (
-              <Card glass key={video.id}>
+              <Card variant="glass" key={video.id}>
                 <CardContent className="p-4">
                   {video.url && <VideoPlayer src={video.url} thumbnail={video.thumbnail_url} title={video.title} />}
                   <div className="mt-4 space-y-3">
@@ -286,7 +286,7 @@ export default function VideosPage() {
         message="Are you sure you want to delete this video? This action cannot be undone."
         confirmLabel="Delete"
         variant="danger"
-        loading={deleting}
+        isLoading={deleting}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteConfirm(null)}
       />

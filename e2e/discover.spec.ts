@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAsCoach } from './helpers/auth';
-import { waitForPageLoad, waitForElement, clearAndFill } from './helpers/common';
+import { waitForPageLoad, waitForElement } from './helpers/common';
 
 test.describe('Player Discovery', () => {
   test.beforeEach(async ({ page }) => {

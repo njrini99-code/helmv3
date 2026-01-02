@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { 
-  IconSearch, IconUsers, IconCalendar, IconChart, IconMessage, 
+import {
+  IconSearch, IconUsers, IconCalendar, IconChart, IconMessage,
   IconSettings, IconGolf, IconFlag, IconBook, IconAirplane,
-  IconChevronRight, IconX
+  IconChevronRight
 } from '@/components/icons';
 
 interface CommandItem {
@@ -294,7 +294,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
 // Trigger button to show in UI
 export function CommandPaletteTrigger() {
-  const [open, setOpen] = useState(false);
+  const [_open, setOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

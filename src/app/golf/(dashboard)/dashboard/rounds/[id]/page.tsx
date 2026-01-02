@@ -228,7 +228,7 @@ export default async function RoundDetailPage({
       </div>
 
       {/* Round Summary Card */}
-      <Card glass className="mb-6">
+      <Card variant="glass" className="mb-6">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -424,7 +424,7 @@ export default async function RoundDetailPage({
       </Card>
 
       {/* Scorecard */}
-      <Card glass>
+      <Card variant="glass">
         <CardHeader>
           <CardTitle>Scorecard</CardTitle>
         </CardHeader>
@@ -545,7 +545,7 @@ export default async function RoundDetailPage({
 
       {/* Records / Highlights */}
       {(roundData.longest_hole_out || roundData.longest_drive) && (
-        <Card glass className="mt-6">
+        <Card variant="glass" className="mt-6">
           <CardHeader>
             <CardTitle>Round Highlights</CardTitle>
           </CardHeader>

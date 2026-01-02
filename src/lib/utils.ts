@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { formatDistanceToNow, format, isToday, isYesterday, differenceInMinutes, differenceInHours, differenceInDays, isSameYear } from "date-fns";
+import { format, isToday, isYesterday, differenceInMinutes, differenceInHours, differenceInDays, isSameYear } from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -101,7 +101,7 @@ export function formatPosition(pos: string | null): string {
   return positions[pos] || pos;
 }
 
-export function formatVelocity(velo: number | null, type: 'pitch' | 'exit' = 'pitch'): string {
+export function formatVelocity(velo: number | null, _type: 'pitch' | 'exit' = 'pitch'): string {
   if (!velo) return '—';
   return `${velo} mph`;
 }

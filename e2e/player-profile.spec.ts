@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAsCoach } from './helpers/auth';
-import { waitForPageLoad, waitForElement } from './helpers/common';
+import { waitForPageLoad } from './helpers/common';
 
 test.describe('Player Profile', () => {
   test.beforeEach(async ({ page }) => {
