@@ -74,6 +74,27 @@ export default function GolfCoachOnboarding() {
         return;
       }
 
+      // IMPORTANT: Ensure the users table record exists
+      // The trigger should create it, but let's make sure
+      const { error: usersError } = await supabase
+        .from('users')
+        .upsert({
+          id: user.id,
+          email: user.email || '',
+          role: 'coach',
+          sport: 'golf', // CRITICAL: Must specify sport to prevent default 'baseball'
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'id',
+          ignoreDuplicates: true,
+        });
+
+      if (usersError) {
+        console.error('Users table error:', usersError);
+        // Continue anyway - the record might already exist
+      }
+
       // Step 1: Create organization
       const { data: org, error: orgError } = await supabase
         .from('golf_organizations')
@@ -110,24 +131,50 @@ export default function GolfCoachOnboarding() {
         return;
       }
 
-      // Step 3: Update coach record
-      const { error: coachError } = await supabase
+      // Step 3: Check if coach record exists, then insert or update
+      const { data: existingCoach } = await supabase
         .from('golf_coaches')
-        .update({
-          team_id: team.id,
-          organization_id: org.id,
-          full_name: fullName,
-          title: title || null,
-          email: email || null,
-          phone: phone || null,
-          onboarding_completed: true,
-        })
-        .eq('user_id', user.id);
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
 
-      if (coachError) {
-        setError(`Failed to update coach: ${coachError.message}`);
-        setLoading(false);
-        return;
+      const coachData = {
+        team_id: team.id,
+        organization_id: org.id,
+        full_name: fullName,
+        title: title || null,
+        email: email || null,
+        phone: phone || null,
+        onboarding_completed: true,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existingCoach) {
+        // Update existing coach record
+        const { error: updateError } = await supabase
+          .from('golf_coaches')
+          .update(coachData)
+          .eq('id', existingCoach.id);
+
+        if (updateError) {
+          setError(`Failed to update coach: ${updateError.message}`);
+          setLoading(false);
+          return;
+        }
+      } else {
+        // Insert new coach record
+        const { error: insertError } = await supabase
+          .from('golf_coaches')
+          .insert({
+            user_id: user.id,
+            ...coachData,
+          });
+
+        if (insertError) {
+          setError(`Failed to create coach: ${insertError.message}`);
+          setLoading(false);
+          return;
+        }
       }
 
       router.push('/golf/dashboard');
@@ -630,7 +677,7 @@ export default function GolfCoachOnboarding() {
                   <Button
                     size="lg"
                     onClick={handleComplete}
-                    loading={loading}
+                    isLoading={loading}
                     className="px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
                   >
                     Go to Dashboard

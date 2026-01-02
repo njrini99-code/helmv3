@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
 import { PageLoading } from '@/components/ui/loading';
-import { IconArrowRight, IconCheck, IconUser, IconUpload } from '@/components/icons';
+import { IconArrowRight, IconCheck, IconUser, IconUpload, IconUsers } from '@/components/icons';
+import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 import type { GolfPlayerYear } from '@/lib/types/golf';
 
-type Step = 'welcome' | 'basic' | 'golf' | 'academic' | 'photo' | 'complete';
+type Step = 'welcome' | 'basic' | 'golf' | 'academic' | 'photo' | 'team' | 'complete';
 
 const years: { value: GolfPlayerYear; label: string }[] = [
   { value: 'freshman', label: 'Freshman' },
@@ -24,7 +25,7 @@ const years: { value: GolfPlayerYear; label: string }[] = [
 
 const graduationYears = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() + i);
 
-const STEPS = ['welcome', 'basic', 'golf', 'academic', 'photo', 'complete'] as const;
+const STEPS = ['welcome', 'basic', 'golf', 'academic', 'photo', 'team', 'complete'] as const;
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -56,6 +57,13 @@ export default function GolfPlayerOnboarding() {
   const [userId, setUserId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [teamName, setTeamName] = useState<string>('');
+
+  // Team join state
+  const [inviteCode, setInviteCode] = useState('');
+  const [joiningTeam, setJoiningTeam] = useState(false);
+  const [teamJoinError, setTeamJoinError] = useState('');
+  const [teamJoined, setTeamJoined] = useState(false);
+  const [hasExistingTeam, setHasExistingTeam] = useState(false);
 
   // Form data
   const [firstName, setFirstName] = useState('');
@@ -90,7 +98,7 @@ export default function GolfPlayerOnboarding() {
       // Check for existing player record
       const { data: player } = await supabase
         .from('golf_players')
-        .select('*, team:golf_teams(name)')
+        .select('*')
         .eq('user_id', user.id)
         .single();
 
@@ -111,8 +119,19 @@ export default function GolfPlayerOnboarding() {
         setHandicap(player.handicap?.toString() || '');
         setMajor(player.major || '');
         setGpa(player.gpa?.toString() || '');
-        if (player.team) {
-          setTeamName(player.team.name);
+
+        // Fetch team name if player has a team
+        if (player.team_id) {
+          setHasExistingTeam(true);
+          setTeamJoined(true);
+          const { data: team } = await supabase
+            .from('golf_teams')
+            .select('name')
+            .eq('id', player.team_id)
+            .single();
+          if (team) {
+            setTeamName(team.name);
+          }
         }
       }
 
@@ -127,6 +146,48 @@ export default function GolfPlayerOnboarding() {
   const currentStepIndex = STEPS.indexOf(step);
   const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
 
+  const handleJoinTeam = async () => {
+    if (!inviteCode.trim() || !playerId) return;
+
+    setJoiningTeam(true);
+    setTeamJoinError('');
+
+    try {
+      const result = await processGolfTeamInvitation(inviteCode.trim(), playerId);
+
+      if (!result.success) {
+        setTeamJoinError(result.error || 'Failed to join team');
+        setJoiningTeam(false);
+        return;
+      }
+
+      // Fetch the team name after joining
+      const { data: player } = await supabase
+        .from('golf_players')
+        .select('team_id')
+        .eq('id', playerId)
+        .single();
+
+      if (player?.team_id) {
+        const { data: team } = await supabase
+          .from('golf_teams')
+          .select('name')
+          .eq('id', player.team_id)
+          .single();
+
+        if (team) {
+          setTeamName(team.name);
+        }
+      }
+
+      setTeamJoined(true);
+      setJoiningTeam(false);
+    } catch (err) {
+      setTeamJoinError(err instanceof Error ? err.message : 'Failed to join team');
+      setJoiningTeam(false);
+    }
+  };
+
   const handleComplete = async () => {
     if (!userId) return;
 
@@ -134,6 +195,32 @@ export default function GolfPlayerOnboarding() {
     setError('');
 
     try {
+      // Get current user for email
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // IMPORTANT: Ensure the users table record exists
+      // The trigger should create it, but let's make sure
+      if (user) {
+        const { error: usersError } = await supabase
+          .from('users')
+          .upsert({
+            id: user.id,
+            email: user.email || '',
+            role: 'player',
+            sport: 'golf', // CRITICAL: Must specify sport to prevent default 'baseball'
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: 'id',
+            ignoreDuplicates: true,
+          });
+
+        if (usersError) {
+          console.error('Users table error:', usersError);
+          // Continue anyway - the record might already exist
+        }
+      }
+
       const updateData = {
         first_name: firstName,
         last_name: lastName,
@@ -150,7 +237,7 @@ export default function GolfPlayerOnboarding() {
       };
 
       if (playerId) {
-        // Update existing player
+        // Update existing player by ID
         const { error: updateError } = await supabase
           .from('golf_players')
           .update(updateData)
@@ -158,22 +245,56 @@ export default function GolfPlayerOnboarding() {
 
         if (updateError) throw updateError;
       } else {
-        // Create new player record
-        const { error: insertError } = await supabase
+        // Check if a player record already exists for this user (trigger might have created it)
+        const { data: existingPlayer } = await supabase
           .from('golf_players')
-          .insert({
-            user_id: userId,
-            ...updateData,
-            status: 'active',
-          });
+          .select('id')
+          .eq('user_id', userId)
+          .single();
 
-        if (insertError) throw insertError;
+        if (existingPlayer) {
+          // Update existing record
+          console.log('🔍 Updating existing golf_players record:', existingPlayer.id);
+          const { error: updateError } = await supabase
+            .from('golf_players')
+            .update({
+              ...updateData,
+              status: 'active',
+              onboarding_completed: true,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingPlayer.id);
+
+          if (updateError) {
+            console.error('❌ Update failed:', updateError);
+            throw updateError;
+          }
+        } else {
+          // Insert new record
+          console.log('🔍 Inserting new golf_players record for user:', userId);
+          const { error: insertError } = await supabase
+            .from('golf_players')
+            .insert({
+              user_id: userId,
+              ...updateData,
+              status: 'active',
+              onboarding_completed: true,
+            });
+
+          if (insertError) {
+            console.error('❌ Insert failed:', insertError);
+            throw insertError;
+          }
+        }
       }
 
+      console.log('✅ Onboarding complete, redirecting to dashboard');
       router.push('/golf/dashboard');
       router.refresh();
     } catch (err: unknown) {
-      console.error('Onboarding error:', err);
+      console.error('❌ Onboarding error:', err);
+      console.error('❌ Error type:', typeof err);
+      console.error('❌ Error details:', JSON.stringify(err, null, 2));
       const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
       setError(errorMessage);
       setLoading(false);
@@ -298,7 +419,7 @@ export default function GolfPlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 1 of 4
+                    Step 1 of 5
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Basic Information</h2>
                 </motion.div>
@@ -420,7 +541,7 @@ export default function GolfPlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 2 of 4
+                    Step 2 of 5
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Golf Information</h2>
                 </motion.div>
@@ -517,7 +638,7 @@ export default function GolfPlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 3 of 4
+                    Step 3 of 5
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Academic Information</h2>
                   <p className="text-sm text-slate-600 mt-2">
@@ -599,7 +720,7 @@ export default function GolfPlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 4 of 4
+                    Step 4 of 5
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Profile Photo</h2>
                   <p className="text-sm text-slate-600 mt-2">
@@ -637,16 +758,144 @@ export default function GolfPlayerOnboarding() {
                     </Button>
                     <Button
                       variant="ghost"
-                      onClick={() => setStep('complete')}
+                      onClick={() => setStep('team')}
                       className="flex-1"
                     >
                       Skip
                     </Button>
                     <Button
+                      onClick={() => setStep('team')}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {step === 'team' && (
+            <motion.div
+              key="team"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-md"
+            >
+              <motion.div
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+                className="space-y-6"
+              >
+                <motion.div variants={staggerItem} className="text-center mb-8">
+                  <div className="text-sm font-medium text-slate-500 mb-2">
+                    Step 5 of 5
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">Join a Team</h2>
+                  <p className="text-sm text-slate-600 mt-2">
+                    {hasExistingTeam || teamJoined
+                      ? "You're already on a team!"
+                      : "Have an invite code from your coach? Enter it below to join your team."}
+                  </p>
+                </motion.div>
+
+                <motion.div
+                  variants={staggerItem}
+                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
+                >
+                  {(hasExistingTeam || teamJoined) ? (
+                    // Already on a team - show success state
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-center py-4"
+                    >
+                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <IconCheck size={32} className="text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                        Team Joined!
+                      </h3>
+                      <p className="text-slate-600">
+                        You are now a member of <span className="font-medium text-green-600">{teamName}</span>
+                      </p>
+                    </motion.div>
+                  ) : (
+                    // No team yet - show join form
+                    <div className="space-y-5">
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="flex flex-col items-center mb-6"
+                      >
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center mb-4 shadow-sm">
+                          <IconUsers size={28} className="text-green-600" />
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <Input
+                          label="Team Invite Code"
+                          value={inviteCode}
+                          onChange={(e) => {
+                            setInviteCode(e.target.value.toUpperCase());
+                            setTeamJoinError('');
+                          }}
+                          placeholder="Enter code (e.g. ABC123)"
+                          maxLength={20}
+                          className="text-center tracking-widest font-mono text-lg"
+                        />
+                      </motion.div>
+
+                      {teamJoinError && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-sm text-red-600 text-center bg-red-50 border border-red-200 rounded-xl px-4 py-3"
+                        >
+                          {teamJoinError}
+                        </motion.p>
+                      )}
+
+                      <Button
+                        onClick={handleJoinTeam}
+                        disabled={!inviteCode.trim() || joiningTeam}
+                        isLoading={joiningTeam}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      >
+                        Join Team
+                      </Button>
+
+                      <div className="text-center">
+                        <p className="text-xs text-slate-500">
+                          Don't have a code? You can join a team later from Settings.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 mt-8">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setStep('photo')}
+                      className="flex-1"
+                    >
+                      Back
+                    </Button>
+                    <Button
                       onClick={() => setStep('complete')}
                       className="flex-1 bg-green-600 hover:bg-green-700"
                     >
-                      Complete
+                      {(hasExistingTeam || teamJoined) ? 'Continue' : 'Skip for Now'}
                     </Button>
                   </div>
                 </motion.div>
@@ -704,7 +953,7 @@ export default function GolfPlayerOnboarding() {
                   <Button
                     size="lg"
                     onClick={handleComplete}
-                    loading={loading}
+                    isLoading={loading}
                     className="px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
                   >
                     Go to Dashboard
