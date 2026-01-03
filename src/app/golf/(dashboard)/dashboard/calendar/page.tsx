@@ -66,14 +66,25 @@ export default async function GolfCalendarPage() {
   // Map golf_events to CalendarEvent format
   // Combine date and time fields into datetime strings for proper calendar positioning
   events = (eventsData || []).map(event => {
+    // Debug: Log events missing time data
+    if (!event.start_time || !event.end_time) {
+      console.warn('Event missing time data:', event.title, {
+        start_time: event.start_time,
+        end_time: event.end_time,
+        event_type: event.event_type
+      });
+    }
+
     // Combine date and time for start
     const startDateTime = event.start_time
       ? `${event.start_date}T${event.start_time}`
       : event.start_date;
 
-    // Combine date and time for end (use start_date if end_date is null)
+    // Combine date and time for end
+    // For recurring events (classes), end_date represents semester end, not the event end time
+    // So we use start_date with end_time to get the correct event duration
     const endDateTime = event.end_time
-      ? `${event.end_date || event.start_date}T${event.end_time}`
+      ? `${event.start_date}T${event.end_time}`
       : event.end_date || event.start_date;
 
     return {

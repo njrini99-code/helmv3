@@ -16,6 +16,7 @@ export interface ParsedClass {
   room: string;
   credits: number | null;
   semester: string;
+  semesterStartDate?: string; // Custom semester start date (YYYY-MM-DD)
   color?: string;
 }
 
@@ -148,29 +149,67 @@ export function parseTime(timeStr: string, inferredPeriod?: string): string {
 // Parse time range (e.g., "9:30AM - 10:45AM" or "1:00 - 1:50 PM")
 export function parseTimeRange(rangeStr: string): { start: string; end: string } {
   const parts = rangeStr.split(/[-–—to]/i).map(s => s.trim());
-  
+
   if (parts.length < 2) {
     return {
       start: parts[0] ? parseTime(parts[0]) : '',
       end: '',
     };
   }
-  
-  // Check if the end time has AM/PM
+
+  // Parse both times
+  const startTimeStr = parts[0] || '';
   const endTimeStr = parts[1] || '';
+
+  // Check if start/end have explicit AM/PM
+  const startPeriodMatch = startTimeStr.match(/(AM|PM)/i);
   const endPeriodMatch = endTimeStr.match(/(AM|PM)/i);
+
+  const startPeriod = startPeriodMatch ? startPeriodMatch[1]?.toUpperCase() : undefined;
   const endPeriod = endPeriodMatch ? endPeriodMatch[1]?.toUpperCase() : undefined;
-  
+
   // Parse end time first (it usually has AM/PM)
   const endTime = parseTime(endTimeStr);
-  
-  // Parse start time, using end time's period if start doesn't have one
-  const startTimeStr = parts[0] || '';
-  const startPeriodMatch = startTimeStr.match(/(AM|PM)/i);
-  const startPeriod = startPeriodMatch ? startPeriodMatch[1]?.toUpperCase() : endPeriod;
-  
-  const startTime = parseTime(startTimeStr, startPeriod);
-  
+
+  // Smart period inference for start time
+  let inferredStartPeriod = startPeriod;
+
+  if (!startPeriod && endPeriod) {
+    // Extract hour values to determine if we're crossing meridiem
+    const startHourMatch = startTimeStr.match(/(\d{1,2})/);
+    const endHourMatch = endTimeStr.match(/(\d{1,2})/);
+
+    if (startHourMatch && endHourMatch) {
+      const startHour = parseInt(startHourMatch[1] || '0', 10);
+      const endHour = parseInt(endHourMatch[1] || '0', 10);
+
+      console.log('[TimeRange] Parsing:', rangeStr);
+      console.log('[TimeRange] Start hour:', startHour, 'End hour:', endHour, 'End period:', endPeriod);
+
+      // Special case: "11:00 - 12:15 PM" means 11 AM to 12:15 PM (crossing noon)
+      // If end is 12 PM and start is 11, it's likely AM to PM
+      if (endPeriod === 'PM' && endHour === 12 && startHour === 11) {
+        inferredStartPeriod = 'AM';
+        console.log('[TimeRange] Detected noon crossing, setting start to AM');
+      }
+      // If end hour is less than start hour (in 12-hour format), likely crossing meridiem
+      else if (endHour < startHour && endPeriod === 'PM') {
+        inferredStartPeriod = 'AM';
+        console.log('[TimeRange] End < start, setting start to AM');
+      }
+      // Otherwise use the end period
+      else {
+        inferredStartPeriod = endPeriod;
+        console.log('[TimeRange] Using end period:', endPeriod);
+      }
+    } else {
+      inferredStartPeriod = endPeriod;
+    }
+  }
+
+  const startTime = parseTime(startTimeStr, inferredStartPeriod);
+  console.log('[TimeRange] Result:', { start: startTime, end: endTime });
+
   return { start: startTime, end: endTime };
 }
 
