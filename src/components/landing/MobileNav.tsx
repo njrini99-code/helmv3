@@ -63,9 +63,10 @@ export function MobileNav() {
                 transition={{ delay: 0.1 }}
                 className="space-y-8"
               >
+                {/* Main Navigation Links */}
                 {[
-                  { name: 'BaseballHelm', href: '/baseball' },
-                  { name: 'GolfHelm', href: '/golf' },
+                  { name: 'BaseballHelm', href: '/baseball/signup' },
+                  { name: 'GolfHelm', href: '/golf/signup' },
                   { name: 'About', href: '/about' },
                 ].map((link, i) => (
                   <motion.div
@@ -83,17 +84,67 @@ export function MobileNav() {
                     </Link>
                   </motion.div>
                 ))}
+
+                {/* Auth Links */}
+                <div className="pt-8 border-t border-warm-200 mt-8 space-y-6">
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.25 }}
+                  >
+                    <p className="text-warm-500 text-sm mb-3">Baseball</p>
+                    <div className="flex gap-4">
+                      <Link
+                        href="/baseball/login"
+                        onClick={() => setIsOpen(false)}
+                        className="text-xl text-warm-700 hover:text-golden-600 transition-colors"
+                      >
+                        Log in
+                      </Link>
+                      <Link
+                        href="/baseball/signup"
+                        onClick={() => setIsOpen(false)}
+                        className="text-xl text-warm-700 hover:text-golden-600 transition-colors"
+                      >
+                        Sign up
+                      </Link>
+                    </div>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <p className="text-warm-500 text-sm mb-3">Golf</p>
+                    <div className="flex gap-4">
+                      <Link
+                        href="/golf/login"
+                        onClick={() => setIsOpen(false)}
+                        className="text-xl text-warm-700 hover:text-golden-600 transition-colors"
+                      >
+                        Log in
+                      </Link>
+                      <Link
+                        href="/golf/signup"
+                        onClick={() => setIsOpen(false)}
+                        className="text-xl text-warm-700 hover:text-golden-600 transition-colors"
+                      >
+                        Sign up
+                      </Link>
+                    </div>
+                  </motion.div>
+                </div>
               </motion.div>
 
               {/* CTA at bottom */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: 0.35 }}
                 className="absolute bottom-12 left-8 right-8"
               >
                 <Link
-                  href="/baseball/(auth)/coach-onboarding"
+                  href="/baseball/coach-onboarding"
                   onClick={() => setIsOpen(false)}
                   className="block w-full py-4 rounded-xl bg-warm-900 text-white text-center font-medium
                              hover:bg-warm-800 transition-colors"

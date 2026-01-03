@@ -145,10 +145,10 @@ export function Navigation() {
 
         {/* CTA Button */}
         <Link
-          href="/baseball/(auth)/coach-onboarding"
+          href="/baseball/coach-onboarding"
           className="hidden md:inline-flex px-6 py-3 rounded-full bg-amber-500 text-white font-semibold text-lg
                      hover:bg-amber-600 transition-all duration-200
-                     shadow-md shadow-amber-500/20 hover:shadow-lg hover:shadow-amber-500/30 
+                     shadow-md shadow-amber-500/20 hover:shadow-lg hover:shadow-amber-500/30
                      active:scale-[0.98]"
         >
           Book a demo

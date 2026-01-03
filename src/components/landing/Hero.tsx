@@ -74,7 +74,7 @@ export function Hero() {
             style={{ opacity: 1 }} // CSS fallback
           >
             <Link
-              href="/baseball/(auth)/coach-onboarding"
+              href="/baseball/coach-onboarding"
               className="group px-8 py-4 rounded-2xl bg-warm-900 text-white font-medium
                          hover:bg-warm-800 transition-all duration-200
                          shadow-lg hover:shadow-xl active:scale-[0.98]
