@@ -16,6 +16,7 @@ interface ClassFormData {
   room: string;
   credits: number | null;
   semester: string;
+  semesterStartDate?: string; // Custom semester start date (YYYY-MM-DD)
   color: string;
   notes: string;
 }
@@ -25,10 +26,17 @@ interface ClassFormData {
  * Creates one event per class occurrence (for each day the class meets)
  */
 export async function syncClassToCalendar(classData: ClassFormData, classId: string, playerId: string, teamId: string) {
+  console.log('[CalendarSync] Starting sync for:', classData.course_code, 'teamId:', teamId);
+
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+  if (!user) {
+    console.error('[CalendarSync] No user found');
+    throw new Error('Unauthorized');
+  }
+
+  console.log('[CalendarSync] User ID:', user.id);
 
   // Verify user is a golf player
   const { data: player } = await supabase
@@ -37,39 +45,35 @@ export async function syncClassToCalendar(classData: ClassFormData, classId: str
     .eq('user_id', user.id)
     .single();
 
+  console.log('[CalendarSync] Player data:', player);
+
   if (!player || player.id !== playerId) {
+    console.error('[CalendarSync] Player mismatch or not found');
     throw new Error('Unauthorized: player mismatch');
   }
 
   if (!teamId) {
+    console.error('[CalendarSync] No team ID provided');
     throw new Error('Player must be on a team to sync calendar');
   }
 
-  // Get a coach from the team to use as created_by (calendar events require a coach)
-  const { data: teamCoach } = await supabase
-    .from('golf_coaches')
-    .select('id')
-    .eq('team_id', teamId)
-    .limit(1)
-    .single();
-
-  if (!teamCoach) {
-    // If no coach exists for this team, skip calendar sync
-    // Classes can still be created, just not synced to team calendar
-    console.warn(`No coach found for team ${teamId}, skipping calendar sync`);
-    return { success: true, skipped: true };
-  }
+  console.log('[CalendarSync] Player can create calendar events for team:', teamId);
 
   // Parse semester to determine start and end dates
-  // Format examples: "Fall 2025", "Spring 2025", "Summer 2025"
-  const semesterDates = parseSemesterDates(classData.semester);
+  // Use custom start date if provided, otherwise parse from semester string
+  console.log('[CalendarSync] Parsing semester:', classData.semester);
+  console.log('[CalendarSync] Custom start date:', classData.semesterStartDate);
+
+  const semesterDates = parseSemesterDates(classData.semester, classData.semesterStartDate);
+
   if (!semesterDates) {
-    console.warn(`Unable to parse semester dates for: ${classData.semester}`);
+    console.warn(`[CalendarSync] Unable to parse semester dates for: ${classData.semester}`);
     return { success: true, skipped: true };
   }
 
+  console.log('[CalendarSync] Semester dates:', semesterDates);
+
   // Delete existing calendar events for this class (if updating)
-  // @ts-ignore - class_id column will exist after migration
   await supabase.from('golf_events').delete().eq('class_id', classId);
 
   // Create calendar events for each day the class meets
@@ -80,7 +84,7 @@ export async function syncClassToCalendar(classData: ClassFormData, classId: str
     return {
       team_id: teamId,
       title: `${classData.course_code}: ${classData.course_name}`,
-      event_type: 'class',
+      event_type: 'class' as const,
       start_date: firstOccurrence,
       end_date: semesterDates.end, // Classes recur until end of semester
       start_time: classData.start_time,
@@ -93,22 +97,27 @@ export async function syncClassToCalendar(classData: ClassFormData, classId: str
         classData.notes,
       ].filter(Boolean).join('\n') || null,
       is_mandatory: false,
-      created_by: teamCoach.id,
+      created_by: null, // Players can create events directly without coach
       class_id: classId,
     };
   });
 
   if (events.length === 0) {
+    console.log('[CalendarSync] No events to create (no days specified)');
     return { success: true, eventsCreated: 0 };
   }
 
-  // @ts-ignore - golf_events table with class_id will exist after migration
+  console.log('[CalendarSync] Creating', events.length, 'calendar events');
+  console.log('[CalendarSync] Sample event:', events[0]);
+
   const { error } = await supabase.from('golf_events').insert(events);
 
   if (error) {
-    console.error('Error syncing class to calendar:', error);
+    console.error('[CalendarSync] Error inserting events:', error);
     throw error;
   }
+
+  console.log('[CalendarSync] ✅ Successfully created', events.length, 'events');
 
   revalidatePath('/golf/dashboard/calendar');
   return { success: true, eventsCreated: events.length };
@@ -123,7 +132,6 @@ export async function removeClassFromCalendar(classId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  // @ts-ignore - class_id column will exist after migration
   const { error } = await supabase.from('golf_events').delete().eq('class_id', classId);
 
   if (error) throw error;
@@ -135,8 +143,9 @@ export async function removeClassFromCalendar(classId: string) {
 /**
  * Parse semester string to get start and end dates
  * Format: "Fall 2025", "Spring 2026", etc.
+ * If customStartDate is provided, use it instead of the default start date
  */
-function parseSemesterDates(semester: string): { start: string; end: string } | null {
+function parseSemesterDates(semester: string, customStartDate?: string): { start: string; end: string } | null {
   const match = semester.match(/(Fall|Spring|Summer|Winter)\s+(\d{4})/i);
   if (!match || !match[1] || !match[2]) return null;
 
@@ -144,37 +153,54 @@ function parseSemesterDates(semester: string): { start: string; end: string } | 
   const year = match[2];
   const yearNum = parseInt(year, 10);
 
+  let startDate: string;
+  let endDate: string;
+
   switch (term.toLowerCase()) {
     case 'spring':
-      return {
-        start: `${yearNum}-01-15`, // Mid-January
-        end: `${yearNum}-05-15`,   // Mid-May
-      };
+      startDate = customStartDate || `${yearNum}-01-15`; // Mid-January
+      endDate = `${yearNum}-05-15`;   // Mid-May
+      break;
     case 'summer':
-      return {
-        start: `${yearNum}-06-01`, // Early June
-        end: `${yearNum}-08-15`,   // Mid-August
-      };
+      startDate = customStartDate || `${yearNum}-06-01`; // Early June
+      endDate = `${yearNum}-08-15`;   // Mid-August
+      break;
     case 'fall':
-      return {
-        start: `${yearNum}-08-20`, // Late August
-        end: `${yearNum}-12-15`,   // Mid-December
-      };
+      startDate = customStartDate || `${yearNum}-08-20`; // Late August
+      endDate = `${yearNum}-12-15`;   // Mid-December
+      break;
     case 'winter':
-      return {
-        start: `${yearNum}-12-15`, // Mid-December
-        end: `${yearNum + 1}-01-15`, // Mid-January next year
-      };
+      startDate = customStartDate || `${yearNum}-12-15`; // Mid-December
+      endDate = `${yearNum + 1}-01-15`; // Mid-January next year
+      break;
     default:
       return null;
   }
+
+  return { start: startDate, end: endDate };
 }
 
 /**
- * Convert day name to day of week number (0 = Sunday, 6 = Saturday)
+ * Convert day code to day of week number (0 = Sunday, 6 = Saturday)
+ * Supports both short codes (M, T, W, Th, F) and full names
  */
 function getDayOfWeek(day: string): number {
-  const days: Record<string, number> = {
+  // Handle short day codes (what's stored in database)
+  const shortCodes: Record<string, number> = {
+    'M': 1,   // Monday
+    'T': 2,   // Tuesday
+    'W': 3,   // Wednesday
+    'Th': 4,  // Thursday
+    'F': 5,   // Friday
+  };
+
+  // Check short codes first
+  if (shortCodes[day]) {
+    return shortCodes[day];
+  }
+
+  // Fallback to full day names
+  const fullNames: Record<string, number> = {
     'sunday': 0,
     'monday': 1,
     'tuesday': 2,
@@ -183,7 +209,7 @@ function getDayOfWeek(day: string): number {
     'friday': 5,
     'saturday': 6,
   };
-  return days[day.toLowerCase()] ?? 1; // Default to Monday if unknown
+  return fullNames[day.toLowerCase()] ?? 1; // Default to Monday if unknown
 }
 
 /**

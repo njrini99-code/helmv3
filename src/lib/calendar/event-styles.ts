@@ -141,8 +141,20 @@ export function shouldShowEventText(type: EventType): boolean {
 /**
  * Format time for display (e.g., "9:00 AM")
  */
-export function formatTime(dateString: string): string {
-  const date = new Date(dateString);
+export function formatTime(timeString: string): string {
+  // Handle time-only strings (HH:MM:SS or HH:MM)
+  if (timeString && !timeString.includes('T') && !timeString.includes(' ')) {
+    const parts = timeString.split(':').map(Number);
+    const hours = parts[0] ?? 0;
+    const minutes = parts[1] ?? 0;
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours % 12 || 12;
+    const displayMinutes = String(minutes).padStart(2, '0');
+    return `${displayHour}:${displayMinutes} ${period}`;
+  }
+
+  // Handle full datetime strings
+  const date = new Date(timeString);
   return date.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -191,10 +203,16 @@ export function isToday(dateString: string): boolean {
 }
 
 /**
- * Get hour from date string (0-23)
+ * Get hour from date string or time string (0-23)
  */
-export function getHour(dateString: string): number {
-  return new Date(dateString).getHours();
+export function getHour(timeString: string): number {
+  // Handle time-only strings (HH:MM:SS or HH:MM)
+  if (timeString && !timeString.includes('T') && !timeString.includes(' ')) {
+    const parts = timeString.split(':').map(Number);
+    return parts[0] ?? 0;
+  }
+  // Handle full datetime strings
+  return new Date(timeString).getHours();
 }
 
 /**
@@ -202,6 +220,25 @@ export function getHour(dateString: string): number {
  * Each hour = 64px
  */
 export function calculateEventHeight(start: string, end: string | null): number {
+  // Handle time-only strings (HH:MM:SS or HH:MM)
+  if (start && !start.includes('T') && !start.includes(' ')) {
+    const startParts = start.split(':').map(Number);
+    const startH = startParts[0] ?? 0;
+    const startM = startParts[1] ?? 0;
+    const endTime = end || '00:00:00';
+    const endParts = endTime.split(':').map(Number);
+    const endH = endParts[0] ?? 0;
+    const endM = endParts[1] ?? 0;
+
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+    const durationMinutes = endMinutes > startMinutes ? endMinutes - startMinutes : 60; // Default to 1 hour if invalid
+    const durationHours = durationMinutes / 60;
+
+    return Math.max(durationHours * 64, 48); // Minimum 48px
+  }
+
+  // Handle full datetime strings
   const startDate = new Date(start);
   const endDate = end ? new Date(end) : new Date(startDate.getTime() + 60 * 60 * 1000); // Default to 1 hour if no end
   const durationMs = endDate.getTime() - startDate.getTime();
@@ -213,10 +250,22 @@ export function calculateEventHeight(start: string, end: string | null): number 
  * Calculate top offset for event positioning (for week/day views)
  * Based on start time relative to calendar start hour (6 AM)
  */
-export function calculateEventTop(dateString: string, startHour: number = 6): number {
-  const date = new Date(dateString);
-  const hour = date.getHours();
-  const minutes = date.getMinutes();
+export function calculateEventTop(timeString: string, startHour: number = 6): number {
+  let hour: number;
+  let minutes: number;
+
+  // Handle time-only strings (HH:MM:SS or HH:MM)
+  if (timeString && !timeString.includes('T') && !timeString.includes(' ')) {
+    const parts = timeString.split(':').map(Number);
+    hour = parts[0] ?? 0;
+    minutes = parts[1] ?? 0;
+  } else {
+    // Handle full datetime strings
+    const date = new Date(timeString);
+    hour = date.getHours();
+    minutes = date.getMinutes();
+  }
+
   const hoursFromStart = hour - startHour;
   const minuteOffset = (minutes / 60) * 64;
   return hoursFromStart * 64 + minuteOffset;

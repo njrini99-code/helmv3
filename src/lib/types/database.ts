@@ -1158,6 +1158,7 @@ export type Database = {
       golf_events: {
         Row: {
           all_day: boolean | null
+          class_id: string | null
           course_name: string | null
           created_at: string | null
           created_by: string | null
@@ -1176,6 +1177,7 @@ export type Database = {
         }
         Insert: {
           all_day?: boolean | null
+          class_id?: string | null
           course_name?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -1194,6 +1196,7 @@ export type Database = {
         }
         Update: {
           all_day?: boolean | null
+          class_id?: string | null
           course_name?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -1211,6 +1214,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "golf_events_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "golf_player_classes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "golf_events_created_by_fkey"
             columns: ["created_by"]
@@ -3900,6 +3910,7 @@ export type Database = {
         | "meeting"
         | "travel"
         | "other"
+        | "class"
       golf_player_status: "active" | "injured" | "redshirt" | "inactive"
       golf_player_year:
         | "freshman"
@@ -4087,6 +4098,7 @@ export const Constants = {
         "meeting",
         "travel",
         "other",
+        "class",
       ],
       golf_player_status: ["active", "injured", "redshirt", "inactive"],
       golf_player_year: [

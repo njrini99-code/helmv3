@@ -262,30 +262,47 @@ export default function GolfClassesPage() {
       console.log('[Classes] Successfully inserted:', data?.length, 'classes');
 
       // Sync all classes to calendar
+      console.log('[Classes] Checking calendar sync - data:', !!data, 'teamId:', teamId);
+
       if (data && teamId) {
+        console.log('[Classes] Starting calendar sync for', data.length, 'classes');
+
         for (let i = 0; i < data.length; i++) {
           const insertedClass = data[i];
           const confirmedClass = confirmed[i];
 
           if (insertedClass && confirmedClass) {
-            await syncClassToCalendar({
-              id: insertedClass.id,
-              course_code: confirmedClass.course_code || '',
-              course_name: confirmedClass.course_name || confirmedClass.course_code || 'Untitled Class',
-              instructor: confirmedClass.instructor || '',
-              days: confirmedClass.days || [],
-              start_time: confirmedClass.start_time || '',
-              end_time: confirmedClass.end_time || '',
-              location: confirmedClass.location || '',
-              building: confirmedClass.building || '',
-              room: confirmedClass.room || '',
-              credits: confirmedClass.credits,
-              semester: confirmedClass.semester || 'Fall 2025',
-              color: confirmedClass.color || generateClassColor(),
-              notes: '',
-            }, insertedClass.id, playerId, teamId);
+            console.log('[Classes] Syncing class to calendar:', confirmedClass.course_code);
+
+            try {
+              const result = await syncClassToCalendar({
+                id: insertedClass.id,
+                course_code: confirmedClass.course_code || '',
+                course_name: confirmedClass.course_name || confirmedClass.course_code || 'Untitled Class',
+                instructor: confirmedClass.instructor || '',
+                days: confirmedClass.days || [],
+                start_time: confirmedClass.start_time || '',
+                end_time: confirmedClass.end_time || '',
+                location: confirmedClass.location || '',
+                building: confirmedClass.building || '',
+                room: confirmedClass.room || '',
+                credits: confirmedClass.credits,
+                semester: confirmedClass.semester || 'Fall 2025',
+                semesterStartDate: (confirmedClass as any).semesterStartDate, // Custom start date from modal
+                color: confirmedClass.color || generateClassColor(),
+                notes: '',
+              }, insertedClass.id, playerId, teamId);
+
+              console.log('[Classes] Sync result:', result);
+            } catch (syncError) {
+              console.error('[Classes] Sync error for', confirmedClass.course_code, ':', syncError);
+            }
           }
         }
+
+        console.log('[Classes] Calendar sync completed');
+      } else {
+        console.warn('[Classes] Skipping calendar sync - data:', !!data, 'teamId:', teamId);
       }
 
       await fetchClasses();
@@ -304,7 +321,7 @@ export default function GolfClassesPage() {
 
   const handleEditFromDetail = () => {
     if (!selectedClass) return;
-    
+
     setEditingClass({
       id: selectedClass.id,
       course_code: selectedClass.course_code || '',
@@ -323,6 +340,37 @@ export default function GolfClassesPage() {
     });
     setShowDetailModal(false);
     setShowAddModal(true);
+  };
+
+  const handleDeleteAllClasses = async () => {
+    if (!playerId) return;
+
+    const confirmDelete = confirm(
+      `Are you sure you want to delete all ${classes.length} classes? This will also remove them from your calendar. This action cannot be undone.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      // Delete all calendar events for these classes
+      const classIds = classes.map(c => c.id);
+      for (const classId of classIds) {
+        await removeClassFromCalendar(classId);
+      }
+
+      // Delete all classes
+      const { error } = await supabase
+        .from('golf_player_classes')
+        .delete()
+        .eq('player_id', playerId);
+
+      if (error) throw error;
+
+      await fetchClasses();
+    } catch (error) {
+      console.error('Error deleting all classes:', error);
+      alert('Error deleting classes. Please try again.');
+    }
   };
 
   // Group classes by day for schedule view
@@ -369,6 +417,15 @@ export default function GolfClassesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {classes.length > 0 && (
+            <Button
+              variant="danger"
+              onClick={handleDeleteAllClasses}
+              className="gap-2"
+            >
+              Delete All
+            </Button>
+          )}
           <Button variant="secondary" onClick={() => setShowUploadModal(true)} className="gap-2">
             <IconUpload size={18} />
             Import Schedule

@@ -26,12 +26,20 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
   const [classes, setClasses] = useState<ParsedClass[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [semesterStartDate, setSemesterStartDate] = useState<string>('');
 
   // Update classes when parsedClasses prop changes
   useEffect(() => {
     if (parsedClasses.length > 0) {
       console.log('[ConfirmModal] Received', parsedClasses.length, 'classes');
       setClasses(parsedClasses.map(c => ({ ...c, color: generateClassColor() })));
+
+      // Set default semester start date to next Monday
+      const today = new Date();
+      const nextMonday = new Date(today);
+      nextMonday.setDate(today.getDate() + ((1 + 7 - today.getDay()) % 7 || 7));
+      const defaultDate = nextMonday.toISOString().split('T')[0];
+      setSemesterStartDate(defaultDate || '');
     }
   }, [parsedClasses]);
 
@@ -73,12 +81,22 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
       console.log('[ConfirmModal] No classes to confirm');
       return;
     }
-    
-    console.log('[ConfirmModal] Confirming', classes.length, 'classes');
+
+    if (!semesterStartDate) {
+      alert('Please select a semester start date');
+      return;
+    }
+
+    console.log('[ConfirmModal] Confirming', classes.length, 'classes with start date:', semesterStartDate);
     setLoading(true);
-    
+
     try {
-      await onConfirm(classes);
+      // Add semester start date to each class
+      const classesWithStartDate = classes.map(cls => ({
+        ...cls,
+        semesterStartDate, // Add custom start date
+      }));
+      await onConfirm(classesWithStartDate);
       console.log('[ConfirmModal] Confirm completed successfully');
     } catch (error) {
       console.error('[ConfirmModal] Error during confirm:', error);
@@ -290,23 +308,44 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50">
-          <p className="text-sm text-slate-500">
-            Classes will sync to your calendar
-          </p>
-          <div className="flex items-center gap-3">
-            <Button variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleConfirm} 
-              isLoading={loading}
-              disabled={classes.length === 0}
-              className="gap-2"
-            >
-              <IconCheck size={18} />
-              Add {classes.length} Class{classes.length !== 1 ? 'es' : ''}
-            </Button>
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 space-y-4">
+          <div className="bg-yellow-50 border-2 border-yellow-500 rounded-lg p-4">
+            <label className="block text-sm font-medium text-slate-900 mb-2 text-base">
+              ⚠️ REQUIRED: When does the semester start?
+            </label>
+            <Input
+              type="date"
+              value={semesterStartDate}
+              onChange={(e) => setSemesterStartDate(e.target.value)}
+              className="max-w-xs bg-white border-2 border-slate-300 text-base h-12"
+              required
+              placeholder="Select semester start date"
+            />
+            <p className="text-sm text-slate-700 mt-2 font-medium">
+              👉 Your classes will appear on the calendar starting from this date
+            </p>
+            <p className="text-xs text-slate-600 mt-1">
+              Default: {semesterStartDate || 'Not set'}
+            </p>
+          </div>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-500">
+              {classes.length} class{classes.length !== 1 ? 'es' : ''} will sync to your calendar
+            </p>
+            <div className="flex items-center gap-3">
+              <Button variant="secondary" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirm}
+                isLoading={loading}
+                disabled={classes.length === 0 || !semesterStartDate}
+                className="gap-2"
+              >
+                <IconCheck size={18} />
+                Add {classes.length} Class{classes.length !== 1 ? 'es' : ''}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

@@ -54,7 +54,7 @@ const EventCardInner = forwardRef<
         ref={ref}
         onClick={onClick}
         className={cn(
-          'w-full rounded-[8px] overflow-hidden text-left px-2.5 py-1.5',
+          'w-full h-full rounded-[8px] overflow-hidden text-left px-2.5 py-1.5',
           'border-l-[3px]',
           'transition-all duration-200',
           'hover:scale-[1.02] hover:shadow-md hover:z-10',
