@@ -1,10 +1,15 @@
 'use client'
 
 import { motion, useScroll, useTransform } from 'framer-motion'
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
 
 export function Hero() {
+  // Fallback: ensure content is visible even if framer-motion fails
+  const [isClient, setIsClient] = useState(false)
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
   const containerRef = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -36,12 +41,13 @@ export function Hero() {
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-32 grid lg:grid-cols-2 gap-16 items-center">
         {/* Left: Content */}
         <div>
-          {/* Headline */}
+          {/* Headline - visible immediately, animates if framer-motion works */}
           <motion.h1
-            initial={{ opacity: 0, y: 30 }}
+            initial={isClient ? { opacity: 0, y: 30 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="font-serif text-5xl md:text-6xl lg:text-7xl text-warm-900 leading-[1.1] mb-6"
+            style={{ opacity: 1 }} // CSS fallback
           >
             Where great teams{' '}
             <span className="text-golden-600">are built.</span>
@@ -49,10 +55,11 @@ export function Hero() {
 
           {/* Subhead */}
           <motion.p
-            initial={{ opacity: 0, y: 30 }}
+            initial={isClient ? { opacity: 0, y: 30 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="text-xl text-warm-600 max-w-lg mb-10 leading-relaxed"
+            style={{ opacity: 1 }} // CSS fallback
           >
             A clean command center for college staffs: recruiting pipelines,
             roster planning, and athlete development.
@@ -60,10 +67,11 @@ export function Hero() {
 
           {/* CTAs */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={isClient ? { opacity: 0, y: 30 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-wrap gap-4"
+            style={{ opacity: 1 }} // CSS fallback
           >
             <Link
               href="/baseball/(auth)/coach-onboarding"

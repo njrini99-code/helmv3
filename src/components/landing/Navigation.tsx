@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -10,12 +10,19 @@ export function Navigation() {
   const [showLoginDropdown, setShowLoginDropdown] = useState(false)
   const [showSignupDropdown, setShowSignupDropdown] = useState(false)
 
+  // Fallback: ensure nav is visible even if framer-motion fails
+  const [isClient, setIsClient] = useState(false)
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
   return (
     <motion.nav
-      initial={{ y: -100, opacity: 0 }}
+      initial={isClient ? { y: -100, opacity: 0 } : false}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className="absolute top-0 left-0 right-0 z-50 bg-transparent"
+      style={{ opacity: 1, transform: 'translateY(0)' }}
     >
       {/* Top bar with centered navigation links and auth buttons */}
       <div className="flex items-center pt-4 pb-2 max-w-7xl mx-auto px-6">
