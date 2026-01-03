@@ -146,7 +146,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self' ${process.env.NODE_ENV === 'development' ? "'unsafe-inline' 'unsafe-eval'" : ''} https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:;
+              script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:;
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               img-src 'self' data: https: blob:;
               font-src 'self' data: https://fonts.gstatic.com;
