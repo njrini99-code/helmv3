@@ -140,7 +140,7 @@ function ProductShowcase({
               fill
               className="object-cover"
               priority={index === 0}
-              unoptimized
+              sizes="100vw"
             />
           </motion.div>
           
