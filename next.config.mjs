@@ -15,11 +15,6 @@ const nextConfig = {
     // removeConsole: process.env.NODE_ENV === 'production',
   },
 
-  // Turbopack configuration (Next.js 16+)
-  turbopack: {
-    root: '/Users/ricknini/Downloads/helmv3',
-  },
-
   // Transpile specific packages that need compilation
   transpilePackages: ['pdfjs-dist'],
 
