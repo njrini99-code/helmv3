@@ -42,7 +42,7 @@ export function FinalCTA() {
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           <Link
-            href="/baseball/(auth)/coach-onboarding"
+            href="/baseball/coach-onboarding"
             className="inline-flex items-center gap-2 px-10 py-5 rounded-2xl
                        bg-warm-900 text-white text-lg font-medium
                        hover:bg-warm-800 transition-all duration-200
