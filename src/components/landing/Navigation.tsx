@@ -12,8 +12,7 @@ export function Navigation() {
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-50 bg-transparent"
-      style={{ pointerEvents: 'auto' }}
+      className="fixed top-0 left-0 right-0 z-[60] bg-transparent pointer-events-auto"
     >
       {/* Top bar with centered navigation links and auth buttons */}
       <div className="flex items-center pt-4 pb-2 max-w-7xl mx-auto px-6">
