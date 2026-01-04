@@ -54,9 +54,16 @@ export {
 export { PollResultSelector, CompactPollResults } from './PollResultSelector';
 
 // ============================================================================
-// PHASE 5: Sync & Feeds (Pending)
+// PHASE 5: Sync & Feeds
 // ============================================================================
-// export { CalendarFeedManager } from './CalendarFeedManager';
-// export { FeedCard } from './FeedCard';
-// export { CreateFeedSection } from './CreateFeedSection';
-// export { SubscriptionInstructions } from './SubscriptionInstructions';
+export {
+  CalendarFeedManager,
+  CompactFeedManager,
+  type FeedType,
+} from './CalendarFeedManager';
+export { FeedCard, CompactFeedCard, type CalendarFeed } from './FeedCard';
+export { CreateFeedSection, QuickCreateFeed } from './CreateFeedSection';
+export {
+  SubscriptionInstructions,
+  CompactSubscriptionHelp,
+} from './SubscriptionInstructions';
