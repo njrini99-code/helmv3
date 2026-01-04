@@ -189,6 +189,9 @@ export default function NewRoundClient() {
 
       console.log('Submitting round data:', roundData);
       const result = await submitGolfRoundComprehensive(roundData);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
       console.log('Round submitted successfully:', result);
 
       // Calculate summary stats
@@ -262,6 +265,11 @@ export default function NewRoundClient() {
         currentHole: currentHoleIndex + 1, // Next hole player will resume on
         holesToPlay: holes.length as 9 | 18,
         holes: completedHoleStats,
+        holeConfigs: holes.map(hole => ({
+          holeNumber: hole.number,
+          par: hole.par,
+          yardage: hole.yardage,
+        })),
       };
 
       const result = await savePartialRound(partialRoundData, savedRoundId || undefined);
@@ -269,6 +277,7 @@ export default function NewRoundClient() {
       if (!result.success) {
         throw new Error(result.error);
       }
+      setSavedRoundId(result.data.roundId);
 
       // Clear local draft since it's saved to database
       clearDraft();

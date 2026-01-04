@@ -111,6 +111,9 @@ export default function ContinueRoundClient({
 
       console.log('[Continue Round] Submitting completed round:', roundData);
       const result = await submitGolfRoundComprehensive(roundData, roundId);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
       console.log('[Continue Round] Round submitted successfully:', result);
 
       // Calculate summary stats
@@ -181,6 +184,11 @@ export default function ContinueRoundClient({
         currentHole: currentHoleIndex + 1, // Next hole player will resume on
         holesToPlay: holes.length as 9 | 18,
         holes: completedHoleStats,
+        holeConfigs: holes.map(hole => ({
+          holeNumber: hole.number,
+          par: hole.par,
+          yardage: hole.yardage,
+        })),
       };
 
       console.log('[Continue Round] Saving partial round progress:', partialRoundData);

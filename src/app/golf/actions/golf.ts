@@ -1819,6 +1819,12 @@ export interface PartialRoundData {
   holesToPlay: number; // 9 or 18
   // Completed holes data
   holes: HoleStats[];
+  // Hole configuration for full round (completed + remaining)
+  holeConfigs?: Array<{
+    holeNumber: number;
+    par: number;
+    yardage?: number | null;
+  }>;
 }
 
 /**
@@ -1919,76 +1925,110 @@ export async function savePartialRound(
       roundId = round.id;
     }
 
-    // Insert holes (only completed ones)
-    if (data.holes.length > 0) {
-      const holesData = data.holes.map(hole => ({
-        round_id: roundId,
-        hole_number: hole.holeNumber,
+    const completedHoles = data.holes.filter((hole): hole is HoleStats => Boolean(hole));
+    const holeConfigs = (data.holeConfigs && data.holeConfigs.length > 0)
+      ? data.holeConfigs
+      : completedHoles.map(hole => ({
+        holeNumber: hole.holeNumber,
         par: hole.par,
         yardage: hole.yardage || null,
-        score: hole.score,
-        putts: hole.putts,
-        fairway_hit: hole.fairwayHit,
-        green_in_regulation: hole.greenInRegulation,
-        penalties: hole.penaltyStrokes,
-        driving_distance: hole.drivingDistance,
-        used_driver: hole.usedDriver,
-        drive_miss_direction: hole.driveMissDirection,
-        approach_distance: hole.approachDistance,
-        approach_lie: hole.approachLie,
-        approach_proximity: hole.approachProximity,
-        approach_miss_direction: hole.approachMissDirection,
-        scramble_attempt: hole.scrambleAttempt,
-        scramble_made: hole.scrambleMade,
-        sand_save_attempt: hole.sandSaveAttempt,
-        sand_save_made: hole.sandSaveMade,
-        first_putt_distance: hole.firstPuttDistance,
-        first_putt_leave: hole.firstPuttLeave,
-        first_putt_break: hole.firstPuttBreak,
-        first_putt_slope: hole.firstPuttSlope,
-        first_putt_miss_direction: hole.firstPuttMissDirection,
-        holed_out_distance: hole.holedOutDistance,
-        holed_out_type: hole.holedOutType,
       }));
 
-      const { error: holesError } = await supabase
+    const completedHolesByNumber = new Map<number, HoleStats>(
+      completedHoles.map(hole => [hole.holeNumber, hole])
+    );
+
+    if (holeConfigs.length > 0) {
+      const holesData = holeConfigs.map(config => {
+        const completed = completedHolesByNumber.get(config.holeNumber);
+
+        if (completed) {
+          return {
+            round_id: roundId,
+            hole_number: completed.holeNumber,
+            par: completed.par,
+            yardage: completed.yardage || null,
+            score: completed.score,
+            putts: completed.putts,
+            fairway_hit: completed.fairwayHit,
+            green_in_regulation: completed.greenInRegulation,
+            penalty_strokes: completed.penaltyStrokes,
+            driving_distance: completed.drivingDistance,
+            used_driver: completed.usedDriver,
+            drive_miss_direction: completed.driveMissDirection,
+            approach_distance: completed.approachDistance,
+            approach_lie: completed.approachLie,
+            approach_proximity: completed.approachProximity,
+            approach_miss_direction: completed.approachMissDirection,
+            scramble_attempt: completed.scrambleAttempt,
+            scramble_made: completed.scrambleMade,
+            sand_save_attempt: completed.sandSaveAttempt,
+            sand_save_made: completed.sandSaveMade,
+            first_putt_distance: completed.firstPuttDistance,
+            first_putt_leave: completed.firstPuttLeave,
+            first_putt_break: completed.firstPuttBreak,
+            first_putt_slope: completed.firstPuttSlope,
+            first_putt_miss_direction: completed.firstPuttMissDirection,
+            holed_out_distance: completed.holedOutDistance,
+            holed_out_type: completed.holedOutType,
+          };
+        }
+
+        return {
+          round_id: roundId,
+          hole_number: config.holeNumber,
+          par: config.par,
+          yardage: config.yardage ?? null,
+          score: null,
+        };
+      });
+
+      const { data: insertedHoles, error: holesError } = await supabase
         .from('golf_holes')
-        .insert(holesData);
+        .insert(holesData)
+        .select('id, hole_number');
 
       if (holesError) {
         console.error('[Golf] Failed to insert holes:', holesError);
-        // Don't fail the whole operation, holes can be re-entered
-      }
+      } else {
+        const holeIdMap = new Map(insertedHoles?.map(h => [h.hole_number, h.id]) || []);
 
-      // Insert shots for each hole
-      for (const hole of data.holes) {
-        if (hole.shots && hole.shots.length > 0) {
-          const shotsData = hole.shots.map(shot => ({
-            round_id: roundId,
-            hole_number: hole.holeNumber,
-            shot_number: shot.shotNumber,
-            shot_type: shot.shotType,
-            club_type: shot.clubType,
-            lie_before: shot.lieBefore,
-            distance_to_hole_before: shot.distanceToHoleBefore,
-            distance_unit_before: shot.distanceUnitBefore,
-            result: shot.result,
-            distance_to_hole_after: shot.distanceToHoleAfter,
-            distance_unit_after: shot.distanceUnitAfter,
-            shot_distance: shot.shotDistance,
-            miss_direction: shot.missDirection,
-            putt_break: shot.puttBreak,
-            putt_slope: shot.puttSlope,
-            is_penalty: shot.isPenalty,
-            penalty_type: shot.penaltyType,
-          }));
+        for (const hole of completedHoles) {
+          if (hole.shots && hole.shots.length > 0) {
+            const holeId = holeIdMap.get(hole.holeNumber);
+            if (!holeId) {
+              console.error(`[Golf] Missing hole_id for hole ${hole.holeNumber}, skipping shots insert.`);
+              continue;
+            }
 
-          const { error: shotsError } = await supabase
-            .from('golf_shots')
-            .insert(shotsData);
+            const shotsData = hole.shots.map(shot => ({
+              round_id: roundId,
+              hole_id: holeId,
+              hole_number: hole.holeNumber,
+              shot_number: shot.shotNumber,
+              shot_type: shot.shotType,
+              club_type: shot.clubType,
+              lie_before: shot.lieBefore,
+              distance_to_hole_before: shot.distanceToHoleBefore,
+              distance_unit_before: shot.distanceUnitBefore,
+              result: shot.result,
+              distance_to_hole_after: shot.distanceToHoleAfter,
+              distance_unit_after: shot.distanceUnitAfter,
+              shot_distance: shot.shotDistance,
+              miss_direction: shot.missDirection,
+              putt_break: shot.puttBreak,
+              putt_slope: shot.puttSlope,
+              is_penalty: shot.isPenalty,
+              penalty_type: shot.penaltyType,
+            }));
 
-          if (shotsError) {
-            console.error(`[Golf] Failed to insert shots for hole ${hole.holeNumber}:`, shotsError);
+            const { error: shotsError } = await supabase
+              .from('golf_shots')
+              .insert(shotsData);
+
+            if (shotsError) {
+              console.error(`[Golf] Failed to insert shots for hole ${hole.holeNumber}:`, shotsError);
+            }
           }
         }
       }

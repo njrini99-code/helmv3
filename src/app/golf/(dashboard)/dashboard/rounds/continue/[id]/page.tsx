@@ -46,65 +46,98 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
     console.error('[Golf] Error loading holes:', holesError);
   }
 
-  // Transform database holes to HoleStats format
-  const completedHoleStats: HoleStats[] = (holes || []).map(hole => {
-    const shots = (hole.shots || []).sort((a: any, b: any) => a.shot_number - b.shot_number);
+  const { data: legacyShots, error: legacyShotsError } = await supabase
+    .from('golf_shots')
+    .select('*')
+    .eq('round_id', params.id)
+    .is('hole_id', null)
+    .order('hole_number', { ascending: true })
+    .order('shot_number', { ascending: true });
 
-    return {
-      holeNumber: hole.hole_number,
+  if (legacyShotsError) {
+    console.error('[Golf] Error loading legacy shots:', legacyShotsError);
+  }
+
+  const legacyShotsByHole = new Map<number, any[]>();
+  for (const shot of legacyShots || []) {
+    const holeShots = legacyShotsByHole.get(shot.hole_number) || [];
+    holeShots.push(shot);
+    legacyShotsByHole.set(shot.hole_number, holeShots);
+  }
+
+  // Transform database holes to HoleStats format (completed holes only)
+  const completedHoleStats: HoleStats[] = (holes || [])
+    .filter((hole: any) => hole.score !== null)
+    .map(hole => {
+      const holeShots = (hole.shots && hole.shots.length > 0)
+        ? hole.shots
+        : (legacyShotsByHole.get(hole.hole_number) || []);
+      const shots = holeShots.sort((a: any, b: any) => a.shot_number - b.shot_number);
+
+      return {
+        holeNumber: hole.hole_number,
+        par: hole.par,
+        yardage: hole.yardage || 0,
+        score: hole.score,
+        putts: hole.putts || 0,
+        fairwayHit: hole.fairway_hit,
+        greenInRegulation: hole.green_in_regulation || false,
+        drivingDistance: hole.driving_distance,
+        usedDriver: hole.used_driver,
+        driveMissDirection: hole.drive_miss_direction,
+        approachDistance: hole.approach_distance,
+        approachLie: hole.approach_lie,
+        approachProximity: hole.approach_proximity,
+        approachMissDirection: hole.approach_miss_direction,
+        scrambleAttempt: hole.scramble_attempt || false,
+        scrambleMade: hole.scramble_made || false,
+        sandSaveAttempt: hole.sand_save_attempt || false,
+        sandSaveMade: hole.sand_save_made || false,
+        penaltyStrokes: hole.penalty_strokes ?? hole.penalties ?? 0,
+        firstPuttDistance: hole.first_putt_distance,
+        firstPuttLeave: hole.first_putt_leave,
+        firstPuttBreak: hole.first_putt_break,
+        firstPuttSlope: hole.first_putt_slope,
+        firstPuttMissDirection: hole.first_putt_miss_direction,
+        holedOutDistance: hole.holed_out_distance,
+        holedOutType: hole.holed_out_type,
+        shots: shots.map((shot: any) => ({
+          shotNumber: shot.shot_number,
+          shotType: shot.shot_type,
+          clubType: shot.club_type,
+          lieBefore: shot.lie_before,
+          distanceToHoleBefore: shot.distance_to_hole_before,
+          distanceUnitBefore: shot.distance_unit_before,
+          result: shot.result,
+          distanceToHoleAfter: shot.distance_to_hole_after,
+          distanceUnitAfter: shot.distance_unit_after,
+          shotDistance: shot.shot_distance,
+          missDirection: shot.miss_direction,
+          puttBreak: shot.putt_break,
+          puttSlope: shot.putt_slope,
+          isPenalty: shot.is_penalty,
+          penaltyType: shot.penalty_type,
+        })),
+      };
+    });
+
+  const holeConfigMap = new Map<number, { par: number; yardage: number | null; score: number | null }>();
+  for (const hole of holes || []) {
+    holeConfigMap.set(hole.hole_number, {
       par: hole.par,
-      yardage: hole.yardage || 0,
+      yardage: hole.yardage,
       score: hole.score,
-      putts: hole.putts || 0,
-      fairwayHit: hole.fairway_hit,
-      greenInRegulation: hole.green_in_regulation || false,
-      drivingDistance: hole.driving_distance,
-      usedDriver: hole.used_driver,
-      driveMissDirection: hole.drive_miss_direction,
-      approachDistance: hole.approach_distance,
-      approachLie: hole.approach_lie,
-      approachProximity: hole.approach_proximity,
-      approachMissDirection: hole.approach_miss_direction,
-      scrambleAttempt: hole.scramble_attempt || false,
-      scrambleMade: hole.scramble_made || false,
-      sandSaveAttempt: hole.sand_save_attempt || false,
-      sandSaveMade: hole.sand_save_made || false,
-      penaltyStrokes: hole.penalties || 0,
-      firstPuttDistance: hole.first_putt_distance,
-      firstPuttLeave: hole.first_putt_leave,
-      firstPuttBreak: hole.first_putt_break,
-      firstPuttSlope: hole.first_putt_slope,
-      firstPuttMissDirection: hole.first_putt_miss_direction,
-      holedOutDistance: hole.holed_out_distance,
-      holedOutType: hole.holed_out_type,
-      shots: shots.map((shot: any) => ({
-        shotNumber: shot.shot_number,
-        shotType: shot.shot_type,
-        clubType: shot.club_type,
-        lieBefore: shot.lie_before,
-        distanceToHoleBefore: shot.distance_to_hole_before,
-        distanceUnitBefore: shot.distance_unit_before,
-        result: shot.result,
-        distanceToHoleAfter: shot.distance_to_hole_after,
-        distanceUnitAfter: shot.distance_unit_after,
-        shotDistance: shot.shot_distance,
-        missDirection: shot.miss_direction,
-        puttBreak: shot.putt_break,
-        puttSlope: shot.putt_slope,
-        isPenalty: shot.is_penalty,
-        penaltyType: shot.penalty_type,
-      })),
-    };
-  });
+    });
+  }
 
   // Create hole configuration for remaining holes
   const allHoles = Array.from({ length: round.holes_to_play || 18 }, (_, i) => {
-    const existingHole = completedHoleStats.find(h => h.holeNumber === i + 1);
+    const existingHole = holeConfigMap.get(i + 1);
     return {
       number: i + 1,
       par: existingHole?.par || 4, // Default par if not found
       yardage: existingHole?.yardage || 400,
-      score: existingHole?.score || null,
+      score: existingHole?.score ?? null,
     };
   });
 
