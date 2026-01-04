@@ -809,45 +809,55 @@ export default function GolfDashboardPage() {
         let eventsData: any[] | null = null;
 
         if (teamId) {
-          // Get team details
-          const { data: teamData } = await supabase
-            .from('golf_teams')
-            .select('*')
-            .eq('id', teamId)
-            .single();
+          // PERFORMANCE OPTIMIZATION: Run all independent queries in parallel
+          const [
+            { data: teamData },
+            { count: rosterCount },
+            { data: fetchedEvents, count: eventsCount },
+            { count: qualifiersCount },
+            { data: players }
+          ] = await Promise.all([
+            // Get team details
+            supabase
+              .from('golf_teams')
+              .select('*')
+              .eq('id', teamId)
+              .single(),
+
+            // Get roster size
+            supabase
+              .from('golf_players')
+              .select('*', { count: 'exact', head: true })
+              .eq('team_id', teamId),
+
+            // Get upcoming events (fetch actual data for calendar widget)
+            supabase
+              .from('golf_events')
+              .select('*', { count: 'exact' })
+              .eq('team_id', teamId)
+              .gte('start_date', new Date().toISOString().split('T')[0])
+              .order('start_date', { ascending: true })
+              .limit(20),
+
+            // Get active qualifiers
+            supabase
+              .from('golf_qualifiers')
+              .select('*', { count: 'exact', head: true })
+              .eq('team_id', teamId)
+              .in('status', ['upcoming', 'in_progress']),
+
+            // Get team players
+            supabase
+              .from('golf_players')
+              .select('id, first_name, last_name')
+              .eq('team_id', teamId)
+          ]);
+
           team = teamData as GolfTeam;
-
-          // Get roster size
-          const { count: rosterCount } = await supabase
-            .from('golf_players')
-            .select('*', { count: 'exact', head: true })
-            .eq('team_id', teamId);
           rosterSize = rosterCount || 0;
-
-          // Get upcoming events (fetch actual data for calendar widget)
-          const { data: fetchedEvents, count: eventsCount } = await supabase
-            .from('golf_events')
-            .select('*', { count: 'exact' })
-            .eq('team_id', teamId)
-            .gte('start_date', new Date().toISOString().split('T')[0])
-            .order('start_date', { ascending: true })
-            .limit(20);
           eventsData = fetchedEvents;
           upcomingEvents = eventsCount || 0;
-
-          // Get active qualifiers
-          const { count: qualifiersCount } = await supabase
-            .from('golf_qualifiers')
-            .select('*', { count: 'exact', head: true })
-            .eq('team_id', teamId)
-            .in('status', ['upcoming', 'in_progress']);
           activeQualifiers = qualifiersCount || 0;
-
-          // Get team players
-          const { data: players } = await supabase
-            .from('golf_players')
-            .select('id, first_name, last_name')
-            .eq('team_id', teamId);
 
           if (players && players.length > 0) {
             const playerIds = players.map(p => p.id);
@@ -873,21 +883,31 @@ export default function GolfDashboardPage() {
             }
 
             // Calculate team average and top players
-            const playerStats = await Promise.all(players.map(async (p) => {
-              const { data: pRounds } = await supabase
-                .from('golf_rounds')
-                .select('total_score')
-                .eq('player_id', p.id)
-                .not('total_score', 'is', null);
-              
-              const scores = pRounds?.map(r => r.total_score).filter(Boolean) as number[] || [];
+            // PERFORMANCE OPTIMIZATION: Fetch all rounds in ONE query instead of N queries
+            const { data: allPlayerRounds } = await supabase
+              .from('golf_rounds')
+              .select('player_id, total_score')
+              .in('player_id', playerIds)
+              .not('total_score', 'is', null);
+
+            // Group rounds by player_id in memory
+            const roundsByPlayerId = (allPlayerRounds || []).reduce((acc, round) => {
+              if (!acc[round.player_id]) acc[round.player_id] = [];
+              acc[round.player_id].push(round);
+              return acc;
+            }, {} as Record<string, Array<{ total_score: number }>>);
+
+            // Calculate stats for each player
+            const playerStats = players.map(p => {
+              const playerRounds = roundsByPlayerId[p.id] || [];
+              const scores = playerRounds.map(r => r.total_score).filter(Boolean) as number[];
               return {
                 id: p.id,
                 name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
                 avg_score: scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 999,
                 rounds: scores.length,
               };
-            }));
+            });
 
             // Filter and sort top players
             topPlayers = playerStats

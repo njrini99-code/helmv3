@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   description: 'Access and manage your team files, resources, and important documents',
 };
 
+// Cache documents for 5 minutes (documents don't change very often)
+export const revalidate = 300;
+
 export default async function GolfDocumentsPage() {
   const supabase = await createClient();
 

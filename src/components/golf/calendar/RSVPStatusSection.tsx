@@ -1,242 +1,444 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Check, X, HelpCircle, Clock, User } from 'lucide-react';
-import { getEventRSVP } from '@/app/golf/actions/golf';
+/**
+ * RSVP Status Section Component - Premium UI
+ *
+ * Coach view for monitoring event RSVP status:
+ * - RSVP Progress Ring showing breakdown
+ * - Player list with avatars
+ * - Response status dots
+ * - Quick stats (confirmed/total)
+ * - Filter by response status
+ * - Search functionality
+ * - Export functionality
+ * - Send reminders (bulk selection)
+ *
+ * Used in event detail pages for coaches to monitor attendance.
+ */
 
-// ============================================================================
-// TYPES
-// ============================================================================
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { calculateRSVPStats, type RSVPStats } from '@/lib/calendar/premium-utils';
+import { RSVPProgressRing } from './RSVPProgressRing';
+import { Users, Download, Search } from 'lucide-react';
+import '@/styles/calendar-tokens.css';
 
-interface RSVPAttendee {
-  playerId: string;
-  playerName: string;
-  avatarUrl: string | null;
-  status: 'pending' | 'accepted' | 'declined' | 'tentative';
-  respondedAt: string | null;
+export interface RSVPParticipant {
+  id: string;
+  user_id: string;
+  name: string;
+  avatar_url?: string | null;
+  response: 'confirmed' | 'maybe' | 'declined' | 'pending';
+  responded_at?: string | null;
+  email?: string;
+  phone?: string;
 }
 
-interface RSVPSummary {
-  total: number;
-  accepted: number;
-  declined: number;
-  tentative: number;
-  pending: number;
-  attendees: RSVPAttendee[];
+export interface RSVPStatusSectionProps {
+  participants: RSVPParticipant[];
+  totalInvited: number;
+  className?: string;
+  onExport?: () => void;
+  onSendReminder?: (participantIds: string[]) => Promise<void>;
+  compact?: boolean;
 }
 
-interface RSVPStats {
-  summary: RSVPSummary;
-  acceptanceRate: number;
-  responseRate: number;
-}
+type RSVPFilter = 'all' | 'confirmed' | 'maybe' | 'declined' | 'pending';
 
-// ============================================================================
-// SUB-COMPONENTS
-// ============================================================================
+const RESPONSE_CONFIGS = {
+  confirmed: {
+    label: 'Confirmed',
+    color: 'bg-emerald-500',
+    textColor: 'text-emerald-700',
+    bgColor: 'bg-emerald-50',
+  },
+  maybe: {
+    label: 'Maybe',
+    color: 'bg-amber-500',
+    textColor: 'text-amber-700',
+    bgColor: 'bg-amber-50',
+  },
+  declined: {
+    label: 'Declined',
+    color: 'bg-rose-400',
+    textColor: 'text-rose-700',
+    bgColor: 'bg-rose-50',
+  },
+  pending: {
+    label: 'No Response',
+    color: 'bg-slate-300',
+    textColor: 'text-slate-600',
+    bgColor: 'bg-slate-50',
+  },
+};
 
-function RSVPPill({
-  count,
-  label,
-  color,
-}: {
-  count: number;
-  label: string;
-  color: 'emerald' | 'red' | 'amber' | 'slate';
-}) {
-  const colorClasses = {
-    emerald: 'bg-emerald-100 text-emerald-700 border-emerald-300',
-    red: 'bg-red-100 text-red-700 border-red-300',
-    amber: 'bg-amber-100 text-amber-700 border-amber-300',
-    slate: 'bg-slate-100 text-slate-600 border-slate-300',
+export function RSVPStatusSection({
+  participants,
+  totalInvited,
+  className,
+  onExport,
+  onSendReminder,
+  compact = false,
+}: RSVPStatusSectionProps) {
+  const [filter, setFilter] = useState<RSVPFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Calculate stats
+  const stats: RSVPStats = {
+    confirmed: participants.filter((p) => p.response === 'confirmed').length,
+    maybe: participants.filter((p) => p.response === 'maybe').length,
+    declined: participants.filter((p) => p.response === 'declined').length,
+    pending: participants.filter((p) => p.response === 'pending').length,
+    total: totalInvited,
+    percentage:
+      totalInvited > 0
+        ? (participants.filter((p) => p.response === 'confirmed').length / totalInvited) * 100
+        : 0,
   };
 
-  return (
-    <div className={`px-3 py-2 rounded-lg border ${colorClasses[color]} flex items-center gap-2`}>
-      <span className="text-lg font-bold">{count}</span>
-      <span className="text-sm font-medium">{label}</span>
-    </div>
-  );
-}
+  // Filter and search participants
+  const filteredParticipants = participants
+    .filter((p) => filter === 'all' || p.response === filter)
+    .filter((p) => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        p.name.toLowerCase().includes(query) ||
+        p.email?.toLowerCase().includes(query)
+      );
+    });
 
-function RSVPBadge({ status }: { status: 'pending' | 'accepted' | 'declined' | 'tentative' }) {
-  const config = {
-    accepted: {
-      icon: Check,
-      label: 'Going',
-      className: 'bg-emerald-100 text-emerald-700 border-emerald-500',
-    },
-    declined: {
-      icon: X,
-      label: "Can't Go",
-      className: 'bg-red-100 text-red-700 border-red-500',
-    },
-    tentative: {
-      icon: HelpCircle,
-      label: 'Maybe',
-      className: 'bg-amber-100 text-amber-700 border-amber-500',
-    },
-    pending: {
-      icon: Clock,
-      label: 'Awaiting',
-      className: 'bg-slate-100 text-slate-600 border-slate-300',
-    },
-  };
-
-  const { icon: Icon, label, className } = config[status];
-
-  return (
-    <span className={`px-2.5 py-1 text-xs font-medium rounded-full border flex items-center gap-1 ${className}`}>
-      <Icon className="w-3 h-3" />
-      {label}
-    </span>
-  );
-}
-
-function RSVPSkeleton() {
-  return (
-    <div className="space-y-4 p-4 bg-slate-50 rounded-xl animate-pulse">
-      <div className="flex gap-2">
-        <div className="h-12 bg-slate-200 rounded-lg w-24"></div>
-        <div className="h-12 bg-slate-200 rounded-lg w-24"></div>
-        <div className="h-12 bg-slate-200 rounded-lg w-24"></div>
-        <div className="h-12 bg-slate-200 rounded-lg w-24"></div>
-      </div>
-      <div className="space-y-2">
-        {[1, 2, 3].map(i => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-slate-200 rounded-full"></div>
-            <div className="flex-1 h-4 bg-slate-200 rounded"></div>
-            <div className="w-20 h-6 bg-slate-200 rounded-full"></div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export function RSVPStatusSection({ eventId }: { eventId: string }) {
-  const [stats, setStats] = useState<RSVPStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchRSVP() {
-      setLoading(true);
-      setError(null);
-
-      const result = await getEventRSVP(eventId);
-
-      if (result.success) {
-        setStats(result.data);
-      } else {
-        setError(result.error || 'Failed to load RSVP data');
-      }
-
-      setLoading(false);
+  function toggleSelection(id: string) {
+    const newSelection = new Set(selectedIds);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
+    } else {
+      newSelection.add(id);
     }
-
-    fetchRSVP();
-  }, [eventId]);
-
-  if (loading) {
-    return <RSVPSkeleton />;
+    setSelectedIds(newSelection);
   }
 
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-        <p className="text-sm text-red-600">{error}</p>
-      </div>
-    );
+  function selectAll() {
+    if (selectedIds.size === filteredParticipants.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredParticipants.map((p) => p.id)));
+    }
   }
 
-  if (!stats) {
-    return null;
+  async function handleSendReminder() {
+    if (onSendReminder && selectedIds.size > 0) {
+      await onSendReminder(Array.from(selectedIds));
+      setSelectedIds(new Set());
+    }
   }
-
-  const { summary, acceptanceRate, responseRate } = stats;
 
   return (
-    <div className="space-y-4 p-4 bg-slate-50/50 rounded-xl backdrop-blur-sm">
-      {/* Summary Pills */}
-      <div className="flex flex-wrap gap-2">
-        <RSVPPill count={summary.accepted} label="Going" color="emerald" />
-        <RSVPPill count={summary.declined} label="Can't Go" color="red" />
-        <RSVPPill count={summary.tentative} label="Maybe" color="amber" />
-        <RSVPPill count={summary.pending} label="Awaiting" color="slate" />
+    <div className={cn('bg-white rounded-2xl border border-slate-200 shadow-sm', className)}>
+      {/* Header */}
+      <div className={cn('p-6 border-b border-slate-200', compact && 'p-4')}>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 className={cn('font-semibold text-slate-900', compact ? 'text-base' : 'text-lg')}>
+              RSVP Status
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">
+              {stats.confirmed} of {stats.total} confirmed
+            </p>
+          </div>
+
+          {onExport && (
+            <button
+              onClick={onExport}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+          )}
+        </div>
+
+        {/* Progress Ring */}
+        <div className="flex justify-center">
+          <RSVPProgressRing
+            confirmed={stats.confirmed}
+            maybe={stats.maybe}
+            declined={stats.declined}
+            pending={stats.pending}
+            total={stats.total}
+            size={compact ? 'md' : 'lg'}
+            showLabel={!compact}
+          />
+        </div>
       </div>
 
-      {/* Response Rate */}
-      {summary.total > 0 && (
-        <div className="flex gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500">Response Rate:</span>
-            <span className="font-semibold text-slate-900">{responseRate}%</span>
-            <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 transition-all duration-300"
-                style={{ width: `${responseRate}%` }}
-              ></div>
-            </div>
+      {/* Filters and search */}
+      <div className={cn('p-4 border-b border-slate-200 space-y-3', compact && 'p-3')}>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search players..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-100 focus:border-green-500"
+          />
+        </div>
+
+        {/* Filter buttons */}
+        <div className="flex flex-wrap gap-2">
+          <FilterButton
+            active={filter === 'all'}
+            onClick={() => setFilter('all')}
+            count={participants.length}
+          >
+            All
+          </FilterButton>
+          <FilterButton
+            active={filter === 'confirmed'}
+            onClick={() => setFilter('confirmed')}
+            count={stats.confirmed}
+            color="emerald"
+          >
+            Confirmed
+          </FilterButton>
+          <FilterButton
+            active={filter === 'maybe'}
+            onClick={() => setFilter('maybe')}
+            count={stats.maybe}
+            color="amber"
+          >
+            Maybe
+          </FilterButton>
+          <FilterButton
+            active={filter === 'declined'}
+            onClick={() => setFilter('declined')}
+            count={stats.declined}
+            color="rose"
+          >
+            Declined
+          </FilterButton>
+          <FilterButton
+            active={filter === 'pending'}
+            onClick={() => setFilter('pending')}
+            count={stats.pending}
+            color="slate"
+          >
+            Pending
+          </FilterButton>
+        </div>
+      </div>
+
+      {/* Player list */}
+      <div className="divide-y divide-slate-200 max-h-[400px] overflow-y-auto">
+        {filteredParticipants.length === 0 ? (
+          <div className="p-8 text-center">
+            <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm text-slate-500">
+              {searchQuery ? 'No players match your search' : 'No players in this category'}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500">Acceptance Rate:</span>
-            <span className="font-semibold text-slate-900">{acceptanceRate}%</span>
-            <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 transition-all duration-300"
-                style={{ width: `${acceptanceRate}%` }}
-              ></div>
-            </div>
+        ) : (
+          <>
+            {/* Select all (if reminder function available) */}
+            {onSendReminder && filteredParticipants.length > 1 && (
+              <div className="p-3 bg-slate-50 border-b border-slate-200">
+                <button
+                  onClick={selectAll}
+                  className="text-sm text-slate-700 hover:text-slate-900 font-medium"
+                >
+                  {selectedIds.size === filteredParticipants.length
+                    ? 'Deselect All'
+                    : `Select All (${filteredParticipants.length})`}
+                </button>
+              </div>
+            )}
+
+            {filteredParticipants.map((participant) => (
+              <ParticipantRow
+                key={participant.id}
+                participant={participant}
+                selected={selectedIds.has(participant.id)}
+                onToggleSelect={() => toggleSelection(participant.id)}
+                showCheckbox={!!onSendReminder}
+                compact={compact}
+              />
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* Actions footer (if selections made) */}
+      {selectedIds.size > 0 && onSendReminder && (
+        <div className="p-4 border-t border-slate-200 bg-slate-50">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-slate-600">{selectedIds.size} selected</p>
+            <button
+              onClick={handleSendReminder}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Send Reminder
+            </button>
           </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Attendee List */}
-      {summary.attendees.length > 0 ? (
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {summary.attendees.map(attendee => (
-            <div
-              key={attendee.playerId}
-              className="flex items-center gap-3 p-2 bg-white rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
-            >
-              {/* Avatar */}
-              {attendee.avatarUrl ? (
-                <img
-                  src={attendee.avatarUrl}
-                  alt={attendee.playerName}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center border-2 border-white shadow-sm">
-                  <User className="w-5 h-5 text-slate-500" />
-                </div>
-              )}
+/**
+ * Filter Button Component
+ */
+function FilterButton({
+  active,
+  onClick,
+  count,
+  color = 'slate',
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  count: number;
+  color?: 'emerald' | 'amber' | 'rose' | 'slate';
+  children: React.ReactNode;
+}) {
+  const colorClasses = {
+    emerald: active ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+    amber: active ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100',
+    rose: active ? 'bg-rose-500 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100',
+    slate: active ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+  };
 
-              {/* Name */}
-              <span className="flex-1 text-sm font-medium text-slate-700">{attendee.playerName}</span>
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
+        'flex items-center gap-1.5',
+        colorClasses[color]
+      )}
+    >
+      <span>{children}</span>
+      <span className={cn('tabular-nums', active ? 'opacity-90' : 'opacity-75')}>
+        {count}
+      </span>
+    </button>
+  );
+}
 
-              {/* Status Badge */}
-              <RSVPBadge status={attendee.status} />
+/**
+ * Participant Row Component
+ */
+function ParticipantRow({
+  participant,
+  selected,
+  onToggleSelect,
+  showCheckbox,
+  compact,
+}: {
+  participant: RSVPParticipant;
+  selected: boolean;
+  onToggleSelect: () => void;
+  showCheckbox: boolean;
+  compact?: boolean;
+}) {
+  const config = RESPONSE_CONFIGS[participant.response];
 
-              {/* Responded Time */}
-              {attendee.respondedAt && (
-                <span className="text-xs text-slate-400">
-                  {new Date(attendee.respondedAt).toLocaleDateString()}
-                </span>
-              )}
-            </div>
-          ))}
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors',
+        selected && 'bg-green-50',
+        compact && 'p-2'
+      )}
+    >
+      {/* Checkbox (if enabled) */}
+      {showCheckbox && (
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggleSelect}
+          className="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-2 focus:ring-green-100"
+        />
+      )}
+
+      {/* Avatar */}
+      <div className="shrink-0">
+        {participant.avatar_url ? (
+          <img
+            src={participant.avatar_url}
+            alt={participant.name}
+            className={cn('rounded-full object-cover', compact ? 'w-8 h-8' : 'w-10 h-10')}
+          />
+        ) : (
+          <div
+            className={cn(
+              'rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium',
+              compact ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'
+            )}
+          >
+            {participant.name
+              .split(' ')
+              .map((n) => n[0])
+              .join('')
+              .toUpperCase()
+              .slice(0, 2)}
+          </div>
+        )}
+      </div>
+
+      {/* Name and email */}
+      <div className="flex-1 min-w-0">
+        <p className={cn('font-medium text-slate-900 truncate', compact ? 'text-sm' : 'text-base')}>
+          {participant.name}
+        </p>
+        {!compact && participant.email && (
+          <p className="text-xs text-slate-500 truncate">{participant.email}</p>
+        )}
+      </div>
+
+      {/* Response status */}
+      <div className="shrink-0">
+        <div
+          className={cn(
+            'flex items-center gap-1.5 px-2.5 py-1 rounded-full',
+            config.bgColor
+          )}
+        >
+          <div className={cn('w-2 h-2 rounded-full', config.color)}></div>
+          {!compact && (
+            <span className={cn('text-xs font-medium', config.textColor)}>
+              {config.label}
+            </span>
+          )}
         </div>
-      ) : (
-        <div className="text-center py-8">
-          <User className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-          <p className="text-sm text-slate-500">No attendees invited yet</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Compact RSVP Status (for sidebars/previews)
+ */
+export function CompactRSVPStatus({
+  participants,
+  totalInvited,
+}: Pick<RSVPStatusSectionProps, 'participants' | 'totalInvited'>) {
+  const confirmed = participants.filter((p) => p.response === 'confirmed').length;
+  const pending = participants.filter((p) => p.response === 'pending').length;
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+        <span className="text-sm font-medium text-slate-700">{confirmed} confirmed</span>
+      </div>
+      {pending > 0 && (
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+          <span className="text-sm text-slate-500">{pending} pending</span>
         </div>
       )}
     </div>

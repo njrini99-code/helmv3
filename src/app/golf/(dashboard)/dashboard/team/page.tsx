@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   description: 'View your golf team roster and coach information',
 };
 
+// Cache team info for 10 minutes (rarely changes)
+export const revalidate = 600;
+
 export default async function GolfTeamInfoPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

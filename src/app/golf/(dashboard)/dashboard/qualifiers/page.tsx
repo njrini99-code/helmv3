@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   description: 'Track and manage team qualifiers for player selection and performance evaluation',
 };
 
+// Cache qualifiers for 5 minutes (qualifiers don't change frequently)
+export const revalidate = 300;
+
 export default async function GolfQualifiersPage() {
   const supabase = await createClient();
 

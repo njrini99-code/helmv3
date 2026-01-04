@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   description: 'Track tournament travel, manage logistics, and coordinate team itineraries for your golf program.',
 };
 
+// Cache travel info for 5 minutes (travel plans don't change frequently)
+export const revalidate = 300;
+
 export default async function GolfTravelPage() {
   const supabase = await createClient();
 

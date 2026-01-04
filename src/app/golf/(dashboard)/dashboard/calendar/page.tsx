@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   description: 'View and manage your team events, practices, and class schedule',
 };
 
+// Cache calendar for 60 seconds (events change moderately)
+export const revalidate = 60;
+
 export default async function GolfCalendarPage() {
   const supabase = await createClient();
 

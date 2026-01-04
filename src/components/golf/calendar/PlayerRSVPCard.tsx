@@ -1,246 +1,351 @@
 'use client';
 
+/**
+ * Player RSVP Card Component - Premium UI
+ *
+ * Response interface for players to RSVP to events:
+ * - Event header with type badge
+ * - Large tap targets (≥52px) for mobile
+ * - Going / Maybe / Can't Go buttons in 3-column grid
+ * - Selected state with scale effect
+ * - Lock indicator with countdown
+ * - Confirmation feedback
+ *
+ * Optimized for on-the-go mobile RSVP.
+ */
+
 import { useState } from 'react';
-import { Calendar, MapPin, Clock, Check, X, HelpCircle, AlertTriangle } from 'lucide-react';
-import { respondToEvent } from '@/app/golf/actions/golf';
-import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { formatTime } from '@/lib/calendar/premium-utils';
+import { StatusBadge } from './StatusBadge';
+import { RSVPLockIndicator, InlineRSVPLock } from './RSVPLockIndicator';
+import {
+  CheckCircle2,
+  HelpCircle,
+  XCircle,
+  Calendar,
+  Clock,
+  MapPin,
+} from 'lucide-react';
+import { format } from 'date-fns';
+import '@/styles/calendar-tokens.css';
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
-interface EventInvitation {
-  eventId: string;
-  eventTitle: string;
-  eventType: string;
-  startDate: string;
-  startTime: string | null;
-  endDate: string | null;
-  endTime: string | null;
-  location: string | null;
-  description: string | null;
-  requiresRsvp: boolean;
-  rsvpDeadline: string | null;
-  createdBy: string;
-  status: 'pending' | 'accepted' | 'declined' | 'tentative';
+export interface PlayerRSVPCardProps {
+  event: {
+    id: string;
+    title: string;
+    event_type: string;
+    status: string;
+    start_time: string;
+    end_time?: string | null;
+    location?: string | null;
+    description?: string | null;
+    rsvp_lock_time?: string | null;
+  };
+  currentResponse?: 'confirmed' | 'maybe' | 'declined' | null;
+  onRespond: (response: 'confirmed' | 'maybe' | 'declined') => Promise<void>;
+  className?: string;
+  compact?: boolean;
 }
 
-interface PlayerRSVPCardProps {
-  event: EventInvitation;
-  onRespond?: () => void; // Callback after response
-}
+type RSVPOption = 'confirmed' | 'maybe' | 'declined';
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
+const RSVP_OPTIONS: Array<{
+  value: RSVPOption;
+  label: string;
+  shortLabel: string;
+  icon: typeof CheckCircle2;
+  colorClass: string;
+  bgClass: string;
+  hoverClass: string;
+  selectedClass: string;
+}> = [
+  {
+    value: 'confirmed',
+    label: "I'm Going",
+    shortLabel: 'Going',
+    icon: CheckCircle2,
+    colorClass: 'text-emerald-700',
+    bgClass: 'bg-emerald-50',
+    hoverClass: 'hover:bg-emerald-100',
+    selectedClass: 'bg-emerald-600 text-white ring-4 ring-emerald-200 shadow-lg',
+  },
+  {
+    value: 'maybe',
+    label: 'Maybe',
+    shortLabel: 'Maybe',
+    icon: HelpCircle,
+    colorClass: 'text-amber-700',
+    bgClass: 'bg-amber-50',
+    hoverClass: 'hover:bg-amber-100',
+    selectedClass: 'bg-amber-500 text-white ring-4 ring-amber-200 shadow-lg',
+  },
+  {
+    value: 'declined',
+    label: "Can't Go",
+    shortLabel: "Can't",
+    icon: XCircle,
+    colorClass: 'text-rose-700',
+    bgClass: 'bg-rose-50',
+    hoverClass: 'hover:bg-rose-100',
+    selectedClass: 'bg-rose-500 text-white ring-4 ring-rose-200 shadow-lg',
+  },
+];
 
-function formatEventDateTime(event: EventInvitation): string {
-  const startDate = new Date(event.startDate);
-  const dateStr = startDate.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+export function PlayerRSVPCard({
+  event,
+  currentResponse,
+  onRespond,
+  className,
+  compact = false,
+}: PlayerRSVPCardProps) {
+  const [selectedResponse, setSelectedResponse] = useState<RSVPOption | null>(
+    currentResponse || null
+  );
+  const [loading, setLoading] = useState(false);
 
-  if (event.startTime) {
-    const [hours, minutes] = event.startTime.split(':');
-    const hour = parseInt(hours ?? '0');
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    const timeStr = `${displayHour}:${minutes ?? '00'} ${period}`;
+  const eventDate = new Date(event.start_time);
+  const isLocked = event.rsvp_lock_time
+    ? new Date(event.rsvp_lock_time) < new Date()
+    : false;
 
-    if (event.endTime) {
-      const [endHours, endMinutes] = event.endTime.split(':');
-      const endHour = parseInt(endHours ?? '0');
-      const endPeriod = endHour >= 12 ? 'PM' : 'AM';
-      const endDisplayHour = endHour > 12 ? endHour - 12 : endHour === 0 ? 12 : endHour;
-      const endTimeStr = `${endDisplayHour}:${endMinutes ?? '00'} ${endPeriod}`;
-      return `${dateStr} • ${timeStr} - ${endTimeStr}`;
+  async function handleRespond(response: RSVPOption) {
+    if (isLocked || loading) return;
+
+    setLoading(true);
+    try {
+      await onRespond(response);
+      setSelectedResponse(response);
+    } catch (error) {
+      console.error('Failed to submit RSVP:', error);
+    } finally {
+      setLoading(false);
     }
-
-    return `${dateStr} • ${timeStr}`;
   }
 
-  return dateStr;
-}
-
-function getEventTypeColor(eventType: string): {
-  bg: string;
-  text: string;
-  border: string;
-} {
-  const defaultColor = { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-500' };
-
-  const colors: Record<string, { bg: string; text: string; border: string }> = {
-    practice: { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-500' },
-    tournament: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-500' },
-    qualifier: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-500' },
-    meeting: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-500' },
-    travel: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-500' },
-    other: defaultColor,
-  };
-
-  return colors[eventType] || defaultColor;
-}
-
-// ============================================================================
-// COMPONENT
-// ============================================================================
-
-export function PlayerRSVPCard({ event, onRespond }: PlayerRSVPCardProps) {
-  const [isResponding, setIsResponding] = useState(false);
-  const [currentStatus, setCurrentStatus] = useState(event.status);
-
-  const colors = getEventTypeColor(event.eventType ?? 'other');
-
-  const handleRespond = async (status: 'accepted' | 'declined' | 'tentative') => {
-    setIsResponding(true);
-
-    try {
-      const result = await respondToEvent(event.eventId, status);
-
-      if (result.success) {
-        setCurrentStatus(status);
-        toast.success(
-          `You've marked yourself as ${status === 'accepted' ? 'going' : status === 'declined' ? "can't go" : 'maybe'}`
-        );
-        onRespond?.();
-      } else {
-        toast.error(result.error || 'Failed to update RSVP');
-      }
-    } catch (error) {
-      toast.error('An unexpected error occurred');
-    } finally {
-      setIsResponding(false);
-    }
-  };
-
-  // Check if RSVP deadline has passed
-  const deadlinePassed = event.rsvpDeadline ? new Date(event.rsvpDeadline) < new Date() : false;
-
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-4 shadow-sm hover:shadow-md transition-all">
-      {/* Header */}
-      <div className="flex items-start gap-4">
-        {/* Event Type Icon */}
-        <div
-          className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors.bg} ${colors.border} border-2 flex-shrink-0`}
-        >
-          <Calendar className={`w-6 h-6 ${colors.text}`} />
-        </div>
+    <div
+      className={cn(
+        'bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden',
+        'hover:shadow-md transition-all duration-200',
+        className
+      )}
+    >
+      {/* Event header */}
+      <div className={cn('p-5 border-b border-slate-200', compact && 'p-4')}>
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <h3
+              className={cn(
+                'font-semibold text-slate-900 mb-1.5',
+                compact ? 'text-base' : 'text-lg'
+              )}
+            >
+              {event.title}
+            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <StatusBadge status={event.status as any} size="sm" />
+              <span className="text-xs text-slate-500 uppercase tracking-wide font-medium">
+                {event.event_type.replace('_', ' ')}
+              </span>
+            </div>
+          </div>
 
-        {/* Event Info */}
-        <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-slate-900 truncate">{event.eventTitle}</h4>
-          <p className="text-sm text-slate-500 mt-1 flex items-center gap-1 flex-wrap">
-            <Clock className="w-3 h-3" />
-            {formatEventDateTime(event)}
-          </p>
-          {event.location && (
-            <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
-              <MapPin className="w-3 h-3" />
-              {event.location}
-            </p>
+          {event.rsvp_lock_time && !isLocked && (
+            <InlineRSVPLock lockTime={event.rsvp_lock_time} />
           )}
         </div>
 
-        {/* Event Type Badge */}
-        <span
-          className={`px-2.5 py-1 text-xs font-medium rounded-full ${colors.bg} ${colors.text} capitalize`}
-        >
-          {event.eventType}
-        </span>
-      </div>
-
-      {/* Description */}
-      {event.description && (
-        <div className="p-3 bg-slate-50 rounded-lg">
-          <p className="text-sm text-slate-600 line-clamp-2">{event.description}</p>
-        </div>
-      )}
-
-      {/* RSVP Deadline Warning */}
-      {event.rsvpDeadline && !deadlinePassed && (
-        <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg">
-          <p className="text-xs text-amber-700">
-            <Clock className="w-3 h-3 inline mr-1" />
-            Please respond by{' '}
-            {new Date(event.rsvpDeadline).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-            })}
-          </p>
-        </div>
-      )}
-
-      {/* Deadline Passed Warning */}
-      {deadlinePassed && currentStatus === 'pending' && (
-        <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-xs text-red-700">
-            <AlertTriangle className="w-3 h-3 inline mr-1" />
-            RSVP deadline has passed
-          </p>
-        </div>
-      )}
-
-      {/* RSVP Buttons */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => handleRespond('accepted')}
-          disabled={isResponding || deadlinePassed}
-          className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all ${
-            currentStatus === 'accepted'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          <Check className="w-4 h-4" />
-          Going
-        </button>
-
-        <button
-          onClick={() => handleRespond('tentative')}
-          disabled={isResponding || deadlinePassed}
-          className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all ${
-            currentStatus === 'tentative'
-              ? 'bg-amber-600 text-white shadow-sm'
-              : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          <HelpCircle className="w-4 h-4" />
-          Maybe
-        </button>
-
-        <button
-          onClick={() => handleRespond('declined')}
-          disabled={isResponding || deadlinePassed}
-          className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all ${
-            currentStatus === 'declined'
-              ? 'bg-red-600 text-white shadow-sm'
-              : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          <X className="w-4 h-4" />
-          Can't Go
-        </button>
-      </div>
-
-      {/* Current Status Indicator */}
-      {currentStatus !== 'pending' && (
-        <div className="text-center">
-          <p className="text-xs text-slate-500">
-            You responded:{' '}
-            <span className="font-medium text-slate-700">
-              {currentStatus === 'accepted' && 'Going'}
-              {currentStatus === 'declined' && "Can't Go"}
-              {currentStatus === 'tentative' && 'Maybe'}
+        {/* Event details */}
+        <div className="space-y-2 mt-3">
+          <div className="flex items-center gap-2.5 text-sm text-slate-700">
+            <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+            <span className="font-medium">{format(eventDate, 'EEEE, MMMM d, yyyy')}</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-sm text-slate-700">
+            <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+            <span>
+              {formatTime(event.start_time)}
+              {event.end_time && ` - ${formatTime(event.end_time)}`}
             </span>
-          </p>
+          </div>
+          {event.location && (
+            <div className="flex items-center gap-2.5 text-sm text-slate-700">
+              <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="truncate">{event.location}</span>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Description (non-compact only) */}
+        {!compact && event.description && (
+          <div className="mt-3 p-3 bg-slate-50 rounded-lg">
+            <p className="text-sm text-slate-600 line-clamp-2">{event.description}</p>
+          </div>
+        )}
+      </div>
+
+      {/* RSVP options */}
+      <div className={cn('p-5', compact && 'p-4')}>
+        {isLocked ? (
+          <div className="text-center py-6">
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+              <XCircle className="w-6 h-6 text-slate-400" />
+            </div>
+            <p className="text-sm font-semibold text-slate-700 mb-1">RSVP Window Closed</p>
+            <p className="text-xs text-slate-500">
+              You can no longer change your response
+            </p>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm font-semibold text-slate-700 mb-4">
+              Will you attend this event?
+            </p>
+
+            {/* Large tap target buttons (≥52px) */}
+            <div className="grid grid-cols-3 gap-2.5">
+              {RSVP_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                const isSelected = selectedResponse === option.value;
+                const isCurrentSelection = currentResponse === option.value;
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleRespond(option.value)}
+                    disabled={loading}
+                    className={cn(
+                      // Base styles
+                      'relative flex flex-col items-center justify-center gap-2',
+                      'min-h-[88px] p-4 rounded-xl border-2',
+                      'transition-all duration-200',
+                      'active:scale-95',
+                      // Touch-friendly (≥52px tap target exceeded with 88px height)
+                      'touch-manipulation',
+                      // Default state
+                      option.bgClass,
+                      option.hoverClass,
+                      'border-transparent',
+                      // Selected state with scale effect
+                      isSelected && option.selectedClass,
+                      isSelected && 'scale-105',
+                      // Loading state
+                      loading && 'opacity-50 cursor-not-allowed',
+                      // Focus ring for accessibility
+                      'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2',
+                      isSelected
+                        ? 'focus-visible:ring-white'
+                        : 'focus-visible:ring-slate-300'
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        'shrink-0',
+                        compact ? 'w-6 h-6' : 'w-7 h-7',
+                        isSelected ? 'text-white' : option.colorClass,
+                        'transition-transform',
+                        isSelected && 'scale-110'
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        'text-xs font-bold text-center uppercase tracking-wide',
+                        isSelected ? 'text-white' : option.colorClass
+                      )}
+                    >
+                      {compact ? option.shortLabel : option.label}
+                    </span>
+
+                    {/* Current response indicator */}
+                    {isCurrentSelection && !isSelected && (
+                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-600 flex items-center justify-center shadow-md">
+                        <CheckCircle2 className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Lock countdown */}
+            {event.rsvp_lock_time && (
+              <div className="mt-4">
+                <RSVPLockIndicator lockTime={event.rsvp_lock_time} compact />
+              </div>
+            )}
+
+            {/* Confirmation message */}
+            {selectedResponse && (
+              <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <p className="text-sm text-emerald-800 text-center font-medium">
+                  ✓ Response saved! You can change this anytime before the deadline.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Compact RSVP Card (for lists/grids)
+ */
+export function CompactPlayerRSVPCard({
+  event,
+  currentResponse,
+  onRespond,
+}: Omit<PlayerRSVPCardProps, 'className' | 'compact'>) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleQuickRespond(response: RSVPOption) {
+    setLoading(true);
+    try {
+      await onRespond(response);
+    } catch (error) {
+      console.error('Failed to submit RSVP:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm text-slate-900 truncate">{event.title}</p>
+        <p className="text-xs text-slate-500 mt-0.5">{formatTime(event.start_time)}</p>
+      </div>
+
+      <div className="flex items-center gap-1.5 shrink-0">
+        {RSVP_OPTIONS.map((option) => {
+          const Icon = option.icon;
+          const isSelected = currentResponse === option.value;
+
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleQuickRespond(option.value)}
+              disabled={loading}
+              className={cn(
+                'p-2.5 rounded-lg transition-all',
+                'min-w-[44px] min-h-[44px]', // Touch-friendly
+                isSelected ? option.selectedClass : `${option.bgClass} ${option.hoverClass}`,
+                loading && 'opacity-50',
+                'active:scale-95'
+              )}
+              title={option.label}
+            >
+              <Icon
+                className={cn('w-4 h-4', isSelected ? 'text-white' : option.colorClass)}
+              />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

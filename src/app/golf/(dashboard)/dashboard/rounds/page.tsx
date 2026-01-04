@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   description: 'View and manage all golf rounds for your team. Track scores, stats, and player performance over time.',
 };
 
+// Cache rounds for 2 minutes (new rounds added moderately often)
+export const revalidate = 120;
+
 interface RoundWithPlayer extends GolfRound {
   player: {
     first_name: string | null;

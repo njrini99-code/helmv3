@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   description: 'Manage your golf team roster, view player stats, and track team performance',
 };
 
+// Cache roster page for 5 minutes (roster doesn't change frequently)
+export const revalidate = 300;
+
 interface PlayerWithStats extends GolfPlayer {
   rounds_count?: number;
   avg_score?: number;
@@ -52,27 +55,39 @@ export default async function GolfRosterPage() {
     .order('last_name', { ascending: true });
 
   // Get rounds to calculate stats for each player
+  // PERFORMANCE OPTIMIZATION: Fetch all rounds in ONE query instead of N queries
   const playersWithStats: PlayerWithStats[] = players && players.length > 0
-    ? await Promise.all(
-      players.map(async (player) => {
-      const { data: rounds } = await supabase
-        .from('golf_rounds')
-        .select('total_score')
-        .eq('player_id', player.id)
-        .not('total_score', 'is', null);
+    ? await (async () => {
+        // Fetch ALL rounds for ALL players in a single query
+        const playerIds = players.map(p => p.id);
+        const { data: allRounds } = await supabase
+          .from('golf_rounds')
+          .select('player_id, total_score')
+          .in('player_id', playerIds)
+          .not('total_score', 'is', null);
 
-      const roundsCount = rounds?.length || 0;
-      const avgScore = roundsCount > 0
-        ? rounds!.reduce((sum, r) => sum + (r.total_score || 0), 0) / roundsCount
-        : 0;
+        // Group rounds by player_id in memory (fast!)
+        const roundsByPlayer = (allRounds || []).reduce((acc, round) => {
+          if (!acc[round.player_id]) acc[round.player_id] = [];
+          acc[round.player_id].push(round);
+          return acc;
+        }, {} as Record<string, Array<{ total_score: number }>>);
 
-        return {
-          ...player,
-          rounds_count: roundsCount,
-          avg_score: avgScore,
-        };
-      })
-    )
+        // Map players to include stats (no more database queries!)
+        return players.map(player => {
+          const rounds = roundsByPlayer[player.id] || [];
+          const roundsCount = rounds.length;
+          const avgScore = roundsCount > 0
+            ? rounds.reduce((sum, r) => sum + (r.total_score || 0), 0) / roundsCount
+            : 0;
+
+          return {
+            ...player,
+            rounds_count: roundsCount,
+            avg_score: avgScore,
+          };
+        });
+      })()
     : [];
 
   const teamName = team?.name || 'Team';

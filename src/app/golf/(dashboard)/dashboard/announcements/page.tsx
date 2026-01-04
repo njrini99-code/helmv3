@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   description: 'View team news, updates, and important announcements from your golf coaching staff',
 };
 
+// Cache announcements for 2 minutes (new announcements added moderately often)
+export const revalidate = 120;
+
 export default async function GolfAnnouncementsPage() {
   const supabase = await createClient();
 
