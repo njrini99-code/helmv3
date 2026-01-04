@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { InvitePlayerButton } from '@/components/golf/roster/InvitePlayerButton';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
 import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
@@ -124,11 +125,23 @@ export default async function GolfRosterPage() {
                 <div className="relative flex items-center gap-4 p-4">
                   {/* Avatar */}
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <span className="text-white font-semibold text-sm">
-                        {player.first_name?.[0] || '?'}{player.last_name?.[0] || '?'}
-                      </span>
-                    </div>
+                    {player.avatar_url ? (
+                      <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
+                        <Image
+                          src={player.avatar_url}
+                          alt={`${player.first_name} ${player.last_name}`}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <span className="text-white font-semibold text-sm">
+                          {player.first_name?.[0] || '?'}{player.last_name?.[0] || '?'}
+                        </span>
+                      </div>
+                    )}
                     {/* Status indicator */}
                     <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-green-500" />
                   </div>

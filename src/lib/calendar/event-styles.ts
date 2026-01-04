@@ -10,7 +10,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   game: {
     label: 'Game',
     color: 'emerald',
-    bgColor: 'bg-emerald-50/90',
+    bgColor: 'bg-emerald-50/60',
     borderColor: 'border-l-emerald-500',
     textColor: 'text-emerald-800',
     showText: true,
@@ -18,7 +18,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   tournament: {
     label: 'Tournament',
     color: 'emerald',
-    bgColor: 'bg-emerald-50/90',
+    bgColor: 'bg-emerald-50/60',
     borderColor: 'border-l-emerald-600',
     textColor: 'text-emerald-800',
     showText: true,
@@ -27,7 +27,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   qualifier: {
     label: 'Qualifier',
     color: 'amber',
-    bgColor: 'bg-amber-50/90',
+    bgColor: 'bg-amber-50/60',
     borderColor: 'border-l-amber-500',
     textColor: 'text-amber-800',
     showText: true,
@@ -36,7 +36,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   practice: {
     label: 'Practice',
     color: 'stone',
-    bgColor: 'bg-stone-100/90',
+    bgColor: 'bg-stone-100/60',
     borderColor: 'border-l-stone-400',
     textColor: 'text-stone-700',
     showText: true,
@@ -45,7 +45,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   scrimmage: {
     label: 'Scrimmage',
     color: 'teal',
-    bgColor: 'bg-teal-50/90',
+    bgColor: 'bg-teal-50/60',
     borderColor: 'border-l-teal-500',
     textColor: 'text-teal-800',
     showText: true,
@@ -54,7 +54,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   recruiting_visit: {
     label: 'Recruiting Visit',
     color: 'violet',
-    bgColor: 'bg-violet-50/90',
+    bgColor: 'bg-violet-50/60',
     borderColor: 'border-l-violet-500',
     textColor: 'text-violet-800',
     showText: true,
@@ -63,7 +63,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   camp: {
     label: 'Camp',
     color: 'orange',
-    bgColor: 'bg-orange-50/90',
+    bgColor: 'bg-orange-50/60',
     borderColor: 'border-l-orange-500',
     textColor: 'text-orange-800',
     showText: true,
@@ -72,7 +72,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   meeting: {
     label: 'Meeting',
     color: 'sky',
-    bgColor: 'bg-sky-50/90',
+    bgColor: 'bg-sky-50/60',
     borderColor: 'border-l-sky-500',
     textColor: 'text-sky-800',
     showText: true,
@@ -81,7 +81,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   workout: {
     label: 'Workout',
     color: 'rose',
-    bgColor: 'bg-rose-50/90',
+    bgColor: 'bg-rose-50/60',
     borderColor: 'border-l-rose-500',
     textColor: 'text-rose-800',
     showText: true,
@@ -90,7 +90,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   class: {
     label: 'Class',
     color: 'stone',
-    bgColor: 'bg-stone-100/70',
+    bgColor: 'bg-stone-100/50',
     borderColor: 'border-l-stone-300',
     textColor: 'text-stone-500',
     showText: false,
@@ -99,7 +99,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   blocked_time: {
     label: 'Blocked Time',
     color: 'stone',
-    bgColor: 'bg-stone-100/50',
+    bgColor: 'bg-stone-100/40',
     borderColor: 'border-l-stone-200',
     textColor: 'text-stone-400',
     showText: false,
@@ -108,7 +108,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   travel: {
     label: 'Travel',
     color: 'purple',
-    bgColor: 'bg-purple-50/90',
+    bgColor: 'bg-purple-50/60',
     borderColor: 'border-l-purple-500',
     textColor: 'text-purple-800',
     showText: true,
@@ -117,7 +117,7 @@ export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   other: {
     label: 'Other',
     color: 'stone',
-    bgColor: 'bg-stone-100/90',
+    bgColor: 'bg-stone-100/60',
     borderColor: 'border-l-stone-400',
     textColor: 'text-stone-600',
     showText: true,

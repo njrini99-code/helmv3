@@ -1,80 +1,120 @@
+#!/usr/bin/env node
+
 import { createClient } from '@supabase/supabase-js';
+import { readFileSync } from 'fs';
 
-const supabase = createClient(
-  'https://dgvlnelygibgrrjehbyc.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRndmxuZWx5Z2liZ3JyamVoYnljIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTkzMDg2OCwiZXhwIjoyMDgxNTA2ODY4fQ.W23S_6Kn0lsSDOSV2Bvt21ooQrpwPs5Q6VNuw5tJPLs'
-);
+const SUPABASE_URL = 'https://dgvlnelygibgrrjehbyc.supabase.co';
+const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRndmxuZWx5Z2liZ3JyamVoYnljIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTkzMDg2OCwiZXhwIjoyMDgxNTA2ODY4fQ.W23S_6Kn0lsSDOSV2Bvt21ooQrpwPs5Q6VNuw5tJPLs';
 
-// Note: RLS policies need to be applied via SQL directly.
-// Since we can't run DDL via the client, we'll verify the existing state
-// and note what needs to be applied via Supabase dashboard.
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-async function verifyRLS() {
-  console.log('=== RLS VERIFICATION ===\n');
+console.log('🔧 Applying RLS Policy Fixes via Supabase REST API\n');
 
-  // Test anonymous access to players table
-  const anonClient = createClient(
-    'https://dgvlnelygibgrrjehbyc.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRndmxuZWx5Z2liZ3JyamVoYnljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5MzA4NjgsImV4cCI6MjA4MTUwNjg2OH0.CPpPgG_EEXvu5eaSaDD-FPSVXcNTPlA5VS9W5tcX5Ck'
-  );
+// Individual policy creation statements
+const policies = [
+  {
+    name: 'Drop existing golf_players SELECT policy',
+    sql: `DROP POLICY IF EXISTS "Users can view their own golf player profile" ON golf_players`
+  },
+  {
+    name: 'Drop existing golf_players UPDATE policy',
+    sql: `DROP POLICY IF EXISTS "Users can update their own golf player profile" ON golf_players`
+  },
+  {
+    name: 'Drop existing golf_players INSERT policy',
+    sql: `DROP POLICY IF EXISTS "Users can create their own golf player profile" ON golf_players`
+  },
+  {
+    name: 'Drop existing golf_coaches SELECT policy',
+    sql: `DROP POLICY IF EXISTS "Users can view their own golf coach profile" ON golf_coaches`
+  },
+  {
+    name: 'Drop existing golf_coaches UPDATE policy',
+    sql: `DROP POLICY IF EXISTS "Users can update their own golf coach profile" ON golf_coaches`
+  },
+  {
+    name: 'Drop existing golf_coaches INSERT policy',
+    sql: `DROP POLICY IF EXISTS "Users can create their own golf coach profile" ON golf_coaches`
+  },
+  {
+    name: 'Create golf_players SELECT policy',
+    sql: `CREATE POLICY "Users can view their own golf player profile" ON golf_players FOR SELECT TO authenticated USING (auth.uid() = user_id)`
+  },
+  {
+    name: 'Create golf_players UPDATE policy',
+    sql: `CREATE POLICY "Users can update their own golf player profile" ON golf_players FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id)`
+  },
+  {
+    name: 'Create golf_players INSERT policy',
+    sql: `CREATE POLICY "Users can create their own golf player profile" ON golf_players FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id)`
+  },
+  {
+    name: 'Create golf_coaches SELECT policy',
+    sql: `CREATE POLICY "Users can view their own golf coach profile" ON golf_coaches FOR SELECT TO authenticated USING (auth.uid() = user_id)`
+  },
+  {
+    name: 'Create golf_coaches UPDATE policy',
+    sql: `CREATE POLICY "Users can update their own golf coach profile" ON golf_coaches FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id)`
+  },
+  {
+    name: 'Create golf_coaches INSERT policy',
+    sql: `CREATE POLICY "Users can create their own golf coach profile" ON golf_coaches FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id)`
+  }
+];
 
-  console.log('Testing anonymous access to players table...');
-  const { data: anonPlayers, error: anonError } = await anonClient
-    .from('players')
-    .select('id, first_name')
-    .limit(5);
+console.log(`Executing ${policies.length} policy statements...\n`);
 
-  if (anonError) {
-    console.log('✅ Anonymous access blocked:', anonError.message);
-  } else if (anonPlayers && anonPlayers.length > 0) {
-    console.log('❌ SECURITY ISSUE: Anonymous can see', anonPlayers.length, 'players');
-    console.log('   Sample:', anonPlayers[0]);
-  } else {
-    console.log('✅ Anonymous returns 0 players');
+let successCount = 0;
+let errorCount = 0;
+
+for (const policy of policies) {
+  console.log(`📝 ${policy.name}...`);
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+      },
+      body: JSON.stringify({ query: policy.sql })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.log(`   ❌ Failed: ${error.substring(0, 100)}`);
+      errorCount++;
+    } else {
+      console.log('   ✅ Success');
+      successCount++;
+    }
+  } catch (err) {
+    console.log(`   ❌ Error: ${err.message}`);
+    errorCount++;
   }
 
-  console.log('\nTesting anonymous access to golf_players table...');
-  const { data: anonGolfPlayers, error: anonGolfError } = await anonClient
-    .from('golf_players')
-    .select('id, first_name')
-    .limit(5);
-
-  if (anonGolfError) {
-    console.log('✅ Anonymous access blocked:', anonGolfError.message);
-  } else if (anonGolfPlayers && anonGolfPlayers.length > 0) {
-    console.log('❌ SECURITY ISSUE: Anonymous can see', anonGolfPlayers.length, 'golf players');
-  } else {
-    console.log('✅ Anonymous returns 0 golf players');
-  }
-
-  console.log('\nTesting anonymous access to golf_teams table...');
-  const { data: anonTeams, error: anonTeamsError } = await anonClient
-    .from('golf_teams')
-    .select('id, name')
-    .limit(5);
-
-  if (anonTeamsError) {
-    console.log('✅ Anonymous access blocked:', anonTeamsError.message);
-  } else if (anonTeams && anonTeams.length > 0) {
-    console.log('⚠️  Anonymous can see', anonTeams.length, 'teams (may be intentional for invite lookup)');
-  } else {
-    console.log('✅ Anonymous returns 0 teams');
-  }
-
-  console.log('\n=== SERVICE ROLE CHECK ===');
-  const { count: playerCount } = await supabase.from('players').select('*', { count: 'exact', head: true });
-  const { count: golfPlayerCount } = await supabase.from('golf_players').select('*', { count: 'exact', head: true });
-  console.log('Service role can see:', playerCount, 'baseball players');
-  console.log('Service role can see:', golfPlayerCount, 'golf players');
-
-  console.log('\n=== RLS MIGRATION NEEDED ===');
-  console.log('The RLS migration at supabase/migrations/048_rls_security_fix.sql');
-  console.log('needs to be applied via the Supabase Dashboard SQL Editor.');
-  console.log('');
-  console.log('Steps:');
-  console.log('1. Go to https://supabase.com/dashboard/project/dgvlnelygibgrrjehbyc/sql/new');
-  console.log('2. Copy the contents of 048_rls_security_fix.sql');
-  console.log('3. Run it in the SQL Editor');
+  // Small delay to avoid rate limiting
+  await new Promise(resolve => setTimeout(resolve, 100));
 }
 
-verifyRLS().catch(console.error);
+console.log('\n' + '='.repeat(60));
+console.log('SUMMARY');
+console.log('='.repeat(60));
+console.log(`✅ Successful: ${successCount}`);
+console.log(`❌ Failed: ${errorCount}`);
+
+if (errorCount > 0) {
+  console.log('\n⚠️  Some policies failed to apply via REST API');
+  console.log('📋 Manual method - Run in Supabase Dashboard SQL Editor:');
+  console.log('   1. https://supabase.com/dashboard/project/dgvlnelygibgrrjehbyc/sql');
+  console.log('   2. Copy contents of FIX_GOLF_RLS_POLICIES.sql');
+  console.log('   3. Paste and Run');
+} else {
+  console.log('\n✅ All policies applied successfully!');
+  console.log('🎉 You should now be able to access the dashboard');
+  console.log('\nNext steps:');
+  console.log('   1. Clear browser cache/cookies');
+  console.log('   2. Go to /golf/login');
+  console.log('   3. Dashboard should load normally!');
+}

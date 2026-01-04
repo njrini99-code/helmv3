@@ -58,7 +58,11 @@ const EventCardInner = forwardRef<
           'border-l-[3px]',
           'transition-all duration-200',
           'hover:scale-[1.02] hover:shadow-md hover:z-10',
-          'backdrop-blur-sm',
+
+          /* Stronger blur + layered shadow + inner highlight */
+          'backdrop-blur-md',
+          'shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.5)]',
+
           isDragging && 'opacity-50 shadow-lg scale-105',
           isOverlay && 'shadow-xl scale-105 cursor-grabbing',
           isDraggable && !isDragging && 'cursor-grab',
@@ -84,7 +88,11 @@ const EventCardInner = forwardRef<
         'border-l-[3px]',
         'transition-all duration-200',
         'hover:scale-[1.01] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:z-10',
-        'backdrop-blur-sm',
+
+        /* Stronger blur + layered shadow + inner highlight */
+        'backdrop-blur-md',
+        'shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.5)]',
+
         isDragging && 'opacity-50 shadow-lg scale-105',
         isOverlay && 'shadow-xl scale-105 cursor-grabbing ring-2 ring-stone-200',
         isDraggable && !isDragging && 'cursor-grab',

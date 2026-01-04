@@ -75,17 +75,27 @@ export default async function GolfCalendarPage() {
       });
     }
 
+    // CRITICAL FIX: Extract just the date portion from start_date
+    // Supabase returns timestamptz as full ISO string like "2026-01-21T00:00:00+00:00"
+    // We need just "2026-01-21" to combine with the time
+    const startDateOnly = typeof event.start_date === 'string' 
+      ? event.start_date.split('T')[0] 
+      : event.start_date;
+    const endDateOnly = event.end_date && typeof event.end_date === 'string'
+      ? event.end_date.split('T')[0]
+      : event.end_date;
+
     // Combine date and time for start
     const startDateTime = event.start_time
-      ? `${event.start_date}T${event.start_time}`
+      ? `${startDateOnly}T${event.start_time}`
       : event.start_date;
 
     // Combine date and time for end
     // For recurring events (classes), end_date represents semester end, not the event end time
     // So we use start_date with end_time to get the correct event duration
     const endDateTime = event.end_time
-      ? `${event.start_date}T${event.end_time}`
-      : event.end_date || event.start_date;
+      ? `${startDateOnly}T${event.end_time}`
+      : endDateOnly || event.start_date;
 
     return {
       id: event.id,

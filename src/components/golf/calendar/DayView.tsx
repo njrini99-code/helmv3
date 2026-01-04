@@ -32,8 +32,10 @@ function DroppableTimeSlot({ date, hour }: { date: Date; hour: number }) {
     <div
       ref={setNodeRef}
       className={cn(
-        'h-20 border-l border-t border-stone-100/80 relative transition-all duration-200',
-        isOver && 'bg-emerald-100/60 border-emerald-300'
+        'h-16 relative transition-all duration-200',
+        'border-l border-t border-stone-100/30',
+        'hover:bg-white/20',
+        isOver && 'bg-emerald-100/40 border-emerald-300/50'
       )}
     >
       {isOver && (
@@ -87,7 +89,14 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
             {HOURS.map((hour) => (
               <div key={hour} className="contents">
                 {/* Time label column */}
-                <div className="h-20 bg-stone-50/30 border-r border-stone-200/40 flex items-start justify-end pr-4 pt-2">
+                <div className="
+                  h-16
+                  border-r border-stone-100/20
+                  flex items-start justify-end pr-4 pt-1
+
+                  /* Gradient fade from left edge */
+                  bg-gradient-to-r from-stone-50/40 to-transparent
+                ">
                   <span className="text-[11px] font-medium text-stone-400">
                     {hour === 0
                       ? '12 AM'
@@ -102,7 +111,12 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
                 {isDraggable ? (
                   <DroppableTimeSlot date={date} hour={hour} />
                 ) : (
-                  <div className="h-20 border-l border-t border-stone-100/80 relative" />
+                  <div className="
+                    h-16 relative
+                    border-l border-t border-stone-100/30
+                    hover:bg-white/30
+                    transition-colors duration-150
+                  " />
                 )}
               </div>
             ))}

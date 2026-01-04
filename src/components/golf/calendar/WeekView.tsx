@@ -39,9 +39,11 @@ function DroppableTimeSlot({
     <div
       ref={setNodeRef}
       className={cn(
-        'h-16 border-l border-t border-stone-100/80 relative transition-all duration-200',
-        isCurrentDay && 'bg-emerald-50/30',
-        isOver && 'bg-emerald-100/60 border-emerald-300'
+        'h-16 relative transition-all duration-200',
+        'border-l border-t border-stone-100/30',
+        'hover:bg-white/20',
+        isCurrentDay && 'bg-emerald-50/20',
+        isOver && 'bg-emerald-100/40 border-emerald-300/50'
       )}
     >
       {isOver && (
@@ -97,10 +99,25 @@ export function WeekView({ weekStart, events, onEventClick, isDraggable = false 
   const todayIndex = weekDates.findIndex((date) => isToday(date.toISOString()));
 
   return (
-    <div className="flex-1 overflow-auto">
-      <div className="min-w-[800px]">
+    <div
+      className="flex-1 overflow-auto"
+      style={{ background: 'transparent' }}
+    >
+      <div className="min-w-[800px]" style={{ background: 'transparent' }}>
         {/* Header row - Day names and dates */}
-        <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-stone-200/60 sticky top-0 bg-white/90 backdrop-blur-sm z-20">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '64px repeat(7, 1fr)',
+            position: 'sticky',
+            top: 0,
+            zIndex: 20,
+            background: 'rgba(255, 255, 255, 0.4)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderBottom: '1px solid rgba(214, 211, 209, 0.3)',
+          }}
+        >
           <div className="h-14" />
           {weekDates.map((date, index) => {
             const isCurrentDay = index === todayIndex;
@@ -111,8 +128,8 @@ export function WeekView({ weekStart, events, onEventClick, isDraggable = false 
               <div
                 key={index}
                 className={cn(
-                  'h-14 flex flex-col items-center justify-center border-l border-stone-100/80',
-                  isCurrentDay && 'bg-emerald-50/40'
+                  'h-14 flex flex-col items-center justify-center border-l border-stone-100/30',
+                  isCurrentDay && 'bg-emerald-50/30'
                 )}
               >
                 <p className={cn(
@@ -142,7 +159,18 @@ export function WeekView({ weekStart, events, onEventClick, isDraggable = false 
             {HOURS.map((hour) => (
               <div key={hour} className="contents">
                 {/* Time label column */}
-                <div className="h-16 bg-stone-50/30 border-r border-stone-200/40 flex items-start justify-end pr-3 pt-1">
+                <div
+                  style={{
+                    height: '64px',
+                    borderRight: '1px solid rgba(231, 229, 228, 0.2)',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'flex-end',
+                    paddingRight: '12px',
+                    paddingTop: '4px',
+                    background: 'linear-gradient(to right, rgba(250, 250, 249, 0.4), transparent)',
+                  }}
+                >
                   <span className="text-[11px] font-medium text-stone-400">
                     {hour === 0
                       ? '12 AM'
@@ -169,8 +197,11 @@ export function WeekView({ weekStart, events, onEventClick, isDraggable = false 
                     <div
                       key={dayIndex}
                       className={cn(
-                        'h-16 border-l border-t border-stone-100/80 relative',
-                        isCurrentDay && 'bg-emerald-50/30'
+                        'h-16 relative',
+                        'border-l border-t border-stone-100/30',
+                        'hover:bg-white/30',
+                        'transition-colors duration-150',
+                        isCurrentDay && 'bg-emerald-50/20'
                       )}
                     />
                   );

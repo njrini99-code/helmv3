@@ -73,8 +73,9 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           'transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
           collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'
         )}
+        style={{ background: 'transparent' }}
       >
-        <div className="animate-page-enter min-h-full">
+        <div className="animate-page-enter min-h-full" style={{ background: 'transparent' }}>
           {children}
         </div>
       </main>

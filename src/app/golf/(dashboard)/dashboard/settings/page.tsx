@@ -31,6 +31,7 @@ import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 interface UserProfile {
   name: string;
   email: string;
+  avatarUrl?: string | null;
   role: 'coach' | 'player';
   teamName?: string;
   // Player-specific
@@ -72,7 +73,7 @@ export default function GolfSettingsPage() {
     // Check if coach
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('full_name, team_id')
+      .select('full_name, team_id, avatar_url')
       .eq('user_id', user.id)
       .single();
 
@@ -91,6 +92,7 @@ export default function GolfSettingsPage() {
       setProfile({
         name: coach.full_name || 'Coach',
         email: user.email || '',
+        avatarUrl: coach.avatar_url,
         role: 'coach',
         teamName,
       });
@@ -101,7 +103,7 @@ export default function GolfSettingsPage() {
     // Check if player
     const { data: player } = await supabase
       .from('golf_players')
-      .select('id, first_name, last_name, team_id')
+      .select('id, first_name, last_name, team_id, avatar_url')
       .eq('user_id', user.id)
       .single();
 
@@ -133,6 +135,7 @@ export default function GolfSettingsPage() {
       setProfile({
         name: `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Player',
         email: user.email || '',
+        avatarUrl: player.avatar_url,
         role: 'player',
         teamName,
         playerId: player.id,
@@ -177,7 +180,7 @@ export default function GolfSettingsPage() {
           >
             <ShineEffect />
             <div className="flex items-center gap-4">
-              <Avatar name={profile.name} size="lg" />
+              <Avatar src={profile.avatarUrl} name={profile.name} size="lg" />
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-semibold text-slate-900">{profile.name}</h2>
                 <p className="text-sm text-slate-500 flex items-center gap-2">
@@ -329,6 +332,7 @@ export default function GolfSettingsPage() {
             isOpen={personalInfoOpen}
             onClose={() => setPersonalInfoOpen(false)}
             currentName={profile.name}
+            currentAvatarUrl={profile.avatarUrl}
             role={profile.role}
             onUpdate={loadProfile}
           />

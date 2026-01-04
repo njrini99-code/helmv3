@@ -1,21 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { AvatarUpload } from '@/components/ui/avatar-upload';
 
 interface PersonalInfoModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentName: string;
+  currentAvatarUrl?: string | null;
   role: 'coach' | 'player';
   onUpdate: () => void;
 }
 
-export function PersonalInfoModal({ isOpen, onClose, currentName, role, onUpdate }: PersonalInfoModalProps) {
+export function PersonalInfoModal({
+  isOpen,
+  onClose,
+  currentName,
+  currentAvatarUrl,
+  role,
+  onUpdate
+}: PersonalInfoModalProps) {
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
@@ -24,6 +33,12 @@ export function PersonalInfoModal({ isOpen, onClose, currentName, role, onUpdate
   const [firstName, setFirstName] = useState(role === 'player' ? nameParts[0] || '' : '');
   const [lastName, setLastName] = useState(role === 'player' ? nameParts.slice(1).join(' ') || '' : '');
   const [fullName, setFullName] = useState(role === 'coach' ? currentName : '');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(currentAvatarUrl || null);
+
+  // Reset avatar when modal opens with new data
+  useEffect(() => {
+    setAvatarUrl(currentAvatarUrl || null);
+  }, [currentAvatarUrl, isOpen]);
 
   async function handleSave() {
     setLoading(true);
@@ -36,7 +51,10 @@ export function PersonalInfoModal({ isOpen, onClose, currentName, role, onUpdate
       if (role === 'coach') {
         const { error } = await supabase
           .from('golf_coaches')
-          .update({ full_name: fullName.trim() })
+          .update({
+            full_name: fullName.trim(),
+            avatar_url: avatarUrl
+          })
           .eq('user_id', user.id);
 
         if (error) throw error;
@@ -45,7 +63,8 @@ export function PersonalInfoModal({ isOpen, onClose, currentName, role, onUpdate
           .from('golf_players')
           .update({
             first_name: firstName.trim(),
-            last_name: lastName.trim()
+            last_name: lastName.trim(),
+            avatar_url: avatarUrl
           })
           .eq('user_id', user.id);
 
@@ -64,7 +83,21 @@ export function PersonalInfoModal({ isOpen, onClose, currentName, role, onUpdate
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Personal Information">
-      <div className="space-y-4">
+      <div className="space-y-6">
+        {/* Avatar Upload */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-3">
+            Profile Picture
+          </label>
+          <AvatarUpload
+            currentAvatarUrl={avatarUrl}
+            name={role === 'coach' ? fullName : `${firstName} ${lastName}`}
+            onUploadComplete={(url) => setAvatarUrl(url)}
+            onRemove={() => setAvatarUrl(null)}
+          />
+        </div>
+
+        {/* Name Fields */}
         {role === 'coach' ? (
           <Input
             label="Full Name"

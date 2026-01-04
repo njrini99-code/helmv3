@@ -10,7 +10,7 @@ export interface CalendarHeaderProps {
   onViewChange: (view: CalendarView) => void;
   currentDate: Date;
   onNavigate: (direction: 'prev' | 'next' | 'today') => void;
-  onAddEvent?: () => void; // Optional - only coaches can add events
+  onAddEvent?: () => void;
 }
 
 export function CalendarHeader({
@@ -20,7 +20,6 @@ export function CalendarHeader({
   onNavigate,
   onAddEvent,
 }: CalendarHeaderProps) {
-  // Format title based on view
   const getTitle = () => {
     if (view === 'day') {
       return currentDate.toLocaleDateString('en-US', {
@@ -30,8 +29,6 @@ export function CalendarHeader({
         year: 'numeric',
       });
     }
-
-    // Week and Month views
     return currentDate.toLocaleDateString('en-US', {
       month: 'long',
       year: 'numeric',
@@ -39,61 +36,83 @@ export function CalendarHeader({
   };
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 border-b border-stone-200/60">
+    <header
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '16px 24px',
+        borderBottom: '1px solid rgba(214, 211, 209, 0.2)',
+        background: 'transparent',
+      }}
+    >
       {/* Left: Title + Nav */}
       <div className="flex items-center gap-4">
         <h1 className="text-lg font-semibold text-stone-900 tracking-tight">
           {getTitle()}
         </h1>
 
-        {/* Navigation arrows - Premium pill style */}
+        {/* Navigation arrows */}
         <div className="flex items-center gap-1">
           <button
             onClick={() => onNavigate('prev')}
-            className="
-              w-8 h-8 rounded-[10px]
-              bg-white/60 backdrop-blur-sm
-              border border-stone-200/60
-              hover:bg-white hover:border-stone-300/60 hover:scale-105
-              active:scale-95
-              transition-all duration-200
-              flex items-center justify-center
-              shadow-[0_1px_3px_rgba(0,0,0,0.04)]
-            "
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '10px',
+              background: 'rgba(255, 255, 255, 0.4)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              border: '1px solid rgba(255, 255, 255, 0.6)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.04)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
           >
             <ChevronLeft className="w-4 h-4 text-stone-600" />
           </button>
           <button
             onClick={() => onNavigate('next')}
-            className="
-              w-8 h-8 rounded-[10px]
-              bg-white/60 backdrop-blur-sm
-              border border-stone-200/60
-              hover:bg-white hover:border-stone-300/60 hover:scale-105
-              active:scale-95
-              transition-all duration-200
-              flex items-center justify-center
-              shadow-[0_1px_3px_rgba(0,0,0,0.04)]
-            "
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '10px',
+              background: 'rgba(255, 255, 255, 0.4)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              border: '1px solid rgba(255, 255, 255, 0.6)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.04)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
           >
             <ChevronRight className="w-4 h-4 text-stone-600" />
           </button>
         </div>
 
-        {/* Today Button - Premium ghost style */}
+        {/* Today Button */}
         <button
           onClick={() => onNavigate('today')}
-          className="
-            px-4 py-2
-            rounded-[10px]
-            text-sm font-medium text-stone-700
-            bg-white/60 backdrop-blur-sm
-            border border-stone-200/60
-            hover:bg-white hover:border-stone-300/60 hover:text-stone-900
-            active:scale-[0.98]
-            transition-all duration-200
-            shadow-[0_1px_3px_rgba(0,0,0,0.04)]
-          "
+          style={{
+            padding: '8px 16px',
+            borderRadius: '10px',
+            fontSize: '14px',
+            fontWeight: 500,
+            color: '#44403c',
+            background: 'rgba(255, 255, 255, 0.4)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            border: '1px solid rgba(255, 255, 255, 0.6)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.04)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
         >
           Today
         </button>
@@ -101,38 +120,28 @@ export function CalendarHeader({
 
       {/* Right: View Toggle + Add Event */}
       <div className="flex items-center gap-3">
-        {/* View Toggle - Unified pill container */}
-        <div className="
-          bg-stone-100/80
-          p-1
-          rounded-full
-          inline-flex
-          border border-stone-200/50
-        ">
+        {/* View Toggle - Glass pill */}
+        <div
+          style={{
+            padding: '4px',
+            borderRadius: '9999px',
+            display: 'inline-flex',
+            background: 'rgba(255, 255, 255, 0.3)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            border: '1px solid rgba(255, 255, 255, 0.4)',
+            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.04)',
+          }}
+        >
           {(['day', 'week', 'month'] as const).map((v) => (
             <button
               key={v}
               onClick={() => onViewChange(v)}
               className={cn(
-                // Base styles for ALL states
-                'px-4 py-1.5',
-                'text-sm font-medium',
-                'rounded-full',
-                'transition-all duration-200',
-
-                // Conditional styles
+                'px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200',
                 view === v
-                  ? [
-                      // ACTIVE: White background, shadow, dark text
-                      'bg-white',
-                      'text-stone-900',
-                      'shadow-sm',
-                    ]
-                  : [
-                      // INACTIVE: Transparent, muted text
-                      'text-stone-500',
-                      'hover:text-stone-700',
-                    ]
+                  ? 'bg-white text-stone-900 shadow-sm'
+                  : 'text-stone-500 hover:text-stone-700'
               )}
             >
               {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -140,39 +149,25 @@ export function CalendarHeader({
           ))}
         </div>
 
-        {/* Add Event Button - Gradient green with glow */}
+        {/* Add Event Button */}
         {onAddEvent && (
           <button
             onClick={onAddEvent}
-            className="
-              inline-flex items-center gap-2
-              px-4 py-2
-
-              /* Gradient background */
-              bg-gradient-to-br from-emerald-500 to-emerald-600
-              text-white
-
-              /* Typography */
-              font-medium text-sm
-
-              /* Shape */
-              rounded-[10px]
-
-              /* Glow shadow */
-              shadow-lg shadow-emerald-500/25
-
-              /* Hover effects */
-              transition-all duration-200
-              hover:from-emerald-600 hover:to-emerald-700
-              hover:shadow-xl hover:shadow-emerald-500/30
-              hover:-translate-y-0.5
-
-              /* Active press */
-              active:scale-[0.98]
-
-              /* Focus */
-              focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2
-            "
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+              color: 'white',
+              fontWeight: 500,
+              fontSize: '14px',
+              borderRadius: '10px',
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
           >
             <Plus className="w-4 h-4" />
             Add Event

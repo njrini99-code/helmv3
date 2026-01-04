@@ -285,22 +285,21 @@ export function PremiumCalendarClient({
           />
 
           {/* Premium Glass Calendar Container */}
-          <div className="
-            flex-1 flex flex-col overflow-hidden
-
-            /* GLASS EFFECT */
-            bg-white/70
-            backdrop-blur-xl
-
-            /* BORDER - subtle white glow */
-            border border-white/40
-
-            /* CORNERS - 20px radius */
-            rounded-[20px]
-
-            /* LAYERED SHADOW */
-            shadow-[0_8px_32px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.6)]
-          ">
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              // Premium frosted glass - semi-transparent cream/white
+              background: 'rgba(255, 253, 250, 0.6)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              borderRadius: '20px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.7)',
+            }}
+          >
             <CalendarHeader
               view={view}
               onViewChange={setView}
