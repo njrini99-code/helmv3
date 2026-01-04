@@ -39,14 +39,19 @@ export {
 } from './RSVPStatusSection';
 
 // ============================================================================
-// PHASE 4: Check-In & Polling (Pending)
+// PHASE 4: Check-In & Polling
 // ============================================================================
-// export { AttendanceCheckIn } from './AttendanceCheckIn';
-// export { PlayerAttendanceRow } from './PlayerAttendanceRow';
-// export { AbsenceReasonSheet } from './AbsenceReasonSheet';
-// export { AvailabilityPollGrid } from './AvailabilityPollGrid';
-// export { AvailabilityCell } from './AvailabilityCell';
-// export { PollResultSelector } from './PollResultSelector';
+export { AttendanceCheckIn, CompactAttendanceSummary } from './AttendanceCheckIn';
+export { PlayerAttendanceRow, CompactPlayerAttendanceRow } from './PlayerAttendanceRow';
+export { AbsenceReasonSheet, QuickAbsenceReason, type AbsenceData } from './AbsenceReasonSheet';
+export { AvailabilityPollGrid, CompactAvailabilityGrid } from './AvailabilityPollGrid';
+export {
+  AvailabilityCell,
+  AvailabilityCellLegend,
+  CompactAvailabilityIndicator,
+  AvailabilityBar,
+} from './AvailabilityCell';
+export { PollResultSelector, CompactPollResults } from './PollResultSelector';
 
 // ============================================================================
 // PHASE 5: Sync & Feeds (Pending)
