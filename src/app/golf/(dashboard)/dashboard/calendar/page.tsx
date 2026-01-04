@@ -59,6 +59,7 @@ export default async function GolfCalendarPage() {
 
   if (teamId) {
     // User has a team: fetch only team events (RLS will enforce this)
+    // CRITICAL: Filter by team_id
     eventsQuery = eventsQuery.eq('team_id', teamId);
   } else {
     // User has no team: RLS will return no events (correct behavior)
@@ -112,6 +113,8 @@ export default async function GolfCalendarPage() {
       event_type: event.event_type,
       start_date: startDateTime,
       end_date: endDateTime,
+      start_time: event.start_time,
+      end_time: event.end_time,
       location: event.location,
       description: event.description,
     };

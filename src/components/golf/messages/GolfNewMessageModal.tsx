@@ -6,7 +6,7 @@ import { Modal, ModalFooter } from '@/components/ui/modal';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { IconCheck, IconUsers } from '@/components/icons';
+import { IconCheck, IconUsers, IconAlertCircle } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 
 interface SearchResult {
@@ -23,7 +23,7 @@ interface GolfNewMessageModalProps {
   onClose: () => void;
   onSelect: (userId: string) => void;
   currentUserRole: 'coach' | 'player';
-  teamId?: string;
+  teamId?: string;  // CRITICAL: This must be passed and valid
 }
 
 export function GolfNewMessageModal({
@@ -37,33 +37,41 @@ export function GolfNewMessageModal({
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [noTeamError, setNoTeamError] = useState(false);
 
-  // Search for users
+  // Search for users - FIXED to require team_id
   const searchUsers = useCallback(async (query: string) => {
+    // CRITICAL: Do not search without a valid teamId
+    if (!teamId) {
+      setNoTeamError(true);
+      setResults([]);
+      return;
+    }
+
+    setNoTeamError(false);
     setLoading(true);
     const supabase = createClient();
 
     try {
-      // CRITICAL: Must have team_id to search
-      if (!teamId) {
-        console.error('Cannot search users: No team_id provided');
-        setResults([]);
-        setLoading(false);
-        return;
-      }
 
       if (currentUserRole === 'coach') {
-        // Coach searching for players on their team
+        // Coach searching for players on THEIR team only
         let playerQuery = supabase
           .from('golf_players')
           .select('id, user_id, first_name, last_name, year, avatar_url')
-          .eq('team_id', teamId);  // Always filter by team
+          .eq('team_id', teamId);  // ENFORCED team filter
 
         if (query.trim()) {
           playerQuery = playerQuery.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
         }
 
-        const { data: players } = await playerQuery.limit(20);
+        const { data: players, error } = await playerQuery.limit(20);
+
+        if (error) {
+          console.error('Error searching players:', error);
+          setResults([]);
+          return;
+        }
 
         const playerResults: SearchResult[] = (players || [])
           .filter(p => p.user_id) // Must have a user_id to message
@@ -71,24 +79,30 @@ export function GolfNewMessageModal({
             id: p.id,
             userId: p.user_id!,
             name: [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown Player',
-            subtitle: p.year ? `${p.year.charAt(0).toUpperCase()}${p.year.slice(1)}` : 'Golf Player',
+            subtitle: p.year ? `${p.year.charAt(0).toUpperCase()}${p.year.slice(1)}` : 'Player',
             avatar: p.avatar_url,
             type: 'player' as const,
           }));
 
         setResults(playerResults);
       } else {
-        // Player searching for coaches on their team
+        // Player searching for coaches on THEIR team only
         let coachQuery = supabase
           .from('golf_coaches')
           .select('id, user_id, full_name, title, avatar_url')
-          .eq('team_id', teamId);  // Always filter by team
+          .eq('team_id', teamId);  // ENFORCED team filter
 
         if (query.trim()) {
           coachQuery = coachQuery.ilike('full_name', `%${query}%`);
         }
 
-        const { data: coaches } = await coachQuery.limit(20);
+        const { data: coaches, error } = await coachQuery.limit(20);
+
+        if (error) {
+          console.error('Error searching coaches:', error);
+          setResults([]);
+          return;
+        }
 
         const coachResults: SearchResult[] = (coaches || [])
           .filter(c => c.user_id)
@@ -124,6 +138,7 @@ export function GolfNewMessageModal({
       setSearchQuery('');
       setResults([]);
       setSelectedId(null);
+      setNoTeamError(false);
     }
   }, [isOpen]);
 
@@ -148,14 +163,29 @@ export function GolfNewMessageModal({
      
     >
       <div className="space-y-4">
+        {/* No Team Error */}
+        {noTeamError && (
+          <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <IconAlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-800">No Team Found</p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                You need to be assigned to a team before you can message team members.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Search Input */}
-        <SearchBar
-          value={searchQuery}
-          onChange={setSearchQuery}
-          placeholder={`Search ${currentUserRole === 'coach' ? 'players' : 'coaches'}...`}
-          className="w-full"
-          autoFocus
-        />
+        {!noTeamError && (
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder={`Search ${currentUserRole === 'coach' ? 'players' : 'coaches'}...`}
+            className="w-full"
+            autoFocus
+          />
+        )}
 
         {/* Results */}
         <div className="min-h-[300px] max-h-[400px] overflow-y-auto -mx-6 px-6">
@@ -163,7 +193,7 @@ export function GolfNewMessageModal({
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
             </div>
-          ) : results.length > 0 ? (
+          ) : noTeamError ? null : results.length > 0 ? (
             <div className="divide-y divide-slate-100">
               {results.map(result => (
                 <button
@@ -213,7 +243,7 @@ export function GolfNewMessageModal({
         <Button
           variant="primary"
           onClick={handleStartConversation}
-          disabled={!selectedId}
+          disabled={!selectedId || noTeamError}
         >
           Start Conversation
         </Button>

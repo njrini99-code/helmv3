@@ -9,21 +9,27 @@ import { addMonths, format } from 'date-fns';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const token = params.token;
+    const { token } = await params;
     const supabase = await createClient();
 
     // Find player by feed token
     const { data: player, error } = await supabase
       .from('golf_players')
-      .select('id, first_name, last_name, team_id, calendar_feed_enabled')
+      .select('id, first_name, last_name, team_id')
       .eq('calendar_feed_token', token)
       .single();
 
-    if (error || !player || !player.calendar_feed_enabled) {
+    // For now, calendar_feed_enabled is not in the schema, so we just check if player exists
+    if (error || !player) {
       return new NextResponse('Invalid or disabled feed', { status: 404 });
+    }
+
+    // Check if player has a team
+    if (!player.team_id) {
+      return new NextResponse('Player is not assigned to a team', { status: 400 });
     }
 
     // Get events player is involved in (6 months range)

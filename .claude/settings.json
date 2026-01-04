@@ -4,5 +4,8 @@
       "*",
       "mcp_*"
     ]
+  },
+  "enabledPlugins": {
+    "supabase@claude-plugins-official": true
   }
 }

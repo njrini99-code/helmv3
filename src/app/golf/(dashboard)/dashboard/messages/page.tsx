@@ -4,24 +4,32 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { IconMail, IconPlus, IconSend, IconArrowLeft, IconMessageSquare } from '@/components/icons';
+import { IconMail, IconPlus, IconSend, IconArrowLeft, IconMessageSquare, IconAlertCircle } from '@/components/icons';
 import { useToast } from '@/components/ui/toast';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
 import { createGolfConversation } from '@/app/golf/actions/messages';
 import { GolfNewMessageModal } from '@/components/golf/messages/GolfNewMessageModal';
-import { createClient } from '@/lib/supabase/client';
+import { useTeamContext } from '@/hooks/golf/use-team-context';
 import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
 
 export default function GolfMessagesPage() {
   const { showToast } = useToast();
+
+  // USE THE TEAM CONTEXT HOOK - This ensures we have valid team info
+  const {
+    userId,
+    userRole,
+    teamId,
+    teamName,
+    loading: contextLoading,
+    error: contextError
+  } = useTeamContext();
+
   const { conversations, loading: conversationsLoading, refetch } = useGolfConversations();
-  
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
-  const [teamId, setTeamId] = useState<string | undefined>();
-  const [userRole, setUserRole] = useState<'coach' | 'player'>('player');
 
   // Get messages for selected conversation
   const { messages, loading: messagesLoading, sendMessage } = useGolfMessages(selectedConversationId || '');
@@ -30,51 +38,6 @@ export default function GolfMessagesPage() {
   const groupedConversations = useMemo(() => {
     return groupConversationsByTime(conversations);
   }, [conversations]);
-
-  // Fetch current user and their team/role
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      const supabase = createClient();
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      setCurrentUserId(user.id);
-      
-      // Check if user is a golf coach
-      const { data: coach } = await supabase
-        .from('golf_coaches')
-        .select('id, team_id')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (coach) {
-        setUserRole('coach');
-        if (!coach.team_id) {
-          console.warn('Coach has no team assigned');
-        }
-        setTeamId(coach.team_id || undefined);
-        return;
-      }
-
-      // Check if user is a golf player
-      const { data: player } = await supabase
-        .from('golf_players')
-        .select('id, team_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (player) {
-        setUserRole('player');
-        if (!player.team_id) {
-          console.warn('Player has no team assigned');
-        }
-        setTeamId(player.team_id || undefined);
-      }
-    };
-    
-    fetchUserInfo();
-  }, []);
 
   // Auto-select first conversation
   useEffect(() => {
@@ -132,10 +95,36 @@ export default function GolfMessagesPage() {
     }
   };
 
-  if (conversationsLoading) {
+  // Loading state
+  if (contextLoading || conversationsLoading) {
     return (
       <div className="h-[calc(100vh-64px)] flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // No team error state - CRITICAL: Show helpful message
+  if (!teamId) {
+    return (
+      <div className="h-[calc(100vh-64px)] flex items-center justify-center p-6">
+        <div className="max-w-md text-center">
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+            <IconAlertCircle size={32} className="text-amber-500" />
+          </div>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">No Team Found</h2>
+          <p className="text-slate-500 mb-6">
+            You need to be assigned to a team before you can send messages.
+            {userRole === 'coach'
+              ? ' Please create a team in Team Settings or contact support.'
+              : ' Please contact your coach to be added to a team.'}
+          </p>
+          {userRole === 'coach' && (
+            <Button onClick={() => window.location.href = '/golf/dashboard/team'}>
+              Go to Team Settings
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -160,7 +149,7 @@ export default function GolfMessagesPage() {
               New
             </Button>
           </div>
-          <p className="text-sm text-slate-500">Team communication</p>
+          <p className="text-sm text-slate-500">{teamName || 'Team'} communication</p>
         </div>
 
         {/* Conversation List */}
@@ -183,7 +172,7 @@ export default function GolfMessagesPage() {
                   conversations={groupedConversations.today}
                   selectedId={selectedConversationId}
                   onSelect={handleSelectConversation}
-                  currentUserId={currentUserId}
+                  currentUserId={userId}
                 />
               )}
               {groupedConversations.yesterday.length > 0 && (
@@ -192,7 +181,7 @@ export default function GolfMessagesPage() {
                   conversations={groupedConversations.yesterday}
                   selectedId={selectedConversationId}
                   onSelect={handleSelectConversation}
-                  currentUserId={currentUserId}
+                  currentUserId={userId}
                 />
               )}
               {groupedConversations.thisWeek.length > 0 && (
@@ -201,7 +190,7 @@ export default function GolfMessagesPage() {
                   conversations={groupedConversations.thisWeek}
                   selectedId={selectedConversationId}
                   onSelect={handleSelectConversation}
-                  currentUserId={currentUserId}
+                  currentUserId={userId}
                 />
               )}
               {groupedConversations.older.length > 0 && (
@@ -210,7 +199,7 @@ export default function GolfMessagesPage() {
                   conversations={groupedConversations.older}
                   selectedId={selectedConversationId}
                   onSelect={handleSelectConversation}
-                  currentUserId={currentUserId}
+                  currentUserId={userId}
                 />
               )}
             </div>
@@ -266,7 +255,7 @@ export default function GolfMessagesPage() {
               ) : (
                 <div className="space-y-4">
                   {messages.map((msg, idx) => {
-                    const isOwn = msg.sender_id === currentUserId;
+                    const isOwn = msg.sender_id === userId;
                     const prevMsg = messages[idx - 1];
                     const nextMsg = messages[idx + 1];
 
@@ -365,13 +354,13 @@ export default function GolfMessagesPage() {
         )}
       </div>
 
-      {/* New Message Modal */}
+      {/* New Message Modal - NOW WITH CORRECT teamId */}
       <GolfNewMessageModal
         isOpen={showNewMessageModal}
         onClose={() => setShowNewMessageModal(false)}
         onSelect={handleNewConversation}
-        currentUserRole={userRole}
-        teamId={teamId}
+        currentUserRole={userRole || 'player'}
+        teamId={teamId}  // THIS IS NOW GUARANTEED TO BE SET OR MODAL WON'T OPEN
       />
     </div>
   );

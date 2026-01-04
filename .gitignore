@@ -30,6 +30,7 @@ tsconfig.tsbuildinfo
 # IDE
 .vscode/
 .idea/
+.cursor/mcp.json
 
 # OS
 .DS_Store

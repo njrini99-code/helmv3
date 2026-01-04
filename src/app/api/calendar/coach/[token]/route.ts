@@ -9,20 +9,22 @@ import { addMonths, format } from 'date-fns';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const token = params.token;
+    const { token } = await params;
     const supabase = await createClient();
 
     // Find coach by feed token
+    // Note: golf_coaches uses full_name instead of first_name/last_name
     const { data: coach, error } = await supabase
       .from('golf_coaches')
-      .select('id, first_name, last_name, team_id, calendar_feed_enabled')
+      .select('id, full_name, team_id')
       .eq('calendar_feed_token', token)
       .single();
 
-    if (error || !coach || !coach.calendar_feed_enabled) {
+    // For now, calendar_feed_enabled is not in the schema, so we just check if coach exists
+    if (error || !coach) {
       return new NextResponse('Invalid or disabled feed', { status: 404 });
     }
 
@@ -40,7 +42,7 @@ export async function GET(
       .order('start_date', { ascending: true });
 
     const iCalEvents = (events || []).map(convertToICalEvent);
-    const coachName = `${coach.first_name} ${coach.last_name}`;
+    const coachName = coach.full_name || 'Coach';
     const icalContent = generateCoachCalendar(coachName, iCalEvents);
 
     // Log access

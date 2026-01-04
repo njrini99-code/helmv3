@@ -10,7 +10,8 @@ import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { Avatar } from '@/components/ui/avatar';
 import type { GolfPlayer } from '@/lib/types/golf';
-import { IconUsers, IconChartBar, IconMessage, IconChevronRight } from '@/components/icons';
+import { IconUsers, IconChartBar, IconMessage, IconChevronRight, IconAlertCircle } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -62,29 +63,38 @@ export default async function GolfRosterPage() {
   }
 
   if (!coach) {
-    console.error('No coach record found for user:', user.id);
     return (
-      <div className="p-6">
-        <div className="max-w-md mx-auto text-center">
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">Coach Profile Not Found</h2>
-          <p className="text-slate-500">
-            You don't have a coach profile set up. Please complete your onboarding.
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+            <IconAlertCircle size={32} className="text-amber-500" />
+          </div>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">Coach Profile Not Found</h2>
+          <p className="text-slate-500 mb-6">
+            Unable to find your coach profile. Please complete onboarding or contact support.
           </p>
+          <Link href="/golf/coach">
+            <Button>Complete Onboarding</Button>
+          </Link>
         </div>
       </div>
     );
   }
 
   if (!coach.team_id) {
-    console.warn('Coach has no team_id:', coach.id);
     return (
-      <div className="p-6">
-        <div className="max-w-md mx-auto text-center">
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">No Team Assigned</h2>
-          <p className="text-slate-500 mb-4">
-            You haven't been assigned to a team yet. Please contact your administrator to assign you to a team.
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+            <IconUsers size={32} className="text-amber-500" />
+          </div>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">No Team Assigned</h2>
+          <p className="text-slate-500 mb-6">
+            You haven't created or joined a team yet. Create a team to start building your roster.
           </p>
-          <p className="text-xs text-slate-400">Coach ID: {coach.id}</p>
+          <Link href="/golf/dashboard/team">
+            <Button>Go to Team Settings</Button>
+          </Link>
         </div>
       </div>
     );

@@ -1,0 +1,192 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
+
+export interface TeamContext {
+  // User identity
+  userId: string | null;
+  userRole: 'coach' | 'player' | null;
+
+  // Role-specific IDs
+  coachId: string | null;
+  playerId: string | null;
+
+  // Team info
+  teamId: string | null;
+  teamName: string | null;
+
+  // Loading/error state
+  loading: boolean;
+  error: string | null;
+
+  // Refresh function
+  refresh: () => Promise<void>;
+}
+
+export function useTeamContext(): TeamContext {
+  const [context, setContext] = useState<Omit<TeamContext, 'refresh' | 'loading' | 'error'>>({
+    userId: null,
+    userRole: null,
+    coachId: null,
+    playerId: null,
+    teamId: null,
+    teamName: null,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchContext = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const supabase = createClient();
+
+      // 1. Get authenticated user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        setError('Not authenticated');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Check if user is a coach
+      const { data: coach } = await supabase
+        .from('golf_coaches')
+        .select('id, team_id, full_name')
+        .eq('user_id', user.id)
+        .single();
+
+      if (coach) {
+        // User is a coach
+        let teamName = null;
+
+        if (coach.team_id) {
+          const { data: team } = await supabase
+            .from('golf_teams')
+            .select('name')
+            .eq('id', coach.team_id)
+            .single();
+          teamName = team?.name || null;
+        }
+
+        setContext({
+          userId: user.id,
+          userRole: 'coach',
+          coachId: coach.id,
+          playerId: null,
+          teamId: coach.team_id,
+          teamName,
+        });
+        setLoading(false);
+        return;
+      }
+
+      // 3. Check if user is a player
+      const { data: player } = await supabase
+        .from('golf_players')
+        .select('id, team_id, first_name, last_name')
+        .eq('user_id', user.id)
+        .single();
+
+      if (player) {
+        // User is a player
+        let teamName = null;
+
+        if (player.team_id) {
+          const { data: team } = await supabase
+            .from('golf_teams')
+            .select('name')
+            .eq('id', player.team_id)
+            .single();
+          teamName = team?.name || null;
+        }
+
+        setContext({
+          userId: user.id,
+          userRole: 'player',
+          coachId: null,
+          playerId: player.id,
+          teamId: player.team_id,
+          teamName,
+        });
+        setLoading(false);
+        return;
+      }
+
+      // 4. User has no profile yet
+      setContext({
+        userId: user.id,
+        userRole: null,
+        coachId: null,
+        playerId: null,
+        teamId: null,
+        teamName: null,
+      });
+      setError('No player or coach profile found');
+
+    } catch (err) {
+      console.error('Error fetching team context:', err);
+      setError('Failed to load team context');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchContext();
+  }, [fetchContext]);
+
+  return {
+    ...context,
+    loading,
+    error,
+    refresh: fetchContext,
+  };
+}
+
+// Server-side version for use in Server Components
+export async function getServerTeamContext() {
+  const { createClient } = await import('@/lib/supabase/server');
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // Check coach first
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id, team_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (coach) {
+    return {
+      userId: user.id,
+      userRole: 'coach' as const,
+      coachId: coach.id,
+      playerId: null,
+      teamId: coach.team_id,
+    };
+  }
+
+  // Check player
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id, team_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (player) {
+    return {
+      userId: user.id,
+      userRole: 'player' as const,
+      coachId: null,
+      playerId: player.id,
+      teamId: player.team_id,
+    };
+  }
+
+  return null;
+}

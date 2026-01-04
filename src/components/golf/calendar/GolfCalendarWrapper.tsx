@@ -1,9 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PremiumCalendarClient, type TeamMember } from './PremiumCalendarClient';
-import { CalendarFeedManager } from './CalendarFeedManager';
+import { createClient } from '@/lib/supabase/client';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface GolfCalendarWrapperProps {
   initialEvents: CalendarEvent[];
@@ -32,10 +38,18 @@ export function GolfCalendarWrapper({
         onSyncSettings={() => setShowFeedManager(true)}
       />
 
-      <CalendarFeedManager
-        isOpen={showFeedManager}
-        onClose={() => setShowFeedManager(false)}
-      />
+      <Dialog open={showFeedManager} onOpenChange={setShowFeedManager}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Calendar Feeds</DialogTitle>
+          </DialogHeader>
+          <div className="p-6">
+            <p className="text-sm text-slate-600">
+              Calendar feed management will be available soon. You'll be able to subscribe to your calendar in Apple Calendar, Google Calendar, or Outlook.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

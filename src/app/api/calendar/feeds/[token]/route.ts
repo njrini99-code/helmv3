@@ -12,7 +12,21 @@ import { NextRequest, NextResponse } from 'next/server';
  * - personal: User's personal events
  * - tournament: Tournament events only
  * - all: All events user has access to
+ *
+ * NOTE: This feature requires the golf_calendar_feeds table to be created.
+ * The table schema should include: id, feed_token, feed_type, team_id, name, is_active, last_synced_at
  */
+
+// Type for calendar feed (not yet in database types)
+interface CalendarFeed {
+  id: string;
+  feed_token: string;
+  feed_type: 'team' | 'personal' | 'tournament' | 'all';
+  team_id: string | null;
+  name: string | null;
+  is_active: boolean;
+  last_synced_at: string | null;
+}
 
 // Helper to format date for iCal (YYYYMMDDTHHMMSSZ format)
 function formatICalDate(dateStr: string | null): string {
@@ -89,11 +103,11 @@ function generateICal(events: any[], feedName: string): string {
 }
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { token: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const { token } = params;
+    const { token } = await params;
 
     if (!token) {
       return NextResponse.json({ error: 'Feed token required' }, { status: 400 });
@@ -102,19 +116,24 @@ export async function GET(
     const supabase = await createClient();
 
     // Look up the feed by token
-    const { data: feed, error: feedError } = await supabase
+    // Note: golf_calendar_feeds table may not exist yet - using type cast
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: feedData, error: feedError } = await (supabase as any)
       .from('golf_calendar_feeds')
       .select('*')
       .eq('feed_token', token)
       .eq('is_active', true)
       .single();
 
+    const feed = feedData as CalendarFeed | null;
+
     if (feedError || !feed) {
       return NextResponse.json({ error: 'Invalid or inactive feed' }, { status: 404 });
     }
 
     // Update last_synced_at
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
       .from('golf_calendar_feeds')
       .update({ last_synced_at: new Date().toISOString() })
       .eq('id', feed.id);
