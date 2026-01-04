@@ -121,21 +121,21 @@ export function CreateFeedSection({
     <div className={cn('space-y-6', className)}>
       {/* Header */}
       <div>
-        <div className=\"flex items-center gap-2 mb-2\">
-          <Sparkles className=\"w-5 h-5 text-emerald-600\" />
-          <h3 className=\"text-lg font-semibold text-slate-900\">Create Calendar Feed</h3>
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="w-5 h-5 text-emerald-600" />
+          <h3 className="text-lg font-semibold text-slate-900">Create Calendar Feed</h3>
         </div>
-        <p className=\"text-sm text-slate-600\">
+        <p className="text-sm text-slate-600">
           Choose what events to include in your calendar feed
         </p>
       </div>
 
       {/* Feed type selection */}
       <div>
-        <label className=\"block text-sm font-medium text-slate-700 mb-3\">
+        <label className="block text-sm font-medium text-slate-700 mb-3">
           Feed Type
         </label>
-        <div className=\"grid grid-cols-2 md:grid-cols-4 gap-3\">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {FEED_TYPE_OPTIONS.map((option) => {
             const Icon = option.icon;
             const isSelected = selectedType === option.type;
@@ -143,7 +143,7 @@ export function CreateFeedSection({
             return (
               <button
                 key={option.type}
-                type=\"button\"
+                type="button"
                 onClick={() => handleTypeSelect(option.type)}
                 disabled={loading}
                 className={cn(
@@ -168,7 +168,7 @@ export function CreateFeedSection({
                     isSelected ? 'text-white' : option.colorClass
                   )}
                 />
-                <div className=\"text-center\">
+                <div className="text-center">
                   <p
                     className={cn(
                       'text-xs font-bold uppercase tracking-wide',
@@ -194,37 +194,37 @@ export function CreateFeedSection({
 
       {/* Feed name */}
       <div>
-        <label htmlFor=\"feed-name\" className=\"block text-sm font-medium text-slate-700 mb-2\">
+        <label htmlFor="feed-name" className="block text-sm font-medium text-slate-700 mb-2">
           Feed Name
         </label>
         <input
-          id=\"feed-name\"
-          type=\"text\"
+          id="feed-name"
+          type="text"
           value={feedName}
           onChange={(e) => {
             setFeedName(e.target.value);
             setError(null);
           }}
-          placeholder=\"e.g., My Team Events\"
+          placeholder="e.g., My Team Events"
           disabled={loading}
-          className=\"w-full px-4 py-2.5 rounded-lg border border-slate-200
+          className="w-full px-4 py-2.5 rounded-lg border border-slate-200
                    focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100
                    text-slate-900 placeholder:text-slate-400 transition-colors
-                   disabled:opacity-50 disabled:cursor-not-allowed\"
+                   disabled:opacity-50 disabled:cursor-not-allowed"
         />
-        <p className=\"text-xs text-slate-500 mt-1.5\">
+        <p className="text-xs text-slate-500 mt-1.5">
           This name will help you identify the feed in your calendar app
         </p>
       </div>
 
       {/* Preview URL (when type is selected) */}
       {selectedType && (
-        <div className=\"p-4 rounded-lg bg-slate-50 border border-slate-200\">
-          <p className=\"text-xs font-medium text-slate-700 mb-2\">Feed URL Preview</p>
-          <code className=\"text-xs text-slate-600 font-mono break-all\">
+        <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
+          <p className="text-xs font-medium text-slate-700 mb-2">Feed URL Preview</p>
+          <code className="text-xs text-slate-600 font-mono break-all">
             webcal://helm.app/api/feeds/{selectedType}/[generated-id].ics
           </code>
-          <p className=\"text-xs text-slate-500 mt-2\">
+          <p className="text-xs text-slate-500 mt-2">
             The actual URL will be generated when you create the feed
           </p>
         </div>
@@ -232,33 +232,33 @@ export function CreateFeedSection({
 
       {/* Error message */}
       {error && (
-        <div className=\"p-3 rounded-lg bg-rose-50 border border-rose-200\">
-          <p className=\"text-sm text-rose-700\">{error}</p>
+        <div className="p-3 rounded-lg bg-rose-50 border border-rose-200">
+          <p className="text-sm text-rose-700">{error}</p>
         </div>
       )}
 
       {/* Actions */}
-      <div className=\"flex items-center justify-end gap-3 pt-4 border-t border-slate-200\">
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
         <button
-          type=\"button\"
+          type="button"
           onClick={onCancel}
           disabled={loading}
-          className=\"px-4 py-2.5 rounded-lg font-medium text-sm
+          className="px-4 py-2.5 rounded-lg font-medium text-sm
                    bg-white text-slate-700 border border-slate-200
                    hover:bg-slate-50 hover:border-slate-300
                    disabled:opacity-50 disabled:cursor-not-allowed
-                   transition-colors\"
+                   transition-colors"
         >
           Cancel
         </button>
         <button
-          type=\"button\"
+          type="button"
           onClick={handleCreate}
           disabled={loading || !selectedType || !feedName.trim()}
-          className=\"px-4 py-2.5 rounded-lg font-medium text-sm
+          className="px-4 py-2.5 rounded-lg font-medium text-sm
                    bg-emerald-600 text-white hover:bg-emerald-700
                    disabled:opacity-50 disabled:cursor-not-allowed
-                   transition-colors\"
+                   transition-colors"
         >
           {loading ? 'Creating...' : 'Create Feed'}
         </button>
@@ -276,13 +276,13 @@ export function QuickCreateFeed({
   onSelect: (type: FeedType) => void;
 }) {
   return (
-    <div className=\"flex items-center gap-2 overflow-x-auto pb-2\">
+    <div className="flex items-center gap-2 overflow-x-auto pb-2">
       {FEED_TYPE_OPTIONS.map((option) => {
         const Icon = option.icon;
         return (
           <button
             key={option.type}
-            type=\"button\"
+            type="button"
             onClick={() => onSelect(option.type)}
             className={cn(
               'shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg',

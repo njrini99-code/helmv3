@@ -133,8 +133,8 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
       )}
     >
       {/* Feed header */}
-      <div className=\"p-4\">
-        <div className=\"flex items-start gap-3\">
+      <div className="p-4">
+        <div className="flex items-start gap-3">
           {/* Type icon */}
           <div
             className={cn(
@@ -148,9 +148,9 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
           </div>
 
           {/* Feed info */}
-          <div className=\"flex-1 min-w-0\">
-            <div className=\"flex items-start justify-between gap-2 mb-1\">
-              <h3 className=\"font-semibold text-slate-900\">{feed.name}</h3>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <h3 className="font-semibold text-slate-900">{feed.name}</h3>
               <span
                 className={cn(
                   'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium',
@@ -164,7 +164,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
 
             {/* Last synced */}
             {feed.last_synced_at && (
-              <p className=\"text-xs text-slate-500\">
+              <p className="text-xs text-slate-500">
                 Last synced {formatDistanceToNow(new Date(feed.last_synced_at), { addSuffix: true })}
               </p>
             )}
@@ -172,17 +172,17 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
         </div>
 
         {/* Feed URL */}
-        <div className=\"mt-3\">
-          <div className=\"flex items-center gap-2\">
-            <div className=\"flex-1 min-w-0 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200\">
-              <code className=\"text-xs text-slate-600 truncate block font-mono\">
+        <div className="mt-3">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
+              <code className="text-xs text-slate-600 truncate block font-mono">
                 {feed.url}
               </code>
             </div>
 
             {/* Copy button */}
             <button
-              type=\"button\"
+              type="button"
               onClick={handleCopy}
               className={cn(
                 'shrink-0 p-2.5 rounded-lg font-medium text-sm transition-all',
@@ -190,12 +190,12 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                   ? 'bg-emerald-100 text-emerald-700'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               )}
-              title=\"Copy URL\"
+              title="Copy URL"
             >
               {copied ? (
-                <Check className=\"w-4 h-4\" />
+                <Check className="w-4 h-4" />
               ) : (
-                <Copy className=\"w-4 h-4\" />
+                <Copy className="w-4 h-4" />
               )}
             </button>
           </div>
@@ -203,53 +203,53 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
 
         {/* Subscription instructions toggle */}
         <button
-          type=\"button\"
+          type="button"
           onClick={() => setShowInstructions(!showInstructions)}
-          className=\"mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg
+          className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg
                    bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-medium
-                   transition-colors\"
+                   transition-colors"
         >
-          <ExternalLink className=\"w-4 h-4\" />
+          <ExternalLink className="w-4 h-4" />
           <span>Subscription Instructions</span>
           {showInstructions ? (
-            <ChevronUp className=\"w-4 h-4 ml-auto\" />
+            <ChevronUp className="w-4 h-4 ml-auto" />
           ) : (
-            <ChevronDown className=\"w-4 h-4 ml-auto\" />
+            <ChevronDown className="w-4 h-4 ml-auto" />
           )}
         </button>
       </div>
 
       {/* Subscription instructions (collapsible) */}
       {showInstructions && (
-        <div className=\"px-4 pb-4 border-t border-slate-100\">
+        <div className="px-4 pb-4 border-t border-slate-100">
           <SubscriptionInstructions feedUrl={feed.url} compact />
         </div>
       )}
 
       {/* Actions */}
-      <div className=\"px-4 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-2\">
+      <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
         {showDeleteConfirm ? (
           // Delete confirmation
           <>
-            <p className=\"text-xs text-slate-600\">Delete this feed?</p>
-            <div className=\"flex items-center gap-2\">
+            <p className="text-xs text-slate-600">Delete this feed?</p>
+            <div className="flex items-center gap-2">
               <button
-                type=\"button\"
+                type="button"
                 onClick={() => setShowDeleteConfirm(false)}
-                className=\"px-3 py-1.5 rounded-lg text-xs font-medium
+                className="px-3 py-1.5 rounded-lg text-xs font-medium
                          bg-white text-slate-700 border border-slate-200
-                         hover:bg-slate-50 transition-colors\"
+                         hover:bg-slate-50 transition-colors"
               >
                 Cancel
               </button>
               <button
-                type=\"button\"
+                type="button"
                 onClick={handleDelete}
                 disabled={loading}
-                className=\"px-3 py-1.5 rounded-lg text-xs font-medium
+                className="px-3 py-1.5 rounded-lg text-xs font-medium
                          bg-rose-600 text-white hover:bg-rose-700
                          disabled:opacity-50 disabled:cursor-not-allowed
-                         transition-colors\"
+                         transition-colors"
               >
                 {loading ? 'Deleting...' : 'Delete'}
               </button>
@@ -258,13 +258,13 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
         ) : (
           // Normal actions
           <>
-            <p className=\"text-xs text-slate-500\">
+            <p className="text-xs text-slate-500">
               Created {formatDistanceToNow(new Date(feed.created_at), { addSuffix: true })}
             </p>
-            <div className=\"flex items-center gap-2\">
+            <div className="flex items-center gap-2">
               {/* Regenerate button */}
               <button
-                type=\"button\"
+                type="button"
                 onClick={handleRegenerate}
                 disabled={loading}
                 className={cn(
@@ -273,22 +273,22 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                   loading && 'animate-spin'
                 )}
-                title=\"Regenerate URL\"
+                title="Regenerate URL"
               >
-                <RefreshCw className=\"w-4 h-4\" />
+                <RefreshCw className="w-4 h-4" />
               </button>
 
               {/* Delete button */}
               <button
-                type=\"button\"
+                type="button"
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={loading}
-                className=\"p-2 rounded-lg transition-colors
+                className="p-2 rounded-lg transition-colors
                          text-rose-600 hover:text-rose-700 hover:bg-rose-50
-                         disabled:opacity-50 disabled:cursor-not-allowed\"
-                title=\"Delete feed\"
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Delete feed"
               >
-                <Trash2 className=\"w-4 h-4\" />
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </>
@@ -336,13 +336,13 @@ export function CompactFeedCard({
         <Icon className={cn('w-4 h-4', config.colorClass)} />
       </div>
 
-      <div className=\"flex-1 min-w-0\">
-        <p className=\"text-sm font-semibold text-slate-900 truncate\">{feed.name}</p>
-        <p className=\"text-xs text-slate-500\">{config.label}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-slate-900 truncate">{feed.name}</p>
+        <p className="text-xs text-slate-500">{config.label}</p>
       </div>
 
       <button
-        type=\"button\"
+        type="button"
         onClick={handleCopy}
         className={cn(
           'shrink-0 p-2 rounded-lg transition-colors',
@@ -351,7 +351,7 @@ export function CompactFeedCard({
             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
         )}
       >
-        {copied ? <Check className=\"w-3.5 h-3.5\" /> : <Copy className=\"w-3.5 h-3.5\" />}
+        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
       </button>
     </div>
   );

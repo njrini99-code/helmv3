@@ -82,11 +82,11 @@ export function SubscriptionInstructions({
       {/* Platform tabs */}
       <div>
         {!compact && (
-          <p className=\"text-sm font-medium text-slate-700 mb-3\">
+          <p className="text-sm font-medium text-slate-700 mb-3">
             Choose your calendar app:
           </p>
         )}
-        <div className=\"flex items-center gap-2 flex-wrap\">
+        <div className="flex items-center gap-2 flex-wrap">
           {PLATFORMS.map((platform) => {
             const Icon = platform.icon;
             const isSelected = selectedPlatform === platform.id;
@@ -94,7 +94,7 @@ export function SubscriptionInstructions({
             return (
               <button
                 key={platform.id}
-                type=\"button\"
+                type="button"
                 onClick={() => setSelectedPlatform(platform.id)}
                 className={cn(
                   'flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm',
@@ -104,7 +104,7 @@ export function SubscriptionInstructions({
                     : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                 )}
               >
-                <Icon className=\"w-4 h-4\" />
+                <Icon className="w-4 h-4" />
                 <span>{platform.name}</span>
               </button>
             );
@@ -114,18 +114,18 @@ export function SubscriptionInstructions({
 
       {/* Copy URL button (prominent) */}
       {!compact && (
-        <div className=\"p-4 rounded-lg bg-emerald-50 border border-emerald-200\">
-          <div className=\"flex items-start gap-3\">
-            <div className=\"flex-1\">
-              <p className=\"text-sm font-semibold text-emerald-900 mb-1\">
+        <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-emerald-900 mb-1">
                 First, copy this URL:
               </p>
-              <code className=\"text-xs text-emerald-700 font-mono break-all block\">
+              <code className="text-xs text-emerald-700 font-mono break-all block">
                 {feedUrl}
               </code>
             </div>
             <button
-              type=\"button\"
+              type="button"
               onClick={handleCopy}
               className={cn(
                 'shrink-0 px-3 py-2 rounded-lg font-medium text-sm transition-all',
@@ -136,12 +136,12 @@ export function SubscriptionInstructions({
             >
               {copied ? (
                 <>
-                  <Check className=\"w-4 h-4 inline mr-1.5\" />
+                  <Check className="w-4 h-4 inline mr-1.5" />
                   Copied!
                 </>
               ) : (
                 <>
-                  <Copy className=\"w-4 h-4 inline mr-1.5\" />
+                  <Copy className="w-4 h-4 inline mr-1.5" />
                   Copy
                 </>
               )}
@@ -159,13 +159,13 @@ export function SubscriptionInstructions({
 
       {/* Help footer */}
       {!compact && (
-        <div className=\"flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200\">
-          <ExternalLink className=\"w-4 h-4 text-blue-600 shrink-0 mt-0.5\" />
-          <div className=\"flex-1\">
-            <p className=\"text-sm font-medium text-blue-900 mb-0.5\">
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200">
+          <ExternalLink className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-blue-900 mb-0.5">
               Need more help?
             </p>
-            <p className=\"text-xs text-blue-700\">
+            <p className="text-xs text-blue-700">
               Contact support or check our detailed guide on subscribing to calendar feeds
             </p>
           </div>
@@ -210,13 +210,13 @@ function AppleInstructions({ compact }: { compact?: boolean }) {
         const Icon = section.icon;
         return (
           <div key={idx}>
-            <div className=\"flex items-center gap-2 mb-2\">
-              <Icon className=\"w-4 h-4 text-slate-500\" />
+            <div className="flex items-center gap-2 mb-2">
+              <Icon className="w-4 h-4 text-slate-500" />
               <h4 className={cn('font-semibold text-slate-900', compact ? 'text-xs' : 'text-sm')}>
                 {section.title}
               </h4>
             </div>
-            <ol className=\"space-y-1.5 pl-6\">
+            <ol className="space-y-1.5 pl-6">
               {section.steps.map((step, stepIdx) => (
                 <li
                   key={stepIdx}
@@ -225,7 +225,7 @@ function AppleInstructions({ compact }: { compact?: boolean }) {
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
-                  <span className=\"text-emerald-600 font-semibold shrink-0\">{stepIdx + 1}.</span>
+                  <span className="text-emerald-600 font-semibold shrink-0">{stepIdx + 1}.</span>
                   <span>{step}</span>
                 </li>
               ))}
@@ -272,13 +272,13 @@ function GoogleInstructions({ compact }: { compact?: boolean }) {
         const Icon = section.icon;
         return (
           <div key={idx}>
-            <div className=\"flex items-center gap-2 mb-2\">
-              <Icon className=\"w-4 h-4 text-slate-500\" />
+            <div className="flex items-center gap-2 mb-2">
+              <Icon className="w-4 h-4 text-slate-500" />
               <h4 className={cn('font-semibold text-slate-900', compact ? 'text-xs' : 'text-sm')}>
                 {section.title}
               </h4>
             </div>
-            <ol className=\"space-y-1.5 pl-6\">
+            <ol className="space-y-1.5 pl-6">
               {section.steps.map((step, stepIdx) => (
                 <li
                   key={stepIdx}
@@ -287,7 +287,7 @@ function GoogleInstructions({ compact }: { compact?: boolean }) {
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
-                  <span className=\"text-emerald-600 font-semibold shrink-0\">{stepIdx + 1}.</span>
+                  <span className="text-emerald-600 font-semibold shrink-0">{stepIdx + 1}.</span>
                   <span>{step}</span>
                 </li>
               ))}
@@ -296,7 +296,7 @@ function GoogleInstructions({ compact }: { compact?: boolean }) {
         );
       })}
 
-      <div className=\"p-3 rounded-lg bg-amber-50 border border-amber-200\">
+      <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
         <p className={cn('text-amber-800', compact ? 'text-xs' : 'text-sm')}>
           <strong>Note:</strong> Google Calendar may take 12-24 hours to fully sync external calendars
         </p>
@@ -340,13 +340,13 @@ function OutlookInstructions({ compact }: { compact?: boolean }) {
         const Icon = section.icon;
         return (
           <div key={idx}>
-            <div className=\"flex items-center gap-2 mb-2\">
-              <Icon className=\"w-4 h-4 text-slate-500\" />
+            <div className="flex items-center gap-2 mb-2">
+              <Icon className="w-4 h-4 text-slate-500" />
               <h4 className={cn('font-semibold text-slate-900', compact ? 'text-xs' : 'text-sm')}>
                 {section.title}
               </h4>
             </div>
-            <ol className=\"space-y-1.5 pl-6\">
+            <ol className="space-y-1.5 pl-6">
               {section.steps.map((step, stepIdx) => (
                 <li
                   key={stepIdx}
@@ -355,7 +355,7 @@ function OutlookInstructions({ compact }: { compact?: boolean }) {
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
-                  <span className=\"text-emerald-600 font-semibold shrink-0\">{stepIdx + 1}.</span>
+                  <span className="text-emerald-600 font-semibold shrink-0">{stepIdx + 1}.</span>
                   <span>{step}</span>
                 </li>
               ))}
@@ -384,13 +384,13 @@ export function CompactSubscriptionHelp({ feedUrl }: { feedUrl: string }) {
   }
 
   return (
-    <div className=\"flex items-center gap-2 p-2 rounded-lg bg-slate-50\">
-      <ExternalLink className=\"w-4 h-4 text-slate-400 shrink-0\" />
-      <p className=\"text-xs text-slate-600 flex-1\">
+    <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-50">
+      <ExternalLink className="w-4 h-4 text-slate-400 shrink-0" />
+      <p className="text-xs text-slate-600 flex-1">
         Add to Calendar → From URL → Paste link
       </p>
       <button
-        type=\"button\"
+        type="button"
         onClick={handleCopy}
         className={cn(
           'shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors',
