@@ -41,12 +41,12 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
 
     try {
       const result = await invitePlayerToTeam('');
-      if (result.success && result.data) {
+      if (result.success) {
         setInviteCode(result.data.inviteCode);
         setInviteLink(`${window.location.origin}${result.data.inviteLink}`);
         router.refresh();
       } else {
-        setError(result.error || 'Failed to generate invite code');
+        setError(result.error);
       }
     } catch (err) {
       console.error('Failed to generate invite:', err);

@@ -50,7 +50,7 @@ export async function sendMessage({
     const sanitizedContent = sanitizeHtml(validatedData.content);
 
     // Verify user is a participant in this conversation
-    const { data: participant } = await supabase
+    const { data: participant, error: participantError } = await supabase
       .from('conversation_participants')
       .select('id')
       .eq('conversation_id', validatedData.conversation_id)
@@ -58,7 +58,11 @@ export async function sendMessage({
       .single();
 
     if (!participant) {
-      console.warn('[Security] Unauthorized message attempt:', { userId: user.id, conversationId: validatedData.conversation_id });
+      console.warn('[Security] Unauthorized message attempt:', {
+        userId: user.id,
+        conversationId: validatedData.conversation_id,
+        participantError: participantError?.message
+      });
       throw new Error('Not a participant in this conversation');
     }
 
@@ -71,7 +75,7 @@ export async function sendMessage({
     });
 
     // Insert message
-    const { error: messageError } = await supabase
+    const { data: insertedMessage, error: messageError } = await supabase
       .from('messages')
       .insert({
         conversation_id: validatedData.conversation_id,
@@ -79,11 +83,25 @@ export async function sendMessage({
         content: sanitizedContent,
         sent_at: new Date().toISOString(),
         read: false,
-      });
+      })
+      .select()
+      .single();
 
     if (messageError) {
-      console.error('[Security] Message insert failed:', { userId: user.id, conversationId: validatedData.conversation_id, error: messageError.message });
-      throw new Error('Failed to send message');
+      console.error('[Security] Message insert failed:', {
+        userId: user.id,
+        conversationId: validatedData.conversation_id,
+        error: messageError.message,
+        code: messageError.code,
+        details: messageError.details,
+        hint: messageError.hint
+      });
+      throw new Error(`Failed to send message: ${messageError.message}`);
+    }
+
+    if (!insertedMessage) {
+      console.error('[Security] Message insert succeeded but no data returned:', { userId: user.id, conversationId: validatedData.conversation_id });
+      throw new Error('Failed to send message: No data returned');
     }
 
     // Update conversation updated_at
@@ -194,8 +212,15 @@ export async function createConversation({
     .single();
 
   if (convError || !conversation) {
-    console.error('Conversation create error:', convError);
-    throw new Error('Failed to create conversation');
+    console.error('[Security] Conversation create error:', {
+      error: convError?.message,
+      code: convError?.code,
+      details: convError?.details,
+      hint: convError?.hint,
+      userId: user.id,
+      participantUserIds,
+    });
+    throw new Error(`Failed to create conversation: ${convError?.message || 'Unknown error'}`);
   }
 
   // Add all participants (including creator)
@@ -211,8 +236,15 @@ export async function createConversation({
     .insert(participants);
 
   if (participantsError) {
-    console.error('Participants insert error:', participantsError);
-    throw new Error('Failed to add participants');
+    console.error('[Security] Participants insert error:', {
+      error: participantsError.message,
+      code: participantsError.code,
+      details: participantsError.details,
+      hint: participantsError.hint,
+      conversationId: conversation.id,
+      participantCount: participants.length,
+    });
+    throw new Error(`Failed to add participants: ${participantsError.message}`);
   }
 
   revalidatePath(`/${sport}/dashboard/messages`);

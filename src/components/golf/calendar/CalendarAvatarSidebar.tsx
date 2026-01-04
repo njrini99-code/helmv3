@@ -13,39 +13,46 @@ export interface TeamMember {
 
 export interface CalendarAvatarSidebarProps {
   teamMembers: TeamMember[];
-  selectedMemberIds: string[];
-  onSelectionChange: (ids: string[]) => void;
+  selectedPlayerId: string | null; // Single selection, not multi-select
+  onPlayerSelect: (playerId: string | null) => void;
   onSyncSettings?: () => void;
 }
 
+/**
+ * Calendar Avatar Sidebar - Single Player Selection
+ *
+ * Behavioral changes for availability overlay:
+ * - When coach clicks a player avatar, it SELECTS that single player
+ * - Selecting a player fetches their schedule (events + classes)
+ * - Their schedule is overlaid on the calendar with different colors
+ * - "ALL" button shows team events only (no player overlay)
+ * - Selected player gets green ring + scale effect
+ */
 export function CalendarAvatarSidebar({
   teamMembers,
-  selectedMemberIds,
-  onSelectionChange,
+  selectedPlayerId,
+  onPlayerSelect,
   onSyncSettings,
 }: CalendarAvatarSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const isAllSelected = selectedMemberIds.length === 0 || selectedMemberIds.length === teamMembers.length;
+  const isAllSelected = selectedPlayerId === null;
 
   const handleAllClick = () => {
-    onSelectionChange([]);
+    onPlayerSelect(null); // Clear selection - show team events only
   };
 
   const handleMemberClick = (memberId: string) => {
-    if (selectedMemberIds.includes(memberId)) {
-      const newIds = selectedMemberIds.filter(id => id !== memberId);
-      onSelectionChange(newIds.length === 0 ? [] : newIds);
+    // Toggle selection: clicking same player deselects, clicking different player selects
+    if (selectedPlayerId === memberId) {
+      onPlayerSelect(null); // Deselect
     } else {
-      onSelectionChange([...selectedMemberIds, memberId]);
+      onPlayerSelect(memberId); // Select this player
     }
   };
 
-  // Only show as selected (green) when explicitly filtered to that member
-  // When ALL is selected, individual avatars stay neutral
   const isMemberSelected = (memberId: string) => {
-    if (isAllSelected) return false;
-    return selectedMemberIds.includes(memberId);
+    return selectedPlayerId === memberId;
   };
 
   const getInitials = (member: TeamMember) => {
@@ -117,7 +124,7 @@ export function CalendarAvatarSidebar({
       </button>
 
       {/* ALL Button */}
-      <Tooltip content="Show all events" side="right">
+      <Tooltip content="Show team events only" side="right">
         <button
           onClick={handleAllClick}
           style={{
@@ -204,7 +211,12 @@ export function CalendarAvatarSidebar({
             const selected = isMemberSelected(member.id);
 
             return (
-              <Tooltip key={member.id} content={getFullName(member)} side="right" delayMs={300}>
+              <Tooltip
+                key={member.id}
+                content={selected ? `${getFullName(member)} (viewing schedule)` : getFullName(member)}
+                side="right"
+                delayMs={300}
+              >
                 <button
                   onClick={() => handleMemberClick(member.id)}
                   title={getFullName(member)}
@@ -226,8 +238,8 @@ export function CalendarAvatarSidebar({
                       ? {
                           background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
                           color: 'white',
-                          boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
-                          transform: 'scale(1.05)',
+                          boxShadow: '0 0 0 3px rgba(22, 163, 74, 0.3), 0 4px 14px rgba(22, 163, 74, 0.35)',
+                          transform: 'scale(1.08)',
                         }
                       : {
                           background: 'linear-gradient(135deg, #fafaf9 0%, #e7e5e4 100%)',
@@ -249,6 +261,23 @@ export function CalendarAvatarSidebar({
                     />
                   ) : (
                     <span>{getInitials(member)}</span>
+                  )}
+
+                  {/* Selection indicator dot */}
+                  {selected && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '-4px',
+                        right: '-4px',
+                        width: '14px',
+                        height: '14px',
+                        background: 'white',
+                        borderRadius: '50%',
+                        border: '2px solid #16a34a',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                      }}
+                    />
                   )}
                 </button>
               </Tooltip>

@@ -850,6 +850,12 @@ export default function GolfPlayerOnboarding() {
                             setInviteCode(e.target.value.toUpperCase());
                             setTeamJoinError('');
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && inviteCode.trim() && !joiningTeam) {
+                              e.preventDefault();
+                              handleJoinTeam();
+                            }
+                          }}
                           placeholder="Enter code (e.g. ABC123)"
                           maxLength={20}
                           className="text-center tracking-widest font-mono text-lg"

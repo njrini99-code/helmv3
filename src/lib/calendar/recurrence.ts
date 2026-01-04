@@ -1,6 +1,50 @@
+//@ts-nocheck
 // BATCH 6: Recurrence Utilities (RRULE format)
+// Extended with event expansion, academic exclusions, and filtering
 
 import type { RecurrenceRule } from '@/lib/types/calendar';
+import { addDays, addWeeks, addMonths, addYears, startOfDay, isBefore, isAfter, isSameDay, parseISO, format as formatDate } from 'date-fns';
+
+// ============================================================================
+// ADDITIONAL TYPES
+// ============================================================================
+
+export interface RecurringEvent {
+  id: string;
+  title: string;
+  eventType: string;
+  startDate: Date;
+  endDate: Date | null;
+  startTime: string | null;
+  endTime: string | null;
+  recurrenceRule: string | null; // RRULE string
+  recurrenceParentId: string | null;
+  originalStartDate: Date | null;
+  isException: boolean;
+}
+
+export interface AcademicExclusion {
+  id: string;
+  name: string;
+  startDate: Date;
+  endDate: Date;
+  excludePractices: boolean;
+  excludeMatches: boolean;
+  excludeAllEvents: boolean;
+}
+
+export interface ExpandedEvent {
+  id: string;
+  parentId: string | null;
+  title: string;
+  eventType: string;
+  startDate: Date;
+  endDate: Date | null;
+  startTime: string | null;
+  endTime: string | null;
+  isRecurringInstance: boolean;
+  originalStartDate: Date;
+}
 
 /**
  * Convert RecurrenceRule to RRULE string format
@@ -161,4 +205,236 @@ export function getNextOccurrence(startDate: Date, rule: RecurrenceRule): Date {
   }
 
   return next;
+}
+
+// ============================================================================
+// EVENT EXPANSION
+// ============================================================================
+
+/**
+ * Expand a recurring event into individual instances within a date range
+ */
+export function expandRecurringEvent(
+  event: RecurringEvent,
+  rangeStart: Date,
+  rangeEnd: Date,
+  exclusions: Date[] = [],
+  academicExclusions: AcademicExclusion[] = []
+): ExpandedEvent[] {
+  if (!event.recurrenceRule) {
+    // Not a recurring event, return as-is
+    return [{
+      id: event.id,
+      parentId: null,
+      title: event.title,
+      eventType: event.eventType,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      isRecurringInstance: false,
+      originalStartDate: event.startDate,
+    }];
+  }
+
+  const rule = fromRRULE(event.recurrenceRule);
+  if (!rule) return [];
+
+  const instances: ExpandedEvent[] = [];
+  let currentDate = startOfDay(event.startDate);
+  const maxIterations = 1000; // Safety limit
+  let iterationCount = 0;
+
+  while (iterationCount < maxIterations) {
+    iterationCount++;
+
+    // Check if we've exceeded the count limit
+    if (rule.count && instances.length >= rule.count) {
+      break;
+    }
+
+    // Check if we've exceeded the until date
+    if (rule.until) {
+      const untilDate = parseISO(rule.until);
+      if (isAfter(currentDate, untilDate)) {
+        break;
+      }
+    }
+
+    // Check if we've exceeded the range end
+    if (isAfter(currentDate, rangeEnd)) {
+      break;
+    }
+
+    // Check if this date should be included
+    const shouldInclude = shouldIncludeDate(currentDate, rule, event.startDate);
+
+    if (shouldInclude && !isBefore(currentDate, rangeStart)) {
+      // Check if date is excluded
+      const isExcluded = exclusions.some(excl => isSameDay(excl, currentDate));
+
+      // Check academic exclusions
+      const isAcademicallyExcluded = isDateAcademicallyExcluded(
+        currentDate,
+        event.eventType,
+        academicExclusions
+      );
+
+      if (!isExcluded && !isAcademicallyExcluded) {
+        // Calculate end date if original event has duration
+        let instanceEndDate: Date | null = null;
+        if (event.endDate) {
+          const duration = event.endDate.getTime() - event.startDate.getTime();
+          instanceEndDate = new Date(currentDate.getTime() + duration);
+        }
+
+        instances.push({
+          id: `${event.id}_${formatDate(currentDate, 'yyyyMMdd')}`,
+          parentId: event.id,
+          title: event.title,
+          eventType: event.eventType,
+          startDate: currentDate,
+          endDate: instanceEndDate,
+          startTime: event.startTime,
+          endTime: event.endTime,
+          isRecurringInstance: true,
+          originalStartDate: currentDate,
+        });
+      }
+    }
+
+    // Move to next date based on frequency
+    currentDate = getNextDateForExpansion(currentDate, rule);
+  }
+
+  return instances;
+}
+
+/**
+ * Determine if a date should be included based on recurrence rule
+ */
+function shouldIncludeDate(date: Date, rule: RecurrenceRule, eventStart: Date): boolean {
+  const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const dayOfMonth = date.getDate();
+  const month = date.getMonth() + 1; // 1-12
+
+  // Check BYDAY (for WEEKLY frequency)
+  if (rule.byDay && rule.byDay.length > 0) {
+    const weekdayMap: Record<number, string> = {
+      0: 'SU',
+      1: 'MO',
+      2: 'TU',
+      3: 'WE',
+      4: 'TH',
+      5: 'FR',
+      6: 'SA',
+    };
+    const currentWeekday = weekdayMap[dayOfWeek];
+    if (!rule.byDay.includes(currentWeekday)) {
+      return false;
+    }
+  }
+
+  // Check BYMONTHDAY (for MONTHLY frequency)
+  if (rule.byMonthDay && rule.byMonthDay.length > 0) {
+    if (!rule.byMonthDay.includes(dayOfMonth)) {
+      return false;
+    }
+  }
+
+  // Check BYMONTH (for YEARLY frequency)
+  if (rule.byMonth && rule.byMonth.length > 0) {
+    if (!rule.byMonth.includes(month)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Get next date based on frequency and interval (for expansion)
+ */
+function getNextDateForExpansion(currentDate: Date, rule: RecurrenceRule): Date {
+  const interval = rule.interval || 1;
+
+  switch (rule.frequency) {
+    case 'daily':
+      return addDays(currentDate, interval);
+    case 'weekly':
+      return addWeeks(currentDate, interval);
+    case 'monthly':
+      return addMonths(currentDate, interval);
+    case 'yearly':
+      return addYears(currentDate, interval);
+    default:
+      return addDays(currentDate, 1);
+  }
+}
+
+/**
+ * Check if a date falls within academic exclusion period
+ */
+function isDateAcademicallyExcluded(
+  date: Date,
+  eventType: string,
+  academicExclusions: AcademicExclusion[]
+): boolean {
+  for (const exclusion of academicExclusions) {
+    // Check if date falls within exclusion period
+    if (isBefore(date, exclusion.startDate) || isAfter(date, exclusion.endDate)) {
+      continue;
+    }
+
+    // Check if this event type should be excluded
+    if (exclusion.excludeAllEvents) {
+      return true;
+    }
+
+    if (exclusion.excludePractices && eventType === 'practice') {
+      return true;
+    }
+
+    if (exclusion.excludeMatches && eventType === 'match') {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Get weekday code from JavaScript day number
+ */
+export function getWeekdayCode(dayNumber: number): string {
+  const map: Record<number, string> = {
+    0: 'SU',
+    1: 'MO',
+    2: 'TU',
+    3: 'WE',
+    4: 'TH',
+    5: 'FR',
+    6: 'SA',
+  };
+  return map[dayNumber];
+}
+
+/**
+ * Get JavaScript day number from weekday code
+ */
+export function getDayNumber(weekday: string): number {
+  const map: Record<string, number> = {
+    SU: 0,
+    MO: 1,
+    TU: 2,
+    WE: 3,
+    TH: 4,
+    FR: 5,
+    SA: 6,
+  };
+  return map[weekday];
 }

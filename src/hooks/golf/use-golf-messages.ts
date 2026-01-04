@@ -74,11 +74,24 @@ export function useGolfMessages(conversationId: string) {
 
   const sendMessage = async (content: string) => {
     try {
-      await sendGolfMessage(conversationId, content);
+      const result = await sendGolfMessage(conversationId, content);
+
+      // Check if the result indicates an error
+      if (result && 'error' in result && result.error) {
+        console.error('Failed to send message:', result.error);
+        throw new Error(result.error);
+      }
+
+      if (!result || !result.success) {
+        console.error('Failed to send message: Unknown error');
+        throw new Error('Failed to send message');
+      }
+
       return true;
     } catch (error) {
       console.error('Error sending message:', error);
-      return false;
+      // Re-throw so the UI can handle it
+      throw error;
     }
   };
 

@@ -1,0 +1,585 @@
+/**
+ * RSVP Management Utilities
+ *
+ * Handles event invitations, RSVP tracking, and notifications
+ * for the GolfHelm calendar system
+ */
+
+import { SupabaseClient } from '@supabase/supabase-js';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export type RSVPStatus = 'pending' | 'accepted' | 'declined' | 'tentative';
+
+export interface RSVPSummary {
+  total: number;
+  accepted: number;
+  declined: number;
+  tentative: number;
+  pending: number;
+  attendees: Array<{
+    playerId: string;
+    playerName: string;
+    avatarUrl: string | null;
+    status: RSVPStatus;
+    respondedAt: string | null;
+  }>;
+}
+
+export interface EventInvitation {
+  eventId: string;
+  eventTitle: string;
+  eventType: string;
+  startDate: string;
+  startTime: string | null;
+  endDate: string | null;
+  endTime: string | null;
+  location: string | null;
+  description: string | null;
+  requiresRsvp: boolean;
+  rsvpDeadline: string | null;
+  createdBy: string;
+  status: RSVPStatus;
+}
+
+// ============================================================================
+// RSVP SUMMARY
+// ============================================================================
+
+/**
+ * Get RSVP summary for an event
+ * Shows attendance status breakdown and attendee list
+ */
+export async function getEventRSVPSummary(
+  eventId: string,
+  supabase: SupabaseClient
+): Promise<RSVPSummary> {
+  const { data: attendances } = await supabase
+    .from('golf_event_attendance')
+    .select(`
+      *,
+      player:golf_players(id, first_name, last_name, avatar_url)
+    `)
+    .eq('event_id', eventId);
+
+  const attendees = (attendances || []).map((a: any) => ({
+    playerId: a.player_id,
+    playerName: a.player ? `${a.player.first_name} ${a.player.last_name}` : 'Unknown',
+    avatarUrl: a.player?.avatar_url || null,
+    status: a.status as RSVPStatus,
+    respondedAt: a.responded_at,
+  }));
+
+  return {
+    total: attendees.length,
+    accepted: attendees.filter(a => a.status === 'accepted').length,
+    declined: attendees.filter(a => a.status === 'declined').length,
+    tentative: attendees.filter(a => a.status === 'tentative').length,
+    pending: attendees.filter(a => a.status === 'pending').length,
+    attendees,
+  };
+}
+
+/**
+ * Get RSVP summary with percentage calculations
+ * Useful for displaying attendance rates
+ */
+export async function getEventRSVPStats(
+  eventId: string,
+  supabase: SupabaseClient
+): Promise<{
+  summary: RSVPSummary;
+  acceptanceRate: number;
+  responseRate: number;
+}> {
+  const summary = await getEventRSVPSummary(eventId, supabase);
+
+  const responseRate = summary.total > 0
+    ? ((summary.total - summary.pending) / summary.total) * 100
+    : 0;
+
+  const acceptanceRate = summary.total > 0
+    ? (summary.accepted / summary.total) * 100
+    : 0;
+
+  return {
+    summary,
+    acceptanceRate: Math.round(acceptanceRate),
+    responseRate: Math.round(responseRate),
+  };
+}
+
+// ============================================================================
+// INVITATIONS
+// ============================================================================
+
+/**
+ * Send invitations to players for an event
+ * Creates attendance records and notifications
+ */
+export async function sendEventInvitations(
+  eventId: string,
+  playerIds: string[],
+  supabase: SupabaseClient
+): Promise<void> {
+  if (playerIds.length === 0) return;
+
+  // Get event details
+  const { data: event } = await supabase
+    .from('golf_events')
+    .select('*')
+    .eq('id', eventId)
+    .single();
+
+  if (!event) throw new Error('Event not found');
+
+  // Get player details (including user_id for notifications)
+  const { data: players } = await supabase
+    .from('golf_players')
+    .select('id, user_id, first_name, last_name')
+    .in('id', playerIds);
+
+  if (!players || players.length === 0) return;
+
+  // Create attendance records (pending status)
+  const attendanceRecords = players.map(player => ({
+    event_id: eventId,
+    player_id: player.id,
+    status: 'pending' as RSVPStatus,
+    notified_at: new Date().toISOString(),
+  }));
+
+  await supabase
+    .from('golf_event_attendance')
+    .upsert(attendanceRecords, { onConflict: 'event_id,player_id' });
+
+  // Create notifications for each player
+  const notifications = players
+    .filter(p => p.user_id)
+    .map(player => ({
+      user_id: player.user_id!,
+      event_id: eventId,
+      type: 'event_invitation' as const,
+      title: `You're invited: ${event.title}`,
+      message: `${formatEventDate(event)} ${event.location ? `at ${event.location}` : ''}`.trim(),
+      action_url: `/golf/dashboard/calendar?event=${eventId}`,
+      read: false,
+    }));
+
+  if (notifications.length > 0) {
+    await supabase
+      .from('golf_calendar_notifications')
+      .insert(notifications);
+  }
+}
+
+/**
+ * Update invitations when event details change
+ * Notifies attendees of the update
+ */
+export async function notifyEventUpdate(
+  eventId: string,
+  supabase: SupabaseClient,
+  changes?: string
+): Promise<void> {
+  // Get event details
+  const { data: event } = await supabase
+    .from('golf_events')
+    .select('*')
+    .eq('id', eventId)
+    .single();
+
+  if (!event) return;
+
+  // Get all attendees
+  const { data: attendances } = await supabase
+    .from('golf_event_attendance')
+    .select('player:golf_players(user_id)')
+    .eq('event_id', eventId);
+
+  if (!attendances || attendances.length === 0) return;
+
+  // Create update notifications
+  const userIds = attendances
+    .map((a: any) => a.player?.user_id)
+    .filter(Boolean);
+
+  if (userIds.length === 0) return;
+
+  const notifications = userIds.map(userId => ({
+    user_id: userId,
+    event_id: eventId,
+    type: 'event_updated' as const,
+    title: `Event updated: ${event.title}`,
+    message: changes || `${formatEventDate(event)} ${event.location ? `at ${event.location}` : ''}`.trim(),
+    action_url: `/golf/dashboard/calendar?event=${eventId}`,
+    read: false,
+  }));
+
+  await supabase
+    .from('golf_calendar_notifications')
+    .insert(notifications);
+}
+
+/**
+ * Cancel an event and notify all attendees
+ */
+export async function cancelEventAndNotify(
+  eventId: string,
+  supabase: SupabaseClient,
+  reason?: string
+): Promise<void> {
+  // Get event details
+  const { data: event } = await supabase
+    .from('golf_events')
+    .select('*')
+    .eq('id', eventId)
+    .single();
+
+  if (!event) throw new Error('Event not found');
+
+  // Get all attendees
+  const { data: attendances } = await supabase
+    .from('golf_event_attendance')
+    .select('player:golf_players(user_id)')
+    .eq('event_id', eventId);
+
+  if (attendances && attendances.length > 0) {
+    const userIds = attendances
+      .map((a: any) => a.player?.user_id)
+      .filter(Boolean);
+
+    if (userIds.length > 0) {
+      // Create cancellation notifications
+      const notifications = userIds.map(userId => ({
+        user_id: userId,
+        event_id: eventId,
+        type: 'event_cancelled' as const,
+        title: `Event cancelled: ${event.title}`,
+        message: reason || `${formatEventDate(event)} has been cancelled`,
+        action_url: `/golf/dashboard/calendar`,
+        read: false,
+      }));
+
+      await supabase
+        .from('golf_calendar_notifications')
+        .insert(notifications);
+    }
+  }
+
+  // Delete the event (cascade will remove attendances)
+  await supabase
+    .from('golf_events')
+    .delete()
+    .eq('id', eventId);
+}
+
+// ============================================================================
+// RSVP RESPONSES
+// ============================================================================
+
+/**
+ * Update a player's RSVP status
+ * Notifies event creator of the response
+ */
+export async function updateRSVP(
+  eventId: string,
+  playerId: string,
+  status: RSVPStatus,
+  supabase: SupabaseClient
+): Promise<void> {
+  // Update attendance record
+  await supabase
+    .from('golf_event_attendance')
+    .update({
+      status,
+      responded_at: new Date().toISOString(),
+    })
+    .eq('event_id', eventId)
+    .eq('player_id', playerId);
+
+  // Get event and player details for notification
+  const { data: event } = await supabase
+    .from('golf_events')
+    .select(`
+      *,
+      creator:golf_coaches(user_id)
+    `)
+    .eq('id', eventId)
+    .single();
+
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('first_name, last_name')
+    .eq('id', playerId)
+    .single();
+
+  // Notify event creator (if it's a coach)
+  if (event?.created_by && (event as any).creator?.user_id) {
+    const statusText = status === 'accepted' ? 'accepted' :
+                      status === 'declined' ? 'declined' :
+                      status === 'tentative' ? 'marked as tentative for' : 'updated';
+
+    await supabase
+      .from('golf_calendar_notifications')
+      .insert({
+        user_id: (event as any).creator.user_id,
+        event_id: eventId,
+        type: 'rsvp_response' as const,
+        title: `${player?.first_name} ${statusText}`,
+        message: `${player?.first_name} ${player?.last_name} has ${statusText} "${event.title}"`,
+        action_url: `/golf/dashboard/calendar?event=${eventId}`,
+        read: false,
+      });
+  }
+}
+
+/**
+ * Batch update RSVPs for multiple players
+ * Useful for "accept all" or "decline all" scenarios
+ */
+export async function batchUpdateRSVPs(
+  updates: Array<{ eventId: string; playerId: string; status: RSVPStatus }>,
+  supabase: SupabaseClient
+): Promise<void> {
+  for (const update of updates) {
+    await updateRSVP(update.eventId, update.playerId, update.status, supabase);
+  }
+}
+
+// ============================================================================
+// PLAYER INVITATIONS
+// ============================================================================
+
+/**
+ * Get all pending invitations for a player
+ * Used to display invitation list on player dashboard
+ */
+export async function getPlayerPendingInvitations(
+  playerId: string,
+  supabase: SupabaseClient
+): Promise<EventInvitation[]> {
+  const { data: attendances } = await supabase
+    .from('golf_event_attendance')
+    .select(`
+      status,
+      responded_at,
+      event:golf_events(*)
+    `)
+    .eq('player_id', playerId)
+    .eq('status', 'pending')
+    .order('event(start_date)', { ascending: true });
+
+  if (!attendances) return [];
+
+  return attendances.map((a: any) => {
+    const event = a.event;
+    return {
+      eventId: event.id,
+      eventTitle: event.title,
+      eventType: event.event_type,
+      startDate: event.start_date,
+      startTime: event.start_time,
+      endDate: event.end_date,
+      endTime: event.end_time,
+      location: event.location,
+      description: event.description,
+      requiresRsvp: event.requires_rsvp || false,
+      rsvpDeadline: event.rsvp_deadline,
+      createdBy: event.created_by,
+      status: a.status,
+    };
+  });
+}
+
+/**
+ * Get all upcoming events for a player (any status)
+ * Includes events they've RSVP'd to
+ */
+export async function getPlayerUpcomingEvents(
+  playerId: string,
+  supabase: SupabaseClient
+): Promise<EventInvitation[]> {
+  const { data: attendances } = await supabase
+    .from('golf_event_attendance')
+    .select(`
+      status,
+      responded_at,
+      event:golf_events(*)
+    `)
+    .eq('player_id', playerId)
+    .gte('event(start_date)', new Date().toISOString().split('T')[0])
+    .order('event(start_date)', { ascending: true });
+
+  if (!attendances) return [];
+
+  return attendances.map((a: any) => {
+    const event = a.event;
+    return {
+      eventId: event.id,
+      eventTitle: event.title,
+      eventType: event.event_type,
+      startDate: event.start_date,
+      startTime: event.start_time,
+      endDate: event.end_date,
+      endTime: event.end_time,
+      location: event.location,
+      description: event.description,
+      requiresRsvp: event.requires_rsvp || false,
+      rsvpDeadline: event.rsvp_deadline,
+      createdBy: event.created_by,
+      status: a.status,
+    };
+  });
+}
+
+// ============================================================================
+// REMINDERS
+// ============================================================================
+
+/**
+ * Send RSVP reminder to players who haven't responded
+ * Typically called by a scheduled job before the deadline
+ */
+export async function sendRSVPReminders(
+  eventId: string,
+  supabase: SupabaseClient
+): Promise<number> {
+  // Get event details
+  const { data: event } = await supabase
+    .from('golf_events')
+    .select('*')
+    .eq('id', eventId)
+    .single();
+
+  if (!event || !event.requires_rsvp) return 0;
+
+  // Get pending attendances
+  const { data: pendingAttendances } = await supabase
+    .from('golf_event_attendance')
+    .select(`
+      player_id,
+      reminder_sent,
+      player:golf_players(user_id, first_name)
+    `)
+    .eq('event_id', eventId)
+    .eq('status', 'pending')
+    .eq('reminder_sent', false);
+
+  if (!pendingAttendances || pendingAttendances.length === 0) return 0;
+
+  // Create reminder notifications
+  const notifications = pendingAttendances
+    .filter((a: any) => a.player?.user_id)
+    .map((a: any) => ({
+      user_id: a.player.user_id,
+      event_id: eventId,
+      type: 'rsvp_reminder' as const,
+      title: `RSVP reminder: ${event.title}`,
+      message: `Please respond to "${event.title}" by ${formatEventDate(event)}`,
+      action_url: `/golf/dashboard/calendar?event=${eventId}`,
+      read: false,
+    }));
+
+  if (notifications.length > 0) {
+    await supabase
+      .from('golf_calendar_notifications')
+      .insert(notifications);
+
+    // Mark reminders as sent
+    await supabase
+      .from('golf_event_attendance')
+      .update({ reminder_sent: true })
+      .eq('event_id', eventId)
+      .eq('status', 'pending');
+  }
+
+  return notifications.length;
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Format event date for display in notifications
+ */
+function formatEventDate(event: any): string {
+  const startDate = new Date(event.start_date);
+  const dateStr = startDate.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  if (event.start_time) {
+    const timeStr = event.start_time.slice(0, 5); // HH:MM
+    return `${dateStr} at ${timeStr}`;
+  }
+
+  return dateStr;
+}
+
+/**
+ * Check if RSVP deadline has passed
+ */
+export function isRSVPDeadlinePassed(rsvpDeadline: string | null): boolean {
+  if (!rsvpDeadline) return false;
+  return new Date(rsvpDeadline) < new Date();
+}
+
+/**
+ * Get RSVP status color for UI
+ */
+export function getRSVPStatusColor(status: RSVPStatus): {
+  bg: string;
+  text: string;
+  border: string;
+} {
+  switch (status) {
+    case 'accepted':
+      return {
+        bg: 'bg-emerald-100',
+        text: 'text-emerald-700',
+        border: 'border-emerald-500',
+      };
+    case 'declined':
+      return {
+        bg: 'bg-red-100',
+        text: 'text-red-700',
+        border: 'border-red-500',
+      };
+    case 'tentative':
+      return {
+        bg: 'bg-amber-100',
+        text: 'text-amber-700',
+        border: 'border-amber-500',
+      };
+    case 'pending':
+    default:
+      return {
+        bg: 'bg-slate-100',
+        text: 'text-slate-600',
+        border: 'border-slate-300',
+      };
+  }
+}
+
+/**
+ * Get RSVP status label
+ */
+export function getRSVPStatusLabel(status: RSVPStatus): string {
+  switch (status) {
+    case 'accepted':
+      return 'Going';
+    case 'declined':
+      return "Can't Go";
+    case 'tentative':
+      return 'Maybe';
+    case 'pending':
+    default:
+      return 'Pending';
+  }
+}

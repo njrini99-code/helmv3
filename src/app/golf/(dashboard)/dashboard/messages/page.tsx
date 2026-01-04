@@ -107,13 +107,17 @@ export default function GolfMessagesPage() {
   // Handle sending a message
   const handleSendMessage = async (content: string) => {
     if (!selectedConversationId) return false;
-    const success = await sendMessage(content);
-    if (success) {
+
+    try {
+      await sendMessage(content);
       refetch();
-    } else {
-      showToast('Failed to send message', 'error');
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      console.error('Message send error:', error);
+      showToast(errorMessage, 'error');
+      return false;
     }
-    return success;
   };
 
   if (conversationsLoading) {

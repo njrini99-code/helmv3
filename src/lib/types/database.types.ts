@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       camp_registrations: {
@@ -706,6 +731,63 @@ export type Database = {
           },
         ]
       }
+      golf_academic_exclusions: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          end_date: string
+          exclude_all_events: boolean | null
+          exclude_matches: boolean | null
+          exclude_practices: boolean | null
+          id: string
+          name: string
+          start_date: string
+          team_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          end_date: string
+          exclude_all_events?: boolean | null
+          exclude_matches?: boolean | null
+          exclude_practices?: boolean | null
+          id?: string
+          name: string
+          start_date: string
+          team_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string
+          exclude_all_events?: boolean | null
+          exclude_matches?: boolean | null
+          exclude_practices?: boolean | null
+          id?: string
+          name?: string
+          start_date?: string
+          team_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_academic_exclusions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_academic_exclusions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_announcement_acknowledgements: {
         Row: {
           acknowledged_at: string | null
@@ -1261,6 +1343,41 @@ export type Database = {
           },
         ]
       }
+      golf_event_exclusions: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          excluded_date: string
+          id: string
+          reason: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          excluded_date: string
+          id?: string
+          reason?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          excluded_date?: string
+          id?: string
+          reason?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_event_exclusions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "golf_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_events: {
         Row: {
           all_day: boolean | null
@@ -1273,10 +1390,14 @@ export type Database = {
           end_time: string | null
           event_type: Database["public"]["Enums"]["golf_event_type"]
           id: string
+          is_exception: boolean | null
           is_mandatory: boolean | null
           location: string | null
           max_attendees: number | null
+          original_start_date: string | null
           player_id: string | null
+          recurrence_parent_id: string | null
+          recurrence_rule: string | null
           requires_rsvp: boolean | null
           rsvp_deadline: string | null
           start_date: string
@@ -1296,10 +1417,14 @@ export type Database = {
           end_time?: string | null
           event_type: Database["public"]["Enums"]["golf_event_type"]
           id?: string
+          is_exception?: boolean | null
           is_mandatory?: boolean | null
           location?: string | null
           max_attendees?: number | null
+          original_start_date?: string | null
           player_id?: string | null
+          recurrence_parent_id?: string | null
+          recurrence_rule?: string | null
           requires_rsvp?: boolean | null
           rsvp_deadline?: string | null
           start_date: string
@@ -1319,10 +1444,14 @@ export type Database = {
           end_time?: string | null
           event_type?: Database["public"]["Enums"]["golf_event_type"]
           id?: string
+          is_exception?: boolean | null
           is_mandatory?: boolean | null
           location?: string | null
           max_attendees?: number | null
+          original_start_date?: string | null
           player_id?: string | null
+          recurrence_parent_id?: string | null
+          recurrence_rule?: string | null
           requires_rsvp?: boolean | null
           rsvp_deadline?: string | null
           start_date?: string
@@ -1351,6 +1480,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_events_recurrence_parent_id_fkey"
+            columns: ["recurrence_parent_id"]
+            isOneToOne: false
+            referencedRelation: "golf_events"
             referencedColumns: ["id"]
           },
           {
@@ -4218,6 +4354,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       coach_type: ["college", "high_school", "juco", "showcase"],

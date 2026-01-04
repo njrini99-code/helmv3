@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import {
   DndContext,
   DragEndEvent,
@@ -13,11 +14,13 @@ import {
 } from '@dnd-kit/core';
 import { CalendarHeader, type CalendarView } from '@/components/golf/calendar/CalendarHeader';
 import { CalendarAvatarSidebar } from '@/components/golf/calendar/CalendarAvatarSidebar';
+import { AvailabilityDayView } from '@/components/golf/calendar/AvailabilityDayView';
 import { WeekView } from '@/components/golf/calendar/WeekView';
 import { MonthView } from '@/components/golf/calendar/MonthView';
 import { DayView } from '@/components/golf/calendar/DayView';
 import { EventCard } from '@/components/golf/calendar/EventCard';
 import { EventDetailModal, type GolfEventFormData } from '@/components/golf/calendar/EventDetailModal';
+import { NotificationCenter } from '@/components/golf/calendar/NotificationCenter';
 import { createGolfEvent, updateGolfEvent, deleteGolfEvent } from '@/app/golf/actions/golf';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
@@ -62,7 +65,7 @@ export function PremiumCalendarClient({
   const router = useRouter();
   const [view, setView] = useState<CalendarView>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   // CRUD Modal State
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -73,6 +76,109 @@ export function PremiumCalendarClient({
   // Drag-and-drop state
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
+  // Coach busy periods (always for current coach)
+  const [coachBusyPeriods, setCoachBusyPeriods] = useState<any[]>([]);
+
+  // Player busy periods (only when player is selected)
+  const [playerBusyPeriods, setPlayerBusyPeriods] = useState<any[]>([]);
+
+  // Fetch player availability when player is selected
+  useEffect(() => {
+    if (!selectedPlayerId) {
+      setPlayerBusyPeriods([]);
+      return;
+    }
+
+    const fetchPlayerAvailability = async () => {
+      // Calculate date range based on current view
+      let startDate: Date;
+      let endDate: Date;
+
+      if (view === 'day') {
+        startDate = currentDate;
+        endDate = currentDate;
+      } else if (view === 'week') {
+        startDate = startOfWeek(currentDate, { weekStartsOn: 0 });
+        endDate = endOfWeek(currentDate, { weekStartsOn: 0 });
+      } else {
+        startDate = startOfMonth(currentDate);
+        endDate = endOfMonth(currentDate);
+      }
+
+      // Import and use the action
+      const { getPlayerAvailability } = await import('@/app/golf/actions/golf');
+      const result = await getPlayerAvailability(
+        selectedPlayerId,
+        format(startDate, 'yyyy-MM-dd'),
+        format(endDate, 'yyyy-MM-dd')
+      );
+
+      if (result.success && result.data) {
+        // Convert ISO strings to Date objects
+        const periods = result.data.map((p: any) => ({
+          ...p,
+          start: new Date(p.start),
+          end: new Date(p.end),
+        }));
+        setPlayerBusyPeriods(periods);
+      }
+    };
+
+    fetchPlayerAvailability();
+  }, [selectedPlayerId, currentDate, view]);
+
+  // Fetch coach blocked time (for current coach)
+  useEffect(() => {
+    if (!isCoach) {
+      setCoachBusyPeriods([]);
+      return;
+    }
+
+    const fetchCoachAvailability = async () => {
+      // Calculate date range based on current view
+      let startDate: Date;
+      let endDate: Date;
+
+      if (view === 'day') {
+        startDate = currentDate;
+        endDate = currentDate;
+      } else if (view === 'week') {
+        startDate = startOfWeek(currentDate, { weekStartsOn: 0 });
+        endDate = endOfWeek(currentDate, { weekStartsOn: 0 });
+      } else {
+        startDate = startOfMonth(currentDate);
+        endDate = endOfMonth(currentDate);
+      }
+
+      // Import and use the action
+      const { getCoachBlockedTime } = await import('@/app/golf/actions/golf');
+      const result = await getCoachBlockedTime(
+        format(startDate, 'yyyy-MM-dd'),
+        format(endDate, 'yyyy-MM-dd')
+      );
+
+      if (result.success && result.data) {
+        // Convert blocked times to busy period format
+        const periods = result.data.map((blocked: any) => {
+          const startDateTime = new Date(`${blocked.start_date}T${blocked.start_time || '00:00:00'}`);
+          const endDateTime = new Date(`${blocked.end_date || blocked.start_date}T${blocked.end_time || '23:59:59'}`);
+
+          return {
+            start: startDateTime,
+            end: endDateTime,
+            type: 'blocked',
+            title: blocked.title,
+            ownerId: null,
+            ownerType: 'coach',
+          };
+        });
+        setCoachBusyPeriods(periods);
+      }
+    };
+
+    fetchCoachAvailability();
+  }, [currentDate, view, isCoach]);
+
   // Configure drag sensors - require 8px movement before drag starts
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -82,17 +188,14 @@ export function PremiumCalendarClient({
     })
   );
 
-  // Fixed filtering logic - properly filter events when members are selected
-  const filteredEvents = useMemo(() => {
-    // Show all events when no filters or all members selected
-    if (selectedMemberIds.length === 0 || selectedMemberIds.length === teamMembers.length) {
-      return initialEvents;
-    }
-    // When specific members are selected, filter events
-    // Since golf_events doesn't have attendees, show all team events
-    // (filtering would require event_attendees table which we don't have yet)
-    return initialEvents;
-  }, [initialEvents, selectedMemberIds, teamMembers.length]);
+  // Get selected player object
+  const selectedPlayer = useMemo(() => {
+    if (!selectedPlayerId) return null;
+    return teamMembers.find(m => m.id === selectedPlayerId) || null;
+  }, [selectedPlayerId, teamMembers]);
+
+  // All events are shown (no filtering needed)
+  const filteredEvents = initialEvents;
 
   const handleNavigate = (direction: 'prev' | 'next' | 'today') => {
     if (direction === 'today') {
@@ -132,6 +235,15 @@ export function PremiumCalendarClient({
     setView('day');
   };
 
+  // Handle quick event creation from availability view
+  const handleTimeSlotClick = (date: Date, _hour: number) => {
+    setCurrentDate(date);
+    setIsCreatingEvent(true);
+    setSelectedEvent(null);
+    setIsEventModalOpen(true);
+    // Modal will use currentDate for default date
+  };
+
   // Save event (create or update)
   const handleSaveEvent = async (data: GolfEventFormData) => {
     setIsSavingEvent(true);
@@ -149,6 +261,10 @@ export function PremiumCalendarClient({
           courseName: data.courseName || undefined,
           description: data.description || undefined,
           isMandatory: data.isMandatory,
+          requiresRsvp: data.requiresRsvp,
+          rsvpDeadline: data.rsvpDeadline || undefined,
+          maxAttendees: data.maxAttendees || undefined,
+          attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
         });
         if (!result.success) {
           throw new Error(result.error || 'Failed to create event');
@@ -166,6 +282,10 @@ export function PremiumCalendarClient({
           courseName: data.courseName || undefined,
           description: data.description || undefined,
           isMandatory: data.isMandatory,
+          requiresRsvp: data.requiresRsvp,
+          rsvpDeadline: data.rsvpDeadline || undefined,
+          maxAttendees: data.maxAttendees || undefined,
+          attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
         });
         if (!result.success) {
           throw new Error(result.error || 'Failed to update event');
@@ -279,8 +399,8 @@ export function PremiumCalendarClient({
           {/* Premium Avatar Sidebar */}
           <CalendarAvatarSidebar
             teamMembers={teamMembers}
-            selectedMemberIds={selectedMemberIds}
-            onSelectionChange={setSelectedMemberIds}
+            selectedPlayerId={selectedPlayerId}
+            onPlayerSelect={setSelectedPlayerId}
             onSyncSettings={onSyncSettings}
           />
 
@@ -300,40 +420,59 @@ export function PremiumCalendarClient({
               boxShadow: '0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.7)',
             }}
           >
-            <CalendarHeader
-              view={view}
-              onViewChange={setView}
-              currentDate={currentDate}
-              onNavigate={handleNavigate}
-              onAddEvent={handleAddEvent}
-            />
-
-            {view === 'week' && (
-              <WeekView
-                weekStart={weekStart}
-                events={filteredEvents}
-                onEventClick={handleEventClick}
-                isDraggable={true}
+            {/* Header with Notification Center */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-white/20">
+              <CalendarHeader
+                view={view}
+                onViewChange={setView}
+                currentDate={currentDate}
+                onNavigate={handleNavigate}
+                onAddEvent={handleAddEvent}
               />
-            )}
+              <NotificationCenter />
+            </div>
 
-            {view === 'month' && (
-              <MonthView
-                month={currentDate}
-                events={filteredEvents}
-                onDateClick={handleDateClick}
-                onEventClick={handleEventClick}
-                isDraggable={true}
-              />
-            )}
+            {/* Availability Day View (when player selected) */}
+            {selectedPlayer && view === 'day' ? (
+              <div className="flex-1 overflow-y-auto p-6">
+                <AvailabilityDayView
+                  date={currentDate}
+                  coachBusyPeriods={coachBusyPeriods}
+                  playerBusyPeriods={playerBusyPeriods}
+                  selectedPlayer={selectedPlayer}
+                  onTimeSlotClick={handleTimeSlotClick}
+                />
+              </div>
+            ) : (
+              <>
+                {view === 'week' && (
+                  <WeekView
+                    weekStart={weekStart}
+                    events={filteredEvents}
+                    onEventClick={handleEventClick}
+                    isDraggable={true}
+                  />
+                )}
 
-            {view === 'day' && (
-              <DayView
-                date={currentDate}
-                events={filteredEvents}
-                onEventClick={handleEventClick}
-                isDraggable={true}
-              />
+                {view === 'month' && (
+                  <MonthView
+                    month={currentDate}
+                    events={filteredEvents}
+                    onDateClick={handleDateClick}
+                    onEventClick={handleEventClick}
+                    isDraggable={true}
+                  />
+                )}
+
+                {view === 'day' && (
+                  <DayView
+                    date={currentDate}
+                    events={filteredEvents}
+                    onEventClick={handleEventClick}
+                    isDraggable={true}
+                  />
+                )}
+              </>
             )}
           </div>
         </div>
@@ -369,6 +508,7 @@ export function PremiumCalendarClient({
         onSave={handleSaveEvent}
         onDelete={selectedEvent ? handleDeleteEvent : undefined}
         isSaving={isSavingEvent}
+        teamPlayers={teamMembers}
       />
     </>
   );

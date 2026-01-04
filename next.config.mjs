@@ -150,7 +150,7 @@ const nextConfig = {
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               img-src 'self' data: https: blob:;
               font-src 'self' data: https://fonts.gstatic.com;
-              connect-src 'self' https://*.supabase.co https://sentry.io https://cdnjs.cloudflare.com ws://localhost:* ws://127.0.0.1:*;
+              connect-src 'self' https://*.supabase.co wss://*.supabase.co https://sentry.io https://cdnjs.cloudflare.com ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:*;
               worker-src 'self' blob:;
               frame-ancestors 'none';
             `.replace(/\s{2,}/g, ' ').trim(),

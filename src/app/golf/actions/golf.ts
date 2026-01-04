@@ -64,6 +64,11 @@ const golfEventSchema = z.object({
   courseName: z.string().max(200).optional(),
   description: z.string().max(5000).optional(),
   isMandatory: z.boolean().optional(),
+  // RSVP fields
+  requiresRsvp: z.boolean().optional(),
+  rsvpDeadline: z.string().optional(),
+  maxAttendees: z.number().int().positive().optional(),
+  attendeeIds: z.array(z.string().uuid()).optional(),
 });
 
 const golfQualifierSchema = z.object({
@@ -139,6 +144,11 @@ interface GolfEventInput {
   courseName?: string;
   description?: string;
   isMandatory?: boolean;
+  // RSVP fields
+  requiresRsvp?: boolean;
+  rsvpDeadline?: string;
+  maxAttendees?: number;
+  attendeeIds?: string[];
 }
 
 interface GolfQualifierInput {
@@ -665,6 +675,10 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       course_name: validatedData.courseName || null,
       description: validatedData.description || null,
       is_mandatory: validatedData.isMandatory ?? false,
+      // RSVP fields
+      requires_rsvp: validatedData.requiresRsvp ?? false,
+      rsvp_deadline: validatedData.rsvpDeadline || null,
+      max_attendees: validatedData.maxAttendees || null,
     };
 
     // Only add created_by if it's not null (coaches only)
@@ -698,6 +712,18 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       eventType: event.event_type,
       startDate: event.start_date,
     });
+
+    // Send invitations if attendeeIds provided
+    if (validatedData.attendeeIds && validatedData.attendeeIds.length > 0) {
+      try {
+        const { sendEventInvitations } = await import('@/lib/calendar/rsvp');
+        await sendEventInvitations(event.id, validatedData.attendeeIds, supabase);
+        console.log('✅ [DEBUG] Sent invitations to', validatedData.attendeeIds.length, 'players');
+      } catch (inviteError) {
+        console.error('⚠️ [DEBUG] Failed to send invitations:', inviteError);
+        // Don't fail the whole operation if invitations fail
+      }
+    }
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/calendar');
@@ -1210,5 +1236,508 @@ export async function updatePlayerStatus(
       return { success: false, error: err.message };
     }
     return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
+// RSVP & CALENDAR ACTIONS
+// ============================================================================
+
+/**
+ * Player responds to an event invitation
+ */
+export async function respondToEvent(
+  eventId: string,
+  status: 'pending' | 'accepted' | 'declined' | 'tentative'
+): Promise<ActionResult> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    // Get player ID
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    // Update RSVP
+    const { updateRSVP } = await import('@/lib/calendar/rsvp');
+    await updateRSVP(eventId, player.id, status, supabase);
+
+    revalidatePath('/golf/dashboard/calendar');
+    return { success: true, data: undefined };
+
+  } catch (error) {
+    console.error('[Golf] Error updating RSVP:', error);
+    return { success: false, error: 'Failed to update RSVP' };
+  }
+}
+
+/**
+ * Check for scheduling conflicts when creating/editing an event
+ */
+export async function checkScheduleConflicts(
+  startDate: string,
+  startTime: string,
+  endDate: string,
+  endTime: string,
+  attendeeIds: string[],
+  excludeEventId?: string
+): Promise<ActionResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    const start = new Date(`${startDate}T${startTime}`);
+    const end = new Date(`${endDate}T${endTime}`);
+
+    const { checkEventConflicts } = await import('@/lib/calendar/conflicts');
+    const result = await checkEventConflicts(
+      start,
+      end,
+      attendeeIds,
+      supabase,
+      { excludeEventId }
+    );
+
+    return { success: true, data: result };
+
+  } catch (error) {
+    console.error('[Golf] Error checking conflicts:', error);
+    return { success: false, error: 'Failed to check conflicts' };
+  }
+}
+
+/**
+ * Get availability for a specific player on a specific date
+ * Used for the availability day view overlay
+ */
+export async function getPlayerAvailability(
+  playerId: string,
+  startDate: string, // YYYY-MM-DD
+  endDate: string // YYYY-MM-DD
+): Promise<ActionResult<any[]>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('user_id')
+      .eq('id', playerId)
+      .single();
+
+    if (!player?.user_id) {
+      return { success: false, error: 'Player not found' };
+    }
+
+    const dayStart = new Date(`${startDate}T00:00:00`);
+    const dayEnd = new Date(`${endDate}T23:59:59`);
+
+    const { getUserBusyPeriods } = await import('@/lib/calendar/availability');
+    const busyPeriods = await getUserBusyPeriods(
+      player.user_id,
+      dayStart,
+      dayEnd,
+      supabase
+    );
+
+    // Convert to serializable format
+    const serialized = busyPeriods.map(period => ({
+      start: period.start.toISOString(),
+      end: period.end.toISOString(),
+      type: period.type,
+      title: period.title,
+      eventId: period.eventId,
+    }));
+
+    return { success: true, data: serialized };
+
+  } catch (error) {
+    console.error('[Golf] Error getting availability:', error);
+    return { success: false, error: 'Failed to get availability' };
+  }
+}
+
+/**
+ * Get all calendar notifications for the current user
+ */
+export async function getNotifications(limit: number = 50): Promise<ActionResult<any[]>> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data, error } = await supabase
+      .from('golf_calendar_notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('[Golf] Error fetching notifications:', error);
+      return { success: false, error: 'Failed to fetch notifications' };
+    }
+
+    return { success: true, data: data || [] };
+
+  } catch (error) {
+    console.error('[Golf] Error fetching notifications:', error);
+    return { success: false, error: 'Failed to fetch notifications' };
+  }
+}
+
+/**
+ * Mark a notification as read
+ */
+export async function markNotificationRead(
+  notificationId: string
+): Promise<ActionResult> {
+  try {
+    const supabase = await createClient();
+
+    await supabase
+      .from('golf_calendar_notifications')
+      .update({ read: true, updated_at: new Date().toISOString() })
+      .eq('id', notificationId);
+
+    revalidatePath('/golf/dashboard');
+    return { success: true, data: undefined };
+
+  } catch (error) {
+    console.error('[Golf] Error marking notification read:', error);
+    return { success: false, error: 'Failed to mark notification read' };
+  }
+}
+
+/**
+ * Mark all notifications as read for the current user
+ */
+export async function markAllNotificationsRead(): Promise<ActionResult> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    await supabase
+      .from('golf_calendar_notifications')
+      .update({ read: true, updated_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .eq('read', false);
+
+    revalidatePath('/golf/dashboard');
+    return { success: true, data: undefined };
+
+  } catch (error) {
+    console.error('[Golf] Error marking all notifications read:', error);
+    return { success: false, error: 'Failed to mark notifications read' };
+  }
+}
+
+/**
+ * Get pending event invitations for the current player
+ */
+export async function getPendingInvitations(): Promise<ActionResult<any[]>> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get player ID
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    const { getPlayerPendingInvitations } = await import('@/lib/calendar/rsvp');
+    const invitations = await getPlayerPendingInvitations(player.id, supabase);
+
+    return { success: true, data: invitations };
+
+  } catch (error) {
+    console.error('[Golf] Error fetching pending invitations:', error);
+    return { success: false, error: 'Failed to fetch invitations' };
+  }
+}
+
+/**
+ * Get RSVP summary for an event (coach view)
+ */
+export async function getEventRSVP(eventId: string): Promise<ActionResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    const { getEventRSVPStats } = await import('@/lib/calendar/rsvp');
+    const stats = await getEventRSVPStats(eventId, supabase);
+
+    return { success: true, data: stats };
+
+  } catch (error) {
+    console.error('[Golf] Error fetching RSVP stats:', error);
+    return { success: false, error: 'Failed to fetch RSVP data' };
+  }
+}
+
+// ============================================================================
+// COACH BLOCKED TIME MANAGEMENT
+// ============================================================================
+
+const blockedTimeSchema = z.object({
+  title: z.string().min(1).max(200),
+  startDate: z.string(),
+  endDate: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  allDay: z.boolean().optional(),
+  recurrenceRule: z.string().optional(),
+  description: z.string().max(1000).optional(),
+});
+
+/**
+ * Add coach blocked time
+ */
+export async function addCoachBlockedTime(
+  data: z.infer<typeof blockedTimeSchema>
+): Promise<ActionResult<{ id: string }>> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get coach ID
+    const { data: coach, error: coachError } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (coachError || !coach) {
+      return { success: false, error: 'Coach profile not found' };
+    }
+
+    // Validate input
+    const validatedData = blockedTimeSchema.parse(data);
+
+    // Insert blocked time
+    const { data: blockedTime, error } = await supabase
+      .from('golf_coach_blocked_time')
+      .insert({
+        coach_id: coach.id,
+        title: validatedData.title,
+        start_date: validatedData.startDate,
+        end_date: validatedData.endDate || validatedData.startDate,
+        start_time: validatedData.startTime || null,
+        end_time: validatedData.endTime || null,
+        all_day: validatedData.allDay || false,
+        recurrence_rule: validatedData.recurrenceRule || null,
+        description: validatedData.description || null,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('[Golf] Error creating blocked time:', error);
+      return { success: false, error: 'Failed to add blocked time' };
+    }
+
+    revalidatePath('/golf/dashboard/calendar');
+
+    return { success: true, data: { id: blockedTime.id } };
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: 'Invalid blocked time data' };
+    }
+    console.error('[Golf] Unexpected error creating blocked time:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    };
+  }
+}
+
+/**
+ * Delete coach blocked time
+ */
+export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<void>> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get coach ID
+    const { data: coach, error: coachError } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (coachError || !coach) {
+      return { success: false, error: 'Coach profile not found' };
+    }
+
+    // Delete blocked time (RLS will ensure it's theirs)
+    const { error } = await supabase
+      .from('golf_coach_blocked_time')
+      .delete()
+      .eq('id', id)
+      .eq('coach_id', coach.id);
+
+    if (error) {
+      console.error('[Golf] Error deleting blocked time:', error);
+      return { success: false, error: 'Failed to delete blocked time' };
+    }
+
+    revalidatePath('/golf/dashboard/calendar');
+
+    return { success: true, data: undefined };
+
+  } catch (error) {
+    console.error('[Golf] Unexpected error deleting blocked time:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    };
+  }
+}
+
+/**
+ * Update coach blocked time
+ */
+export async function updateCoachBlockedTime(
+  id: string,
+  data: Partial<z.infer<typeof blockedTimeSchema>>
+): Promise<ActionResult<void>> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get coach ID
+    const { data: coach, error: coachError } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (coachError || !coach) {
+      return { success: false, error: 'Coach profile not found' };
+    }
+
+    // Build update object
+    const updates: any = {};
+    if (data.title !== undefined) updates.title = data.title;
+    if (data.startDate !== undefined) updates.start_date = data.startDate;
+    if (data.endDate !== undefined) updates.end_date = data.endDate;
+    if (data.startTime !== undefined) updates.start_time = data.startTime;
+    if (data.endTime !== undefined) updates.end_time = data.endTime;
+    if (data.allDay !== undefined) updates.all_day = data.allDay;
+    if (data.recurrenceRule !== undefined) updates.recurrence_rule = data.recurrenceRule;
+    if (data.description !== undefined) updates.description = data.description;
+
+    // Update blocked time (RLS will ensure it's theirs)
+    const { error } = await supabase
+      .from('golf_coach_blocked_time')
+      .update(updates)
+      .eq('id', id)
+      .eq('coach_id', coach.id);
+
+    if (error) {
+      console.error('[Golf] Error updating blocked time:', error);
+      return { success: false, error: 'Failed to update blocked time' };
+    }
+
+    revalidatePath('/golf/dashboard/calendar');
+
+    return { success: true, data: undefined };
+
+  } catch (error) {
+    console.error('[Golf] Unexpected error updating blocked time:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    };
+  }
+}
+
+/**
+ * Get coach blocked time periods
+ */
+export async function getCoachBlockedTime(
+  startDate: string,
+  endDate: string
+): Promise<ActionResult<any[]>> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get coach ID
+    const { data: coach, error: coachError } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (coachError || !coach) {
+      return { success: false, error: 'Coach profile not found' };
+    }
+
+    // Query blocked time in date range
+    const { data: blockedTimes, error } = await supabase
+      .from('golf_coach_blocked_time')
+      .select('*')
+      .eq('coach_id', coach.id)
+      .gte('end_date', startDate)
+      .lte('start_date', endDate)
+      .order('start_date', { ascending: true });
+
+    if (error) {
+      console.error('[Golf] Error fetching blocked time:', error);
+      return { success: false, error: 'Failed to fetch blocked time' };
+    }
+
+    return { success: true, data: blockedTimes || [] };
+
+  } catch (error) {
+    console.error('[Golf] Unexpected error fetching blocked time:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    };
   }
 }
