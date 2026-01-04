@@ -44,16 +44,21 @@ export function GolfNewMessageModal({
     const supabase = createClient();
 
     try {
+      // CRITICAL: Must have team_id to search
+      if (!teamId) {
+        console.error('Cannot search users: No team_id provided');
+        setResults([]);
+        setLoading(false);
+        return;
+      }
+
       if (currentUserRole === 'coach') {
         // Coach searching for players on their team
         let playerQuery = supabase
           .from('golf_players')
-          .select('id, user_id, first_name, last_name, year, avatar_url');
-        
-        if (teamId) {
-          playerQuery = playerQuery.eq('team_id', teamId);
-        }
-        
+          .select('id, user_id, first_name, last_name, year, avatar_url')
+          .eq('team_id', teamId);  // Always filter by team
+
         if (query.trim()) {
           playerQuery = playerQuery.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
         }
@@ -76,12 +81,9 @@ export function GolfNewMessageModal({
         // Player searching for coaches on their team
         let coachQuery = supabase
           .from('golf_coaches')
-          .select('id, user_id, full_name, title, avatar_url');
-        
-        if (teamId) {
-          coachQuery = coachQuery.eq('team_id', teamId);
-        }
-        
+          .select('id, user_id, full_name, title, avatar_url')
+          .eq('team_id', teamId);  // Always filter by team
+
         if (query.trim()) {
           coachQuery = coachQuery.ilike('full_name', `%${query}%`);
         }

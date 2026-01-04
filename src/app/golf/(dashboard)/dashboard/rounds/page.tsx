@@ -51,30 +51,61 @@ export default async function RoundsPage() {
 
   // Fetch rounds based on role
   let rounds: RoundWithPlayer[] = [];
+  let inProgressRounds: RoundWithPlayer[] = [];
 
   if (userRole === 'coach' && coach?.team_id) {
-    const { data } = await supabase
+    // Fetch completed rounds
+    const { data: completedData } = await supabase
       .from('golf_rounds')
       .select(`
         *,
         player:golf_players!inner(first_name, last_name, team_id)
       `)
       .eq('player.team_id', coach.team_id)
+      .eq('status', 'completed')
       .order('round_date', { ascending: false })
       .limit(50);
 
-    rounds = data as RoundWithPlayer[] || [];
+    rounds = completedData as RoundWithPlayer[] || [];
+
+    // Fetch in-progress rounds for team players
+    const { data: inProgressData } = await supabase
+      .from('golf_rounds')
+      .select(`
+        *,
+        player:golf_players!inner(first_name, last_name, team_id)
+      `)
+      .eq('player.team_id', coach.team_id)
+      .eq('status', 'in_progress')
+      .order('updated_at', { ascending: false });
+
+    inProgressRounds = inProgressData as RoundWithPlayer[] || [];
   } else if (userRole === 'player' && player) {
-    const { data } = await supabase
+    // Fetch completed rounds
+    const { data: completedData } = await supabase
       .from('golf_rounds')
       .select(`
         *,
         player:golf_players(first_name, last_name)
       `)
       .eq('player_id', player.id)
+      .eq('status', 'completed')
       .order('round_date', { ascending: false });
 
-    rounds = data as RoundWithPlayer[] || [];
+    rounds = completedData as RoundWithPlayer[] || [];
+
+    // Fetch in-progress rounds
+    const { data: inProgressData } = await supabase
+      .from('golf_rounds')
+      .select(`
+        *,
+        player:golf_players(first_name, last_name)
+      `)
+      .eq('player_id', player.id)
+      .eq('status', 'in_progress')
+      .order('updated_at', { ascending: false });
+
+    inProgressRounds = inProgressData as RoundWithPlayer[] || [];
   }
 
   // Group rounds by date
@@ -114,7 +145,75 @@ export default async function RoundsPage() {
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-6 py-8">
-        {rounds.length === 0 ? (
+        {/* In-Progress Rounds Section */}
+        {inProgressRounds.length > 0 && userRole === 'player' && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">Continue Playing</h2>
+              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
+                {inProgressRounds.length} in progress
+              </span>
+            </div>
+            <div className="space-y-3">
+              {inProgressRounds.map((round) => {
+                const timeSince = new Date().getTime() - new Date(round.updated_at || round.created_at).getTime();
+                const hoursSince = Math.floor(timeSince / (1000 * 60 * 60));
+                const daysSince = Math.floor(hoursSince / 24);
+                const timeAgo = daysSince > 0
+                  ? `${daysSince} day${daysSince > 1 ? 's' : ''} ago`
+                  : `${hoursSince} hour${hoursSince !== 1 ? 's' : ''} ago`;
+
+                return (
+                  <Link key={round.id} href={`/golf/dashboard/rounds/continue/${round.id}`}>
+                    <div className="relative glass-standard rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-emerald-200">
+                      <ShineEffect />
+                      <div className="flex items-center gap-4 p-4">
+                        {/* Progress Indicator */}
+                        <div className="w-14 h-14 rounded-xl bg-emerald-50 flex flex-col items-center justify-center flex-shrink-0">
+                          <span className="text-2xl font-bold text-emerald-600">
+                            {round.current_hole || 1}
+                          </span>
+                          <span className="text-[10px] font-medium text-emerald-500">
+                            of {round.holes_to_play || 18}
+                          </span>
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-slate-900 mb-1">
+                            {round.course_name}
+                          </h3>
+                          <div className="flex items-center gap-3 text-sm text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <IconCalendar size={14} />
+                              {new Date(round.round_date).toLocaleDateString()}
+                            </span>
+                            <span className="text-xs">•</span>
+                            <span>Last updated {timeAgo}</span>
+                          </div>
+                        </div>
+
+                        {/* Continue Button */}
+                        <div className="flex items-center gap-2">
+                          <div className="px-4 py-2 bg-emerald-500 text-white font-medium text-sm rounded-lg group-hover:bg-emerald-600 transition-colors">
+                            Continue Round
+                          </div>
+                          <IconChevronRight size={20} className="text-slate-400" />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Divider */}
+            <div className="mt-8 mb-6 border-t border-slate-200" />
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Completed Rounds</h2>
+          </div>
+        )}
+
+        {rounds.length === 0 && inProgressRounds.length === 0 ? (
           <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
             <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">

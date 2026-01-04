@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PremiumCalendarClient, type TeamMember } from './PremiumCalendarClient';
-import { SyncModal } from '@/components/calendar/sync-modal';
+import { CalendarFeedManager } from './CalendarFeedManager';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 interface GolfCalendarWrapperProps {
@@ -21,34 +21,7 @@ export function GolfCalendarWrapper({
   teamMembers,
   isCoach = true,
 }: GolfCalendarWrapperProps) {
-  const [showSyncModal, setShowSyncModal] = useState(false);
-
-  // Placeholder handlers for sync functionality
-  // These will be connected to actual OAuth flows in the future
-  const handleConnectGoogle = async () => {
-    // TODO: Implement Google OAuth flow
-    console.log('Connecting to Google Calendar...');
-  };
-
-  const handleConnectApple = async () => {
-    // TODO: Implement Apple Calendar sync
-    console.log('Connecting to Apple Calendar...');
-  };
-
-  const handleDisconnectGoogle = async () => {
-    // TODO: Implement disconnect
-    console.log('Disconnecting Google Calendar...');
-  };
-
-  const handleDisconnectApple = async () => {
-    // TODO: Implement disconnect
-    console.log('Disconnecting Apple Calendar...');
-  };
-
-  const handleSync = async () => {
-    // TODO: Implement manual sync
-    console.log('Syncing calendars...');
-  };
+  const [showFeedManager, setShowFeedManager] = useState(false);
 
   return (
     <>
@@ -56,19 +29,12 @@ export function GolfCalendarWrapper({
         initialEvents={initialEvents}
         teamMembers={teamMembers}
         isCoach={isCoach}
-        onSyncSettings={() => setShowSyncModal(true)}
+        onSyncSettings={() => setShowFeedManager(true)}
       />
 
-      <SyncModal
-        isOpen={showSyncModal}
-        onClose={() => setShowSyncModal(false)}
-        googleConnected={false}
-        appleConnected={false}
-        onConnectGoogle={handleConnectGoogle}
-        onConnectApple={handleConnectApple}
-        onDisconnectGoogle={handleDisconnectGoogle}
-        onDisconnectApple={handleDisconnectApple}
-        onSync={handleSync}
+      <CalendarFeedManager
+        isOpen={showFeedManager}
+        onClose={() => setShowFeedManager(false)}
       />
     </>
   );

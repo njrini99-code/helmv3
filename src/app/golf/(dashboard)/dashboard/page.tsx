@@ -862,11 +862,12 @@ export default function GolfDashboardPage() {
           if (players && players.length > 0) {
             const playerIds = players.map(p => p.id);
             
-            // Get recent rounds
+            // Get recent completed rounds
             const { data: rounds } = await supabase
               .from('golf_rounds')
               .select('*, player:golf_players(first_name, last_name)')
               .in('player_id', playerIds)
+              .eq('status', 'completed')
               .not('total_score', 'is', null)
               .order('round_date', { ascending: false })
               .limit(6);
@@ -888,6 +889,7 @@ export default function GolfDashboardPage() {
               .from('golf_rounds')
               .select('player_id, total_score')
               .in('player_id', playerIds)
+              .eq('status', 'completed')
               .not('total_score', 'is', null);
 
             // Group rounds by player_id in memory
@@ -980,6 +982,7 @@ export default function GolfDashboardPage() {
           .from('golf_rounds')
           .select('*')
           .eq('player_id', player.id)
+          .eq('status', 'completed')
           .not('total_score', 'is', null)
           .order('round_date', { ascending: false });
 

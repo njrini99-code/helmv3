@@ -101,6 +101,7 @@ export default function GolfStatsPage() {
                 .from('golf_rounds')
                 .select('total_score')
                 .eq('player_id', player.id)
+                .eq('status', 'completed')
                 .not('total_score', 'is', null);
 
               const roundsPlayed = rounds?.length || 0;
@@ -149,7 +150,7 @@ export default function GolfStatsPage() {
     setLoadingStats(true);
     const supabase = createClient();
 
-    // Fetch all rounds with their IDs
+    // Fetch all completed rounds with their IDs
     const { data: roundsData } = await supabase
       .from('golf_rounds')
       .select(`
@@ -161,6 +162,7 @@ export default function GolfStatsPage() {
         total_to_par
       `)
       .eq('player_id', playerId)
+      .eq('status', 'completed')
       .order('round_date', { ascending: false });
 
     console.log('🔵 Fetched rounds:', roundsData?.length || 0, roundsData);

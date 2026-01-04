@@ -76,7 +76,6 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
               name={`${player.first_name} ${player.last_name}`}
               src={player.avatar_url}
               size="xl"
-              ring
             />
             {/* Green Recruiting Indicator */}
             {(player as any).recruiting_activated && (

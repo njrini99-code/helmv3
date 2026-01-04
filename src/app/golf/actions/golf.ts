@@ -208,7 +208,8 @@ type GolfEventUpdateData = {
  * Submit a golf round with comprehensive shot-by-shot stats
  */
 export async function submitGolfRoundComprehensive(
-  data: GolfRoundInputComprehensive
+  data: GolfRoundInputComprehensive,
+  existingRoundId?: string
 ): Promise<ActionResult<{ roundId: string }>> {
   try {
     const supabase = await createClient();
@@ -227,6 +228,32 @@ export async function submitGolfRoundComprehensive(
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
+    }
+
+    // If updating an existing round, delete old holes and shots first
+    if (existingRoundId) {
+      console.log('[Golf] Updating existing round:', existingRoundId);
+
+      // Delete existing shots (cascades from holes)
+      const { error: deleteShotsError } = await supabase
+        .from('golf_shots')
+        .delete()
+        .eq('round_id', existingRoundId);
+
+      if (deleteShotsError) {
+        console.error('[Golf] Failed to delete old shots:', deleteShotsError);
+      }
+
+      // Delete existing holes
+      const { error: deleteHolesError } = await supabase
+        .from('golf_holes')
+        .delete()
+        .eq('round_id', existingRoundId);
+
+      if (deleteHolesError) {
+        console.error('[Golf] Failed to delete old holes:', deleteHolesError);
+        return { success: false, error: 'Failed to update round. Please try again.' };
+      }
     }
 
     // Calculate round totals from holes
@@ -284,54 +311,84 @@ export async function submitGolfRoundComprehensive(
     ? Math.round((fairwaysHit / fairwaysTotal) * 1000) / 10
     : null;
 
-  // Insert round with comprehensive stats
-  const { data: round, error: roundError } = await supabase
-    .from('golf_rounds')
-    .insert({
-      player_id: player.id,
-      course_name: data.courseName,
-      course_city: data.courseCity || null,
-      course_state: data.courseState || null,
-      course_rating: data.courseRating || null,
-      course_slope: data.courseSlope || null,
-      tees_played: data.teesPlayed || null,
-      course_id: data.courseId || null,
-      round_type: data.roundType,
-      round_date: data.roundDate,
-      total_score: totalScore,
-      total_to_par: totalToPar,
-      total_putts: totalPutts,
-      fairways_hit: fairwaysHit,
-      fairways_total: fairwaysTotal,
-      greens_in_regulation: greensInReg,
-      greens_total: data.holes.length,
-      is_verified: false,
-      // New comprehensive stats columns
-      driving_distance_avg: drivingDistanceAvg,
-      driving_accuracy: drivingAccuracy,
-      putts_per_gir: puttsPerGir,
-      scrambling_attempts: scrambleAttempts,
-      scrambles_made: scramblesMade,
-      sand_save_attempts: sandSaveAttempts,
-      sand_saves_made: sandSavesMade,
-      penalty_strokes: totalPenalties,
-      three_putts: threePutts,
-      birdies: birdies,
-      pars: pars,
-      bogeys: bogeys,
-      double_bogeys_plus: doublePlus,
-      eagles: eagles,
-      longest_drive: longestDrive,
-      longest_putt_made: longestPuttMade,
-      longest_hole_out: longestHoleOut,
-    })
-    .select()
-    .single();
+  // Prepare round data
+  const roundData = {
+    player_id: player.id,
+    course_name: data.courseName,
+    course_city: data.courseCity || null,
+    course_state: data.courseState || null,
+    course_rating: data.courseRating || null,
+    course_slope: data.courseSlope || null,
+    tees_played: data.teesPlayed || null,
+    course_id: data.courseId || null,
+    round_type: data.roundType,
+    round_date: data.roundDate,
+    total_score: totalScore,
+    total_to_par: totalToPar,
+    total_putts: totalPutts,
+    fairways_hit: fairwaysHit,
+    fairways_total: fairwaysTotal,
+    greens_in_regulation: greensInReg,
+    greens_total: data.holes.length,
+    is_verified: false,
+    status: 'completed' as const, // Mark as completed when all holes are done
+    // New comprehensive stats columns
+    driving_distance_avg: drivingDistanceAvg,
+    driving_accuracy: drivingAccuracy,
+    putts_per_gir: puttsPerGir,
+    scrambling_attempts: scrambleAttempts,
+    scrambles_made: scramblesMade,
+    sand_save_attempts: sandSaveAttempts,
+    sand_saves_made: sandSavesMade,
+    penalty_strokes: totalPenalties,
+    three_putts: threePutts,
+    birdies: birdies,
+    pars: pars,
+    bogeys: bogeys,
+    double_bogeys_plus: doublePlus,
+    eagles: eagles,
+    longest_drive: longestDrive,
+    longest_putt_made: longestPuttMade,
+    longest_hole_out: longestHoleOut,
+  };
 
-    if (roundError) {
+  // Insert or update round
+  let round;
+  let roundError;
+
+  if (existingRoundId) {
+    // Update existing round
+    const result = await supabase
+      .from('golf_rounds')
+      .update(roundData)
+      .eq('id', existingRoundId)
+      .eq('player_id', player.id) // Security: ensure player owns this round
+      .select()
+      .single();
+
+    round = result.data;
+    roundError = result.error;
+
+    if (roundError || !round) {
+      console.error('[Golf] Failed to update round:', roundError);
+      return { success: false, error: 'Failed to update round. Please try again.' };
+    }
+  } else {
+    // Insert new round
+    const result = await supabase
+      .from('golf_rounds')
+      .insert(roundData)
+      .select()
+      .single();
+
+    round = result.data;
+    roundError = result.error;
+
+    if (roundError || !round) {
       console.error('[Golf] Failed to insert round:', roundError);
       return { success: false, error: 'Failed to save round. Please try again.' };
     }
+  }
 
     // Insert holes with comprehensive stats
   const holesData = data.holes.map(hole => ({
@@ -1738,6 +1795,382 @@ export async function getCoachBlockedTime(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    };
+  }
+}
+
+// ============================================================================
+// SAVE FOR LATER - INCOMPLETE ROUND MANAGEMENT
+// ============================================================================
+
+export interface PartialRoundData {
+  // Round setup
+  courseName: string;
+  courseCity?: string;
+  courseState?: string;
+  courseRating?: number;
+  courseSlope?: number;
+  teesPlayed?: string;
+  courseId?: string;
+  roundType: 'practice' | 'tournament' | 'qualifier';
+  roundDate: string;
+  // Progress tracking
+  currentHole: number;
+  holesToPlay: number; // 9 or 18
+  // Completed holes data
+  holes: HoleStats[];
+}
+
+/**
+ * Save an incomplete round to database
+ * Status will be 'in_progress' and stats will NOT be calculated
+ */
+export async function savePartialRound(
+  data: PartialRoundData,
+  existingRoundId?: string
+): Promise<ActionResult<{ roundId: string }>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    // Get player record
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    const roundData = {
+      player_id: player.id,
+      course_name: data.courseName,
+      course_city: data.courseCity || null,
+      course_state: data.courseState || null,
+      course_rating: data.courseRating || null,
+      course_slope: data.courseSlope || null,
+      tees_played: data.teesPlayed || null,
+      course_id: data.courseId || null,
+      round_type: data.roundType,
+      round_date: data.roundDate,
+      status: 'in_progress' as const,
+      current_hole: data.currentHole,
+      holes_to_play: data.holesToPlay,
+      // Leave stats null for incomplete rounds
+      total_score: null,
+      total_to_par: null,
+      total_putts: null,
+      fairways_hit: null,
+      fairways_total: null,
+      greens_in_regulation: null,
+      greens_total: null,
+    };
+
+    let roundId: string;
+
+    if (existingRoundId) {
+      // Update existing incomplete round
+      const { data: round, error: roundError } = await supabase
+        .from('golf_rounds')
+        .update(roundData)
+        .eq('id', existingRoundId)
+        .eq('player_id', player.id)
+        .eq('status', 'in_progress')
+        .select()
+        .single();
+
+      if (roundError) {
+        console.error('[Golf] Failed to update incomplete round:', roundError);
+        return { success: false, error: 'Failed to update round' };
+      }
+
+      roundId = round.id;
+
+      // Delete existing holes for this round
+      await supabase
+        .from('golf_holes')
+        .delete()
+        .eq('round_id', roundId);
+
+      // Delete existing shots
+      await supabase
+        .from('golf_shots')
+        .delete()
+        .eq('round_id', roundId);
+    } else {
+      // Create new incomplete round
+      const { data: round, error: roundError } = await supabase
+        .from('golf_rounds')
+        .insert(roundData)
+        .select()
+        .single();
+
+      if (roundError) {
+        console.error('[Golf] Failed to create incomplete round:', roundError);
+        return { success: false, error: 'Failed to save round' };
+      }
+
+      roundId = round.id;
+    }
+
+    // Insert holes (only completed ones)
+    if (data.holes.length > 0) {
+      const holesData = data.holes.map(hole => ({
+        round_id: roundId,
+        hole_number: hole.holeNumber,
+        par: hole.par,
+        yardage: hole.yardage || null,
+        score: hole.score,
+        putts: hole.putts,
+        fairway_hit: hole.fairwayHit,
+        green_in_regulation: hole.greenInRegulation,
+        penalties: hole.penaltyStrokes,
+        driving_distance: hole.drivingDistance,
+        used_driver: hole.usedDriver,
+        drive_miss_direction: hole.driveMissDirection,
+        approach_distance: hole.approachDistance,
+        approach_lie: hole.approachLie,
+        approach_proximity: hole.approachProximity,
+        approach_miss_direction: hole.approachMissDirection,
+        scramble_attempt: hole.scrambleAttempt,
+        scramble_made: hole.scrambleMade,
+        sand_save_attempt: hole.sandSaveAttempt,
+        sand_save_made: hole.sandSaveMade,
+        first_putt_distance: hole.firstPuttDistance,
+        first_putt_leave: hole.firstPuttLeave,
+        first_putt_break: hole.firstPuttBreak,
+        first_putt_slope: hole.firstPuttSlope,
+        first_putt_miss_direction: hole.firstPuttMissDirection,
+        holed_out_distance: hole.holedOutDistance,
+        holed_out_type: hole.holedOutType,
+      }));
+
+      const { error: holesError } = await supabase
+        .from('golf_holes')
+        .insert(holesData);
+
+      if (holesError) {
+        console.error('[Golf] Failed to insert holes:', holesError);
+        // Don't fail the whole operation, holes can be re-entered
+      }
+
+      // Insert shots for each hole
+      for (const hole of data.holes) {
+        if (hole.shots && hole.shots.length > 0) {
+          const shotsData = hole.shots.map(shot => ({
+            round_id: roundId,
+            hole_number: hole.holeNumber,
+            shot_number: shot.shotNumber,
+            shot_type: shot.shotType,
+            club_type: shot.clubType,
+            lie_before: shot.lieBefore,
+            distance_to_hole_before: shot.distanceToHoleBefore,
+            distance_unit_before: shot.distanceUnitBefore,
+            result: shot.result,
+            distance_to_hole_after: shot.distanceToHoleAfter,
+            distance_unit_after: shot.distanceUnitAfter,
+            shot_distance: shot.shotDistance,
+            miss_direction: shot.missDirection,
+            putt_break: shot.puttBreak,
+            putt_slope: shot.puttSlope,
+            is_penalty: shot.isPenalty,
+            penalty_type: shot.penaltyType,
+          }));
+
+          const { error: shotsError } = await supabase
+            .from('golf_shots')
+            .insert(shotsData);
+
+          if (shotsError) {
+            console.error(`[Golf] Failed to insert shots for hole ${hole.holeNumber}:`, shotsError);
+          }
+        }
+      }
+    }
+
+    revalidatePath('/golf/dashboard/rounds');
+
+    return { success: true, data: { roundId } };
+
+  } catch (error) {
+    console.error('[Golf] Unexpected error saving partial round:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to save round'
+    };
+  }
+}
+
+/**
+ * Get all in-progress rounds for current player
+ */
+export async function getInProgressRounds(): Promise<ActionResult<any[]>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    const { data: rounds, error } = await supabase
+      .from('golf_rounds')
+      .select(`
+        id,
+        course_name,
+        round_date,
+        round_type,
+        current_hole,
+        holes_to_play,
+        created_at,
+        updated_at
+      `)
+      .eq('player_id', player.id)
+      .eq('status', 'in_progress')
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      console.error('[Golf] Error fetching in-progress rounds:', error);
+      return { success: false, error: 'Failed to fetch rounds' };
+    }
+
+    return { success: true, data: rounds || [] };
+
+  } catch (error) {
+    console.error('[Golf] Unexpected error fetching in-progress rounds:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch rounds'
+    };
+  }
+}
+
+/**
+ * Load an in-progress round with all data
+ */
+export async function loadInProgressRound(roundId: string): Promise<ActionResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    // Get round data
+    const { data: round, error: roundError } = await supabase
+      .from('golf_rounds')
+      .select('*')
+      .eq('id', roundId)
+      .eq('player_id', player.id)
+      .eq('status', 'in_progress')
+      .single();
+
+    if (roundError || !round) {
+      return { success: false, error: 'Round not found' };
+    }
+
+    // Get holes with shots
+    const { data: holes, error: holesError } = await supabase
+      .from('golf_holes')
+      .select(`
+        *,
+        shots:golf_shots(*)
+      `)
+      .eq('round_id', roundId)
+      .order('hole_number', { ascending: true });
+
+    if (holesError) {
+      console.error('[Golf] Error loading holes:', holesError);
+    }
+
+    return {
+      success: true,
+      data: {
+        round,
+        holes: holes || [],
+      }
+    };
+
+  } catch (error) {
+    console.error('[Golf] Unexpected error loading round:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to load round'
+    };
+  }
+}
+
+/**
+ * Delete an in-progress round
+ */
+export async function deleteInProgressRound(roundId: string): Promise<ActionResult<void>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    // Delete the round (cascades to holes and shots)
+    const { error } = await supabase
+      .from('golf_rounds')
+      .delete()
+      .eq('id', roundId)
+      .eq('player_id', player.id)
+      .eq('status', 'in_progress');
+
+    if (error) {
+      console.error('[Golf] Error deleting round:', error);
+      return { success: false, error: 'Failed to delete round' };
+    }
+
+    revalidatePath('/golf/dashboard/rounds');
+
+    return { success: true, data: undefined };
+
+  } catch (error) {
+    console.error('[Golf] Unexpected error deleting round:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete round'
     };
   }
 }

@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive, { type HoleStats } from '@/components/golf/ShotTrackingComprehensive';
-import { submitGolfRoundComprehensive } from '@/app/golf/actions/golf';
+import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound } from '@/app/golf/actions/golf';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
+import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { useRoundDraft } from '@/hooks/use-round-draft';
 
@@ -69,6 +70,8 @@ export default function NewRoundClient() {
   const [summaryData, setSummaryData] = useState<RoundSummary | null>(null);
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
   const [draftAge, setDraftAge] = useState<number | null>(null);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
 
   // Check for draft on mount
   useEffect(() => {
@@ -243,6 +246,53 @@ export default function NewRoundClient() {
       setError(err instanceof Error ? err.message : 'Failed to submit round');
       setStep('tracking');
     }
+  };
+
+  const handleSaveForLater = async () => {
+    try {
+      const partialRoundData = {
+        courseName: setupData.courseName,
+        courseCity: setupData.courseCity || undefined,
+        courseState: setupData.courseState || undefined,
+        courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
+        courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
+        teesPlayed: setupData.teesPlayed || undefined,
+        roundType: setupData.roundType,
+        roundDate: setupData.roundDate,
+        currentHole: currentHoleIndex + 1, // Next hole player will resume on
+        holesToPlay: holes.length as 9 | 18,
+        holes: completedHoleStats,
+      };
+
+      const result = await savePartialRound(partialRoundData, savedRoundId || undefined);
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      // Clear local draft since it's saved to database
+      clearDraft();
+      setShowExitModal(false);
+
+      // Redirect to rounds page
+      router.push('/golf/dashboard/rounds');
+    } catch (err) {
+      throw err; // Let modal handle error display
+    }
+  };
+
+  const handleDeleteRound = async () => {
+    if (savedRoundId) {
+      // Delete from database if it exists
+      await deleteInProgressRound(savedRoundId);
+    }
+
+    // Clear local draft
+    clearDraft();
+    setShowExitModal(false);
+
+    // Redirect to rounds page
+    router.push('/golf/dashboard/rounds');
   };
 
   // ============================================================================
@@ -486,6 +536,17 @@ export default function NewRoundClient() {
         holes={holes}
         currentHoleIndex={currentHoleIndex}
         onHoleComplete={handleHoleComplete}
+        onExit={() => setShowExitModal(true)}
+      />
+
+      {/* Save Round Modal */}
+      <SaveRoundModal
+        isOpen={showExitModal}
+        onClose={() => setShowExitModal(false)}
+        onSaveForLater={handleSaveForLater}
+        onDelete={handleDeleteRound}
+        currentHole={currentHoleIndex + 1}
+        totalHoles={holes.length}
       />
 
       {/* Round Completion Summary Modal */}

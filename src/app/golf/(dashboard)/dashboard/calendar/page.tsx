@@ -50,21 +50,26 @@ export default async function GolfCalendarPage() {
   }
 
   // Fetch events from golf_events table
-  // Include both team events (if user has a team) and personal events (team_id = null)
+  // IMPORTANT: RLS policies will automatically filter to only show team events
+  // We only need to filter by team_id explicitly here for clarity
   let eventsQuery = supabase
     .from('golf_events')
     .select('*')
     .order('start_date', { ascending: true });
 
   if (teamId) {
-    // User has a team: fetch team events OR personal events
-    eventsQuery = eventsQuery.or(`team_id.eq.${teamId},team_id.is.null`);
+    // User has a team: fetch only team events (RLS will enforce this)
+    eventsQuery = eventsQuery.eq('team_id', teamId);
   } else {
-    // User has no team: fetch only personal events
-    eventsQuery = eventsQuery.is('team_id', null);
+    // User has no team: RLS will return no events (correct behavior)
+    console.warn('User has no team_id, calendar will be empty');
   }
 
-  const { data: eventsData } = await eventsQuery;
+  const { data: eventsData, error: eventsError } = await eventsQuery;
+
+  if (eventsError) {
+    console.error('Error fetching events:', eventsError);
+  }
 
   // Map golf_events to CalendarEvent format
   // Combine date and time fields into datetime strings for proper calendar positioning

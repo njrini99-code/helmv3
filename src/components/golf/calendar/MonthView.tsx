@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import type { EventType } from '@/lib/types/calendar';
 import { getEventTypeConfig, isToday } from '@/lib/calendar/event-styles';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { PremiumEventBlock } from './PremiumEventBlock';
 
 export interface MonthViewProps {
   month: Date;
@@ -78,25 +79,30 @@ function DroppableDayCell({
       {/* Event Previews (max 3) */}
       <div className="space-y-1">
         {dayEvents.slice(0, 3).map((event) => {
-          const styles = getEventTypeConfig(event.event_type as EventType);
-
           return (
-            <button
+            <div
               key={event.id}
               onClick={(e) => {
                 e.stopPropagation();
                 onEventClick?.(event);
               }}
-              className={cn(
-                'w-full text-left px-2 py-1 rounded-[6px] border-l-[3px] text-[11px] font-medium truncate transition-all duration-200',
-                'hover:scale-[1.02] hover:shadow-sm backdrop-blur-sm',
-                styles.bgColor,
-                styles.borderColor,
-                styles.textColor
-              )}
             >
-              {event.title}
-            </button>
+              <PremiumEventBlock
+                event={{
+                  id: event.id,
+                  title: event.title,
+                  event_type: event.event_type,
+                  status: event.status || 'confirmed',
+                  start_time: event.start_time,
+                  end_time: event.end_time,
+                  location: event.location,
+                  rsvp_confirmed_count: event.rsvp_confirmed_count,
+                  rsvp_total_count: event.rsvp_total_count,
+                  is_recurring: event.is_recurring,
+                }}
+                compact={true}
+              />
+            </div>
           );
         })}
 
@@ -207,25 +213,30 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
               {/* Event Previews (max 3) */}
               <div className="space-y-1">
                 {dayEvents.slice(0, 3).map((event) => {
-                  const styles = getEventTypeConfig(event.event_type as EventType);
-
                   return (
-                    <button
+                    <div
                       key={event.id}
                       onClick={(e) => {
                         e.stopPropagation();
                         onEventClick?.(event);
                       }}
-                      className={cn(
-                        'w-full text-left px-2 py-1 rounded-[6px] border-l-[3px] text-[11px] font-medium truncate transition-all duration-200',
-                        'hover:scale-[1.02] hover:shadow-sm backdrop-blur-sm',
-                        styles.bgColor,
-                        styles.borderColor,
-                        styles.textColor
-                      )}
                     >
-                      {event.title}
-                    </button>
+                      <PremiumEventBlock
+                        event={{
+                          id: event.id,
+                          title: event.title,
+                          event_type: event.event_type,
+                          status: event.status || 'confirmed',
+                          start_time: event.start_time,
+                          end_time: event.end_time,
+                          location: event.location,
+                          rsvp_confirmed_count: event.rsvp_confirmed_count,
+                          rsvp_total_count: event.rsvp_total_count,
+                          is_recurring: event.is_recurring,
+                        }}
+                        compact={true}
+                      />
+                    </div>
                   );
                 })}
 

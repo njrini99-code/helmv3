@@ -5,6 +5,7 @@ import { X, Trash2, MapPin, Calendar, Clock, Users, AlertCircle, UserPlus } from
 import { Button } from '@/components/ui/button';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { RSVPStatusSection } from './RSVPStatusSection';
+import { PlayerRSVPCard } from './PlayerRSVPCard';
 import { ConflictWarning } from './ConflictWarning';
 import { checkScheduleConflicts } from '@/app/golf/actions/golf';
 
@@ -582,8 +583,27 @@ export function EventDetailModal({
             </>
           )}
 
-          {/* RSVP Status Section (for existing events with RSVP) */}
-          {!isCreating && event?.id && formData.requiresRsvp && (
+          {/* Player RSVP Card (for players viewing events requiring RSVP) */}
+          {!isCreating && event && formData.requiresRsvp && !isCoach && (
+            <div className="border-t border-slate-200 -mx-6 px-6 pt-4">
+              <PlayerRSVPCard
+                event={{
+                  id: event.id,
+                  title: event.title,
+                  event_type: event.event_type,
+                  status: event.status || 'confirmed',
+                  start_time: event.start_time,
+                  end_time: event.end_time,
+                  location: event.location,
+                  rsvp_confirmed_count: event.rsvp_confirmed_count,
+                  rsvp_total_count: event.rsvp_total_count,
+                }}
+              />
+            </div>
+          )}
+
+          {/* RSVP Status Section (for coaches viewing all responses) */}
+          {!isCreating && event?.id && formData.requiresRsvp && isCoach && (
             <div className="border-t border-slate-200 -mx-6 px-6 pt-4">
               <h4 className="text-sm font-semibold text-slate-900 mb-3">RSVP Status</h4>
               <RSVPStatusSection eventId={event.id} />

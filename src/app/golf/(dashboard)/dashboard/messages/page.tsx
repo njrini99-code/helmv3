@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-mes
 import { createGolfConversation } from '@/app/golf/actions/messages';
 import { GolfNewMessageModal } from '@/components/golf/messages/GolfNewMessageModal';
 import { createClient } from '@/lib/supabase/client';
+import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
 
 export default function GolfMessagesPage() {
   const { showToast } = useToast();
@@ -24,6 +25,11 @@ export default function GolfMessagesPage() {
 
   // Get messages for selected conversation
   const { messages, loading: messagesLoading, sendMessage } = useGolfMessages(selectedConversationId || '');
+
+  // Memoize grouped conversations for performance
+  const groupedConversations = useMemo(() => {
+    return groupConversationsByTime(conversations);
+  }, [conversations]);
 
   // Fetch current user and their team/role
   useEffect(() => {
@@ -44,19 +50,25 @@ export default function GolfMessagesPage() {
       
       if (coach) {
         setUserRole('coach');
+        if (!coach.team_id) {
+          console.warn('Coach has no team assigned');
+        }
         setTeamId(coach.team_id || undefined);
         return;
       }
-      
+
       // Check if user is a golf player
       const { data: player } = await supabase
         .from('golf_players')
         .select('id, team_id')
         .eq('user_id', user.id)
         .single();
-      
+
       if (player) {
         setUserRole('player');
+        if (!player.team_id) {
+          console.warn('Player has no team assigned');
+        }
         setTeamId(player.team_id || undefined);
       }
     };
@@ -164,53 +176,43 @@ export default function GolfMessagesPage() {
               </Button>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
-              {conversations.map(conv => (
-                <button
-                  key={conv.id}
-                  onClick={() => handleSelectConversation(conv.id)}
-                  className={cn(
-                    'w-full p-4 flex items-start gap-3 text-left transition-colors',
-                    selectedConversationId === conv.id
-                      ? 'bg-green-50'
-                      : 'hover:bg-slate-50'
-                  )}
-                >
-                  <Avatar
-                    name={conv.other_participant?.name || 'User'}
-                    src={conv.other_participant?.avatar}
-                    size="md"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-0.5">
-                      <span className={cn(
-                        'font-medium truncate',
-                        conv.unread_count > 0 ? 'text-slate-900' : 'text-slate-700'
-                      )}>
-                        {conv.other_participant?.name || 'Unknown User'}
-                      </span>
-                      {conv.last_message && (
-                        <span className="text-xs text-slate-400 flex-shrink-0">
-                          {formatTime(conv.last_message.sent_at)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <p className={cn(
-                        'text-sm truncate flex-1',
-                        conv.unread_count > 0 ? 'text-slate-900 font-medium' : 'text-slate-500'
-                      )}>
-                        {conv.last_message?.content || 'No messages yet'}
-                      </p>
-                      {conv.unread_count > 0 && (
-                        <span className="w-5 h-5 rounded-full bg-green-600 text-white text-xs flex items-center justify-center flex-shrink-0">
-                          {conv.unread_count > 9 ? '9+' : conv.unread_count}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              ))}
+            <div className="py-2">
+              {groupedConversations.today.length > 0 && (
+                <ConversationGroup
+                  label="Today"
+                  conversations={groupedConversations.today}
+                  selectedId={selectedConversationId}
+                  onSelect={handleSelectConversation}
+                  currentUserId={currentUserId}
+                />
+              )}
+              {groupedConversations.yesterday.length > 0 && (
+                <ConversationGroup
+                  label="Yesterday"
+                  conversations={groupedConversations.yesterday}
+                  selectedId={selectedConversationId}
+                  onSelect={handleSelectConversation}
+                  currentUserId={currentUserId}
+                />
+              )}
+              {groupedConversations.thisWeek.length > 0 && (
+                <ConversationGroup
+                  label="This Week"
+                  conversations={groupedConversations.thisWeek}
+                  selectedId={selectedConversationId}
+                  onSelect={handleSelectConversation}
+                  currentUserId={currentUserId}
+                />
+              )}
+              {groupedConversations.older.length > 0 && (
+                <ConversationGroup
+                  label="Earlier"
+                  conversations={groupedConversations.older}
+                  selectedId={selectedConversationId}
+                  onSelect={handleSelectConversation}
+                  currentUserId={currentUserId}
+                />
+              )}
             </div>
           )}
         </div>
@@ -248,7 +250,7 @@ export default function GolfMessagesPage() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4">
               {messagesLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
@@ -262,48 +264,83 @@ export default function GolfMessagesPage() {
                   <p className="text-xs text-slate-400 mt-1">Start the conversation!</p>
                 </div>
               ) : (
-                messages.map((msg, idx) => {
-                  const isOwn = msg.sender_id === currentUserId;
-                  const showAvatar = !isOwn && (idx === 0 || messages[idx - 1]?.sender_id !== msg.sender_id);
-                  
-                  return (
-                    <div
-                      key={msg.id}
-                      className={cn(
-                        'flex items-end gap-2',
-                        isOwn ? 'justify-end' : 'justify-start'
-                      )}
-                    >
-                      {!isOwn && (
-                        <div className="w-8">
-                          {showAvatar && (
-                            <Avatar
-                              name={selectedConversation.other_participant?.name || 'User'}
-                              src={selectedConversation.other_participant?.avatar}
-                              size="sm"
-                            />
-                          )}
-                        </div>
-                      )}
+                <div className="space-y-4">
+                  {messages.map((msg, idx) => {
+                    const isOwn = msg.sender_id === currentUserId;
+                    const prevMsg = messages[idx - 1];
+                    const nextMsg = messages[idx + 1];
+
+                    // Group consecutive messages from same sender
+                    const isFirstInGroup = !prevMsg || prevMsg.sender_id !== msg.sender_id;
+                    const isLastInGroup = !nextMsg || nextMsg.sender_id !== msg.sender_id;
+
+                    // Only show time on last message of group
+                    const showTime = isLastInGroup;
+
+                    return (
                       <div
+                        key={msg.id}
                         className={cn(
-                          'max-w-[70%] rounded-2xl px-4 py-2',
-                          isOwn
-                            ? 'bg-green-600 text-white rounded-br-md'
-                            : 'glass-standard text-slate-900 rounded-bl-md shadow-sm'
+                          'flex items-end gap-2',
+                          isOwn ? 'justify-end' : 'justify-start',
+                          !isLastInGroup && 'mb-0.5' // Tighter spacing within groups
                         )}
                       >
-                        <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                        <p className={cn(
-                          'text-[10px] mt-1',
-                          isOwn ? 'text-green-100' : 'text-slate-400'
+                        {/* Avatar (only for first message in group) */}
+                        {!isOwn && (
+                          <div className="w-8 shrink-0">
+                            {isFirstInGroup && (
+                              <Avatar
+                                name={selectedConversation?.other_participant?.name || 'User'}
+                                src={selectedConversation?.other_participant?.avatar}
+                                size="sm"
+                              />
+                            )}
+                          </div>
+                        )}
+
+                        {/* Message bubble */}
+                        <div className={cn(
+                          'max-w-[70%] px-4 py-2.5',
+                          isOwn
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-white border border-slate-200 text-slate-900 shadow-sm',
+                          // Dynamic border radius based on position in group
+                          isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'),
+                          isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-lg' : 'rounded-2xl rounded-bl-lg'),
+                          !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-2xl rounded-tr-lg rounded-br-md' : 'rounded-2xl rounded-tl-lg rounded-bl-md'),
+                          !isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-r-2xl rounded-l-lg' : 'rounded-l-2xl rounded-r-lg'),
                         )}>
-                          {formatTime(msg.sent_at)}
-                        </p>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                            {msg.content}
+                          </p>
+                        </div>
+
+                        {/* Time + read receipt (only on last message of group) */}
+                        {showTime && (
+                          <div className={cn(
+                            'flex items-center gap-1 pb-1',
+                            isOwn ? 'flex-row-reverse' : ''
+                          )}>
+                            <span className="text-[10px] text-slate-400">
+                              {formatTime(msg.sent_at)}
+                            </span>
+                            {isOwn && (
+                              <svg
+                                className="w-3.5 h-3.5 text-emerald-500"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                </div>
               )}
             </div>
 
@@ -344,6 +381,15 @@ export default function GolfMessagesPage() {
 function MessageInput({ onSend }: { onSend: (content: string) => Promise<boolean> }) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  }, [message]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -365,29 +411,48 @@ function MessageInput({ onSend }: { onSend: (content: string) => Promise<boolean
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 glass-standard border-t border-slate-200/60">
-      <div className="flex items-end gap-2">
+    <form onSubmit={handleSubmit} className="p-4 bg-white border-t border-slate-200/60">
+      <div className={cn(
+        'flex items-end gap-3 p-1.5 rounded-2xl',
+        'bg-slate-50 border border-slate-200',
+        'focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20',
+        'transition-all duration-200'
+      )}>
         <textarea
+          ref={textareaRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           rows={1}
-          className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500"
-          style={{ minHeight: '44px', maxHeight: '120px' }}
+          className={cn(
+            'flex-1 resize-none bg-transparent px-3 py-2 text-sm',
+            'placeholder:text-slate-400',
+            'focus:outline-none'
+          )}
+          style={{ minHeight: '40px', maxHeight: '120px' }}
         />
-        <Button
+        <button
           type="submit"
           disabled={!message.trim() || sending}
-          className="h-11 w-11 p-0 rounded-xl"
+          className={cn(
+            'h-10 w-10 rounded-xl flex items-center justify-center',
+            'transition-all duration-200',
+            message.trim() && !sending
+              ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
+              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+          )}
         >
           {sending ? (
-            <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
             <IconSend size={18} />
           )}
-        </Button>
+        </button>
       </div>
+      <p className="text-[10px] text-slate-400 mt-1.5 px-2">
+        Press Enter to send, Shift+Enter for new line
+      </p>
     </form>
   );
 }
@@ -410,4 +475,142 @@ function formatTime(dateStr: string | null): string {
   } else {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
+}
+
+// Group conversations by recency
+function groupConversationsByTime(conversations: GolfConversationWithMeta[]) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+  const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const groups = {
+    today: [] as GolfConversationWithMeta[],
+    yesterday: [] as GolfConversationWithMeta[],
+    thisWeek: [] as GolfConversationWithMeta[],
+    older: [] as GolfConversationWithMeta[],
+  };
+
+  conversations.forEach(conv => {
+    const lastMsgDate = conv.last_message?.sent_at
+      ? new Date(conv.last_message.sent_at)
+      : new Date(0);
+
+    if (lastMsgDate >= today) {
+      groups.today.push(conv);
+    } else if (lastMsgDate >= yesterday) {
+      groups.yesterday.push(conv);
+    } else if (lastMsgDate >= lastWeek) {
+      groups.thisWeek.push(conv);
+    } else {
+      groups.older.push(conv);
+    }
+  });
+
+  return groups;
+}
+
+// Conversation Group Component
+function ConversationGroup({
+  label,
+  conversations,
+  selectedId,
+  onSelect,
+  currentUserId,
+}: {
+  label: string;
+  conversations: GolfConversationWithMeta[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  currentUserId: string | null;
+}) {
+  return (
+    <div className="mb-2">
+      <h3 className="px-4 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+        {label}
+      </h3>
+      <div className="space-y-0.5 px-2">
+        {conversations.map(conv => (
+          <ConversationRow
+            key={conv.id}
+            conversation={conv}
+            isSelected={selectedId === conv.id}
+            onSelect={() => onSelect(conv.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Premium Conversation Row Component
+function ConversationRow({
+  conversation: conv,
+  isSelected,
+  onSelect,
+}: {
+  conversation: GolfConversationWithMeta;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const hasUnread = conv.unread_count > 0;
+
+  return (
+    <button
+      onClick={onSelect}
+      className={cn(
+        'w-full p-3 flex items-start gap-3 text-left rounded-xl',
+        'transition-all duration-150',
+        isSelected
+          ? 'bg-emerald-50 shadow-sm'
+          : 'hover:bg-slate-50'
+      )}
+    >
+      {/* Avatar with unread indicator */}
+      <div className="relative">
+        <Avatar
+          name={conv.other_participant?.name || 'User'}
+          src={conv.other_participant?.avatar}
+          size="md"
+        />
+        {hasUnread && (
+          <span className="absolute -top-1 -right-1 w-5 h-5
+                          bg-emerald-500 rounded-full
+                          flex items-center justify-center
+                          text-[10px] font-bold text-white
+                          ring-2 ring-white shadow-sm">
+            {conv.unread_count > 9 ? '9+' : conv.unread_count}
+          </span>
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        {/* Name + time row */}
+        <div className="flex items-center justify-between gap-2 mb-0.5">
+          <span className={cn(
+            'truncate',
+            hasUnread ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'
+          )}>
+            {conv.other_participant?.name || 'Unknown User'}
+          </span>
+          {conv.last_message && (
+            <span className={cn(
+              'text-[11px] flex-shrink-0',
+              hasUnread ? 'text-emerald-600 font-medium' : 'text-slate-400'
+            )}>
+              {formatTime(conv.last_message.sent_at)}
+            </span>
+          )}
+        </div>
+
+        {/* Preview */}
+        <p className={cn(
+          'text-sm truncate',
+          hasUnread ? 'text-slate-900' : 'text-slate-500'
+        )}>
+          {conv.last_message?.content || 'No messages yet'}
+        </p>
+      </div>
+    </button>
+  );
 }

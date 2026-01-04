@@ -174,7 +174,6 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
               name={getFullName(player.first_name, player.last_name)}
               src={player.avatar_url}
               size="xl"
-              ring
             />
             <div className="flex-1">
               <h2 className="text-xl font-semibold text-slate-900">

@@ -10,8 +10,20 @@ export interface CalendarEvent {
   event_type: string; // Accepts any event type string for flexibility across sports
   start_date: string;
   end_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
   location?: string | null;
   description?: string | null;
+  status?: string;
+  rsvp_confirmed_count?: number;
+  rsvp_maybe_count?: number;
+  rsvp_declined_count?: number;
+  rsvp_pending_count?: number;
+  rsvp_total_count?: number;
+  rsvp_lock_time?: string | null;
+  is_recurring?: boolean;
+  requires_rsvp?: boolean;
+  rsvp_deadline?: string | null;
 }
 
 export interface UseCalendarEventsOptions {

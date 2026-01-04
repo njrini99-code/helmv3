@@ -236,8 +236,8 @@ export default function CalendarDemoPage() {
                       title: 'Team Practice - Thursday',
                       event_type: 'practice',
                       status: 'confirmed',
-                      start_time: '09:00:00',
-                      end_time: '11:00:00',
+                      start_time: '2026-01-09T09:00:00',
+                      end_time: '2026-01-09T11:00:00',
                     }}
                     currentResponse={null}
                     onRespond={async (response) => console.log('RSVP:', response)}

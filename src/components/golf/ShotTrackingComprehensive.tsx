@@ -66,6 +66,7 @@ interface ShotTrackingProps {
   currentHoleIndex: number;
   onHoleComplete: (holeIndex: number, stats: HoleStats) => void;
   onSaveShot?: (shot: ShotRecord) => void;
+  onExit?: () => void;
 }
 
 // ============================================================================
@@ -76,7 +77,8 @@ export default function ShotTrackingComprehensive({
   holes,
   currentHoleIndex,
   onHoleComplete,
-  onSaveShot
+  onSaveShot,
+  onExit
 }: ShotTrackingProps) {
   const currentHole = holes[currentHoleIndex];
 
@@ -539,15 +541,24 @@ export default function ShotTrackingComprehensive({
       <div className="bg-[#1e293b] sticky top-0 z-50">
         {/* Mobile Navigation */}
         <div className="lg:hidden flex justify-between items-center px-4 py-2 border-b border-slate-600">
-          <button
-            onClick={() => {
-              const element = document.getElementById(`hole-${Math.max(1, currentHole.number - 1)}`);
-              element?.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-            }}
-            disabled={currentHoleIndex === 0}
-            className="px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity uppercase tracking-wide">
-            ← Prev
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const element = document.getElementById(`hole-${Math.max(1, currentHole.number - 1)}`);
+                element?.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+              }}
+              disabled={currentHoleIndex === 0}
+              className="px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity uppercase tracking-wide">
+              ← Prev
+            </button>
+            {onExit && (
+              <button
+                onClick={onExit}
+                className="px-3 py-1.5 text-xs font-semibold bg-rose-500 hover:bg-rose-600 text-white rounded transition-colors uppercase tracking-wide">
+                Exit
+              </button>
+            )}
+          </div>
           <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">
             Hole {currentHole.number} of 18
           </span>

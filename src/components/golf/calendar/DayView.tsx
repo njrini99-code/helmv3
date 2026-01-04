@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { EventCard } from './EventCard';
+import { PremiumEventBlock } from './PremiumEventBlock';
 import { calculateEventTop, calculateEventHeight, isToday } from '@/lib/calendar/event-styles';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
@@ -139,16 +139,21 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
                       height: `${height}px`,
                     }}
                   >
-                    <EventCard
-                      id={event.id}
-                      title={event.title}
-                      type={event.event_type}
-                      startTime={event.start_date}
-                      endTime={event.end_date || event.start_date}
-                      location={event.location || undefined}
-                      compact={height < 80}
+                    <PremiumEventBlock
+                      event={{
+                        id: event.id,
+                        title: event.title,
+                        event_type: event.event_type,
+                        status: event.status || 'confirmed',
+                        start_time: event.start_time,
+                        end_time: event.end_time,
+                        location: event.location,
+                        rsvp_confirmed_count: event.rsvp_confirmed_count,
+                        rsvp_total_count: event.rsvp_total_count,
+                        is_recurring: event.is_recurring,
+                      }}
                       onClick={() => onEventClick?.(event)}
-                      isDraggable={isDraggable}
+                      compact={height < 80}
                     />
                   </div>
                 );
