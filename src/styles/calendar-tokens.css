@@ -1,0 +1,218 @@
+/**
+ * Golf Calendar - Premium Design Tokens
+ *
+ * A refined token system for the calendar that ensures consistency
+ * and creates that "premium" feel throughout the interface.
+ */
+
+:root {
+  /* ===================================================================
+     EVENT TYPE COLORS
+     Left border accent colors for instant event recognition
+     =================================================================== */
+  --event-practice: theme(colors.emerald.500);
+  --event-match: theme(colors.amber.500);
+  --event-tournament: theme(colors.rose.500);
+  --event-meeting: theme(colors.slate.400);
+  --event-social: theme(colors.violet.500);
+  --event-other: theme(colors.slate.400);
+
+  /* ===================================================================
+     EVENT STATUS COLORS
+     Visual states that communicate without labels
+     =================================================================== */
+  --status-draft: theme(colors.slate.300);
+  --status-confirmed: theme(colors.emerald.500);
+  --status-cancelled: theme(colors.rose.500);
+  --status-completed: theme(colors.slate.400);
+
+  /* ===================================================================
+     RSVP STATUS COLORS
+     Response visualization
+     =================================================================== */
+  --rsvp-confirmed: theme(colors.emerald.500);
+  --rsvp-maybe: theme(colors.amber.500);
+  --rsvp-declined: theme(colors.rose.400);
+  --rsvp-pending: theme(colors.slate.300);
+
+  /* ===================================================================
+     ATTENDANCE COLORS
+     Check-in interface
+     =================================================================== */
+  --attendance-present: theme(colors.emerald.500);
+  --attendance-absent: theme(colors.rose.500);
+  --attendance-excused: theme(colors.amber.500);
+  --attendance-unknown: theme(colors.slate.300);
+
+  /* ===================================================================
+     CALENDAR GRID DIMENSIONS
+     Consistent spacing for calendar cells
+     =================================================================== */
+  --calendar-cell-radius: 6px;
+  --calendar-event-radius: 6px;
+  --calendar-header-height: 48px;
+  --calendar-time-column-width: 64px;
+  --calendar-cell-min-height: 100px;
+  --calendar-cell-padding: 8px;
+
+  /* ===================================================================
+     TEMPORAL DENSITY COLORS
+     Visualize event density per day
+     =================================================================== */
+  --density-0: transparent;
+  --density-1: theme(colors.emerald.500 / 5%);
+  --density-2: theme(colors.emerald.500 / 10%);
+  --density-3: theme(colors.emerald.500 / 15%);
+  --density-4: theme(colors.emerald.500 / 20%);
+
+  /* ===================================================================
+     TIME GRADIENT (Golf Course Feel)
+     Dawn to dusk gradient for day/week views
+     =================================================================== */
+  --time-gradient-dawn: rgba(255, 247, 237, 0.5);
+  --time-gradient-morning: rgba(255, 255, 255, 0);
+  --time-gradient-afternoon: rgba(255, 255, 255, 0);
+  --time-gradient-golden: rgba(255, 247, 237, 0.3);
+
+  /* ===================================================================
+     ANIMATION DURATIONS
+     Purposeful motion that confirms actions
+     =================================================================== */
+  --calendar-hover-duration: 150ms;
+  --calendar-transition-duration: 200ms;
+  --calendar-slide-duration: 300ms;
+  --calendar-view-transition: 300ms;
+
+  /* ===================================================================
+     SHADOWS
+     Premium depth without overdoing it
+     =================================================================== */
+  --shadow-event: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --shadow-event-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+
+  /* ===================================================================
+     AVAILABILITY POLL HEAT MAP
+     When2meet-style heat colors
+     =================================================================== */
+  --heat-none: theme(colors.slate.50);
+  --heat-low: theme(colors.emerald.100);
+  --heat-medium-low: theme(colors.emerald.200);
+  --heat-medium: theme(colors.emerald.300);
+  --heat-medium-high: theme(colors.emerald.400);
+  --heat-high: theme(colors.emerald.500);
+}
+
+/* ===================================================================
+   RESPONSIVE CALENDAR VIEWS
+   Mobile-first approach
+   =================================================================== */
+
+/* Mobile: Day view optimized */
+@media (max-width: 768px) {
+  :root {
+    --calendar-time-column-width: 48px;
+    --calendar-cell-min-height: 80px;
+    --calendar-cell-padding: 6px;
+  }
+}
+
+/* Tablet: Week view default */
+@media (min-width: 768px) and (max-width: 1024px) {
+  :root {
+    --calendar-time-column-width: 56px;
+    --calendar-cell-min-height: 90px;
+  }
+}
+
+/* Desktop: Month view default */
+@media (min-width: 1024px) {
+  :root {
+    --calendar-time-column-width: 64px;
+    --calendar-cell-min-height: 100px;
+  }
+}
+
+/* ===================================================================
+   REDUCED MOTION SUPPORT
+   Respect user preferences
+   =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --calendar-hover-duration: 0.01ms;
+    --calendar-transition-duration: 0.01ms;
+    --calendar-slide-duration: 0.01ms;
+    --calendar-view-transition: 0.01ms;
+  }
+
+  .calendar-view-transition,
+  .event-hover,
+  .rsvp-button,
+  .modal-animation {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* ===================================================================
+   UTILITY CLASSES
+   Pre-built patterns for common calendar elements
+   =================================================================== */
+
+.event-type-practice { border-left-color: var(--event-practice); }
+.event-type-match { border-left-color: var(--event-match); }
+.event-type-tournament { border-left-color: var(--event-tournament); }
+.event-type-meeting { border-left-color: var(--event-meeting); }
+.event-type-social { border-left-color: var(--event-social); }
+
+.status-draft {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.status-cancelled {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.status-confirmed {
+  @apply ring-1 ring-emerald-500/20;
+}
+
+/* Time gradient background for day/week views */
+.time-column-gradient {
+  background: linear-gradient(
+    180deg,
+    var(--time-gradient-dawn) 0%,
+    var(--time-gradient-morning) 20%,
+    var(--time-gradient-afternoon) 70%,
+    var(--time-gradient-golden) 100%
+  );
+}
+
+/* Event hover effect */
+.event-block {
+  transition: all var(--calendar-hover-duration) ease-out;
+  box-shadow: var(--shadow-event);
+}
+
+.event-block:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-event-hover);
+}
+
+/* Temporal density backgrounds */
+.density-0 { background-color: var(--density-0); }
+.density-1 { background-color: var(--density-1); }
+.density-2 { background-color: var(--density-2); }
+.density-3 { background-color: var(--density-3); }
+.density-4 { background-color: var(--density-4); }
+
+/* Heat map colors for availability polling */
+.heat-none { background-color: var(--heat-none); }
+.heat-low { background-color: var(--heat-low); }
+.heat-medium-low { background-color: var(--heat-medium-low); }
+.heat-medium { background-color: var(--heat-medium); }
+.heat-medium-high { background-color: var(--heat-medium-high); }
+.heat-high { background-color: var(--heat-high); }
