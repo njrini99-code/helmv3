@@ -85,12 +85,14 @@ export async function getUserBusyPeriods(
   // Team events query
   if (teamId) {
     queries.push(
-      supabase
-        .from('golf_events')
-        .select('id, title, start_date, end_date, start_time, end_time, created_by')
-        .eq('team_id', teamId)
-        .gte('start_date', dateMin)
-        .lte('start_date', dateMax)
+      Promise.resolve(
+        supabase
+          .from('golf_events')
+          .select('id, title, start_date, end_date, start_time, end_time, created_by')
+          .eq('team_id', teamId)
+          .gte('start_date', dateMin)
+          .lte('start_date', dateMax)
+      )
     );
   } else {
     queries.push(Promise.resolve({ data: [] }));
@@ -100,22 +102,26 @@ export async function getUserBusyPeriods(
   if (player) {
     // RSVP'd events
     queries.push(
-      supabase
-        .from('golf_event_attendance')
-        .select(`
-          event_id,
-          event:golf_events(id, title, start_date, end_date, start_time, end_time)
-        `)
-        .eq('player_id', player.id)
-        .eq('status', 'accepted')
+      Promise.resolve(
+        supabase
+          .from('golf_event_attendance')
+          .select(`
+            event_id,
+            event:golf_events(id, title, start_date, end_date, start_time, end_time)
+          `)
+          .eq('player_id', player.id)
+          .eq('status', 'accepted')
+      )
     );
 
     // Academic classes
     queries.push(
-      supabase
-        .from('golf_player_classes')
-        .select('id, course_name, days, start_time, end_time, semester_start, semester_end')
-        .eq('player_id', player.id)
+      Promise.resolve(
+        supabase
+          .from('golf_player_classes')
+          .select('id, course_name, days, start_time, end_time, semester_start, semester_end')
+          .eq('player_id', player.id)
+      )
     );
   } else {
     queries.push(Promise.resolve({ data: [] }));
@@ -125,12 +131,14 @@ export async function getUserBusyPeriods(
   // Coach blocked time (only if coach exists)
   if (coach) {
     queries.push(
-      supabase
-        .from('golf_coach_blocked_time')
-        .select('id, title, start_date, end_date, start_time, end_time')
-        .eq('coach_id', coach.id)
-        .gte('end_date', dateMin)
-        .lte('start_date', dateMax)
+      Promise.resolve(
+        supabase
+          .from('golf_coach_blocked_time')
+          .select('id, title, start_date, end_date, start_time, end_time')
+          .eq('coach_id', coach.id)
+          .gte('end_date', dateMin)
+          .lte('start_date', dateMax)
+      )
     );
   } else {
     queries.push(Promise.resolve({ data: [] }));

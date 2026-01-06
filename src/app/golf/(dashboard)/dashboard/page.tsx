@@ -82,7 +82,7 @@ export default function GolfDashboardPage() {
                             supabase.from('golf_players').select('id, first_name, last_name').eq('team_id', teamId)
                         ]);
 
-                        team = teamResult.data;
+                        team = teamResult.data as GolfTeam | null;
                         stats.rosterSize = rosterCountResult.count || 0;
                         stats.upcomingEvents = eventsResult.count || 0;
                         stats.activeQualifiers = qualifiersCountResult.count || 0;
@@ -221,7 +221,7 @@ export default function GolfDashboardPage() {
                             .order('round_date', { ascending: false })
                     ]);
 
-                    team = teamResult.data;
+                    team = teamResult.data as GolfTeam | null;
                     const rounds = roundsResult.data;
 
                     const playerRounds = rounds || [];

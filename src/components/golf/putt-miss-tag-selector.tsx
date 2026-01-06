@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { PuttMissTag, PUTT_MISS_TAG_CONFIG } from '@/lib/types/golf';

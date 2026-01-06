@@ -10,11 +10,12 @@ export async function GET(
     const { playerId } = await params;
     const supabase = await createClient();
     
-    const { data, error } = await supabase
+    // Use type assertion to bypass TypeScript type checking for views not in generated types
+    const { data, error } = await (supabase as any)
       .from('player_putt_tendencies')
       .select('*')
       .eq('player_id', playerId)
-      .single() as { data: any; error: any };
+      .single();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

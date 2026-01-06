@@ -22,7 +22,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: result.error.flatten() }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    // Use type assertion for putt_details table not in generated types
+    const { data, error } = await (supabase as any)
       .from('putt_details')
       .upsert({
         shot_id: result.data.shotId,

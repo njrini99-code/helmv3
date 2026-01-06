@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { IconAlertTriangle } from '@/components/icons';
+import { IconAlertCircle } from '@/components/icons';
 import { PlayerPuttTendencies, PUTT_MISS_TAG_CONFIG } from '@/lib/types/golf';
 import { cn } from '@/lib/utils';
 import { PremiumGlassCard } from '@/components/golf/dashboard';
@@ -36,7 +36,7 @@ export function PuttTendenciesCard({ data }: PuttTendenciesCardProps) {
         </div>
         {primaryIssue && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 border border-amber-200">
-            <IconAlertTriangle size={16} className="text-amber-600" />
+            <IconAlertCircle size={16} className="text-amber-600" />
             <span className="text-sm text-amber-700 font-medium">
               {primaryIssue === 'under-reading' && 'Under-reads break'}
               {primaryIssue === 'over-reading' && 'Over-reads break'}

@@ -527,14 +527,14 @@ export async function submitGolfRoundComprehensive(
         }
       }
 
-      // Insert putt details
+      // Insert putt details (using type assertion for tables not in generated types)
       if (puttDetails.length > 0) {
-        await supabase.from('putt_details').insert(puttDetails);
+        await (supabase as any).from('putt_details').insert(puttDetails);
       }
 
-      // Insert approach miss details
+      // Insert approach miss details (using type assertion for tables not in generated types)
       if (approachMissDetails.length > 0) {
-        await supabase.from('approach_miss_details').insert(approachMissDetails);
+        await (supabase as any).from('approach_miss_details').insert(approachMissDetails);
       }
     }
   }
