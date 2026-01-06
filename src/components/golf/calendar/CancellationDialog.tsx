@@ -268,7 +268,7 @@ export function CancellationDialog({
             Keep Event
           </Button>
           <Button
-            variant="destructive"
+            variant="danger"
             onClick={handleConfirm}
             disabled={loading}
             className="px-4 bg-rose-600 hover:bg-rose-700"

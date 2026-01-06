@@ -1,0 +1,70 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { FocusAreaCard } from './FocusAreaCard';
+import { EmptyState } from '@/components/ui/empty-state';
+import { getPlayerFocusAreas } from '@/app/golf/actions/insights';
+import type { PlayerFocusArea } from '@/lib/coachhelm/insight-types';
+
+interface PlayerFocusAreasProps {
+  playerId: string;
+}
+
+export function PlayerFocusAreas({ playerId }: PlayerFocusAreasProps) {
+  const [focusAreas, setFocusAreas] = useState<PlayerFocusArea[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadFocusAreas = async () => {
+      setLoading(true);
+      setError(null);
+
+      const result = await getPlayerFocusAreas(playerId);
+
+      if (result.success) {
+        setFocusAreas(result.focus_areas as PlayerFocusArea[]);
+      } else {
+        setError(result.error || 'Failed to load focus areas');
+      }
+
+      setLoading(false);
+    };
+
+    loadFocusAreas();
+  }, [playerId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-6">
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
+  }
+
+  if (focusAreas.length === 0) {
+    return (
+      <EmptyState
+        variant="compact"
+        title="No Focus Areas Yet"
+        description="Your coach will set personalized focus areas based on your performance."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {focusAreas.map((area) => (
+        <FocusAreaCard key={area.id} focusArea={area} />
+      ))}
+    </div>
+  );
+}

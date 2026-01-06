@@ -18,71 +18,60 @@ export default async function GolfCalendarPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/golf/login');
 
-  const { data: userData } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  const userRole = userData?.role;
-  const isCoach = userRole === 'coach';
-
-  let teamId: string | null = null;
-  let events: CalendarEvent[] = [];
-  let teamMembers: { id: string; first_name: string; last_name: string; avatar_url?: string }[] = [];
-
-  if (isCoach) {
-    const { data: coach } = await supabase
+  // OPTIMIZATION: Query user role, coach, and player in parallel
+  const [userRoleResult, coachResult, playerResult] = await Promise.all([
+    supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single(),
+    supabase
       .from('golf_coaches')
       .select('id, team_id')
       .eq('user_id', user.id)
-      .single();
-
-    teamId = coach?.team_id || null;
-  } else {
-    const { data: player } = await supabase
+      .maybeSingle(),
+    supabase
       .from('golf_players')
       .select('id, team_id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle(),
+  ]);
 
-    teamId = player?.team_id || null;
-  }
+  const userRole = userRoleResult.data?.role;
+  const isCoach = userRole === 'coach';
+  const teamId = coachResult.data?.team_id || playerResult.data?.team_id || null;
 
-  // Fetch events from golf_events table
-  // IMPORTANT: RLS policies will automatically filter to only show team events
-  // We only need to filter by team_id explicitly here for clarity
-  let eventsQuery = supabase
-    .from('golf_events')
-    .select('*')
-    .order('start_date', { ascending: true });
+  let events: CalendarEvent[] = [];
+  let teamMembers: { id: string; first_name: string; last_name: string; avatar_url?: string }[] = [];
 
-  if (teamId) {
-    // User has a team: fetch only team events (RLS will enforce this)
-    // CRITICAL: Filter by team_id
-    eventsQuery = eventsQuery.eq('team_id', teamId);
-  } else {
-    // User has no team: RLS will return no events (correct behavior)
-    console.warn('User has no team_id, calendar will be empty');
-  }
-
-  const { data: eventsData, error: eventsError } = await eventsQuery;
-
-  if (eventsError) {
-    console.error('Error fetching events:', eventsError);
-  }
+  // OPTIMIZATION: Fetch events, players, and coaches in parallel with optimized selects
+  const [
+    { data: eventsData },
+    { data: playersData },
+    { data: coachesData }
+  ] = teamId
+    ? await Promise.all([
+        supabase
+          .from('golf_events')
+          .select('id, team_id, title, event_type, start_date, end_date, start_time, end_time, location, description')
+          .eq('team_id', teamId)
+          .order('start_date', { ascending: true }),
+        supabase
+          .from('golf_players')
+          .select('id, first_name, last_name, avatar_url')
+          .eq('team_id', teamId)
+          .order('first_name', { ascending: true }),
+        supabase
+          .from('golf_coaches')
+          .select('id, full_name, avatar_url')
+          .eq('team_id', teamId)
+          .order('full_name', { ascending: true })
+      ])
+    : [{ data: null }, { data: null }, { data: null }];
 
   // Map golf_events to CalendarEvent format
   // Combine date and time fields into datetime strings for proper calendar positioning
   events = (eventsData || []).map(event => {
-    // Debug: Log events missing time data
-    if (!event.start_time || !event.end_time) {
-      console.warn('Event missing time data:', event.title, {
-        start_time: event.start_time,
-        end_time: event.end_time,
-        event_type: event.event_type
-      });
-    }
 
     // CRITICAL FIX: Extract just the date portion from start_date
     // Supabase returns timestamptz as full ISO string like "2026-01-21T00:00:00+00:00"
@@ -120,22 +109,8 @@ export default async function GolfCalendarPage() {
     };
   });
 
-  // Fetch team members for avatar sidebar (only if user has a team)
-  if (teamId) {
-    const { data: playersData } = await supabase
-      .from('golf_players')
-      .select('id, first_name, last_name, avatar_url')
-      .eq('team_id', teamId)
-      .order('first_name', { ascending: true });
-
-    // Also fetch coaches on this team for the sidebar
-    // Note: golf_coaches uses full_name instead of first_name/last_name
-    const { data: coachesData } = await supabase
-      .from('golf_coaches')
-      .select('id, full_name, avatar_url')
-      .eq('team_id', teamId);
-
-    // Combine players and coaches for team members display
+  // Combine players and coaches for team members display (data already fetched in parallel above)
+  if (teamId && (playersData || coachesData)) {
     teamMembers = [
       // Parse coach full_name into first/last name parts
       ...(coachesData || []).map(c => {

@@ -127,14 +127,16 @@ export function PremiumCalendarClient({
     fetchPlayerAvailability();
   }, [selectedPlayerId, currentDate, view]);
 
-  // Fetch coach blocked time (for current coach)
+  // Fetch current user's busy periods (works for both coaches and players)
+  // This shows YOUR schedule when comparing availability with a selected team member
   useEffect(() => {
-    if (!isCoach) {
+    // Only fetch if a team member is selected (comparing availability)
+    if (!selectedPlayerId) {
       setCoachBusyPeriods([]);
       return;
     }
 
-    const fetchCoachAvailability = async () => {
+    const fetchCurrentUserAvailability = async () => {
       // Calculate date range based on current view
       let startDate: Date;
       let endDate: Date;
@@ -150,34 +152,27 @@ export function PremiumCalendarClient({
         endDate = endOfMonth(currentDate);
       }
 
-      // Import and use the action
-      const { getCoachBlockedTime } = await import('@/app/golf/actions/golf');
-      const result = await getCoachBlockedTime(
+      // Import and use the action - this gets YOUR busy periods (events + classes)
+      const { getCurrentUserBusyPeriods } = await import('@/app/golf/actions/golf');
+      const result = await getCurrentUserBusyPeriods(
         format(startDate, 'yyyy-MM-dd'),
         format(endDate, 'yyyy-MM-dd')
       );
 
       if (result.success && result.data) {
-        // Convert blocked times to busy period format
-        const periods = result.data.map((blocked: any) => {
-          const startDateTime = new Date(`${blocked.start_date}T${blocked.start_time || '00:00:00'}`);
-          const endDateTime = new Date(`${blocked.end_date || blocked.start_date}T${blocked.end_time || '23:59:59'}`);
-
-          return {
-            start: startDateTime,
-            end: endDateTime,
-            type: 'blocked',
-            title: blocked.title,
-            ownerId: null,
-            ownerType: 'coach',
-          };
-        });
+        // Convert ISO strings to Date objects
+        const periods = result.data.map((p: any) => ({
+          ...p,
+          start: new Date(p.start),
+          end: new Date(p.end),
+          ownerType: isCoach ? 'coach' : 'player',
+        }));
         setCoachBusyPeriods(periods);
       }
     };
 
-    fetchCoachAvailability();
-  }, [currentDate, view, isCoach]);
+    fetchCurrentUserAvailability();
+  }, [currentDate, view, selectedPlayerId, isCoach]);
 
   // Configure drag sensors - require 8px movement before drag starts
   const sensors = useSensors(
@@ -451,6 +446,8 @@ export function PremiumCalendarClient({
                     events={filteredEvents}
                     onEventClick={handleEventClick}
                     isDraggable={true}
+                    playerBusyPeriods={selectedPlayer ? playerBusyPeriods : []}
+                    selectedPlayerName={selectedPlayer ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}` : undefined}
                   />
                 )}
 

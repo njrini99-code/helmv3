@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -16,7 +17,8 @@ import {
   IconMail,
   IconMapPin,
   IconShield,
-  IconPalette
+  IconPalette,
+  IconSparkles
 } from '@/components/icons';
 import { PersonalInfoModal } from '@/components/golf/settings/PersonalInfoModal';
 import { EmailModal } from '@/components/golf/settings/EmailModal';
@@ -27,8 +29,10 @@ import { LocationModal } from '@/components/golf/settings/LocationModal';
 import { TeamSettingsModal } from '@/components/golf/settings/TeamSettingsModal';
 import { InviteSettingsModal } from '@/components/golf/settings/InviteSettingsModal';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
+import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
 
 interface UserProfile {
+  userId: string;
   name: string;
   email: string;
   avatarUrl?: string | null;
@@ -90,6 +94,7 @@ export default function GolfSettingsPage() {
       }
 
       setProfile({
+        userId: user.id,
         name: coach.full_name || 'Coach',
         email: user.email || '',
         avatarUrl: coach.avatar_url,
@@ -133,6 +138,7 @@ export default function GolfSettingsPage() {
       }
 
       setProfile({
+        userId: user.id,
         name: `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Player',
         email: user.email || '',
         avatarUrl: player.avatar_url,
@@ -154,8 +160,12 @@ export default function GolfSettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <div className="relative">
+          <div className="h-8 w-8 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+          <div className="absolute inset-0 h-8 w-8 border-2 border-transparent border-t-primary-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }} />
+        </div>
+        <p className="text-sm text-slate-500 font-medium">Loading settings...</p>
       </div>
     );
   }
@@ -249,10 +259,30 @@ export default function GolfSettingsPage() {
               label="Location"
               description="Default course and location settings"
               onClick={() => setLocationOpen(true)}
-              isLast
+              isLast={profile?.role !== 'coach'}
             />
+            {profile?.role === 'coach' && (
+              <SettingsRow
+                icon={<IconSparkles size={18} />}
+                label="Coaching Philosophy"
+                description="Configure CoachHelm AI insights and priorities"
+                href="/golf/dashboard/settings/coaching-intelligence"
+                isLast
+              />
+            )}
           </div>
         </div>
+
+        {/* CoachHelm AI Section */}
+        {profile && (
+          <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '125ms', opacity: 0 }}>
+            <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">AI Features</h3>
+            <div className="relative glass-standard rounded-2xl overflow-hidden p-4">
+              <ShineEffect />
+              <CoachHelmToggle userId={profile.userId} />
+            </div>
+          </div>
+        )}
 
         {/* Team Section */}
         <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '150ms', opacity: 0 }}>
@@ -382,22 +412,18 @@ function SettingsRow({
   label,
   description,
   onClick,
+  href,
   isLast = false
 }: {
   icon: React.ReactNode;
   label: string;
   description?: string;
   onClick?: () => void;
+  href?: string;
   isLast?: boolean;
 }) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'w-full flex items-center gap-4 p-4 text-left hover:bg-slate-50 transition-colors',
-        !isLast && 'border-b border-slate-100'
-      )}
-    >
+  const content = (
+    <>
       <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-600">
         {icon}
       </div>
@@ -408,6 +434,25 @@ function SettingsRow({
         )}
       </div>
       <IconChevronRight size={18} className="text-slate-300 flex-shrink-0" />
+    </>
+  );
+
+  const className = cn(
+    'w-full flex items-center gap-4 p-4 text-left hover:bg-slate-50 transition-colors',
+    !isLast && 'border-b border-slate-100'
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button onClick={onClick} className={className}>
+      {content}
     </button>
   );
 }

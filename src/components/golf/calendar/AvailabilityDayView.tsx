@@ -34,8 +34,8 @@ const EVENT_COLORS = {
   // Team events (coach-created)
   practice: { bg: 'bg-emerald-500/20', border: 'border-emerald-500', text: 'text-emerald-700' },
   tournament: { bg: 'bg-amber-500/20', border: 'border-amber-500', text: 'text-amber-700' },
-  qualifier: { bg: 'bg-blue-500/20', border: 'border-blue-500', text: 'text-blue-700' },
-  meeting: { bg: 'bg-purple-500/20', border: 'border-purple-500', text: 'text-purple-700' },
+  qualifier: { bg: 'bg-green-500/20', border: 'border-green-500', text: 'text-green-700' },
+  meeting: { bg: 'bg-slate-500/20', border: 'border-slate-500', text: 'text-slate-700' },
   travel: { bg: 'bg-slate-500/20', border: 'border-slate-500', text: 'text-slate-700' },
   other: { bg: 'bg-gray-500/20', border: 'border-gray-500', text: 'text-gray-700' },
 
@@ -49,7 +49,7 @@ const EVENT_COLORS = {
     text: 'text-rose-600',
     pattern: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(244, 63, 94, 0.05) 10px, rgba(244, 63, 94, 0.05) 20px)',
   },
-  playerEvent: { bg: 'bg-cyan-500/20', border: 'border-cyan-500', text: 'text-cyan-700' },
+  playerEvent: { bg: 'bg-green-500/20', border: 'border-green-500', text: 'text-green-700' },
 
   // Availability states
   free: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
@@ -160,21 +160,21 @@ export function AvailabilityDayView({
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-emerald-500"></div>
-              <span className="text-slate-600">Coach Event</span>
+              <span className="text-slate-600">Your Event</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-orange-500"></div>
-              <span className="text-slate-600">Coach Blocked</span>
+              <span className="text-slate-600">Your Class</span>
             </div>
             {selectedPlayer && (
               <>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded bg-rose-400" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(244, 63, 94, 0.2) 2px, rgba(244, 63, 94, 0.2) 4px)' }}></div>
-                  <span className="text-slate-600">Player Class</span>
+                  <span className="text-slate-600">{selectedPlayer.first_name}&apos;s Class</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-cyan-500"></div>
-                  <span className="text-slate-600">Player Event</span>
+                  <div className="w-3 h-3 rounded bg-green-500"></div>
+                  <span className="text-slate-600">{selectedPlayer.first_name}&apos;s Event</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded bg-green-100 border border-green-300"></div>
@@ -231,16 +231,19 @@ export function AvailabilityDayView({
                   </div>
                 )}
 
-                {/* Coach busy periods */}
+                {/* Your busy periods (current user) */}
                 {busyPeriods.coach.map((period, index) => {
+                  const isClass = period.type === 'class';
                   const isBlocked = period.type === 'blocked';
                   return (
                     <div
-                      key={`coach-${index}`}
+                      key={`you-${index}`}
                       className={`mb-2 p-3 rounded-lg border-l-3 backdrop-blur-sm ${
-                        isBlocked
+                        isClass
                           ? 'bg-orange-500/10 border-orange-400'
-                          : 'bg-emerald-500/10 border-emerald-500'
+                          : isBlocked
+                            ? 'bg-orange-500/10 border-orange-400'
+                            : 'bg-emerald-500/10 border-emerald-500'
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -248,16 +251,16 @@ export function AvailabilityDayView({
                           <div className="flex items-center gap-2">
                             <span
                               className={`px-2 py-0.5 text-xs font-medium rounded ${
-                                isBlocked
+                                isClass || isBlocked
                                   ? 'bg-orange-500 text-white'
                                   : 'bg-emerald-600 text-white'
                               }`}
                             >
-                              {isBlocked ? 'Blocked' : 'Coach'}
+                              {isClass ? 'Your Class' : isBlocked ? 'Blocked' : 'You'}
                             </span>
                             <span
                               className={`text-sm font-medium ${
-                                isBlocked ? 'text-orange-900' : 'text-emerald-900'
+                                isClass || isBlocked ? 'text-orange-900' : 'text-emerald-900'
                               }`}
                             >
                               {period.title || 'Busy'}
@@ -279,7 +282,7 @@ export function AvailabilityDayView({
                       className={`mb-2 p-3 rounded-lg border-l-3 backdrop-blur-sm ${
                         isClass
                           ? 'bg-rose-500/5 border-rose-400'
-                          : 'bg-cyan-500/10 border-cyan-500'
+                          : 'bg-green-500/10 border-green-500'
                       }`}
                       style={isClass ? { backgroundImage: EVENT_COLORS.class.pattern } : undefined}
                     >
@@ -288,12 +291,12 @@ export function AvailabilityDayView({
                           <div className="flex items-center gap-2">
                             <span
                               className={`px-2 py-0.5 text-xs font-medium rounded ${
-                                isClass ? 'bg-rose-500 text-white' : 'bg-cyan-600 text-white'
+                                isClass ? 'bg-rose-500 text-white' : 'bg-green-600 text-white'
                               }`}
                             >
                               {isClass ? 'Class' : 'Player Event'}
                             </span>
-                            <span className={`text-sm font-medium ${isClass ? 'text-rose-900' : 'text-cyan-900'}`}>
+                            <span className={`text-sm font-medium ${isClass ? 'text-rose-900' : 'text-green-900'}`}>
                               {period.title || 'Busy'}
                             </span>
                           </div>

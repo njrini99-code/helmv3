@@ -1,7 +1,5 @@
 'use server';
 
-//@ts-nocheck
-
 /**
  * Server Actions for Availability Locking & Conflict Detection
  *
@@ -52,23 +50,30 @@ export async function checkEventConflicts(
         p_event_id: eventId || null,
         p_team_id: teamId,
         p_start_date: startDate,
-        p_end_date: endDate,
-        p_start_time: startTime,
-        p_end_time: endTime,
+        p_end_date: endDate || '',
+        p_start_time: startTime || '',
+        p_end_time: endTime || '',
         p_ignore_conflicts: false,
-      });
+      } as any);
 
     if (error) {
-      console.error('Error checking conflicts:', error);
       return { success: false, error: error.message };
     }
 
+    // Map database response to our interface
+    const mappedConflicts: EventConflict[] = (conflicts || []).map((c: any) => ({
+      conflictType: c.conflict_type,
+      conflictEventId: c.conflict_event_id,
+      conflictEventTitle: c.conflict_event_title,
+      conflictStartDate: c.conflict_start_date,
+      conflictEndDate: c.conflict_end_date,
+    }));
+
     return {
       success: true,
-      data: conflicts || [],
+      data: mappedConflicts,
     };
   } catch (error) {
-    console.error('Error checking event conflicts:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to check conflicts',
@@ -163,7 +168,6 @@ export async function createEventWithConflictCheck(eventData: {
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
-    console.error('Error creating event:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create event',
@@ -223,7 +227,6 @@ export async function createAvailabilityBlock(
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true, data: { blockId: block.id } };
   } catch (error) {
-    console.error('Error creating availability block:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create availability block',
@@ -255,7 +258,6 @@ export async function deleteAvailabilityBlock(
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error deleting availability block:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to delete availability block',
@@ -281,7 +283,6 @@ export async function getPlayerAvailabilityBlocks(
 
     return { success: true, data: blocks || [] };
   } catch (error) {
-    console.error('Error getting availability blocks:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get availability blocks',
@@ -307,10 +308,10 @@ export async function checkPlayerAvailability(
       .rpc('check_player_availability', {
         p_player_id: playerId,
         p_start_date: startDate,
-        p_end_date: endDate,
-        p_start_time: startTime,
-        p_end_time: endTime,
-      });
+        p_end_date: endDate || '',
+        p_start_time: startTime || '',
+        p_end_time: endTime || '',
+      } as any);
 
     if (error) {
       return { success: false, error: error.message };
@@ -318,7 +319,6 @@ export async function checkPlayerAvailability(
 
     return { success: true, data: blocks || [] };
   } catch (error) {
-    console.error('Error checking player availability:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to check player availability',

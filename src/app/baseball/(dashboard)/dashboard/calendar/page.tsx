@@ -72,6 +72,8 @@ export default async function BaseballCalendarPage() {
       event_type: event.event_type || 'other',
       start_date: event.start_time,
       end_date: event.end_time || event.start_time,
+      start_time: event.start_time,
+      end_time: event.end_time || event.start_time,
       location: event.location_venue || undefined,
       description: event.description || undefined,
     }));

@@ -43,16 +43,35 @@ export function RecentActivityFeed({
 
     try {
       if (teamId) {
-        // Fetch recent rounds for team
-        const { data: rounds } = await supabase
-          .from('golf_rounds')
-          .select(`
-            id, round_date, course_name, total_score, total_to_par,
-            player:golf_players(id, first_name, last_name, team_id)
-          `)
-          .eq('player.team_id', teamId)
-          .order('created_at', { ascending: false })
-          .limit(5);
+        // Fetch all data in parallel (performance optimization)
+        const [
+          { data: rounds },
+          { data: announcements },
+          { data: events }
+        ] = await Promise.all([
+          supabase
+            .from('golf_rounds')
+            .select(`
+              id, round_date, course_name, total_score, total_to_par,
+              player:golf_players(id, first_name, last_name, team_id)
+            `)
+            .eq('player.team_id', teamId)
+            .order('created_at', { ascending: false })
+            .limit(5),
+          supabase
+            .from('golf_announcements')
+            .select('id, title, created_at')
+            .eq('team_id', teamId)
+            .order('created_at', { ascending: false })
+            .limit(3),
+          supabase
+            .from('golf_events')
+            .select('id, title, start_date, event_type')
+            .eq('team_id', teamId)
+            .gte('start_date', new Date().toISOString().split('T')[0])
+            .order('start_date', { ascending: true })
+            .limit(3)
+        ]);
 
         if (rounds) {
           for (const round of rounds) {
@@ -70,14 +89,6 @@ export function RecentActivityFeed({
           }
         }
 
-        // Fetch recent announcements
-        const { data: announcements } = await supabase
-          .from('golf_announcements')
-          .select('id, title, created_at')
-          .eq('team_id', teamId)
-          .order('created_at', { ascending: false })
-          .limit(3);
-
         if (announcements) {
           for (const ann of announcements) {
             items.push({
@@ -89,15 +100,6 @@ export function RecentActivityFeed({
             });
           }
         }
-
-        // Fetch upcoming events
-        const { data: events } = await supabase
-          .from('golf_events')
-          .select('id, title, start_date, event_type')
-          .eq('team_id', teamId)
-          .gte('start_date', new Date().toISOString().split('T')[0])
-          .order('start_date', { ascending: true })
-          .limit(3);
 
         if (events) {
           for (const event of events) {

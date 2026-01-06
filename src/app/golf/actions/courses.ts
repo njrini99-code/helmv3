@@ -20,7 +20,6 @@ export async function getSavedCourses(): Promise<GolfCourse[]> {
     .order('name');
 
   if (error) {
-    console.error('Error fetching courses:', error);
     return [];
   }
 

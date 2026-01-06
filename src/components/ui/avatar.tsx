@@ -9,6 +9,7 @@ interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   status?: 'online' | 'offline' | 'away' | 'busy';
   showStatusRing?: boolean; // New: show status as ring instead of dot
+  ring?: boolean; // Alias for showStatusRing
 }
 
 const sizes = {
@@ -71,15 +72,17 @@ export function Avatar({
   size = 'md',
   status,
   showStatusRing = false,
+  ring = false,
   ...props
 }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
   const showInitials = !src || imgError;
   const sizeConfig = sizes[size];
   const gradient = getGradientForName(name);
+  const shouldShowRing = showStatusRing || ring;
 
   // If showStatusRing is true, wrap avatar in a gradient ring
-  if (showStatusRing && status) {
+  if (shouldShowRing && status) {
     return (
       <div className="relative inline-block flex-shrink-0">
         {/* Gradient ring container */}

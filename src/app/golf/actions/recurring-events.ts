@@ -124,7 +124,6 @@ export async function createRecurringEvent(
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
-    console.error('Error creating recurring event:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create recurring event',
@@ -286,7 +285,6 @@ export async function editRecurringEvent(
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error editing recurring event:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to edit recurring event',
@@ -400,7 +398,6 @@ export async function deleteRecurringEvent(
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error deleting recurring event:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to delete recurring event',
@@ -473,9 +470,9 @@ export async function getExpandedEvents(
         name: exc.name,
         startDate: parseISO(exc.start_date),
         endDate: parseISO(exc.end_date),
-        excludePractices: exc.exclude_practices,
-        excludeMatches: exc.exclude_matches,
-        excludeAllEvents: exc.exclude_all_events,
+        excludePractices: exc.exclude_practices ?? false,
+        excludeMatches: exc.exclude_matches ?? false,
+        excludeAllEvents: exc.exclude_all_events ?? false,
       }));
     }
 
@@ -514,7 +511,6 @@ export async function getExpandedEvents(
 
     return { success: true, data: allExpandedEvents };
   } catch (error) {
-    console.error('Error getting expanded events:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get expanded events',
@@ -553,6 +549,11 @@ export async function createAcademicExclusion(input: {
       return { success: false, error: 'Coach not found' };
     }
 
+    const teamId = input.teamId || coach.team_id;
+    if (!teamId) {
+      return { success: false, error: 'Team ID is required' };
+    }
+
     const { data: exclusion, error: insertError } = await supabase
       .from('golf_academic_exclusions')
       .insert({
@@ -562,9 +563,9 @@ export async function createAcademicExclusion(input: {
         exclude_practices: input.excludePractices,
         exclude_matches: input.excludeMatches,
         exclude_all_events: input.excludeAllEvents,
-        team_id: input.teamId || coach.team_id,
+        team_id: teamId,
         created_by: coach.id,
-      })
+      } as any)
       .select('id')
       .single();
 
@@ -575,7 +576,6 @@ export async function createAcademicExclusion(input: {
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true, data: { id: exclusion.id } };
   } catch (error) {
-    console.error('Error creating academic exclusion:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create academic exclusion',
@@ -604,7 +604,6 @@ export async function deleteAcademicExclusion(id: string): Promise<ActionResult>
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error deleting academic exclusion:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to delete academic exclusion',

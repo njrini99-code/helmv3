@@ -26,17 +26,12 @@ interface ClassFormData {
  * Creates one event per class occurrence (for each day the class meets)
  */
 export async function syncClassToCalendar(classData: ClassFormData, classId: string, playerId: string, teamId: string) {
-  console.log('[CalendarSync] Starting sync for:', classData.course_code, 'teamId:', teamId);
-
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    console.error('[CalendarSync] No user found');
     throw new Error('Unauthorized');
   }
-
-  console.log('[CalendarSync] User ID:', user.id);
 
   // Verify user is a golf player
   const { data: player } = await supabase
@@ -45,33 +40,20 @@ export async function syncClassToCalendar(classData: ClassFormData, classId: str
     .eq('user_id', user.id)
     .single();
 
-  console.log('[CalendarSync] Player data:', player);
-
   if (!player || player.id !== playerId) {
-    console.error('[CalendarSync] Player mismatch or not found');
     throw new Error('Unauthorized: player mismatch');
   }
 
   if (!teamId) {
-    console.error('[CalendarSync] No team ID provided');
     throw new Error('Player must be on a team to sync calendar');
   }
 
-  console.log('[CalendarSync] Player can create calendar events for team:', teamId);
-
   // Parse semester to determine start and end dates
-  // Use custom start date if provided, otherwise parse from semester string
-  console.log('[CalendarSync] Parsing semester:', classData.semester);
-  console.log('[CalendarSync] Custom start date:', classData.semesterStartDate);
-
   const semesterDates = parseSemesterDates(classData.semester, classData.semesterStartDate);
 
   if (!semesterDates) {
-    console.warn(`[CalendarSync] Unable to parse semester dates for: ${classData.semester}`);
     return { success: true, skipped: true };
   }
-
-  console.log('[CalendarSync] Semester dates:', semesterDates);
 
   // Delete existing calendar events for this class (if updating)
   await supabase.from('golf_events').delete().eq('class_id', classId);
@@ -103,21 +85,14 @@ export async function syncClassToCalendar(classData: ClassFormData, classId: str
   });
 
   if (events.length === 0) {
-    console.log('[CalendarSync] No events to create (no days specified)');
     return { success: true, eventsCreated: 0 };
   }
-
-  console.log('[CalendarSync] Creating', events.length, 'calendar events');
-  console.log('[CalendarSync] Sample event:', events[0]);
 
   const { error } = await supabase.from('golf_events').insert(events);
 
   if (error) {
-    console.error('[CalendarSync] Error inserting events:', error);
     throw error;
   }
-
-  console.log('[CalendarSync] ✅ Successfully created', events.length, 'events');
 
   revalidatePath('/golf/dashboard/calendar');
   return { success: true, eventsCreated: events.length };

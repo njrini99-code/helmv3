@@ -473,20 +473,31 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string | null
+          creator_id: string | null
           id: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          creator_id?: string | null
           id?: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          creator_id?: string | null
           id?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_creator_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       demo_requests: {
         Row: {
@@ -1289,6 +1300,116 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_coach_philosophy: {
+        Row: {
+          alert_bubble_player: boolean
+          alert_closing_holes: boolean
+          alert_par_3_issues: boolean
+          alert_plateau: boolean
+          alert_recurring_weakness: boolean
+          alert_scoring_decline: boolean
+          alert_sensitivity: string
+          alert_stat_regression: boolean
+          alert_streaks: boolean
+          alert_surge_player: boolean
+          alert_tournament_pressure: boolean
+          bubble_zone_range: number
+          coach_id: string
+          created_at: string | null
+          decline_threshold: number
+          id: string
+          insight_verbosity: string
+          pressure_gap_threshold: number
+          priority_ball_striking: number
+          priority_course_management: number
+          priority_mental_game: number
+          priority_putting: number
+          priority_short_game: number
+          show_advanced_stats: boolean
+          show_strokes_gained: boolean
+          updated_at: string | null
+          weight_historical: number
+          weight_qualifying: number
+          weight_recent_form: number
+          weight_subjective: number
+          weight_tournament: number
+        }
+        Insert: {
+          alert_bubble_player?: boolean
+          alert_closing_holes?: boolean
+          alert_par_3_issues?: boolean
+          alert_plateau?: boolean
+          alert_recurring_weakness?: boolean
+          alert_scoring_decline?: boolean
+          alert_sensitivity?: string
+          alert_stat_regression?: boolean
+          alert_streaks?: boolean
+          alert_surge_player?: boolean
+          alert_tournament_pressure?: boolean
+          bubble_zone_range?: number
+          coach_id: string
+          created_at?: string | null
+          decline_threshold?: number
+          id?: string
+          insight_verbosity?: string
+          pressure_gap_threshold?: number
+          priority_ball_striking?: number
+          priority_course_management?: number
+          priority_mental_game?: number
+          priority_putting?: number
+          priority_short_game?: number
+          show_advanced_stats?: boolean
+          show_strokes_gained?: boolean
+          updated_at?: string | null
+          weight_historical?: number
+          weight_qualifying?: number
+          weight_recent_form?: number
+          weight_subjective?: number
+          weight_tournament?: number
+        }
+        Update: {
+          alert_bubble_player?: boolean
+          alert_closing_holes?: boolean
+          alert_par_3_issues?: boolean
+          alert_plateau?: boolean
+          alert_recurring_weakness?: boolean
+          alert_scoring_decline?: boolean
+          alert_sensitivity?: string
+          alert_stat_regression?: boolean
+          alert_streaks?: boolean
+          alert_surge_player?: boolean
+          alert_tournament_pressure?: boolean
+          bubble_zone_range?: number
+          coach_id?: string
+          created_at?: string | null
+          decline_threshold?: number
+          id?: string
+          insight_verbosity?: string
+          pressure_gap_threshold?: number
+          priority_ball_striking?: number
+          priority_course_management?: number
+          priority_mental_game?: number
+          priority_putting?: number
+          priority_short_game?: number
+          show_advanced_stats?: boolean
+          show_strokes_gained?: boolean
+          updated_at?: string | null
+          weight_historical?: number
+          weight_qualifying?: number
+          weight_recent_form?: number
+          weight_subjective?: number
+          weight_tournament?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coach_philosophy_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: true
+            referencedRelation: "golf_coaches"
             referencedColumns: ["id"]
           },
         ]
@@ -3015,6 +3136,7 @@ export type Database = {
           course_slope: number | null
           course_state: string | null
           created_at: string | null
+          current_hole: number | null
           double_bogeys_plus: number | null
           driving_accuracy: number | null
           driving_distance_avg: number | null
@@ -3023,6 +3145,7 @@ export type Database = {
           fairways_total: number | null
           greens_in_regulation: number | null
           greens_total: number | null
+          holes_to_play: number | null
           id: string
           is_verified: boolean | null
           longest_drive: number | null
@@ -3039,6 +3162,7 @@ export type Database = {
           scrambles_made: number | null
           scrambling_attempts: number | null
           starting_hole: number | null
+          status: Database["public"]["Enums"]["golf_round_status"]
           tees_played: string | null
           three_putts: number | null
           total_putts: number | null
@@ -3055,6 +3179,7 @@ export type Database = {
           course_slope?: number | null
           course_state?: string | null
           created_at?: string | null
+          current_hole?: number | null
           double_bogeys_plus?: number | null
           driving_accuracy?: number | null
           driving_distance_avg?: number | null
@@ -3063,6 +3188,7 @@ export type Database = {
           fairways_total?: number | null
           greens_in_regulation?: number | null
           greens_total?: number | null
+          holes_to_play?: number | null
           id?: string
           is_verified?: boolean | null
           longest_drive?: number | null
@@ -3079,6 +3205,7 @@ export type Database = {
           scrambles_made?: number | null
           scrambling_attempts?: number | null
           starting_hole?: number | null
+          status?: Database["public"]["Enums"]["golf_round_status"]
           tees_played?: string | null
           three_putts?: number | null
           total_putts?: number | null
@@ -3095,6 +3222,7 @@ export type Database = {
           course_slope?: number | null
           course_state?: string | null
           created_at?: string | null
+          current_hole?: number | null
           double_bogeys_plus?: number | null
           driving_accuracy?: number | null
           driving_distance_avg?: number | null
@@ -3103,6 +3231,7 @@ export type Database = {
           fairways_total?: number | null
           greens_in_regulation?: number | null
           greens_total?: number | null
+          holes_to_play?: number | null
           id?: string
           is_verified?: boolean | null
           longest_drive?: number | null
@@ -3119,6 +3248,7 @@ export type Database = {
           scrambles_made?: number | null
           scrambling_attempts?: number | null
           starting_hole?: number | null
+          status?: Database["public"]["Enums"]["golf_round_status"]
           tees_played?: string | null
           three_putts?: number | null
           total_putts?: number | null
@@ -4819,10 +4949,16 @@ export type Database = {
         }[]
       }
       cleanup_old_login_attempts: { Args: never; Returns: undefined }
-      create_conversation_with_participants: {
-        Args: { participant_user_ids: string[]; title?: string }
-        Returns: string
-      }
+      create_conversation_with_participants:
+        | {
+            Args: { p_creator_id: string; p_participant_user_ids: string[] }
+            Returns: string
+          }
+        | {
+            Args: { p_participant_user_ids: string[]; p_title?: string }
+            Returns: string
+          }
+        | { Args: { participant_user_ids: string[] }; Returns: string }
       detect_event_conflicts: {
         Args: {
           p_end_date: string
@@ -5002,6 +5138,10 @@ export type Database = {
           }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      user_is_in_conversation: {
+        Args: { conv_id: string; user_id_to_check: string }
+        Returns: boolean
+      }
     }
     Enums: {
       coach_type: "college" | "high_school" | "juco" | "showcase"
@@ -5031,6 +5171,7 @@ export type Database = {
         | "fifth_year"
         | "graduate"
       golf_qualifier_status: "upcoming" | "in_progress" | "completed"
+      golf_round_status: "in_progress" | "completed" | "abandoned"
       golf_round_type: "tournament" | "qualifier" | "practice" | "casual"
       golf_task_status: "pending" | "completed" | "overdue"
       golf_transportation_type: "bus" | "van" | "fly" | "carpool"
@@ -5225,6 +5366,7 @@ export const Constants = {
         "graduate",
       ],
       golf_qualifier_status: ["upcoming", "in_progress", "completed"],
+      golf_round_status: ["in_progress", "completed", "abandoned"],
       golf_round_type: ["tournament", "qualifier", "practice", "casual"],
       golf_task_status: ["pending", "completed", "overdue"],
       golf_transportation_type: ["bus", "van", "fly", "carpool"],

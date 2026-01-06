@@ -1,7 +1,5 @@
 'use server';
 
-//@ts-nocheck
-
 /**
  * Server Actions for Event Lifecycle Management
  *
@@ -69,7 +67,6 @@ export async function publishEvent(eventId: string): Promise<ActionResult> {
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error publishing event:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to publish event',
@@ -96,7 +93,7 @@ export async function cancelEvent(
 
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, first_name, last_name')
+      .select('id, full_name')
       .eq('user_id', user.id)
       .single();
 
@@ -160,7 +157,6 @@ export async function cancelEvent(
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error cancelling event:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to cancel event',
@@ -212,7 +208,6 @@ export async function reinstateEvent(eventId: string): Promise<ActionResult> {
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error reinstating event:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to reinstate event',
@@ -241,8 +236,7 @@ export async function getEventStatusHistory(
       .select(`
         *,
         coach:changed_by (
-          first_name,
-          last_name
+          full_name
         )
       `)
       .eq('event_id', eventId)
@@ -254,7 +248,6 @@ export async function getEventStatusHistory(
 
     return { success: true, data: history || [] };
   } catch (error) {
-    console.error('Error fetching status history:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch status history',
@@ -321,7 +314,6 @@ export async function createDraftEvent(eventData: {
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
-    console.error('Error creating draft event:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create draft event',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Trash2, MapPin, Calendar, Clock, Users, AlertCircle, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -74,8 +74,8 @@ interface EventDetailModalProps {
 const eventTypeColors: Record<GolfEventType, { bg: string; text: string; border: string }> = {
   practice: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   tournament: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
-  qualifier: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
-  meeting: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+  qualifier: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
+  meeting: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' },
   travel: { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200' },
   other: { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' },
 };
@@ -112,6 +112,30 @@ export function EventDetailModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [conflicts, setConflicts] = useState<ConflictData | null>(null);
   const [checkingConflicts, setCheckingConflicts] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Handle keyboard escape
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+    }
+  }, [onClose]);
+
+  // Focus management and escape key
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Focus the close button when modal opens
+      setTimeout(() => closeButtonRef.current?.focus(), 0);
+      // Prevent body scrolling
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, handleKeyDown]);
 
   // Reset form when modal opens/closes or event changes
   useEffect(() => {
@@ -176,7 +200,8 @@ export function EventDetailModal({
   // Check for conflicts when attendees or event time changes
   useEffect(() => {
     async function checkConflicts() {
-      if (!formData.requiresRsvp || formData.attendeeIds.length === 0 || !formData.startDate) {
+      // Check conflicts when attendees are selected (regardless of RSVP toggle)
+      if (formData.attendeeIds.length === 0 || !formData.startDate) {
         setConflicts(null);
         return;
       }
@@ -215,7 +240,7 @@ export function EventDetailModal({
 
     const debounce = setTimeout(checkConflicts, 500);
     return () => clearTimeout(debounce);
-  }, [formData.attendeeIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.requiresRsvp, formData.allDay]);
+  }, [formData.attendeeIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -271,41 +296,59 @@ export function EventDetailModal({
 
   if (!isOpen) return null;
 
-  const canEdit = isCoach;
-  const isViewMode = !isCreating && !canEdit;
+  // Both coaches and players can create events
+  // For editing, coaches can edit any event, players can only view
+  const canEdit = isCreating || isCoach;
+  const isViewMode = !isCreating && !isCoach;
   const eventTypeColor = eventTypeColors[formData.eventType] || eventTypeColors.other;
 
+  const modalTitle = isCreating ? 'Create Event' : isViewMode ? 'Event Details' : 'Edit Event';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="event-modal-title"
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Modal */}
-      <div className="relative bg-white/95 backdrop-blur-xl rounded-[24px] border border-white/40 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden">
+      <div
+        ref={modalRef}
+        className="relative bg-white/95 backdrop-blur-xl rounded-[24px] border border-white/40 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${eventTypeColor.bg} ${eventTypeColor.border} border-2`} />
-            <h2 className="text-lg font-semibold text-slate-900">
-              {isCreating ? 'Create Event' : isViewMode ? 'Event Details' : 'Edit Event'}
+            <div className={`w-3 h-3 rounded-full ${eventTypeColor.bg} ${eventTypeColor.border} border-2`} aria-hidden="true" />
+            <h2 id="event-modal-title" className="text-lg font-semibold text-slate-900">
+              {modalTitle}
             </h2>
           </div>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            aria-label="Close modal"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Content */}
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-5 max-h-[calc(90vh-140px)] overflow-y-auto">
           {error && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div
+              role="alert"
+              className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm"
+            >
+              <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
               {error}
             </div>
           )}
@@ -482,105 +525,114 @@ export function EventDetailModal({
             </span>
           </label>
 
-          {/* RSVP Toggle */}
+          {/* Add People Section (always visible for coaches) */}
           {canEdit && (
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={formData.requiresRsvp}
-                onChange={(e) => setFormData({ ...formData, requiresRsvp: e.target.checked })}
-                disabled={isViewMode || isSaving}
-                className="w-5 h-5 rounded-lg border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-              />
-              <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">
-                <UserPlus className="w-3.5 h-3.5 inline-block mr-1" />
-                Require RSVP from attendees
-              </span>
-            </label>
-          )}
-
-          {/* RSVP Fields (shown when RSVP is enabled) */}
-          {formData.requiresRsvp && canEdit && (
-            <>
-              {/* Player Selection */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Invite Players
+            <div className="border-t border-slate-200 pt-4 mt-4">
+              <div className="flex items-center justify-between mb-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                  <UserPlus className="w-4 h-4 text-slate-600" />
+                  Add People
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {teamPlayers.length === 0 ? (
-                    <p className="text-sm text-slate-500">No team players available</p>
-                  ) : (
-                    teamPlayers.map(player => (
-                      <button
-                        key={player.id}
-                        type="button"
-                        onClick={() => handleToggleAttendee(player.id)}
-                        disabled={isViewMode || isSaving}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                          formData.attendeeIds.includes(player.id)
-                            ? 'bg-green-100 text-green-700 border-2 border-green-500'
-                            : 'bg-slate-100 text-slate-600 border-2 border-transparent hover:border-slate-300'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                      >
-                        {player.first_name} {player.last_name}
-                      </button>
-                    ))
-                  )}
-                </div>
                 {formData.attendeeIds.length > 0 && (
-                  <p className="text-xs text-slate-500 mt-2">
-                    {formData.attendeeIds.length} player{formData.attendeeIds.length !== 1 ? 's' : ''} selected
-                  </p>
+                  <span className="text-xs font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                    {formData.attendeeIds.length} selected
+                  </span>
                 )}
               </div>
 
-              {/* RSVP Deadline & Max Attendees Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    RSVP Deadline
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={formData.rsvpDeadline || ''}
-                    onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value || null })}
-                    disabled={isViewMode || isSaving}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 bg-white transition-colors disabled:bg-slate-50 disabled:text-slate-500"
-                  />
+              {teamPlayers.length === 0 ? (
+                <p className="text-sm text-slate-500 py-2">
+                  No team members available. Add players to your roster first.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {teamPlayers.map(player => (
+                    <button
+                      key={player.id}
+                      type="button"
+                      onClick={() => handleToggleAttendee(player.id)}
+                      disabled={isViewMode || isSaving}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        formData.attendeeIds.includes(player.id)
+                          ? 'bg-green-100 text-green-700 border-2 border-green-500'
+                          : 'bg-slate-100 text-slate-600 border-2 border-transparent hover:border-slate-300'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {player.first_name} {player.last_name}
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Max Attendees
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.maxAttendees || ''}
-                    onChange={(e) => setFormData({ ...formData, maxAttendees: e.target.value ? parseInt(e.target.value) : null })}
-                    disabled={isViewMode || isSaving}
-                    placeholder="Optional"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors disabled:bg-slate-50 disabled:text-slate-500"
-                  />
-                </div>
-              </div>
+              )}
 
-              {/* Conflict Warning */}
+              {/* Conflict Warning - shows when people are added */}
               {checkingConflicts && (
-                <div className="p-3 bg-slate-50 rounded-xl text-sm text-slate-600 flex items-center gap-2">
+                <div className="mt-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 flex items-center gap-2">
                   <div className="animate-spin h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full" />
                   Checking for scheduling conflicts...
                 </div>
               )}
 
               {conflicts && conflicts.hasConflicts && (
-                <ConflictWarning
-                  conflicts={conflicts.conflicts}
-                  suggestions={conflicts.suggestions}
-                  onSelectTime={handleSelectSuggestedTime}
-                />
+                <div className="mt-3">
+                  <ConflictWarning
+                    conflicts={conflicts.conflicts}
+                    suggestions={conflicts.suggestions}
+                    onSelectTime={handleSelectSuggestedTime}
+                  />
+                </div>
               )}
-            </>
+            </div>
+          )}
+
+          {/* RSVP Settings (optional - for tracking responses) */}
+          {canEdit && (
+            <div className="border-t border-slate-200 pt-4 mt-4">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.requiresRsvp}
+                  onChange={(e) => setFormData({ ...formData, requiresRsvp: e.target.checked })}
+                  disabled={isViewMode || isSaving}
+                  className="w-5 h-5 rounded-lg border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                />
+                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">
+                  <Users className="w-3.5 h-3.5 inline-block mr-1" />
+                  Require RSVP from attendees
+                </span>
+              </label>
+
+              {/* RSVP Deadline & Max Attendees (shown when RSVP is enabled) */}
+              {formData.requiresRsvp && (
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                      RSVP Deadline
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formData.rsvpDeadline || ''}
+                      onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value || null })}
+                      disabled={isViewMode || isSaving}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 bg-white transition-colors disabled:bg-slate-50 disabled:text-slate-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                      Max Attendees
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.maxAttendees || ''}
+                      onChange={(e) => setFormData({ ...formData, maxAttendees: e.target.value ? parseInt(e.target.value) : null })}
+                      disabled={isViewMode || isSaving}
+                      placeholder="Optional"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors disabled:bg-slate-50 disabled:text-slate-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Player RSVP Card (for players viewing events requiring RSVP) */}
@@ -592,12 +644,14 @@ export function EventDetailModal({
                   title: event.title,
                   event_type: event.event_type,
                   status: event.status || 'confirmed',
-                  start_time: event.start_time,
+                  start_time: event.start_time || '',
                   end_time: event.end_time,
                   location: event.location,
-                  rsvp_confirmed_count: event.rsvp_confirmed_count,
-                  rsvp_total_count: event.rsvp_total_count,
+                  description: event.description,
+                  rsvp_lock_time: event.rsvp_lock_time,
                 }}
+                currentResponse={null}
+                onRespond={async () => {}}
               />
             </div>
           )}
@@ -606,7 +660,10 @@ export function EventDetailModal({
           {!isCreating && event?.id && formData.requiresRsvp && isCoach && (
             <div className="border-t border-slate-200 -mx-6 px-6 pt-4">
               <h4 className="text-sm font-semibold text-slate-900 mb-3">RSVP Status</h4>
-              <RSVPStatusSection eventId={event.id} />
+              <RSVPStatusSection
+                participants={[]}
+                totalInvited={0}
+              />
             </div>
           )}
         </form>

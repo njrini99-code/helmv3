@@ -15,7 +15,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Check, X, Clock, AlertCircle } from 'lucide-react';
+import { Check, X, AlertCircle } from 'lucide-react';
 import '@/styles/calendar-tokens.css';
 
 export interface PlayerAttendanceRowProps {

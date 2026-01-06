@@ -155,10 +155,11 @@ export function PollResultSelector({
           <>
             {sortedResults.map((slot, index) => {
               const dateObj = parseISO(slot.date);
-              const percentage =
+              const _percentage =
                 slot.totalResponses > 0
                   ? (slot.availableCount / slot.totalResponses) * 100
                   : 0;
+              void _percentage; // Suppress unused warning - may be used in future
               const isSelected = selectedSlot === slot;
               const isTopChoice = sortBy === 'availability' && index === 0;
 
@@ -294,7 +295,9 @@ export function PollResultSelector({
  * Format time string for display
  */
 function formatTime(time: string): string {
-  const [hours, minutes] = time.split(':').map(Number);
+  const parts = time.split(':').map(Number);
+  const hours = parts[0] ?? 0;
+  const minutes = parts[1] ?? 0;
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
 

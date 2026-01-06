@@ -213,3 +213,182 @@ export interface RoundData {
   played_at: string;
   holes: HoleData[];
 }
+
+// ============================================================================
+// PUTT MISS CLASSIFICATION TYPES
+// ============================================================================
+
+export type PuttMissTag = 'low' | 'high' | 'short' | 'long' | 'pull' | 'push';
+
+export type PuttBreakDirection = 'left_to_right' | 'right_to_left' | 'straight';
+
+export interface PuttDetails {
+  id: string;
+  shotId: string;
+  missTags: PuttMissTag[];
+  breakDirection?: PuttBreakDirection;
+  estimatedBreakInches?: number;
+  distanceFeet?: number;
+  made: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlayerPuttTendencies {
+  playerId: string;
+  fullName: string;
+  totalMissedPutts: number;
+  missByType: {
+    low: number;
+    high: number;
+    short: number;
+    long: number;
+    pull: number;
+    push: number;
+  };
+  percentages: {
+    lowMissPct: number;
+    highMissPct: number;
+    underReadTendency: number; // 0-100, >50 means under-reads more
+    leaveShortTendency: number; // 0-100, >50 means leaves short more
+  };
+  byDistance: {
+    inside5ft: { attempts: number; made: number; pct: number };
+    fiveTo10ft: { attempts: number; made: number; pct: number };
+    outside10ft: { attempts: number; made: number; pct: number };
+  };
+}
+
+export const PUTT_MISS_TAG_CONFIG: Record<PuttMissTag, { 
+  label: string; 
+  description: string; 
+  category: 'read' | 'speed' | 'stroke';
+  color: string;
+}> = {
+  low: { 
+    label: 'Low (More Break)', 
+    description: 'Broke more than read', 
+    category: 'read',
+    color: 'text-blue-400'
+  },
+  high: { 
+    label: 'High (Less Break)', 
+    description: 'Broke less than read', 
+    category: 'read',
+    color: 'text-amber-400'
+  },
+  short: { 
+    label: 'Short', 
+    description: 'Left it short', 
+    category: 'speed',
+    color: 'text-red-400'
+  },
+  long: { 
+    label: 'Long', 
+    description: 'Ran it past', 
+    category: 'speed',
+    color: 'text-orange-400'
+  },
+  pull: { 
+    label: 'Pull', 
+    description: 'Pulled left of line', 
+    category: 'stroke',
+    color: 'text-purple-400'
+  },
+  push: { 
+    label: 'Push', 
+    description: 'Pushed right of line', 
+    category: 'stroke',
+    color: 'text-pink-400'
+  },
+};
+
+// ============================================================================
+// APPROACH MISS CLASSIFICATION TYPES
+// ============================================================================
+
+export type ApproachMissDirection = 
+  | 'short'
+  | 'long'
+  | 'left'
+  | 'right'
+  | 'short_left'
+  | 'short_right'
+  | 'long_left'
+  | 'long_right';
+
+export interface ApproachMissDetails {
+  id: string;
+  shotId: string;
+  missDirection: ApproachMissDirection;
+  distanceFromGreenYards?: number;
+  lieType?: 'fairway' | 'rough' | 'bunker' | 'hazard';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApproachTendencies {
+  playerId: string;
+  fullName: string;
+  totalMisses: number;
+  byDirection: Record<ApproachMissDirection, number>;
+  shortTendencyPct: number;
+  leftTendencyPct: number;
+  bunkerMissPct: number;
+}
+
+export const APPROACH_MISS_CONFIG: Record<ApproachMissDirection, {
+  label: string;
+  shortLabel: string;
+  icon: string;
+  color: string;
+}> = {
+  short: { 
+    label: 'Short', 
+    shortLabel: 'S',
+    icon: '↓', 
+    color: 'text-red-400' 
+  },
+  long: { 
+    label: 'Long', 
+    shortLabel: 'L',
+    icon: '↑', 
+    color: 'text-orange-400' 
+  },
+  left: { 
+    label: 'Left', 
+    shortLabel: 'L',
+    icon: '←', 
+    color: 'text-blue-400' 
+  },
+  right: { 
+    label: 'Right', 
+    shortLabel: 'R',
+    icon: '→', 
+    color: 'text-purple-400' 
+  },
+  short_left: { 
+    label: 'Short Left', 
+    shortLabel: 'SL',
+    icon: '↙', 
+    color: 'text-red-400' 
+  },
+  short_right: { 
+    label: 'Short Right', 
+    shortLabel: 'SR',
+    icon: '↘', 
+    color: 'text-red-400' 
+  },
+  long_left: { 
+    label: 'Long Left', 
+    shortLabel: 'LL',
+    icon: '↖', 
+    color: 'text-orange-400' 
+  },
+  long_right: { 
+    label: 'Long Right', 
+    shortLabel: 'LR',
+    icon: '↗', 
+    color: 'text-orange-400' 
+  },
+};

@@ -205,19 +205,26 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade-in"
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Command palette">
+      {/* Enhanced Premium Glass Backdrop */}
+      <div
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-md animate-fade-in"
         onClick={() => setOpen(false)}
+        aria-hidden="true"
       />
       
-      {/* Dialog */}
+      {/* Premium Glass Dialog */}
       <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg animate-scale-in">
-        <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+        <div className={cn(
+          'bg-white/60 backdrop-blur-[24px]', // Enhanced glass effect
+          'rounded-2xl', // Standardized: 16px
+          'shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.5)]',
+          'border border-white/30',
+          'overflow-hidden'
+        )}>
           {/* Search Input */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
-            <IconSearch size={20} className="text-slate-400" />
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-white/20 bg-white/30">
+            <IconSearch size={20} className="text-slate-400" aria-hidden="true" />
             <input
               ref={inputRef}
               type="text"
@@ -228,61 +235,76 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
               }}
               onKeyDown={handleKeyDown}
               placeholder="Search commands..."
-              className="flex-1 outline-none text-slate-900 placeholder:text-slate-400"
+              aria-label="Search commands"
+              aria-autocomplete="list"
+              aria-controls="command-list"
+              aria-activedescendant={filteredCommands[selectedIndex]?.id ? `cmd-${filteredCommands[selectedIndex].id}` : undefined}
+              className="flex-1 outline-none text-slate-900 placeholder:text-slate-400 bg-transparent"
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-400 bg-slate-100 rounded">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-400 bg-white/60 backdrop-blur-sm rounded-lg border border-white/30">
               ESC
             </kbd>
           </div>
 
           {/* Commands List */}
-          <div className="max-h-80 overflow-y-auto p-2">
+          <div
+            id="command-list"
+            role="listbox"
+            aria-label="Available commands"
+            className="max-h-80 overflow-y-auto p-2"
+          >
             {filteredCommands.length === 0 ? (
-              <div className="text-center py-8 text-slate-500">
+              <div className="text-center py-8 text-sm text-slate-500" role="status">
                 No commands found
               </div>
             ) : (
               filteredCommands.map((cmd, index) => (
                 <button
                   key={cmd.id}
+                  id={`cmd-${cmd.id}`}
+                  role="option"
+                  aria-selected={index === selectedIndex}
                   onClick={() => {
                     cmd.action();
                     setOpen(false);
                   }}
                   className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors', // Standardized: 12px
                     index === selectedIndex
-                      ? 'bg-green-50 text-green-900'
-                      : 'hover:bg-slate-50 text-slate-700'
+                      ? 'bg-primary-50/80 backdrop-blur-sm text-primary-900'
+                      : 'hover:bg-white/40 text-slate-700'
                   )}
                 >
-                  <div className={cn(
-                    'w-8 h-8 rounded-lg flex items-center justify-center',
-                    index === selectedIndex ? 'bg-green-100' : 'bg-slate-100'
-                  )}>
+                  <div
+                    className={cn(
+                      'w-8 h-8 rounded-lg flex items-center justify-center', // Standardized: 12px
+                      index === selectedIndex ? 'bg-primary-100' : 'bg-white/60 backdrop-blur-sm'
+                    )}
+                    aria-hidden="true"
+                  >
                     {cmd.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{cmd.label}</p>
+                    <p className="text-sm font-medium truncate">{cmd.label}</p>
                     {cmd.description && (
-                      <p className="text-sm text-slate-500 truncate">{cmd.description}</p>
+                      <p className="text-xs text-slate-500 truncate">{cmd.description}</p>
                     )}
                   </div>
-                  <IconChevronRight size={16} className="text-slate-400" />
+                  <IconChevronRight size={16} className="text-slate-400" aria-hidden="true" />
                 </button>
               ))
             )}
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+          <div className="px-4 py-2 border-t border-white/20 bg-white/30 backdrop-blur-sm flex items-center justify-between text-xs text-slate-500">
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-white rounded border">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-white rounded border">↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-white/60 backdrop-blur-sm rounded border border-white/30">↑</kbd>
+              <kbd className="px-1.5 py-0.5 bg-white/60 backdrop-blur-sm rounded border border-white/30">↓</kbd>
               <span>Navigate</span>
             </div>
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-white rounded border">↵</kbd>
+              <kbd className="px-1.5 py-0.5 bg-white/60 backdrop-blur-sm rounded border border-white/30">↵</kbd>
               <span>Select</span>
             </div>
           </div>

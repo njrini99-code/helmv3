@@ -7,11 +7,20 @@ import { PremiumEventBlock } from './PremiumEventBlock';
 import { calculateEventTop, calculateEventHeight, isToday } from '@/lib/calendar/event-styles';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
+export interface BusyPeriod {
+  start: string;
+  end: string;
+  type: 'event' | 'class' | 'blocked';
+  title?: string;
+}
+
 export interface WeekViewProps {
   weekStart: Date;
   events: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;
   isDraggable?: boolean;
+  playerBusyPeriods?: BusyPeriod[];
+  selectedPlayerName?: string;
 }
 
 // Droppable time slot component with premium styling
@@ -56,7 +65,14 @@ function DroppableTimeSlot({
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export function WeekView({ weekStart, events, onEventClick, isDraggable = false }: WeekViewProps) {
+export function WeekView({ 
+  weekStart, 
+  events, 
+  onEventClick, 
+  isDraggable = false,
+  playerBusyPeriods = [],
+  selectedPlayerName,
+}: WeekViewProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -83,6 +99,35 @@ export function WeekView({ weekStart, events, onEventClick, isDraggable = false 
       );
     });
   });
+
+  // Group player busy periods by day for overlay rendering
+  const busyPeriodsByDay = weekDates.map((date) => {
+    return playerBusyPeriods.filter((period) => {
+      const periodDate = new Date(period.start);
+      return (
+        periodDate.getDate() === date.getDate() &&
+        periodDate.getMonth() === date.getMonth() &&
+        periodDate.getFullYear() === date.getFullYear()
+      );
+    });
+  });
+
+  // Calculate busy period positioning
+  const calculateBusyPeriodTop = (startTime: string) => {
+    const date = new Date(startTime);
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const hoursFromStart = hours - 6; // HOURS starts at 6
+    if (hoursFromStart < 0) return 0;
+    return hoursFromStart * 64 + (minutes / 60) * 64;
+  };
+
+  const calculateBusyPeriodHeight = (startTime: string, endTime: string) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+    return (durationMinutes / 60) * 64;
+  };
 
   const getCurrentTimePosition = () => {
     const hour = currentTime.getHours();
@@ -210,6 +255,46 @@ export function WeekView({ weekStart, events, onEventClick, isDraggable = false 
             ))}
           </div>
 
+          {/* Player Busy Periods overlay (classes, blocked time) */}
+          {playerBusyPeriods.length > 0 && (
+            <div className="absolute inset-0 pointer-events-none grid grid-cols-[64px_repeat(7,1fr)]">
+              <div />
+              {busyPeriodsByDay.map((dayPeriods, dayIndex) => (
+                <div key={dayIndex} className="relative pointer-events-none">
+                  {dayPeriods.map((period, periodIndex) => {
+                    const top = calculateBusyPeriodTop(period.start);
+                    const height = calculateBusyPeriodHeight(period.start, period.end);
+                    const isClass = period.type === 'class';
+
+                    return (
+                      <div
+                        key={periodIndex}
+                        className="absolute left-0.5 right-0.5 rounded-lg border-l-2 overflow-hidden"
+                        style={{
+                          top: `${top}px`,
+                          height: `${Math.max(height, 24)}px`,
+                          background: isClass 
+                            ? 'repeating-linear-gradient(45deg, rgba(244, 63, 94, 0.08), rgba(244, 63, 94, 0.08) 8px, rgba(244, 63, 94, 0.04) 8px, rgba(244, 63, 94, 0.04) 16px)'
+                            : 'rgba(251, 146, 60, 0.12)',
+                          borderColor: isClass ? 'rgb(244, 63, 94)' : 'rgb(251, 146, 60)',
+                        }}
+                      >
+                        <div className="px-2 py-1 h-full">
+                          <p className={cn(
+                            'text-[10px] font-medium truncate',
+                            isClass ? 'text-rose-600' : 'text-orange-600'
+                          )}>
+                            {period.title || (isClass ? 'Class' : 'Busy')}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Events overlay */}
           <div className="absolute inset-0 pointer-events-none grid grid-cols-[64px_repeat(7,1fr)]">
             <div />
@@ -250,6 +335,15 @@ export function WeekView({ weekStart, events, onEventClick, isDraggable = false 
               </div>
             ))}
           </div>
+
+          {/* Selected player indicator */}
+          {selectedPlayerName && (
+            <div className="absolute top-2 left-20 z-20 px-3 py-1.5 rounded-full bg-rose-100/90 backdrop-blur-sm border border-rose-200">
+              <p className="text-xs font-medium text-rose-700">
+                Viewing {selectedPlayerName}&apos;s schedule
+              </p>
+            </div>
+          )}
 
           {/* Current Time Indicator - Premium red line with dot and glow */}
           {currentTimeTop !== null && todayIndex >= 0 && (

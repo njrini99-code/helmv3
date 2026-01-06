@@ -230,9 +230,19 @@ export async function submitGolfRoundComprehensive(
       return { success: false, error: 'Player profile not found' };
     }
 
-    // If updating an existing round, delete old holes and shots first
+    // If updating an existing round, verify ownership and delete old holes and shots first
     if (existingRoundId) {
-      console.log('[Golf] Updating existing round:', existingRoundId);
+      // SECURITY: Verify the round belongs to this player before modifying
+      const { data: existingRound, error: verifyError } = await supabase
+        .from('golf_rounds')
+        .select('id, player_id')
+        .eq('id', existingRoundId)
+        .eq('player_id', player.id)
+        .single();
+
+      if (verifyError || !existingRound) {
+        return { success: false, error: 'Round not found or you do not have permission to update it.' };
+      }
 
       // Delete existing shots (cascades from holes)
       const { error: deleteShotsError } = await supabase
@@ -241,7 +251,7 @@ export async function submitGolfRoundComprehensive(
         .eq('round_id', existingRoundId);
 
       if (deleteShotsError) {
-        console.error('[Golf] Failed to delete old shots:', deleteShotsError);
+        // Non-critical - shots might not exist
       }
 
       // Delete existing holes
@@ -251,7 +261,6 @@ export async function submitGolfRoundComprehensive(
         .eq('round_id', existingRoundId);
 
       if (deleteHolesError) {
-        console.error('[Golf] Failed to delete old holes:', deleteHolesError);
         return { success: false, error: 'Failed to update round. Please try again.' };
       }
     }
@@ -370,7 +379,6 @@ export async function submitGolfRoundComprehensive(
     roundError = result.error;
 
     if (roundError || !round) {
-      console.error('[Golf] Failed to update round:', roundError);
       return { success: false, error: 'Failed to update round. Please try again.' };
     }
   } else {
@@ -385,7 +393,6 @@ export async function submitGolfRoundComprehensive(
     roundError = result.error;
 
     if (roundError || !round) {
-      console.error('[Golf] Failed to insert round:', roundError);
       return { success: false, error: 'Failed to save round. Please try again.' };
     }
   }
@@ -432,7 +439,6 @@ export async function submitGolfRoundComprehensive(
       .select('id, hole_number');
 
     if (holesError) {
-      console.error('[Golf] Failed to insert holes:', holesError);
       return { success: false, error: 'Failed to save hole data. Please try again.' };
     }
 
@@ -468,15 +474,70 @@ export async function submitGolfRoundComprehensive(
   }
 
   if (allShots.length > 0) {
-    const { error: shotsError } = await supabase
+    const { data: insertedShots, error: shotsError } = await supabase
       .from('golf_shots')
-      .insert(allShots);
+      .insert(allShots)
+      .select('id, hole_number, shot_number, shot_type');
 
-      if (shotsError) {
-        console.error('[Golf] Failed to insert shots:', shotsError);
-        // Don't throw - shots are supplementary data
+    if (shotsError) {
+      // Don't throw - shots are supplementary data
+    } else if (insertedShots) {
+      // Create maps to find shot IDs for putt and approach miss details
+      const shotIdMap = new Map<string, string>();
+      for (const shot of insertedShots) {
+        const key = `${shot.hole_number}-${shot.shot_number}`;
+        shotIdMap.set(key, shot.id);
+      }
+
+      // Save putt details and approach miss details
+      const puttDetails: any[] = [];
+      const approachMissDetails: any[] = [];
+
+      for (const hole of data.holes) {
+        for (const shot of hole.shots) {
+          const key = `${hole.holeNumber}-${shot.shotNumber}`;
+          const shotId = shotIdMap.get(key);
+          
+          if (!shotId) continue;
+
+          // Save putt details if this is a putt with miss tags
+          if (shot.shotType === 'putting' && shot.puttMissTags && shot.puttMissTags.length > 0) {
+            puttDetails.push({
+              shot_id: shotId,
+              miss_tags: shot.puttMissTags,
+              break_direction: shot.puttBreak || null,
+              distance_feet: shot.puttDistanceFeet || null,
+              made: shot.result === 'hole',
+            });
+          }
+
+          // Save approach miss details if this is an approach shot with miss direction
+          if ((shot.shotType === 'approach' || shot.shotType === 'around_green') && 
+              shot.approachMissDirection && 
+              shot.result !== 'green' && shot.result !== 'hole') {
+            approachMissDetails.push({
+              shot_id: shotId,
+              miss_direction: shot.approachMissDirection,
+              lie_type: shot.approachMissLieType || null,
+              distance_from_green_yards: shot.distanceUnitAfter === 'feet' 
+                ? Math.round((shot.distanceToHoleAfter || 0) / 3)
+                : shot.distanceToHoleAfter || null,
+            });
+          }
+        }
+      }
+
+      // Insert putt details
+      if (puttDetails.length > 0) {
+        await supabase.from('putt_details').insert(puttDetails);
+      }
+
+      // Insert approach miss details
+      if (approachMissDetails.length > 0) {
+        await supabase.from('approach_miss_details').insert(approachMissDetails);
       }
     }
+  }
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/rounds');
@@ -485,7 +546,6 @@ export async function submitGolfRoundComprehensive(
     return { success: true, data: { roundId: round.id } };
 
   } catch (error) {
-    console.error('[Golf] Unexpected error submitting round:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -558,7 +618,6 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
     .single();
 
     if (roundError) {
-      console.error('[Golf] Failed to insert round:', roundError);
       return { success: false, error: 'Failed to save round. Please try again.' };
     }
 
@@ -581,7 +640,6 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
       .insert(holesData);
 
     if (holesError) {
-      console.error('[Golf] Failed to insert holes:', holesError);
       return { success: false, error: 'Failed to save hole data. Please try again.' };
     }
 
@@ -595,7 +653,6 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid round data. Please check your inputs.' };
     }
-    console.error('[Golf] Unexpected error submitting round:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -636,7 +693,6 @@ export async function deleteGolfRound(roundId: string): Promise<ActionResult> {
       .eq('id', roundId);
 
     if (error) {
-      console.error('[Golf] Failed to delete round:', error);
       return { success: false, error: 'Failed to delete round. Please try again.' };
     }
 
@@ -646,11 +702,10 @@ export async function deleteGolfRound(roundId: string): Promise<ActionResult> {
 
     return { success: true, data: undefined };
 
-  } catch (error) {
-    console.error('[Golf] Unexpected error deleting round:', error);
+  } catch {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+      error: 'An unexpected error occurred'
     };
   }
 }
@@ -671,12 +726,6 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       return { success: false, error: 'You must be signed in to create events' };
     }
 
-    console.log('🔍 [DEBUG] Creating event for user:', {
-      userId: user.id,
-      userEmail: user.email,
-      userRole: user.role,
-    });
-
     // Try to get coach profile first
     const { data: coach } = await supabase
       .from('golf_coaches')
@@ -684,11 +733,10 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       .eq('user_id', user.id)
       .maybeSingle();
 
-    console.log('🔍 [DEBUG] Coach profile query result:', coach);
-
     // If not a coach, try to get player profile
     let teamId: string | null = null;
     let createdBy: string | null = null;
+    let playerId: string | null = null;
 
     if (coach) {
       // Coach - team_id is required for coaches
@@ -697,7 +745,6 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       }
       teamId = coach.team_id;
       createdBy = coach.id;
-      console.log('🔍 [DEBUG] User is COACH:', { coachId: coach.id, teamId });
     } else {
       // Check if user is a player
       const { data: player } = await supabase
@@ -706,8 +753,6 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
         .eq('user_id', user.id)
         .maybeSingle();
 
-      console.log('🔍 [DEBUG] Player profile query result:', player);
-
       if (!player) {
         return { success: false, error: 'User profile not found' };
       }
@@ -715,7 +760,8 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       // For players, team_id is optional (can be null for personal events)
       teamId = player.team_id || null;
       createdBy = null;
-      console.log('🔍 [DEBUG] User is PLAYER:', { playerId: player.id, teamId: teamId || 'NULL (personal event)' });
+      // Store player id to set player_id on the event
+      playerId = player.id;
     }
 
     // Build insert data - only include created_by if it's not null
@@ -742,8 +788,11 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
     if (createdBy) {
       insertData.created_by = createdBy;
     }
-
-    console.log('🔍 [DEBUG] Insert data to be sent:', JSON.stringify(insertData, null, 2));
+    
+    // Set player_id if this event is created by a player
+    if (playerId) {
+      insertData.player_id = playerId;
+    }
 
     const { data: event, error } = await supabase
       .from('golf_events')
@@ -752,32 +801,15 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       .single();
 
     if (error) {
-      console.error('❌ [DEBUG] INSERT FAILED with error:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-      });
-      console.error('❌ [DEBUG] Full error object:', error);
       return { success: false, error: 'Failed to create event. Please try again.' };
     }
-
-    console.log('✅ [DEBUG] INSERT SUCCEEDED!');
-    console.log('✅ [DEBUG] Created event:', {
-      id: event.id,
-      title: event.title,
-      eventType: event.event_type,
-      startDate: event.start_date,
-    });
 
     // Send invitations if attendeeIds provided
     if (validatedData.attendeeIds && validatedData.attendeeIds.length > 0) {
       try {
         const { sendEventInvitations } = await import('@/lib/calendar/rsvp');
         await sendEventInvitations(event.id, validatedData.attendeeIds, supabase);
-        console.log('✅ [DEBUG] Sent invitations to', validatedData.attendeeIds.length, 'players');
-      } catch (inviteError) {
-        console.error('⚠️ [DEBUG] Failed to send invitations:', inviteError);
+      } catch {
         // Don't fail the whole operation if invitations fail
       }
     }
@@ -791,7 +823,6 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid event data. Please check your inputs.' };
     }
-    console.error('[Golf] Unexpected error creating event:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -1049,7 +1080,6 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
       .single();
 
     if (qualifierError) {
-      console.error('[Golf] Failed to create qualifier:', qualifierError);
       return { success: false, error: 'Failed to create qualifier. Please try again.' };
     }
 
@@ -1067,7 +1097,6 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
         .insert(entries);
 
       if (entriesError) {
-        console.error('[Golf] Failed to add qualifier entries:', entriesError);
         return { success: false, error: 'Failed to add players to qualifier. Please try again.' };
       }
     }
@@ -1081,7 +1110,6 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid qualifier data. Please check your inputs.' };
     }
-    console.error('[Golf] Unexpected error creating qualifier:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -1107,7 +1135,6 @@ export async function updateQualifierStatus(
       .eq('id', qualifierId);
 
     if (error) {
-      console.error('[Golf] Failed to update qualifier status:', error);
       return { success: false, error: 'Failed to update qualifier status. Please try again.' };
     }
 
@@ -1116,7 +1143,6 @@ export async function updateQualifierStatus(
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[Golf] Unexpected error updating qualifier status:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -1173,7 +1199,6 @@ export async function createAnnouncement(data: {
       .single();
 
     if (error) {
-      console.error('[Golf] Failed to create announcement:', error);
       return { success: false, error: 'Failed to create announcement. Please try again.' };
     }
 
@@ -1185,7 +1210,6 @@ export async function createAnnouncement(data: {
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid announcement data. Please check your inputs.' };
     }
-    console.error('[Golf] Unexpected error creating announcement:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -1236,7 +1260,6 @@ export async function invitePlayerToTeam(
         .eq('id', coach.team_id);
 
       if (updateError) {
-        console.error('[Golf] Failed to generate invite code:', updateError);
         return { success: false, error: 'Failed to generate invite code. Please try again.' };
       }
     }
@@ -1250,7 +1273,6 @@ export async function invitePlayerToTeam(
     };
 
   } catch (error) {
-    console.error('[Golf] Unexpected error inviting player:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -1334,7 +1356,6 @@ export async function respondToEvent(
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[Golf] Error updating RSVP:', error);
     return { success: false, error: 'Failed to update RSVP' };
   }
 }
@@ -1368,7 +1389,6 @@ export async function checkScheduleConflicts(
     return { success: true, data: result };
 
   } catch (error) {
-    console.error('[Golf] Error checking conflicts:', error);
     return { success: false, error: 'Failed to check conflicts' };
   }
 }
@@ -1378,21 +1398,35 @@ export async function checkScheduleConflicts(
  * Used for the availability day view overlay
  */
 export async function getPlayerAvailability(
-  playerId: string,
+  memberId: string,
   startDate: string, // YYYY-MM-DD
   endDate: string // YYYY-MM-DD
 ): Promise<ActionResult<any[]>> {
   try {
     const supabase = await createClient();
 
+    // First, check if this is a player
     const { data: player } = await supabase
       .from('golf_players')
       .select('user_id')
-      .eq('id', playerId)
-      .single();
+      .eq('id', memberId)
+      .maybeSingle();
 
-    if (!player?.user_id) {
-      return { success: false, error: 'Player not found' };
+    let userId: string | null = player?.user_id || null;
+
+    // If not a player, check if it's a coach
+    if (!userId) {
+      const { data: coach } = await supabase
+        .from('golf_coaches')
+        .select('user_id')
+        .eq('id', memberId)
+        .maybeSingle();
+
+      userId = coach?.user_id || null;
+    }
+
+    if (!userId) {
+      return { success: false, error: 'Team member not found' };
     }
 
     const dayStart = new Date(`${startDate}T00:00:00`);
@@ -1400,7 +1434,7 @@ export async function getPlayerAvailability(
 
     const { getUserBusyPeriods } = await import('@/lib/calendar/availability');
     const busyPeriods = await getUserBusyPeriods(
-      player.user_id,
+      userId,
       dayStart,
       dayEnd,
       supabase
@@ -1418,7 +1452,49 @@ export async function getPlayerAvailability(
     return { success: true, data: serialized };
 
   } catch (error) {
-    console.error('[Golf] Error getting availability:', error);
+    return { success: false, error: 'Failed to get availability' };
+  }
+}
+
+/**
+ * Get the current user's busy periods (works for both coaches and players)
+ * Used to show YOUR schedule when viewing availability alongside a team member
+ */
+export async function getCurrentUserBusyPeriods(
+  startDate: string, // YYYY-MM-DD
+  endDate: string // YYYY-MM-DD
+): Promise<ActionResult<any[]>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const dayStart = new Date(`${startDate}T00:00:00`);
+    const dayEnd = new Date(`${endDate}T23:59:59`);
+
+    const { getUserBusyPeriods } = await import('@/lib/calendar/availability');
+    const busyPeriods = await getUserBusyPeriods(
+      user.id,
+      dayStart,
+      dayEnd,
+      supabase
+    );
+
+    // Convert to serializable format
+    const serialized = busyPeriods.map(period => ({
+      start: period.start.toISOString(),
+      end: period.end.toISOString(),
+      type: period.type,
+      title: period.title,
+      eventId: period.eventId,
+    }));
+
+    return { success: true, data: serialized };
+
+  } catch (error) {
     return { success: false, error: 'Failed to get availability' };
   }
 }
@@ -1443,14 +1519,12 @@ export async function getNotifications(limit: number = 50): Promise<ActionResult
       .limit(limit);
 
     if (error) {
-      console.error('[Golf] Error fetching notifications:', error);
       return { success: false, error: 'Failed to fetch notifications' };
     }
 
     return { success: true, data: data || [] };
 
   } catch (error) {
-    console.error('[Golf] Error fetching notifications:', error);
     return { success: false, error: 'Failed to fetch notifications' };
   }
 }
@@ -1473,7 +1547,6 @@ export async function markNotificationRead(
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[Golf] Error marking notification read:', error);
     return { success: false, error: 'Failed to mark notification read' };
   }
 }
@@ -1500,7 +1573,6 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[Golf] Error marking all notifications read:', error);
     return { success: false, error: 'Failed to mark notifications read' };
   }
 }
@@ -1534,7 +1606,6 @@ export async function getPendingInvitations(): Promise<ActionResult<any[]>> {
     return { success: true, data: invitations };
 
   } catch (error) {
-    console.error('[Golf] Error fetching pending invitations:', error);
     return { success: false, error: 'Failed to fetch invitations' };
   }
 }
@@ -1552,7 +1623,6 @@ export async function getEventRSVP(eventId: string): Promise<ActionResult<any>> 
     return { success: true, data: stats };
 
   } catch (error) {
-    console.error('[Golf] Error fetching RSVP stats:', error);
     return { success: false, error: 'Failed to fetch RSVP data' };
   }
 }
@@ -1618,7 +1688,6 @@ export async function addCoachBlockedTime(
       .single();
 
     if (error) {
-      console.error('[Golf] Error creating blocked time:', error);
       return { success: false, error: 'Failed to add blocked time' };
     }
 
@@ -1630,7 +1699,6 @@ export async function addCoachBlockedTime(
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid blocked time data' };
     }
-    console.error('[Golf] Unexpected error creating blocked time:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -1669,7 +1737,6 @@ export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<v
       .eq('coach_id', coach.id);
 
     if (error) {
-      console.error('[Golf] Error deleting blocked time:', error);
       return { success: false, error: 'Failed to delete blocked time' };
     }
 
@@ -1678,7 +1745,6 @@ export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<v
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[Golf] Unexpected error deleting blocked time:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -1731,7 +1797,6 @@ export async function updateCoachBlockedTime(
       .eq('coach_id', coach.id);
 
     if (error) {
-      console.error('[Golf] Error updating blocked time:', error);
       return { success: false, error: 'Failed to update blocked time' };
     }
 
@@ -1740,7 +1805,6 @@ export async function updateCoachBlockedTime(
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[Golf] Unexpected error updating blocked time:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -1784,14 +1848,12 @@ export async function getCoachBlockedTime(
       .order('start_date', { ascending: true });
 
     if (error) {
-      console.error('[Golf] Error fetching blocked time:', error);
       return { success: false, error: 'Failed to fetch blocked time' };
     }
 
     return { success: true, data: blockedTimes || [] };
 
   } catch (error) {
-    console.error('[Golf] Unexpected error fetching blocked time:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -1892,7 +1954,6 @@ export async function savePartialRound(
         .single();
 
       if (roundError) {
-        console.error('[Golf] Failed to update incomplete round:', roundError);
         return { success: false, error: 'Failed to update round' };
       }
 
@@ -1918,7 +1979,6 @@ export async function savePartialRound(
         .single();
 
       if (roundError) {
-        console.error('[Golf] Failed to create incomplete round:', roundError);
         return { success: false, error: 'Failed to save round' };
       }
 
@@ -1989,7 +2049,6 @@ export async function savePartialRound(
         .select('id, hole_number');
 
       if (holesError) {
-        console.error('[Golf] Failed to insert holes:', holesError);
       } else {
         const holeIdMap = new Map(insertedHoles?.map(h => [h.hole_number, h.id]) || []);
 
@@ -1997,7 +2056,6 @@ export async function savePartialRound(
           if (hole.shots && hole.shots.length > 0) {
             const holeId = holeIdMap.get(hole.holeNumber);
             if (!holeId) {
-              console.error(`[Golf] Missing hole_id for hole ${hole.holeNumber}, skipping shots insert.`);
               continue;
             }
 
@@ -2027,7 +2085,6 @@ export async function savePartialRound(
               .insert(shotsData);
 
             if (shotsError) {
-              console.error(`[Golf] Failed to insert shots for hole ${hole.holeNumber}:`, shotsError);
             }
           }
         }
@@ -2039,7 +2096,6 @@ export async function savePartialRound(
     return { success: true, data: { roundId } };
 
   } catch (error) {
-    console.error('[Golf] Unexpected error saving partial round:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to save round'
@@ -2086,14 +2142,12 @@ export async function getInProgressRounds(): Promise<ActionResult<any[]>> {
       .order('updated_at', { ascending: false });
 
     if (error) {
-      console.error('[Golf] Error fetching in-progress rounds:', error);
       return { success: false, error: 'Failed to fetch rounds' };
     }
 
     return { success: true, data: rounds || [] };
 
   } catch (error) {
-    console.error('[Golf] Unexpected error fetching in-progress rounds:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch rounds'
@@ -2147,7 +2201,6 @@ export async function loadInProgressRound(roundId: string): Promise<ActionResult
       .order('hole_number', { ascending: true });
 
     if (holesError) {
-      console.error('[Golf] Error loading holes:', holesError);
     }
 
     return {
@@ -2159,7 +2212,6 @@ export async function loadInProgressRound(roundId: string): Promise<ActionResult
     };
 
   } catch (error) {
-    console.error('[Golf] Unexpected error loading round:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to load round'
@@ -2198,7 +2250,6 @@ export async function deleteInProgressRound(roundId: string): Promise<ActionResu
       .eq('status', 'in_progress');
 
     if (error) {
-      console.error('[Golf] Error deleting round:', error);
       return { success: false, error: 'Failed to delete round' };
     }
 
@@ -2207,7 +2258,6 @@ export async function deleteInProgressRound(roundId: string): Promise<ActionResu
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[Golf] Unexpected error deleting round:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to delete round'

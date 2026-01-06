@@ -90,8 +90,8 @@ export default function GolfClassesPage() {
       }));
 
       setClasses(processedClasses);
-    } catch (error) {
-      console.error('Error fetching classes:', error);
+    } catch {
+      // Error handled silently - classes will show empty state
     } finally {
       setLoading(false);
     }
@@ -134,7 +134,6 @@ export default function GolfClassesPage() {
       setShowAddModal(false);
       setEditingClass(null);
     } catch (error) {
-      console.error('Error adding class:', error);
       throw error;
     }
   };
@@ -173,7 +172,6 @@ export default function GolfClassesPage() {
       setEditingClass(null);
       setShowDetailModal(false);
     } catch (error) {
-      console.error('Error updating class:', error);
       throw error;
     }
   };
@@ -197,7 +195,6 @@ export default function GolfClassesPage() {
       setShowDetailModal(false);
       setSelectedClass(null);
     } catch (error) {
-      console.error('Error deleting class:', error);
       throw error;
     }
   };
@@ -209,44 +206,33 @@ export default function GolfClassesPage() {
   };
 
   const handleConfirmClasses = async (confirmed: ParsedClass[]) => {
-    console.log('[Classes] handleConfirmClasses called with', confirmed.length, 'classes');
-    console.log('[Classes] playerId:', playerId);
-    
     if (!playerId) {
-      console.error('[Classes] No player ID!');
       alert('Error: No player ID found. Please refresh the page.');
       return;
     }
     
     if (confirmed.length === 0) {
-      console.error('[Classes] No classes to confirm!');
       return;
     }
 
     try {
-      const classesToInsert = confirmed.map(cls => {
-        const classData = {
-          player_id: playerId,
-          course_code: cls.course_code || 'UNKNOWN',
-          course_name: cls.course_name || cls.course_code || 'Untitled Class',
-          instructor: cls.instructor || null,
-          days: cls.days || [],
-          day_of_week: 0, // Deprecated, using days array instead
-          start_time: cls.start_time || '00:00',
-          end_time: cls.end_time || '00:00',
-          location: cls.location || null,
-          building: cls.building || null,
-          room: cls.room || null,
-          credits: cls.credits || null,
-          semester: cls.semester || 'Fall 2025',
-          color: cls.color || generateClassColor(),
-          notes: null,
-        };
-        console.log('[Classes] Prepared class:', classData.course_code);
-        return classData;
-      });
-
-      console.log('[Classes] Inserting', classesToInsert.length, 'classes...');
+      const classesToInsert = confirmed.map(cls => ({
+        player_id: playerId,
+        course_code: cls.course_code || 'UNKNOWN',
+        course_name: cls.course_name || cls.course_code || 'Untitled Class',
+        instructor: cls.instructor || null,
+        days: cls.days || [],
+        day_of_week: 0, // Deprecated, using days array instead
+        start_time: cls.start_time || '00:00',
+        end_time: cls.end_time || '00:00',
+        location: cls.location || null,
+        building: cls.building || null,
+        room: cls.room || null,
+        credits: cls.credits || null,
+        semester: cls.semester || 'Fall 2025',
+        color: cls.color || generateClassColor(),
+        notes: null,
+      }));
       
       const { data, error } = await supabase
         .from('golf_player_classes')
@@ -254,28 +240,19 @@ export default function GolfClassesPage() {
         .select();
 
       if (error) {
-        console.error('[Classes] Supabase insert error:', error);
         alert(`Error saving classes: ${error.message}`);
         throw error;
       }
 
-      console.log('[Classes] Successfully inserted:', data?.length, 'classes');
-
       // Sync all classes to calendar
-      console.log('[Classes] Checking calendar sync - data:', !!data, 'teamId:', teamId);
-
       if (data && teamId) {
-        console.log('[Classes] Starting calendar sync for', data.length, 'classes');
-
         for (let i = 0; i < data.length; i++) {
           const insertedClass = data[i];
           const confirmedClass = confirmed[i];
 
           if (insertedClass && confirmedClass) {
-            console.log('[Classes] Syncing class to calendar:', confirmedClass.course_code);
-
             try {
-              const result = await syncClassToCalendar({
+              await syncClassToCalendar({
                 id: insertedClass.id,
                 course_code: confirmedClass.course_code || '',
                 course_name: confirmedClass.course_name || confirmedClass.course_code || 'Untitled Class',
@@ -292,25 +269,18 @@ export default function GolfClassesPage() {
                 color: confirmedClass.color || generateClassColor(),
                 notes: '',
               }, insertedClass.id, playerId, teamId);
-
-              console.log('[Classes] Sync result:', result);
-            } catch (syncError) {
-              console.error('[Classes] Sync error for', confirmedClass.course_code, ':', syncError);
+            } catch {
+              // Calendar sync error - continue with other classes
             }
           }
         }
-
-        console.log('[Classes] Calendar sync completed');
-      } else {
-        console.warn('[Classes] Skipping calendar sync - data:', !!data, 'teamId:', teamId);
       }
 
       await fetchClasses();
       setShowConfirmModal(false);
       setParsedClasses([]);
-    } catch (error: unknown) {
-      console.error('[Classes] Error saving classes:', error);
-      // Don't re-throw, the error is already handled with alert
+    } catch {
+      // Error already handled with alert
     }
   };
 
@@ -367,8 +337,7 @@ export default function GolfClassesPage() {
       if (error) throw error;
 
       await fetchClasses();
-    } catch (error) {
-      console.error('Error deleting all classes:', error);
+    } catch {
       alert('Error deleting classes. Please try again.');
     }
   };

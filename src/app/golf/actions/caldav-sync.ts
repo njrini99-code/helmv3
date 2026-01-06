@@ -1,7 +1,5 @@
 'use server';
 
-//@ts-nocheck
-
 /**
  * Server Actions for CalDAV Sync
  *
@@ -15,8 +13,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { CalDAVClient, type CalDAVEvent } from '@/lib/calendar/caldav';
-import { parseICalendar, generateICalendar } from '@/lib/calendar/ical';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 
 // ============================================================================
 // TYPES
@@ -117,7 +114,6 @@ export async function connectExternalCalendar(input: {
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true, data: { connectionId: connection.id } };
   } catch (error) {
-    console.error('Error connecting external calendar:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to connect calendar',
@@ -171,8 +167,8 @@ export async function syncExternalCalendar(
       const client = new CalDAVClient({
         serverUrl: connection.calendar_url || '',
         username: '', // Would need to store encrypted
-        password: connection.access_token,
-        accessToken: connection.access_token,
+        password: connection.access_token || undefined,
+        accessToken: connection.access_token || undefined,
       });
 
       // Import from external calendar
@@ -200,34 +196,37 @@ export async function syncExternalCalendar(
         .eq('id', connectionId);
 
       // Complete sync log
-      await supabase
-        .from('golf_calendar_sync_log')
-        .update({
-          sync_completed_at: new Date().toISOString(),
-          sync_status: 'success',
-          events_imported: imported,
-          events_exported: exported,
-          conflicts_detected: conflicts,
-        })
-        .eq('id', syncLog.id);
+      if (syncLog?.id) {
+        await supabase
+          .from('golf_calendar_sync_log')
+          .update({
+            sync_completed_at: new Date().toISOString(),
+            sync_status: 'success',
+            events_imported: imported,
+            events_exported: exported,
+            conflicts_detected: conflicts,
+          })
+          .eq('id', syncLog.id);
+      }
 
       revalidatePath('/golf/(dashboard)/dashboard/calendar');
       return { success: true, data: { imported, exported, conflicts } };
     } catch (error) {
       // Log failure
-      await supabase
-        .from('golf_calendar_sync_log')
-        .update({
-          sync_completed_at: new Date().toISOString(),
-          sync_status: 'failed',
-          error_details: { message: error instanceof Error ? error.message : 'Unknown error' },
-        })
-        .eq('id', syncLog.id);
+      if (syncLog?.id) {
+        await supabase
+          .from('golf_calendar_sync_log')
+          .update({
+            sync_completed_at: new Date().toISOString(),
+            sync_status: 'failed',
+            error_details: { message: error instanceof Error ? error.message : 'Unknown error' },
+          })
+          .eq('id', syncLog.id);
+      }
 
       throw error;
     }
   } catch (error) {
-    console.error('Error syncing calendar:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Sync failed',
@@ -303,7 +302,6 @@ async function importFromExternal(
         imported++;
       }
     } catch (error) {
-      console.error(`Error importing event ${externalEvent.event.id}:`, error);
     }
   }
 
@@ -385,7 +383,6 @@ async function exportToExternal(
       if (error instanceof Error && error.message.includes('ETag mismatch')) {
         conflicts++;
       }
-      console.error(`Error exporting event ${pending.event_id}:`, error);
     }
   }
 
@@ -451,8 +448,10 @@ export async function disconnectExternalCalendar(
         .eq('external_calendar_id', connectionId);
 
       if (syncStates && syncStates.length > 0) {
-        const eventIds = syncStates.map(s => s.golf_event_id);
-        await supabase.from('golf_events').delete().in('id', eventIds);
+        const eventIds = syncStates.map(s => s.golf_event_id).filter((id): id is string => id !== null);
+        if (eventIds.length > 0) {
+          await supabase.from('golf_events').delete().in('id', eventIds);
+        }
       }
     }
 

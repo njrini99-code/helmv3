@@ -144,7 +144,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         isCollapsed ? 'px-3 justify-center' : 'px-5'
       )}>
-        <Link href="/golf/dashboard" className="flex items-center gap-3" onClick={handleNavClick}>
+        <Link href="/golf/dashboard" prefetch={true} className="flex items-center gap-3" onClick={handleNavClick}>
           <div className="relative h-9 flex items-center">
             {/* Icon version (shown when collapsed OR as fallback) */}
             <div
@@ -221,6 +221,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
               <Link
                 key={item.name}
                 href={item.href}
+                prefetch={true}
                 onClick={handleNavClick}
                 title={isCollapsed ? item.name : undefined}
                 className={cn(
@@ -269,6 +270,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
               <Link
                 key={item.name}
                 href={item.href}
+                prefetch={true}
                 onClick={handleNavClick}
                 title={isCollapsed ? item.name : undefined}
                 className={cn(
@@ -303,6 +305,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       )}>
         <Link
           href="/golf/dashboard/settings"
+          prefetch={true}
           onClick={handleNavClick}
           title={isCollapsed ? 'Settings' : undefined}
           className={cn(

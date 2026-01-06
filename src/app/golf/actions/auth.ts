@@ -39,12 +39,7 @@ export async function loginAction(
   // Check account lockout
   const lockoutStatus = await checkAccountLockout(normalizedEmail);
   if (lockoutStatus.locked && lockoutStatus.lockedUntil) {
-    console.warn('[Security] Golf login attempt on locked account:', {
-      email: normalizedEmail,
-      ip,
-      lockedUntil: lockoutStatus.lockedUntil,
-    });
-
+    // Security: Account is locked due to too many failed attempts
     return {
       success: false,
       error: formatLockoutMessage(lockoutStatus.lockedUntil),
@@ -86,14 +81,7 @@ export async function loginAction(
   if (error) {
     const lockoutResult = await recordFailedLogin(normalizedEmail, ip, userAgent);
 
-    console.warn('[Security] Failed golf login attempt:', {
-      email: normalizedEmail,
-      ip,
-      attempts: lockoutResult.attempts,
-      remainingAttempts: lockoutResult.remainingAttempts,
-      locked: lockoutResult.locked,
-    });
-
+    // Security: Failed login attempt recorded
     if (lockoutResult.locked && lockoutResult.lockedUntil) {
       return {
         success: false,
@@ -116,12 +104,6 @@ export async function loginAction(
   resetRateLimit(`login:email:${normalizedEmail}`);
   resetRateLimit(`login:ip:${ip}`);
   await resetLoginAttempts(normalizedEmail);
-
-  console.info('[Auth] Successful golf login:', {
-    email: normalizedEmail,
-    userId: data.user.id,
-    ip,
-  });
 
   // Get user role for golf
   const { data: userData } = await supabase
@@ -230,12 +212,6 @@ export async function signupAction(
   });
 
   if (error) {
-    console.error('[Auth] Golf signup error:', {
-      email: normalizedEmail,
-      error: error.message,
-      ip,
-    });
-
     return {
       success: false,
       error: error.message,
@@ -248,13 +224,6 @@ export async function signupAction(
       error: 'Failed to create account',
     };
   }
-
-  console.info('[Auth] Successful golf signup:', {
-    email: normalizedEmail,
-    userId: data.user.id,
-    role,
-    ip,
-  });
 
   // Redirect based on role - coaches go to coach onboarding, players go to player onboarding
   const redirectTo = role === 'coach'
@@ -281,9 +250,6 @@ export async function requestPasswordResetAction(
 ): Promise<PasswordResetResult> {
   const normalizedEmail = email.toLowerCase().trim();
 
-  const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
-
   // Check rate limit
   const rateLimit = checkRateLimit(
     `password-reset:email:${normalizedEmail}`,
@@ -300,22 +266,9 @@ export async function requestPasswordResetAction(
 
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+  await supabase.auth.resetPasswordForEmail(normalizedEmail, {
     redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/golf/reset-password`,
   });
-
-  if (error) {
-    console.error('[Auth] Golf password reset error:', {
-      email: normalizedEmail,
-      error: error.message,
-      ip,
-    });
-  } else {
-    console.info('[Auth] Golf password reset requested:', {
-      email: normalizedEmail,
-      ip,
-    });
-  }
 
   // Generic response - don't reveal if email exists
   return {

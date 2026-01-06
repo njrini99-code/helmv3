@@ -46,7 +46,6 @@ export async function createGolfDocument(input: CreateDocumentInput) {
     .single();
 
   if (error) {
-    console.error('Error creating golf document:', error);
     return {
       success: false,
       error: error.message,
@@ -80,7 +79,6 @@ export async function updateGolfDocument(input: UpdateDocumentInput) {
     .single();
 
   if (error) {
-    console.error('Error updating golf document:', error);
     return {
       success: false,
       error: error.message,
@@ -108,7 +106,6 @@ export async function deleteGolfDocument(documentId: string, filePath: string) {
     .eq('id', documentId);
 
   if (dbError) {
-    console.error('Error deleting golf document:', dbError);
     return {
       success: false,
       error: dbError.message,
@@ -122,7 +119,6 @@ export async function deleteGolfDocument(documentId: string, filePath: string) {
     .remove([filePath]);
 
   if (storageError) {
-    console.error('Error deleting file from storage:', storageError);
     // Document deleted but file remains - not critical
   }
 
@@ -157,7 +153,6 @@ export async function uploadGolfDocument(
     });
 
   if (error) {
-    console.error('Error uploading file:', error);
     return {
       success: false,
       error: error.message,

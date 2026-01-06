@@ -48,7 +48,6 @@ export default async function GolfRosterPage() {
     .single();
 
   if (coachError) {
-    console.error('Error fetching coach:', coachError);
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center">
@@ -108,7 +107,6 @@ export default async function GolfRosterPage() {
     .single();
 
   if (teamError) {
-    console.error('Error fetching team:', teamError);
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center">
@@ -131,7 +129,6 @@ export default async function GolfRosterPage() {
     .order('last_name', { ascending: true });
 
   if (playersError) {
-    console.error('Error fetching players:', playersError);
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center">
@@ -220,14 +217,16 @@ export default async function GolfRosterPage() {
             {playersWithStats.map((player, index) => (
               <div
                 key={player.id}
-                className="group relative glass-standard rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                className="group relative glass-standard rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                 style={{
                   animation: 'fadeInUp 0.4s ease-out forwards',
                   animationDelay: `${index * 30}ms`,
                   opacity: 0,
                 }}
               >
-                <ShineEffect />
+                <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+                  <ShineEffect />
+                </div>
                 <div className="relative flex items-center gap-4 p-4">
                   {/* Avatar */}
                   <div className="relative">
@@ -279,22 +278,22 @@ export default async function GolfRosterPage() {
                     </div>
                   </div>
 
-                  {/* Stats */}
-                  <div className="hidden md:flex items-center gap-1">
+                  {/* Stats - hidden on mobile, shown on md+ */}
+                  <div className="hidden md:flex items-center gap-1" role="group" aria-label={`Stats for ${player.first_name} ${player.last_name}`}>
                     <div className="flex flex-col items-center px-4 py-1 rounded-lg hover:bg-slate-50 transition-colors">
                       <p className="text-lg font-semibold text-slate-900 tabular-nums leading-none">
                         {player.rounds_count || 0}
                       </p>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wide mt-0.5">Rounds</p>
+                      <p className="text-xs text-slate-400 uppercase tracking-wide mt-0.5">Rounds</p>
                     </div>
-                    <div className="w-px h-8 bg-slate-100" />
+                    <div className="w-px h-8 bg-slate-100" aria-hidden="true" />
                     <div className="flex flex-col items-center px-4 py-1 rounded-lg hover:bg-slate-50 transition-colors">
                       <p className="text-lg font-semibold text-slate-900 tabular-nums leading-none">
                         {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '—'}
                       </p>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wide mt-0.5">Avg</p>
+                      <p className="text-xs text-slate-400 uppercase tracking-wide mt-0.5">Avg</p>
                     </div>
-                    <div className="w-px h-8 bg-slate-100" />
+                    <div className="w-px h-8 bg-slate-100" aria-hidden="true" />
                     <div className="flex flex-col items-center px-4 py-1 rounded-lg hover:bg-slate-50 transition-colors">
                       <p className={cn(
                         'text-lg font-semibold tabular-nums leading-none',
@@ -302,7 +301,7 @@ export default async function GolfRosterPage() {
                       )}>
                         {formatHandicap(player.handicap)}
                       </p>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wide mt-0.5">HCP</p>
+                      <p className="text-xs text-slate-400 uppercase tracking-wide mt-0.5">HCP</p>
                     </div>
                   </div>
 

@@ -2,41 +2,42 @@
 
 ```yaml
 - generic [active] [ref=e1]:
-  - generic [ref=e3]:
-    - generic [ref=e4]:
-      - img "GolfHelm" [ref=e5]
-      - heading "Welcome to GolfHelm" [level=1] [ref=e6]
-      - paragraph [ref=e7]: Sign in to your account
-    - generic [ref=e8]:
-      - generic [ref=e9]:
-        - generic [ref=e10]:
-          - generic [ref=e11]: Email
-          - textbox "you@example.com" [ref=e13]: rinin376@gmail.com
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - img "GolfHelm" [ref=e8]
+        - heading "GolfHelm" [level=1] [ref=e9]
+      - generic [ref=e10]:
+        - heading "Welcome back" [level=2] [ref=e11]
+        - paragraph [ref=e12]: Sign in to continue to your dashboard
+      - generic [ref=e13]:
         - generic [ref=e14]:
-          - generic [ref=e15]:
-            - generic [ref=e16]: Password
-            - generic [ref=e17]:
-              - textbox "••••••••" [ref=e18]: Pirates#09!!
-              - button [ref=e19] [cursor=pointer]:
-                - img [ref=e20]
-          - link "Forgot password?" [ref=e24] [cursor=pointer]:
-            - /url: /golf/forgot-password
-        - button "Please wait..." [disabled] [ref=e25]:
-          - img [ref=e26]
-          - generic [ref=e29]: Please wait...
-      - paragraph [ref=e30]:
-        - text: Don't have an account?
-        - link "Sign up" [ref=e31] [cursor=pointer]:
-          - /url: /golf/signup
-    - paragraph [ref=e32]:
-      - link "← Back to HelmLabs" [ref=e33] [cursor=pointer]:
+          - text: Email
+          - textbox "you@example.com" [ref=e15]: rinin376@gmail.com
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - generic [ref=e18]: Password
+            - link "Forgot password?" [ref=e19] [cursor=pointer]:
+              - /url: /golf/forgot-password
+          - textbox "••••••••" [ref=e20]: Pirates#09!!
+        - button [disabled] [ref=e21]
+        - generic [ref=e28]: or
+        - button "Continue with Google" [disabled] [ref=e30]:
+          - img [ref=e31]
+          - text: Continue with Google
+    - paragraph [ref=e36]:
+      - text: Don't have an account?
+      - link "Sign up" [ref=e37] [cursor=pointer]:
+        - /url: /golf/signup
+    - paragraph [ref=e38]:
+      - link "← Back to HelmLabs" [ref=e39] [cursor=pointer]:
         - /url: /
-  - button "Open Next.js Dev Tools" [ref=e39] [cursor=pointer]:
-    - generic [ref=e42]:
+  - button "Open Next.js Dev Tools" [ref=e45] [cursor=pointer]:
+    - generic [ref=e48]:
       - text: Rendering
-      - generic [ref=e43]:
-        - generic [ref=e44]: .
-        - generic [ref=e45]: .
-        - generic [ref=e46]: .
-  - alert [ref=e47]
+      - generic [ref=e49]:
+        - generic [ref=e50]: .
+        - generic [ref=e51]: .
+        - generic [ref=e52]: .
+  - alert [ref=e53]
 ```

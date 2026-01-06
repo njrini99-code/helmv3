@@ -18,9 +18,8 @@
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { getUrgencyLevel, getUrgencyClasses } from '@/lib/calendar/premium-utils';
 import { Lock, Clock, AlertTriangle } from 'lucide-react';
-import { differenceInMinutes, differenceInHours, format } from 'date-fns';
+import { differenceInMinutes, differenceInHours } from 'date-fns';
 
 export interface RSVPLockIndicatorProps {
   lockTime: string; // ISO datetime when RSVP locks

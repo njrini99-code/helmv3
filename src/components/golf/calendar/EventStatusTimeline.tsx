@@ -80,7 +80,7 @@ export function EventStatusTimeline({
  */
 function TimelineEntry({
   entry,
-  isFirst,
+  isFirst: _isFirst,
   isLast,
   compact,
 }: {

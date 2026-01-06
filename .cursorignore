@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Cache
+.cache/
+*.tsbuildinfo
+
+# Test artifacts
+test-results/
+playwright-report/
+coverage/
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env*
+!.env.example
+
+# Generated
+src/lib/types/database.ts
+
+# Temporary/Archive
+archive/
+*.sql
+*.vsix
+
+# Large assets
+public/videos/
+*.mp4
+*.mov
+
+# Supabase local
+supabase/.temp/

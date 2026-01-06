@@ -35,7 +35,7 @@ export interface AvailabilityCellProps {
 }
 
 export function AvailabilityCell({
-  timeSlot,
+  timeSlot: _timeSlot,
   availableCount,
   maybeCount,
   totalResponses,
@@ -53,6 +53,11 @@ export function AvailabilityCell({
   const isMyResponse = myResponse === 'available' || myResponse === 'maybe';
   const isClickable = !!onToggle && !disabled;
 
+  // Generate accessible label
+  const accessibleLabel = myResponse
+    ? `Your response: ${myResponse}. ${availableCount} of ${totalResponses} available.`
+    : `${availableCount} of ${totalResponses} available. Click to toggle your availability.`;
+
   return (
     <div className="relative group">
       <button
@@ -61,10 +66,16 @@ export function AvailabilityCell({
         disabled={disabled || !onToggle}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
+        onFocus={() => setShowTooltip(true)}
+        onBlur={() => setShowTooltip(false)}
+        aria-label={accessibleLabel}
+        aria-pressed={isMyResponse}
         className={cn(
           // Base styles
           'w-full aspect-square rounded-md transition-all duration-200',
           'touch-manipulation',
+          // Focus visible
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
           // Heat level background
           heatLevel.className,
           // Border overlay for my response
@@ -207,12 +218,20 @@ export function AvailabilityBar({
         </div>
       )}
 
-      <div className="h-2 bg-slate-100 rounded-full overflow-hidden flex">
+      <div
+        role="progressbar"
+        aria-valuenow={availablePercentage}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${availableCount} of ${totalResponses} available${maybeCount > 0 ? `, ${maybeCount} maybe` : ''}`}
+        className="h-2 bg-slate-100 rounded-full overflow-hidden flex"
+      >
         {/* Available segment */}
         {availablePercentage > 0 && (
           <div
             className="bg-emerald-500 transition-all duration-300"
             style={{ width: `${availablePercentage}%` }}
+            aria-hidden="true"
           />
         )}
 
@@ -221,6 +240,7 @@ export function AvailabilityBar({
           <div
             className="bg-amber-400 transition-all duration-300"
             style={{ width: `${maybePercentage}%` }}
+            aria-hidden="true"
           />
         )}
       </div>

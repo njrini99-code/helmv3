@@ -140,9 +140,8 @@ export async function sendMessage({
       }
     }
 
-    // Revalidate paths
-    revalidatePath(`/${sport}/dashboard/messages/${validatedData.conversation_id}`);
-    revalidatePath(`/${sport}/dashboard/messages`);
+    // NOTE: Removed revalidatePath calls - messages page uses real-time subscriptions
+    // Revalidation was causing unnecessary page reloads on every message send
 
     return { success: true };
   } catch (err) {
@@ -201,17 +200,13 @@ export async function createConversation({
     }
   }
 
-  // Create new conversation
-  const { data: conversation, error: convError } = await supabase
-    .from('conversations')
-    .insert({
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
+  // Create new conversation using SECURITY DEFINER function (bypasses RLS issues)
+  const { data: conversationId, error: convError } = await supabase
+    .rpc('create_conversation_with_participants', {
+      participant_user_ids: participantUserIds
+    });
 
-  if (convError || !conversation) {
+  if (convError || !conversationId) {
     console.error('[Security] Conversation create error:', {
       error: convError?.message,
       code: convError?.code,
@@ -223,33 +218,9 @@ export async function createConversation({
     throw new Error(`Failed to create conversation: ${convError?.message || 'Unknown error'}`);
   }
 
-  // Add all participants (including creator)
-  const allParticipants = [user.id, ...participantUserIds];
-  const participants = allParticipants.map(userId => ({
-    conversation_id: conversation.id,
-    user_id: userId,
-    last_read_at: new Date().toISOString(),
-  }));
-
-  const { error: participantsError } = await supabase
-    .from('conversation_participants')
-    .insert(participants);
-
-  if (participantsError) {
-    console.error('[Security] Participants insert error:', {
-      error: participantsError.message,
-      code: participantsError.code,
-      details: participantsError.details,
-      hint: participantsError.hint,
-      conversationId: conversation.id,
-      participantCount: participants.length,
-    });
-    throw new Error(`Failed to add participants: ${participantsError.message}`);
-  }
-
   revalidatePath(`/${sport}/dashboard/messages`);
 
-  return { conversationId: conversation.id };
+  return { conversationId };
 }
 
 interface MarkMessagesAsReadOptions {

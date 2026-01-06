@@ -1160,6 +1160,18 @@
     }
   }
 
+  /* Dashboard card animations (camelCase for inline styles) */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .animate-slide-in-up {
     animation: slide-in-up 0.3s ease-out forwards;
   }
@@ -1197,6 +1209,30 @@
   @keyframes pulse-subtle {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
+  }
+
+  /* Round Review Animations */
+  @keyframes scoreReveal {
+    0% {
+      opacity: 0;
+      transform: scale(0.8) translateY(-4px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes barGrow {
+    0% {
+      transform: scaleX(0);
+    }
+    60% {
+      transform: scaleX(1.05);
+    }
+    100% {
+      transform: scaleX(1);
+    }
   }
 
   /* Safe area for mobile devices */
@@ -1342,4 +1378,194 @@ body {
 
 .animate-shimmer {
   animation: shimmer-product 2s infinite;
+}
+
+/* ========================================
+   VIEW TRANSITIONS - PAGE NAVIGATION
+   ======================================== */
+
+/* Enable cross-document view transitions */
+@view-transition {
+  navigation: auto;
+}
+
+/* Default page transition - subtle fade + slide */
+::view-transition-old(root) {
+  animation: page-fade-out 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+::view-transition-new(root) {
+  animation: page-fade-in 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes page-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sidebar stays fixed during transitions */
+::view-transition-group(sidebar) {
+  animation: none;
+}
+
+/* Page content transitions smoothly */
+::view-transition-group(page-content) {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+/* Shared element: Page headers morph between pages */
+::view-transition-old(page-header),
+::view-transition-new(page-header) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+/* ========================================
+   SCROLL-DRIVEN ANIMATIONS
+   ======================================== */
+
+/* Fade in on scroll - apply to any element with .scroll-fade-in */
+.scroll-fade-in {
+  animation: scroll-fade-in linear both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 100%;
+}
+
+@keyframes scroll-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale up on scroll */
+.scroll-scale-in {
+  animation: scroll-scale-in linear both;
+  animation-timeline: view();
+  animation-range: entry 10% entry 60%;
+}
+
+@keyframes scroll-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Stagger children on scroll */
+.scroll-stagger > * {
+  animation: scroll-fade-in linear both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 80%;
+}
+
+.scroll-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.scroll-stagger > *:nth-child(2) { animation-delay: 50ms; }
+.scroll-stagger > *:nth-child(3) { animation-delay: 100ms; }
+.scroll-stagger > *:nth-child(4) { animation-delay: 150ms; }
+.scroll-stagger > *:nth-child(5) { animation-delay: 200ms; }
+.scroll-stagger > *:nth-child(6) { animation-delay: 250ms; }
+.scroll-stagger > *:nth-child(7) { animation-delay: 300ms; }
+.scroll-stagger > *:nth-child(8) { animation-delay: 350ms; }
+
+/* Premium Skeleton Shimmer for loading states */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  animation: shimmer-sweep 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer-sweep {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Reduced motion fallback */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::after {
+    animation: none;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-fade-in,
+  .scroll-scale-in,
+  .scroll-stagger > * {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ========================================
+   MOTION DESIGN TOKENS
+   ======================================== */
+
+:root {
+  /* Duration */
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-normal: 220ms;
+  --duration-slow: 320ms;
+  --duration-slower: 500ms;
+
+  /* Easing */
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }

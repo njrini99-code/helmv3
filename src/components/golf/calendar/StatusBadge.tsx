@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 import {
   CheckCircle,
   XCircle,
-  AlertCircle,
   Clock,
   Edit3,
   type LucideIcon,
@@ -37,7 +36,7 @@ interface StatusConfig {
   borderClass: string;
 }
 
-const STATUS_CONFIGS: Record<string, StatusConfig> = {
+const STATUS_CONFIGS: Record<StatusBadgeProps['status'], StatusConfig> = {
   draft: {
     icon: Edit3,
     label: 'Draft',
@@ -97,7 +96,7 @@ export function StatusBadge({
   showIcon = true,
   size = 'md',
 }: StatusBadgeProps) {
-  const config = STATUS_CONFIGS[status] || STATUS_CONFIGS.pending;
+  const config = STATUS_CONFIGS[status];
   const sizeConfig = SIZE_CONFIGS[size];
   const Icon = config.icon;
 
@@ -131,7 +130,7 @@ export function StatusBadgeWithTooltip({
   className,
   size = 'md',
 }: Omit<StatusBadgeProps, 'compact' | 'showIcon'>) {
-  const config = STATUS_CONFIGS[status] || STATUS_CONFIGS.pending;
+  const config = STATUS_CONFIGS[status];
 
   return (
     <div className="relative group">

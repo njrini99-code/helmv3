@@ -137,6 +137,8 @@ export function LiveScorecard({
               <button
                 key={hole.holeNumber}
                 onClick={() => onHoleSelect(hole.holeNumber)}
+                aria-label={`Hole ${hole.holeNumber}${score?.score ? `, score ${score.score}` : ''}`}
+                aria-current={isCurrentHole ? 'true' : undefined}
                 className={`flex-shrink-0 w-8 h-8 rounded-lg text-xs font-bold
                   flex items-center justify-center transition-all
                   ${isCurrentHole ? 'ring-2 ring-green-500 ring-offset-1' : ''}
@@ -227,6 +229,8 @@ export function LiveScorecard({
               <button
                 key={hole.holeNumber}
                 onClick={() => onHoleSelect(hole.holeNumber)}
+                aria-label={`Hole ${hole.holeNumber}, par ${hole.par}${score?.score ? `, score ${score.score}` : ''}`}
+                aria-current={isCurrentHole ? 'true' : undefined}
                 className={`aspect-square rounded-lg flex flex-col items-center justify-center
                   text-xs transition-all
                   ${isCurrentHole ? 'ring-2 ring-green-500' : ''}
@@ -255,6 +259,8 @@ export function LiveScorecard({
               <button
                 key={hole.holeNumber}
                 onClick={() => onHoleSelect(hole.holeNumber)}
+                aria-label={`Hole ${hole.holeNumber}, par ${hole.par}${score?.score ? `, score ${score.score}` : ''}`}
+                aria-current={isCurrentHole ? 'true' : undefined}
                 className={`aspect-square rounded-lg flex flex-col items-center justify-center
                   text-xs transition-all
                   ${isCurrentHole ? 'ring-2 ring-green-500' : ''}

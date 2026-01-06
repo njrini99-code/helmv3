@@ -1,0 +1,356 @@
+/**
+ * CoachHelm V2 Gate
+ *
+ * Controls access to CoachHelm features based on user and team settings.
+ * Provides functions to check if CoachHelm is enabled for a user.
+ *
+ * Note: Uses type assertions because the tables are created via migration
+ * and aren't in the generated database types yet.
+ */
+
+import { createClient } from '@/lib/supabase/server';
+import type { CoachHelmSettings, CoachHelmStatus } from './types';
+
+// Internal types for database rows (tables created via migration)
+interface CoachHelmSettingsRow {
+  enabled: boolean;
+  disabled_at: string | null;
+  disabled_reason: string | null;
+}
+
+interface TeamCoachHelmSettingsRow {
+  enabled: boolean;
+  disabled_reason: string | null;
+}
+
+/**
+ * Checks if CoachHelm is enabled globally (feature flag)
+ *
+ * @returns Whether CoachHelm V2 is enabled globally
+ */
+export function isCoachHelmEnabled(): boolean {
+  // Could be controlled by environment variable or feature flag
+  const envFlag = process.env.NEXT_PUBLIC_COACHHELM_ENABLED;
+  return envFlag !== 'false'; // Enabled by default unless explicitly disabled
+}
+
+/**
+ * Gets CoachHelm settings for a user
+ *
+ * @param userId - The user's UUID
+ * @returns Settings or null if not found
+ */
+export async function getCoachHelmSettings(
+  userId: string
+): Promise<CoachHelmSettings | null> {
+  const supabase = await createClient();
+
+  // Type assertion for new table
+  const { data, error } = await (supabase
+    .from('golf_coachhelm_settings' as 'users')
+    .select('enabled, disabled_at, disabled_reason')
+    .eq('user_id', userId)
+    .maybeSingle() as unknown as Promise<{
+    data: CoachHelmSettingsRow | null;
+    error: Error | null;
+  }>);
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    enabled: data.enabled,
+    disabledAt: data.disabled_at,
+    disabledReason: data.disabled_reason,
+  };
+}
+
+/**
+ * Gets team CoachHelm settings
+ *
+ * @param teamId - The team's UUID
+ * @returns Whether team has CoachHelm enabled
+ */
+export async function getTeamCoachHelmSettings(
+  teamId: string
+): Promise<{ enabled: boolean; disabledReason: string | null } | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await (supabase
+    .from('golf_team_coachhelm_settings' as 'users')
+    .select('enabled, disabled_reason')
+    .eq('team_id', teamId)
+    .maybeSingle() as unknown as Promise<{
+    data: TeamCoachHelmSettingsRow | null;
+    error: Error | null;
+  }>);
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    enabled: data.enabled,
+    disabledReason: data.disabled_reason,
+  };
+}
+
+/**
+ * Checks if CoachHelm is enabled for a specific coach
+ *
+ * This checks both global feature flag, user settings, and team settings.
+ *
+ * @param coachId - The coach's UUID (from golf_coaches table)
+ * @returns Full status including whether enabled and why disabled
+ */
+export async function isCoachHelmEnabledForCoach(
+  coachId: string
+): Promise<CoachHelmStatus> {
+  // Check global flag first
+  if (!isCoachHelmEnabled()) {
+    return {
+      userEnabled: false,
+      teamEnabled: false,
+      effectivelyEnabled: false,
+      disabledReason: 'CoachHelm is disabled globally',
+      disabledBy: null,
+    };
+  }
+
+  const supabase = await createClient();
+
+  // Get coach record to find user_id and team_id
+  const { data: coach, error: coachError } = await supabase
+    .from('golf_coaches')
+    .select('user_id, team_id')
+    .eq('id', coachId)
+    .single();
+
+  if (coachError || !coach) {
+    return {
+      userEnabled: true,
+      teamEnabled: true,
+      effectivelyEnabled: true,
+      disabledReason: null,
+      disabledBy: null,
+    };
+  }
+
+  // Check user-level settings
+  const userSettings = await getCoachHelmSettings(coach.user_id);
+  const userEnabled = userSettings?.enabled ?? true;
+
+  if (!userEnabled) {
+    return {
+      userEnabled: false,
+      teamEnabled: true,
+      effectivelyEnabled: false,
+      disabledReason: userSettings?.disabledReason ?? 'Disabled by user',
+      disabledBy: 'user',
+    };
+  }
+
+  // Check team-level settings if coach has a team
+  if (coach.team_id) {
+    const teamSettings = await getTeamCoachHelmSettings(coach.team_id);
+    const teamEnabled = teamSettings?.enabled ?? true;
+
+    if (!teamEnabled) {
+      return {
+        userEnabled: true,
+        teamEnabled: false,
+        effectivelyEnabled: false,
+        disabledReason: teamSettings?.disabledReason ?? 'Disabled by team',
+        disabledBy: 'team',
+      };
+    }
+  }
+
+  return {
+    userEnabled: true,
+    teamEnabled: true,
+    effectivelyEnabled: true,
+    disabledReason: null,
+    disabledBy: null,
+  };
+}
+
+/**
+ * Checks if CoachHelm is enabled for a specific player
+ *
+ * @param playerId - The player's UUID (from golf_players table)
+ * @returns Full status including whether enabled and why disabled
+ */
+export async function isCoachHelmEnabledForPlayer(
+  playerId: string
+): Promise<CoachHelmStatus> {
+  // Check global flag first
+  if (!isCoachHelmEnabled()) {
+    return {
+      userEnabled: false,
+      teamEnabled: false,
+      effectivelyEnabled: false,
+      disabledReason: 'CoachHelm is disabled globally',
+      disabledBy: null,
+    };
+  }
+
+  const supabase = await createClient();
+
+  // Get player record to find user_id and team_id
+  const { data: player, error: playerError } = await supabase
+    .from('golf_players')
+    .select('user_id, team_id')
+    .eq('id', playerId)
+    .single();
+
+  if (playerError || !player) {
+    return {
+      userEnabled: true,
+      teamEnabled: true,
+      effectivelyEnabled: true,
+      disabledReason: null,
+      disabledBy: null,
+    };
+  }
+
+  // Check user-level settings (user_id can be null for legacy data)
+  if (!player.user_id) {
+    return {
+      userEnabled: true,
+      teamEnabled: true,
+      effectivelyEnabled: true,
+      disabledReason: null,
+      disabledBy: null,
+    };
+  }
+  const userSettings = await getCoachHelmSettings(player.user_id);
+  const userEnabled = userSettings?.enabled ?? true;
+
+  if (!userEnabled) {
+    return {
+      userEnabled: false,
+      teamEnabled: true,
+      effectivelyEnabled: false,
+      disabledReason: userSettings?.disabledReason ?? 'Disabled by user',
+      disabledBy: 'user',
+    };
+  }
+
+  // Check team-level settings if player has a team
+  if (player.team_id) {
+    const teamSettings = await getTeamCoachHelmSettings(player.team_id);
+    const teamEnabled = teamSettings?.enabled ?? true;
+
+    if (!teamEnabled) {
+      return {
+        userEnabled: true,
+        teamEnabled: false,
+        effectivelyEnabled: false,
+        disabledReason: teamSettings?.disabledReason ?? 'Disabled by coach',
+        disabledBy: 'coach',
+      };
+    }
+  }
+
+  return {
+    userEnabled: true,
+    teamEnabled: true,
+    effectivelyEnabled: true,
+    disabledReason: null,
+    disabledBy: null,
+  };
+}
+
+/**
+ * Enables CoachHelm for a user
+ *
+ * @param userId - The user's UUID
+ */
+export async function enableCoachHelm(userId: string): Promise<boolean> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const table = supabase.from('golf_coachhelm_settings' as any) as any;
+  const { error } = await table.upsert({
+    user_id: userId,
+    enabled: true,
+    disabled_at: null,
+    disabled_reason: null,
+  });
+
+  return !error;
+}
+
+/**
+ * Disables CoachHelm for a user
+ *
+ * @param userId - The user's UUID
+ * @param reason - Optional reason for disabling
+ */
+export async function disableCoachHelm(
+  userId: string,
+  reason?: string
+): Promise<boolean> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const table = supabase.from('golf_coachhelm_settings' as any) as any;
+  const { error } = await table.upsert({
+    user_id: userId,
+    enabled: false,
+    disabled_at: new Date().toISOString(),
+    disabled_reason: reason ?? null,
+  });
+
+  return !error;
+}
+
+/**
+ * Enables CoachHelm for a team
+ *
+ * @param teamId - The team's UUID
+ */
+export async function enableTeamCoachHelm(teamId: string): Promise<boolean> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const table = supabase.from('golf_team_coachhelm_settings' as any) as any;
+  const { error } = await table.upsert({
+    team_id: teamId,
+    enabled: true,
+    disabled_at: null,
+    disabled_by: null,
+    disabled_reason: null,
+  });
+
+  return !error;
+}
+
+/**
+ * Disables CoachHelm for a team
+ *
+ * @param teamId - The team's UUID
+ * @param disabledBy - The user who disabled it
+ * @param reason - Optional reason for disabling
+ */
+export async function disableTeamCoachHelm(
+  teamId: string,
+  disabledBy: string,
+  reason?: string
+): Promise<boolean> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const table = supabase.from('golf_team_coachhelm_settings' as any) as any;
+  const { error } = await table.upsert({
+    team_id: teamId,
+    enabled: false,
+    disabled_at: new Date().toISOString(),
+    disabled_by: disabledBy,
+    disabled_reason: reason ?? null,
+  });
+
+  return !error;
+}

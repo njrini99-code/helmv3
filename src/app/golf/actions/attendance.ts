@@ -1,7 +1,5 @@
 'use server';
 
-//@ts-nocheck
-
 /**
  * Server Actions for Attendance Tracking
  *
@@ -50,7 +48,7 @@ export async function checkInPlayer(
       .eq('user_id', user.id)
       .single();
 
-    const { data: player } = await supabase
+    const { data: _player } = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
@@ -132,7 +130,6 @@ export async function checkInPlayer(
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error checking in player:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to check in player',
@@ -184,7 +181,6 @@ export async function bulkCheckIn(
       data: { successCount, failureCount },
     };
   } catch (error) {
-    console.error('Error with bulk check-in:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to bulk check-in',
@@ -236,7 +232,6 @@ export async function markNoShow(
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error marking no-show:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to mark no-show',
@@ -288,7 +283,6 @@ export async function getAttendanceReport(
       },
     };
   } catch (error) {
-    console.error('Error getting attendance report:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get attendance report',
@@ -327,7 +321,6 @@ export async function getPlayerAttendanceStats(
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error getting player attendance stats:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get attendance stats',
@@ -363,7 +356,6 @@ export async function verifyQRCodeCheckIn(
       },
     };
   } catch (error) {
-    console.error('Error verifying QR code:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Invalid QR code',

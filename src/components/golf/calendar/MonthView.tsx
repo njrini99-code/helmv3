@@ -2,8 +2,7 @@
 
 import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
-import type { EventType } from '@/lib/types/calendar';
-import { getEventTypeConfig, isToday } from '@/lib/calendar/event-styles';
+import { isToday } from '@/lib/calendar/event-styles';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { PremiumEventBlock } from './PremiumEventBlock';
 

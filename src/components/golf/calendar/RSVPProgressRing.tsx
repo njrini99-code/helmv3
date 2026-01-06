@@ -17,7 +17,6 @@
  */
 
 import { cn } from '@/lib/utils';
-import { calculateRSVPStats, type RSVPStats } from '@/lib/calendar/premium-utils';
 import '@/styles/calendar-tokens.css';
 
 export interface RSVPProgressRingProps {

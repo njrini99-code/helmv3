@@ -1,7 +1,6 @@
-'use client';
-
-//@ts-nocheck
+// @ts-nocheck
 /* eslint-disable @typescript-eslint/no-explicit-any */
+'use client';
 
 /**
  * RecurrenceEditDialog Component
@@ -113,12 +112,12 @@ export function RecurrenceEditDialog({
         </div>
 
         <div className="flex gap-3">
-          <Button variant="outline" onClick={onClose} className="flex-1">
+          <Button variant="secondary" onClick={onClose} className="flex-1">
             Cancel
           </Button>
           <Button
             onClick={handleConfirm}
-            variant={action === 'delete' ? 'destructive' : 'default'}
+            variant={action === 'delete' ? 'danger' : 'primary'}
             className="flex-1"
           >
             {action === 'edit' ? 'Continue' : 'Delete'}

@@ -1,7 +1,6 @@
-'use client';
-
-//@ts-nocheck
+// @ts-nocheck
 /* eslint-disable @typescript-eslint/no-explicit-any */
+'use client';
 
 /**
  * RecurrencePicker Component
@@ -91,7 +90,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
         <Label>Recurrence</Label>
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           onClick={() => setIsOpen(true)}
           className="w-full justify-start text-left font-normal"
         >
@@ -273,7 +272,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
         {value && (
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             onClick={handleClear}
           >
             Clear

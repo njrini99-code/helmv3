@@ -8,6 +8,7 @@ import { PageLoading } from '@/components/ui/loading';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { ToastProvider } from '@/components/ui/toast';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
+import { ViewTransitionsProvider } from '@/components/providers/ViewTransitionsProvider';
 import { CommandPalette } from '@/components/golf/CommandPalette';
 import { MobileBottomNav } from '@/components/golf/MobileBottomNav';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
@@ -30,7 +31,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       <CommandPalette isCoach={isCoach} />
       
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block" style={{ viewTransitionName: 'sidebar' }}>
         <GolfSidebar
           userRole={userData.role}
           userName={userData.name}
@@ -73,7 +74,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           'transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
           collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'
         )}
-        style={{ background: 'transparent' }}
+        style={{ background: 'transparent', viewTransitionName: 'page-content' }}
       >
         <div className="animate-page-enter min-h-full" style={{ background: 'transparent' }}>
           {children}
@@ -108,18 +109,25 @@ export default function GolfDashboardLayout({
         return;
       }
 
-      // TEMPORARY: Simplified queries without joins + bypass onboarding for development
-      console.log('🔍 DEBUG: Querying golf_coaches with simplified query (no joins)');
-      const { data: coach, error: coachError } = await supabase
-        .from('golf_coaches')
-        .select('id, full_name, avatar_url, team_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // OPTIMIZATION: Query both coach and player in parallel
+      const [coachResult, playerResult] = await Promise.all([
+        supabase
+          .from('golf_coaches')
+          .select('id, full_name, avatar_url, team_id')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        supabase
+          .from('golf_players')
+          .select('id, first_name, last_name, avatar_url, team_id')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+      ]);
 
-      console.log('🔍 DEBUG: Coach query result:', { coach, error: coachError });
+      const coach = coachResult.data;
+      const player = playerResult.data;
 
       if (coach) {
-        // Get team name if team_id exists
+        // Get team name if team_id exists (parallel with player query if needed)
         let teamName: string | undefined;
         if (coach.team_id) {
           const { data: team } = await supabase
@@ -139,15 +147,6 @@ export default function GolfDashboardLayout({
         setLoading(false);
         return;
       }
-
-      console.log('🔍 DEBUG: Querying golf_players with simplified query (no joins)');
-      const { data: player, error: playerError } = await supabase
-        .from('golf_players')
-        .select('id, first_name, last_name, avatar_url, team_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      console.log('🔍 DEBUG: Player query result:', { player, error: playerError });
 
       if (player) {
         // Get team name if team_id exists
@@ -182,14 +181,16 @@ export default function GolfDashboardLayout({
   }
 
   return (
-    <SidebarProvider>
-      <ToastProvider>
-        <SessionActivityProvider>
-          <GolfDashboardContent userData={userData}>
-            {children}
-          </GolfDashboardContent>
-        </SessionActivityProvider>
-      </ToastProvider>
-    </SidebarProvider>
+    <ViewTransitionsProvider>
+      <SidebarProvider>
+        <ToastProvider>
+          <SessionActivityProvider>
+            <GolfDashboardContent userData={userData}>
+              {children}
+            </GolfDashboardContent>
+          </SessionActivityProvider>
+        </ToastProvider>
+      </SidebarProvider>
+    </ViewTransitionsProvider>
   );
 }

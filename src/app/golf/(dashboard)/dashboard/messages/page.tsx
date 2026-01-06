@@ -22,7 +22,7 @@ export default function GolfMessagesPage() {
     teamId,
     teamName,
     loading: contextLoading,
-    error: contextError
+    error: _contextError
   } = useTeamContext();
 
   const { conversations, loading: conversationsLoading, refetch } = useGolfConversations();
@@ -73,8 +73,7 @@ export default function GolfMessagesPage() {
         handleSelectConversation(result.conversationId);
         showToast('Conversation started', 'success');
       }
-    } catch (error) {
-      console.error('Error creating conversation:', error);
+    } catch {
       showToast('Failed to start conversation', 'error');
     }
   };
@@ -85,11 +84,10 @@ export default function GolfMessagesPage() {
 
     try {
       await sendMessage(content);
-      refetch();
+      // NOTE: Removed refetch() - real-time subscription automatically updates messages
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
-      console.error('Message send error:', error);
       showToast(errorMessage, 'error');
       return false;
     }
@@ -505,7 +503,7 @@ function ConversationGroup({
   conversations,
   selectedId,
   onSelect,
-  currentUserId,
+  currentUserId: _currentUserId,
 }: {
   label: string;
   conversations: GolfConversationWithMeta[];

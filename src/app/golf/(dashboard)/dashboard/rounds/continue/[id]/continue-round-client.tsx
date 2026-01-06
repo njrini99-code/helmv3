@@ -109,12 +109,10 @@ export default function ContinueRoundClient({
         holes: allHoleStats,
       };
 
-      console.log('[Continue Round] Submitting completed round:', roundData);
       const result = await submitGolfRoundComprehensive(roundData, roundId);
       if (!result.success) {
         throw new Error(result.error);
       }
-      console.log('[Continue Round] Round submitted successfully:', result);
 
       // Calculate summary stats
       const totalScore = allHoleStats.reduce((sum, h) => sum + h.score, 0);
@@ -163,8 +161,6 @@ export default function ContinueRoundClient({
       setSubmitting(false);
       setShowSummary(true);
     } catch (err) {
-      console.error('[Continue Round] Failed to submit round - Full error:', err);
-      console.error('[Continue Round] Error details:', JSON.stringify(err, null, 2));
       setError(err instanceof Error ? err.message : 'Failed to submit round');
       setSubmitting(false);
     }
@@ -191,7 +187,6 @@ export default function ContinueRoundClient({
         })),
       };
 
-      console.log('[Continue Round] Saving partial round progress:', partialRoundData);
       const result = await savePartialRound(partialRoundData, roundId);
 
       if (!result.success) {
@@ -208,7 +203,6 @@ export default function ContinueRoundClient({
   };
 
   const handleDeleteRound = async () => {
-    console.log('[Continue Round] Deleting in-progress round:', roundId);
     await deleteInProgressRound(roundId);
 
     setShowExitModal(false);
@@ -287,6 +281,7 @@ export default function ContinueRoundClient({
         currentHoleIndex={currentHoleIndex}
         onHoleComplete={handleHoleComplete}
         onExit={() => setShowExitModal(true)}
+        onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}
       />
 
       {/* Save Round Modal */}

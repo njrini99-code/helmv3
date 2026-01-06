@@ -18,7 +18,7 @@
 import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { AvailabilityCell, AvailabilityCellLegend } from './AvailabilityCell';
-import { format, parseISO, addMinutes } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import '@/styles/calendar-tokens.css';
 
 export interface TimeSlot {
@@ -216,7 +216,9 @@ export function AvailabilityPollGrid({
  * Format time label for display
  */
 function formatTimeLabel(time: string): string {
-  const [hours, minutes] = time.split(':').map(Number);
+  const parts = time.split(':').map(Number);
+  const hours = parts[0] ?? 0;
+  const minutes = parts[1] ?? 0;
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
 
@@ -239,7 +241,7 @@ export function CompactAvailabilityGrid({
   const previewDates = dates.slice(0, 3);
 
   // Show only 4-6 time slots
-  const uniqueTimes = [...new Set(timeSlots.map((s) => s.startTime))].slice(0, 6);
+  const uniqueTimes = Array.from(new Set(timeSlots.map((s) => s.startTime))).slice(0, 6);
 
   return (
     <div className={cn('space-y-1', className)}>

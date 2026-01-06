@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { PuttMissTagSelector } from './putt-miss-tag-selector';
+import { ApproachMissSelector } from './approach-miss-selector';
+import type { PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
 
 // ============================================================================
 // TYPES
@@ -24,11 +27,17 @@ export interface ShotRecord {
   distanceToHoleAfter: number;
   distanceUnitAfter: 'yards' | 'feet';
   shotDistance: number;
-  missDirection?: string;
+  missDirection?: string; // Legacy field, kept for backward compatibility
   puttBreak?: 'right_to_left' | 'left_to_right' | 'straight' | 'multiple';
   puttSlope?: 'uphill' | 'downhill' | 'level' | 'severe';
   isPenalty: boolean;
   penaltyType?: 'ob' | 'water' | 'unplayable' | 'lost';
+  // New putt classification fields
+  puttMissTags?: PuttMissTag[];
+  puttDistanceFeet?: number;
+  // New approach miss classification
+  approachMissDirection?: ApproachMissDirection;
+  approachMissLieType?: 'fairway' | 'rough' | 'bunker' | 'hazard';
 }
 
 export interface HoleStats {
@@ -67,6 +76,91 @@ interface ShotTrackingProps {
   onHoleComplete: (holeIndex: number, stats: HoleStats) => void;
   onSaveShot?: (shot: ShotRecord) => void;
   onExit?: () => void;
+  onNavigateToHole?: (holeIndex: number) => void;
+}
+
+// ============================================================================
+// SHOT DISTANCE CALCULATION HELPER
+// ============================================================================
+
+/**
+ * Calculates the actual shot distance based on miss direction.
+ *
+ * The key insight: distanceToHoleAfter tells us how far the ball is from the hole,
+ * but the DIRECTION tells us WHERE the ball is relative to the hole:
+ *
+ * - SHORT: Ball is between you and the hole → shot = before - after
+ * - LONG: Ball went past the hole → shot = before + after
+ * - LEFT/RIGHT: Ball is lateral to the hole at ~same depth → shot ≈ before
+ * - SHORT_LEFT/SHORT_RIGHT: Diagonal short → shot ≈ before - (after * 0.7)
+ * - LONG_LEFT/LONG_RIGHT: Diagonal long → shot ≈ before + (after * 0.7)
+ *
+ * The 0.7 factor approximates a 45-degree diagonal (cos(45°) ≈ 0.707)
+ */
+function calculateShotDistanceWithDirection(
+  distanceBeforeYards: number,
+  distanceAfterYards: number,
+  missDirection: string | null | undefined
+): number {
+  // If holed out, shot distance is exactly the before distance
+  if (distanceAfterYards === 0) {
+    return distanceBeforeYards;
+  }
+
+  // If no miss direction, assume linear (short) - ball didn't reach target
+  if (!missDirection) {
+    return Math.max(0, distanceBeforeYards - distanceAfterYards);
+  }
+
+  switch (missDirection.toLowerCase()) {
+    // SHORT: Ball is between you and the hole
+    case 'short':
+      return Math.max(0, distanceBeforeYards - distanceAfterYards);
+
+    // LONG: Ball went past the hole
+    case 'long':
+      return distanceBeforeYards + distanceAfterYards;
+
+    // LEFT/RIGHT: Pure lateral miss - ball traveled approximately to hole depth
+    // then ended up sideways. Shot distance ≈ original distance since ball
+    // traveled to the target depth, just missed sideways.
+    case 'left':
+    case 'right':
+      // If the ball is truly lateral at hole's depth, shot distance ≈ before
+      // For a more geometric approach: sqrt(before² - after²) if after < before
+      // But in practice, lateral misses mean you reached the target zone
+      if (distanceAfterYards >= distanceBeforeYards) {
+        // This shouldn't happen for a true lateral miss, but handle it
+        return distanceBeforeYards;
+      }
+      // Use Pythagorean: if ball reached hole depth but is 'after' yards off to side
+      // shot distance = sqrt(before² + lateral_offset²) but since lateral_offset ≈ after for pure lateral
+      // Actually, for pure lateral at same depth: shot ≈ before
+      return distanceBeforeYards;
+
+    // DIAGONAL SHORT: Ball is short AND to the side
+    // Using 45-degree approximation: forward component ≈ after * 0.707
+    case 'short_left':
+    case 'short_right':
+      return Math.max(0, distanceBeforeYards - (distanceAfterYards * 0.707));
+
+    // DIAGONAL LONG: Ball went past AND to the side
+    case 'long_left':
+    case 'long_right':
+      return distanceBeforeYards + (distanceAfterYards * 0.707);
+
+    // PUTTING MISSES
+    case 'high':
+    case 'low':
+      // High/low means the ball broke too much or not enough - treat as short miss
+      // since the ball didn't go in, it likely went past or stopped near the hole
+      // For putting, we typically assume linear distance
+      return Math.max(0, distanceBeforeYards - distanceAfterYards);
+
+    default:
+      // Unknown direction, assume linear
+      return Math.max(0, distanceBeforeYards - distanceAfterYards);
+  }
 }
 
 // ============================================================================
@@ -78,7 +172,8 @@ export default function ShotTrackingComprehensive({
   currentHoleIndex,
   onHoleComplete,
   onSaveShot,
-  onExit
+  onExit,
+  onNavigateToHole
 }: ShotTrackingProps) {
   const currentHole = holes[currentHoleIndex];
 
@@ -111,6 +206,12 @@ export default function ShotTrackingComprehensive({
   const [missDirection, setMissDirection] = useState<string | null>(null);
   const [puttBreak, setPuttBreak] = useState<string | null>(null);
   const [puttSlope, setPuttSlope] = useState<string | null>(null);
+  // New putt classification state
+  const [puttMissTags, setPuttMissTags] = useState<PuttMissTag[]>([]);
+  const [puttDistanceFeet, setPuttDistanceFeet] = useState<number | undefined>(undefined);
+  // New approach miss classification state
+  const [approachMissDirection, setApproachMissDirection] = useState<ApproachMissDirection | null>(null);
+  const [approachMissLieType, setApproachMissLieType] = useState<'fairway' | 'rough' | 'bunker' | 'hazard' | undefined>(undefined);
   
   // Distance after shot (key fix: we ask for this after EVERY shot)
   const [distanceAfterShot, setDistanceAfterShot] = useState<string>('');
@@ -139,6 +240,11 @@ export default function ShotTrackingComprehensive({
     setDistanceAfterUnit('yards');
     setShowPenaltyModal(false);
     setPenaltyType(null);
+    // Reset new classification fields
+    setPuttMissTags([]);
+    setPuttDistanceFeet(undefined);
+    setApproachMissDirection(null);
+    setApproachMissLieType(undefined);
   }, [currentHoleIndex, currentHole.yardage]);
 
   // ============================================================================
@@ -218,10 +324,9 @@ export default function ShotTrackingComprehensive({
       if (!puttBreak) return false;
     }
     
-    // Miss direction required for misses
+    // Miss direction required for tee shot misses
     if (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot) && !missDirection) return false;
-    if (isApproachOrAroundGreen && !['green', 'hole', 'fairway'].includes(resultOfShot) && !missDirection) return false;
-    if (isPutting && resultOfShot !== 'hole' && !missDirection) return false;
+    // Approach and putt miss classification are optional but encouraged
     
     return true;
   };
@@ -270,10 +375,14 @@ export default function ShotTrackingComprehensive({
       unitAfter = distanceAfterUnit;
     }
     
-    // Calculate shot distance (normalize to yards for comparison)
+    // Calculate shot distance using geometry based on miss direction
     const beforeInYards = distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole;
     const afterInYards = unitAfter === 'feet' ? distanceAfter / 3 : distanceAfter;
-    const shotDistance = Math.max(0, Math.round(beforeInYards - afterInYards));
+    const shotDistance = Math.round(calculateShotDistanceWithDirection(
+      beforeInYards,
+      afterInYards,
+      missDirection
+    ));
     
     // Create shot record
     const shotRecord: ShotRecord = {
@@ -287,10 +396,15 @@ export default function ShotTrackingComprehensive({
       distanceToHoleAfter: distanceAfter,
       distanceUnitAfter: unitAfter,
       shotDistance: shotDistance,
-      missDirection: missDirection || undefined,
+      missDirection: missDirection || undefined, // Legacy field
       puttBreak: isPutting ? puttBreak as any : undefined,
       puttSlope: isPutting ? puttSlope as any : undefined,
       isPenalty: false,
+      // New classification fields
+      puttMissTags: isPutting && puttMissTags.length > 0 ? puttMissTags : undefined,
+      puttDistanceFeet: isPutting && puttDistanceFeet ? puttDistanceFeet : undefined,
+      approachMissDirection: (isApproachOrAroundGreen && approachMissDirection) ? approachMissDirection : undefined,
+      approachMissLieType: (isApproachOrAroundGreen && approachMissLieType) ? approachMissLieType : undefined,
     };
 
     const updatedHistory = [...shotHistory, shotRecord];
@@ -344,16 +458,9 @@ export default function ShotTrackingComprehensive({
         fairwayHit = teeShot.result === 'fairway';
         driveMissDirection = teeShot.missDirection || null;
         driverUsed = teeShot.clubType === 'driver';
-        
-        // Driving distance = distance before - distance after
-        // Normalize to yards
-        const beforeYards = teeShot.distanceUnitBefore === 'feet' 
-          ? teeShot.distanceToHoleBefore / 3 
-          : teeShot.distanceToHoleBefore;
-        const afterYards = teeShot.distanceUnitAfter === 'feet' 
-          ? teeShot.distanceToHoleAfter / 3 
-          : teeShot.distanceToHoleAfter;
-        drivingDistance = Math.round(beforeYards - afterYards);
+
+        // Driving distance is already calculated correctly with geometry in shotDistance
+        drivingDistance = teeShot.shotDistance;
       }
     }
 
@@ -537,6 +644,28 @@ export default function ShotTrackingComprehensive({
   return (
     <div className="min-h-screen bg-white">
 
+      {/* Desktop Header with Exit */}
+      {onExit && (
+        <div className="hidden lg:flex items-center justify-between px-6 py-3 bg-slate-800 border-b border-slate-700">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-slate-300">
+              Round in Progress
+            </span>
+            <span className="text-xs text-slate-400">
+              Hole {currentHole.number} of {holes.length} • {shotHistory.length + 1} shot{shotHistory.length !== 0 ? 's' : ''}
+            </span>
+          </div>
+          <button
+            onClick={onExit}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-medium text-sm transition-colors shadow-sm">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Save & Exit
+          </button>
+        </div>
+      )}
+
       {/* SCORECARD - Dark header */}
       <div className="bg-[#1e293b] sticky top-0 z-50">
         {/* Mobile Navigation */}
@@ -580,6 +709,7 @@ export default function ShotTrackingComprehensive({
               const isCurrent = idx === currentHoleIndex;
               const hasScore = hole.score !== null;
               const scoreToPar = hasScore ? (hole.score || 0) - hole.par : 0;
+              const canNavigate = onNavigateToHole && (hasScore || idx < currentHoleIndex);
               const getScoreColor = () => {
                 if (isCurrent) return 'text-white';
                 if (!hasScore) return 'text-slate-500';
@@ -590,14 +720,29 @@ export default function ShotTrackingComprehensive({
                 return 'text-red-400'; // Double+
               };
               return (
-                <div key={hole.number} id={`hole-${hole.number}`} className={`min-w-[75px] py-3 px-2 text-center border-r border-slate-600 ${isCurrent ? 'bg-emerald-600' : ''}`}>
+                <button
+                  key={hole.number}
+                  id={`hole-${hole.number}`}
+                  onClick={() => canNavigate && onNavigateToHole(idx)}
+                  disabled={!canNavigate}
+                  className={`min-w-[75px] py-3 px-2 text-center border-r border-slate-600 transition-all ${
+                    isCurrent
+                      ? 'bg-emerald-600'
+                      : canNavigate
+                        ? 'hover:bg-slate-700 cursor-pointer'
+                        : 'cursor-default'
+                  }`}
+                >
                   <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-slate-300'}`}>Hole {hole.number}</div>
                   <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-slate-400'}`}>Par {hole.par}</div>
                   <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-slate-500'}`}>{hole.yardage} yds</div>
                   <div className={`mt-1 text-lg font-bold ${getScoreColor()}`}>
                     {hasScore ? hole.score : '-'}
                   </div>
-                </div>
+                  {canNavigate && !isCurrent && (
+                    <div className="text-[10px] text-slate-400 mt-0.5">✎ Edit</div>
+                  )}
+                </button>
               );
             })}
             {/* OUT */}
@@ -613,6 +758,7 @@ export default function ShotTrackingComprehensive({
               const isCurrent = actualIdx === currentHoleIndex;
               const hasScore = hole.score !== null;
               const scoreToPar = hasScore ? (hole.score || 0) - hole.par : 0;
+              const canNavigate = onNavigateToHole && (hasScore || actualIdx < currentHoleIndex);
               const getScoreColor = () => {
                 if (isCurrent) return 'text-white';
                 if (!hasScore) return 'text-slate-500';
@@ -623,14 +769,29 @@ export default function ShotTrackingComprehensive({
                 return 'text-red-400'; // Double+
               };
               return (
-                <div key={hole.number} id={`hole-${hole.number}`} className={`min-w-[75px] py-3 px-2 text-center border-r border-slate-600 ${isCurrent ? 'bg-emerald-600' : ''}`}>
+                <button
+                  key={hole.number}
+                  id={`hole-${hole.number}`}
+                  onClick={() => canNavigate && onNavigateToHole(actualIdx)}
+                  disabled={!canNavigate}
+                  className={`min-w-[75px] py-3 px-2 text-center border-r border-slate-600 transition-all ${
+                    isCurrent
+                      ? 'bg-emerald-600'
+                      : canNavigate
+                        ? 'hover:bg-slate-700 cursor-pointer'
+                        : 'cursor-default'
+                  }`}
+                >
                   <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-slate-300'}`}>Hole {hole.number}</div>
                   <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-slate-400'}`}>Par {hole.par}</div>
                   <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-slate-500'}`}>{hole.yardage} yds</div>
                   <div className={`mt-1 text-lg font-bold ${getScoreColor()}`}>
                     {hasScore ? hole.score : '-'}
                   </div>
-                </div>
+                  {canNavigate && !isCurrent && (
+                    <div className="text-[10px] text-slate-400 mt-0.5">✎ Edit</div>
+                  )}
+                </button>
               );
             })}
             {/* IN */}
@@ -844,53 +1005,43 @@ export default function ShotTrackingComprehensive({
                   ))}
                 </div>
               )}
-              {isApproachOrAroundGreen && (
-                <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
-                  {['long_left', 'long', 'long_right', 'left', null, 'right', 'short_left', 'short', 'short_right'].map((d, i) => (
-                    d === null ? (
-                      <div key={i} className="flex items-center justify-center">
-                        <div className="w-10 h-10 rounded-lg bg-emerald-50 ring-2 ring-emerald-200 flex items-center justify-center text-base">⛳</div>
+              {isApproachOrAroundGreen && resultOfShot && !['green', 'hole', 'fairway'].includes(resultOfShot) && (
+                <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
+                  <ApproachMissSelector
+                    selectedDirection={approachMissDirection}
+                    onDirectionChange={setApproachMissDirection}
+                  />
+                  {/* Lie type selector for approach misses */}
+                  {approachMissDirection && (
+                    <div className="mt-4 space-y-2">
+                      <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">Lie Type</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(['fairway', 'rough', 'bunker', 'hazard'] as const).map((lie) => (
+                          <button
+                            key={lie}
+                            onClick={() => setApproachMissLieType(lie)}
+                            className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                              approachMissLieType === lie
+                                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                                : 'bg-white/70 backdrop-blur-sm border border-slate-200 text-slate-700 hover:border-emerald-300 hover:bg-emerald-50'
+                            }`}
+                          >
+                            {lie.charAt(0).toUpperCase() + lie.slice(1)}
+                          </button>
+                        ))}
                       </div>
-                    ) : (
-                      <button key={d} onClick={() => setMissDirection(d)}
-                        className={`py-2.5 rounded-lg font-semibold text-xs transition-all ${
-                          missDirection === d
-                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                            : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100'}`}>
-                        {d === 'long_left' && '↖'}
-                        {d === 'long' && '↑'}
-                        {d === 'long_right' && '↗'}
-                        {d === 'left' && '←'}
-                        {d === 'right' && '→'}
-                        {d === 'short_left' && '↙'}
-                        {d === 'short' && '↓'}
-                        {d === 'short_right' && '↘'}
-                      </button>
-                    )
-                  ))}
+                    </div>
+                  )}
                 </div>
               )}
-              {isPutting && (
-                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
-                  {[
-                    { v: 'short', l: 'Short', icon: '↓', desc: 'Came up short' },
-                    { v: 'low', l: 'Low', icon: '↘', desc: "Didn't break enough" },
-                    { v: 'high', l: 'High', icon: '↗', desc: 'Broke too much' },
-                  ].map(d => (
-                    <button
-                      key={d.v}
-                      onClick={() => setMissDirection(d.v)}
-                      className={`py-4 rounded-xl font-semibold text-sm transition-all flex flex-col items-center gap-1 ${
-                        missDirection === d.v
-                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                          : 'bg-white text-slate-700 ring-1 ring-emerald-200 hover:ring-emerald-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="text-xl">{d.icon}</span>
-                      <span>{d.l}</span>
-                      <span className="text-[10px] opacity-70 font-normal">{d.desc}</span>
-                    </button>
-                  ))}
+              {isPutting && resultOfShot && resultOfShot !== 'hole' && (
+                <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
+                  <PuttMissTagSelector
+                    selectedTags={puttMissTags}
+                    onTagsChange={setPuttMissTags}
+                    distanceFeet={puttDistanceFeet}
+                    onDistanceChange={setPuttDistanceFeet}
+                  />
                 </div>
               )}
             </div>
@@ -910,6 +1061,7 @@ export default function ShotTrackingComprehensive({
                 <input
                   ref={distanceInputRef}
                   type="number"
+                  inputMode="numeric"
                   value={distanceAfterShot}
                   onChange={(e) => setDistanceAfterShot(e.target.value)}
                   placeholder="Enter distance"
@@ -942,9 +1094,10 @@ export default function ShotTrackingComprehensive({
                 <div className="flex items-center justify-between bg-white/60 rounded-lg px-4 py-2.5 border border-emerald-200">
                   <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Shot Distance</span>
                   <span className="text-lg font-bold text-emerald-700">
-                    ~{Math.max(0, Math.round(
-                      (distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole) -
-                      (distanceAfterUnit === 'feet' ? parseInt(distanceAfterShot) / 3 : parseInt(distanceAfterShot))
+                    ~{Math.round(calculateShotDistanceWithDirection(
+                      distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole,
+                      distanceAfterUnit === 'feet' ? parseInt(distanceAfterShot) / 3 : parseInt(distanceAfterShot),
+                      missDirection
                     ))} yards
                   </span>
                 </div>
@@ -953,7 +1106,10 @@ export default function ShotTrackingComprehensive({
           )}
 
           {/* Next Shot Button */}
-          <button onClick={handleNextShot} disabled={!isReadyForNextShot()}
+          <button
+            onClick={handleNextShot}
+            disabled={!isReadyForNextShot()}
+            aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}
             className={`w-full py-4 rounded-lg font-bold text-base transition-all ${
               isReadyForNextShot()
                 ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
@@ -962,7 +1118,9 @@ export default function ShotTrackingComprehensive({
           </button>
 
           {/* Penalty Button */}
-          <button onClick={handleAddPenalty}
+          <button
+            onClick={handleAddPenalty}
+            aria-label="Add penalty stroke"
             className="w-full py-3 rounded-lg font-semibold text-sm text-red-600 bg-red-50 ring-1 ring-red-200 hover:bg-red-100 hover:ring-red-300 transition-all">
             ⚠️ Add Penalty Stroke
           </button>

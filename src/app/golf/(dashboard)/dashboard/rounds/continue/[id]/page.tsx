@@ -32,31 +32,29 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
     notFound();
   }
 
-  // Load holes and shots
-  const { data: holes, error: holesError } = await supabase
-    .from('golf_holes')
-    .select(`
-      *,
-      shots:golf_shots(*)
-    `)
-    .eq('round_id', params.id)
-    .order('hole_number', { ascending: true });
+  // Load holes and shots in parallel (performance optimization)
+  const [
+    { data: holes },
+    { data: legacyShots }
+  ] = await Promise.all([
+    supabase
+      .from('golf_holes')
+      .select(`
+        *,
+        shots:golf_shots(*)
+      `)
+      .eq('round_id', params.id)
+      .order('hole_number', { ascending: true }),
+    supabase
+      .from('golf_shots')
+      .select('*')
+      .eq('round_id', params.id)
+      .is('hole_id', null)
+      .order('hole_number', { ascending: true })
+      .order('shot_number', { ascending: true })
+  ]);
 
-  if (holesError) {
-    console.error('[Golf] Error loading holes:', holesError);
-  }
-
-  const { data: legacyShots, error: legacyShotsError } = await supabase
-    .from('golf_shots')
-    .select('*')
-    .eq('round_id', params.id)
-    .is('hole_id', null)
-    .order('hole_number', { ascending: true })
-    .order('shot_number', { ascending: true });
-
-  if (legacyShotsError) {
-    console.error('[Golf] Error loading legacy shots:', legacyShotsError);
-  }
+  // Errors are handled gracefully - holes/shots will be empty if fetch fails
 
   const legacyShotsByHole = new Map<number, any[]>();
   for (const shot of legacyShots || []) {
@@ -68,11 +66,11 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
   // Transform database holes to HoleStats format (completed holes only)
   const completedHoleStats: HoleStats[] = (holes || [])
     .filter((hole: any) => hole.score !== null)
-    .map(hole => {
-      const holeShots = (hole.shots && hole.shots.length > 0)
+    .map((hole: any) => {
+      const holeShots = (hole.shots && Array.isArray(hole.shots) && hole.shots.length > 0)
         ? hole.shots
         : (legacyShotsByHole.get(hole.hole_number) || []);
-      const shots = holeShots.sort((a: any, b: any) => a.shot_number - b.shot_number);
+      const shots = (holeShots || []).sort((a: any, b: any) => a.shot_number - b.shot_number);
 
       return {
         holeNumber: hole.hole_number,
@@ -131,7 +129,9 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
   }
 
   // Create hole configuration for remaining holes
-  const allHoles = Array.from({ length: round.holes_to_play || 18 }, (_, i) => {
+  // Note: holes_to_play is not in schema, default to 18
+  const holesToPlay = 18;
+  const allHoles = Array.from({ length: holesToPlay }, (_, i) => {
     const existingHole = holeConfigMap.get(i + 1);
     return {
       number: i + 1,
@@ -153,13 +153,23 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
     roundDate: round.round_date,
   };
 
+  // Determine the starting hole index
+  // current_hole is the hole the player was on when they exited (1-indexed)
+  // We need to convert to 0-indexed for the component
+  // If current_hole is not set, use the next hole after completed holes, or hole 1
+  const startHoleIndex = round.current_hole 
+    ? Math.max(0, round.current_hole - 1) // Convert to 0-indexed, ensure non-negative
+    : completedHoleStats.length > 0 
+      ? completedHoleStats.length // Next hole after last completed
+      : 0; // Start at hole 1 (index 0)
+
   return (
     <ContinueRoundClient
       roundId={params.id}
       setupData={setupData}
       holes={allHoles}
       completedHoleStats={completedHoleStats}
-      startHoleIndex={(round.current_hole || 1) - 1}
+      startHoleIndex={startHoleIndex}
     />
   );
 }

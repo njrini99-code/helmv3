@@ -57,9 +57,9 @@ const FEED_TYPE_CONFIGS = {
   team: {
     icon: Users,
     label: 'Team Events',
-    colorClass: 'text-blue-700',
-    bgClass: 'bg-blue-50',
-    borderClass: 'border-blue-200',
+    colorClass: 'text-green-700',
+    bgClass: 'bg-green-50',
+    borderClass: 'border-green-200',
   },
   personal: {
     icon: Calendar,

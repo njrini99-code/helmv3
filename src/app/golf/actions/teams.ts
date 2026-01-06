@@ -99,7 +99,6 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
     .eq('id', playerId);
 
   if (error) {
-    console.error('Error joining golf team:', error);
     return {
       success: false,
       error: 'Failed to join team. Please try again.',

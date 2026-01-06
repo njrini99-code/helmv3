@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { PremiumCalendarClient, type TeamMember } from './PremiumCalendarClient';
-import { createClient } from '@/lib/supabase/client';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import {
   Dialog,

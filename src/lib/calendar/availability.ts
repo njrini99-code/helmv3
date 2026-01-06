@@ -57,33 +57,91 @@ export async function getUserBusyPeriods(
   supabase: SupabaseClient
 ): Promise<BusyPeriod[]> {
   const busyPeriods: BusyPeriod[] = [];
+  const dateMin = timeMin.toISOString().split('T')[0];
+  const dateMax = timeMax.toISOString().split('T')[0];
 
-  // 1. Get player/coach profile
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id, team_id, user_id')
-    .eq('user_id', userId)
-    .maybeSingle();
+  // 1. Get player/coach profile in parallel (optimization: query both at once)
+  const [playerResult, coachResult] = await Promise.all([
+    supabase
+      .from('golf_players')
+      .select('id, team_id, user_id')
+      .eq('user_id', userId)
+      .maybeSingle(),
+    supabase
+      .from('golf_coaches')
+      .select('id, team_id, user_id')
+      .eq('user_id', userId)
+      .maybeSingle(),
+  ]);
 
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, team_id, user_id')
-    .eq('user_id', userId)
-    .maybeSingle();
-
+  const player = playerResult.data;
+  const coach = coachResult.data;
   const isCoach = !!coach;
-
-  // 2. Fetch team events they're part of
   const teamId = coach?.team_id || player?.team_id;
-  if (teamId) {
-    const { data: events } = await supabase
-      .from('golf_events')
-      .select('*')
-      .eq('team_id', teamId)
-      .gte('start_date', timeMin.toISOString().split('T')[0])
-      .lte('start_date', timeMax.toISOString().split('T')[0]);
 
-    for (const event of events || []) {
+  // 2. Fetch all busy periods in parallel (major performance improvement)
+  const queries: Promise<any>[] = [];
+
+  // Team events query
+  if (teamId) {
+    queries.push(
+      supabase
+        .from('golf_events')
+        .select('id, title, start_date, end_date, start_time, end_time, created_by')
+        .eq('team_id', teamId)
+        .gte('start_date', dateMin)
+        .lte('start_date', dateMax)
+    );
+  } else {
+    queries.push(Promise.resolve({ data: [] }));
+  }
+
+  // Player-specific queries (only if player exists)
+  if (player) {
+    // RSVP'd events
+    queries.push(
+      supabase
+        .from('golf_event_attendance')
+        .select(`
+          event_id,
+          event:golf_events(id, title, start_date, end_date, start_time, end_time)
+        `)
+        .eq('player_id', player.id)
+        .eq('status', 'accepted')
+    );
+
+    // Academic classes
+    queries.push(
+      supabase
+        .from('golf_player_classes')
+        .select('id, course_name, days, start_time, end_time, semester_start, semester_end')
+        .eq('player_id', player.id)
+    );
+  } else {
+    queries.push(Promise.resolve({ data: [] }));
+    queries.push(Promise.resolve({ data: [] }));
+  }
+
+  // Coach blocked time (only if coach exists)
+  if (coach) {
+    queries.push(
+      supabase
+        .from('golf_coach_blocked_time')
+        .select('id, title, start_date, end_date, start_time, end_time')
+        .eq('coach_id', coach.id)
+        .gte('end_date', dateMin)
+        .lte('start_date', dateMax)
+    );
+  } else {
+    queries.push(Promise.resolve({ data: [] }));
+  }
+
+  // Execute all queries in parallel
+  const [teamEventsResult, attendancesResult, classesResult, blockedTimesResult] = await Promise.all(queries);
+
+  // Process team events
+  if (teamEventsResult.data) {
+    for (const event of teamEventsResult.data) {
       const startDateTime = parseEventDateTime(event.start_date, event.start_time);
       const endDateTime = parseEventDateTime(
         event.end_date || event.start_date,
@@ -102,22 +160,10 @@ export async function getUserBusyPeriods(
     }
   }
 
-  // 3. Fetch events where player has RSVP'd accepted (for players only)
-  if (player) {
-    const { data: attendances } = await supabase
-      .from('golf_event_attendance')
-      .select(`
-        event_id,
-        status,
-        event:golf_events(*)
-      `)
-      .eq('player_id', player.id)
-      .eq('status', 'accepted');
-
-    // Add to busyPeriods (dedupe by event_id)
-    const existingEventIds = new Set(busyPeriods.map(p => p.eventId).filter(Boolean));
-
-    for (const attendance of attendances || []) {
+  // Process RSVP'd events (dedupe by event_id)
+  const existingEventIds = new Set(busyPeriods.map(p => p.eventId).filter(Boolean));
+  if (attendancesResult.data) {
+    for (const attendance of attendancesResult.data) {
       const event = (attendance as any).event;
       if (!event || existingEventIds.has(event.id)) continue;
 
@@ -133,36 +179,23 @@ export async function getUserBusyPeriods(
         type: 'event',
         title: event.title,
         eventId: event.id,
-        ownerId: player.user_id,
+        ownerId: player!.user_id,
         ownerType: 'player',
       });
     }
   }
 
-  // 4. Fetch academic classes (recurring schedule - players only)
-  if (player) {
-    const { data: classes } = await supabase
-      .from('golf_player_classes')
-      .select('*')
-      .eq('player_id', player.id);
-
-    // Convert recurring class schedule to busy periods within timeMin/timeMax
-    for (const cls of classes || []) {
+  // Process academic classes
+  if (classesResult.data) {
+    for (const cls of classesResult.data) {
       const classInstances = expandRecurringClass(cls, timeMin, timeMax);
       busyPeriods.push(...classInstances);
     }
   }
 
-  // 5. Fetch coach blocked time (coaches only)
-  if (coach) {
-    const { data: blockedTimes } = await supabase
-      .from('golf_coach_blocked_time')
-      .select('*')
-      .eq('coach_id', coach.id)
-      .gte('end_date', timeMin.toISOString().split('T')[0])
-      .lte('start_date', timeMax.toISOString().split('T')[0]);
-
-    for (const blocked of blockedTimes || []) {
+  // Process coach blocked time
+  if (blockedTimesResult.data) {
+    for (const blocked of blockedTimesResult.data) {
       const startDateTime = parseEventDateTime(blocked.start_date, blocked.start_time);
       const endDateTime = parseEventDateTime(
         blocked.end_date || blocked.start_date,
@@ -174,13 +207,13 @@ export async function getUserBusyPeriods(
         end: endDateTime,
         type: 'blocked',
         title: blocked.title || 'Blocked',
-        ownerId: coach.user_id,
+        ownerId: coach!.user_id,
         ownerType: 'coach',
       });
     }
   }
 
-  // 6. Sort by start time and merge overlapping periods
+  // Sort by start time and merge overlapping periods
   return mergeOverlappingPeriods(busyPeriods);
 }
 

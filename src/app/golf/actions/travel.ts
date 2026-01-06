@@ -152,7 +152,6 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
       .single();
 
     if (error) {
-      console.error('Error creating golf travel itinerary:', error);
       return {
         success: false,
         error: error.message,
@@ -172,7 +171,6 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
         error: 'Invalid travel itinerary data. Please check your inputs.',
       };
     }
-    console.error('Unexpected error creating travel itinerary:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred',
@@ -201,7 +199,6 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
       .single();
 
     if (error) {
-      console.error('Error updating golf travel itinerary:', error);
       return {
         success: false,
         error: error.message,
@@ -221,7 +218,6 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
         error: 'Invalid travel itinerary data. Please check your inputs.',
       };
     }
-    console.error('Unexpected error updating travel itinerary:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred',
@@ -241,7 +237,6 @@ export async function deleteGolfTravelItinerary(itineraryId: string) {
     .eq('id', itineraryId);
 
   if (error) {
-    console.error('Error deleting golf travel itinerary:', error);
     return {
       success: false,
       error: error.message,

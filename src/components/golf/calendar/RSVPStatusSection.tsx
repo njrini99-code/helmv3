@@ -18,7 +18,6 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { calculateRSVPStats, type RSVPStats } from '@/lib/calendar/premium-utils';
 import { RSVPProgressRing } from './RSVPProgressRing';
 import { Users, Download, Search } from 'lucide-react';
 import '@/styles/calendar-tokens.css';
@@ -44,6 +43,15 @@ export interface RSVPStatusSectionProps {
 }
 
 type RSVPFilter = 'all' | 'confirmed' | 'maybe' | 'declined' | 'pending';
+
+interface RSVPStats {
+  confirmed: number;
+  maybe: number;
+  declined: number;
+  pending: number;
+  total: number;
+  percentage: number;
+}
 
 const RESPONSE_CONFIGS = {
   confirmed: {
@@ -424,8 +432,9 @@ function ParticipantRow({
  */
 export function CompactRSVPStatus({
   participants,
-  totalInvited,
+  totalInvited: _totalInvited,
 }: Pick<RSVPStatusSectionProps, 'participants' | 'totalInvited'>) {
+  void _totalInvited; // May be used in future for percentage calculations
   const confirmed = participants.filter((p) => p.response === 'confirmed').length;
   const pending = participants.filter((p) => p.response === 'pending').length;
 

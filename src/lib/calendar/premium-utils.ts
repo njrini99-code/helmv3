@@ -4,7 +4,7 @@
  * Helper functions for premium calendar UI features
  */
 
-import { isSameDay, isToday, isTomorrow, format } from 'date-fns';
+import { isSameDay, isToday, isTomorrow } from 'date-fns';
 
 // ============================================================================
 // TEMPORAL DENSITY
@@ -128,7 +128,7 @@ export function getRSVPColor(status: string): string {
     declined: 'text-rose-600 bg-rose-50 border-rose-200',
     pending: 'text-slate-600 bg-slate-50 border-slate-200',
   };
-  return colorMap[status] || colorMap.pending;
+  return colorMap[status] || colorMap['pending'] || 'text-slate-600 bg-slate-50 border-slate-200';
 }
 
 // ============================================================================
@@ -173,6 +173,7 @@ export function getHeatLevel(
 export function isPreDawn(time: string, sunriseTime: string = '06:00'): boolean {
   const [hour] = time.split(':').map(Number);
   const [sunriseHour] = sunriseTime.split(':').map(Number);
+  if (hour === undefined || sunriseHour === undefined) return false;
   return hour < sunriseHour;
 }
 
@@ -182,6 +183,7 @@ export function isPreDawn(time: string, sunriseTime: string = '06:00'): boolean 
 export function formatTime(time: string | null): string {
   if (!time) return '';
   const [hours, minutes] = time.split(':').map(Number);
+  if (hours === undefined || minutes === undefined) return time;
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHours = hours % 12 || 12;
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;

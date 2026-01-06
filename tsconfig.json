@@ -7,7 +7,7 @@
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "esnext",
-    "target": "es5",
+    "target": "es2018",
     "types": [],
     // For nodejs:
     // "lib": ["esnext"],
@@ -65,6 +65,7 @@
   ],
   "exclude": [
     "node_modules",
-    "next-shadcn-dashboard-starter"
+    "next-shadcn-dashboard-starter",
+    "archive"
   ]
 }

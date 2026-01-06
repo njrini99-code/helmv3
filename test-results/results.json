@@ -95,40 +95,32 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "timedOut",
-                      "duration": 35354,
+                      "status": "failed",
+                      "duration": 34193,
                       "error": {
-                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8",
+                        "message": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================",
+                        "stack": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16",
                         "location": {
                           "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                          "column": 8,
-                          "line": 14
+                          "column": 16,
+                          "line": 24
                         },
-                        "snippet": "  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |"
+                        "snippet": "\u001b[0m \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// Wait for redirect to dashboard\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/golf/dashboard**'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 25 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 26 |\u001b[39m\n \u001b[90m 27 |\u001b[39m   test(\u001b[32m'should load dashboard successfully'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m"
                       },
                       "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                            "column": 8,
-                            "line": 14
-                          },
-                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8"
-                        },
                         {
                           "location": {
                             "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
                             "column": 16,
                             "line": 24
                           },
-                          "message": "Error: page.waitForURL: Test timeout of 30000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n  22 |\n  23 |     // Wait for redirect to dashboard\n> 24 |     await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });\n     |                ^\n  25 |   });\n  26 |\n  27 |   test('should load dashboard successfully', async ({ page }) => {\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16"
+                          "message": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n\u001b[0m \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// Wait for redirect to dashboard\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/golf/dashboard**'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 25 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 26 |\u001b[39m\n \u001b[90m 27 |\u001b[39m   test(\u001b[32m'should load dashboard successfully'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16\u001b[22m"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-24T17:35:07.573Z",
+                      "startTime": "2026-01-05T00:07:07.442Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -149,8 +141,8 @@
                       ],
                       "errorLocation": {
                         "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                        "column": 8,
-                        "line": 14
+                        "column": 16,
+                        "line": 24
                       }
                     }
                   ],
@@ -177,40 +169,32 @@
                     {
                       "workerIndex": 1,
                       "parallelIndex": 1,
-                      "status": "timedOut",
-                      "duration": 35158,
+                      "status": "failed",
+                      "duration": 34958,
                       "error": {
-                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8",
+                        "message": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================",
+                        "stack": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16",
                         "location": {
                           "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                          "column": 8,
-                          "line": 14
+                          "column": 16,
+                          "line": 24
                         },
-                        "snippet": "  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |"
+                        "snippet": "\u001b[0m \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// Wait for redirect to dashboard\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/golf/dashboard**'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 25 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 26 |\u001b[39m\n \u001b[90m 27 |\u001b[39m   test(\u001b[32m'should load dashboard successfully'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m"
                       },
                       "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                            "column": 8,
-                            "line": 14
-                          },
-                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8"
-                        },
                         {
                           "location": {
                             "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
                             "column": 16,
                             "line": 24
                           },
-                          "message": "Error: page.waitForURL: Test timeout of 30000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n  22 |\n  23 |     // Wait for redirect to dashboard\n> 24 |     await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });\n     |                ^\n  25 |   });\n  26 |\n  27 |   test('should load dashboard successfully', async ({ page }) => {\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16"
+                          "message": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n\u001b[0m \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// Wait for redirect to dashboard\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/golf/dashboard**'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 25 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 26 |\u001b[39m\n \u001b[90m 27 |\u001b[39m   test(\u001b[32m'should load dashboard successfully'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16\u001b[22m"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-24T17:35:07.586Z",
+                      "startTime": "2026-01-05T00:07:07.532Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -231,8 +215,8 @@
                       ],
                       "errorLocation": {
                         "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                        "column": 8,
-                        "line": 14
+                        "column": 16,
+                        "line": 24
                       }
                     }
                   ],
@@ -259,40 +243,32 @@
                     {
                       "workerIndex": 2,
                       "parallelIndex": 2,
-                      "status": "timedOut",
-                      "duration": 35061,
+                      "status": "failed",
+                      "duration": 34729,
                       "error": {
-                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8",
+                        "message": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================",
+                        "stack": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16",
                         "location": {
                           "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                          "column": 8,
-                          "line": 14
+                          "column": 16,
+                          "line": 24
                         },
-                        "snippet": "  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |"
+                        "snippet": "\u001b[0m \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// Wait for redirect to dashboard\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/golf/dashboard**'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 25 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 26 |\u001b[39m\n \u001b[90m 27 |\u001b[39m   test(\u001b[32m'should load dashboard successfully'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m"
                       },
                       "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                            "column": 8,
-                            "line": 14
-                          },
-                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8"
-                        },
                         {
                           "location": {
                             "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
                             "column": 16,
                             "line": 24
                           },
-                          "message": "Error: page.waitForURL: Test timeout of 30000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n  22 |\n  23 |     // Wait for redirect to dashboard\n> 24 |     await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });\n     |                ^\n  25 |   });\n  26 |\n  27 |   test('should load dashboard successfully', async ({ page }) => {\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16"
+                          "message": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n\u001b[0m \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// Wait for redirect to dashboard\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/golf/dashboard**'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 25 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 26 |\u001b[39m\n \u001b[90m 27 |\u001b[39m   test(\u001b[32m'should load dashboard successfully'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16\u001b[22m"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-24T17:35:07.540Z",
+                      "startTime": "2026-01-05T00:07:07.563Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -313,8 +289,8 @@
                       ],
                       "errorLocation": {
                         "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                        "column": 8,
-                        "line": 14
+                        "column": 16,
+                        "line": 24
                       }
                     }
                   ],
@@ -341,40 +317,32 @@
                     {
                       "workerIndex": 3,
                       "parallelIndex": 3,
-                      "status": "timedOut",
-                      "duration": 35188,
+                      "status": "failed",
+                      "duration": 34603,
                       "error": {
-                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8",
+                        "message": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================",
+                        "stack": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16",
                         "location": {
                           "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                          "column": 8,
-                          "line": 14
+                          "column": 16,
+                          "line": 24
                         },
-                        "snippet": "  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |"
+                        "snippet": "\u001b[0m \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// Wait for redirect to dashboard\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/golf/dashboard**'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 25 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 26 |\u001b[39m\n \u001b[90m 27 |\u001b[39m   test(\u001b[32m'should load dashboard successfully'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m"
                       },
                       "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                            "column": 8,
-                            "line": 14
-                          },
-                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  12 |\n  13 | test.describe('Golf Dashboard - Player Flow', () => {\n> 14 |   test.beforeEach(async ({ page }) => {\n     |        ^\n  15 |     // Navigate to login page\n  16 |     await page.goto('http://localhost:3000/golf/login');\n  17 |\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:14:8"
-                        },
                         {
                           "location": {
                             "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
                             "column": 16,
                             "line": 24
                           },
-                          "message": "Error: page.waitForURL: Test timeout of 30000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n  22 |\n  23 |     // Wait for redirect to dashboard\n> 24 |     await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });\n     |                ^\n  25 |   });\n  26 |\n  27 |   test('should load dashboard successfully', async ({ page }) => {\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16"
+                          "message": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/golf/dashboard**\" until \"load\"\n============================================================\n\n\u001b[0m \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// Wait for redirect to dashboard\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/golf/dashboard**'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 25 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 26 |\u001b[39m\n \u001b[90m 27 |\u001b[39m   test(\u001b[32m'should load dashboard successfully'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:24:16\u001b[22m"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-24T17:35:07.546Z",
+                      "startTime": "2026-01-05T00:07:07.496Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -395,8 +363,8 @@
                       ],
                       "errorLocation": {
                         "file": "/Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts",
-                        "column": 8,
-                        "line": 14
+                        "column": 16,
+                        "line": 24
                       }
                     }
                   ],
@@ -422,9 +390,9 @@
                   "results": [
                     {
                       "workerIndex": 4,
-                      "parallelIndex": 2,
+                      "parallelIndex": 0,
                       "status": "timedOut",
-                      "duration": 31556,
+                      "duration": 31171,
                       "error": {
                         "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
                         "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
@@ -439,13 +407,13 @@
                             "column": 27,
                             "line": 121
                           },
-                          "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('input[name=\"courseName\"]')\u001b[22m\n\n\n  119 |     // Check for emerald focus rings on inputs\n  120 |     const courseNameInput = page.locator('input[name=\"courseName\"]');\n> 121 |     await courseNameInput.click();\n      |                           ^\n  122 |\n  123 |     // Check button has emerald background\n  124 |     const nextButton = page.locator('button:has-text(\"Next: Configure Holes\")');\n    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:121:27"
+                          "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('input[name=\"courseName\"]')\u001b[22m\n\n\n\u001b[0m \u001b[90m 119 |\u001b[39m     \u001b[90m// Check for emerald focus rings on inputs\u001b[39m\n \u001b[90m 120 |\u001b[39m     \u001b[36mconst\u001b[39m courseNameInput \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'input[name=\"courseName\"]'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 121 |\u001b[39m     \u001b[36mawait\u001b[39m courseNameInput\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 122 |\u001b[39m\n \u001b[90m 123 |\u001b[39m     \u001b[90m// Check button has emerald background\u001b[39m\n \u001b[90m 124 |\u001b[39m     \u001b[36mconst\u001b[39m nextButton \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'button:has-text(\"Next: Configure Holes\")'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at /Users/ricknini/Downloads/helmv3/e2e/golf-dashboard.spec.ts:121:27\u001b[22m"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-24T17:35:50.296Z",
+                      "startTime": "2026-01-05T00:07:45.075Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -496,14 +464,14 @@
                   "results": [
                     {
                       "workerIndex": 5,
-                      "parallelIndex": 0,
+                      "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 6282,
+                      "duration": 4020,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-24T17:35:50.283Z",
+                      "startTime": "2026-01-05T00:07:45.281Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -530,14 +498,14 @@
                   "results": [
                     {
                       "workerIndex": 6,
-                      "parallelIndex": 3,
+                      "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 4223,
+                      "duration": 5989,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-24T17:35:54.359Z",
+                      "startTime": "2026-01-05T00:07:45.445Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -557,8 +525,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-12-24T17:35:04.293Z",
-    "duration": 78564.808,
+    "startTime": "2026-01-05T00:07:04.936Z",
+    "duration": 72132.966,
     "expected": 2,
     "skipped": 0,
     "unexpected": 5,

@@ -94,33 +94,43 @@ export default function GolfStatsPage() {
           .order('last_name');
 
         if (teamPlayers && teamPlayers.length > 0) {
-          // Calculate basic stats for each player
-          const playersWithStats = await Promise.all(
-            teamPlayers.map(async (player) => {
-              const { data: rounds } = await supabase
-                .from('golf_rounds')
-                .select('total_score')
-                .eq('player_id', player.id)
-                .eq('status', 'completed')
-                .not('total_score', 'is', null);
+          // Fetch ALL rounds for ALL players in ONE query (performance optimization)
+          const playerIds = teamPlayers.map(p => p.id);
 
-              const roundsPlayed = rounds?.length || 0;
-              const scores = rounds?.map(r => r.total_score).filter(Boolean) as number[];
-              const scoringAvg = scores.length > 0
-                ? scores.reduce((a, b) => a + b, 0) / scores.length
-                : null;
-              const bestRound = scores.length > 0 ? Math.min(...scores) : null;
+          const { data: allRounds } = await supabase
+            .from('golf_rounds')
+            .select('player_id, total_score')
+            .in('player_id', playerIds)
+            .eq('status', 'completed')
+            .not('total_score', 'is', null);
 
-              return {
-                ...player,
-                stats: {
-                  rounds_played: roundsPlayed,
-                  scoring_average: scoringAvg,
-                  best_round: bestRound,
-                }
-              };
-            })
-          );
+          // Group rounds by player in memory (fast)
+          const roundsByPlayer = (allRounds || []).reduce((acc, round) => {
+            if (!acc[round.player_id]) acc[round.player_id] = [];
+            if (round.total_score !== null) {
+              acc[round.player_id]!.push(round.total_score);
+            }
+            return acc;
+          }, {} as Record<string, number[]>);
+
+          // Calculate stats for each player
+          const playersWithStats = teamPlayers.map(player => {
+            const scores = roundsByPlayer[player.id] || [];
+            const roundsPlayed = scores.length;
+            const scoringAvg = scores.length > 0
+              ? scores.reduce((a, b) => a + b, 0) / scores.length
+              : null;
+            const bestRound = scores.length > 0 ? Math.min(...scores) : null;
+
+            return {
+              ...player,
+              stats: {
+                rounds_played: roundsPlayed,
+                scoring_average: scoringAvg,
+                best_round: bestRound,
+              }
+            };
+          });
 
           setPlayers(playersWithStats);
         }
@@ -146,7 +156,6 @@ export default function GolfStatsPage() {
   }
 
   async function loadPlayerStats(playerId: string) {
-    console.log('🔵 loadPlayerStats called for playerId:', playerId);
     setLoadingStats(true);
     const supabase = createClient();
 
@@ -165,14 +174,11 @@ export default function GolfStatsPage() {
       .eq('status', 'completed')
       .order('round_date', { ascending: false });
 
-    console.log('🔵 Fetched rounds:', roundsData?.length || 0, roundsData);
-
     // Store rounds for selector
     setRounds(roundsData || []);
 
     // Initialize empty stats if no rounds
     if (!roundsData || roundsData.length === 0) {
-      console.log('⚠️ No rounds found, initializing empty stats');
       const stats = calculateStatsFromShots([], [], []);
       setComprehensiveStats(stats);
       setLoadingStats(false);
@@ -190,8 +196,6 @@ export default function GolfStatsPage() {
       .select('id, round_id, hole_number, par, yardage')
       .in('round_id', roundIds);
 
-    console.log('🔵 Fetched holes:', holesData?.length || 0);
-
     // Fetch ALL shots (source of truth)
     const { data: shotsData } = await supabase
       .from('golf_shots')
@@ -199,8 +203,6 @@ export default function GolfStatsPage() {
       .in('round_id', roundIds)
       .order('hole_number')
       .order('shot_number');
-
-    console.log('🔵 Fetched shots (raw):', shotsData?.length || 0);
 
     // Transform to types expected by calculator (only filtered rounds)
     const filteredRoundsData = selectedRoundId === 'overall'
@@ -252,28 +254,10 @@ export default function GolfStatsPage() {
         penalty_type: s.penalty_type,
       }));
 
-    console.log('🔵 Valid shots (after filter):', shots.length);
-    console.log('🔵 Rounds info:', roundsInfo.length);
-    console.log('🔵 Holes info:', holesInfo.length);
-    console.log('🔵 Sample shot types:', shots.slice(0, 5).map(s => ({ type: s.shot_type, club: s.club_type })));
-
     // Calculate stats from raw shots ONLY (pure shot-based approach)
-    console.log('🔵 Calling calculateStatsFromShots...');
     const stats = calculateStatsFromShots(shots, holesInfo, roundsInfo);
-    console.log('✅ Stats calculated!', stats);
-    console.log('📊 Key stats:', {
-      roundsPlayed: stats.roundsPlayed,
-      scoringAverage: stats.scoringAverage,
-      drivingDistanceAvg: stats.drivingDistanceAvg,
-      fairwayPercentage: stats.fairwayPercentage,
-      girPercentage: stats.girPercentage,
-      approachProximityAvg: stats.approachProximityAvg,
-      scramblingPercentage: stats.scramblingPercentage,
-      puttsPerRound: stats.puttsPerRound
-    });
 
     setComprehensiveStats(stats);
-    console.log('✅ comprehensiveStats state set!');
     setLoadingStats(false);
   }
 
@@ -386,8 +370,6 @@ export default function GolfStatsPage() {
   }
 
   // Player stats view
-  console.log('🎨 RENDER - loadingStats:', loadingStats, 'comprehensiveStats:', comprehensiveStats ? 'EXISTS' : 'NULL');
-
   return (
     <div className="relative">
       {/* Floating Back Button for Coaches */}
@@ -408,25 +390,14 @@ export default function GolfStatsPage() {
           <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
         </div>
       ) : comprehensiveStats ? (
-        <>
-          {console.log('✅ RENDERING GolfStatsDisplay with stats:', {
-            roundsPlayed: comprehensiveStats.roundsPlayed,
-            drivingDistanceAvg: comprehensiveStats.drivingDistanceAvg
-          })}
-          <GolfStatsDisplay
-            stats={comprehensiveStats}
-            playerName={playerName}
-            rounds={rounds}
-            selectedRoundId={selectedRoundId}
-            onRoundChange={setSelectedRoundId}
-          />
-        </>
-      ) : (
-        <>
-          {console.log('⚠️ NOT RENDERING - comprehensiveStats is null/undefined')}
-          {null}
-        </>
-      )}
+        <GolfStatsDisplay
+          stats={comprehensiveStats}
+          playerName={playerName}
+          rounds={rounds}
+          selectedRoundId={selectedRoundId}
+          onRoundChange={setSelectedRoundId}
+        />
+      ) : null}
     </div>
   );
 }

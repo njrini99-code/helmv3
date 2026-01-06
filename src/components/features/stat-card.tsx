@@ -25,7 +25,7 @@ export function StatCard({ label, value, change, changeType = 'neutral', icon: I
             <p className="text-sm font-medium text-slate-500 mb-1">{label}</p>
             <p className="text-2xl font-semibold text-slate-900 tabular-nums tracking-tight">
               {canAnimate ? (
-                <AnimatedNumber value={numericValue} duration={1500} decimals={0} />
+                <AnimatedNumber value={numericValue} decimals={0} />
               ) : typeof value === 'number' ? (
                 formatNumber(value)
               ) : (

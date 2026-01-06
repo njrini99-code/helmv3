@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { IconCopy, IconCheck, IconRefresh, IconSave } from '@/components/icons';
+import { IconCopy, IconCheck, IconRefresh } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
 
@@ -66,8 +66,7 @@ export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
 
       showToast('Team created successfully!', 'success');
       router.refresh();
-    } catch (err) {
-      console.error('Error creating team:', err);
+    } catch {
       showToast('Failed to create team', 'error');
     } finally {
       setLoading(false);
@@ -93,8 +92,7 @@ export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
 
       showToast('Team updated successfully!', 'success');
       router.refresh();
-    } catch (err) {
-      console.error('Error updating team:', err);
+    } catch {
       showToast('Failed to update team', 'error');
     } finally {
       setLoading(false);
@@ -126,8 +124,7 @@ export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
 
       showToast('Invite code regenerated', 'success');
       router.refresh();
-    } catch (err) {
-      console.error('Error regenerating invite code:', err);
+    } catch {
       showToast('Failed to regenerate invite code', 'error');
     } finally {
       setLoading(false);
@@ -222,7 +219,7 @@ export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
           variant="secondary"
           className="gap-2"
         >
-          <IconSave size={16} />
+          <IconCheck size={16} />
           Save Changes
         </Button>
       </div>

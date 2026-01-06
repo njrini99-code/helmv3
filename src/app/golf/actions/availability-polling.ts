@@ -1,7 +1,5 @@
 'use server';
 
-//@ts-nocheck
-
 /**
  * Server Actions for Group Availability Polling
  *
@@ -98,7 +96,6 @@ export async function createAvailabilityPoll(input: {
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true, data: { pollId: poll.id } };
   } catch (error) {
-    console.error('Error creating poll:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create poll',
@@ -164,7 +161,6 @@ export async function submitPollResponses(
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error submitting poll responses:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to submit responses',
@@ -193,7 +189,6 @@ export async function getPollResults(
 
     return { success: true, data: results || [] };
   } catch (error) {
-    console.error('Error getting poll results:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get results',
@@ -224,7 +219,6 @@ export async function getSuggestedBestTimes(
 
     return { success: true, data: suggestions || [] };
   } catch (error) {
-    console.error('Error getting best times:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get best times',
@@ -277,7 +271,6 @@ export async function scheduleEventFromPoll(
     }
 
     // Calculate end time
-    const [hours, minutes] = selectedTime.split(':').map(Number);
     const endDate = new Date(`${selectedDate}T${selectedTime}`);
     endDate.setMinutes(endDate.getMinutes() + poll.duration_minutes);
     const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
@@ -318,7 +311,6 @@ export async function scheduleEventFromPoll(
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
-    console.error('Error scheduling event from poll:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to schedule event',
@@ -351,7 +343,6 @@ export async function closePoll(pollId: string): Promise<ActionResult> {
     revalidatePath('/golf/(dashboard)/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('Error closing poll:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to close poll',
