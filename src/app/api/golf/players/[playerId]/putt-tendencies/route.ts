@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { PlayerPuttTendencies } from '@/lib/types/golf';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ playerId: string }> }
 ) {
   try {
