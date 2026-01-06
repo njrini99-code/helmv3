@@ -14,7 +14,7 @@ export async function GET(
       .from('player_putt_tendencies')
       .select('*')
       .eq('player_id', playerId)
-      .single();
+      .single() as { data: any; error: any };
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
