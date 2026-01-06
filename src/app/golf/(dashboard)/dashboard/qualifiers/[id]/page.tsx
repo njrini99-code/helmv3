@@ -230,7 +230,7 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
           {!leaderboard || leaderboard.length === 0 ? (
             <p className="text-center text-slate-400 py-8">No entries yet</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200">

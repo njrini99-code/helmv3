@@ -49,6 +49,8 @@ interface ContinueRoundClientProps {
   holes: Hole[];
   completedHoleStats: HoleStats[];
   startHoleIndex: number;
+  initialShots?: HoleStats['shots'];
+  initialShotNumber?: number;
 }
 
 export default function ContinueRoundClient({
@@ -57,6 +59,8 @@ export default function ContinueRoundClient({
   holes: initialHoles,
   completedHoleStats: initialCompletedStats,
   startHoleIndex,
+  initialShots = [],
+  initialShotNumber = 1,
 }: ContinueRoundClientProps) {
   const router = useRouter();
 
@@ -282,6 +286,8 @@ export default function ContinueRoundClient({
         onHoleComplete={handleHoleComplete}
         onExit={() => setShowExitModal(true)}
         onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}
+        initialShots={currentHoleIndex === startHoleIndex ? initialShots : undefined}
+        initialShotNumber={currentHoleIndex === startHoleIndex ? initialShotNumber : undefined}
       />
 
       {/* Save Round Modal */}

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { IconX, IconClock, IconTrash, IconAlertCircle } from '@/components/icons';
+import { useMobileNav } from '@/contexts/mobile-nav-context';
 
 interface SaveRoundModalProps {
   isOpen: boolean;
@@ -21,39 +22,74 @@ export function SaveRoundModal({
   currentHole,
   totalHoles,
 }: SaveRoundModalProps) {
+  const { show } = useMobileNav();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Show nav when modal closes (after save or delete)
+  useEffect(() => {
+    if (!isOpen) {
+      show();
+    }
+  }, [isOpen, show]);
+
   if (!isOpen) return null;
 
-  const handleSaveForLater = async () => {
+  const handleSaveForLater = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    
+    console.log('[SaveRoundModal] handleSaveForLater called', { saving, isOpen });
+    
+    if (saving) {
+      console.log('[SaveRoundModal] Already saving, ignoring click');
+      return;
+    }
+    
     try {
+      console.log('[SaveRoundModal] Starting save...');
       setSaving(true);
       setError(null);
       await onSaveForLater();
+      console.log('[SaveRoundModal] Save completed successfully');
+      // Show nav after save
+      show();
       // Modal will be closed by parent component after successful save
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save round');
+      console.error('[SaveRoundModal] Save for later error:', err);
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : typeof err === 'string' 
+        ? err 
+        : 'Failed to save round. Please check your connection and try again.';
+      setError(errorMessage);
       setSaving(false);
     }
   };
 
   const handleDelete = () => {
+    // Show nav after delete
+    show();
     onDelete();
     // Modal will be closed by parent component
   };
 
   return (
-    <>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+      <div 
+        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+        onClick={(e) => {
+          // Prevent clicks inside modal from closing it
+          e.stopPropagation();
+        }}
+      >
           {/* Header */}
           <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">
@@ -94,8 +130,12 @@ export function SaveRoundModal({
             <div className="space-y-3">
               {/* Save for Later */}
               <button
-                onClick={handleSaveForLater}
+                onClick={(e) => {
+                  console.log('[SaveRoundModal] Button clicked');
+                  handleSaveForLater(e);
+                }}
                 disabled={saving}
+                type="button"
                 className={cn(
                   'w-full p-4 rounded-xl border-2 transition-all duration-200',
                   'flex items-center gap-4',
@@ -156,7 +196,6 @@ export function SaveRoundModal({
             </button>
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

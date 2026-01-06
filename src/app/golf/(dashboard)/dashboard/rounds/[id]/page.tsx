@@ -430,7 +430,7 @@ export default async function RoundDetailPage({
         </CardHeader>
         <CardContent>
           {sortedHoles && sortedHoles.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200">

@@ -143,7 +143,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
   };
 
   return (
-    <div className="flex-1 overflow-auto p-5">
+    <div className="flex-1 overflow-auto p-5 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
       <div className="
         grid grid-cols-7 gap-px
         bg-stone-200/60

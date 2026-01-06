@@ -12,6 +12,7 @@ import { ViewTransitionsProvider } from '@/components/providers/ViewTransitionsP
 import { CommandPalette } from '@/components/golf/CommandPalette';
 import { MobileBottomNav } from '@/components/golf/MobileBottomNav';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
+import { MobileNavProvider } from '@/contexts/mobile-nav-context';
 import { cn } from '@/lib/utils';
 
 interface UserData {
@@ -26,7 +27,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
   const isCoach = userData.role === 'coach';
 
   return (
-    <div className="flex h-screen bg-dashboard-gradient">
+    <div className="flex h-screen bg-dashboard-gradient overscroll-none" style={{ overscrollBehavior: 'none' }}>
       {/* Command Palette (Cmd+K) */}
       <CommandPalette isCoach={isCoach} />
       
@@ -70,11 +71,20 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       {/* Main content */}
       <main
         className={cn(
-          'flex-1 overflow-y-auto pb-20 lg:pb-0',
+          'flex-1 overflow-y-auto lg:overflow-y-auto',
+          'pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0',
           'transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'
+          collapsed ? 'lg:ml-[72px]' : 'lg:ml-64',
+          // Mobile scroll optimization
+          'overscroll-none touch-pan-y',
+          // Prevent scroll chaining
+          'overscroll-behavior-contain'
         )}
-        style={{ background: 'transparent', viewTransitionName: 'page-content' }}
+        style={{ 
+          background: 'transparent', 
+          viewTransitionName: 'page-content',
+          WebkitOverflowScrolling: 'touch',
+        }}
       >
         <div className="animate-page-enter min-h-full" style={{ background: 'transparent' }}>
           {children}
@@ -181,16 +191,18 @@ export default function GolfDashboardLayout({
   }
 
   return (
-    <ViewTransitionsProvider>
-      <SidebarProvider>
-        <ToastProvider>
-          <SessionActivityProvider>
-            <GolfDashboardContent userData={userData}>
-              {children}
-            </GolfDashboardContent>
-          </SessionActivityProvider>
-        </ToastProvider>
-      </SidebarProvider>
-    </ViewTransitionsProvider>
+    <MobileNavProvider>
+      <ViewTransitionsProvider>
+        <SidebarProvider>
+          <ToastProvider>
+            <SessionActivityProvider>
+              <GolfDashboardContent userData={userData}>
+                {children}
+              </GolfDashboardContent>
+            </SessionActivityProvider>
+          </ToastProvider>
+        </SidebarProvider>
+      </ViewTransitionsProvider>
+    </MobileNavProvider>
   );
 }

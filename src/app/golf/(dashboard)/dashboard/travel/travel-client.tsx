@@ -382,7 +382,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl my-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-slate-900">
@@ -405,7 +405,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               </div>
             )}
 
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
               {/* Event Name */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Event Name *</label>

@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
 import type { HoleStats } from '@/components/golf/ShotTrackingComprehensive';
 
-export default async function ContinueRoundPage({ params }: { params: { id: string } }) {
+export default async function ContinueRoundPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
 
   // Get current user
@@ -23,7 +25,7 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
   const { data: round, error: roundError } = await supabase
     .from('golf_rounds')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('player_id', player.id)
     .eq('status', 'in_progress')
     .single();
@@ -35,7 +37,7 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
   // Load holes and shots in parallel (performance optimization)
   const [
     { data: holes },
-    { data: legacyShots }
+    { data: allShots }
   ] = await Promise.all([
     supabase
       .from('golf_holes')
@@ -43,24 +45,24 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
         *,
         shots:golf_shots(*)
       `)
-      .eq('round_id', params.id)
+      .eq('round_id', id)
       .order('hole_number', { ascending: true }),
     supabase
       .from('golf_shots')
       .select('*')
-      .eq('round_id', params.id)
-      .is('hole_id', null)
+      .eq('round_id', id)
       .order('hole_number', { ascending: true })
       .order('shot_number', { ascending: true })
   ]);
 
   // Errors are handled gracefully - holes/shots will be empty if fetch fails
 
-  const legacyShotsByHole = new Map<number, any[]>();
-  for (const shot of legacyShots || []) {
-    const holeShots = legacyShotsByHole.get(shot.hole_number) || [];
+  // Group shots by hole number for easy lookup
+  const shotsByHole = new Map<number, any[]>();
+  for (const shot of allShots || []) {
+    const holeShots = shotsByHole.get(shot.hole_number) || [];
     holeShots.push(shot);
-    legacyShotsByHole.set(shot.hole_number, holeShots);
+    shotsByHole.set(shot.hole_number, holeShots);
   }
 
   // Transform database holes to HoleStats format (completed holes only)
@@ -69,7 +71,7 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
     .map((hole: any) => {
       const holeShots = (hole.shots && Array.isArray(hole.shots) && hole.shots.length > 0)
         ? hole.shots
-        : (legacyShotsByHole.get(hole.hole_number) || []);
+        : (shotsByHole.get(hole.hole_number) || []);
       const shots = (holeShots || []).sort((a: any, b: any) => a.shot_number - b.shot_number);
 
       return {
@@ -129,8 +131,8 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
   }
 
   // Create hole configuration for remaining holes
-  // Note: holes_to_play is not in schema, default to 18
-  const holesToPlay = 18;
+  // Use holes_to_play from round, default to 18 if not set
+  const holesToPlay = round.holes_to_play || 18;
   const allHoles = Array.from({ length: holesToPlay }, (_, i) => {
     const existingHole = holeConfigMap.get(i + 1);
     return {
@@ -149,7 +151,7 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
     courseRating: round.course_rating?.toString() || '',
     courseSlope: round.course_slope?.toString() || '',
     teesPlayed: round.tees_played || '',
-    roundType: round.round_type as 'practice' | 'tournament' | 'qualifier',
+    roundType: roundTypeFromDb(round.round_type || 'practice'),
     roundDate: round.round_date,
   };
 
@@ -163,13 +165,44 @@ export default async function ContinueRoundPage({ params }: { params: { id: stri
       ? completedHoleStats.length // Next hole after last completed
       : 0; // Start at hole 1 (index 0)
 
+  // Get shots for the starting hole to restore progress
+  const startHoleNumber = startHoleIndex + 1;
+  const startHoleShots = shotsByHole.get(startHoleNumber) || [];
+  const sortedStartHoleShots = startHoleShots.sort((a: any, b: any) => a.shot_number - b.shot_number);
+  
+  // Calculate the current shot number (next shot to record)
+  // If there are shots, the next shot is shots.length + 1
+  // Otherwise, start at shot 1
+  const startShotNumber = sortedStartHoleShots.length > 0 ? sortedStartHoleShots.length + 1 : 1;
+
+  // Transform shots to ShotRecord format for the component
+  const initialShots = sortedStartHoleShots.map((shot: any) => ({
+    shotNumber: shot.shot_number,
+    shotType: shot.shot_type,
+    clubType: shot.club_type,
+    lieBefore: shot.lie_before,
+    distanceToHoleBefore: shot.distance_to_hole_before,
+    distanceUnitBefore: shot.distance_unit_before,
+    result: shot.result,
+    distanceToHoleAfter: shot.distance_to_hole_after,
+    distanceUnitAfter: shot.distance_unit_after,
+    shotDistance: shot.shot_distance,
+    missDirection: shot.miss_direction,
+    puttBreak: shot.putt_break,
+    puttSlope: shot.putt_slope,
+    isPenalty: shot.is_penalty,
+    penaltyType: shot.penalty_type,
+  }));
+
   return (
     <ContinueRoundClient
-      roundId={params.id}
+      roundId={id}
       setupData={setupData}
       holes={allHoles}
       completedHoleStats={completedHoleStats}
       startHoleIndex={startHoleIndex}
+      initialShots={initialShots}
+      initialShotNumber={startShotNumber}
     />
   );
 }

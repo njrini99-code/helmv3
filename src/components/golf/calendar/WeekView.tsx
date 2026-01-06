@@ -145,8 +145,9 @@ export function WeekView({
 
   return (
     <div
-      className="flex-1 overflow-auto"
-      style={{ background: 'transparent' }}
+      className="flex-1 overflow-auto overscroll-contain touch-pan-y"
+      style={{ WebkitOverflowScrolling: 'touch', background: 'transparent' }}
+      data-scroll-container
     >
       <div className="min-w-[800px]" style={{ background: 'transparent' }}>
         {/* Header row - Day names and dates */}

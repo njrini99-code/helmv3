@@ -219,6 +219,14 @@ export default function NewRoundClient() {
   };
 
   const handleSaveForLater = async () => {
+    console.log('[NewRoundClient] handleSaveForLater called', {
+      currentHoleIndex,
+      holesCount: holes.length,
+      completedHolesCount: completedHoleStats.length,
+      savedRoundId,
+      setupData,
+    });
+    
     try {
       const partialRoundData = {
         courseName: setupData.courseName,
@@ -239,20 +247,34 @@ export default function NewRoundClient() {
         })),
       };
 
+      console.log('[NewRoundClient] Calling savePartialRound with data:', {
+        ...partialRoundData,
+        holes: `[${completedHoleStats.length} holes]`,
+        holeConfigs: `[${holes.length} configs]`,
+      });
+
       const result = await savePartialRound(partialRoundData, savedRoundId || undefined);
 
+      console.log('[NewRoundClient] savePartialRound result:', result);
+
       if (!result.success) {
+        console.error('[NewRoundClient] Save failed:', result.error);
         throw new Error(result.error);
       }
+      
+      console.log('[NewRoundClient] Save successful, roundId:', result.data.roundId);
       setSavedRoundId(result.data.roundId);
 
       // Clear local draft since it's saved to database
       clearDraft();
       setShowExitModal(false);
 
-      // Redirect to rounds page
+      // Redirect to rounds page and refresh to show the new unfinished round
+      console.log('[NewRoundClient] Redirecting to rounds page...');
       router.push('/golf/dashboard/rounds');
+      router.refresh();
     } catch (err) {
+      console.error('[NewRoundClient] Error in handleSaveForLater:', err);
       throw err; // Let modal handle error display
     }
   };

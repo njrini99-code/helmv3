@@ -58,7 +58,7 @@ export default function Loading() {
           <Skeleton className="h-6 w-32" />
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200">

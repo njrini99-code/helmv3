@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 export type CalendarView = 'day' | 'week' | 'month';
 
@@ -20,6 +21,8 @@ export function CalendarHeader({
   onNavigate,
   onAddEvent,
 }: CalendarHeaderProps) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
   const getTitle = () => {
     if (view === 'day') {
       return currentDate.toLocaleDateString('en-US', {
@@ -133,12 +136,13 @@ export function CalendarHeader({
             boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.04)',
           }}
         >
-          {(['day', 'week', 'month'] as const).map((v) => (
+          {/* Mobile: Only show Day view, Desktop: Show all views */}
+          {(isMobile ? ['day'] : ['day', 'week', 'month'] as const).map((v) => (
             <button
               key={v}
-              onClick={() => onViewChange(v)}
+              onClick={() => onViewChange(v as CalendarView)}
               className={cn(
-                'px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200',
+                'px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium rounded-full transition-all duration-200 min-h-[44px]',
                 view === v
                   ? 'bg-white text-stone-900 shadow-sm'
                   : 'text-stone-500 hover:text-stone-700'

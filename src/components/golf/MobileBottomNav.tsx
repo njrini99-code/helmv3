@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { IconHome, IconUsers, IconCalendar, IconChart, IconMessage } from '@/components/icons';
+import { IconHome, IconUsers, IconCalendar, IconChart, IconMessage, IconSettings } from '@/components/icons';
+import { useMobileNav } from '@/contexts/mobile-nav-context';
 
 interface NavItem {
   href: string;
@@ -16,7 +17,7 @@ const coachNavItems: NavItem[] = [
   { href: '/golf/dashboard/roster', label: 'Roster', icon: <IconUsers size={20} /> },
   { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={20} /> },
   { href: '/golf/dashboard/stats', label: 'Stats', icon: <IconChart size={20} /> },
-  { href: '/golf/dashboard/messages', label: 'Messages', icon: <IconMessage size={20} /> },
+  { href: '/golf/dashboard/settings', label: 'Settings', icon: <IconSettings size={20} /> },
 ];
 
 const playerNavItems: NavItem[] = [
@@ -24,6 +25,7 @@ const playerNavItems: NavItem[] = [
   { href: '/golf/dashboard/rounds', label: 'Rounds', icon: <IconChart size={20} /> },
   { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={20} /> },
   { href: '/golf/dashboard/messages', label: 'Messages', icon: <IconMessage size={20} /> },
+  { href: '/golf/dashboard/settings', label: 'Settings', icon: <IconSettings size={20} /> },
 ];
 
 interface MobileBottomNavProps {
@@ -33,9 +35,14 @@ interface MobileBottomNavProps {
 export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
   const pathname = usePathname();
   const navItems = isCoach ? coachNavItems : playerNavItems;
+  const { isVisible } = useMobileNav();
+
+  if (!isVisible) {
+    return null;
+  }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-slate-200 safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-slate-200" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="flex items-center justify-around px-2 py-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href || 

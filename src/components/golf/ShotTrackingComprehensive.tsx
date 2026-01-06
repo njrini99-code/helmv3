@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PuttMissTagSelector } from './putt-miss-tag-selector';
 import { ApproachMissSelector } from './approach-miss-selector';
+import { useMobileNav } from '@/contexts/mobile-nav-context';
 import type { PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
 
 // ============================================================================
@@ -77,6 +78,8 @@ interface ShotTrackingProps {
   onSaveShot?: (shot: ShotRecord) => void;
   onExit?: () => void;
   onNavigateToHole?: (holeIndex: number) => void;
+  initialShots?: ShotRecord[];
+  initialShotNumber?: number;
 }
 
 // ============================================================================
@@ -173,9 +176,21 @@ export default function ShotTrackingComprehensive({
   onHoleComplete,
   onSaveShot,
   onExit,
-  onNavigateToHole
+  onNavigateToHole,
+  initialShots = [],
+  initialShotNumber = 1,
 }: ShotTrackingProps) {
+  const { hide, show } = useMobileNav();
   const currentHole = holes[currentHoleIndex];
+
+  // Hide mobile nav when shot tracking is active
+  useEffect(() => {
+    hide();
+    return () => {
+      // Show nav again when component unmounts
+      show();
+    };
+  }, [hide, show]);
 
   if (!currentHole) {
     return (
@@ -189,16 +204,48 @@ export default function ShotTrackingComprehensive({
   // STATE & REFS
   // ============================================================================
 
-  const [currentShot, setCurrentShot] = useState(1);
-  const [shotHistory, setShotHistory] = useState<ShotRecord[]>([]);
+  const [currentShot, setCurrentShot] = useState(initialShotNumber);
+  const [shotHistory, setShotHistory] = useState<ShotRecord[]>(initialShots);
 
   // Ref for auto-focusing distance input
   const distanceInputRef = useRef<HTMLInputElement>(null);
   
-  // Current position state
-  const [distanceToHole, setDistanceToHole] = useState(currentHole.yardage);
-  const [distanceUnit, setDistanceUnit] = useState<'yards' | 'feet'>('yards');
-  const [currentLie, setCurrentLie] = useState<'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other'>('tee');
+  // Current position state - initialize from last shot if available
+  const getInitialDistance = (): number => {
+    if (initialShots.length > 0) {
+      const lastShot = initialShots[initialShots.length - 1];
+      if (lastShot?.distanceToHoleAfter) {
+        const parsed = typeof lastShot.distanceToHoleAfter === 'string' 
+          ? parseFloat(lastShot.distanceToHoleAfter) 
+          : lastShot.distanceToHoleAfter;
+        return isNaN(parsed) ? currentHole.yardage : parsed;
+      }
+    }
+    return currentHole.yardage;
+  };
+  
+  const getInitialDistanceUnit = (): 'yards' | 'feet' => {
+    if (initialShots.length > 0) {
+      const lastShot = initialShots[initialShots.length - 1];
+      return (lastShot?.distanceUnitAfter || 'yards') as 'yards' | 'feet';
+    }
+    return 'yards';
+  };
+  
+  const getInitialLie = (): 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' => {
+    if (initialShots.length > 0) {
+      const lastShot = initialShots[initialShots.length - 1];
+      if (lastShot?.result === 'green') return 'green';
+      if (lastShot?.result === 'rough') return 'rough';
+      if (lastShot?.result === 'sand') return 'sand';
+      if (lastShot?.result === 'fairway') return 'fairway';
+    }
+    return 'tee';
+  };
+  
+  const [distanceToHole, setDistanceToHole] = useState(getInitialDistance());
+  const [distanceUnit, setDistanceUnit] = useState<'yards' | 'feet'>(getInitialDistanceUnit());
+  const [currentLie, setCurrentLie] = useState<'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other'>(getInitialLie());
   
   // Shot input state
   const [usedDriver, setUsedDriver] = useState<boolean | null>(null);
@@ -225,26 +272,64 @@ export default function ShotTrackingComprehensive({
   // RESET ON HOLE CHANGE
   // ============================================================================
   
+  // Track if we've initialized with initial shots
+  const [hasInitialized, setHasInitialized] = useState(false);
+  
   useEffect(() => {
-    setCurrentShot(1);
-    setShotHistory([]);
-    setDistanceToHole(currentHole.yardage);
-    setDistanceUnit('yards');
-    setCurrentLie('tee');
-    setUsedDriver(null);
-    setResultOfShot(null);
-    setMissDirection(null);
-    setPuttBreak(null);
-    setPuttSlope(null);
-    setDistanceAfterShot('');
-    setDistanceAfterUnit('yards');
-    setShowPenaltyModal(false);
-    setPenaltyType(null);
-    // Reset new classification fields
-    setPuttMissTags([]);
-    setPuttDistanceFeet(undefined);
-    setApproachMissDirection(null);
-    setApproachMissLieType(undefined);
+    // On initial mount with initialShots, restore them
+    if (!hasInitialized && initialShots.length > 0) {
+      setCurrentShot(initialShotNumber);
+      setShotHistory(initialShots);
+      // Set distance to hole from last shot's distance after
+      const lastShot = initialShots[initialShots.length - 1];
+      if (lastShot?.distanceToHoleAfter) {
+        const parsed = typeof lastShot.distanceToHoleAfter === 'string' 
+          ? parseFloat(lastShot.distanceToHoleAfter) 
+          : lastShot.distanceToHoleAfter;
+        if (!isNaN(parsed)) {
+          setDistanceToHole(parsed);
+        }
+        setDistanceUnit(lastShot.distanceUnitAfter || 'yards');
+      }
+      // Set lie based on last shot result
+      if (lastShot?.result === 'green') {
+        setCurrentLie('green');
+      } else if (lastShot?.result === 'rough') {
+        setCurrentLie('rough');
+      } else if (lastShot?.result === 'sand') {
+        setCurrentLie('sand');
+      } else if (lastShot?.result === 'fairway') {
+        setCurrentLie('fairway');
+      }
+      setHasInitialized(true);
+      return;
+    }
+    
+    // Reset when changing holes (but not on initial load)
+    if (hasInitialized) {
+      setCurrentShot(1);
+      setShotHistory([]);
+      setDistanceToHole(currentHole.yardage);
+      setDistanceUnit('yards');
+      setCurrentLie('tee');
+      setUsedDriver(null);
+      setResultOfShot(null);
+      setMissDirection(null);
+      setPuttBreak(null);
+      setPuttSlope(null);
+      setDistanceAfterShot('');
+      setDistanceAfterUnit('yards');
+      setShowPenaltyModal(false);
+      setPenaltyType(null);
+      // Reset new classification fields
+      setPuttMissTags([]);
+      setPuttDistanceFeet(undefined);
+      setApproachMissDirection(null);
+      setApproachMissLieType(undefined);
+    } else {
+      // First load without initial shots - mark as initialized
+      setHasInitialized(true);
+    }
   }, [currentHoleIndex, currentHole.yardage]);
 
   // ============================================================================

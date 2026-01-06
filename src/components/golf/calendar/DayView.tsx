@@ -82,29 +82,41 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
   const isCurrentDay = isToday(date.toISOString());
 
   return (
-    <div className="flex-1 overflow-auto">
-      <div className="max-w-4xl mx-auto p-6">
+    <div className="flex-1 overflow-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+      <div className="max-w-4xl mx-auto p-3 md:p-6">
         <div className="relative">
-          <div className="grid grid-cols-[80px_1fr]">
+          <div className="grid grid-cols-[48px_1fr] md:grid-cols-[80px_1fr]">
             {HOURS.map((hour) => (
               <div key={hour} className="contents">
-                {/* Time label column */}
+                {/* Time label column - Compact on mobile */}
                 <div className="
                   h-16
                   border-r border-stone-100/20
-                  flex items-start justify-end pr-4 pt-1
+                  flex items-start justify-end pr-2 md:pr-4 pt-1
 
                   /* Gradient fade from left edge */
                   bg-gradient-to-r from-stone-50/40 to-transparent
                 ">
-                  <span className="text-[11px] font-medium text-stone-400">
-                    {hour === 0
-                      ? '12 AM'
-                      : hour < 12
-                      ? `${hour} AM`
-                      : hour === 12
-                      ? '12 PM'
-                      : `${hour - 12} PM`}
+                  <span className="text-[10px] md:text-[11px] font-medium text-stone-400">
+                    {/* Mobile: compact format (6a), Desktop: full format (6 AM) */}
+                    <span className="md:hidden">
+                      {hour === 0
+                        ? '12a'
+                        : hour < 12
+                        ? `${hour}a`
+                        : hour === 12
+                        ? '12p'
+                        : `${hour - 12}p`}
+                    </span>
+                    <span className="hidden md:inline">
+                      {hour === 0
+                        ? '12 AM'
+                        : hour < 12
+                        ? `${hour} AM`
+                        : hour === 12
+                        ? '12 PM'
+                        : `${hour - 12} PM`}
+                    </span>
                   </span>
                 </div>
 
@@ -123,7 +135,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
           </div>
 
           {/* Events overlay */}
-          <div className="absolute inset-0 pointer-events-none grid grid-cols-[80px_1fr]">
+          <div className="absolute inset-0 pointer-events-none grid grid-cols-[48px_1fr] md:grid-cols-[80px_1fr]">
             <div />
             <div className="relative pointer-events-none">
               {dayEvents.map((event) => {

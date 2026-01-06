@@ -240,7 +240,7 @@ export function RSVPStatusSection({
       </div>
 
       {/* Player list */}
-      <div className="divide-y divide-slate-200 max-h-[400px] overflow-y-auto">
+      <div className="divide-y divide-slate-200 max-h-[400px] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
         {filteredParticipants.length === 0 ? (
           <div className="p-8 text-center">
             <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />

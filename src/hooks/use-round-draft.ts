@@ -59,7 +59,6 @@ export function useRoundDraft() {
       };
 
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
-      console.log('[Draft] Saved:', draft.step);
     } catch (error) {
       console.error('[Draft] Failed to save:', error);
     }
@@ -84,7 +83,6 @@ export function useRoundDraft() {
   const clearDraft = useCallback(() => {
     try {
       localStorage.removeItem(DRAFT_KEY);
-      console.log('[Draft] Cleared');
     } catch (error) {
       console.error('[Draft] Failed to clear:', error);
     }
@@ -102,12 +100,10 @@ export function useRoundDraft() {
 
       // Check if draft has expired
       if (Date.now() - draft.timestamp > DRAFT_EXPIRY_MS) {
-        console.log('[Draft] Expired, clearing');
         clearDraft();
         return null;
       }
 
-      console.log('[Draft] Loaded:', draft.step);
       return draft;
     } catch (error) {
       console.error('[Draft] Failed to load:', error);

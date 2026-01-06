@@ -151,7 +151,7 @@ export default function GolfMessagesPage() {
         </div>
 
         {/* Conversation List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
           {!conversations || conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
@@ -237,7 +237,7 @@ export default function GolfMessagesPage() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
               {messagesLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />

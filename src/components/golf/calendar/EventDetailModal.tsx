@@ -342,7 +342,7 @@ export function EventDetailModal({
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-5 max-h-[calc(90vh-140px)] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-5 max-h-[calc(90vh-140px)] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
           {error && (
             <div
               role="alert"

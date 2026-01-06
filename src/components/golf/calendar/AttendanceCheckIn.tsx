@@ -217,7 +217,7 @@ export function AttendanceCheckIn({
         </div>
 
         {/* Player list */}
-        <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto">
+        <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
           {sortedPlayers.length === 0 ? (
             <div className="text-center py-12">
               <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />

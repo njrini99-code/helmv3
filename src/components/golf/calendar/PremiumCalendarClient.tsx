@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   DndContext,
   DragEndEvent,
@@ -63,9 +64,11 @@ export function PremiumCalendarClient({
   actionHandlers = defaultActionHandlers,
 }: PremiumCalendarClientProps) {
   const router = useRouter();
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [view, setView] = useState<CalendarView>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [showPlayerFilter, setShowPlayerFilter] = useState(false);
 
   // CRUD Modal State
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -81,6 +84,16 @@ export function PremiumCalendarClient({
 
   // Player busy periods (only when player is selected)
   const [playerBusyPeriods, setPlayerBusyPeriods] = useState<any[]>([]);
+
+  // Auto-switch to day view on mobile
+  useEffect(() => {
+    if (isMobile && view !== 'day') {
+      setView('day');
+    } else if (!isMobile && view === 'day' && !selectedPlayerId) {
+      // Only switch back to week if not viewing a player's schedule
+      setView('week');
+    }
+  }, [isMobile]); // Only run when mobile state changes
 
   // Fetch player availability when player is selected
   useEffect(() => {
@@ -390,14 +403,16 @@ export function PremiumCalendarClient({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex h-full gap-4">
-          {/* Premium Avatar Sidebar */}
-          <CalendarAvatarSidebar
-            teamMembers={teamMembers}
-            selectedPlayerId={selectedPlayerId}
-            onPlayerSelect={setSelectedPlayerId}
-            onSyncSettings={onSyncSettings}
-          />
+        <div className="flex flex-col md:flex-row h-full gap-4">
+          {/* Premium Avatar Sidebar - Hidden on mobile, shown on desktop */}
+          {!isMobile && (
+            <CalendarAvatarSidebar
+              teamMembers={teamMembers}
+              selectedPlayerId={selectedPlayerId}
+              onPlayerSelect={setSelectedPlayerId}
+              onSyncSettings={onSyncSettings}
+            />
+          )}
 
           {/* Premium Glass Calendar Container */}
           <div
@@ -415,6 +430,75 @@ export function PremiumCalendarClient({
               boxShadow: '0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.7)',
             }}
           >
+            {/* Mobile Player Filter Header */}
+            {isMobile && (
+              <div className="px-4 py-3 border-b border-white/20 flex items-center justify-between">
+                <button
+                  onClick={() => setShowPlayerFilter(!showPlayerFilter)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/50 text-slate-700 text-sm font-medium min-h-[44px]"
+                >
+                  <span>
+                    {selectedPlayerId 
+                      ? teamMembers.find(m => m.id === selectedPlayerId)?.first_name || 'Player'
+                      : 'All Players'}
+                  </span>
+                </button>
+                <NotificationCenter />
+              </div>
+            )}
+
+            {/* Mobile Player Filter Chips */}
+            {isMobile && showPlayerFilter && (
+              <div className="px-4 py-3 border-b border-white/20 overflow-x-auto scrollbar-hide">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedPlayerId(null);
+                      setShowPlayerFilter(false);
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap min-h-[44px] transition-colors ${
+                      !selectedPlayerId
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-white/50 text-slate-700'
+                    }`}
+                  >
+                    <span className="text-sm font-medium">All</span>
+                  </button>
+                  {teamMembers.map((member) => (
+                    <button
+                      key={member.id}
+                      onClick={() => {
+                        setSelectedPlayerId(member.id === selectedPlayerId ? null : member.id);
+                        setShowPlayerFilter(false);
+                      }}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap min-h-[44px] transition-colors ${
+                        selectedPlayerId === member.id
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-white/50 text-slate-700'
+                      }`}
+                    >
+                      {member.avatar_url ? (
+                        <img
+                          src={member.avatar_url}
+                          alt={`${member.first_name} ${member.last_name}`}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-slate-300 flex items-center justify-center">
+                          <span className="text-xs font-medium text-slate-600">
+                            {member.first_name[0]}{member.last_name[0]}
+                          </span>
+                        </div>
+                      )}
+                      <span className="text-sm font-medium">
+                        {member.first_name} {member.last_name[0]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Header with Notification Center */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-white/20">
               <CalendarHeader
@@ -424,12 +508,12 @@ export function PremiumCalendarClient({
                 onNavigate={handleNavigate}
                 onAddEvent={handleAddEvent}
               />
-              <NotificationCenter />
+              {!isMobile && <NotificationCenter />}
             </div>
 
             {/* Availability Day View (when player selected) */}
             {selectedPlayer && view === 'day' ? (
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-6 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
                 <AvailabilityDayView
                   date={currentDate}
                   coachBusyPeriods={coachBusyPeriods}

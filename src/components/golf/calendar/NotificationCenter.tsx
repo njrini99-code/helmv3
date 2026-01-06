@@ -124,7 +124,7 @@ export function NotificationCenter() {
             </div>
 
             {/* Notification List */}
-            <div className="max-h-[480px] overflow-y-auto">
+            <div className="max-h-[480px] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
               {loading ? (
                 <div className="p-4 space-y-3">
                   {[1, 2, 3].map(i => (
