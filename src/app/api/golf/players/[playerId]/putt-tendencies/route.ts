@@ -4,15 +4,16 @@ import type { PlayerPuttTendencies } from '@/lib/types/golf';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { playerId: string } }
+  { params }: { params: Promise<{ playerId: string }> }
 ) {
   try {
+    const { playerId } = await params;
     const supabase = await createClient();
     
     const { data, error } = await supabase
       .from('player_putt_tendencies')
       .select('*')
-      .eq('player_id', params.playerId)
+      .eq('player_id', playerId)
       .single();
 
     if (error) {
@@ -21,7 +22,7 @@ export async function GET(
 
     if (!data) {
       return NextResponse.json({
-        playerId: params.playerId,
+        playerId: playerId,
         fullName: 'Unknown',
         totalMissedPutts: 0,
         missByType: {
