@@ -331,7 +331,7 @@ export default async function RoundsPage() {
               </div>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* CSS Keyframes */}

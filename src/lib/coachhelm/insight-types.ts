@@ -61,7 +61,7 @@ export interface PlayerFocusArea {
   player_id: string;
   coach_id: string;
   category: FocusAreaCategory;
-  priority_rank: number;
+  priority: number;
   title: string;
   description: string;
   specific_drills: string[];

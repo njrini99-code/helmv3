@@ -28,14 +28,14 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
         <div
           className={cn(
             'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0',
-            focusArea.priority_rank === 1 && 'bg-green-100 text-green-700',
-            focusArea.priority_rank === 2 && 'bg-green-50 text-green-600',
-            focusArea.priority_rank === 3 && 'bg-slate-100 text-slate-600',
-            focusArea.priority_rank === 4 && 'bg-slate-50 text-slate-500',
-            focusArea.priority_rank === 5 && 'bg-slate-50 text-slate-400'
+            focusArea.priority === 1 && 'bg-green-100 text-green-700',
+            focusArea.priority === 2 && 'bg-green-50 text-green-600',
+            focusArea.priority === 3 && 'bg-slate-100 text-slate-600',
+            focusArea.priority === 4 && 'bg-slate-50 text-slate-500',
+            focusArea.priority === 5 && 'bg-slate-50 text-slate-400'
           )}
         >
-          {focusArea.priority_rank}
+          {focusArea.priority}
         </div>
 
         {/* Icon */}

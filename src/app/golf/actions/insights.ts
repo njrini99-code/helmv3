@@ -369,7 +369,7 @@ export async function getPlayerFocusAreas(playerId: string) {
       .select('*')
       .eq('player_id', playerId)
       .eq('status', 'active')
-      .order('priority_rank', { ascending: true });
+      .order('priority', { ascending: true });
 
     if (error) {
       return { success: false, error: error.message, focus_areas: [] };

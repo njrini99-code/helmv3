@@ -15,6 +15,7 @@ export default function GolfDashboardPage() {
     const router = useRouter();
     const supabase = useMemo(() => supabaseClient, []); // Reuse client instance
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<'coach' | 'player' | null>(null);
     const [coachData, setCoachData] = useState<CoachDashboardData | null>(null);
     const [playerData, setPlayerData] = useState<PlayerDashboardData | null>(null);
@@ -204,6 +205,8 @@ export default function GolfDashboardPage() {
                     if (!mounted) return;
                     setUserRole('player');
 
+                    let team: GolfTeam | null = null;
+
                     // OPTIMIZATION: Fetch team and rounds in parallel
                     const [teamResult, roundsResult] = await Promise.all([
                         player.team_id
@@ -264,8 +267,12 @@ export default function GolfDashboardPage() {
                     router.push('/golf/signup');
                 }
 
-            } catch {
-                if (mounted) setLoading(false);
+            } catch (error) {
+                console.error('Dashboard loading error:', error);
+                if (mounted) {
+                    setError(error instanceof Error ? error.message : 'Failed to load dashboard');
+                    setLoading(false);
+                }
             }
         }
 
@@ -278,6 +285,27 @@ export default function GolfDashboardPage() {
 
     if (loading) {
         return <PageLoading />;
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+                <div className="text-center">
+                    <h2 className="text-xl font-semibold text-slate-900 mb-2">Error Loading Dashboard</h2>
+                    <p className="text-slate-600 mb-4">{error}</p>
+                    <button
+                        onClick={() => {
+                            setError(null);
+                            setLoading(true);
+                            window.location.reload();
+                        }}
+                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     if (userRole === 'coach' && coachData) {

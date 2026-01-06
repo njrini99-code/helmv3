@@ -59,7 +59,7 @@ export interface GeneratedInsight {
 export interface GeneratedFocusArea {
   player_id: string;
   category: string;
-  priority_rank: number;
+  priority: number;
   title: string;
   description: string;
   specific_drills: string[];
