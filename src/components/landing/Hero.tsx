@@ -60,10 +60,6 @@ function EmailCapture() {
           Notify Me
         </button>
       </form>
-
-      <p className="text-white/40 text-sm mt-3">
-        Join 500+ coaches already on the waitlist
-      </p>
     </div>
   )
 }
