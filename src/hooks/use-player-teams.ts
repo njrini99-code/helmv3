@@ -52,8 +52,8 @@ export function usePlayerTeams() {
 
       // Extract teams from member data
       const playerTeams: Team[] = (memberData || [])
-        .map((item: any) => item.teams)
-        .filter((team: any): team is Team => team !== null);
+        .map((item: { teams: Team | null }) => item.teams)
+        .filter((team): team is Team => team !== null);
 
       setTeams(playerTeams);
       setIsLoading(false);

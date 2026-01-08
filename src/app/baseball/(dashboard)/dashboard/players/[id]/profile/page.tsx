@@ -44,7 +44,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Player Card - Takes 2 columns */}
           <div className="lg:col-span-2">
-            <PlayerCard player={player as any} isPublic={isPublicView} />
+            <PlayerCard player={player as unknown as Parameters<typeof PlayerCard>[0]['player']} isPublic={isPublicView} />
           </div>
 
           {/* Action Sidebar */}

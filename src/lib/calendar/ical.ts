@@ -6,6 +6,7 @@
  */
 
 import { format, parseISO } from 'date-fns';
+import type { GolfEvent } from '@/lib/types/golf';
 
 // ============================================================================
 // TYPES
@@ -41,6 +42,23 @@ export interface ICalCalendar {
   productId?: string; // Product identifier
   refreshInterval?: number; // Minutes
 }
+
+type CalendarEventRow = Pick<
+  GolfEvent,
+  | 'id'
+  | 'title'
+  | 'description'
+  | 'location'
+  | 'course_name'
+  | 'start_date'
+  | 'end_date'
+  | 'start_time'
+  | 'end_time'
+  | 'all_day'
+  | 'recurrence_rule'
+  | 'created_at'
+  | 'updated_at'
+>;
 
 // ============================================================================
 // ICAL GENERATION
@@ -263,7 +281,7 @@ export function parseEventDate(dateString: string): Date {
 /**
  * Convert database event to ICalEvent
  */
-export function convertToICalEvent(dbEvent: any): ICalEvent {
+export function convertToICalEvent(dbEvent: CalendarEventRow): ICalEvent {
   const startDate = parseISO(dbEvent.start_date);
   let endDate: Date | undefined;
 
@@ -274,20 +292,20 @@ export function convertToICalEvent(dbEvent: any): ICalEvent {
     const [startHour, startMin] = (dbEvent.start_time || '00:00').split(':');
     const [endHour, endMin] = (dbEvent.end_time || '00:00').split(':');
 
-    startDate.setHours(parseInt(startHour), parseInt(startMin));
+    startDate.setHours(parseInt(startHour || '0'), parseInt(startMin || '0'));
     endDate = new Date(startDate);
-    endDate.setHours(parseInt(endHour), parseInt(endMin));
+    endDate.setHours(parseInt(endHour || '0'), parseInt(endMin || '0'));
   }
 
   return {
     id: dbEvent.id,
     title: dbEvent.title,
-    description: dbEvent.description,
-    location: dbEvent.location || dbEvent.course_name,
+    description: dbEvent.description ?? undefined,
+    location: dbEvent.location ?? dbEvent.course_name ?? undefined,
     startDate,
     endDate,
     allDay: dbEvent.all_day || false,
-    recurrenceRule: dbEvent.recurrence_rule,
+    recurrenceRule: dbEvent.recurrence_rule ?? undefined,
     createdAt: dbEvent.created_at ? parseISO(dbEvent.created_at) : undefined,
     updatedAt: dbEvent.updated_at ? parseISO(dbEvent.updated_at) : undefined,
   };

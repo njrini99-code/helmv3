@@ -32,7 +32,7 @@ interface VideoWithPlayer extends Video {
 }
 
 export default function VideosPage() {
-  const { user, player, coach: _coach, loading: authLoading } = useAuth();
+  const { user, player, loading: authLoading } = useAuth();
   const { selectedTeamId } = useTeamStore();
   const [videos, setVideos] = useState<VideoWithPlayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,7 +116,7 @@ export default function VideosPage() {
       }
       showToast('Video deleted successfully', 'success');
       fetchVideos();
-    } catch (error) {
+    } catch {
       showToast('Failed to delete video', 'error');
     } finally {
       setDeleting(false);

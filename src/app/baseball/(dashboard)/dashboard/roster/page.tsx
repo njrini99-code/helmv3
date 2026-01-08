@@ -49,7 +49,7 @@ export default function RosterPage() {
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [activeView, setActiveView] = useState<'roster' | 'lineup'>('roster');
-  const [_savingLineup, setSavingLineup] = useState(false);
+  const [, setSavingLineup] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {

@@ -44,7 +44,7 @@ export default function ResetPasswordPage() {
       }
 
       router.push('/golf/login?message=Password updated successfully');
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }

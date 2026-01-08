@@ -2,6 +2,15 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
+interface PuttDetailsRow {
+  shot_id: string;
+  miss_tags: string[];
+  break_direction: string | null;
+  estimated_break_inches: number | null;
+  distance_feet: number | null;
+  made: boolean;
+}
+
 const puttDetailsSchema = z.object({
   shotId: z.string().uuid(),
   missTags: z.array(z.enum(['low', 'high', 'short', 'long', 'pull', 'push'])),
@@ -22,8 +31,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: result.error.flatten() }, { status: 400 });
     }
 
-    // Use type assertion for putt_details table not in generated types
-    const { data, error } = await (supabase as any)
+    // Use a loose client for tables not in generated types
+    const supabaseAny = supabase as unknown as { from: (table: string) => any };
+    const { data, error } = await supabaseAny
       .from('putt_details')
       .upsert({
         shot_id: result.data.shotId,
@@ -42,7 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(data as PuttDetailsRow | null);
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },

@@ -4,8 +4,40 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { RoundReview } from '@/lib/coachhelm/types';
 
+// Database row type for golf_round_reviews
+interface RoundReviewDbRow {
+  id: string;
+  round_id: string;
+  player_id: string;
+  round_score: number;
+  round_score_to_par: number;
+  scoring_avg_before: string | number | null;
+  scoring_avg_after: string | number | null;
+  qualifying_position_before: number | null;
+  qualifying_position_after: number | null;
+  gap_to_next_position: string | number | null;
+  goal_impacts: unknown[];
+  highlights: unknown[];
+  areas_to_review: unknown[];
+  round_stats: unknown;
+  player_averages: unknown;
+  team_averages: unknown;
+  strokes_gained: unknown;
+  patterns_detected: unknown[];
+  patterns_recurring: unknown[];
+  summary: string | null;
+  primary_takeaway: string | null;
+  next_practice_priority: string | null;
+  linked_focus_area_id: string | null;
+  shared_with_coach: boolean;
+  shared_at: string | null;
+  coach_viewed_at: string | null;
+  coach_notes: string | null;
+  created_at: string;
+}
+
 // Map database to TypeScript
-function dbToReview(row: any): RoundReview {
+function dbToReview(row: RoundReviewDbRow): RoundReview {
   return {
     id: row.id,
     roundId: row.round_id,
@@ -60,7 +92,7 @@ export function useRoundReview(roundId: string | null) {
       setError(null);
 
       // Note: golf_round_reviews table types will be available after running db:types
-      const { data, error: fetchError } = await (supabase as any)
+      const { data, error: fetchError } = await supabase
         .from('golf_round_reviews')
         .select('*')
         .eq('round_id', currentRoundId)
@@ -115,7 +147,7 @@ export function useRoundReview(roundId: string | null) {
     if (!review?.id) return false;
 
     // Note: golf_round_reviews table types will be available after running db:types
-    const { error: updateError } = await (supabase as any)
+    const { error: updateError } = await supabase
       .from('golf_round_reviews')
       .update({
         shared_with_coach: true,

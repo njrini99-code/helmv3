@@ -52,6 +52,7 @@ export interface GeneratedInsight {
   title: string;
   description: string;
   recommendation: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: Record<string, any>;
   expires_in_days?: number;
 }
@@ -63,6 +64,7 @@ export interface GeneratedFocusArea {
   title: string;
   description: string;
   specific_drills: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   current_performance: Record<string, any>;
   target_improvement: string;
 }
@@ -225,6 +227,7 @@ function detectTournamentPressure(
 function detectPlateau(
   player: PlayerData,
   rounds: PlayerRoundData[],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _philosophy: CoachPhilosophy
 ): GeneratedInsight | null {
   // Need at least 15 rounds to detect plateau
@@ -322,6 +325,7 @@ function detectBubblePlayer(
 function detectSurgePlayer(
   player: PlayerData,
   rounds: PlayerRoundData[],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _philosophy: CoachPhilosophy
 ): GeneratedInsight | null {
   if (rounds.length < 10) return null;
@@ -361,6 +365,7 @@ function detectSurgePlayer(
 function detectStreak(
   player: PlayerData,
   rounds: PlayerRoundData[],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _philosophy: CoachPhilosophy
 ): GeneratedInsight | null {
   if (rounds.length < 5) return null;
@@ -421,6 +426,7 @@ function detectStreak(
 function detectStatRegression(
   player: PlayerData,
   rounds: PlayerRoundData[],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _philosophy: CoachPhilosophy
 ): GeneratedInsight[] {
   const insights: GeneratedInsight[] = [];

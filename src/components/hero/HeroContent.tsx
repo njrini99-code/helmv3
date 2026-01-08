@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export function HeroContent() {
   return (
@@ -83,25 +84,27 @@ export function HeroContent() {
         </motion.button>
 
         {/* Secondary CTA - WCAG 44px minimum */}
-        <motion.button
-          className="group px-6 py-3 text-base font-medium text-white rounded-xl
-                     border border-white/10 hover:border-white/20 hover:bg-white/5
-                     transition-all duration-200 min-h-[44px]"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <span className="flex items-center justify-center gap-2">
-            Explore products
-            <svg
-              className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </span>
-        </motion.button>
+        <Link href="/products">
+          <motion.button
+            className="group px-6 py-3 text-base font-medium text-white rounded-xl
+                       border border-white/10 hover:border-white/20 hover:bg-white/5
+                       transition-all duration-200 min-h-[44px]"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <span className="flex items-center justify-center gap-2">
+              Explore products
+              <svg
+                className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </span>
+          </motion.button>
+        </Link>
       </motion.div>
     </div>
   );

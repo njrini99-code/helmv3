@@ -12,6 +12,7 @@ import {
 } from '@/lib/utils/golf-stats-calculator-shots';
 import GolfStatsDisplay from '@/components/golf/stats/GolfStatsDisplay';
 import { IconChevronLeft, IconUser } from '@/components/icons';
+import type { GolfRound } from '@/lib/types/golf';
 
 interface Player {
   id: string;
@@ -28,6 +29,11 @@ interface PlayerStats {
   best_round: number | null;
 }
 
+type RoundSummary = Pick<
+  GolfRound,
+  'id' | 'round_date' | 'course_name' | 'round_type' | 'total_score' | 'total_to_par'
+>;
+
 export default function GolfStatsPage() {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<'coach' | 'player' | null>(null);
@@ -36,7 +42,7 @@ export default function GolfStatsPage() {
   const [comprehensiveStats, setComprehensiveStats] = useState<GolfStats | null>(null);
   const [playerName, setPlayerName] = useState('');
   const [loadingStats, setLoadingStats] = useState(false);
-  const [rounds, setRounds] = useState<any[]>([]);
+  const [rounds, setRounds] = useState<RoundSummary[]>([]);
   const [selectedRoundId, setSelectedRoundId] = useState<string | 'overall'>('overall');
 
   useEffect(() => {
@@ -175,7 +181,7 @@ export default function GolfStatsPage() {
       .order('round_date', { ascending: false });
 
     // Store rounds for selector
-    setRounds(roundsData || []);
+    setRounds((roundsData || []) as RoundSummary[]);
 
     // Initialize empty stats if no rounds
     if (!roundsData || roundsData.length === 0) {
@@ -393,7 +399,15 @@ export default function GolfStatsPage() {
         <GolfStatsDisplay
           stats={comprehensiveStats}
           playerName={playerName}
-          rounds={rounds}
+          rounds={rounds.filter((r): r is RoundSummary & { total_score: number; total_to_par: number } =>
+            r.total_score !== null && r.total_to_par !== null
+          ).map(r => ({
+            id: r.id,
+            round_date: r.round_date,
+            course_name: r.course_name,
+            total_score: r.total_score,
+            total_to_par: r.total_to_par,
+          }))}
           selectedRoundId={selectedRoundId}
           onRoundChange={setSelectedRoundId}
         />

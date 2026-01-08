@@ -167,7 +167,7 @@ export function useConversations() {
           : [conv.conversation_participants];
 
         const otherParticipant = participants.find(
-          (p: any) => p.user_id !== user.id
+          (p: { user_id: string; users?: unknown }) => p.user_id !== user.id
         );
 
         return {

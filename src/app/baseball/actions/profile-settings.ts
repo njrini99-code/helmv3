@@ -132,7 +132,8 @@ export async function updateOrganizationProfile(
   }
 }
 
-export async function updateOrganizationSettings(_organizationId: string, _settings: unknown) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function updateOrganizationSettings(organizationId: string, settings: unknown) {
   // TODO: Implement when organization_settings table is created
   throw new Error('Not implemented');
 

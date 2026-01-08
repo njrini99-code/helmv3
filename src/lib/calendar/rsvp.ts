@@ -5,7 +5,8 @@
  * for the GolfHelm calendar system
  */
 
-import { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { GolfCoach, GolfEvent, GolfEventAttendance, GolfPlayer } from '@/lib/types/golf';
 
 // ============================================================================
 // TYPES
@@ -40,8 +41,36 @@ export interface EventInvitation {
   description: string | null;
   requiresRsvp: boolean;
   rsvpDeadline: string | null;
-  createdBy: string;
+  createdBy: string | null;
   status: RSVPStatus;
+}
+
+type AttendanceWithPlayer = GolfEventAttendance & {
+  player: Pick<GolfPlayer, 'id' | 'first_name' | 'last_name' | 'avatar_url'> | null;
+};
+
+type AttendanceWithUser = {
+  player: Pick<GolfPlayer, 'user_id'> | Array<Pick<GolfPlayer, 'user_id'>> | null;
+};
+
+type AttendanceWithEvent = Pick<GolfEventAttendance, 'status' | 'responded_at'> & {
+  event: GolfEvent | GolfEvent[] | null;
+};
+
+type EventWithCreator = GolfEvent & {
+  creator: Pick<GolfCoach, 'user_id'> | null;
+};
+
+type ReminderAttendance = Pick<GolfEventAttendance, 'player_id' | 'reminder_sent'> & {
+  player: Pick<GolfPlayer, 'user_id' | 'first_name'> | Array<Pick<GolfPlayer, 'user_id' | 'first_name'>> | null;
+};
+
+type EventDateInput = Pick<GolfEvent, 'start_date' | 'start_time'>;
+type MaybeArray<T> = T | T[] | null | undefined;
+
+function firstOrNull<T>(value: MaybeArray<T>): T | null {
+  if (!value) return null;
+  return Array.isArray(value) ? value[0] ?? null : value;
 }
 
 // ============================================================================
@@ -64,13 +93,20 @@ export async function getEventRSVPSummary(
     `)
     .eq('event_id', eventId);
 
-  const attendees = (attendances || []).map((a: any) => ({
-    playerId: a.player_id,
-    playerName: a.player ? `${a.player.first_name} ${a.player.last_name}` : 'Unknown',
-    avatarUrl: a.player?.avatar_url || null,
-    status: a.status as RSVPStatus,
-    respondedAt: a.responded_at,
-  }));
+  const attendanceRows = (attendances || []) as AttendanceWithPlayer[];
+  const attendees = attendanceRows.map(attendance => {
+    const firstName = attendance.player?.first_name ?? '';
+    const lastName = attendance.player?.last_name ?? '';
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    return {
+      playerId: attendance.player_id,
+      playerName: fullName || 'Unknown',
+      avatarUrl: attendance.player?.avatar_url || null,
+      status: (attendance.status ?? 'pending') as RSVPStatus,
+      respondedAt: attendance.responded_at,
+    };
+  });
 
   return {
     total: attendees.length,
@@ -202,9 +238,10 @@ export async function notifyEventUpdate(
   if (!attendances || attendances.length === 0) return;
 
   // Create update notifications
-  const userIds = attendances
-    .map((a: any) => a.player?.user_id)
-    .filter(Boolean);
+  const attendanceRows = (attendances || []) as unknown as AttendanceWithUser[];
+  const userIds = attendanceRows
+    .map(attendance => firstOrNull(attendance.player)?.user_id)
+    .filter((userId): userId is string => Boolean(userId));
 
   if (userIds.length === 0) return;
 
@@ -247,9 +284,10 @@ export async function cancelEventAndNotify(
     .eq('event_id', eventId);
 
   if (attendances && attendances.length > 0) {
-    const userIds = attendances
-      .map((a: any) => a.player?.user_id)
-      .filter(Boolean);
+    const attendanceRows = (attendances || []) as unknown as AttendanceWithUser[];
+    const userIds = attendanceRows
+      .map(attendance => firstOrNull(attendance.player)?.user_id)
+      .filter((userId): userId is string => Boolean(userId));
 
     if (userIds.length > 0) {
       // Create cancellation notifications
@@ -301,7 +339,7 @@ export async function updateRSVP(
     .eq('player_id', playerId);
 
   // Get event and player details for notification
-  const { data: event } = await supabase
+  const { data: eventData } = await supabase
     .from('golf_events')
     .select(`
       *,
@@ -309,6 +347,7 @@ export async function updateRSVP(
     `)
     .eq('id', eventId)
     .single();
+  const event = eventData as EventWithCreator | null;
 
   const { data: player } = await supabase
     .from('golf_players')
@@ -317,7 +356,7 @@ export async function updateRSVP(
     .single();
 
   // Notify event creator (if it's a coach)
-  if (event?.created_by && (event as any).creator?.user_id) {
+  if (event?.created_by && event.creator?.user_id) {
     const statusText = status === 'accepted' ? 'accepted' :
                       status === 'declined' ? 'declined' :
                       status === 'tentative' ? 'marked as tentative for' : 'updated';
@@ -325,7 +364,7 @@ export async function updateRSVP(
     await supabase
       .from('golf_calendar_notifications')
       .insert({
-        user_id: (event as any).creator.user_id,
+        user_id: event.creator.user_id,
         event_id: eventId,
         type: 'rsvp_response' as const,
         title: `${player?.first_name} ${statusText}`,
@@ -374,9 +413,12 @@ export async function getPlayerPendingInvitations(
 
   if (!attendances) return [];
 
-  return attendances.map((a: any) => {
-    const event = a.event;
-    return {
+  const attendanceRows = (attendances || []) as unknown as AttendanceWithEvent[];
+  const invitations: EventInvitation[] = [];
+  for (const attendance of attendanceRows) {
+    const event = firstOrNull(attendance.event);
+    if (!event) continue;
+    invitations.push({
       eventId: event.id,
       eventTitle: event.title,
       eventType: event.event_type,
@@ -389,9 +431,10 @@ export async function getPlayerPendingInvitations(
       requiresRsvp: event.requires_rsvp || false,
       rsvpDeadline: event.rsvp_deadline,
       createdBy: event.created_by,
-      status: a.status,
-    };
-  });
+      status: (attendance.status ?? 'pending') as RSVPStatus,
+    });
+  }
+  return invitations;
 }
 
 /**
@@ -415,9 +458,12 @@ export async function getPlayerUpcomingEvents(
 
   if (!attendances) return [];
 
-  return attendances.map((a: any) => {
-    const event = a.event;
-    return {
+  const attendanceRows = (attendances || []) as unknown as AttendanceWithEvent[];
+  const invitations: EventInvitation[] = [];
+  for (const attendance of attendanceRows) {
+    const event = firstOrNull(attendance.event);
+    if (!event) continue;
+    invitations.push({
       eventId: event.id,
       eventTitle: event.title,
       eventType: event.event_type,
@@ -430,9 +476,10 @@ export async function getPlayerUpcomingEvents(
       requiresRsvp: event.requires_rsvp || false,
       rsvpDeadline: event.rsvp_deadline,
       createdBy: event.created_by,
-      status: a.status,
-    };
-  });
+      status: (attendance.status ?? 'pending') as RSVPStatus,
+    });
+  }
+  return invitations;
 }
 
 // ============================================================================
@@ -471,17 +518,20 @@ export async function sendRSVPReminders(
   if (!pendingAttendances || pendingAttendances.length === 0) return 0;
 
   // Create reminder notifications
-  const notifications = pendingAttendances
-    .filter((a: any) => a.player?.user_id)
-    .map((a: any) => ({
-      user_id: a.player.user_id,
+  const attendanceRows = (pendingAttendances || []) as unknown as ReminderAttendance[];
+  const notifications = attendanceRows.flatMap(attendance => {
+    const userId = firstOrNull(attendance.player)?.user_id;
+    if (!userId) return [];
+    return [{
+      user_id: userId,
       event_id: eventId,
       type: 'rsvp_reminder' as const,
       title: `RSVP reminder: ${event.title}`,
       message: `Please respond to "${event.title}" by ${formatEventDate(event)}`,
       action_url: `/golf/dashboard/calendar?event=${eventId}`,
       read: false,
-    }));
+    }];
+  });
 
   if (notifications.length > 0) {
     await supabase
@@ -506,7 +556,7 @@ export async function sendRSVPReminders(
 /**
  * Format event date for display in notifications
  */
-function formatEventDate(event: any): string {
+function formatEventDate(event: EventDateInput): string {
   const startDate = new Date(event.start_date);
   const dateStr = startDate.toLocaleDateString('en-US', {
     weekday: 'short',

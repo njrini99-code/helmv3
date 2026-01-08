@@ -3,8 +3,8 @@
 import { useState } from 'react';
 
 interface SearchResults {
-  players: any[];
-  colleges: any[];
+  players: unknown[];
+  colleges: unknown[];
 }
 
 // Placeholder search hook - to be fully implemented in later phases

@@ -42,6 +42,24 @@ export interface PollResponse {
   notes?: string;
 }
 
+interface PollResult {
+  date_option: string;
+  time_option: string;
+  available_count: number;
+  total_responses: number;
+  availability_percentage: number;
+}
+
+interface SuggestedTime {
+  date_option: string;
+  time_option: string;
+  availability_percentage: number;
+  available_players: string[];
+}
+
+type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
+type GolfEventStatus = 'draft' | 'confirmed' | 'cancelled' | 'completed';
+
 // ============================================================================
 // CREATE POLL
 // ============================================================================
@@ -174,7 +192,7 @@ export async function submitPollResponses(
 
 export async function getPollResults(
   pollId: string
-): Promise<ActionResult<any[]>> {
+): Promise<ActionResult<PollResult[]>> {
   try {
     const supabase = await createClient();
 
@@ -203,7 +221,7 @@ export async function getPollResults(
 export async function getSuggestedBestTimes(
   pollId: string,
   minAvailabilityPercentage: number = 70
-): Promise<ActionResult<any[]>> {
+): Promise<ActionResult<SuggestedTime[]>> {
   try {
     const supabase = await createClient();
 
@@ -281,14 +299,14 @@ export async function scheduleEventFromPoll(
       .insert({
         title: eventData.title || poll.title,
         description: eventData.description || poll.description,
-        event_type: eventData.eventType as any,
+        event_type: eventData.eventType as GolfEventType,
         start_date: selectedDate,
         start_time: selectedTime,
         end_time: endTime,
         location: eventData.location,
         created_by: coach.id,
         team_id: poll.team_id,
-        status: 'confirmed' as any,
+        status: 'confirmed' as GolfEventStatus,
       })
       .select('id')
       .single();

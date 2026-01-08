@@ -233,7 +233,7 @@ export async function getPlayerRecruitingInterests(playerId: string) {
  */
 export async function updatePlayerProfile(
   playerId: string,
-  updates: Record<string, any>
+  updates: Record<string, unknown>
 ) {
   const supabase = await createClient();
 

@@ -47,6 +47,7 @@ export interface CoachInsight {
   title: string;
   description: string;
   recommendation: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: Record<string, any>;
   status: InsightStatus;
   acknowledged_at: string | null;
@@ -65,6 +66,7 @@ export interface PlayerFocusArea {
   title: string;
   description: string;
   specific_drills: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   current_performance: Record<string, any>;
   target_improvement: string | null;
   status: FocusAreaStatus;
@@ -84,6 +86,7 @@ export interface InsightGenerationLog {
   focus_areas_updated: number;
   players_analyzed: number;
   execution_time_ms: number | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: Record<string, any>;
   created_at: string;
 }
@@ -96,6 +99,7 @@ export interface PlayerPerformanceSnapshot {
   scoring_average: number | null;
   best_round: number | null;
   worst_round: number | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   stats: Record<string, any>;
   trend_direction: TrendDirection | null;
   trend_magnitude: number | null;

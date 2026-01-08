@@ -85,7 +85,7 @@ function MessagesContent() {
         handleSelectConversation(result.conversationId);
         showToast('Conversation started', 'success');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to start conversation', 'error');
     }
   };
@@ -138,7 +138,7 @@ function MessagesContent() {
             messages={messages}
             participant={selectedParticipant}
             currentUserId={user?.id || ''}
-            isLoading={messagesLoading}
+            loading={messagesLoading}
             onSend={handleSendMessage}
             onBack={handleBack}
             className="h-full"

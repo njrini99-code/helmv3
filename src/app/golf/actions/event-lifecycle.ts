@@ -18,11 +18,22 @@ import { revalidatePath } from 'next/cache';
 // ============================================================================
 
 export type EventStatus = 'draft' | 'confirmed' | 'cancelled';
+type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
 interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+interface EventStatusHistory {
+  id: string;
+  event_id: string;
+  previous_status: EventStatus | null;
+  new_status: EventStatus;
+  changed_by: string;
+  reason: string | null;
+  changed_at: string;
 }
 
 // ============================================================================
@@ -53,12 +64,12 @@ export async function publishEvent(eventId: string): Promise<ActionResult> {
     const { error: updateError } = await supabase
       .from('golf_events')
       .update({
-        status: 'confirmed' as any,
+        status: 'confirmed' as EventStatus,
         updated_at: new Date().toISOString(),
       })
       .eq('id', eventId)
       .eq('created_by', coach.id) // Verify ownership
-      .eq('status', 'draft' as any); // Only draft events can be published
+      .eq('status', 'draft' as EventStatus); // Only draft events can be published
 
     if (updateError) {
       return { success: false, error: updateError.message };
@@ -116,7 +127,7 @@ export async function cancelEvent(
     const { error: updateError } = await supabase
       .from('golf_events')
       .update({
-        status: 'cancelled' as any,
+        status: 'cancelled' as EventStatus,
         cancelled_at: new Date().toISOString(),
         cancelled_by: coach.id,
         cancellation_reason: reason,
@@ -191,7 +202,7 @@ export async function reinstateEvent(eventId: string): Promise<ActionResult> {
     const { error: updateError } = await supabase
       .from('golf_events')
       .update({
-        status: 'confirmed' as any,
+        status: 'confirmed' as EventStatus,
         cancelled_at: null,
         cancelled_by: null,
         cancellation_reason: null,
@@ -199,7 +210,7 @@ export async function reinstateEvent(eventId: string): Promise<ActionResult> {
       })
       .eq('id', eventId)
       .eq('created_by', coach.id) // Verify ownership
-      .eq('status', 'cancelled' as any); // Only cancelled events can be reinstated
+      .eq('status', 'cancelled' as EventStatus); // Only cancelled events can be reinstated
 
     if (updateError) {
       return { success: false, error: updateError.message };
@@ -221,7 +232,7 @@ export async function reinstateEvent(eventId: string): Promise<ActionResult> {
 
 export async function getEventStatusHistory(
   eventId: string
-): Promise<ActionResult<any[]>> {
+): Promise<ActionResult<EventStatusHistory[]>> {
   try {
     const supabase = await createClient();
 
@@ -294,7 +305,7 @@ export async function createDraftEvent(eventData: {
       .insert({
         title: eventData.title,
         description: eventData.description,
-        event_type: eventData.eventType as any,
+        event_type: eventData.eventType as GolfEventType,
         start_date: eventData.startDate,
         end_date: eventData.endDate,
         start_time: eventData.startTime,
@@ -302,7 +313,7 @@ export async function createDraftEvent(eventData: {
         location: eventData.location,
         created_by: coach.id,
         team_id: eventData.teamId || coach.team_id,
-        status: 'draft' as any,
+        status: 'draft' as EventStatus,
       })
       .select('id')
       .single();

@@ -33,7 +33,7 @@ const products = {
       { icon: Video, label: 'Video Library', description: 'Highlight reels that get noticed' },
       { icon: MessageCircle, label: 'Coach Network', description: 'Direct messaging with programs' },
     ],
-    href: '/baseball',
+    href: '/products#baseballhelm',
     logo: '/helm-baseball-logo.png',
     bgImage: '/baseball-aerial.webp',
     accentColor: 'emerald',
@@ -48,7 +48,7 @@ const products = {
       { icon: BarChart3, label: 'Performance Stats', description: 'Strokes gained & trends' },
       { icon: Calendar, label: 'Practice Planning', description: 'Schedule & track development' },
     ],
-    href: '/golf',
+    href: '/products#golfhelm',
     logo: '/helm-golf-logo.png',
     bgImage: '/golf-course-aerial.webp', // Placeholder - user will provide
     accentColor: 'amber',
@@ -64,12 +64,12 @@ const products = {
  * - border border-white/20 for edge craft
  * - Subtle shadow for depth
  */
-function GlassmorphismPanel({ 
-  children, 
-  className = '' 
-}: { 
+function GlassmorphismPanel({
+  children,
+  className = ''
+}: {
   children: React.ReactNode
-  className?: string 
+  className?: string
 }) {
   return (
     <div className={`
@@ -82,10 +82,10 @@ function GlassmorphismPanel({
     `}>
       {/* Top edge highlight - key premium detail */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-      
+
       {/* Inner glow */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none" />
-      
+
       {children}
     </div>
   )
@@ -94,42 +94,41 @@ function GlassmorphismPanel({
 /**
  * ProductShowcase - Individual cinematic showcase for one product
  */
-function ProductShowcase({ 
-  product, 
-  index 
-}: { 
+function ProductShowcase({
+  product,
+  index
+}: {
   product: typeof products.baseball
-  index: number 
+  index: number
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: false, amount: 0.3 })
-  
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end end'],
   })
-  
+
   // Flyover effect: zoom in + vertical pan (flying closer to the field)
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.5])
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '-20%'])
   const imageOpacity = useTransform(scrollYProgress, [0, 0.1], [0.7, 1])
-  
+
   // Panel animation: fade in and slide up
   const panelOpacity = useTransform(scrollYProgress, [0.1, 0.3], [0, 1])
   const panelY = useTransform(scrollYProgress, [0.1, 0.3], [60, 0])
-  
+
   const isEmerald = product.accentColor === 'emerald'
-  
+
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="relative"
-      style={{ height: '300vh' }}
+      className="relative h-[240vh] sm:h-[270vh] md:h-[300vh]"
     >
       {/* Sticky viewport - stays pinned while scrolling through 300vh */}
       <div className="sticky top-0 h-screen w-full overflow-hidden">
         {/* Background image with flyover effect */}
-        <motion.div 
+        <motion.div
           className="absolute inset-0"
           style={{ scale, y }}
         >
@@ -143,37 +142,37 @@ function ProductShowcase({
               sizes="100vw"
             />
           </motion.div>
-          
+
           {/* Gradient overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/40" />
-          
+
           {/* Accent color gradient overlay */}
           <div className={`
             absolute inset-0 opacity-20
-            ${isEmerald 
-              ? 'bg-gradient-to-br from-emerald-900/50 to-transparent' 
+            ${isEmerald
+              ? 'bg-gradient-to-br from-emerald-900/50 to-transparent'
               : 'bg-gradient-to-br from-amber-900/50 to-transparent'
             }
           `} />
         </motion.div>
-        
+
         {/* Atmospheric fog overlay */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.3)_100%)]" />
         </div>
-        
+
         {/* Content container */}
-        <div className="relative h-full flex items-center justify-center px-6 py-20">
+        <div className="relative h-full flex items-center justify-center px-4 sm:px-6 py-16 sm:py-20">
           <motion.div
             style={{ opacity: panelOpacity, y: panelY }}
             className="w-full max-w-6xl"
           >
-            <GlassmorphismPanel className="p-8 md:p-12">
+            <GlassmorphismPanel className="p-6 sm:p-8 md:p-12">
               <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
                 {/* Left: Product info */}
                 <div className="flex flex-col justify-center">
                   {/* Logo */}
-                  <motion.div 
+                  <motion.div
                     className="mb-6"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={isInView ? { opacity: 1, scale: 1 } : {}}
@@ -183,8 +182,8 @@ function ProductShowcase({
                       {/* Logo glow */}
                       <div className={`
                         absolute -inset-4 rounded-2xl blur-xl opacity-60
-                        ${isEmerald 
-                          ? 'bg-gradient-to-br from-emerald-400/40 to-teal-400/40' 
+                        ${isEmerald
+                          ? 'bg-gradient-to-br from-emerald-400/40 to-teal-400/40'
                           : 'bg-gradient-to-br from-amber-400/40 to-orange-400/40'
                         }
                       `} />
@@ -193,32 +192,37 @@ function ProductShowcase({
                         alt={product.name}
                         width={80}
                         height={80}
-                        className="relative w-20 h-20"
-                        style={{ boxShadow: '0px 4px 12px 0px rgba(0, 0, 0, 0.15)' }}
+                        className="relative w-16 h-16 sm:w-20 sm:h-20"
+                        style={{ 
+                          backdropFilter: 'blur(12px)',
+                          border: '1px solid rgba(0, 0, 0, 1)',
+                          opacity: 0.9,
+                          mixBlendMode: 'luminosity'
+                        }}
                       />
                     </div>
                   </motion.div>
-                  
+
                   {/* Title */}
-                  <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
                     {product.name}
                   </h2>
-                  
+
                   {/* Tagline */}
                   <p className={`
-                    text-xl md:text-2xl font-medium mb-4
+                    text-lg sm:text-xl md:text-2xl font-medium mb-4
                     ${isEmerald ? 'text-emerald-400' : 'text-amber-400'}
                   `}>
                     {product.tagline}
                   </p>
-                  
+
                   {/* Description */}
-                  <p className="text-lg text-white/70 mb-8 leading-relaxed max-w-lg">
+                  <p className="text-base sm:text-lg text-white/70 mb-8 leading-relaxed max-w-lg">
                     {product.description}
                   </p>
-                  
+
                   {/* Features grid */}
-                  <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                     {product.features.map((feature, i) => (
                       <motion.div
                         key={feature.label}
@@ -229,8 +233,8 @@ function ProductShowcase({
                       >
                         <div className={`
                           flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center
-                          ${isEmerald 
-                            ? 'bg-emerald-500/20 text-emerald-400' 
+                          ${isEmerald
+                            ? 'bg-emerald-500/20 text-emerald-400'
                             : 'bg-amber-500/20 text-amber-400'
                           }
                         `}>
@@ -243,17 +247,17 @@ function ProductShowcase({
                       </motion.div>
                     ))}
                   </div>
-                  
+
                   {/* CTA */}
-                  <Link href={product.href}>
+                  <Link href={product.href} className="inline-flex w-full sm:w-auto">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       className={`
-                        inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white
+                        inline-flex w-full sm:w-auto justify-center items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white
                         transition-all duration-300 shadow-lg
-                        ${isEmerald 
-                          ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/25' 
+                        ${isEmerald
+                          ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/25'
                           : 'bg-amber-600 hover:bg-amber-500 shadow-amber-500/25'
                         }
                       `}
@@ -263,7 +267,7 @@ function ProductShowcase({
                     </motion.button>
                   </Link>
                 </div>
-                
+
                 {/* Right: Dashboard preview */}
                 <div className="hidden lg:flex items-center justify-center">
                   <motion.div
@@ -290,7 +294,7 @@ function ProductShowcase({
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Dashboard preview content */}
                       <div className="relative w-[400px] h-[280px] bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 p-4">
                         {/* Glow */}
@@ -299,7 +303,7 @@ function ProductShowcase({
                           w-48 h-48 rounded-full blur-[60px] opacity-30
                           ${isEmerald ? 'bg-emerald-500' : 'bg-amber-500'}
                         `} />
-                        
+
                         {/* Mock dashboard elements */}
                         <div className="relative space-y-3">
                           {/* Header bar */}
@@ -307,7 +311,7 @@ function ProductShowcase({
                             <div className="h-4 w-24 bg-white/10 rounded" />
                             <div className={`h-6 w-20 rounded-lg ${isEmerald ? 'bg-emerald-500/30' : 'bg-amber-500/30'}`} />
                           </div>
-                          
+
                           {/* Stats row */}
                           <div className="grid grid-cols-3 gap-2">
                             {[1, 2, 3].map((i) => (
@@ -317,7 +321,7 @@ function ProductShowcase({
                               </div>
                             ))}
                           </div>
-                          
+
                           {/* Chart area */}
                           <div className="bg-white/5 rounded-lg p-3 border border-white/5">
                             <div className="flex items-end justify-between h-24 gap-2">
@@ -330,7 +334,7 @@ function ProductShowcase({
                               ))}
                             </div>
                           </div>
-                          
+
                           {/* Table rows */}
                           <div className="space-y-1.5">
                             {[1, 2].map((i) => (
@@ -344,7 +348,7 @@ function ProductShowcase({
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Floating stat card */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -368,14 +372,14 @@ function ProductShowcase({
             </GlassmorphismPanel>
           </motion.div>
         </div>
-        
+
         {/* Scroll indicator */}
         <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+          className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
           animate={{ opacity: [0.4, 0.8, 0.4] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          <span className="text-white/60 text-sm">Keep scrolling</span>
+          <span className="text-white/60 text-xs sm:text-sm">Keep scrolling</span>
           <motion.div
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
@@ -399,7 +403,7 @@ export function ProductShowcases() {
     <section className="relative">
       {/* BaseballHelm Showcase */}
       <ProductShowcase product={products.baseball} index={0} />
-      
+
       {/* GolfHelm Showcase */}
       <ProductShowcase product={products.golf} index={1} />
     </section>

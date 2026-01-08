@@ -36,7 +36,7 @@ export function useTeamMembers(teamId?: string) {
 
           if (membersError) throw membersError;
 
-          const teamMembers = (data || []).map((member: any) => ({
+          const teamMembers = (data || []).map((member: { id: string; user_id: string; users?: { id: string; full_name?: string; avatar_url?: string } | null }) => ({
             id: member.id,
             user_id: member.user_id,
             full_name: member.users?.full_name || 'Unknown',

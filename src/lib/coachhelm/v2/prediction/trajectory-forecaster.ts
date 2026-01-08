@@ -322,7 +322,9 @@ export class TrajectoryForecaster {
    */
   private generateScenarios(
     ensemble: TrajectoryPoint[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _linear: TrajectoryPoint[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _horizonDays: number
   ): TrajectoryScenario[] {
     if (ensemble.length === 0) return [];

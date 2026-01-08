@@ -25,6 +25,48 @@ interface ActionResult<T = void> {
   error?: string;
 }
 
+type SupabaseClientType = ReturnType<typeof createClient> extends Promise<infer T> ? T : never;
+
+interface CalendarConnection {
+  id: string;
+  calendar_url: string;
+  ctag?: string;
+  sync_team_ids?: string[];
+  team_id?: string;
+}
+
+interface ICalEvent {
+  id?: string;
+  title: string;
+  description?: string;
+  startDate: Date;
+  endDate?: Date | null;
+  location?: string;
+  allDay?: boolean;
+  status?: string;
+}
+
+interface GolfEventRecord {
+  id: string;
+  title: string;
+  description?: string;
+  start_date: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  location?: string;
+}
+
+interface SyncStateData {
+  golf_event_id?: string;
+  connection_id: string;
+  external_event_id: string;
+  external_event_url?: string;
+  external_etag?: string;
+  external_event_hash?: string;
+  sync_status: string;
+  last_modified_source: string;
+}
+
 export interface ExternalCalendarConnection {
   id: string;
   calendarType: 'google' | 'apple' | 'outlook' | 'caldav';
@@ -239,9 +281,9 @@ export async function syncExternalCalendar(
 // ============================================================================
 
 async function importFromExternal(
-  supabase: any,
+  supabase: SupabaseClientType,
   client: CalDAVClient,
-  connection: any
+  connection: CalendarConnection
 ): Promise<{ imported: number; conflicts: number }> {
   let imported = 0;
   let conflicts = 0;
@@ -301,7 +343,8 @@ async function importFromExternal(
         });
         imported++;
       }
-    } catch (error) {
+    } catch {
+      // Ignore individual event import errors - continue with other events
     }
   }
 
@@ -313,9 +356,9 @@ async function importFromExternal(
 // ============================================================================
 
 async function exportToExternal(
-  supabase: any,
+  supabase: SupabaseClientType,
   client: CalDAVClient,
-  connection: any
+  connection: CalendarConnection
 ): Promise<{ exported: number; conflicts: number }> {
   let exported = 0;
   let conflicts = 0;
@@ -476,7 +519,7 @@ export async function disconnectExternalCalendar(
 // HELPER FUNCTIONS
 // ============================================================================
 
-async function createGolfEvent(supabase: any, connection: any, icalEvent: any): Promise<string> {
+async function createGolfEvent(supabase: SupabaseClientType, connection: CalendarConnection, icalEvent: ICalEvent): Promise<string> {
   const { data: event } = await supabase
     .from('golf_events')
     .insert({
@@ -496,7 +539,7 @@ async function createGolfEvent(supabase: any, connection: any, icalEvent: any): 
   return event.id;
 }
 
-async function updateGolfEvent(supabase: any, eventId: string, icalEvent: any): Promise<void> {
+async function updateGolfEvent(supabase: SupabaseClientType, eventId: string, icalEvent: ICalEvent): Promise<void> {
   await supabase
     .from('golf_events')
     .update({
@@ -511,18 +554,18 @@ async function updateGolfEvent(supabase: any, eventId: string, icalEvent: any): 
     .eq('id', eventId);
 }
 
-async function createSyncState(supabase: any, data: any): Promise<void> {
+async function createSyncState(supabase: SupabaseClientType, data: SyncStateData): Promise<void> {
   await supabase.from('golf_calendar_sync_state').insert(data);
 }
 
-async function updateSyncState(supabase: any, syncStateId: string, updates: any): Promise<void> {
+async function updateSyncState(supabase: SupabaseClientType, syncStateId: string, updates: Partial<SyncStateData>): Promise<void> {
   await supabase
     .from('golf_calendar_sync_state')
     .update({ ...updates, last_synced_at: new Date().toISOString() })
     .eq('id', syncStateId);
 }
 
-async function handleConflict(supabase: any, syncStateId: string, externalEvent: CalDAVEvent): Promise<void> {
+async function handleConflict(supabase: SupabaseClientType, syncStateId: string, externalEvent: CalDAVEvent): Promise<void> {
   await supabase
     .from('golf_calendar_sync_state')
     .update({
@@ -538,14 +581,14 @@ async function handleConflict(supabase: any, syncStateId: string, externalEvent:
     .eq('id', syncStateId);
 }
 
-function calculateEventHash(event: any): string {
+function calculateEventHash(event: ICalEvent): string {
   const str =
     `${event.title || ''}|${event.startDate}|${event.endDate || ''}|${event.location || ''}|${event.description || ''}`;
   // Simple hash - in production use crypto
   return Buffer.from(str).toString('base64');
 }
 
-function convertGolfEventToICal(golfEvent: any): any {
+function convertGolfEventToICal(golfEvent: GolfEventRecord): ICalEvent {
   return {
     id: golfEvent.id,
     title: golfEvent.title,

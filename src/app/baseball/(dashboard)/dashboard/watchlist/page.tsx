@@ -146,7 +146,7 @@ export default function WatchlistPage() {
           ? { ...item, pipeline_stage: newStatus }
           : item
       ));
-    } catch (error) {
+    } catch {
       showToast('Failed to update status', 'error');
     }
   }
@@ -163,7 +163,7 @@ export default function WatchlistPage() {
       // Update local state
       setWatchlist(prev => prev.filter(item => item.id !== removeConfirm));
       showToast('Player removed from watchlist', 'success');
-    } catch (error) {
+    } catch {
       showToast('Failed to remove from watchlist', 'error');
     } finally {
       setRemoving(false);
@@ -182,7 +182,7 @@ export default function WatchlistPage() {
       ));
       setEditingNote(null);
       setNoteValue('');
-    } catch (error) {
+    } catch {
       showToast('Failed to save note', 'error');
     }
   }
@@ -235,7 +235,7 @@ export default function WatchlistPage() {
       ));
 
       setSelectedPlayers(new Set());
-    } catch (error) {
+    } catch {
       showToast('Failed to update some players', 'error');
     }
   }
@@ -256,7 +256,7 @@ export default function WatchlistPage() {
       setWatchlist(prev => prev.filter(item => !selectedPlayers.has(item.id)));
       setSelectedPlayers(new Set());
       showToast(`${selectedPlayers.size} player(s) removed from watchlist`, 'success');
-    } catch (error) {
+    } catch {
       showToast('Failed to remove some players', 'error');
     } finally {
       setRemoving(false);

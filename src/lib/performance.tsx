@@ -8,7 +8,7 @@ import { memo, ComponentType } from 'react';
  * Deep comparison function for React.memo
  * Use sparingly - only for components with complex props
  */
-export function deepCompare<T extends Record<string, any>>(
+export function deepCompare<T extends Record<string, unknown>>(
   prevProps: T,
   nextProps: T
 ): boolean {
@@ -19,7 +19,7 @@ export function deepCompare<T extends Record<string, any>>(
  * Shallow comparison for simple props
  * More performant than deep compare
  */
-export function shallowCompare<T extends Record<string, any>>(
+export function shallowCompare<T extends Record<string, unknown>>(
   prevProps: T,
   nextProps: T
 ): boolean {
@@ -43,7 +43,7 @@ export function shallowCompare<T extends Record<string, any>>(
  * Memoize a component with shallow comparison
  * Use for components that receive primitive props
  */
-export function memoShallow<P extends Record<string, any>>(
+export function memoShallow<P extends Record<string, unknown>>(
   Component: ComponentType<P>,
   displayName?: string
 ): ComponentType<P> {
@@ -61,7 +61,7 @@ export function memoShallow<P extends Record<string, any>>(
  * Use for components that receive complex objects
  * WARNING: Can be expensive - use sparingly
  */
-export function memoDeep<P extends Record<string, any>>(
+export function memoDeep<P extends Record<string, unknown>>(
   Component: ComponentType<P>,
   displayName?: string
 ): ComponentType<P> {
@@ -78,13 +78,13 @@ export function memoDeep<P extends Record<string, any>>(
  * Debounce function for performance
  * Delays function execution until after delay has passed
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   fn: T,
   delay: number
 ): (...args: Parameters<T>) => void {
   let timeoutId: NodeJS.Timeout;
 
-  return function (this: any, ...args: Parameters<T>) {
+  return function (this: unknown, ...args: Parameters<T>) {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn.apply(this, args), delay);
   };
@@ -94,13 +94,13 @@ export function debounce<T extends (...args: any[]) => any>(
  * Throttle function for performance
  * Limits function execution to once per interval
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   fn: T,
   interval: number
 ): (...args: Parameters<T>) => void {
   let lastCall = 0;
 
-  return function (this: any, ...args: Parameters<T>) {
+  return function (this: unknown, ...args: Parameters<T>) {
     const now = Date.now();
 
     if (now - lastCall >= interval) {

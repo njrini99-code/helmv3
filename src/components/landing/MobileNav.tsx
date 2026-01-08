@@ -21,24 +21,29 @@ export function MobileNav() {
 
   return (
     <>
-      {/* Hamburger button */}
+      {/* Hamburger button - floating pill style */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden relative z-50 w-10 h-10 flex items-center justify-center"
+        className={`md:hidden relative z-50 w-11 h-11 flex items-center justify-center
+                   rounded-full backdrop-blur-2xl transition-all duration-200
+                   ${isOpen
+                     ? 'bg-warm-100'
+                     : 'bg-white/[0.08] border border-white/[0.12] shadow-[0_2px_20px_rgba(0,0,0,0.15)]'
+                   }`}
         aria-label={isOpen ? 'Close menu' : 'Open menu'}
       >
-        <div className="w-6 h-5 relative flex flex-col justify-between">
+        <div className="w-5 h-4 relative flex flex-col justify-between">
           <motion.span
-            animate={isOpen ? { rotate: 45, y: 8 } : { rotate: 0, y: 0 }}
-            className="w-full h-0.5 bg-warm-900 origin-left transition-all"
+            animate={isOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }}
+            className={`w-full h-[2px] rounded-full origin-left transition-colors ${isOpen ? 'bg-warm-900' : 'bg-white'}`}
           />
           <motion.span
-            animate={isOpen ? { opacity: 0 } : { opacity: 1 }}
-            className="w-full h-0.5 bg-warm-900 transition-all"
+            animate={isOpen ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }}
+            className={`w-full h-[2px] rounded-full transition-colors ${isOpen ? 'bg-warm-900' : 'bg-white'}`}
           />
           <motion.span
-            animate={isOpen ? { rotate: -45, y: -8 } : { rotate: 0, y: 0 }}
-            className="w-full h-0.5 bg-warm-900 origin-left transition-all"
+            animate={isOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }}
+            className={`w-full h-[2px] rounded-full origin-left transition-colors ${isOpen ? 'bg-warm-900' : 'bg-white'}`}
           />
         </div>
       </button>
@@ -65,9 +70,9 @@ export function MobileNav() {
               >
                 {/* Main Navigation Links */}
                 {[
-                  { name: 'BaseballHelm', href: '/baseball/signup' },
-                  { name: 'GolfHelm', href: '/golf/signup' },
+                  { name: 'Home', href: '/' },
                   { name: 'About', href: '/about' },
+                  { name: 'Products', href: '/products' },
                 ].map((link, i) => (
                   <motion.div
                     key={link.name}
@@ -101,13 +106,6 @@ export function MobileNav() {
                       >
                         Log in
                       </Link>
-                      <Link
-                        href="/baseball/signup"
-                        onClick={() => setIsOpen(false)}
-                        className="text-xl text-warm-700 hover:text-golden-600 transition-colors"
-                      >
-                        Sign up
-                      </Link>
                     </div>
                   </motion.div>
                   <motion.div
@@ -123,13 +121,6 @@ export function MobileNav() {
                         className="text-xl text-warm-700 hover:text-golden-600 transition-colors"
                       >
                         Log in
-                      </Link>
-                      <Link
-                        href="/golf/signup"
-                        onClick={() => setIsOpen(false)}
-                        className="text-xl text-warm-700 hover:text-golden-600 transition-colors"
-                      >
-                        Sign up
                       </Link>
                     </div>
                   </motion.div>

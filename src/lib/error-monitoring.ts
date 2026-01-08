@@ -136,15 +136,15 @@ class ErrorMonitoring {
     if (typeof window !== 'undefined') {
       import('@sentry/nextjs').then((Sentry) => {
         Sentry.captureException(new Error(report.message), {
-          level: this.mapSeverityToSentryLevel(report.severity),
+          level: this.mapSeverityToSentryLevel(report.severity) as 'fatal' | 'error' | 'warning' | 'log' | 'info' | 'debug',
           contexts: {
-            error_context: report.context,
+            error_context: report.context as Record<string, unknown>,
           },
           extra: {
             timestamp: report.timestamp,
             stack: report.stack,
           },
-        } as any);
+        });
       }).catch(() => {
         // Sentry not available, fallback to console
         console.error('[Production Error]', report);
@@ -162,15 +162,15 @@ class ErrorMonitoring {
       // Server-side
       import('@sentry/nextjs').then((Sentry) => {
         Sentry.captureException(new Error(report.message), {
-          level: this.mapSeverityToSentryLevel(report.severity),
+          level: this.mapSeverityToSentryLevel(report.severity) as 'fatal' | 'error' | 'warning' | 'log' | 'info' | 'debug',
           contexts: {
-            error_context: report.context,
+            error_context: report.context as Record<string, unknown>,
           },
           extra: {
             timestamp: report.timestamp,
             stack: report.stack,
           },
-        } as any);
+        });
       }).catch(() => {
         console.error('[Server Error]', report);
       });

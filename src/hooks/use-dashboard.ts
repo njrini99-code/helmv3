@@ -204,7 +204,7 @@ export function useUpcomingEvents(limit = 5) {
         const playerCamps = (registrations || [])
           .filter(r => r.camps)
           .map(r => {
-            const camp = r.camps as any;
+            const camp = r.camps as { id: string; name: string; start_date: string; end_date: string | null; location: string | null; organization?: { name: string; logo_url?: string } | { name: string; logo_url?: string }[] | null };
             return {
               ...camp,
               organization: Array.isArray(camp.organization) ? camp.organization[0] : camp.organization,

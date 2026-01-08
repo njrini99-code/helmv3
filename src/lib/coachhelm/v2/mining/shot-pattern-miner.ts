@@ -574,6 +574,7 @@ export class ShotPatternMiner {
    */
   private summarizeOverall(
     patterns: ShotPattern[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _rangeStats: DistanceRangeStats[]
   ): {
     overallDispersion: DispersionPattern;

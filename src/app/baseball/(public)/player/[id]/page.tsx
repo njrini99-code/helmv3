@@ -8,16 +8,68 @@ import { IconMail, IconStar, IconVideo, IconTrendingUp } from '@/components/icon
 import { Metadata } from 'next';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
+}
+
+interface PlayerSettings {
+  show_videos?: boolean;
+  show_dream_schools?: boolean;
+  show_stats?: boolean;
+  [key: string]: unknown;
+}
+
+interface PlayerVideo {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  video_url: string | null;
+  duration_seconds: number | null;
+  is_highlight: boolean;
+  created_at: string;
+}
+
+interface DreamSchool {
+  id: string;
+  rank: number;
+  college_program: {
+    id: string;
+    name: string;
+    division: string | null;
+    logo_url: string | null;
+  } | null;
+}
+
+interface PlayerStats {
+  season?: string;
+  batting_avg?: number;
+  home_runs?: number | null;
+  rbis?: number | null;
+  stolen_bases?: number | null;
+  era?: number;
+  strikeouts?: number | null;
+  fb_velo_avg?: number;
+  [key: string]: unknown;
+}
+
+interface PlayerWithRelations {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  player_settings: PlayerSettings | null;
+  player_videos: PlayerVideo[];
+  player_dream_schools: DreamSchool[];
+  player_stats: PlayerStats[];
+  [key: string]: unknown;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
   const supabase = await createClient();
 
   const { data: player } = await supabase
     .from('players')
     .select('first_name, last_name, primary_position, grad_year')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!player) {
@@ -33,6 +85,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PublicPlayerProfilePage({ params }: PageProps) {
+  const { id } = await params;
   const supabase = await createClient();
 
   // Fetch player with settings and related data
@@ -64,7 +117,7 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
         *
       )
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (error || !player) {
@@ -95,17 +148,18 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
     }
   }
 
-  const settings = player.player_settings || {} as any;
+  const typedPlayer = player as unknown as PlayerWithRelations;
+  const settings = typedPlayer.player_settings || {};
   const showVideos = settings.show_videos !== false;
   const showDreamSchools = settings.show_dream_schools !== false;
   const showStats = settings.show_stats !== false;
 
   // Get latest stats
-  const latestStats = (player as any).player_stats?.[0];
+  const latestStats = typedPlayer.player_stats?.[0];
 
   // Sort dream schools by rank
-  const dreamSchools = ((player as any).player_dream_schools || [])
-    .sort((a: any, b: any) => a.rank - b.rank)
+  const dreamSchools = (typedPlayer.player_dream_schools || [])
+    .sort((a, b) => a.rank - b.rank)
     .slice(0, 10);
 
   return (
@@ -129,10 +183,10 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Player Card */}
           <div className="lg:col-span-2 space-y-6">
-            <PlayerCard player={player as any} isPublic={true} />
+            <PlayerCard player={player as unknown as Parameters<typeof PlayerCard>[0]['player']} isPublic={true} />
 
             {/* Videos Section */}
-            {showVideos && (player as any).player_videos && (player as any).player_videos.length > 0 && (
+            {showVideos && typedPlayer.player_videos && typedPlayer.player_videos.length > 0 && (
               <Card className="overflow-hidden">
                 <div className="p-6 border-b border-slate-200 bg-white">
                   <div className="flex items-center gap-2">
@@ -142,7 +196,7 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
                 </div>
                 <div className="p-6 bg-slate-50">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {(player as any).player_videos.slice(0, 4).map((video: any) => (
+                    {typedPlayer.player_videos.slice(0, 4).map((video) => (
                       <div
                         key={video.id}
                         className="bg-white rounded-lg border border-slate-200 overflow-hidden hover:border-green-200 transition-colors cursor-pointer"
@@ -299,7 +353,7 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
                 </div>
                 <div className="p-4 bg-slate-50">
                   <div className="space-y-2">
-                    {dreamSchools.map((school: any) => (
+                    {dreamSchools.map((school) => (
                       <div
                         key={school.id}
                         className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200"

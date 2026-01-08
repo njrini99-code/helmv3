@@ -128,7 +128,7 @@ export function useRoundDraft() {
       }
 
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }, [clearDraft]);
@@ -144,7 +144,7 @@ export function useRoundDraft() {
       const draft: RoundDraft = JSON.parse(stored);
       const ageMs = Date.now() - draft.timestamp;
       return Math.floor(ageMs / 1000 / 60); // Convert to minutes
-    } catch (error) {
+    } catch {
       return null;
     }
   }, []);

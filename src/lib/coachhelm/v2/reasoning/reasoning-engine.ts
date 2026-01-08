@@ -325,7 +325,9 @@ export class ReasoningEngine {
    * Generates alternative explanations
    */
   private generateAlternatives(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _observation: { data: Record<string, unknown> },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _context: {
       features?: ExtractedFeatures;
       patterns?: MinedPattern[];

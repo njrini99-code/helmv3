@@ -58,8 +58,11 @@ export async function saveComparison(params: SaveComparisonParams) {
   const { data: comparison, error: insertError } = await supabase
     .from('player_comparisons')
     .insert({
-      ...comparisonInsert,
-      comparison_data: comparisonInsert.comparison_data as unknown as any,
+      coach_id: comparisonInsert.coach_id,
+      name: comparisonInsert.name,
+      description: comparisonInsert.description,
+      player_ids: comparisonInsert.player_ids,
+      comparison_data: comparisonInsert.comparison_data as unknown as null,
     })
     .select()
     .single();

@@ -1,32 +1,53 @@
 import { AreaToReview, RoundStats } from './types';
 
+interface GolfHole {
+  hole_number: number;
+  par: number | null;
+  score: number | null;
+  putts?: number | null;
+  penalty_strokes?: number | null;
+  gir?: boolean | null;
+  fairway_hit?: boolean | null;
+  up_and_down_attempt?: boolean | null;
+  up_and_down_made?: boolean | null;
+  first_putt_distance?: number | null;
+  first_putt_leave?: number | null;
+}
+
+interface RoundWithHoles {
+  holes?: GolfHole[] | null;
+}
+
 export function detectAreasToReview(
-  round: any,
+  round: RoundWithHoles,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _roundStats: RoundStats,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _playerAverages: RoundStats
 ): AreaToReview[] {
   const areas: AreaToReview[] = [];
   const holes = round.holes || [];
 
   // 1. Find three-putts
-  holes.forEach((hole: any) => {
-    if ((hole.putts || 0) >= 3) {
+  holes.forEach((hole: GolfHole) => {
+    const putts = hole.putts ?? 0;
+    if (putts >= 3) {
       areas.push({
         id: `three-putt-${hole.hole_number}`,
         holeNumber: hole.hole_number,
         type: 'three_putt',
         title: `Three-Putt on Hole ${hole.hole_number}`,
-        description: `${hole.putts} putts on the ${hole.par === 3 ? 'par 3' : `par ${hole.par}`}`,
+        description: `${putts} putts on the ${hole.par === 3 ? 'par 3' : `par ${hole.par}`}`,
         rootCause: analyzeThreePuttCause(hole),
         pattern: 'putting_lag',
         linkedFocusArea: 'putting_lag',
-        severity: hole.putts >= 4 ? 'high' : 'medium',
+        severity: putts >= 4 ? 'high' : 'medium',
       });
     }
   });
 
   // 2. Find double bogeys or worse
-  holes.forEach((hole: any) => {
+  holes.forEach((hole: GolfHole) => {
     const scoreDiff = (hole.score || 0) - (hole.par || 4);
     if (scoreDiff >= 2) {
       // Don't duplicate if already have a three-putt for this hole
@@ -49,8 +70,9 @@ export function detectAreasToReview(
   });
 
   // 3. Find penalties
-  holes.forEach((hole: any) => {
-    if ((hole.penalty_strokes || 0) > 0) {
+  holes.forEach((hole: GolfHole) => {
+    const penaltyStrokes = hole.penalty_strokes ?? 0;
+    if (penaltyStrokes > 0) {
       // Don't duplicate
       if (areas.some(a => a.holeNumber === hole.hole_number)) return;
 
@@ -59,17 +81,17 @@ export function detectAreasToReview(
         holeNumber: hole.hole_number,
         type: 'penalty',
         title: `Penalty on Hole ${hole.hole_number}`,
-        description: `Took ${hole.penalty_strokes} penalty stroke${hole.penalty_strokes > 1 ? 's' : ''}`,
+        description: `Took ${penaltyStrokes} penalty stroke${penaltyStrokes > 1 ? 's' : ''}`,
         rootCause: 'Course management or execution error',
         pattern: null,
         linkedFocusArea: 'course_management',
-        severity: hole.penalty_strokes >= 2 ? 'high' : 'medium',
+        severity: penaltyStrokes >= 2 ? 'high' : 'medium',
       });
     }
   });
 
   // 4. Find failed up-and-downs that led to bogey+
-  holes.forEach((hole: any) => {
+  holes.forEach((hole: GolfHole) => {
     if (!hole.gir && hole.up_and_down_attempt && !hole.up_and_down_made) {
       const scoreDiff = (hole.score || 0) - (hole.par || 4);
       if (scoreDiff >= 1) {
@@ -98,7 +120,7 @@ export function detectAreasToReview(
     .slice(0, 3);
 }
 
-function analyzeThreePuttCause(hole: any): string {
+function analyzeThreePuttCause(hole: GolfHole): string {
   // If we have first putt distance data
   if (hole.first_putt_distance) {
     if (hole.first_putt_distance > 30) {
@@ -110,14 +132,15 @@ function analyzeThreePuttCause(hole: any): string {
   return 'Lag putt distance control or short putt miss';
 }
 
-function analyzeDoubleCause(hole: any): string {
-  if (hole.penalty_strokes > 0) {
+function analyzeDoubleCause(hole: GolfHole): string {
+  const penaltyStrokes = hole.penalty_strokes ?? 0;
+  if (penaltyStrokes > 0) {
     return `Penalty stroke(s) contributed to the big number`;
   }
-  if ((hole.putts || 0) >= 3) {
+  if ((hole.putts ?? 0) >= 3) {
     return `Three-putt added strokes`;
   }
-  if (!hole.fairway_hit && hole.par >= 4) {
+  if (!hole.fairway_hit && (hole.par ?? 0) >= 4) {
     return `Missed fairway led to difficult recovery`;
   }
   if (!hole.gir) {

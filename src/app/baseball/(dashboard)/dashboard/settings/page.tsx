@@ -63,7 +63,7 @@ export default function SettingsPage() {
       setNewPassword('');
       setConfirmPassword('');
       showToast('Password updated successfully', 'success');
-    } catch (error) {
+    } catch {
       showToast('An unexpected error occurred', 'error');
     } finally {
       setSaving(false);

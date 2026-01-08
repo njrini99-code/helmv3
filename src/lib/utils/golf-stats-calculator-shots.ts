@@ -1586,7 +1586,7 @@ function aggregateRoundStats(rounds: Array<{
     if (bucketKey.toString().startsWith('approachEff')) {
       const lies = approachEffByDistanceLie[bucket];
       if (lies) {
-        (stats as any)[bucketKey] = {
+        const effData = {
           fairway: safeAverage(
             (lies.fairway || []).reduce((a, b) => a + b, 0),
             (lies.fairway || []).length
@@ -1600,6 +1600,9 @@ function aggregateRoundStats(rounds: Array<{
             (lies.sand || []).length
           ),
         };
+        // Type-safe dynamic assignment
+        const statsRecord = stats as unknown as Record<string, unknown>;
+        statsRecord[bucketKey] = effData;
       }
     }
   }

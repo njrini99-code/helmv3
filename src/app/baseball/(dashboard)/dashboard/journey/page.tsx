@@ -101,7 +101,8 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
     try {
       await updateInterestStatus(school.id, newStatus);
       onStatusChange(school.id, newStatus);
-    } catch (error) {
+    } catch {
+      // Error handled silently - status update is non-critical
     }
   };
 

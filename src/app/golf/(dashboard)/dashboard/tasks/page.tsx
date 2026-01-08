@@ -11,7 +11,6 @@ import { TasksList } from '@/components/golf/tasks/TasksList';
 import { TaskListSkeleton } from '@/components/golf/tasks/TaskSkeleton';
 import { cn } from '@/lib/utils';
 import { fadeUp } from '@/lib/motion';
-
 type FilterType = 'all' | 'active' | 'completed';
 
 interface Task {
@@ -109,55 +108,73 @@ export default function GolfTasksPage() {
       setPlayers(playersData);
     }
 
-    // Load tasks
+    // Load tasks and assignments separately (due to missing FK in generated types)
     const { data: tasksData } = await supabase
       .from('golf_tasks')
-      .select(`
-        id,
-        title,
-        description,
-        due_date,
-        created_at,
-        assignments:golf_task_assignments(
-          id,
-          status,
-          completed_at,
-          player:golf_players(first_name, last_name)
-        )
-      `)
+      .select('id, title, description, due_date, created_at')
       .eq('team_id', teamId)
       .order('created_at', { ascending: false });
 
-    if (tasksData) {
-      // Type the data properly from Supabase response
-      // Derive status from assignments completion
-      const typedTasks = tasksData.map(task => {
-        // Filter valid assignments and use type assertion
-        const validAssignments = Array.isArray(task.assignments)
-          ? task.assignments.filter(
-              (a) =>
-                a !== null &&
-                typeof a === 'object' &&
-                'id' in a &&
-                'status' in a &&
-                'player' in a &&
-                a.player !== null &&
-                typeof a.player === 'object' &&
-                !('error' in a.player)
-            )
-          : [];
+    if (tasksData && tasksData.length > 0) {
+      const taskIds = tasksData.map(t => t.id);
 
-        const completedCount = validAssignments.filter((a: any) => a.status === 'completed').length;
-        const status = completedCount === validAssignments.length && validAssignments.length > 0 ? 'completed' : 'pending';
+      // Fetch assignments with player info separately
+      // Note: golf_task_assignments may not be in generated types yet
+      interface TaskAssignment {
+        id: string;
+        task_id: string;
+        player_id: string | null;
+        status: string | null;
+        completed_at: string | null;
+      }
+      const { data: assignmentsData } = await (supabase
+        .from('golf_task_assignments' as 'golf_teams')
+        .select('id, task_id, status, completed_at, player_id')
+        .in('task_id', taskIds) as unknown as Promise<{ data: TaskAssignment[] | null; error: Error | null }>);
+
+      // Get unique player IDs and fetch player info
+      const playerIds = [...new Set((assignmentsData || []).map(a => a.player_id).filter(Boolean))] as string[];
+      let playersMap: Record<string, { first_name: string | null; last_name: string | null }> = {};
+
+      if (playerIds.length > 0) {
+        const { data: playersData } = await supabase
+          .from('golf_players')
+          .select('id, first_name, last_name')
+          .in('id', playerIds);
+
+        playersMap = (playersData || []).reduce((acc, p) => {
+          acc[p.id] = { first_name: p.first_name, last_name: p.last_name };
+          return acc;
+        }, {} as Record<string, { first_name: string | null; last_name: string | null }>);
+      }
+
+      // Group assignments by task_id
+      const assignmentsByTask = (assignmentsData || []).reduce((acc, a) => {
+        const taskKey = a.task_id;
+        if (!acc[taskKey]) acc[taskKey] = [];
+        acc[taskKey]!.push({
+          id: a.id,
+          status: a.status || 'pending',
+          completed_at: a.completed_at,
+          player: a.player_id ? playersMap[a.player_id] || { first_name: null, last_name: null } : { first_name: null, last_name: null }
+        });
+        return acc;
+      }, {} as Record<string, Array<{ id: string; status: string; completed_at: string | null; player: { first_name: string | null; last_name: string | null } }>>);
+
+      // Build final tasks
+      const typedTasks = tasksData.map((task) => {
+        const assignments = assignmentsByTask[task.id] || [];
+        const completedCount = assignments.filter((assignment) => assignment.status === 'completed').length;
+        const status = completedCount === assignments.length && assignments.length > 0 ? 'completed' : 'pending';
 
         return {
           id: task.id,
           title: task.title,
           description: task.description,
           due_date: task.due_date,
-          status: status as 'pending' | 'completed',
+          status,
           created_at: task.created_at || '',
-          assignments: validAssignments.map((assignment: any) => ({
+          assignments: assignments.map((assignment) => ({
             id: assignment.id,
             status: assignment.status,
             completed_at: assignment.completed_at,
@@ -166,7 +183,7 @@ export default function GolfTasksPage() {
               last_name: assignment.player?.last_name || ''
             }
           }))
-        } as unknown as Task;
+        };
       });
       setTasks(typedTasks);
     }
@@ -175,7 +192,7 @@ export default function GolfTasksPage() {
   async function loadPlayerData(userId: string) {
     const supabase = createClient();
 
-    // Get player's tasks
+    // Get player's info
     const { data: player } = await supabase
       .from('golf_players')
       .select('id')
@@ -184,50 +201,52 @@ export default function GolfTasksPage() {
 
     if (!player) return;
 
-    // Use type assertion for golf_task_assignments table (not yet in types)
-    const { data: assignmentsData } = await (supabase as any)
-      .from('golf_task_assignments')
-      .select(`
-        id,
-        status,
-        completed_at,
-        task:golf_tasks(
-          id,
-          title,
-          description,
-          due_date,
-          created_at
-        )
-      `)
+    // Fetch assignments for this player separately (due to missing FK in generated types)
+    interface PlayerTaskAssignment {
+      id: string;
+      task_id: string;
+      status: string | null;
+      completed_at: string | null;
+    }
+    const { data: assignmentsData } = await (supabase
+      .from('golf_task_assignments' as 'golf_teams')
+      .select('id, task_id, status, completed_at')
       .eq('player_id', player.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }) as unknown as Promise<{ data: PlayerTaskAssignment[] | null; error: Error | null }>);
 
     if (assignmentsData && assignmentsData.length > 0) {
-      // Transform to match Task interface
-      const validPlayerAssignments = assignmentsData.filter(
-        (assignment: any) =>
-          assignment !== null &&
-          typeof assignment === 'object' &&
-          'task' in assignment &&
-          assignment.task !== null &&
-          typeof assignment.task === 'object' &&
-          !('error' in assignment.task)
-      );
+      // Fetch associated tasks
+      const taskIds = [...new Set(assignmentsData.map(a => a.task_id))];
+      const { data: tasksData } = await supabase
+        .from('golf_tasks')
+        .select('id, title, description, due_date, created_at')
+        .in('id', taskIds);
 
-      const playerTasks = validPlayerAssignments.map((assignment: any) => ({
-        id: assignment.task.id,
-        title: assignment.task.title,
-        description: assignment.task.description,
-        due_date: assignment.task.due_date,
-        status: assignment.status as 'pending' | 'completed',
-        created_at: assignment.task.created_at || '',
-        assignments: [{
-          id: assignment.id,
-          status: assignment.status,
-          completed_at: assignment.completed_at,
-          player: { first_name: '', last_name: '' } // Player viewing their own tasks
-        }]
-      } as unknown as Task));
+      // Create tasks map
+      const tasksMap = (tasksData || []).reduce((acc, t) => {
+        acc[t.id] = t;
+        return acc;
+      }, {} as Record<string, { id: string; title: string; description: string | null; due_date: string | null; created_at: string | null }>);
+
+      const playerTasks = assignmentsData
+        .filter(assignment => tasksMap[assignment.task_id])
+        .map((assignment) => {
+          const task = tasksMap[assignment.task_id]!;
+          return {
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            due_date: task.due_date,
+            status: assignment.status || 'pending',
+            created_at: task.created_at || '',
+            assignments: [{
+              id: assignment.id,
+              status: assignment.status || 'pending',
+              completed_at: assignment.completed_at,
+              player: { first_name: '', last_name: '' } // Player viewing their own tasks
+            }]
+          };
+        });
       setTasks(playerTasks);
     } else {
       setTasks([]);

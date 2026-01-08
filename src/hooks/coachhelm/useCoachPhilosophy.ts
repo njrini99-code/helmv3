@@ -5,8 +5,43 @@ import { createClient } from '@/lib/supabase/client';
 import { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 
+// Database row type for golf_coach_philosophy
+interface PhilosophyDbRow {
+    id: string;
+    coach_id: string;
+    priority_ball_striking: number;
+    priority_short_game: number;
+    priority_putting: number;
+    priority_course_management: number;
+    priority_mental_game: number;
+    alert_sensitivity: 'aggressive' | 'balanced' | 'conservative';
+    decline_threshold: string | number;
+    pressure_gap_threshold: string | number;
+    bubble_zone_range: string | number;
+    weight_historical: number;
+    weight_recent_form: number;
+    weight_tournament: number;
+    weight_qualifying: number;
+    weight_subjective: number;
+    alert_scoring_decline: boolean;
+    alert_stat_regression: boolean;
+    alert_tournament_pressure: boolean;
+    alert_plateau: boolean;
+    alert_bubble_player: boolean;
+    alert_surge_player: boolean;
+    alert_streaks: boolean;
+    alert_recurring_weakness: boolean;
+    alert_closing_holes: boolean;
+    alert_par_3_issues: boolean;
+    show_strokes_gained: boolean;
+    show_advanced_stats: boolean;
+    insight_verbosity: 'minimal' | 'standard' | 'detailed';
+    created_at: string;
+    updated_at: string;
+}
+
 // Map database snake_case to TypeScript camelCase
-function dbToTs(row: any): CoachPhilosophy {
+function dbToTs(row: PhilosophyDbRow): CoachPhilosophy {
     return {
         id: row.id,
         coachId: row.coach_id,
@@ -43,7 +78,7 @@ function dbToTs(row: any): CoachPhilosophy {
 }
 
 // Map TypeScript camelCase to database snake_case
-function tsToDb(data: Partial<CoachPhilosophy>): Record<string, any> {
+function tsToDb(data: Partial<CoachPhilosophy>): Record<string, unknown> {
     const mapping: Record<string, string> = {
         priorityBallStriking: 'priority_ball_striking',
         priorityShortGame: 'priority_short_game',
@@ -74,7 +109,7 @@ function tsToDb(data: Partial<CoachPhilosophy>): Record<string, any> {
         insightVerbosity: 'insight_verbosity',
     };
 
-    const result: Record<string, any> = {};
+    const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
         const dbKey = mapping[key];
         if (dbKey) result[dbKey] = value;

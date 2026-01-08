@@ -9,7 +9,7 @@ export function FinalCTA() {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section ref={ref} className="relative py-32 overflow-hidden">
+    <section ref={ref} className="relative py-20 md:py-32 overflow-hidden">
       {/* Sunset gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-golden-100 via-orange-100 to-amber-200" />
 
@@ -22,7 +22,7 @@ export function FinalCTA() {
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="font-serif text-4xl md:text-5xl lg:text-6xl text-warm-900 mb-6"
+          className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-warm-900 mb-6"
         >
           Ready to focus on what matters?
         </motion.h2>
@@ -31,7 +31,7 @@ export function FinalCTA() {
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-xl text-warm-700 mb-10"
+          className="text-base sm:text-lg md:text-xl text-warm-700 mb-8 sm:mb-10"
         >
           Join coaches who are building better programs with Helm.
         </motion.p>
@@ -43,8 +43,8 @@ export function FinalCTA() {
         >
           <Link
             href="/baseball/coach-onboarding"
-            className="inline-flex items-center gap-2 px-10 py-5 rounded-2xl
-                       bg-warm-900 text-white text-lg font-medium
+            className="inline-flex items-center gap-2 px-8 py-4 sm:px-10 sm:py-5 rounded-2xl
+                       bg-warm-900 text-white text-base sm:text-lg font-medium
                        hover:bg-warm-800 transition-all duration-200
                        shadow-xl hover:shadow-2xl active:scale-[0.98]"
           >

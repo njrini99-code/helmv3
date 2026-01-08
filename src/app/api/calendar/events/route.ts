@@ -1,11 +1,10 @@
-// @ts-nocheck - Calendar tables will be created in database migration
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import type { CalendarEvent } from '@/lib/types/calendar';
 
 /**
  * GET /api/calendar/events
- * Fetch calendar events for the authenticated user
+ * Fetch calendar events for the authenticated user (golf_events table)
  */
 export async function GET(request: Request) {
   try {
@@ -22,9 +21,9 @@ export async function GET(request: Request) {
     const endDate = searchParams.get('end');
     const teamId = searchParams.get('teamId');
 
-    // Build query
+    // Build query using golf_events table
     let query = supabase
-      .from('calendar_events')
+      .from('golf_events')
       .select('*')
       .order('start_time', { ascending: true });
 
@@ -49,6 +48,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(data as unknown as CalendarEvent[]);
   } catch (error) {
+    console.error('Error fetching calendar events:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -79,9 +79,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create event
+    // Create event using golf_events table
     const { data, error } = await supabase
-      .from('calendar_events')
+      .from('golf_events')
       .insert({
         ...body,
         created_by_id: user.id,
@@ -97,6 +97,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(data as unknown as CalendarEvent, { status: 201 });
   } catch (error) {
+    console.error('Error creating calendar event:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

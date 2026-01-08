@@ -14,7 +14,7 @@ export interface ErrorContext {
   route?: string;
   component?: string;
   action?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ErrorLogEntry {

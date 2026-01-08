@@ -8,6 +8,62 @@ import type { GolfCoach, GolfPlayer, GolfTeam } from '@/lib/types/golf';
 import { CoachDashboard, type CoachDashboardData } from './components/CoachDashboard';
 import { PlayerDashboard, type PlayerDashboardData } from './components/PlayerDashboard';
 
+// Local types for dashboard data
+interface RecentRound {
+    id: string;
+    player_name: string;
+    course_name: string;
+    total_score: number;
+    total_to_par: number;
+    round_date: string;
+}
+
+interface TopPlayer {
+    id: string;
+    name: string;
+    avg_score: number;
+    rounds: number;
+}
+
+// Import the proper EventType to match calendar types
+type DashboardEventType = 'game' | 'practice' | 'scrimmage' | 'recruiting_visit' | 'camp' | 'tournament' | 'meeting' | 'workout' | 'class' | 'blocked_time' | 'qualifier' | 'travel' | 'other';
+
+interface DashboardCalendarEvent {
+    id: string;
+    title: string;
+    event_type: DashboardEventType;
+    start_time: string;
+    end_time: string;
+    location: string | null;
+    created_by_id: string;
+    is_recurring: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+interface ScoringTrend {
+    label: string;
+    value: number;
+}
+
+interface RoundWithPlayer {
+    id: string;
+    course_name: string;
+    total_score: number | null;
+    total_to_par: number | null;
+    round_date: string;
+    player?: { first_name: string | null; last_name: string | null } | null;
+}
+
+
+interface PlayerRound {
+    id: string;
+    course_name: string;
+    total_score: number | null;
+    total_to_par: number | null;
+    round_date: string;
+}
+
 // Cache client instance to avoid recreating
 const supabaseClient = createClient();
 
@@ -45,16 +101,16 @@ export default function GolfDashboardPage() {
 
                     const teamId = coach.team_id;
                     let team: GolfTeam | null = null;
-                    let stats = {
+                    const stats = {
                         rosterSize: 0,
                         upcomingEvents: 0,
                         activeQualifiers: 0,
                         teamScoringAverage: null as number | null,
                     };
-                    let recentRounds: any[] = [];
-                    let topPlayers: any[] = [];
-                    let calendarEvents: any[] = [];
-                    let teamScoringTrend: any[] = [];
+                    let recentRounds: RecentRound[] = [];
+                    let topPlayers: TopPlayer[] = [];
+                    let calendarEvents: DashboardCalendarEvent[] = [];
+                    let teamScoringTrend: ScoringTrend[] = [];
 
                     if (teamId) {
                         // OPTIMIZATION: Fetch all initial data in parallel
@@ -127,7 +183,7 @@ export default function GolfDashboardPage() {
                             ]);
 
                             if (recentRoundsResult.data) {
-                                recentRounds = recentRoundsResult.data.map((r: any) => ({
+                                recentRounds = (recentRoundsResult.data as RoundWithPlayer[]).map((r) => ({
                                     id: r.id,
                                     player_name: `${r.player?.first_name || ''} ${r.player?.last_name || ''}`.trim() || 'Unknown',
                                     course_name: r.course_name,
@@ -147,7 +203,7 @@ export default function GolfDashboardPage() {
                                 }
 
                                 // Top Players
-                                const playerAvgs: any[] = [];
+                                const playerAvgs: TopPlayer[] = [];
                                 players.forEach(p => {
                                     const pRounds = allRounds.filter(r => r.player_id === p.id);
                                     if (pRounds.length > 0) {
@@ -180,13 +236,15 @@ export default function GolfDashboardPage() {
                     }
 
                     if (mounted) {
+                        // Import CalendarEvent type for proper typing
+                        type CalendarEventType = import('@/lib/types/calendar').CalendarEvent;
                         setCoachData({
                             coach: coach as GolfCoach,
                             team,
                             stats,
                             recentRounds,
                             topPlayers,
-                            calendarEvents,
+                            calendarEvents: calendarEvents as CalendarEventType[],
                             teamScoringTrend: teamScoringTrend.length > 0 ? teamScoringTrend : undefined
                         });
                         setLoading(false);
@@ -222,10 +280,10 @@ export default function GolfDashboardPage() {
                     ]);
 
                     team = teamResult.data as GolfTeam | null;
-                    const rounds = roundsResult.data;
+                    const rounds = roundsResult.data as PlayerRound[] | null;
 
                     const playerRounds = rounds || [];
-                    const scores = playerRounds.map((r: any) => r.total_score);
+                    const scores = playerRounds.map((r) => r.total_score).filter((s): s is number => s !== null);
 
                     const stats = {
                         roundsPlayed: playerRounds.length,
@@ -248,7 +306,7 @@ export default function GolfDashboardPage() {
                             player: player as GolfPlayer,
                             team,
                             stats,
-                            recentRounds: playerRounds.slice(0, 5).map((r: any) => ({
+                            recentRounds: playerRounds.slice(0, 5).map((r) => ({
                                 id: r.id,
                                 course_name: r.course_name,
                                 total_score: r.total_score || 0,

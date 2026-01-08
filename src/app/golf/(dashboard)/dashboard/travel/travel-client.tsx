@@ -43,6 +43,8 @@ interface TravelItinerary {
   created_at: string | null;
 }
 
+type TransportationType = TravelItinerary['transportation_type'];
+
 interface TravelClientProps {
   itineraries: TravelItinerary[];
   coachId: string;
@@ -60,7 +62,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
   const [formData, setFormData] = useState({
     event_name: '',
     destination: '',
-    transportation_type: 'bus' as 'bus' | 'van' | 'fly' | 'carpool',
+    transportation_type: 'bus' as TransportationType,
     departure_date: '',
     departure_time: '',
     departure_location: '',
@@ -79,7 +81,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
     notes: '',
   });
 
-  const getTransportIcon = (type: string) => {
+  const getTransportIcon = (type: TransportationType) => {
     switch (type) {
       case 'fly':
         return '✈️';
@@ -438,7 +440,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      transportation_type: e.target.value as any,
+                      transportation_type: e.target.value as TransportationType,
                     }))
                   }
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"

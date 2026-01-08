@@ -1,5 +1,22 @@
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+const localStorageOption = `--localstorage-file=${path.join(os.tmpdir(), 'helmv3-localstorage')}`;
+const existingNodeOptions = process.env.NODE_OPTIONS ?? '';
+const hasLocalStorageOption = existingNodeOptions.includes('--localstorage-file');
+const hasLocalStorageValue = /--localstorage-file=\S+/.test(existingNodeOptions);
+
+if (hasLocalStorageOption && !hasLocalStorageValue) {
+  process.env.NODE_OPTIONS = existingNodeOptions
+    .replace(/--localstorage-file(=\S+)?/, localStorageOption)
+    .trim();
+} else if (!hasLocalStorageOption) {
+  process.env.NODE_OPTIONS = `${existingNodeOptions} ${localStorageOption}`.trim();
+}
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -8,6 +25,9 @@ const withBundleAnalyzer = bundleAnalyzer({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true, // Enable to catch potential issues
+  turbopack: {
+    root: projectRoot,
+  },
 
   compiler: {
     // Remove console logs in production for cleaner logs

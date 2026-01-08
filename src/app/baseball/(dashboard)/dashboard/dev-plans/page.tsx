@@ -22,7 +22,7 @@ interface DevPlan {
   status: string | null;
   start_date: string | null;
   end_date: string | null;
-  goals: any;
+  goals: Record<string, unknown> | null;
   created_at: string;
   player: {
     id: string;
@@ -87,9 +87,20 @@ export default function DevPlansPage() {
 
     const { data, error } = await query;
 
-    if (error) {
-    } else {
-      setPlans(data || []);
+    if (!error && data) {
+      // Transform data to match DevPlan interface
+      const transformedPlans: DevPlan[] = data.map(plan => ({
+        id: plan.id,
+        title: plan.title,
+        description: plan.description,
+        status: plan.status,
+        start_date: plan.start_date,
+        end_date: plan.end_date,
+        goals: plan.goals as Record<string, unknown> | null,
+        created_at: plan.created_at,
+        player: plan.player as DevPlan['player'],
+      }));
+      setPlans(transformedPlans);
     }
 
     setLoading(false);
@@ -109,16 +120,16 @@ export default function DevPlansPage() {
     );
   }
 
-  const getStatusBadge = (status: string | null) => {
+  const getStatusBadge = (status: string | null): 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' => {
     if (!status) return 'secondary';
-    const variants = {
+    const variants: Record<string, 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info'> = {
       draft: 'secondary',
       sent: 'default',
       in_progress: 'default',
       completed: 'success',
       archived: 'secondary',
     };
-    return variants[status as keyof typeof variants] || 'secondary';
+    return variants[status] || 'secondary';
   };
 
   const getStatusLabel = (status: string | null) => {
@@ -282,7 +293,7 @@ export default function DevPlansPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-semibold text-slate-900">{plan.title}</h3>
-                            <Badge variant={getStatusBadge(plan.status) as any}>
+                            <Badge variant={getStatusBadge(plan.status)}>
                               {getStatusLabel(plan.status)}
                             </Badge>
                           </div>

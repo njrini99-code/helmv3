@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 /**
- * Middleware runs on every request to:
+ * Proxy runs on every request to:
  * 1. Refresh the user's Supabase session
  * 2. Protect routes that require authentication
  * 3. Redirect authenticated users away from auth pages
@@ -14,7 +14,7 @@ import { updateSession } from '@/lib/supabase/middleware';
  * SECURITY: Development mode bypass has been removed for security.
  * Use proper authentication even in development.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Only bypass auth for specific dev design system routes if explicitly enabled
   const DEV_BYPASS_ROUTES = ['/dev/design-system', '/dev/components'];
 

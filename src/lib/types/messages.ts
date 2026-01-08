@@ -53,27 +53,28 @@ export interface ConversationWithParticipant extends ConversationWithMeta {
 // Helper to extract participant details from conversation
 export function getParticipantDetails(
   conversation: ConversationWithMeta,
-  _currentUserId: string
+  // currentUserId parameter reserved for filtering logic
+  _currentUserId: string // eslint-disable-line @typescript-eslint/no-unused-vars
 ): ParticipantDetails | null {
   const otherUser = conversation.other_user;
 
   if (!otherUser) return null;
 
   // Check if they're a coach (note: existing type uses 'coach' not 'coaches')
-  const coach = (otherUser as any).coach || (otherUser as any).coaches;
+  const coach = otherUser.coach || otherUser.coaches;
   if (coach) {
     return {
       id: otherUser.id,
       name: coach.full_name || coach.school_name || 'Coach',
-      avatar: coach.avatar_url,
+      avatar: coach.avatar_url ?? null,
       role: 'coach',
-      subtitle: coach.school_name || coach.coach_title || undefined,
+      subtitle: coach.school_name || undefined,
       isOnline: false,
     };
   }
 
   // Check if they're a player (note: existing type uses 'player' not 'players')
-  const player = (otherUser as any).player || (otherUser as any).players;
+  const player = otherUser.player || otherUser.players;
   if (player) {
     const name = [player.first_name, player.last_name].filter(Boolean).join(' ');
     return {

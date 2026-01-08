@@ -24,11 +24,27 @@ interface TopSchool {
   logo_url?: string;
 }
 
+interface EngagementEvent {
+  id: string;
+  player_id: string;
+  coach_id?: string;
+  engagement_type: string;
+  engagement_date: string;
+  coaches?: {
+    id: string;
+    school_name?: string;
+    division?: string;
+    logo_url?: string;
+    state?: string;
+    conference?: string;
+  };
+}
+
 interface AnalyticsData {
   stats: AnalyticsStats;
   viewsOverTime: ViewOverTime[];
   topSchools: TopSchool[];
-  recentEngagement: any[];
+  recentEngagement: EngagementEvent[];
 }
 
 export function useAnalytics() {
@@ -127,7 +143,7 @@ export function useAnalytics() {
       events
         .filter(e => e.engagement_type === 'profile_view' && e.coaches)
         .forEach(event => {
-          const coach = event.coaches as any;
+          const coach = event.coaches as { school_name?: string; state?: string; division?: string; conference?: string; logo_url?: string };
           if (coach) {
             let key: string;
             let displayName: string;
@@ -164,8 +180,8 @@ export function useAnalytics() {
           }
         });
 
-      const topSchools: TopSchool[] = Object.entries(schoolViews)
-        .map(([_, data]) => ({
+      const topSchools: TopSchool[] = Object.values(schoolViews)
+        .map((data) => ({
           school_name: data.name,
           school_id: data.name, // Using name as ID for now
           view_count: data.count,

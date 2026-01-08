@@ -1,5 +1,3 @@
-// @ts-nocheck
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * CalDAV Protocol Implementation (RFC 4791)
  *
@@ -52,7 +50,6 @@ export interface CalDAVSyncToken {
 
 export class CalDAVClient {
   private credentials: CalDAVCredentials;
-  private _principalUrl?: string; // Reserved for future use
   private calendarHomeSet?: string;
 
   constructor(credentials: CalDAVCredentials) {
@@ -76,8 +73,6 @@ export class CalDAVClient {
     );
 
     const principalUrl = this.extractPrincipalUrl(principalResponse);
-    this._principalUrl = principalUrl;
-
     // Step 2: Find calendar-home-set
     const homeSetResponse = await this.propfind(
       principalUrl,
@@ -164,14 +159,11 @@ export class CalDAVClient {
 
       // TODO: Implement parseICalendar or use a library
       // For now, create a placeholder event
+      const eventId = eventUrl.split('/').pop()?.replace('.ics', '') || 'unknown';
       const placeholderEvent: ICalEvent = {
-        id: event.id,
-        title: event.title,
-        description: event.description,
-        location: event.location,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        allDay: event.allDay,
+        id: eventId,
+        title: 'CalDAV Event',
+        startDate: new Date(),
       };
 
       return {

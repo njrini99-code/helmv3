@@ -67,9 +67,9 @@ export function useTeams() {
 
       // Add staff teams
       (staffData || []).forEach((item) => {
-        const team = item.teams as any;
+        const team = item.teams as Team | null;
         if (team && !teamMap.has(team.id)) {
-          teamMap.set(team.id, team as Team);
+          teamMap.set(team.id, team);
         }
       });
 

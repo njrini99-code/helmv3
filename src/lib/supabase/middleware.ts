@@ -26,9 +26,19 @@ const RECRUITING_ALLOWED_COACH_TYPES: CoachType[] = ['college', 'juco'];
 /**
  * Check if user is authorized to access the requested route based on their role
  */
+interface SupabaseClient {
+  from: (table: string) => {
+    select: (columns: string) => {
+      eq: (column: string, value: string) => {
+        single: () => Promise<{ data: { coach_type: string } | null; error: Error | null }>;
+      };
+    };
+  };
+}
+
 async function checkRouteAuthorization(
-  supabase: any,
-  user: any,
+  supabase: SupabaseClient,
+  user: { id: string },
   pathname: string
 ): Promise<{ authorized: boolean; redirectTo?: string }> {
   // Check if route requires recruiting access
@@ -160,7 +170,11 @@ export async function updateSession(request: NextRequest) {
 
   // Check role-based authorization for authenticated users
   if (user && isDashboardRoute) {
-    const authResult = await checkRouteAuthorization(supabase, user, pathname);
+    const authResult = await checkRouteAuthorization(
+      supabase as unknown as SupabaseClient,
+      user,
+      pathname
+    );
     if (!authResult.authorized && authResult.redirectTo) {
       return NextResponse.redirect(
         new URL(authResult.redirectTo, request.url)

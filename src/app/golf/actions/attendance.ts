@@ -24,6 +24,45 @@ interface ActionResult<T = void> {
   error?: string;
 }
 
+interface AttendancePlayer {
+  first_name: string | null;
+  last_name: string | null;
+  jersey_number: string | null;
+}
+
+interface AttendanceRecord {
+  id: string;
+  event_id: string;
+  player_id: string;
+  status: string;
+  check_in_time: string | null;
+  check_in_method: CheckInMethod | null;
+  checked_in_by: string | null;
+  player: AttendancePlayer | null;
+}
+
+interface AttendanceSummary {
+  event_id: string;
+  total_expected: number;
+  checked_in: number;
+  no_show: number;
+  excused: number;
+}
+
+interface AttendanceReport {
+  summary: AttendanceSummary | null;
+  attendance: AttendanceRecord[] | null;
+}
+
+interface PlayerAttendanceStats {
+  player_id: string;
+  total_events: number;
+  attended: number;
+  no_shows: number;
+  excused: number;
+  attendance_rate: number;
+}
+
 // ============================================================================
 // CHECK IN PLAYER
 // ============================================================================
@@ -44,12 +83,6 @@ export async function checkInPlayer(
     // Get coach or player ID
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    const { data: _player } = await supabase
-      .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
       .single();
@@ -245,7 +278,7 @@ export async function markNoShow(
 
 export async function getAttendanceReport(
   eventId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<AttendanceReport>> {
   try {
     const supabase = await createClient();
 
@@ -296,7 +329,7 @@ export async function getAttendanceReport(
 
 export async function getPlayerAttendanceStats(
   playerId?: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<PlayerAttendanceStats[]>> {
   try {
     const supabase = await createClient();
 

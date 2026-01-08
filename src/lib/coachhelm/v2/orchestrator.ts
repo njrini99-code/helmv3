@@ -96,7 +96,7 @@ export class CoachHelmIntelligence {
     }
 
     // Generate predictions
-    let predictions: PerformancePrediction[] = [];
+    const predictions: PerformancePrediction[] = [];
     if (includePredictions) {
       const predictor = new PerformancePredictor(playerId);
       const prediction = await predictor.predictPerformance();
@@ -541,7 +541,7 @@ export class CoachHelmIntelligence {
       areas.push(rel.cause);
     }
 
-    return [...new Set(areas)].slice(0, 3);
+    return Array.from(new Set(areas)).slice(0, 3);
   }
 
   /**

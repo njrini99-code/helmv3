@@ -49,6 +49,10 @@ npm run typecheck
 npm run build
 ```
 
+## Link Preview Caching
+
+iMessage, Slack, and social apps aggressively cache link previews. To force a refresh while testing, share the homepage with a throwaway query string like `?v=2` (e.g., `https://your-domain.com/?v=2`).
+
 ## Project Status
 
 - ✅ **55/100+ features complete (55%)**

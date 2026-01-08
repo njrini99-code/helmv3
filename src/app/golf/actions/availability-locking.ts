@@ -30,6 +30,53 @@ export interface EventConflict {
   conflictEndDate: string | null;
 }
 
+interface ConflictRpcResult {
+  conflict_type: string;
+  conflict_event_id: string;
+  conflict_event_title: string;
+  conflict_start_date: string;
+  conflict_end_date: string | null;
+}
+
+interface AvailabilityBlock {
+  id: string;
+  player_id: string;
+  start_date: string;
+  end_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+interface AvailabilityConflict {
+  block_id: string;
+  block_reason: string | null;
+  block_start_date: string;
+  block_end_date: string;
+}
+
+type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
+type GolfEventStatus = 'draft' | 'confirmed' | 'cancelled' | 'completed';
+
+interface DetectConflictsParams {
+  p_event_id: string | null;
+  p_team_id: string;
+  p_start_date: string;
+  p_end_date: string;
+  p_start_time: string;
+  p_end_time: string;
+  p_ignore_conflicts: boolean;
+}
+
+interface CheckAvailabilityParams {
+  p_player_id: string;
+  p_start_date: string;
+  p_end_date: string;
+  p_start_time: string;
+  p_end_time: string;
+}
+
 // ============================================================================
 // CHECK FOR CONFLICTS
 // ============================================================================
@@ -54,14 +101,14 @@ export async function checkEventConflicts(
         p_start_time: startTime || '',
         p_end_time: endTime || '',
         p_ignore_conflicts: false,
-      } as any);
+      } as DetectConflictsParams);
 
     if (error) {
       return { success: false, error: error.message };
     }
 
     // Map database response to our interface
-    const mappedConflicts: EventConflict[] = (conflicts || []).map((c: any) => ({
+    const mappedConflicts: EventConflict[] = ((conflicts || []) as ConflictRpcResult[]).map((c) => ({
       conflictType: c.conflict_type,
       conflictEventId: c.conflict_event_id,
       conflictEventTitle: c.conflict_event_title,
@@ -145,7 +192,7 @@ export async function createEventWithConflictCheck(eventData: {
       .insert({
         title: eventData.title,
         description: eventData.description,
-        event_type: eventData.eventType as any,
+        event_type: eventData.eventType as GolfEventType,
         start_date: eventData.startDate,
         end_date: eventData.endDate,
         start_time: eventData.startTime,
@@ -153,7 +200,7 @@ export async function createEventWithConflictCheck(eventData: {
         location: eventData.location,
         created_by: coach.id,
         team_id: eventData.teamId,
-        status: 'confirmed' as any,
+        status: 'confirmed' as GolfEventStatus,
         ignore_conflicts: eventData.ignoreConflicts || false,
         conflict_override_reason: eventData.conflictOverrideReason,
         conflict_override_by: eventData.ignoreConflicts ? coach.id : null,
@@ -267,7 +314,7 @@ export async function deleteAvailabilityBlock(
 
 export async function getPlayerAvailabilityBlocks(
   playerId: string
-): Promise<ActionResult<any[]>> {
+): Promise<ActionResult<AvailabilityBlock[]>> {
   try {
     const supabase = await createClient();
 
@@ -300,7 +347,7 @@ export async function checkPlayerAvailability(
   endDate: string | null,
   startTime: string | null,
   endTime: string | null
-): Promise<ActionResult<any[]>> {
+): Promise<ActionResult<AvailabilityConflict[]>> {
   try {
     const supabase = await createClient();
 
@@ -311,7 +358,7 @@ export async function checkPlayerAvailability(
         p_end_date: endDate || '',
         p_start_time: startTime || '',
         p_end_time: endTime || '',
-      } as any);
+      } as CheckAvailabilityParams);
 
     if (error) {
       return { success: false, error: error.message };

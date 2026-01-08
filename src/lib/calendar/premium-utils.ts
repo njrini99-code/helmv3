@@ -5,6 +5,7 @@
  */
 
 import { isSameDay, isToday, isTomorrow } from 'date-fns';
+import type { ReactNode } from 'react';
 
 // ============================================================================
 // TEMPORAL DENSITY
@@ -22,10 +23,14 @@ export function getCellDensityClass(eventCount: number): string {
   return 'density-4'; // 4+
 }
 
+interface EventWithStartDate {
+  start_date: string;
+}
+
 /**
  * Calculate event density for a date
  */
-export function getEventDensity(date: Date, events: any[]): number {
+export function getEventDensity(date: Date, events: EventWithStartDate[]): number {
   return events.filter(event =>
     isSameDay(new Date(event.start_date), date)
   ).length;
@@ -38,7 +43,7 @@ export function getEventDensity(date: Date, events: any[]): number {
 export interface EventStyleConfig {
   container: string;
   badge: string;
-  icon: any;
+  icon: ReactNode;
   textStyle?: string;
 }
 

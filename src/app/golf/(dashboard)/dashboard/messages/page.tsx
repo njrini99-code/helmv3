@@ -21,8 +21,7 @@ export default function GolfMessagesPage() {
     userRole,
     teamId,
     teamName,
-    loading: contextLoading,
-    error: _contextError
+    loading: contextLoading
   } = useTeamContext();
 
   const { conversations, loading: conversationsLoading, refetch } = useGolfConversations();
@@ -509,7 +508,7 @@ function ConversationGroup({
   conversations: GolfConversationWithMeta[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  currentUserId: string | null;
+  currentUserId?: string | null;
 }) {
   return (
     <div className="mb-2">

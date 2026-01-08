@@ -309,7 +309,7 @@ export default function CampsPage() {
       // Remove from local state
       setCamps(prev => prev.filter(c => c.id !== deleteConfirm));
       showToast('Camp deleted successfully', 'success');
-    } catch (error) {
+    } catch {
       showToast('An error occurred while deleting', 'error');
     } finally {
       setDeleting(false);

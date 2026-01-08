@@ -76,7 +76,7 @@ export default function ActivateRecruitingPage() {
 
       // Redirect to recruiting dashboard
       router.push('/baseball/dashboard');
-    } catch (err) {
+    } catch {
       setError('An error occurred. Please try again.');
       setActivating(false);
     }

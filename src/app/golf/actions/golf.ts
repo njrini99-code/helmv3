@@ -25,6 +25,238 @@ export type ActionResult<T = void> =
   | { success: false; error: string };
 
 // ============================================================================
+// ACTION RESULT DATA TYPES
+// ============================================================================
+
+/** Putt details for shot tracking */
+interface PuttDetail {
+  shot_id: string;
+  miss_tags: string[];
+  break_direction: string | null;
+  distance_feet: number | null;
+  made: boolean;
+}
+
+/** Approach miss details for shot tracking */
+interface ApproachMissDetail {
+  shot_id: string;
+  miss_direction: string;
+  lie_type: string | null;
+  distance_from_green_yards: number | null;
+}
+
+/** Golf event insert data */
+interface GolfEventInsertData {
+  team_id: string;
+  title: string;
+  event_type: string;
+  start_date: string;
+  end_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  all_day: boolean;
+  location: string | null;
+  course_name: string | null;
+  description: string | null;
+  is_mandatory: boolean;
+  requires_rsvp: boolean;
+  rsvp_deadline: string | null;
+  max_attendees: number | null;
+  created_by?: string;
+  player_id?: string;
+}
+
+/** Blocked time update data */
+interface BlockedTimeUpdateData {
+  title?: string;
+  start_date?: string;
+  end_date?: string;
+  start_time?: string;
+  end_time?: string;
+  all_day?: boolean;
+  recurrence_rule?: string | null;
+  description?: string | null;
+}
+
+/** Conflict check result - re-exported from calendar lib */
+export interface ConflictResult {
+  hasConflict: boolean;
+  conflicts: Array<{
+    userId: string;
+    userName: string;
+    playerId?: string;
+    conflictingEvent: {
+      id: string;
+      title: string;
+      type: 'event' | 'class' | 'blocked';
+      start: string;
+      end: string;
+    };
+  }>;
+  suggestions: Array<{
+    start: Date;
+    end: Date;
+  }>;
+}
+
+/** Busy period for availability - serialized version */
+export interface SerializedBusyPeriod {
+  start: string;
+  end: string;
+  type: 'event' | 'class' | 'blocked';
+  title?: string;
+  eventId?: string;
+}
+
+/** Calendar notification */
+export interface CalendarNotification {
+  id: string;
+  user_id: string;
+  event_id: string | null;
+  notification_type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  action_url: string | null;
+  created_at: string;
+}
+
+/** Event invitation - re-exported from calendar lib */
+export interface EventInvitation {
+  eventId: string;
+  eventTitle: string;
+  eventType: string;
+  startDate: string;
+  startTime: string | null;
+  endDate: string | null;
+  endTime: string | null;
+  location: string | null;
+  description: string | null;
+  requiresRsvp: boolean;
+  rsvpDeadline: string | null;
+  createdBy: string;
+  status: 'pending' | 'accepted' | 'declined' | 'tentative';
+}
+
+/** RSVP stats for an event */
+export interface RSVPStats {
+  summary: {
+    total: number;
+    accepted: number;
+    declined: number;
+    tentative: number;
+    pending: number;
+    attendees: Array<{
+      playerId: string;
+      playerName: string;
+      avatarUrl: string | null;
+      status: 'pending' | 'accepted' | 'declined' | 'tentative';
+      respondedAt: string | null;
+    }>;
+  };
+  acceptanceRate: number;
+  responseRate: number;
+}
+
+/** Coach blocked time period */
+export interface BlockedTimePeriod {
+  id: string;
+  coach_id: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  all_day: boolean;
+  recurrence_rule: string | null;
+  description: string | null;
+  created_at: string;
+}
+
+/** In-progress round summary */
+export interface InProgressRound {
+  id: string;
+  course_name: string;
+  round_date: string;
+  round_type: string;
+  current_hole: number | null;
+  holes_to_play: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PendingMigrationTable = any; // Tables that exist in migration but not yet in generated types
+
+/** Shot data from golf_shots table */
+interface ShotData {
+  id: string;
+  hole_id: string;
+  round_id: string;
+  shot_number: number;
+  shot_type: string;
+  club_used: string | null;
+  result: string;
+  distance_to_hole_before: number | null;
+  distance_to_hole_after: number | null;
+  lie_type: string | null;
+  notes: string | null;
+}
+
+/** Hole data with associated shots */
+interface HoleWithShots {
+  id: string;
+  round_id: string;
+  hole_number: number;
+  par: number;
+  yardage: number | null;
+  score: number | null;
+  putts: number | null;
+  fairway_hit: boolean | null;
+  green_in_regulation: boolean | null;
+  penalty_strokes: number | null;
+  driving_distance: number | null;
+  used_driver: boolean | null;
+  drive_miss_direction: string | null;
+  approach_distance: number | null;
+  approach_lie: string | null;
+  approach_club: string | null;
+  shots: ShotData[];
+}
+
+/** Round record from golf_rounds table */
+interface RoundRecord {
+  id: string;
+  player_id: string;
+  course_name: string;
+  course_city: string | null;
+  course_state: string | null;
+  round_date: string;
+  round_type: string;
+  holes_to_play: number;
+  current_hole: number | null;
+  status: string;
+  course_rating: number | null;
+  course_slope: number | null;
+  tees_played: string | null;
+  total_score: number | null;
+  total_to_par: number | null;
+  total_putts: number | null;
+  fairways_hit: number | null;
+  fairways_total: number | null;
+  greens_in_regulation: number | null;
+  greens_total: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Full round data for loading in-progress round */
+export interface FullRoundData {
+  round: RoundRecord;
+  holes: HoleWithShots[];
+}
+
+// ============================================================================
 // VALIDATION SCHEMAS (Zod)
 // ============================================================================
 
@@ -494,8 +726,8 @@ export async function submitGolfRoundComprehensive(
       }
 
       // Save putt details and approach miss details
-      const puttDetails: any[] = [];
-      const approachMissDetails: any[] = [];
+      const puttDetails: PuttDetail[] = [];
+      const approachMissDetails: ApproachMissDetail[] = [];
 
       for (const hole of data.holes) {
         for (const shot of hole.shots) {
@@ -533,12 +765,12 @@ export async function submitGolfRoundComprehensive(
 
       // Insert putt details (using type assertion for tables not in generated types)
       if (puttDetails.length > 0) {
-        await (supabase as any).from('putt_details').insert(puttDetails);
+        await (supabase as PendingMigrationTable).from('putt_details').insert(puttDetails);
       }
 
       // Insert approach miss details (using type assertion for tables not in generated types)
       if (approachMissDetails.length > 0) {
-        await (supabase as any).from('approach_miss_details').insert(approachMissDetails);
+        await (supabase as PendingMigrationTable).from('approach_miss_details').insert(approachMissDetails);
       }
     }
   }
@@ -772,7 +1004,7 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
     }
 
     // Build insert data - only include created_by if it's not null
-    const insertData: any = {
+    const insertData: GolfEventInsertData = {
       team_id: teamId,
       title: validatedData.title,
       event_type: validatedData.eventType,
@@ -1034,7 +1266,7 @@ export async function deleteGolfEvent(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
 
-  } catch (err) {
+  } catch {
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1229,7 +1461,8 @@ export async function createAnnouncement(data: {
 // ============================================================================
 
 export async function invitePlayerToTeam(
-  _email: string
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _email: string // Email parameter reserved for future email invitations
 ): Promise<ActionResult<{ inviteCode: string; inviteLink: string }>> {
   try {
     const supabase = await createClient();
@@ -1362,7 +1595,7 @@ export async function respondToEvent(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: undefined };
 
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to update RSVP' };
   }
 }
@@ -1377,7 +1610,7 @@ export async function checkScheduleConflicts(
   endTime: string,
   attendeeIds: string[],
   excludeEventId?: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<ConflictResult>> {
   try {
     const supabase = await createClient();
 
@@ -1393,9 +1626,9 @@ export async function checkScheduleConflicts(
       { excludeEventId }
     );
 
-    return { success: true, data: result };
+    return { success: true, data: result as ConflictResult };
 
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to check conflicts' };
   }
 }
@@ -1408,7 +1641,7 @@ export async function getPlayerAvailability(
   memberId: string,
   startDate: string, // YYYY-MM-DD
   endDate: string // YYYY-MM-DD
-): Promise<ActionResult<any[]>> {
+): Promise<ActionResult<SerializedBusyPeriod[]>> {
   try {
     const supabase = await createClient();
 
@@ -1458,7 +1691,7 @@ export async function getPlayerAvailability(
 
     return { success: true, data: serialized };
 
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to get availability' };
   }
 }
@@ -1470,7 +1703,7 @@ export async function getPlayerAvailability(
 export async function getCurrentUserBusyPeriods(
   startDate: string, // YYYY-MM-DD
   endDate: string // YYYY-MM-DD
-): Promise<ActionResult<any[]>> {
+): Promise<ActionResult<SerializedBusyPeriod[]>> {
   try {
     const supabase = await createClient();
 
@@ -1501,7 +1734,7 @@ export async function getCurrentUserBusyPeriods(
 
     return { success: true, data: serialized };
 
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to get availability' };
   }
 }
@@ -1509,7 +1742,7 @@ export async function getCurrentUserBusyPeriods(
 /**
  * Get all calendar notifications for the current user
  */
-export async function getNotifications(limit: number = 50): Promise<ActionResult<any[]>> {
+export async function getNotifications(limit: number = 50): Promise<ActionResult<CalendarNotification[]>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -1531,7 +1764,7 @@ export async function getNotifications(limit: number = 50): Promise<ActionResult
 
     return { success: true, data: data || [] };
 
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to fetch notifications' };
   }
 }
@@ -1553,7 +1786,7 @@ export async function markNotificationRead(
     revalidatePath('/golf/dashboard');
     return { success: true, data: undefined };
 
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to mark notification read' };
   }
 }
@@ -1579,7 +1812,7 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
     revalidatePath('/golf/dashboard');
     return { success: true, data: undefined };
 
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to mark notifications read' };
   }
 }
@@ -1587,7 +1820,7 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
 /**
  * Get pending event invitations for the current player
  */
-export async function getPendingInvitations(): Promise<ActionResult<any[]>> {
+export async function getPendingInvitations(): Promise<ActionResult<EventInvitation[]>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -1612,7 +1845,7 @@ export async function getPendingInvitations(): Promise<ActionResult<any[]>> {
 
     return { success: true, data: invitations };
 
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to fetch invitations' };
   }
 }
@@ -1620,7 +1853,7 @@ export async function getPendingInvitations(): Promise<ActionResult<any[]>> {
 /**
  * Get RSVP summary for an event (coach view)
  */
-export async function getEventRSVP(eventId: string): Promise<ActionResult<any>> {
+export async function getEventRSVP(eventId: string): Promise<ActionResult<RSVPStats>> {
   try {
     const supabase = await createClient();
 
@@ -1629,7 +1862,7 @@ export async function getEventRSVP(eventId: string): Promise<ActionResult<any>> 
 
     return { success: true, data: stats };
 
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to fetch RSVP data' };
   }
 }
@@ -1786,7 +2019,7 @@ export async function updateCoachBlockedTime(
     }
 
     // Build update object
-    const updates: any = {};
+    const updates: BlockedTimeUpdateData = {};
     if (data.title !== undefined) updates.title = data.title;
     if (data.startDate !== undefined) updates.start_date = data.startDate;
     if (data.endDate !== undefined) updates.end_date = data.endDate;
@@ -1825,7 +2058,7 @@ export async function updateCoachBlockedTime(
 export async function getCoachBlockedTime(
   startDate: string,
   endDate: string
-): Promise<ActionResult<any[]>> {
+): Promise<ActionResult<BlockedTimePeriod[]>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -2120,6 +2353,7 @@ export async function savePartialRound(
         .select('id, hole_number');
 
       if (holesError) {
+        // Holes insert failed - continue without saving shots (partial round will still be saved)
       } else {
         const holeIdMap = new Map(insertedHoles?.map(h => [h.hole_number, h.id]) || []);
 
@@ -2182,7 +2416,7 @@ export async function savePartialRound(
 /**
  * Get all in-progress rounds for current player
  */
-export async function getInProgressRounds(): Promise<ActionResult<any[]>> {
+export async function getInProgressRounds(): Promise<ActionResult<InProgressRound[]>> {
   try {
     const supabase = await createClient();
 
@@ -2234,7 +2468,7 @@ export async function getInProgressRounds(): Promise<ActionResult<any[]>> {
 /**
  * Load an in-progress round with all data
  */
-export async function loadInProgressRound(roundId: string): Promise<ActionResult<any>> {
+export async function loadInProgressRound(roundId: string): Promise<ActionResult<FullRoundData>> {
   try {
     const supabase = await createClient();
 
@@ -2277,6 +2511,7 @@ export async function loadInProgressRound(roundId: string): Promise<ActionResult
       .order('hole_number', { ascending: true });
 
     if (holesError) {
+      // Continue with empty holes array - round data is still valid
     }
 
     return {

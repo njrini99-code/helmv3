@@ -1,10 +1,38 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: ["class"],
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
+        // HELM BRAND COLORS (OKLCH for modern color gamut)
+        'helm-green': {
+          DEFAULT: 'oklch(0.65 0.19 150)',
+          50: 'oklch(0.95 0.05 150)',
+          100: 'oklch(0.90 0.08 150)',
+          200: 'oklch(0.82 0.12 150)',
+          300: 'oklch(0.74 0.15 150)',
+          400: 'oklch(0.70 0.17 150)',
+          500: 'oklch(0.65 0.19 150)',
+          600: 'oklch(0.58 0.19 150)',
+          700: 'oklch(0.50 0.18 150)',
+          800: 'oklch(0.42 0.16 150)',
+          900: 'oklch(0.35 0.13 150)',
+        },
+        'helm-amber': {
+          DEFAULT: 'oklch(0.70 0.18 45)',
+          50: 'oklch(0.95 0.05 45)',
+          100: 'oklch(0.90 0.08 45)',
+          200: 'oklch(0.85 0.12 45)',
+          300: 'oklch(0.78 0.15 45)',
+          400: 'oklch(0.74 0.17 45)',
+          500: 'oklch(0.70 0.18 45)',
+          600: 'oklch(0.62 0.18 45)',
+          700: 'oklch(0.54 0.17 45)',
+          800: 'oklch(0.46 0.15 45)',
+          900: 'oklch(0.38 0.12 45)',
+        },
         // PRIMARY BRAND COLORS
         primary: {
           50: '#f0fdf4',
@@ -125,6 +153,8 @@ const config: Config = {
         '7xl': '72px',
         'display-sm': ['48px', { lineHeight: '1.1', letterSpacing: '-0.025em' }],
         'display-lg': ['72px', { lineHeight: '1', letterSpacing: '-0.03em' }],
+        'display-xl': ['6rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+        'display-md': ['3.5rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
       },
       fontWeight: {
         normal: '400',
@@ -370,9 +400,10 @@ const config: Config = {
         'smooth': 'cubic-bezier(0.16, 1, 0.3, 1)',
         'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
         'in-out-expo': 'cubic-bezier(0.87, 0, 0.13, 1)',
+        'elastic': 'cubic-bezier(0.5, 1.5, 0.5, 1)',
       },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 };
 export default config;

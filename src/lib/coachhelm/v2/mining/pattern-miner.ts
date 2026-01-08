@@ -535,6 +535,7 @@ export class PatternMiner {
    */
   private generateRecommendation(
     conditions: PatternCondition[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _outcome: PatternOutcome
   ): string {
     // Simple rule-based recommendations

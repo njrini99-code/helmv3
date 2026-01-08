@@ -111,7 +111,8 @@ export function validateFilePath(path: string): { valid: boolean; sanitized: str
     .replace(/\/\//g, '/')
     .replace(/^\//, '');
 
-  // Check for suspicious patterns
+  // Check for suspicious patterns (intentionally detecting control characters for security)
+  // eslint-disable-next-line no-control-regex
   const suspicious = /[<>:"|?*\x00-\x1f]/.test(sanitized);
 
   return {
@@ -137,11 +138,11 @@ export function getMutationRateLimitKey(
 /**
  * Validate object keys to prevent mass assignment
  */
-export function validateAllowedKeys<T extends Record<string, any>>(
-  data: Record<string, any>,
+export function validateAllowedKeys<T extends Record<string, unknown>>(
+  data: Record<string, unknown>,
   allowedKeys: (keyof T)[]
 ): T {
-  const filtered: Record<string, any> = {};
+  const filtered: Record<string, unknown> = {};
 
   for (const key of allowedKeys) {
     if (key in data) {
@@ -177,7 +178,7 @@ export class ServerActionError extends Error {
   constructor(
     message: string,
     public code: 'VALIDATION' | 'UNAUTHORIZED' | 'NOT_FOUND' | 'RATE_LIMIT' | 'SERVER_ERROR',
-    public details?: any
+    public details?: unknown
   ) {
     super(message);
     this.name = 'ServerActionError';
@@ -240,7 +241,7 @@ export async function logSecurityEvent(details: {
   event: SecurityEventType;
   userId?: string;
   ip?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   action?: string;
 }): Promise<void> {
   console.warn(`[Security Event] ${details.event}:`, {

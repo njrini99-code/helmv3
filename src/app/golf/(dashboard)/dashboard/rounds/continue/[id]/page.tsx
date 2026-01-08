@@ -2,7 +2,12 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
-import type { HoleStats } from '@/components/golf/ShotTrackingComprehensive';
+import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
+import type { Tables } from '@/lib/types/database';
+
+type GolfShot = Tables<'golf_shots'>;
+// Extended hole type with optional penalty_strokes column
+type GolfHoleRow = Tables<'golf_holes'> & { penalty_strokes?: number | null };
 
 export default async function ContinueRoundPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,16 +40,14 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   }
 
   // Load holes and shots in parallel (performance optimization)
+  // Note: We fetch shots separately instead of using relation query due to missing FK in types
   const [
     { data: holes },
     { data: allShots }
   ] = await Promise.all([
     supabase
       .from('golf_holes')
-      .select(`
-        *,
-        shots:golf_shots(*)
-      `)
+      .select('*')
       .eq('round_id', id)
       .order('hole_number', { ascending: true }),
     supabase
@@ -58,27 +61,26 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   // Errors are handled gracefully - holes/shots will be empty if fetch fails
 
   // Group shots by hole number for easy lookup
-  const shotsByHole = new Map<number, any[]>();
-  for (const shot of allShots || []) {
+  const shotsByHole = new Map<number, GolfShot[]>();
+  for (const shot of (allShots || []) as GolfShot[]) {
     const holeShots = shotsByHole.get(shot.hole_number) || [];
     holeShots.push(shot);
     shotsByHole.set(shot.hole_number, holeShots);
   }
 
   // Transform database holes to HoleStats format (completed holes only)
-  const completedHoleStats: HoleStats[] = (holes || [])
-    .filter((hole: any) => hole.score !== null)
-    .map((hole: any) => {
-      const holeShots = (hole.shots && Array.isArray(hole.shots) && hole.shots.length > 0)
-        ? hole.shots
-        : (shotsByHole.get(hole.hole_number) || []);
-      const shots = (holeShots || []).sort((a: any, b: any) => a.shot_number - b.shot_number);
+  const completedHoleStats: HoleStats[] = ((holes || []) as GolfHoleRow[])
+    .filter((hole) => hole.score !== null)
+    .map((hole) => {
+      // Use shots grouped by hole number (we fetch separately due to missing FK)
+      const holeShots = shotsByHole.get(hole.hole_number) || [];
+      const shots = [...holeShots].sort((a, b) => a.shot_number - b.shot_number);
 
       return {
         holeNumber: hole.hole_number,
         par: hole.par,
         yardage: hole.yardage || 0,
-        score: hole.score,
+        score: hole.score!,
         putts: hole.putts || 0,
         fairwayHit: hole.fairway_hit,
         greenInRegulation: hole.green_in_regulation || false,
@@ -93,7 +95,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
         scrambleMade: hole.scramble_made || false,
         sandSaveAttempt: hole.sand_save_attempt || false,
         sandSaveMade: hole.sand_save_made || false,
-        penaltyStrokes: hole.penalty_strokes ?? hole.penalties ?? 0,
+        penaltyStrokes: hole.penalty_strokes ?? 0,
         firstPuttDistance: hole.first_putt_distance,
         firstPuttLeave: hole.first_putt_leave,
         firstPuttBreak: hole.first_putt_break,
@@ -101,28 +103,28 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
         firstPuttMissDirection: hole.first_putt_miss_direction,
         holedOutDistance: hole.holed_out_distance,
         holedOutType: hole.holed_out_type,
-        shots: shots.map((shot: any) => ({
+        shots: shots.map((shot) => ({
           shotNumber: shot.shot_number,
-          shotType: shot.shot_type,
-          clubType: shot.club_type,
-          lieBefore: shot.lie_before,
-          distanceToHoleBefore: shot.distance_to_hole_before,
-          distanceUnitBefore: shot.distance_unit_before,
-          result: shot.result,
-          distanceToHoleAfter: shot.distance_to_hole_after,
-          distanceUnitAfter: shot.distance_unit_after,
-          shotDistance: shot.shot_distance,
-          missDirection: shot.miss_direction,
-          puttBreak: shot.putt_break,
-          puttSlope: shot.putt_slope,
-          isPenalty: shot.is_penalty,
-          penaltyType: shot.penalty_type,
+          shotType: shot.shot_type as ShotRecord['shotType'],
+          clubType: shot.club_type as ShotRecord['clubType'],
+          lieBefore: shot.lie_before as ShotRecord['lieBefore'],
+          distanceToHoleBefore: shot.distance_to_hole_before ?? 0,
+          distanceUnitBefore: shot.distance_unit_before as ShotRecord['distanceUnitBefore'],
+          result: shot.result as ShotRecord['result'],
+          distanceToHoleAfter: shot.distance_to_hole_after ?? 0,
+          distanceUnitAfter: shot.distance_unit_after as ShotRecord['distanceUnitAfter'],
+          shotDistance: shot.shot_distance ?? 0,
+          missDirection: shot.miss_direction ?? undefined,
+          puttBreak: shot.putt_break as ShotRecord['puttBreak'],
+          puttSlope: shot.putt_slope as ShotRecord['puttSlope'],
+          isPenalty: shot.is_penalty ?? false,
+          penaltyType: shot.penalty_type as ShotRecord['penaltyType'],
         })),
       };
     });
 
   const holeConfigMap = new Map<number, { par: number; yardage: number | null; score: number | null }>();
-  for (const hole of holes || []) {
+  for (const hole of (holes || []) as GolfHoleRow[]) {
     holeConfigMap.set(hole.hole_number, {
       par: hole.par,
       yardage: hole.yardage,
@@ -168,7 +170,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   // Get shots for the starting hole to restore progress
   const startHoleNumber = startHoleIndex + 1;
   const startHoleShots = shotsByHole.get(startHoleNumber) || [];
-  const sortedStartHoleShots = startHoleShots.sort((a: any, b: any) => a.shot_number - b.shot_number);
+  const sortedStartHoleShots = [...startHoleShots].sort((a, b) => a.shot_number - b.shot_number);
   
   // Calculate the current shot number (next shot to record)
   // If there are shots, the next shot is shots.length + 1
@@ -176,22 +178,22 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   const startShotNumber = sortedStartHoleShots.length > 0 ? sortedStartHoleShots.length + 1 : 1;
 
   // Transform shots to ShotRecord format for the component
-  const initialShots = sortedStartHoleShots.map((shot: any) => ({
+  const initialShots: ShotRecord[] = sortedStartHoleShots.map((shot) => ({
     shotNumber: shot.shot_number,
-    shotType: shot.shot_type,
-    clubType: shot.club_type,
-    lieBefore: shot.lie_before,
-    distanceToHoleBefore: shot.distance_to_hole_before,
-    distanceUnitBefore: shot.distance_unit_before,
-    result: shot.result,
-    distanceToHoleAfter: shot.distance_to_hole_after,
-    distanceUnitAfter: shot.distance_unit_after,
-    shotDistance: shot.shot_distance,
-    missDirection: shot.miss_direction,
-    puttBreak: shot.putt_break,
-    puttSlope: shot.putt_slope,
-    isPenalty: shot.is_penalty,
-    penaltyType: shot.penalty_type,
+    shotType: shot.shot_type as ShotRecord['shotType'],
+    clubType: shot.club_type as ShotRecord['clubType'],
+    lieBefore: shot.lie_before as ShotRecord['lieBefore'],
+    distanceToHoleBefore: shot.distance_to_hole_before ?? 0,
+    distanceUnitBefore: shot.distance_unit_before as ShotRecord['distanceUnitBefore'],
+    result: shot.result as ShotRecord['result'],
+    distanceToHoleAfter: shot.distance_to_hole_after ?? 0,
+    distanceUnitAfter: shot.distance_unit_after as ShotRecord['distanceUnitAfter'],
+    shotDistance: shot.shot_distance ?? 0,
+    missDirection: shot.miss_direction ?? undefined,
+    puttBreak: shot.putt_break as ShotRecord['puttBreak'],
+    puttSlope: shot.putt_slope as ShotRecord['puttSlope'],
+    isPenalty: shot.is_penalty ?? false,
+    penaltyType: shot.penalty_type as ShotRecord['penaltyType'],
   }));
 
   return (

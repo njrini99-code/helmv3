@@ -52,7 +52,7 @@ export function useOnboardingFlow() {
         const parsed = JSON.parse(stored);
         setData(parsed.data || data);
         setCurrentStep(parsed.currentStep || 'role-selection');
-      } catch (e) {
+      } catch {
         console.error('Failed to parse stored onboarding data');
       }
     }

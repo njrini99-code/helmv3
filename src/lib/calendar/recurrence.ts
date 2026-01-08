@@ -1,4 +1,3 @@
-//@ts-nocheck
 // BATCH 6: Recurrence Utilities (RRULE format)
 // Extended with event expansion, academic exclusions, and filtering
 
@@ -267,7 +266,7 @@ export function expandRecurringEvent(
     }
 
     // Check if this date should be included
-    const shouldInclude = shouldIncludeDate(currentDate, rule, event.startDate);
+    const shouldInclude = shouldIncludeDate(currentDate, rule);
 
     if (shouldInclude && !isBefore(currentDate, rangeStart)) {
       // Check if date is excluded
@@ -313,7 +312,7 @@ export function expandRecurringEvent(
 /**
  * Determine if a date should be included based on recurrence rule
  */
-function shouldIncludeDate(date: Date, rule: RecurrenceRule, eventStart: Date): boolean {
+function shouldIncludeDate(date: Date, rule: RecurrenceRule): boolean {
   const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
   const dayOfMonth = date.getDate();
   const month = date.getMonth() + 1; // 1-12
@@ -330,6 +329,9 @@ function shouldIncludeDate(date: Date, rule: RecurrenceRule, eventStart: Date): 
       6: 'SA',
     };
     const currentWeekday = weekdayMap[dayOfWeek];
+    if (!currentWeekday) {
+      return false;
+    }
     if (!rule.byDay.includes(currentWeekday)) {
       return false;
     }
@@ -420,7 +422,7 @@ export function getWeekdayCode(dayNumber: number): string {
     5: 'FR',
     6: 'SA',
   };
-  return map[dayNumber];
+  return map[dayNumber] ?? 'SU';
 }
 
 /**
@@ -436,5 +438,5 @@ export function getDayNumber(weekday: string): number {
     FR: 5,
     SA: 6,
   };
-  return map[weekday];
+  return map[weekday] ?? 0;
 }

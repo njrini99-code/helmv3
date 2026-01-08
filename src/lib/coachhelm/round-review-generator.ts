@@ -10,6 +10,33 @@ import { detectPatterns } from './pattern-detector';
 import { generateSummary } from './summary-generator';
 import { calculateStrokesGained } from './strokes-gained';
 
+interface GolfHole {
+  hole_number?: number | null;
+  par?: number | null;
+  score?: number | null;
+  putts?: number | null;
+  fairway_hit?: boolean | null;
+  gir?: boolean | null;
+  up_and_down_attempt?: boolean | null;
+  up_and_down_made?: boolean | null;
+  sand_save_attempt?: boolean | null;
+  sand_save_made?: boolean | null;
+}
+
+interface GolfRound {
+  total_score?: number | null;
+  score_to_par?: number | null;
+  holes?: GolfHole[] | null;
+  shots?: unknown[] | null;
+}
+
+interface PlayerGoal {
+  id?: string | null;
+  goal_type?: string | null;
+  current_value?: number | null;
+  target_value?: number | null;
+}
+
 interface GenerateReviewInput {
   roundId: string;
   playerId: string;
@@ -33,6 +60,7 @@ export async function generateRoundReview(input: GenerateReviewInput): Promise<R
   if (roundError || !round) {
     throw new Error('Round not found');
   }
+  const roundData = round as unknown as GolfRound;
 
   // 2. Fetch player data and averages
   const { data: player } = await supabase
@@ -49,16 +77,17 @@ export async function generateRoundReview(input: GenerateReviewInput): Promise<R
     .neq('id', roundId)
     .order('played_at', { ascending: false })
     .limit(20);
+  const previousRoundsData = (previousRounds || []) as GolfRound[];
 
   // 4. Fetch player's active goals (if table exists)
   // Note: golf_player_goals table may not exist yet in the schema
-  const goals: any[] = [];
+  const goals: PlayerGoal[] = [];
 
   // 5. Calculate round stats
-  const roundStats = calculateRoundStats(round);
+  const roundStats = calculateRoundStats(roundData);
 
   // 6. Calculate player averages (before this round)
-  const playerAverages = calculatePlayerAverages(previousRounds || []);
+  const playerAverages = calculatePlayerAverages(previousRoundsData);
 
   // 7. Calculate team averages (if on team)
   let teamAverages: RoundStats | null = null;
@@ -72,35 +101,38 @@ export async function generateRoundReview(input: GenerateReviewInput): Promise<R
       .limit(100);
 
     if (teamRounds && teamRounds.length > 0) {
-      teamAverages = calculatePlayerAverages(teamRounds);
+      teamAverages = calculatePlayerAverages(teamRounds as GolfRound[]);
     }
   }
 
   // 8. Calculate strokes gained
-  const strokesGained = calculateStrokesGained(round.shots || [], round.holes || []);
+  const strokesGained = calculateStrokesGained(roundData.shots || [], roundData.holes || []);
 
   // 9. Detect highlights
-  const highlights = detectHighlights(round, roundStats, playerAverages);
+  const highlights = detectHighlights(roundData, roundStats, playerAverages);
 
   // 10. Detect areas to review
-  const areasToReview = detectAreasToReview(round, roundStats, playerAverages);
+  const areasToReview = detectAreasToReview(roundData, roundStats, playerAverages);
 
   // 11. Detect patterns (comparing to previous rounds)
-  const { newPatterns, recurringPatterns } = detectPatterns(round, previousRounds || []);
+  const { newPatterns, recurringPatterns } = detectPatterns(roundData, previousRoundsData);
 
   // 12. Calculate goal impacts
   const goalImpacts = calculateGoalImpacts(goals, roundStats, playerAverages, player);
 
   // 13. Calculate scoring average change
   const scoringAvgBefore = playerAverages.totalScore || null;
-  const allScores = [...(previousRounds || []).map((r: any) => r.total_score), round.total_score];
-  const scoringAvgAfter = allScores.length > 0
-    ? allScores.reduce((a: number, b: number) => a + b, 0) / allScores.length
+  const scoreValues = [
+    ...previousRoundsData.map((r) => r.total_score ?? null),
+    roundData.total_score ?? null,
+  ].filter((score): score is number => typeof score === 'number');
+  const scoringAvgAfter = scoreValues.length > 0
+    ? scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length
     : null;
 
   // 14. Generate summary
   const { summary, primaryTakeaway, nextPracticePriority } = generateSummary({
-    round,
+    round: roundData,
     roundStats,
     playerAverages,
     strokesGained,
@@ -112,14 +144,12 @@ export async function generateRoundReview(input: GenerateReviewInput): Promise<R
   });
 
   // 15. Build review object
-  // Cast round to any to access properties that TypeScript can't infer from join
-  const roundData = round as any;
-  const roundScoreToPar = roundData.score_to_par ?? (roundData.total_score - 72);
+  const roundScoreToPar = roundData.score_to_par ?? ((roundData.total_score ?? 0) - 72);
 
   const review: Omit<RoundReview, 'id' | 'createdAt'> = {
     roundId,
     playerId,
-    roundScore: round.total_score || 0,
+    roundScore: roundData.total_score || 0,
     roundScoreToPar,
     scoringAvgBefore,
     scoringAvgAfter,
@@ -147,6 +177,7 @@ export async function generateRoundReview(input: GenerateReviewInput): Promise<R
 
   // 16. Save to database
   // Note: golf_round_reviews table types will be available after running db:types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: saved, error: saveError } = await (supabase as any)
     .from('golf_round_reviews')
     .upsert({
@@ -188,14 +219,14 @@ export async function generateRoundReview(input: GenerateReviewInput): Promise<R
 }
 
 // Helper: Calculate stats from a single round
-function calculateRoundStats(round: any): RoundStats {
+function calculateRoundStats(round: GolfRound): RoundStats {
   const holes = round.holes || [];
 
   const totalScore = round.total_score || 0;
   const scoreToPar = round.score_to_par || 0;
 
-  const frontNine = holes.slice(0, 9).reduce((sum: number, h: any) => sum + (h.score || 0), 0);
-  const backNine = holes.slice(9, 18).reduce((sum: number, h: any) => sum + (h.score || 0), 0);
+  const frontNine = holes.slice(0, 9).reduce((sum: number, h: GolfHole) => sum + (h.score || 0), 0);
+  const backNine = holes.slice(9, 18).reduce((sum: number, h: GolfHole) => sum + (h.score || 0), 0);
 
   let eagles = 0, birdies = 0, pars = 0, bogeys = 0, doublePlus = 0;
   let fairwaysHit = 0, fairwaysPossible = 0;
@@ -205,8 +236,9 @@ function calculateRoundStats(round: any): RoundStats {
   let sandSaves = 0, sandAttempts = 0;
   let girPutts = 0, girCount = 0;
 
-  holes.forEach((hole: any) => {
-    const scoreDiff = (hole.score || 0) - (hole.par || 4);
+  holes.forEach((hole: GolfHole) => {
+    const par = hole.par ?? 4;
+    const scoreDiff = (hole.score || 0) - par;
 
     if (scoreDiff <= -2) eagles++;
     else if (scoreDiff === -1) birdies++;
@@ -215,7 +247,7 @@ function calculateRoundStats(round: any): RoundStats {
     else doublePlus++;
 
     // Fairways (par 4s and 5s)
-    if (hole.par >= 4) {
+    if (par >= 4) {
       fairwaysPossible++;
       if (hole.fairway_hit) fairwaysHit++;
     }
@@ -278,7 +310,7 @@ function calculateRoundStats(round: any): RoundStats {
 }
 
 // Helper: Calculate averages from multiple rounds
-function calculatePlayerAverages(rounds: any[]): RoundStats {
+function calculatePlayerAverages(rounds: GolfRound[]): RoundStats {
   if (rounds.length === 0) {
     return {
       totalScore: 72,
@@ -347,19 +379,21 @@ function calculatePlayerAverages(rounds: any[]): RoundStats {
 
 // Helper: Calculate goal impacts
 function calculateGoalImpacts(
-  goals: any[],
+  goals: PlayerGoal[],
   roundStats: RoundStats,
   playerAverages: RoundStats,
-  _player: any
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _player: unknown
 ): GoalImpact[] {
   return goals.map(goal => {
+    const goalType = goal.goal_type ?? 'unknown';
     let valueBefore = goal.current_value || 0;
     let valueAfter = valueBefore;
     let change = 0;
     let direction: 'positive' | 'negative' | 'neutral' = 'neutral';
     let message = '';
 
-    switch (goal.goal_type) {
+    switch (goalType) {
       case 'improve_scoring_average':
         valueBefore = playerAverages.totalScore;
         valueAfter = (playerAverages.totalScore * 19 + roundStats.totalScore) / 20;
@@ -383,9 +417,9 @@ function calculateGoalImpacts(
     }
 
     return {
-      goalId: goal.id,
-      goalType: goal.goal_type,
-      goalLabel: getGoalLabel(goal.goal_type),
+      goalId: goal.id ?? 'unknown',
+      goalType,
+      goalLabel: getGoalLabel(goalType),
       valueBefore,
       valueAfter,
       change,

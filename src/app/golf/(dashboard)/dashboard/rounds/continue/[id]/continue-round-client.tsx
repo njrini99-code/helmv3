@@ -171,39 +171,35 @@ export default function ContinueRoundClient({
   };
 
   const handleSaveForLater = async () => {
-    try {
-      const partialRoundData = {
-        courseName: setupData.courseName,
-        courseCity: setupData.courseCity || undefined,
-        courseState: setupData.courseState || undefined,
-        courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
-        courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
-        teesPlayed: setupData.teesPlayed || undefined,
-        roundType: setupData.roundType,
-        roundDate: setupData.roundDate,
-        currentHole: currentHoleIndex + 1, // Next hole player will resume on
-        holesToPlay: holes.length as 9 | 18,
-        holes: completedHoleStats,
-        holeConfigs: holes.map(hole => ({
-          holeNumber: hole.number,
-          par: hole.par,
-          yardage: hole.yardage,
-        })),
-      };
+    const partialRoundData = {
+      courseName: setupData.courseName,
+      courseCity: setupData.courseCity || undefined,
+      courseState: setupData.courseState || undefined,
+      courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
+      courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
+      teesPlayed: setupData.teesPlayed || undefined,
+      roundType: setupData.roundType,
+      roundDate: setupData.roundDate,
+      currentHole: currentHoleIndex + 1, // Next hole player will resume on
+      holesToPlay: holes.length as 9 | 18,
+      holes: completedHoleStats,
+      holeConfigs: holes.map(hole => ({
+        holeNumber: hole.number,
+        par: hole.par,
+        yardage: hole.yardage,
+      })),
+    };
 
-      const result = await savePartialRound(partialRoundData, roundId);
+    const result = await savePartialRound(partialRoundData, roundId);
 
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-
-      setShowExitModal(false);
-
-      // Redirect to rounds page
-      router.push('/golf/dashboard/rounds');
-    } catch (err) {
-      throw err; // Let modal handle error display
+    if (!result.success) {
+      throw new Error(result.error);
     }
+
+    setShowExitModal(false);
+
+    // Redirect to rounds page
+    router.push('/golf/dashboard/rounds');
   };
 
   const handleDeleteRound = async () => {

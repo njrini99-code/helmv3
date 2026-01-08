@@ -101,7 +101,7 @@ export function formatPosition(pos: string | null): string {
   return positions[pos] || pos;
 }
 
-export function formatVelocity(velo: number | null, _type: 'pitch' | 'exit' = 'pitch'): string {
+export function formatVelocity(velo: number | null): string {
   if (!velo) return '—';
   return `${velo} mph`;
 }

@@ -227,8 +227,9 @@ export async function joinTeam(playerId: string, inviteCode: string) {
     throw teamsError;
   }
 
-  const activeTeams = currentTeams?.map((tm: any) => tm.team).filter(Boolean) || [];
-  const teamTypes = activeTeams.map((t: any) => t.team_type);
+  type TeamMemberWithTeam = { team?: { id: string; name: string; team_type: string } | null };
+  const activeTeams = currentTeams?.map((tm: TeamMemberWithTeam) => tm.team).filter(Boolean) || [];
+  const teamTypes = activeTeams.map((t) => t?.team_type);
 
   // Validate team limits based on player type
   if (player.player_type === 'college' || player.player_type === 'juco') {

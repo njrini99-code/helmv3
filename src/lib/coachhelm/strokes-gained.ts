@@ -1,13 +1,22 @@
 import { StrokesGainedBreakdown } from './types';
 
+interface GolfHole {
+  par?: number | null;
+  fairway_hit?: boolean | null;
+  gir?: boolean | null;
+  up_and_down_made?: boolean | null;
+  up_and_down_attempt?: boolean | null;
+  putts?: number | null;
+}
+
 /**
  * Calculate strokes gained breakdown from shots and holes data.
  * This is a simplified calculation - a full implementation would use
  * PGA Tour benchmark data for expected strokes from various positions.
  */
 export function calculateStrokesGained(
-  _shots: any[],
-  holes: any[]
+  _shots: unknown[],
+  holes: GolfHole[]
 ): StrokesGainedBreakdown {
   // Default to neutral if no data
   if (!holes || holes.length === 0) {
@@ -26,7 +35,7 @@ export function calculateStrokesGained(
   let puttingSG = 0;
 
   // Simplified SG calculation based on hole-level data
-  holes.forEach((hole: any) => {
+  holes.forEach((hole: GolfHole) => {
     const par = hole.par || 4;
 
     // Tee shot (par 4s and 5s)

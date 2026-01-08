@@ -1,15 +1,29 @@
 import { Highlight, HighlightType, RoundStats } from './types';
 
+interface GolfHole {
+  hole_number: number;
+  par: number | null;
+  score: number | null;
+  sand_save_made?: boolean | null;
+  sand_save_attempt?: boolean | null;
+}
+
+interface RoundWithHoles {
+  holes?: GolfHole[] | null;
+}
+
 export function detectHighlights(
-  round: any,
+  round: RoundWithHoles,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _roundStats: RoundStats,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _playerAverages: RoundStats
 ): Highlight[] {
   const highlights: Highlight[] = [];
   const holes = round.holes || [];
 
   // 1. Find eagles
-  holes.forEach((hole: any) => {
+  holes.forEach((hole: GolfHole) => {
     const scoreDiff = (hole.score || 0) - (hole.par || 4);
 
     if (scoreDiff <= -2) {
@@ -29,7 +43,7 @@ export function detectHighlights(
   let streak = 0;
   let streakStart = 0;
 
-  holes.forEach((hole: any, index: number) => {
+  holes.forEach((hole: GolfHole, index: number) => {
     const scoreDiff = (hole.score || 0) - (hole.par || 4);
 
     if (scoreDiff === -1) {
@@ -37,12 +51,18 @@ export function detectHighlights(
       streak++;
     } else {
       if (streak >= 2) {
+        const startHole = holes[streakStart];
+        const endHole = holes[streakStart + streak - 1];
+        if (!startHole || !endHole) {
+          streak = 0;
+          return;
+        }
         highlights.push({
           id: `birdie-streak-${streakStart}`,
-          holeNumber: holes[streakStart].hole_number,
+          holeNumber: startHole.hole_number,
           type: 'birdie_streak',
           title: `${streak} Birdies in a Row`,
-          description: `Made ${streak} consecutive birdies on holes ${holes[streakStart].hole_number}-${holes[streakStart + streak - 1].hole_number}`,
+          description: `Made ${streak} consecutive birdies on holes ${startHole.hole_number}-${endHole.hole_number}`,
           impact: `${streak} under par in ${streak} holes`,
           emoji: '🔥',
         });
@@ -53,20 +73,23 @@ export function detectHighlights(
 
   // Check end of round
   if (streak >= 2) {
-    highlights.push({
-      id: `birdie-streak-${streakStart}`,
-      holeNumber: holes[streakStart].hole_number,
-      type: 'birdie_streak',
-      title: `${streak} Birdies in a Row`,
-      description: `Finished with ${streak} consecutive birdies`,
-      impact: `${streak} under par in ${streak} holes`,
-      emoji: '🔥',
-    });
+    const startHole = holes[streakStart];
+    if (startHole) {
+      highlights.push({
+        id: `birdie-streak-${streakStart}`,
+        holeNumber: startHole.hole_number,
+        type: 'birdie_streak',
+        title: `${streak} Birdies in a Row`,
+        description: `Finished with ${streak} consecutive birdies`,
+        impact: `${streak} under par in ${streak} holes`,
+        emoji: '🔥',
+      });
+    }
   }
 
   // 3. Find standalone birdies (if no streaks already captured)
   if (!highlights.some(h => h.type === 'birdie_streak')) {
-    holes.forEach((hole: any) => {
+    holes.forEach((hole: GolfHole) => {
       const scoreDiff = (hole.score || 0) - (hole.par || 4);
       if (scoreDiff === -1) {
         highlights.push({
@@ -83,7 +106,7 @@ export function detectHighlights(
   }
 
   // 4. Find great sand saves
-  holes.forEach((hole: any) => {
+  holes.forEach((hole: GolfHole) => {
     if (hole.sand_save_made && hole.sand_save_attempt) {
       const scoreDiff = (hole.score || 0) - (hole.par || 4);
       if (scoreDiff <= 0) {
@@ -101,10 +124,11 @@ export function detectHighlights(
   });
 
   // 5. Find bounce backs (birdie or par after double+)
-  holes.forEach((hole: any, index: number) => {
+  holes.forEach((hole: GolfHole, index: number) => {
     if (index === 0) return;
 
     const prevHole = holes[index - 1];
+    if (!prevHole) return;
     const prevDiff = (prevHole.score || 0) - (prevHole.par || 4);
     const currDiff = (hole.score || 0) - (hole.par || 4);
 
@@ -123,7 +147,7 @@ export function detectHighlights(
 
   // 6. Strong finish (last 3 holes under par)
   const lastThree = holes.slice(-3);
-  const lastThreeTotal = lastThree.reduce((sum: number, h: any) => {
+  const lastThreeTotal = lastThree.reduce((sum: number, h: GolfHole) => {
     return sum + ((h.score || 0) - (h.par || 4));
   }, 0);
 

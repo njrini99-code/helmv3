@@ -10,6 +10,24 @@ import { generateInsightsForPlayer, type PlayerData, type PlayerRoundData } from
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 
 // ============================================================================
+// TYPES
+// ============================================================================
+
+interface InsightRecord {
+  coach_id: string;
+  team_id: string;
+  insight_type: string;
+  priority: number;
+  player_id: string;
+  title: string;
+  description: string;
+  recommendation: string;
+  metadata: Record<string, unknown>;
+  status: 'active';
+  expires_at: string | null;
+}
+
+// ============================================================================
 // GENERATE INSIGHTS FOR TEAM
 // ============================================================================
 
@@ -139,7 +157,7 @@ export async function generateTeamInsights() {
 
     // 6. Generate insights for each player
     let totalInsightsCreated = 0;
-    const allInsights: any[] = [];
+    const allInsights: InsightRecord[] = [];
 
     for (const [playerId, playerData] of playerDataMap.entries()) {
       const insights = generateInsightsForPlayer(playerData, coachPhilosophy, players.length);

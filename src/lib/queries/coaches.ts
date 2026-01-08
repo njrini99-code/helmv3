@@ -149,7 +149,7 @@ export async function getCoachCamps(coachId: string, status?: string) {
  */
 export async function updateCoachProfile(
   coachId: string,
-  updates: Record<string, any>
+  updates: Record<string, unknown>
 ) {
   const supabase = await createClient();
 

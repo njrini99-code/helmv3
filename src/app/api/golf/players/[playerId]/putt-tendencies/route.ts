@@ -1,6 +1,31 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import type { PlayerPuttTendencies } from '@/lib/types/golf';
+import type { Database } from '@/lib/types/database';
+
+type DbTable = keyof Database['public']['Tables'];
+
+interface PlayerPuttTendenciesRow {
+  player_id: string;
+  full_name: string | null;
+  total_missed_putts: number | null;
+  low_misses: number | null;
+  high_misses: number | null;
+  short_misses: number | null;
+  long_misses: number | null;
+  pull_misses: number | null;
+  push_misses: number | null;
+  low_miss_pct: number | null;
+  high_miss_pct: number | null;
+  under_read_tendency: number | null;
+  leave_short_tendency: number | null;
+  misses_inside_5ft: number | null;
+  made_inside_5ft: number | null;
+  misses_5_to_10ft: number | null;
+  made_5_to_10ft: number | null;
+  misses_outside_10ft: number | null;
+  made_outside_10ft: number | null;
+}
 
 export async function GET(
   _request: NextRequest,
@@ -11,17 +36,18 @@ export async function GET(
     const supabase = await createClient();
     
     // Use type assertion to bypass TypeScript type checking for views not in generated types
-    const { data, error } = await (supabase as any)
-      .from('player_putt_tendencies')
+    const { data, error } = await supabase
+      .from('player_putt_tendencies' as DbTable)
       .select('*')
       .eq('player_id', playerId)
       .single();
+    const row = data as PlayerPuttTendenciesRow | null;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    if (!data) {
+    if (!row) {
       return NextResponse.json({
         playerId: playerId,
         fullName: 'Unknown',
@@ -50,43 +76,43 @@ export async function GET(
 
     // Transform database result to PlayerPuttTendencies format
     const tendencies: PlayerPuttTendencies = {
-      playerId: data.player_id,
-      fullName: data.full_name || 'Unknown',
-      totalMissedPutts: data.total_missed_putts || 0,
+      playerId: row.player_id,
+      fullName: row.full_name || 'Unknown',
+      totalMissedPutts: row.total_missed_putts || 0,
       missByType: {
-        low: data.low_misses || 0,
-        high: data.high_misses || 0,
-        short: data.short_misses || 0,
-        long: data.long_misses || 0,
-        pull: data.pull_misses || 0,
-        push: data.push_misses || 0,
+        low: row.low_misses || 0,
+        high: row.high_misses || 0,
+        short: row.short_misses || 0,
+        long: row.long_misses || 0,
+        pull: row.pull_misses || 0,
+        push: row.push_misses || 0,
       },
       percentages: {
-        lowMissPct: data.low_miss_pct || 0,
-        highMissPct: data.high_miss_pct || 0,
-        underReadTendency: data.under_read_tendency || 50,
-        leaveShortTendency: data.leave_short_tendency || 50,
+        lowMissPct: row.low_miss_pct || 0,
+        highMissPct: row.high_miss_pct || 0,
+        underReadTendency: row.under_read_tendency || 50,
+        leaveShortTendency: row.leave_short_tendency || 50,
       },
       byDistance: {
         inside5ft: {
-          attempts: (data.misses_inside_5ft || 0) + (data.made_inside_5ft || 0),
-          made: data.made_inside_5ft || 0,
-          pct: (data.misses_inside_5ft || 0) + (data.made_inside_5ft || 0) > 0
-            ? Math.round(((data.made_inside_5ft || 0) / ((data.misses_inside_5ft || 0) + (data.made_inside_5ft || 0))) * 100)
+          attempts: (row.misses_inside_5ft || 0) + (row.made_inside_5ft || 0),
+          made: row.made_inside_5ft || 0,
+          pct: (row.misses_inside_5ft || 0) + (row.made_inside_5ft || 0) > 0
+            ? Math.round(((row.made_inside_5ft || 0) / ((row.misses_inside_5ft || 0) + (row.made_inside_5ft || 0))) * 100)
             : 0,
         },
         fiveTo10ft: {
-          attempts: (data.misses_5_to_10ft || 0) + (data.made_5_to_10ft || 0),
-          made: data.made_5_to_10ft || 0,
-          pct: (data.misses_5_to_10ft || 0) + (data.made_5_to_10ft || 0) > 0
-            ? Math.round(((data.made_5_to_10ft || 0) / ((data.misses_5_to_10ft || 0) + (data.made_5_to_10ft || 0))) * 100)
+          attempts: (row.misses_5_to_10ft || 0) + (row.made_5_to_10ft || 0),
+          made: row.made_5_to_10ft || 0,
+          pct: (row.misses_5_to_10ft || 0) + (row.made_5_to_10ft || 0) > 0
+            ? Math.round(((row.made_5_to_10ft || 0) / ((row.misses_5_to_10ft || 0) + (row.made_5_to_10ft || 0))) * 100)
             : 0,
         },
         outside10ft: {
-          attempts: (data.misses_outside_10ft || 0) + (data.made_outside_10ft || 0),
-          made: data.made_outside_10ft || 0,
-          pct: (data.misses_outside_10ft || 0) + (data.made_outside_10ft || 0) > 0
-            ? Math.round(((data.made_outside_10ft || 0) / ((data.misses_outside_10ft || 0) + (data.made_outside_10ft || 0))) * 100)
+          attempts: (row.misses_outside_10ft || 0) + (row.made_outside_10ft || 0),
+          made: row.made_outside_10ft || 0,
+          pct: (row.misses_outside_10ft || 0) + (row.made_outside_10ft || 0) > 0
+            ? Math.round(((row.made_outside_10ft || 0) / ((row.misses_outside_10ft || 0) + (row.made_outside_10ft || 0))) * 100)
             : 0,
         },
       },

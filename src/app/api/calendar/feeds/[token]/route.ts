@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import type { GolfEvent } from '@/lib/types/golf';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -28,6 +29,20 @@ interface CalendarFeed {
   last_synced_at: string | null;
 }
 
+type CalendarFeedEvent = Pick<
+  GolfEvent,
+  | 'id'
+  | 'start_time'
+  | 'start_date'
+  | 'end_time'
+  | 'end_date'
+  | 'title'
+  | 'description'
+  | 'location'
+  | 'status'
+  | 'event_type'
+>;
+
 // Helper to format date for iCal (YYYYMMDDTHHMMSSZ format)
 function formatICalDate(dateStr: string | null): string {
   if (!dateStr) return '';
@@ -42,7 +57,7 @@ function escapeICalText(text: string | null): string {
 }
 
 // Generate iCal VEVENT component
-function generateVEvent(event: any): string {
+function generateVEvent(event: CalendarFeedEvent): string {
   const lines: string[] = [];
 
   lines.push('BEGIN:VEVENT');
@@ -78,7 +93,7 @@ function generateVEvent(event: any): string {
 }
 
 // Generate complete iCal document
-function generateICal(events: any[], feedName: string): string {
+function generateICal(events: CalendarFeedEvent[], feedName: string): string {
   const lines: string[] = [];
 
   // iCal header
@@ -186,7 +201,7 @@ export async function GET(
 
     // Generate iCal content
     const feedName = feed.name || 'Helm Golf Calendar';
-    const icalContent = generateICal(events || [], feedName);
+    const icalContent = generateICal((events || []) as CalendarFeedEvent[], feedName);
 
     // Return iCal file with appropriate headers
     return new NextResponse(icalContent, {

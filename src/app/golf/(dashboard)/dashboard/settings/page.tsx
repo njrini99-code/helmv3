@@ -52,7 +52,7 @@ interface UserProfile {
 export default function GolfSettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const { showToast: _showToast } = useToast();
+  useToast(); // Initialize toast context
 
   // Modal state
   const [personalInfoOpen, setPersonalInfoOpen] = useState(false);

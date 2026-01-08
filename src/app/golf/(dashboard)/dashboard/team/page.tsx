@@ -2,6 +2,11 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { TeamSettingsClient } from './team-settings-client';
 import { TeamInfoPlayer } from './team-info-player';
+import type { GolfCoach, GolfTeam } from '@/lib/types/golf';
+
+type CoachWithTeam = Pick<GolfCoach, 'id' | 'team_id' | 'full_name'> & {
+  golf_teams: GolfTeam | null;
+};
 
 export default async function TeamSettingsPage() {
   const supabase = await createClient();
@@ -26,13 +31,17 @@ export default async function TeamSettingsPage() {
     `)
     .eq('user_id', user.id)
     .maybeSingle();
+  const coachData = coach as CoachWithTeam | null;
 
   // If coach, show settings view
-  if (coach) {
+  if (coachData) {
+    const team = coachData.golf_teams
+      ? { ...coachData.golf_teams, created_at: coachData.golf_teams.created_at ?? '' }
+      : null;
     return (
       <TeamSettingsClient
-        coach={coach}
-        team={coach.golf_teams as any}
+        coach={coachData}
+        team={team}
       />
     );
   }

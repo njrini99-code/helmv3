@@ -31,6 +31,30 @@ export default async function PrivacySettingsPage() {
     .eq('player_id', player.id)
     .maybeSingle();
 
+  // Transform database nulls to undefined for component compatibility
+  const transformedSettings = settings ? {
+    id: settings.id,
+    player_id: settings.player_id,
+    show_full_name: settings.show_full_name ?? undefined,
+    show_location: settings.show_location ?? undefined,
+    show_school: settings.show_school ?? undefined,
+    show_contact_email: settings.show_contact_email ?? undefined,
+    show_phone: settings.show_phone ?? undefined,
+    show_social_links: settings.show_social_links ?? undefined,
+    show_height_weight: settings.show_height_weight ?? undefined,
+    show_position: settings.show_position ?? undefined,
+    show_grad_year: settings.show_grad_year ?? undefined,
+    show_bats_throws: settings.show_bats_throws ?? undefined,
+    show_videos: settings.show_videos ?? undefined,
+    show_dream_schools: settings.show_dream_schools ?? undefined,
+    show_calendar: settings.show_calendar ?? undefined,
+    show_stats: settings.show_stats ?? undefined,
+    show_gpa: settings.show_gpa ?? undefined,
+    show_test_scores: settings.show_test_scores ?? undefined,
+    allow_messages: settings.allow_messages ?? undefined,
+    show_in_discover: settings.show_in_discover ?? undefined,
+  } : undefined;
+
   return (
     <div className="min-h-screen bg-[#FAF6F1]">
       <div className="max-w-4xl mx-auto px-6 py-8">
@@ -47,7 +71,7 @@ export default async function PrivacySettingsPage() {
         {/* Privacy Form */}
         <PrivacySettingsForm
           playerId={player.id}
-          initialSettings={settings as any || undefined}
+          initialSettings={transformedSettings}
         />
       </div>
     </div>

@@ -57,7 +57,7 @@ interface DevPlanProgress {
 export default function HSCoachDashboardPage() {
   const { coach, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [_teamId, setTeamId] = useState<string | null>(null);
+  const [, setTeamId] = useState<string | null>(null);
 
   // Stats
   const [rosterCount, setRosterCount] = useState(0);
@@ -118,16 +118,17 @@ export default function HSCoachDashboardPage() {
       .eq('team_id', currentTeamId);
 
     if (roster) {
-      setRosterCount(roster.length);
-      setRecentMembers(roster.slice(0, 5));
+      const typedRoster = roster as TeamMember[];
+      setRosterCount(typedRoster.length);
+      setRecentMembers(typedRoster.slice(0, 5));
 
       // Calculate stats
-      const recruitingActive = roster.filter((m: any) => m.player?.recruiting_activated).length;
+      const recruitingActive = typedRoster.filter((m) => m.player?.recruiting_activated).length;
       setRecruitingActiveCount(recruitingActive);
 
       // Calculate average GPA
-      const gpas = roster
-        .map((m: any) => m.player?.gpa)
+      const gpas = typedRoster
+        .map((m) => m.player?.gpa)
         .filter((gpa): gpa is number => gpa !== null && !isNaN(gpa));
       if (gpas.length > 0) {
         const avg = gpas.reduce((sum, gpa) => sum + gpa, 0) / gpas.length;
@@ -135,7 +136,7 @@ export default function HSCoachDashboardPage() {
       }
 
       // Academic alerts (GPA < 2.5)
-      const alerts = roster.filter((m: any) => m.player?.gpa && m.player.gpa < 2.5);
+      const alerts = typedRoster.filter((m) => m.player?.gpa && m.player.gpa < 2.5);
       setAcademicAlerts(alerts.slice(0, 3));
     }
 
@@ -152,13 +153,20 @@ export default function HSCoachDashboardPage() {
         coach:coaches(full_name, school_name, division),
         player:players!inner(first_name, last_name, id)
       `)
-      .in('player_id', roster?.map((m: any) => m.player.id) || [])
+      .in('player_id', (roster as TeamMember[] | null)?.map((m) => m.player.id) || [])
       .gte('created_at', thirtyDaysAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(10);
 
     if (interests) {
-      const formatted = interests.map((i: any) => ({
+      type InterestEvent = {
+        id: string;
+        created_at: string;
+        event_type: string;
+        coach: { full_name: string | null; school_name: string | null; division: string | null } | null;
+        player: { first_name: string | null; last_name: string | null; id: string } | null;
+      };
+      const formatted = (interests as InterestEvent[]).map((i) => ({
         id: i.id,
         created_at: i.created_at,
         event_type: i.event_type,
@@ -185,7 +193,12 @@ export default function HSCoachDashboardPage() {
       setDevPlanCount(devPlans.length);
       // For now, show simplified progress
       // In real implementation, would calculate from plan goals/tasks
-      const progress: DevPlanProgress[] = devPlans.slice(0, 5).map((plan: any) => ({
+      type DevPlan = {
+        player_id: string;
+        status: string;
+        player: { first_name: string | null; last_name: string | null } | null;
+      };
+      const progress: DevPlanProgress[] = (devPlans as DevPlan[]).slice(0, 5).map((plan) => ({
         player_id: plan.player_id,
         player_name: getFullName(plan.player?.first_name, plan.player?.last_name),
         total_goals: 5, // Placeholder
@@ -352,7 +365,7 @@ export default function HSCoachDashboardPage() {
                       <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400r">
                         Players Needing Support
                       </p>
-                      {academicAlerts.map((member: any) => (
+                      {academicAlerts.map((member) => (
                         <div
                           key={member.id}
                           className="flex items-center justify-between p-3 border border-amber-200 bg-amber-50 rounded-lg"
@@ -450,7 +463,7 @@ export default function HSCoachDashboardPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {recentMembers.map((member: any) => (
+                    {recentMembers.map((member) => (
                       <div key={member.id} className="flex items-center gap-3">
                         <Avatar
                           name={getFullName(member.player?.first_name, member.player?.last_name)}

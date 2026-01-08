@@ -11,10 +11,23 @@ import {
     AlertTypeToggles
 } from '@/components/golf/coachhelm/settings';
 import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
+import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { PageLoading } from '@/components/ui/loading';
 import { IconArrowLeft, IconCheck } from '@/components/icons';
 import Link from 'next/link';
 import { Toaster } from 'sonner';
+
+type PriorityValues = Pick<
+    CoachPhilosophy,
+    'priorityBallStriking' | 'priorityShortGame' | 'priorityPutting' | 'priorityCourseManagement' | 'priorityMentalGame'
+>;
+type WeightValues = Pick<
+    CoachPhilosophy,
+    'weightHistorical' | 'weightRecentForm' | 'weightTournament' | 'weightQualifying' | 'weightSubjective'
+>;
+type ThresholdKey = 'declineThreshold' | 'pressureGapThreshold' | 'bubbleZoneRange';
+type DisplayToggleKey = 'showStrokesGained' | 'showAdvancedStats';
+type DisplayKey = DisplayToggleKey | 'insightVerbosity';
 
 export default function CoachingIntelligenceSettingsPage() {
     const [coachId, setCoachId] = useState<string | null>(null);
@@ -43,28 +56,28 @@ export default function CoachingIntelligenceSettingsPage() {
     // Auto-save debouncing could go here, but for settings specific explicit actions or immediate updates are fine.
     // We'll update the local cache immediately via the hook's optimistic update pattern (implied by just calling save)
 
-    const handlePriorityChange = (newValues: any) => {
+    const handlePriorityChange = (newValues: PriorityValues) => {
         save(newValues);
     };
 
-    const handleSensitivityChange = (newValue: any) => {
+    const handleSensitivityChange = (newValue: CoachPhilosophy['alertSensitivity']) => {
         save({ alertSensitivity: newValue });
     };
 
-    const handleThresholdChange = (key: string, value: number) => {
-        save({ [key]: value });
+    const handleThresholdChange = (key: ThresholdKey, value: number) => {
+        save({ [key]: value } as Partial<CoachPhilosophy>);
     };
 
-    const handleAlertToggle = (key: any, checked: boolean) => {
-        save({ [key]: checked });
+    const handleAlertToggle = (key: keyof CoachPhilosophy, checked: boolean) => {
+        save({ [key]: checked } as Partial<CoachPhilosophy>);
     };
 
-    const handleWeightChange = (newValues: any) => {
+    const handleWeightChange = (newValues: WeightValues) => {
         save(newValues);
     };
 
-    const handleDisplayChange = (key: string, value: boolean | string) => {
-        save({ [key]: value });
+    const handleDisplayChange = (key: DisplayKey, value: boolean | CoachPhilosophy['insightVerbosity']) => {
+        save({ [key]: value } as Partial<CoachPhilosophy>);
     };
 
     if (loading || !philosophy) {
@@ -234,14 +247,14 @@ export default function CoachingIntelligenceSettingsPage() {
                         </p>
                     </div>
                     <div className="p-6 space-y-4">
-                        {[
+                        {([
                             { key: 'showStrokesGained', label: 'Show Strokes Gained metrics' },
                             { key: 'showAdvancedStats', label: 'Show advanced statistics' },
-                        ].map(({ key, label }) => (
+                        ] as const).map(({ key, label }) => (
                             <label key={key} className="flex items-center gap-3 cursor-pointer">
                                 <input
                                     type="checkbox"
-                                    checked={(philosophy as any)[key] as boolean}
+                                    checked={philosophy[key]}
                                     onChange={(e) => handleDisplayChange(key, e.target.checked)}
                                     className="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-green-500"
                                 />

@@ -100,103 +100,91 @@ export default function GolfClassesPage() {
   const handleAddClass = async (formData: ClassFormData) => {
     if (!playerId || !teamId) return;
 
-    try {
-      const { data: newClass, error } = await supabase
-        .from('golf_player_classes')
-        .insert({
-          player_id: playerId,
-          course_code: formData.course_code,
-          course_name: formData.course_name,
-          instructor: formData.instructor || null,
-          days: formData.days,
-          day_of_week: 0, // Deprecated, using days array instead
-          start_time: formData.start_time || '00:00',
-          end_time: formData.end_time || '00:00',
-          location: formData.location || null,
-          building: formData.building || null,
-          room: formData.room || null,
-          credits: formData.credits,
-          semester: formData.semester,
-          color: formData.color,
-          notes: formData.notes || null,
-        })
-        .select()
-        .single();
+    const { data: newClass, error } = await supabase
+      .from('golf_player_classes')
+      .insert({
+        player_id: playerId,
+        course_code: formData.course_code,
+        course_name: formData.course_name,
+        instructor: formData.instructor || null,
+        days: formData.days,
+        day_of_week: 0, // Deprecated, using days array instead
+        start_time: formData.start_time || '00:00',
+        end_time: formData.end_time || '00:00',
+        location: formData.location || null,
+        building: formData.building || null,
+        room: formData.room || null,
+        credits: formData.credits,
+        semester: formData.semester,
+        color: formData.color,
+        notes: formData.notes || null,
+      })
+      .select()
+      .single();
 
-      if (error) throw error;
+    if (error) throw error;
 
-      // Sync to calendar
-      if (newClass) {
-        await syncClassToCalendar(formData, newClass.id, playerId, teamId);
-      }
-
-      await fetchClasses();
-      setShowAddModal(false);
-      setEditingClass(null);
-    } catch (error) {
-      throw error;
+    // Sync to calendar
+    if (newClass) {
+      await syncClassToCalendar(formData, newClass.id, playerId, teamId);
     }
+
+    await fetchClasses();
+    setShowAddModal(false);
+    setEditingClass(null);
   };
 
   const handleUpdateClass = async (formData: ClassFormData) => {
     if (!formData.id || !playerId || !teamId) return;
 
-    try {
-      const { error } = await supabase
-        .from('golf_player_classes')
-        .update({
-          course_code: formData.course_code,
-          course_name: formData.course_name,
-          instructor: formData.instructor || null,
-          days: formData.days,
-          day_of_week: 0, // Deprecated, using days array instead
-          start_time: formData.start_time || '00:00',
-          end_time: formData.end_time || '00:00',
-          location: formData.location || null,
-          building: formData.building || null,
-          room: formData.room || null,
-          credits: formData.credits,
-          semester: formData.semester,
-          color: formData.color,
-          notes: formData.notes || null,
-        })
-        .eq('id', formData.id);
+    const { error } = await supabase
+      .from('golf_player_classes')
+      .update({
+        course_code: formData.course_code,
+        course_name: formData.course_name,
+        instructor: formData.instructor || null,
+        days: formData.days,
+        day_of_week: 0, // Deprecated, using days array instead
+        start_time: formData.start_time || '00:00',
+        end_time: formData.end_time || '00:00',
+        location: formData.location || null,
+        building: formData.building || null,
+        room: formData.room || null,
+        credits: formData.credits,
+        semester: formData.semester,
+        color: formData.color,
+        notes: formData.notes || null,
+      })
+      .eq('id', formData.id);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      // Re-sync to calendar (deletes old events and creates new ones)
-      await syncClassToCalendar(formData, formData.id, playerId, teamId);
+    // Re-sync to calendar (deletes old events and creates new ones)
+    await syncClassToCalendar(formData, formData.id, playerId, teamId);
 
-      await fetchClasses();
-      setShowAddModal(false);
-      setEditingClass(null);
-      setShowDetailModal(false);
-    } catch (error) {
-      throw error;
-    }
+    await fetchClasses();
+    setShowAddModal(false);
+    setEditingClass(null);
+    setShowDetailModal(false);
   };
 
   const handleDeleteClass = async () => {
     if (!selectedClass) return;
 
-    try {
-      // Remove from calendar first
-      await removeClassFromCalendar(selectedClass.id);
+    // Remove from calendar first
+    await removeClassFromCalendar(selectedClass.id);
 
-      // Then delete the class
-      const { error } = await supabase
-        .from('golf_player_classes')
-        .delete()
-        .eq('id', selectedClass.id);
+    // Then delete the class
+    const { error } = await supabase
+      .from('golf_player_classes')
+      .delete()
+      .eq('id', selectedClass.id);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      await fetchClasses();
-      setShowDetailModal(false);
-      setSelectedClass(null);
-    } catch (error) {
-      throw error;
-    }
+    await fetchClasses();
+    setShowDetailModal(false);
+    setSelectedClass(null);
   };
 
   const handleParsedClasses = (parsed: ParsedClass[]) => {
@@ -265,7 +253,7 @@ export default function GolfClassesPage() {
                 room: confirmedClass.room || '',
                 credits: confirmedClass.credits,
                 semester: confirmedClass.semester || 'Fall 2025',
-                semesterStartDate: (confirmedClass as any).semesterStartDate, // Custom start date from modal
+                semesterStartDate: confirmedClass.semesterStartDate, // Custom start date from modal
                 color: confirmedClass.color || generateClassColor(),
                 notes: '',
               }, insertedClass.id, playerId, teamId);

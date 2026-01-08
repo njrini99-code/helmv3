@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'Helm Sports Labs' }],
   creator: 'Helm Sports Labs',
   publisher: 'Helm Sports Labs',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://helmlab.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com'),
   icons: {
     icon: '/Helm-Logo-New-Main.png',
     apple: '/Helm-Logo-New-Main.png',

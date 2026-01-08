@@ -28,13 +28,13 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
 
       // If no playerId provided, get from current user
       if (!targetPlayerId) {
-        const { data: { user } } = await (supabase as any).auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           setError('Not authenticated');
           return;
         }
 
-        const { data: player } = await (supabase as any)
+        const { data: player } = await supabase
           .from('golf_players')
           .select('id')
           .eq('user_id', user.id)
@@ -49,7 +49,7 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
       }
 
       // Fetch rounds
-      const { data: roundsData, error: roundsError } = await (supabase as any)
+      const { data: roundsData, error: roundsError } = await supabase
         .from('golf_rounds')
         .select('*, holes:golf_holes(*)')
         .eq('player_id', targetPlayerId)
@@ -61,31 +61,20 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
       // Calculate stats
       if (roundsData && roundsData.length > 0) {
         const roundsPlayed = roundsData.length;
-        const scores = roundsData.map((r: any) => r.total_score).filter((s: any): s is number => s !== null);
+        type RoundWithScore = { total_score?: number | null };
+        const scores = roundsData.map((r: RoundWithScore) => r.total_score).filter((s): s is number => s !== null && s !== undefined);
         const scoringAverage = scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
         const bestRound = scores.length > 0 ? Math.min(...scores) : 0;
         const worstRound = scores.length > 0 ? Math.max(...scores) : 0;
 
         // Calculate score distribution from holes
-        let eagles = 0, birdies = 0, pars = 0, bogeys = 0, doubleBogeys = 0;
         let totalPutts = 0, fairwaysHit = 0, fairwaysTotal = 0, greensInReg = 0, greensTotal = 0;
-        const par3Scores: number[] = [], par4Scores: number[] = [], par5Scores: number[] = [];
 
-        roundsData.forEach((round: any) => {
+        type RoundData = { holes?: HoleData[]; total_putts?: number; fairways_hit?: number; fairways_total?: number; greens_in_regulation?: number; greens_total?: number };
+        type HoleData = { score_to_par: number; par: number; score: number; putts?: number; fairway_hit?: boolean; green_in_regulation?: boolean };
+        roundsData.forEach((round: RoundData) => {
           if (round.holes) {
-            round.holes.forEach((hole: { score_to_par: number; par: number; score: number; putts?: number; fairway_hit?: boolean; green_in_regulation?: boolean }) => {
-              // Score distribution
-              if (hole.score_to_par <= -2) eagles++;
-              else if (hole.score_to_par === -1) birdies++;
-              else if (hole.score_to_par === 0) pars++;
-              else if (hole.score_to_par === 1) bogeys++;
-              else if (hole.score_to_par >= 2) doubleBogeys++;
-
-              // Par-specific averages
-              if (hole.par === 3) par3Scores.push(hole.score);
-              else if (hole.par === 4) par4Scores.push(hole.score);
-              else if (hole.par === 5) par5Scores.push(hole.score);
-
+            round.holes.forEach((hole: HoleData) => {
               // Putting
               if (hole.putts) totalPutts += hole.putts;
 

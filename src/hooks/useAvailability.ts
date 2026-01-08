@@ -62,7 +62,7 @@ export function useAvailability({
 
       if (result.success) {
         // Convert ISO strings back to Date objects
-        const periods: BusyPeriod[] = result.data.map((period: any) => ({
+        const periods: BusyPeriod[] = result.data.map((period: { start: string | Date; end: string | Date; title?: string; source?: string }) => ({
           ...period,
           start: new Date(period.start),
           end: new Date(period.end),
@@ -102,8 +102,16 @@ interface UseCoachBlockedTimeOptions {
   enabled?: boolean;
 }
 
+interface BlockedTime {
+  id: string;
+  start: string;
+  end: string;
+  title?: string;
+  reason?: string;
+}
+
 interface UseCoachBlockedTimeResult {
-  blockedTimes: any[];
+  blockedTimes: BlockedTime[];
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -125,7 +133,7 @@ export function useCoachBlockedTime({
   endDate,
   enabled = true,
 }: UseCoachBlockedTimeOptions): UseCoachBlockedTimeResult {
-  const [blockedTimes, setBlockedTimes] = useState<any[]>([]);
+  const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

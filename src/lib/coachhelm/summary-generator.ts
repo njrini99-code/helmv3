@@ -8,7 +8,7 @@ import {
 } from './types';
 
 interface SummaryInput {
-  round: any;
+  round: unknown;
   roundStats: RoundStats;
   playerAverages: RoundStats;
   strokesGained: StrokesGainedBreakdown;

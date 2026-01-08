@@ -12,6 +12,30 @@ import { useAuth } from '@/hooks/use-auth';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName, formatRelativeTime } from '@/lib/utils';
 
+interface EngagementEvent {
+  id: string;
+  player_id: string;
+  engagement_type: string;
+  engagement_date: string;
+  is_anonymous: boolean;
+  coach_id: string | null;
+  coaches: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    school_name: string | null;
+    division: string | null;
+  } | null;
+  players: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    primary_position: string | null;
+    grad_year: number | null;
+    avatar_url: string | null;
+  } | null;
+}
+
 interface PlayerInterest {
   player_id: string;
   player_name: string;
@@ -125,8 +149,9 @@ export default function CollegeInterestPage() {
 
     // Group by player and calculate stats
     const playerMap = new Map<string, PlayerInterest>();
+    const typedEvents = events as EngagementEvent[];
 
-    events.forEach((event: any) => {
+    typedEvents.forEach((event) => {
       const playerId = event.player_id;
 
       if (!playerMap.has(playerId)) {
@@ -162,21 +187,21 @@ export default function CollegeInterestPage() {
           coach_name: event.is_anonymous
             ? null
             : getFullName(event.coaches?.first_name, event.coaches?.last_name),
-          coach_school: event.is_anonymous ? null : event.coaches?.school_name,
-          coach_division: event.is_anonymous ? null : event.coaches?.division,
+          coach_school: event.is_anonymous ? null : (event.coaches?.school_name ?? null),
+          coach_division: event.is_anonymous ? null : (event.coaches?.division ?? null),
           is_anonymous: event.is_anonymous,
         });
       }
     });
 
     // Count unique coaches per player
-    events.forEach((event: any) => {
+    typedEvents.forEach((event) => {
       const interest = playerMap.get(event.player_id);
       if (interest && event.coach_id) {
         const coachIds = new Set(
-          events
-            .filter((e: any) => e.player_id === event.player_id && e.coach_id)
-            .map((e: any) => e.coach_id)
+          typedEvents
+            .filter((e) => e.player_id === event.player_id && e.coach_id)
+            .map((e) => e.coach_id)
         );
         interest.unique_coaches = coachIds.size;
       }

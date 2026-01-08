@@ -158,7 +158,7 @@ export default function CompleteSignupPage() {
         router.push('/baseball/player');
         return;
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
       setLoading(false);
     }

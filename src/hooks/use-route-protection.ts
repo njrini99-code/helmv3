@@ -29,7 +29,7 @@ export function useRouteProtection(options: RouteProtectionOptions = {}) {
 
   const {
     allowedCoachTypes = ['college', 'high_school', 'juco', 'showcase'],
-    requireRecruiting: _requireRecruiting = false,
+    // requireRecruiting is reserved for future use
     redirectTo = '/baseball/dashboard/team',
   } = options;
 

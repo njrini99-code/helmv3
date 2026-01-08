@@ -183,7 +183,7 @@ export default function ProgramPage() {
       setFormData(prev => ({ ...prev, logo_url: publicUrl }));
       setOrganization(prev => prev ? { ...prev, logo_url: publicUrl } : null);
       showToast('Logo updated successfully', 'success');
-    } catch (error) {
+    } catch {
       showToast('An error occurred while uploading', 'error');
     } finally {
       setUploadingLogo(false);

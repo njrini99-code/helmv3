@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { generateTeamCalendar, convertToICalEvent } from '@/lib/calendar/ical';
+import { generateTeamCalendar, convertToICalEvent, type ICalEvent } from '@/lib/calendar/ical';
 import { expandRecurringEvent } from '@/lib/calendar/recurrence';
 import { addMonths, format } from 'date-fns';
 
@@ -58,7 +58,7 @@ export async function GET(
     }
 
     // Convert events to iCal format and expand recurring events
-    const iCalEvents: any[] = [];
+    const iCalEvents: ICalEvent[] = [];
 
     for (const event of events || []) {
       if (event.recurrence_rule) {

@@ -305,6 +305,7 @@ export class InsightComposer {
    */
   private generateCallToAction(
     insight: { type: string; data: Record<string, unknown> },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _context: InsightContext
   ): string | undefined {
     if (insight.type === 'pattern') {

@@ -143,7 +143,7 @@ export async function updateWatchlistStatus(
     const { error } = await supabase
       .from('watchlists')
       .update({
-        pipeline_stage: validatedData.status as any,
+        pipeline_stage: validatedData.status as PipelineStage,
         updated_at: new Date().toISOString(),
       })
       .eq('id', validatedData.watchlist_id)

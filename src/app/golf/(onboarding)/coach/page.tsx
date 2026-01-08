@@ -179,7 +179,7 @@ export default function GolfCoachOnboarding() {
 
       router.push('/golf/dashboard');
       router.refresh();
-    } catch (err) {
+    } catch {
       setError('An error occurred. Please try again.');
       setLoading(false);
     }

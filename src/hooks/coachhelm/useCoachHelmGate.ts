@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { CoachHelmStatus } from '@/lib/coachhelm/v2/types';
 
@@ -40,7 +40,7 @@ export function useCoachHelmGate(
   const globallyEnabled =
     process.env.NEXT_PUBLIC_COACHHELM_ENABLED !== 'false';
 
-  async function fetchStatus() {
+  const fetchStatus = useCallback(async () => {
     if (!userId) {
       setStatus({
         userEnabled: true,
@@ -145,12 +145,11 @@ export function useCoachHelmGate(
     } finally {
       setLoading(false);
     }
-  }
+  }, [userId, teamId, globallyEnabled, supabase]);
 
   useEffect(() => {
     fetchStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, teamId, globallyEnabled]);
+  }, [fetchStatus]);
 
   const refresh = async () => {
     await fetchStatus();
@@ -182,7 +181,7 @@ export function useCoachHelmGateForCoach(
   const globallyEnabled =
     process.env.NEXT_PUBLIC_COACHHELM_ENABLED !== 'false';
 
-  async function fetchStatus() {
+  const fetchStatus = useCallback(async () => {
     if (!coachId) {
       setStatus({
         userEnabled: true,
@@ -286,12 +285,11 @@ export function useCoachHelmGateForCoach(
     } finally {
       setLoading(false);
     }
-  }
+  }, [coachId, globallyEnabled, supabase]);
 
   useEffect(() => {
     fetchStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coachId, globallyEnabled]);
+  }, [fetchStatus]);
 
   const refresh = async () => {
     await fetchStatus();

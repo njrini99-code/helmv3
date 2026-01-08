@@ -45,7 +45,7 @@ const eligibilityColors = {
 };
 
 export default function AcademicsPage() {
-  const { coach: _coach, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   const { selectedTeamId } = useTeamStore();
   // Only JUCO coaches can access this page
   const { isAllowed, isLoading: routeLoading } = useRouteProtection({
@@ -106,8 +106,21 @@ export default function AcademicsPage() {
       }
 
       // Transform data with real academic information
+      // Note: credits_completed, credits_required, academic_standing, eligibility_status may not exist in DB
+      type PlayerData = {
+        first_name?: string | null;
+        last_name?: string | null;
+        avatar_url?: string | null;
+        primary_position?: string | null;
+        grad_year?: number | null;
+        gpa?: number | null;
+        credits_completed?: number | null;
+        credits_required?: number | null;
+        academic_standing?: 'good' | 'warning' | 'probation' | null;
+        eligibility_status?: 'eligible' | 'ineligible' | 'pending' | null;
+      };
       const transformedStudents: StudentAthlete[] = (membersData || []).map((member) => {
-        const player = member.players as any;
+        const player = member.players as PlayerData | null;
         return {
           id: member.id,
           player_id: member.player_id,
@@ -117,10 +130,10 @@ export default function AcademicsPage() {
           primary_position: player?.primary_position || null,
           grad_year: player?.grad_year || null,
           gpa: player?.gpa || null,
-          credits_completed: player?.credits_completed || 0,
-          credits_required: player?.credits_required || 60,
-          academic_standing: player?.academic_standing || 'good',
-          eligibility_status: player?.eligibility_status || 'eligible',
+          credits_completed: player?.credits_completed ?? 0,
+          credits_required: player?.credits_required ?? 60,
+          academic_standing: player?.academic_standing ?? 'good',
+          eligibility_status: player?.eligibility_status ?? 'eligible',
         };
       });
 
@@ -374,7 +387,7 @@ export default function AcademicsPage() {
                         {editingId === student.id ? (
                           <Select
                             value={editValues.academic_standing || ''}
-                            onChange={(value) => setEditValues({ ...editValues, academic_standing: value as any })}
+                            onChange={(value) => setEditValues({ ...editValues, academic_standing: value as 'good' | 'warning' | 'probation' })}
                             options={[
                               { value: 'good', label: 'Good' },
                               { value: 'warning', label: 'Warning' },
@@ -393,7 +406,7 @@ export default function AcademicsPage() {
                         {editingId === student.id ? (
                           <Select
                             value={editValues.eligibility_status || ''}
-                            onChange={(value) => setEditValues({ ...editValues, eligibility_status: value as any })}
+                            onChange={(value) => setEditValues({ ...editValues, eligibility_status: value as 'eligible' | 'ineligible' | 'pending' })}
                             options={[
                               { value: 'eligible', label: 'Eligible' },
                               { value: 'pending', label: 'Pending' },
