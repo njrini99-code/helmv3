@@ -53,12 +53,13 @@ interface PollResult {
 interface SuggestedTime {
   date_option: string;
   time_option: string;
-  availability_percentage: number;
-  available_players: string[];
+  available_count: number;
+  total_responses: number;
+  score: number;
 }
 
-type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
-type GolfEventStatus = 'draft' | 'confirmed' | 'cancelled' | 'completed';
+type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | 'class';
+type GolfEventStatus = 'draft' | 'confirmed' | 'cancelled';
 
 // ============================================================================
 // CREATE POLL
@@ -235,7 +236,7 @@ export async function getSuggestedBestTimes(
       return { success: false, error: error.message };
     }
 
-    return { success: true, data: suggestions || [] };
+    return { success: true, data: (suggestions || []) as unknown as SuggestedTime[] };
   } catch (error) {
     return {
       success: false,

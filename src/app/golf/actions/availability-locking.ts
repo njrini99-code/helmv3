@@ -45,37 +45,22 @@ interface AvailabilityBlock {
   end_date: string;
   start_time: string | null;
   end_time: string | null;
-  reason: string | null;
-  created_at: string;
+  reason: string;
+  recurrence_rule: string | null;
+  is_recurring: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 interface AvailabilityConflict {
-  block_id: string;
-  block_reason: string | null;
+  is_blocked: boolean;
+  block_reason: string;
   block_start_date: string;
   block_end_date: string;
 }
 
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | 'class';
 type GolfEventStatus = 'draft' | 'confirmed' | 'cancelled';
-
-interface DetectConflictsParams {
-  p_event_id: string | null;
-  p_team_id: string;
-  p_start_date: string;
-  p_end_date: string;
-  p_start_time: string;
-  p_end_time: string;
-  p_ignore_conflicts: boolean;
-}
-
-interface CheckAvailabilityParams {
-  p_player_id: string;
-  p_start_date: string;
-  p_end_date: string;
-  p_start_time: string;
-  p_end_time: string;
-}
 
 // ============================================================================
 // CHECK FOR CONFLICTS
@@ -328,7 +313,7 @@ export async function getPlayerAvailabilityBlocks(
       return { success: false, error: error.message };
     }
 
-    return { success: true, data: blocks || [] };
+    return { success: true, data: (blocks || []) as unknown as AvailabilityBlock[] };
   } catch (error) {
     return {
       success: false,
@@ -355,16 +340,16 @@ export async function checkPlayerAvailability(
       .rpc('check_player_availability', {
         p_player_id: playerId,
         p_start_date: startDate,
-        p_end_date: endDate || '',
-        p_start_time: startTime || '',
-        p_end_time: endTime || '',
-      } as CheckAvailabilityParams);
+        p_end_date: endDate || startDate,
+        p_start_time: startTime || '00:00',
+        p_end_time: endTime || '23:59',
+      });
 
     if (error) {
       return { success: false, error: error.message };
     }
 
-    return { success: true, data: blocks || [] };
+    return { success: true, data: (blocks || []) as unknown as AvailabilityConflict[] };
   } catch (error) {
     return {
       success: false,

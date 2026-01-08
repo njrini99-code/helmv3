@@ -31,28 +31,31 @@ export default async function PrivacySettingsPage() {
     .eq('player_id', player.id)
     .maybeSingle();
 
-  // Transform database nulls to undefined for component compatibility
+  // Transform database settings to component format
+  // Map database fields to component expected fields (use defaults for missing fields)
   const transformedSettings = settings ? {
     id: settings.id,
     player_id: settings.player_id,
-    show_full_name: settings.show_full_name ?? undefined,
+    // Map database fields that exist
     show_location: settings.show_location ?? undefined,
-    show_school: settings.show_school ?? undefined,
-    show_contact_email: settings.show_contact_email ?? undefined,
-    show_phone: settings.show_phone ?? undefined,
-    show_social_links: settings.show_social_links ?? undefined,
-    show_height_weight: settings.show_height_weight ?? undefined,
-    show_position: settings.show_position ?? undefined,
-    show_grad_year: settings.show_grad_year ?? undefined,
-    show_bats_throws: settings.show_bats_throws ?? undefined,
-    show_videos: settings.show_videos ?? undefined,
-    show_dream_schools: settings.show_dream_schools ?? undefined,
-    show_calendar: settings.show_calendar ?? undefined,
-    show_stats: settings.show_stats ?? undefined,
+    show_contact_email: settings.show_contact_info ?? undefined,
     show_gpa: settings.show_gpa ?? undefined,
     show_test_scores: settings.show_test_scores ?? undefined,
-    allow_messages: settings.allow_messages ?? undefined,
-    show_in_discover: settings.show_in_discover ?? undefined,
+    show_in_discover: settings.is_discoverable ?? undefined,
+    // Default values for fields not in database
+    show_full_name: true,
+    show_school: true,
+    show_phone: settings.show_contact_info ?? undefined,
+    show_social_links: true,
+    show_height_weight: true,
+    show_position: true,
+    show_grad_year: true,
+    show_bats_throws: true,
+    show_videos: true,
+    show_dream_schools: true,
+    show_calendar: true,
+    show_stats: true,
+    allow_messages: true,
   } : undefined;
 
   return (
