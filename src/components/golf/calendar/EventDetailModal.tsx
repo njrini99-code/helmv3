@@ -42,21 +42,58 @@ interface TeamPlayer {
 }
 
 interface ConflictData {
-  hasConflicts: boolean;
+  hasConflict: boolean;
   conflicts: Array<{
     userId: string;
     userName: string;
-    conflictingEvents: Array<{
+    playerId?: string;
+    conflictingEvent: {
+      id: string;
       title: string;
+      type: 'event' | 'class' | 'blocked';
       start: string;
       end: string;
-    }>;
+    };
   }>;
   suggestions: Array<{
     start: Date;
     end: Date;
-    score: number;
   }>;
+}
+
+// Transform conflicts from API format to ConflictWarning format
+function transformConflictsForWarning(conflicts: ConflictData['conflicts']) {
+  // Group conflicts by user
+  const grouped = new Map<string, {
+    userId: string;
+    userName: string;
+    playerId?: string;
+    conflictingEvents: Array<{ title: string; start: string; end: string }>;
+  }>();
+
+  for (const c of conflicts) {
+    const existing = grouped.get(c.userId);
+    if (existing) {
+      existing.conflictingEvents.push({
+        title: c.conflictingEvent.title,
+        start: c.conflictingEvent.start,
+        end: c.conflictingEvent.end,
+      });
+    } else {
+      grouped.set(c.userId, {
+        userId: c.userId,
+        userName: c.userName,
+        playerId: c.playerId,
+        conflictingEvents: [{
+          title: c.conflictingEvent.title,
+          start: c.conflictingEvent.start,
+          end: c.conflictingEvent.end,
+        }],
+      });
+    }
+  }
+
+  return Array.from(grouped.values());
 }
 
 interface EventDetailModalProps {
@@ -572,10 +609,10 @@ export function EventDetailModal({
                 </div>
               )}
 
-              {conflicts && conflicts.hasConflicts && (
+              {conflicts && conflicts.hasConflict && (
                 <div className="mt-3">
                   <ConflictWarning
-                    conflicts={conflicts.conflicts}
+                    conflicts={transformConflictsForWarning(conflicts.conflicts)}
                     suggestions={conflicts.suggestions}
                     onSelectTime={handleSelectSuggestedTime}
                   />

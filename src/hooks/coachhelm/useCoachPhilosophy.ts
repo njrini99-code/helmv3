@@ -35,7 +35,7 @@ interface PhilosophyDbRow {
     alert_par_3_issues: boolean;
     show_strokes_gained: boolean;
     show_advanced_stats: boolean;
-    insight_verbosity: 'minimal' | 'standard' | 'detailed';
+    insight_verbosity: string;
     created_at: string;
     updated_at: string;
 }
@@ -51,9 +51,9 @@ function dbToTs(row: PhilosophyDbRow): CoachPhilosophy {
         priorityCourseManagement: row.priority_course_management,
         priorityMentalGame: row.priority_mental_game,
         alertSensitivity: row.alert_sensitivity,
-        declineThreshold: parseFloat(row.decline_threshold),
-        pressureGapThreshold: parseFloat(row.pressure_gap_threshold),
-        bubbleZoneRange: parseFloat(row.bubble_zone_range),
+        declineThreshold: typeof row.decline_threshold === 'string' ? parseFloat(row.decline_threshold) : row.decline_threshold,
+        pressureGapThreshold: typeof row.pressure_gap_threshold === 'string' ? parseFloat(row.pressure_gap_threshold) : row.pressure_gap_threshold,
+        bubbleZoneRange: typeof row.bubble_zone_range === 'string' ? parseFloat(row.bubble_zone_range) : row.bubble_zone_range,
         weightHistorical: row.weight_historical,
         weightRecentForm: row.weight_recent_form,
         weightTournament: row.weight_tournament,
@@ -71,7 +71,8 @@ function dbToTs(row: PhilosophyDbRow): CoachPhilosophy {
         alertPar3Issues: row.alert_par_3_issues,
         showStrokesGained: row.show_strokes_gained,
         showAdvancedStats: row.show_advanced_stats,
-        insightVerbosity: row.insight_verbosity,
+        // Map 'minimal'/'standard' to 'brief', keep 'detailed' as-is
+        insightVerbosity: (row.insight_verbosity === 'detailed' ? 'detailed' : 'brief') as 'brief' | 'detailed',
         createdAt: row.created_at,
         updatedAt: row.updated_at,
     };
@@ -152,7 +153,7 @@ export function useCoachPhilosophy(coachId: string | null) {
             }
 
             if (data) {
-                setPhilosophy(dbToTs(data));
+                setPhilosophy(dbToTs(data as unknown as PhilosophyDbRow));
             } else {
                 // Create default record if none exists
                 const { data: newData, error: createError } = await supabase
@@ -172,7 +173,7 @@ export function useCoachPhilosophy(coachId: string | null) {
                 if (createError) {
                     setError(createError.message);
                 } else if (newData) {
-                    setPhilosophy(dbToTs(newData));
+                    setPhilosophy(dbToTs(newData as unknown as PhilosophyDbRow));
                 }
             }
 
@@ -203,7 +204,7 @@ export function useCoachPhilosophy(coachId: string | null) {
                 return false;
             }
 
-            setPhilosophy(dbToTs(data));
+            setPhilosophy(dbToTs(data as unknown as PhilosophyDbRow));
             setSaving(false);
             return true;
         },

@@ -18,7 +18,7 @@ import type { Message } from '@/lib/types';
 import type { UIMessage, ParticipantDetails } from '@/lib/types/messages';
 import { groupMessagesByDate, formatMessageTime } from '@/lib/types/messages';
 
-interface ChatWindowProps {
+export interface ChatWindowProps {
   messages: Message[];
   participant: ParticipantDetails | null;
   currentUserId: string;

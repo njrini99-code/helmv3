@@ -10,7 +10,7 @@ import { IconPlus, IconCheck, IconCheckCheck, IconMessage, IconSearch } from '@/
 import type { ConversationWithMeta, ConversationWithParticipant } from '@/lib/types/messages';
 import { getParticipantDetails } from '@/lib/types/messages';
 
-interface ConversationListProps {
+export interface ConversationListProps {
   conversations: ConversationWithMeta[];
   selectedId: string | null;
   currentUserId: string;

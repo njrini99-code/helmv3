@@ -9,7 +9,7 @@ interface StateData {
   count: number;
 }
 
-interface USAMapProps {
+export interface USAMapProps {
   stateData: Record<string, StateData>;
   onStateClick?: (state: string) => void;
   onClearState?: () => void;

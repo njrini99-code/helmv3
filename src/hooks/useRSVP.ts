@@ -21,7 +21,7 @@ export interface EventInvitation {
   description: string | null;
   requiresRsvp: boolean;
   rsvpDeadline: string | null;
-  createdBy: string;
+  createdBy: string | null;
   status: RSVPStatus;
 }
 
@@ -114,7 +114,16 @@ export function useRSVP({
       const result = await getEventRSVP(eventId);
 
       if (result.success) {
-        setRsvpSummary(result.data);
+        // Map RSVPStats to local RSVPSummary format
+        const mappedSummary: RSVPSummary = {
+          accepted: result.data.summary.accepted,
+          declined: result.data.summary.declined,
+          tentative: result.data.summary.tentative,
+          pending: result.data.summary.pending,
+          total: result.data.summary.total,
+          attendees: result.data.summary.attendees,
+        };
+        setRsvpSummary(mappedSummary);
       } else {
         setError(result.error);
         setRsvpSummary(null);

@@ -29,10 +29,10 @@ type SupabaseClientType = ReturnType<typeof createClient> extends Promise<infer 
 
 interface CalendarConnection {
   id: string;
-  calendar_url: string;
-  ctag?: string;
-  sync_team_ids?: string[];
-  team_id?: string;
+  calendar_url: string | null;
+  ctag?: string | null;
+  sync_team_ids?: string[] | null;
+  team_id?: string | null;
 }
 
 interface ICalEvent {
@@ -59,10 +59,12 @@ interface GolfEventRecord {
 interface SyncStateData {
   golf_event_id?: string;
   connection_id: string;
+  external_calendar_id: string;
   external_event_id: string;
   external_event_url?: string;
   external_etag?: string;
   external_event_hash?: string;
+  golf_event_hash?: string;
   sync_status: string;
   last_modified_source: string;
 }
@@ -290,8 +292,8 @@ async function importFromExternal(
 
   // Get changes since last sync
   const { changedEvents } = await client.getChanges(
-    connection.calendar_url,
-    connection.ctag
+    connection.calendar_url || '',
+    connection.ctag ?? undefined
   );
 
   for (const externalEvent of changedEvents) {
@@ -318,9 +320,8 @@ async function importFromExternal(
             continue;
           } else {
             // Safe to update
-            await updateGolfEvent(supabase, syncState.golf_event_id, externalEvent.event);
+            await updateGolfEvent(supabase, syncState.golf_event_id || '', externalEvent.event);
             await updateSyncState(supabase, syncState.id, {
-              external_event_hash: externalHash,
               external_etag: externalEvent.etag,
               sync_status: 'synced',
               last_modified_source: 'external',
@@ -332,12 +333,13 @@ async function importFromExternal(
         // New event - import it
         const golfEventId = await createGolfEvent(supabase, connection, externalEvent.event);
         await createSyncState(supabase, {
+          connection_id: connection.id,
           external_calendar_id: connection.id,
           golf_event_id: golfEventId,
-          external_event_id: externalEvent.event.id,
+          external_event_id: externalEvent.event.id || '',
           external_event_url: externalEvent.url,
           external_etag: externalEvent.etag,
-          external_event_hash: externalHash,
+          golf_event_hash: externalHash,
           sync_status: 'synced',
           last_modified_source: 'external',
         });
@@ -378,8 +380,10 @@ async function exportToExternal(
         .eq('id', pending.event_id)
         .single();
 
+      if (!golfEvent) continue;
+
       // Convert to iCal format
-      const icalEvent = convertGolfEventToICal(golfEvent);
+      const icalEvent = convertGolfEventToICal(golfEvent as unknown as GolfEventRecord);
 
       // Get sync state
       const { data: syncState } = await supabase
@@ -391,9 +395,9 @@ async function exportToExternal(
 
       // Push to external calendar
       const { url, etag } = await client.putEvent(
-        connection.calendar_url,
-        icalEvent,
-        syncState?.external_etag
+        connection.calendar_url || '',
+        icalEvent as unknown as import('@/lib/calendar/ical').ICalEvent,
+        syncState?.external_etag || undefined
       );
 
       // Update sync state
@@ -403,19 +407,18 @@ async function exportToExternal(
           external_event_url: url,
           external_etag: etag,
           golf_event_hash: golfHash,
-          external_event_hash: golfHash,
           sync_status: 'synced',
           last_modified_source: 'golf',
         });
       } else {
         await createSyncState(supabase, {
+          connection_id: connection.id,
           external_calendar_id: connection.id,
           golf_event_id: golfEvent.id,
-          external_event_id: icalEvent.id,
+          external_event_id: icalEvent.id || '',
           external_event_url: url,
           external_etag: etag,
           golf_event_hash: golfHash,
-          external_event_hash: golfHash,
           sync_status: 'synced',
           last_modified_source: 'golf',
         });
@@ -536,6 +539,7 @@ async function createGolfEvent(supabase: SupabaseClientType, connection: Calenda
     .select('id')
     .single();
 
+  if (!event) throw new Error('Failed to create event');
   return event.id;
 }
 
@@ -573,7 +577,9 @@ async function handleConflict(supabase: SupabaseClientType, syncStateId: string,
       conflict_data: {
         external: {
           title: externalEvent.event.title,
-          start_date: externalEvent.event.startDate,
+          start_date: externalEvent.event.startDate instanceof Date
+            ? externalEvent.event.startDate.toISOString()
+            : String(externalEvent.event.startDate),
           updated_at: new Date().toISOString(),
         },
       },

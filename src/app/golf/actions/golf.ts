@@ -45,11 +45,13 @@ interface ApproachMissDetail {
   distance_from_green_yards: number | null;
 }
 
+type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | 'class';
+
 /** Golf event insert data */
 interface GolfEventInsertData {
-  team_id: string;
+  team_id: string | null;
   title: string;
-  event_type: string;
+  event_type: GolfEventType;
   start_date: string;
   end_date: string | null;
   start_time: string | null;
@@ -113,12 +115,13 @@ export interface CalendarNotification {
   id: string;
   user_id: string;
   event_id: string | null;
-  notification_type: string;
+  type: string;
   title: string;
-  message: string;
-  read: boolean;
+  message: string | null;
+  read: boolean | null;
   action_url: string | null;
-  created_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 /** Event invitation - re-exported from calendar lib */
@@ -134,7 +137,7 @@ export interface EventInvitation {
   description: string | null;
   requiresRsvp: boolean;
   rsvpDeadline: string | null;
-  createdBy: string;
+  createdBy: string | null;
   status: 'pending' | 'accepted' | 'declined' | 'tentative';
 }
 
@@ -167,10 +170,11 @@ export interface BlockedTimePeriod {
   end_date: string;
   start_time: string | null;
   end_time: string | null;
-  all_day: boolean;
+  all_day: boolean | null;
   recurrence_rule: string | null;
   description: string | null;
-  created_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 /** In-progress round summary */
@@ -178,11 +182,11 @@ export interface InProgressRound {
   id: string;
   course_name: string;
   round_date: string;
-  round_type: string;
+  round_type: string | null;
   current_hole: number | null;
-  holes_to_play: number;
-  created_at: string;
-  updated_at: string;
+  holes_to_play: number | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -232,10 +236,10 @@ interface RoundRecord {
   course_city: string | null;
   course_state: string | null;
   round_date: string;
-  round_type: string;
-  holes_to_play: number;
+  round_type: string | null;
+  holes_to_play: number | null;
   current_hole: number | null;
-  status: string;
+  status: string | null;
   course_rating: number | null;
   course_slope: number | null;
   tees_played: string | null;
@@ -246,8 +250,8 @@ interface RoundRecord {
   fairways_total: number | null;
   greens_in_regulation: number | null;
   greens_total: number | null;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 /** Full round data for loading in-progress round */
@@ -1007,7 +1011,7 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
     const insertData: GolfEventInsertData = {
       team_id: teamId,
       title: validatedData.title,
-      event_type: validatedData.eventType,
+      event_type: validatedData.eventType as GolfEventType,
       start_date: validatedData.startDate,
       end_date: validatedData.endDate || null,
       start_time: validatedData.startTime || null,
@@ -1626,7 +1630,7 @@ export async function checkScheduleConflicts(
       { excludeEventId }
     );
 
-    return { success: true, data: result as ConflictResult };
+    return { success: true, data: result as unknown as ConflictResult };
 
   } catch {
     return { success: false, error: 'Failed to check conflicts' };
@@ -2517,8 +2521,8 @@ export async function loadInProgressRound(roundId: string): Promise<ActionResult
     return {
       success: true,
       data: {
-        round,
-        holes: holes || [],
+        round: round as unknown as RoundRecord,
+        holes: (holes || []) as unknown as HoleWithShots[],
       }
     };
 

@@ -70,16 +70,16 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
         // Calculate score distribution from holes
         let totalPutts = 0, fairwaysHit = 0, fairwaysTotal = 0, greensInReg = 0, greensTotal = 0;
 
-        type RoundData = { holes?: HoleData[]; total_putts?: number; fairways_hit?: number; fairways_total?: number; greens_in_regulation?: number; greens_total?: number };
-        type HoleData = { score_to_par: number; par: number; score: number; putts?: number; fairway_hit?: boolean; green_in_regulation?: boolean };
-        roundsData.forEach((round: RoundData) => {
+        type RoundData = { holes?: HoleData[]; total_putts?: number | null; fairways_hit?: number | null; fairways_total?: number | null; greens_in_regulation?: number | null; greens_total?: number | null };
+        type HoleData = { score_to_par: number | null; par: number | null; score: number | null; putts?: number | null; fairway_hit?: boolean | null; green_in_regulation?: boolean | null };
+        (roundsData as unknown as RoundData[]).forEach((round: RoundData) => {
           if (round.holes) {
             round.holes.forEach((hole: HoleData) => {
               // Putting
               if (hole.putts) totalPutts += hole.putts;
 
               // Fairways (only count par 4s and 5s)
-              if (hole.par >= 4) {
+              if (hole.par && hole.par >= 4) {
                 fairwaysTotal++;
                 if (hole.fairway_hit) fairwaysHit++;
               }

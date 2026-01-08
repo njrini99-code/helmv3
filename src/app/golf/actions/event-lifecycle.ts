@@ -29,11 +29,14 @@ interface ActionResult<T = void> {
 interface EventStatusHistory {
   id: string;
   event_id: string;
-  previous_status: EventStatus | null;
+  old_status: EventStatus | null;
   new_status: EventStatus;
   changed_by: string;
   reason: string | null;
-  changed_at: string;
+  changed_at: string | null;
+  coach?: {
+    full_name: string;
+  };
 }
 
 // ============================================================================
@@ -257,7 +260,7 @@ export async function getEventStatusHistory(
       return { success: false, error: historyError.message };
     }
 
-    return { success: true, data: history || [] };
+    return { success: true, data: (history || []) as unknown as EventStatusHistory[] };
   } catch (error) {
     return {
       success: false,

@@ -27,17 +27,23 @@ interface TopSchool {
 interface EngagementEvent {
   id: string;
   player_id: string;
-  coach_id?: string;
+  coach_id?: string | null;
   engagement_type: string;
   engagement_date: string;
+  created_at?: string;
+  is_anonymous?: boolean | null;
+  metadata?: unknown;
+  video_id?: string | null;
+  view_duration_seconds?: number | null;
+  viewer_user_id?: string | null;
   coaches?: {
     id: string;
     school_name?: string;
-    division?: string;
+    program_division?: string;
     logo_url?: string;
-    state?: string;
+    school_state?: string;
     conference?: string;
-  };
+  } | null;
 }
 
 interface AnalyticsData {
@@ -88,8 +94,10 @@ export function useAnalytics() {
           coaches (
             id,
             school_name,
-            division,
-            logo_url
+            program_division,
+            logo_url,
+            school_state,
+            conference
           )
         `)
         .eq('player_id', player.id)
@@ -143,7 +151,7 @@ export function useAnalytics() {
       events
         .filter(e => e.engagement_type === 'profile_view' && e.coaches)
         .forEach(event => {
-          const coach = event.coaches as { school_name?: string; state?: string; division?: string; conference?: string; logo_url?: string };
+          const coach = event.coaches as { school_name?: string; school_state?: string; program_division?: string; conference?: string; logo_url?: string };
           if (coach) {
             let key: string;
             let displayName: string;
@@ -154,12 +162,12 @@ export function useAnalytics() {
               displayName = key;
             } else {
               // Show anonymous data: "A coach from [State]" or "[Division] program"
-              if (coach.state) {
-                key = `state_${coach.state}`;
-                displayName = `A coach from ${coach.state}`;
-              } else if (coach.division) {
-                key = `division_${coach.division}`;
-                displayName = `${coach.division} program`;
+              if (coach.school_state) {
+                key = `state_${coach.school_state}`;
+                displayName = `A coach from ${coach.school_state}`;
+              } else if (coach.program_division) {
+                key = `division_${coach.program_division}`;
+                displayName = `${coach.program_division} program`;
               } else {
                 key = 'unknown';
                 displayName = 'A college coach';
@@ -170,9 +178,9 @@ export function useAnalytics() {
               schoolViews[key] = {
                 name: displayName,
                 count: 0,
-                division: isRecruitingActivated ? coach.division : undefined,
+                division: isRecruitingActivated ? coach.program_division : undefined,
                 logo: isRecruitingActivated ? coach.logo_url : undefined,
-                state: coach.state,
+                state: coach.school_state,
                 conference: coach.conference,
               };
             }
@@ -195,7 +203,7 @@ export function useAnalytics() {
         stats,
         viewsOverTime,
         topSchools,
-        recentEngagement: events.slice(0, 20),
+        recentEngagement: (events as unknown as EngagementEvent[]).slice(0, 20),
       });
 
       setLoading(false);

@@ -61,11 +61,12 @@ export function useAvailability({
       const result = await getPlayerAvailability(playerId, startDate, endDate);
 
       if (result.success) {
-        // Convert ISO strings back to Date objects
-        const periods: BusyPeriod[] = result.data.map((period: { start: string | Date; end: string | Date; title?: string; source?: string }) => ({
-          ...period,
+        // Convert ISO strings back to Date objects and ensure required fields
+        const periods: BusyPeriod[] = result.data.map((period: { start: string | Date; end: string | Date; title?: string; source?: string; type?: string }) => ({
           start: new Date(period.start),
           end: new Date(period.end),
+          type: (period.type as 'event' | 'class' | 'blocked') || 'event',
+          title: period.title,
         }));
         setBusyPeriods(periods);
       } else {
@@ -150,7 +151,15 @@ export function useCoachBlockedTime({
       const result = await getCoachBlockedTime(startDate, endDate);
 
       if (result.success) {
-        setBlockedTimes(result.data);
+        // Map BlockedTimePeriod to local BlockedTime
+        const mappedBlockedTimes: BlockedTime[] = result.data.map((bt) => ({
+          id: bt.id,
+          start: bt.start_time ? `${bt.start_date}T${bt.start_time}` : bt.start_date,
+          end: bt.end_time ? `${bt.end_date}T${bt.end_time}` : bt.end_date,
+          title: bt.title,
+          reason: bt.description ?? undefined,
+        }));
+        setBlockedTimes(mappedBlockedTimes);
       } else {
         setError(result.error);
         setBlockedTimes([]);

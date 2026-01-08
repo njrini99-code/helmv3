@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { RoundReview } from '@/lib/coachhelm/types';
+import type { RoundReview, GoalImpact, Highlight, AreaToReview, RoundStats, StrokesGainedBreakdown, Pattern } from '@/lib/coachhelm/types';
 
 // Database row type for golf_round_reviews
+// Note: Table may not exist in generated types yet - we use type assertions
 interface RoundReviewDbRow {
   id: string;
   round_id: string;
@@ -36,6 +37,13 @@ interface RoundReviewDbRow {
   created_at: string;
 }
 
+// Helper to parse numeric field
+function parseNumeric(val: string | number | null): number | null {
+  if (val === null) return null;
+  if (typeof val === 'number') return val;
+  return parseFloat(val);
+}
+
 // Map database to TypeScript
 function dbToReview(row: RoundReviewDbRow): RoundReview {
   return {
@@ -44,22 +52,22 @@ function dbToReview(row: RoundReviewDbRow): RoundReview {
     playerId: row.player_id,
     roundScore: row.round_score,
     roundScoreToPar: row.round_score_to_par,
-    scoringAvgBefore: row.scoring_avg_before ? parseFloat(row.scoring_avg_before) : null,
-    scoringAvgAfter: row.scoring_avg_after ? parseFloat(row.scoring_avg_after) : null,
+    scoringAvgBefore: parseNumeric(row.scoring_avg_before),
+    scoringAvgAfter: parseNumeric(row.scoring_avg_after),
     qualifyingPositionBefore: row.qualifying_position_before,
     qualifyingPositionAfter: row.qualifying_position_after,
-    gapToNextPosition: row.gap_to_next_position ? parseFloat(row.gap_to_next_position) : null,
-    goalImpacts: row.goal_impacts || [],
-    highlights: row.highlights || [],
-    areasToReview: row.areas_to_review || [],
-    roundStats: row.round_stats,
-    playerAverages: row.player_averages,
-    teamAverages: row.team_averages,
-    strokesGained: row.strokes_gained,
-    patternsDetected: row.patterns_detected || [],
-    patternsRecurring: row.patterns_recurring || [],
-    summary: row.summary,
-    primaryTakeaway: row.primary_takeaway,
+    gapToNextPosition: parseNumeric(row.gap_to_next_position),
+    goalImpacts: (row.goal_impacts || []) as GoalImpact[],
+    highlights: (row.highlights || []) as Highlight[],
+    areasToReview: (row.areas_to_review || []) as AreaToReview[],
+    roundStats: row.round_stats as RoundStats,
+    playerAverages: row.player_averages as RoundStats,
+    teamAverages: row.team_averages as RoundStats | null,
+    strokesGained: row.strokes_gained as StrokesGainedBreakdown | null,
+    patternsDetected: (row.patterns_detected || []) as Pattern[],
+    patternsRecurring: (row.patterns_recurring || []) as Pattern[],
+    summary: row.summary ?? '',
+    primaryTakeaway: row.primary_takeaway ?? '',
     nextPracticePriority: row.next_practice_priority,
     linkedFocusAreaId: row.linked_focus_area_id,
     sharedWithCoach: row.shared_with_coach,
@@ -91,8 +99,10 @@ export function useRoundReview(roundId: string | null) {
       setLoading(true);
       setError(null);
 
-      // Note: golf_round_reviews table types will be available after running db:types
-      const { data, error: fetchError } = await supabase
+      // Note: golf_round_reviews table may not exist in generated types yet
+      // Using type assertion to bypass TypeScript until types are regenerated
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: fetchError } = await (supabase as any)
         .from('golf_round_reviews')
         .select('*')
         .eq('round_id', currentRoundId)
@@ -105,7 +115,7 @@ export function useRoundReview(roundId: string | null) {
       }
 
       if (data) {
-        setReview(dbToReview(data));
+        setReview(dbToReview(data as RoundReviewDbRow));
       }
       // If no data, review needs to be generated
 
@@ -146,8 +156,9 @@ export function useRoundReview(roundId: string | null) {
   const shareWithCoach = useCallback(async () => {
     if (!review?.id) return false;
 
-    // Note: golf_round_reviews table types will be available after running db:types
-    const { error: updateError } = await supabase
+    // Note: golf_round_reviews table may not exist in generated types yet
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase as any)
       .from('golf_round_reviews')
       .update({
         shared_with_coach: true,

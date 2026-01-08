@@ -72,8 +72,18 @@ export function useNotifications({
       const result = await getNotifications(limit);
 
       if (result.success) {
-        setNotifications(result.data);
-        setUnreadCount(result.data.filter((n: Notification) => !n.read).length);
+        // Map CalendarNotification to local Notification type (handle null → false for read)
+        const mappedNotifications: Notification[] = result.data.map((n) => ({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          read: n.read ?? false,
+          action_url: n.action_url,
+          created_at: n.created_at ?? new Date().toISOString(),
+        }));
+        setNotifications(mappedNotifications);
+        setUnreadCount(mappedNotifications.filter((n) => !n.read).length);
       } else {
         setError(result.error);
       }

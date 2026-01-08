@@ -109,13 +109,17 @@ export async function generateRoundReview(input: GenerateReviewInput): Promise<R
   const strokesGained = calculateStrokesGained(roundData.shots || [], roundData.holes || []);
 
   // 9. Detect highlights
-  const highlights = detectHighlights(roundData, roundStats, playerAverages);
+  // Note: Type assertions needed because local GolfHole allows undefined while detector expects required fields
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const highlights = detectHighlights(roundData as any, roundStats, playerAverages);
 
   // 10. Detect areas to review
-  const areasToReview = detectAreasToReview(roundData, roundStats, playerAverages);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const areasToReview = detectAreasToReview(roundData as any, roundStats, playerAverages);
 
   // 11. Detect patterns (comparing to previous rounds)
-  const { newPatterns, recurringPatterns } = detectPatterns(roundData, previousRoundsData);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { newPatterns, recurringPatterns } = detectPatterns(roundData as any, previousRoundsData as any);
 
   // 12. Calculate goal impacts
   const goalImpacts = calculateGoalImpacts(goals, roundStats, playerAverages, player);

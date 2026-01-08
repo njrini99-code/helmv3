@@ -25,22 +25,36 @@ export function useTeamMembers(teamId?: string) {
             .from('team_members')
             .select(`
               id,
-              user_id,
-              users (
+              player_id,
+              players:player_id (
                 id,
-                full_name,
-                avatar_url
+                first_name,
+                last_name,
+                avatar_url,
+                user_id
               )
             `)
             .eq('team_id', teamId);
 
           if (membersError) throw membersError;
 
-          const teamMembers = (data || []).map((member: { id: string; user_id: string; users?: { id: string; full_name?: string; avatar_url?: string } | null }) => ({
+          interface MemberRow {
+            id: string;
+            player_id: string;
+            players?: {
+              id: string;
+              first_name?: string;
+              last_name?: string;
+              avatar_url?: string;
+              user_id?: string;
+            } | null;
+          }
+
+          const teamMembers = ((data || []) as unknown as MemberRow[]).map((member) => ({
             id: member.id,
-            user_id: member.user_id,
-            full_name: member.users?.full_name || 'Unknown',
-            avatar_url: member.users?.avatar_url,
+            user_id: member.players?.user_id || member.player_id,
+            full_name: member.players ? `${member.players.first_name || ''} ${member.players.last_name || ''}`.trim() || 'Unknown' : 'Unknown',
+            avatar_url: member.players?.avatar_url,
             role: 'player' as const,
           }));
 

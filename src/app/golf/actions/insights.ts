@@ -17,7 +17,7 @@ interface InsightRecord {
   coach_id: string;
   team_id: string;
   insight_type: string;
-  priority: number;
+  priority: string;
   player_id: string;
   title: string;
   description: string;

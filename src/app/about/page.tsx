@@ -1,36 +1,42 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Target, Users, Zap, Shield, Trophy, Heart } from 'lucide-react';
+import { ArrowRight, Compass, Layers, Sparkles, Target } from 'lucide-react';
 
-const values = [
+const ambitions = [
   {
     icon: Target,
-    title: 'Player-First',
-    description: 'Every feature we build starts with one question: does this help athletes achieve their dreams?',
+    title: 'Make talent visible',
+    description: 'Surface athletes on merit, not connections, with trusted performance data and real context.',
   },
   {
-    icon: Users,
-    title: 'Connection',
-    description: 'We believe the right connection at the right time can change everything. We make those connections happen.',
+    icon: Compass,
+    title: 'Guide better decisions',
+    description: 'Give coaches a clear, unbiased view of fit, readiness, and trajectory across every level.',
   },
   {
-    icon: Zap,
-    title: 'Simplicity',
-    description: 'Recruiting is complex enough. Our platform makes it simple, intuitive, and dare we say—enjoyable.',
-  },
-  {
-    icon: Shield,
-    title: 'Trust',
-    description: 'Athletes and coaches trust us with their futures. We take that responsibility seriously.',
+    icon: Layers,
+    title: 'Unify the workflow',
+    description: 'Replace scattered tools with one system that connects recruiting, development, and communication.',
   },
 ];
 
-const stats = [
-  { value: '10,000+', label: 'Athletes' },
-  { value: '500+', label: 'Programs' },
-  { value: '1,000+', label: 'Commitments' },
-  { value: '50', label: 'States' },
+const principles = [
+  {
+    icon: Sparkles,
+    title: 'Clarity over noise',
+    description: 'We focus on the signal that matters most to athletes and programs.',
+  },
+  {
+    icon: Target,
+    title: 'Athlete-centered',
+    description: 'Every workflow should help players improve, get seen, and land in the right environment.',
+  },
+  {
+    icon: Compass,
+    title: 'Trust and accountability',
+    description: 'We build with integrity, privacy, and long-term outcomes as the baseline.',
+  },
 ];
 
 export default function AboutPage() {
@@ -39,13 +45,14 @@ export default function AboutPage() {
       {/* Navigation */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#FAF6F1] supports-[backdrop-filter]:bg-[#FAF6F1]/80 supports-[backdrop-filter]:backdrop-blur-xl border-b border-slate-200/50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-3">
             <img
-              src="/helm-main-logo.png"
-              alt="Helm Sports Lab"
-              className="h-10 w-auto"
+              src="/Helm-Logo-New-Main.png"
+              alt="Helm Sports Labs"
+              className="h-9 w-auto"
               style={{ mixBlendMode: 'multiply' }}
             />
+            <span className="font-semibold text-slate-900 text-base sm:text-lg">Helm Sports Labs</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/" className="text-slate-600 hover:text-slate-900 transition-colors">
@@ -67,97 +74,79 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="pt-32 pb-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/80 border border-slate-200 text-xs uppercase tracking-[0.2em] text-slate-500 mb-6">
+            Why Helm Exists
+          </div>
           <h1 className="text-5xl md:text-6xl font-bold text-slate-900 tracking-tight mb-6">
-            The Future of
-            <span className="text-green-600"> Sports Recruiting</span>
+            Build a recruiting system
+            <span className="text-green-600"> athletes can trust</span>
           </h1>
           <p className="text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto">
-            Helm Sports Lab is building the platform that connects talented athletes 
-            with the programs where they&apos;ll thrive. No more missed opportunities. 
-            No more guesswork. Just the right match.
+            Recruiting should reward talent, effort, and fit. We&apos;re creating the platform
+            that gives athletes visibility and gives coaches the confidence to make the right call.
           </p>
         </div>
       </section>
 
-      {/* Mission */}
+      {/* Why */}
       <section className="py-20 px-6 bg-white">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="grid md:grid-cols-2 gap-12 items-start">
             <div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-6">Our Mission</h2>
+              <h2 className="text-3xl font-bold text-slate-900 mb-6">Why</h2>
               <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                Every year, thousands of talented athletes miss out on opportunities 
-                because the recruiting process is broken. Coaches can&apos;t find the right 
-                players. Players don&apos;t know which programs are interested.
-              </p>
-              <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                We started Helm to fix that. Our platform gives coaches powerful 
-                discovery tools and gives athletes visibility they&apos;ve never had before. 
-                The result? Better matches, more opportunities, and athletes playing 
-                at programs where they belong.
+                The recruiting process is fragmented. Athletes have to prove themselves
+                across disconnected platforms, and coaches are forced to make decisions
+                without a complete picture of performance or potential.
               </p>
               <p className="text-lg text-slate-600 leading-relaxed">
-                Whether you&apos;re a D1 program or a small-town high school player with 
-                big dreams, Helm levels the playing field.
+                Helm exists to bring transparency and structure to that journey, so the
+                right athletes and programs can find each other with confidence.
               </p>
             </div>
-            <div className="relative">
-              <div className="aspect-square rounded-3xl bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center">
-                <Trophy size={120} className="text-green-600/30" />
-              </div>
-              <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl shadow-xl p-6 border border-slate-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                    <Heart size={24} className="text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-900">Built with passion</p>
-                    <p className="text-sm text-slate-500">By athletes, for athletes</p>
-                  </div>
+            <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm">
+              <div className="flex items-center gap-4 mb-6">
+                <img
+                  src="/Helm-Logo-New-Main.png"
+                  alt="Helm Sports Labs"
+                  className="h-12 w-auto"
+                  style={{ mixBlendMode: 'multiply' }}
+                />
+                <div>
+                  <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Our Why</p>
+                  <p className="text-lg font-semibold text-slate-900">Opportunity should be earned</p>
                 </div>
               </div>
+              <p className="text-slate-600 leading-relaxed">
+                We&apos;re building a recruiting system that values consistency, growth, and fit,
+                giving every athlete a real chance to be discovered.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-16 px-6 bg-slate-900">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p className="text-4xl md:text-5xl font-bold text-white mb-2">
-                  {stat.value}
-                </p>
-                <p className="text-slate-400">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Values */}
+      {/* What we want to accomplish */}
       <section className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">What We Believe</h2>
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">What we want to accomplish</h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              These principles guide everything we build
+              A single, modern platform that aligns athlete development with recruiting outcomes.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {values.map((value) => (
+          <div className="grid md:grid-cols-3 gap-6">
+            {ambitions.map((item) => (
               <div
-                key={value.title}
+                key={item.title}
                 className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-green-200 hover:shadow-lg transition-all"
               >
                 <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mb-4">
-                  <value.icon size={24} className="text-green-600" />
+                  <item.icon size={22} className="text-green-600" />
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-2">{value.title}</h3>
+                <h3 className="font-semibold text-slate-900 mb-2">{item.title}</h3>
                 <p className="text-slate-600 text-sm leading-relaxed">
-                  {value.description}
+                  {item.description}
                 </p>
               </div>
             ))}
@@ -165,25 +154,30 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Team */}
+      {/* Principles */}
       <section className="py-20 px-6 bg-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">Built by Athletes</h2>
-          <p className="text-lg text-slate-600 leading-relaxed mb-8">
-            Our team includes former college athletes, coaches, and recruiting 
-            coordinators who&apos;ve experienced the process firsthand. We know what&apos;s 
-            broken because we&apos;ve lived it. And we&apos;re obsessed with making it better.
-          </p>
-          <div className="inline-flex items-center gap-4 px-6 py-3 bg-slate-100 rounded-full">
-            <div className="flex -space-x-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 border-2 border-white"
-                />
-              ))}
-            </div>
-            <span className="text-slate-600">And the team keeps growing...</span>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">How we build</h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Principles that keep us honest and focused on outcomes.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {principles.map((item) => (
+              <div
+                key={item.title}
+                className="bg-[#FAF6F1] rounded-2xl p-6 border border-slate-200 hover:border-green-200 hover:shadow-lg transition-all"
+              >
+                <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center mb-4">
+                  <item.icon size={22} className="text-green-600" />
+                </div>
+                <h3 className="font-semibold text-slate-900 mb-2">{item.title}</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  {item.description}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -198,8 +192,7 @@ export default function AboutPage() {
                 Ready to get started?
               </h2>
               <p className="text-slate-300 text-lg mb-8 max-w-xl mx-auto">
-                Join thousands of athletes and coaches already using Helm to 
-                transform their recruiting journey.
+                Start building a clearer recruiting process for your program or your athletes.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
@@ -226,14 +219,14 @@ export default function AboutPage() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <img
-              src="/helm-main-logo.png"
-              alt="Helm Sports Lab"
+              src="/Helm-Logo-New-Main.png"
+              alt="Helm Sports Labs"
               className="h-8 w-auto"
               style={{ mixBlendMode: 'multiply' }}
             />
           </div>
           <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} Helm Sports Lab. All rights reserved.
+            Copyright {new Date().getFullYear()} Helm Sports Labs. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <Link href="/help" className="text-slate-600 hover:text-slate-900 text-sm">
