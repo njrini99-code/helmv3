@@ -56,8 +56,8 @@ interface AvailabilityConflict {
   block_end_date: string;
 }
 
-type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
-type GolfEventStatus = 'draft' | 'confirmed' | 'cancelled' | 'completed';
+type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | 'class';
+type GolfEventStatus = 'draft' | 'confirmed' | 'cancelled';
 
 interface DetectConflictsParams {
   p_event_id: string | null;
@@ -94,14 +94,14 @@ export async function checkEventConflicts(
 
     const { data: conflicts, error } = await supabase
       .rpc('detect_event_conflicts', {
-        p_event_id: eventId || null,
+        p_event_id: eventId || '',
         p_team_id: teamId,
         p_start_date: startDate,
-        p_end_date: endDate || '',
-        p_start_time: startTime || '',
-        p_end_time: endTime || '',
+        p_end_date: endDate || startDate,
+        p_start_time: startTime || '00:00',
+        p_end_time: endTime || '23:59',
         p_ignore_conflicts: false,
-      } as DetectConflictsParams);
+      });
 
     if (error) {
       return { success: false, error: error.message };

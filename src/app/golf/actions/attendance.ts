@@ -34,19 +34,24 @@ interface AttendanceRecord {
   id: string;
   event_id: string;
   player_id: string;
-  status: string;
-  check_in_time: string | null;
-  check_in_method: CheckInMethod | null;
+  status: string | null;
+  checked_in: boolean | null;
+  checked_in_at: string | null;
+  check_in_method: string | null;
   checked_in_by: string | null;
   player: AttendancePlayer | null;
 }
 
 interface AttendanceSummary {
-  event_id: string;
-  total_expected: number;
-  checked_in: number;
-  no_show: number;
-  excused: number;
+  event_id: string | null;
+  event_title: string | null;
+  start_date: string | null;
+  team_id: string | null;
+  total_rsvps: number | null;
+  rsvp_yes: number | null;
+  checked_in_count: number | null;
+  no_show_count: number | null;
+  attendance_percentage: number | null;
 }
 
 interface AttendanceReport {
@@ -55,12 +60,15 @@ interface AttendanceReport {
 }
 
 interface PlayerAttendanceStats {
-  player_id: string;
-  total_events: number;
-  attended: number;
-  no_shows: number;
-  excused: number;
-  attendance_rate: number;
+  player_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  team_id: string | null;
+  total_events: number | null;
+  attended_count: number | null;
+  rsvp_yes_count: number | null;
+  no_show_count: number | null;
+  attendance_rate: number | null;
 }
 
 // ============================================================================
@@ -311,8 +319,8 @@ export async function getAttendanceReport(
     return {
       success: true,
       data: {
-        summary,
-        attendance,
+        summary: summary as unknown as AttendanceSummary | null,
+        attendance: attendance as unknown as AttendanceRecord[] | null,
       },
     };
   } catch (error) {
@@ -352,7 +360,7 @@ export async function getPlayerAttendanceStats(
       return { success: false, error: error.message };
     }
 
-    return { success: true, data };
+    return { success: true, data: data as unknown as PlayerAttendanceStats[] };
   } catch (error) {
     return {
       success: false,

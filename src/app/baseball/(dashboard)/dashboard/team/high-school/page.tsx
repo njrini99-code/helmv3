@@ -149,7 +149,7 @@ export default function HSCoachDashboardPage() {
       .select(`
         id,
         created_at,
-        event_type,
+        engagement_type,
         coach:coaches(full_name, school_name, division),
         player:players!inner(first_name, last_name, id)
       `)
@@ -162,14 +162,14 @@ export default function HSCoachDashboardPage() {
       type InterestEvent = {
         id: string;
         created_at: string;
-        event_type: string;
+        engagement_type: string;
         coach: { full_name: string | null; school_name: string | null; division: string | null } | null;
         player: { first_name: string | null; last_name: string | null; id: string } | null;
       };
-      const formatted = (interests as InterestEvent[]).map((i) => ({
+      const formatted = (interests as unknown as InterestEvent[]).map((i) => ({
         id: i.id,
         created_at: i.created_at,
-        event_type: i.event_type,
+        event_type: i.engagement_type,
         coach_name: i.coach?.full_name || null,
         school_name: i.coach?.school_name || 'Unknown School',
         school_division: i.coach?.division || null,
