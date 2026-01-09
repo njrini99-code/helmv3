@@ -201,7 +201,6 @@ export async function createConversation({
   }
 
   // Create new conversation using SECURITY DEFINER function (bypasses RLS issues)
-  // @ts-expect-error - RPC function not in generated types, but exists in database
   const { data: conversationId, error: convError } = await supabase.rpc('create_conversation_with_participants', {
     participant_user_ids: participantUserIds,
   }) as {
