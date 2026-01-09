@@ -33,6 +33,7 @@ function extractTablesFromDatabaseTypes(): Map<string, TableInfo> {
   
   while ((match = tableRegex.exec(content)) !== null) {
     const tableName = match[1];
+    if (!tableName) continue;
     const columns = new Set<string>();
     
     // Find the Row type for this table
@@ -51,7 +52,9 @@ function extractTablesFromDatabaseTypes(): Map<string, TableInfo> {
     const columnRegex = /^\s+([a-z_]+):\s+/gm;
     let colMatch;
     while ((colMatch = columnRegex.exec(rowSection)) !== null) {
-      columns.add(colMatch[1]);
+      if (colMatch[1]) {
+        columns.add(colMatch[1]);
+      }
     }
     
     tables.set(tableName, { name: tableName, columns });
@@ -79,6 +82,7 @@ async function extractTableUsage(): Promise<Map<string, Set<string>>> {
       
       while ((match = fromRegex.exec(content)) !== null) {
         const tableName = match[1];
+        if (!tableName) continue;
         
         // Skip if it's a type assertion (already flagged)
         const lineStart = content.lastIndexOf('\n', match.index);
@@ -165,7 +169,7 @@ async function main() {
     lines.forEach((line, index) => {
       if (line.includes('as never') || line.includes('as PendingMigrationTable')) {
         const fromMatch = line.match(/\.from\(['"]([^'"]+)['"]\)/);
-        if (fromMatch) {
+        if (fromMatch && fromMatch[1]) {
           const tableName = fromMatch[1];
           if (tables.has(tableName)) {
             typeAssertions.push({

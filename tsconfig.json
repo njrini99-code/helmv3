@@ -67,6 +67,7 @@
     "node_modules",
     "next-shadcn-dashboard-starter",
     "archive",
-    "helm-intelligence"
+    "helm-intelligence",
+    "scripts"
   ]
 }
