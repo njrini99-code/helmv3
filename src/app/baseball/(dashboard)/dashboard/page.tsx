@@ -124,7 +124,7 @@ export default function DashboardPage() {
           return;
         case 'showcase':
           // Showcase coaches go to team/org dashboard
-          router.replace('/baseball/dashboard/team');
+          router.replace('/baseball/dashboard/organization');
           return;
         case 'juco':
           // JUCO respects mode toggle

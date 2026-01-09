@@ -27,6 +27,10 @@ export function PredictionCard({ prediction, playerName }: PredictionCardProps) 
   };
 
   const confidencePercent = Math.round((prediction.calibratedConfidence ?? prediction.confidence) * 100);
+  const rangeLow = prediction.predictionRange?.low ?? prediction.predictedRangeLow;
+  const rangeHigh = prediction.predictionRange?.high ?? prediction.predictedRangeHigh;
+  const hasRange = Number.isFinite(rangeLow) && Number.isFinite(rangeHigh);
+  const factors = prediction.factors ?? prediction.keyFactors ?? [];
 
   // Type guard for TailRiskProbabilities
   const isTailRiskProbabilities = (
@@ -73,7 +77,7 @@ export function PredictionCard({ prediction, playerName }: PredictionCardProps) 
       </div>
 
       {/* Confidence Range */}
-      {prediction.predictionRange && (
+      {hasRange && (
         <div className="mb-4">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
             <span>Likely Range</span>
@@ -88,20 +92,20 @@ export function PredictionCard({ prediction, playerName }: PredictionCardProps) 
             />
           </div>
           <div className="flex justify-between mt-1 text-xs text-slate-400">
-            <span>{formatScore(prediction.predictionRange.low)}</span>
-            <span>{formatScore(prediction.predictionRange.high)}</span>
+            <span>{formatScore(rangeLow)}</span>
+            <span>{formatScore(rangeHigh)}</span>
           </div>
         </div>
       )}
 
       {/* Key Factors */}
-      {prediction.factors && prediction.factors.length > 0 && (
+      {factors.length > 0 && (
         <div>
           <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">
             Key Factors
           </h4>
           <div className="space-y-1">
-            {prediction.factors.slice(0, 3).map((factor: { name: string; contribution: number }, i: number) => (
+            {factors.slice(0, 3).map((factor: { name: string; contribution: number }, i: number) => (
               <div
                 key={i}
                 className="flex items-center justify-between text-sm"

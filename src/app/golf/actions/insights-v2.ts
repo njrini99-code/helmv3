@@ -11,7 +11,7 @@ import {
   isCoachHelmEnabledForCoach,
   isCoachHelmEnabledForPlayer,
 } from '@/lib/coachhelm/v2';
-import type { PlayerAnalysis, ComposedInsight, MinedPattern } from '@/lib/coachhelm/v2/types';
+import type { PlayerAnalysis, ComposedInsight, MinedPattern, PerformancePrediction } from '@/lib/coachhelm/v2/types';
 
 // ============================================================================
 // ANALYZE PLAYER (V2 FULL ANALYSIS)
@@ -60,6 +60,7 @@ export async function generateTeamInsightsV2(): Promise<{
   success: boolean;
   insights?: ComposedInsight[];
   patterns?: MinedPattern[];
+  predictions?: Array<PerformancePrediction & { playerName?: string }>;
   playersAnalyzed?: number;
   error?: string;
 }> {
@@ -106,10 +107,16 @@ export async function generateTeamInsightsV2(): Promise<{
     // 4. Analyze each player with V2 engine
     const allInsights: ComposedInsight[] = [];
     const allPatterns: MinedPattern[] = [];
+    const allPredictions: Array<PerformancePrediction & { playerName?: string }> = [];
     let playersAnalyzed = 0;
 
     for (const player of players) {
       try {
+        const playerName = [player.first_name, player.last_name]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+
         const analysis = await coachHelmIntelligence.analyzePlayer(player.id, {
           includePatterns: true,
           includeCausal: true,
@@ -128,6 +135,15 @@ export async function generateTeamInsightsV2(): Promise<{
           // Collect patterns
           if (analysis.patterns) {
             allPatterns.push(...analysis.patterns.filter(p => p.isActive));
+          }
+
+          if (analysis.predictions) {
+            for (const prediction of analysis.predictions) {
+              allPredictions.push({
+                ...prediction,
+                playerName: playerName || undefined,
+              });
+            }
           }
         }
       } catch {
@@ -167,6 +183,7 @@ export async function generateTeamInsightsV2(): Promise<{
       success: true,
       insights: allInsights,
       patterns: allPatterns,
+      predictions: allPredictions,
       playersAnalyzed,
     };
   } catch {

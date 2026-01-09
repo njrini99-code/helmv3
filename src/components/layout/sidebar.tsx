@@ -69,7 +69,7 @@ const jucoTeamNav = [
 
 // Showcase Coach - Organization Mode (manages multiple teams)
 const showcaseOrgNav = [
-  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+  { name: 'Dashboard', href: '/baseball/dashboard/organization', icon: IconHome },
   { name: 'Teams', href: '/baseball/dashboard/teams', icon: IconLayers },
   { name: 'Events', href: '/baseball/dashboard/events', icon: IconCalendar },
   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },

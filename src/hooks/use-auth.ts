@@ -53,9 +53,21 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const maxAgeDays = 30;
+    const maxAgeSeconds = maxAgeDays * 24 * 60 * 60;
+    document.cookie = `coach_mode=${encodeURIComponent(
+      coachMode
+    )}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax`;
+  }, [coachMode]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
     clear();
+    if (typeof document !== 'undefined') {
+      document.cookie = 'coach_mode=; Path=/; Max-Age=0; SameSite=Lax';
+    }
     router.push('/baseball/login');
   };
 

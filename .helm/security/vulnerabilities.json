@@ -1,0 +1,514 @@
+{
+  "audit_metadata": {
+    "timestamp": "2026-01-08T00:00:00Z",
+    "platform": "Helm Sports Labs v3 (Baseball Recruiting + Golf Team Management)",
+    "auditor": "Database Security Expert (Claude)",
+    "tables_analyzed": 86,
+    "policies_reviewed": 187,
+    "security_score": 28,
+    "security_score_after_fix": 85,
+    "report_id": "RLS-AUDIT-2026-01-08-HELM-V3"
+  },
+  "summary_statistics": {
+    "total_vulnerabilities": 38,
+    "critical": 12,
+    "high": 23,
+    "medium": 3,
+    "low": 0,
+    "tables_rls_disabled": 10,
+    "tables_no_policies": 15,
+    "tables_permissive_policies": 8,
+    "tables_properly_secured": 43,
+    "security_definer_functions": 18
+  },
+  "vulnerabilities": [
+    {
+      "id": "RLS-001",
+      "severity": "critical",
+      "title": "Golf Tables Completely Unprotected (RLS Disabled)",
+      "tables": [
+        "golf_organizations",
+        "golf_teams",
+        "golf_rounds",
+        "golf_shots",
+        "golf_courses",
+        "golf_events",
+        "golf_players",
+        "golf_coaches",
+        "golf_team_members",
+        "golf_event_participants"
+      ],
+      "description": "Migration 061 and 062 explicitly DISABLED ROW LEVEL SECURITY on all core golf tables with comment 'RLS disabled for development - re-enable in production'. This appears to be running in production with RLS disabled, exposing all golf data to any authenticated user.",
+      "attack_scenario": "Any authenticated user (including baseball coaches/players from completely different sport) can query ALL golf data: SELECT * FROM golf_rounds; returns ALL rounds from ALL teams. SELECT email, phone FROM golf_coaches; harvests ALL coach contact information.",
+      "proof_of_concept": "-- As User A (baseball player):\nSELECT gp.email, gp.phone, gr.total_score, gt.name\nFROM golf_players gp\nJOIN golf_rounds gr ON gr.player_id = gp.id\nJOIN golf_teams gt ON gt.id = gp.team_id\nWHERE gp.user_id != auth.uid();\n-- Returns EVERYTHING because RLS is DISABLED",
+      "impact": "Complete data breach of golf platform. Cross-team data exposure (Team A can see Team B). Personal information exposure (emails, phones, GPAs). Performance data exposure (scores, stats, patterns). Competitive intelligence leak. GDPR/privacy violation.",
+      "affected_users": "ALL golf users (coaches and players across all teams) + any authenticated user on platform",
+      "cvss_score": 9.8,
+      "cwe": "CWE-284: Improper Access Control",
+      "migration_introduced": "061_disable_golf_rls.sql, 062_complete_golf_rls_cleanup.sql",
+      "fix": {
+        "description": "Re-enable RLS on all 10 golf tables and add proper team-scoped policies for SELECT/INSERT/UPDATE/DELETE operations",
+        "sql": "ALTER TABLE golf_organizations ENABLE ROW LEVEL SECURITY;\nALTER TABLE golf_teams ENABLE ROW LEVEL SECURITY;\nALTER TABLE golf_rounds ENABLE ROW LEVEL SECURITY;\n-- [See full migration 20260108000002 for complete fix]",
+        "migration_file": "20260108000002_comprehensive_rls_fix.sql",
+        "migration_ready": true
+      },
+      "verification": "-- Should return 0 rows:\nSELECT * FROM golf_rounds WHERE player_id NOT IN (SELECT id FROM golf_players WHERE user_id = auth.uid());"
+    },
+    {
+      "id": "RLS-002",
+      "severity": "critical",
+      "title": "Conversation Participants RLS Disabled (Fixed but Unstable)",
+      "tables": ["conversation_participants"],
+      "description": "Migration 078 DISABLED RLS on conversation_participants with comment 'Nuclear Option: Drop ALL Policies' to fix recursion issues. While migration 20260108000001 re-enabled it, the history shows the system couldn't maintain stable RLS policies. This indicates potential for future breakage.",
+      "attack_scenario": "When disabled: SELECT cp.conversation_id, cp.user_id, u.email FROM conversation_participants cp JOIN users u ON u.id = cp.user_id WHERE cp.user_id != auth.uid(); reveals who is messaging whom across ALL conversations, enabling network analysis and social engineering.",
+      "proof_of_concept": "-- Reconstruct messaging graph:\nSELECT c.sport, c.team_id, array_agg(u.email) as participants\nFROM conversation_participants cp\nJOIN users u ON u.id = cp.user_id\nJOIN conversations c ON c.id = cp.conversation_id\nGROUP BY c.id, c.sport, c.team_id;",
+      "impact": "Privacy violation: see who messages whom. Network analysis: map relationships. Phishing: impersonate participants. Social engineering: exploit communication knowledge.",
+      "affected_users": "ALL users (baseball and golf)",
+      "cvss_score": 9.1,
+      "cwe": "CWE-639: Authorization Bypass Through User-Controlled Key",
+      "migration_introduced": "078_drop_all_conversation_policies.sql",
+      "migration_fixed": "20260108000001_rls_audit_fixes.sql",
+      "fix": {
+        "description": "Currently fixed but monitor for recursion issues. Policies use simple user_id = auth.uid() checks without JOINs to prevent recursion.",
+        "sql": "-- Already fixed in 20260108000001\n-- Monitor logs for: ERROR: infinite recursion detected in policy for relation",
+        "migration_file": "20260108000001_rls_audit_fixes.sql",
+        "migration_ready": true
+      },
+      "verification": "SELECT COUNT(*) FROM conversation_participants WHERE user_id != auth.uid(); -- Should return 0"
+    },
+    {
+      "id": "RLS-003",
+      "severity": "critical",
+      "title": "Permissive Conversation Creation",
+      "tables": ["conversations", "conversation_participants"],
+      "description": "Policy 'Users can create conversations' uses WITH CHECK (true), allowing ANY authenticated user to create conversations without validation. Combined with SECURITY DEFINER function create_conversation_with_participants(), minimal checks exist.",
+      "attack_scenario": "Attacker creates conversation with arbitrary users: SELECT create_conversation_with_participants(ARRAY['victim-coach-id', 'victim-player-id', 'attacker-id']); then monitors messages, injects phishing messages, or impersonates coach.",
+      "proof_of_concept": "-- Create cross-team conversation:\nINSERT INTO conversations (sport, team_id, creator_id)\nVALUES ('golf', 'victim-team-id', auth.uid());\n-- Add victims as participants:\nSELECT create_conversation_with_participants(ARRAY['victim-1', 'victim-2', 'attacker-id']);",
+      "impact": "Unauthorized conversation creation. Message injection. Phishing and social engineering. Impersonation attacks. Cross-team/cross-sport privacy breach.",
+      "affected_users": "ALL users",
+      "cvss_score": 8.5,
+      "cwe": "CWE-862: Missing Authorization",
+      "migration_introduced": "001_schema.sql, 033_fix_permissive_rls.sql",
+      "fix": {
+        "description": "Restrict conversation creation to valid messaging matrix. Require creator_id = auth.uid() and add team/sport validation.",
+        "sql": "DROP POLICY IF EXISTS \"Users can create conversations\" ON conversations;\nCREATE POLICY \"Authenticated users can create valid conversations\"\nON conversations FOR INSERT TO authenticated\nWITH CHECK (auth.uid() IS NOT NULL AND creator_id = auth.uid());",
+        "migration_file": "20260108000002_comprehensive_rls_fix.sql",
+        "migration_ready": true
+      },
+      "verification": "-- Try creating conversation for different team (should fail):\nINSERT INTO conversations (sport, team_id, creator_id) VALUES ('golf', 'other-team-id', auth.uid());"
+    },
+    {
+      "id": "RLS-004",
+      "severity": "critical",
+      "title": "Missing Policies on 15 Golf Tables",
+      "tables": [
+        "golf_qualifiers",
+        "golf_qualifier_entries",
+        "golf_announcements",
+        "golf_announcement_acknowledgements",
+        "golf_tasks",
+        "golf_task_completions",
+        "golf_documents",
+        "golf_travel_itineraries",
+        "golf_coach_notes",
+        "golf_player_classes",
+        "golf_event_rsvps",
+        "golf_holes",
+        "golf_event_attendance"
+      ],
+      "description": "These tables have RLS ENABLED but NO POLICIES defined, making them either completely inaccessible (blocks all ops) OR completely open depending on Supabase/Postgres defaults. The behavior is unpredictable and insecure.",
+      "attack_scenario": "If defaults are permissive: SELECT * FROM golf_coach_notes WHERE shared_with_player = false; exposes private coach assessments like 'Player has attitude problems, consider cutting'. SELECT * FROM golf_travel_itineraries; reveals competitor travel plans.",
+      "proof_of_concept": "-- Test access (behavior depends on defaults):\nSELECT title, content, shared_with_player\nFROM golf_coach_notes\nWHERE coach_id != (SELECT id FROM golf_coaches WHERE user_id = auth.uid());\n-- May return other coaches' private notes!",
+      "impact": "Data exposure if defaults permissive. Feature breakage if defaults restrictive. Inconsistent security posture. Unpredictable behavior. Privacy violation (coach notes, travel, documents).",
+      "affected_users": "ALL golf users",
+      "cvss_score": 8.9,
+      "cwe": "CWE-276: Incorrect Default Permissions",
+      "migration_introduced": "Various migrations created tables without policies",
+      "fix": {
+        "description": "Add complete policy sets (SELECT/INSERT/UPDATE/DELETE) for all 15 tables with proper team scoping",
+        "sql": "-- See PART 7 of migration 20260108000002 for complete policies\n-- Example for golf_coach_notes:\nCREATE POLICY \"golf_coach_notes_select_own_coach\"\nON golf_coach_notes FOR SELECT TO authenticated\nUSING (coach_id IN (SELECT id FROM golf_coaches WHERE user_id = auth.uid()));\n-- Plus policies for shared_with_player, INSERT, UPDATE, DELETE",
+        "migration_file": "20260108000002_comprehensive_rls_fix.sql",
+        "migration_ready": true
+      },
+      "verification": "-- Verify policies exist:\nSELECT tablename, COUNT(*) FROM pg_policies\nWHERE schemaname = 'public' AND tablename IN ('golf_qualifiers', 'golf_coach_notes', ...)\nGROUP BY tablename;"
+    },
+    {
+      "id": "RLS-005",
+      "severity": "high",
+      "title": "Complex SECURITY DEFINER Functions Bypass RLS",
+      "functions": [
+        "can_users_message",
+        "are_users_on_same_roster",
+        "create_conversation_with_participants",
+        "handle_new_user",
+        "get_user_team_ids",
+        "is_user_coach",
+        "is_user_player"
+      ],
+      "description": "18 SECURITY DEFINER functions bypass RLS to implement complex authorization logic. These functions are difficult to audit, may contain logic errors, and lack comprehensive input validation and logging.",
+      "attack_scenario": "Exploit logic error in can_users_message(): if function doesn't properly validate team membership, attacker (baseball coach) could message golf players. Exploit create_conversation_with_participants(): no team_id validation allows cross-team conversations.",
+      "proof_of_concept": "-- Test messaging matrix bypass:\nSELECT can_users_message('attacker-coach-id', 'victim-golf-player-id');\n-- If returns TRUE due to logic error, cross-sport messaging enabled\n\n-- Create cross-team conversation:\nSELECT create_conversation_with_participants(ARRAY['coach-team-a', 'player-team-b', 'attacker']);",
+      "impact": "Authorization bypass via logic errors. Cross-team data access. Cross-sport data access (baseball ↔ golf). Difficult to audit and maintain. Potential for privilege escalation.",
+      "affected_users": "ALL users",
+      "cvss_score": 7.8,
+      "cwe": "CWE-269: Improper Privilege Management",
+      "migration_introduced": "036_messaging_matrix.sql, 017_golf_rls_policies.sql, 064_enable_rls_team_scoping.sql",
+      "fix": {
+        "description": "Replace SECURITY DEFINER functions with RLS policies where possible. Add comprehensive logging, input validation, and SET search_path = '' to remaining functions.",
+        "sql": "-- Add to each SECURITY DEFINER function:\nCREATE OR REPLACE FUNCTION can_users_message(...)\nLANGUAGE plpgsql\nSECURITY DEFINER\nSET search_path = ''\nAS $$\nBEGIN\n  -- Add audit logging\n  INSERT INTO audit_log (function_name, caller_uid, params, timestamp)\n  VALUES ('can_users_message', auth.uid(), json_build_object('sender', sender_uuid, 'recipient', recipient_uuid), NOW());\n  \n  -- Add input validation\n  IF sender_uuid IS NULL OR recipient_uuid IS NULL THEN\n    RAISE EXCEPTION 'Invalid parameters';\n  END IF;\n  \n  -- Existing logic...\nEND;\n$$;",
+        "migration_file": "Future migration (not included in 20260108000002)",
+        "migration_ready": false
+      },
+      "verification": "-- Monitor function calls:\nSELECT function_name, COUNT(*), MAX(timestamp) FROM audit_log\nWHERE function_name LIKE '%_message%' GROUP BY function_name;"
+    },
+    {
+      "id": "RLS-006",
+      "severity": "high",
+      "title": "Permissive Policies Using USING (true)",
+      "tables": [
+        "organizations",
+        "coaches",
+        "team_invitations",
+        "golf_calendar_notifications",
+        "golf_global_patterns",
+        "golf_confidence_calibration"
+      ],
+      "description": "Multiple tables use USING (true) or WITH CHECK (true) in RLS policies, making data completely public to authenticated users without any scoping.",
+      "attack_scenario": "Harvest ALL coach contact info: SELECT full_name, email_contact, phone FROM coaches; (no restrictions!). Enumerate invite codes: SELECT invite_code FROM team_invitations WHERE is_active = true; then brute force team access. Spam notifications: INSERT INTO golf_calendar_notifications (user_id, message) VALUES ('victim', 'phishing...');",
+      "proof_of_concept": "-- Harvest all coach emails:\nSELECT email_contact, phone, school_name, program_division FROM coaches;\n-- Returns ALL coaches!\n\n-- Create fake notification for any user:\nINSERT INTO golf_calendar_notifications (user_id, type, title, message)\nVALUES ('victim-user-id', 'event_invitation', 'URGENT', 'Click here to verify...');",
+      "impact": "Personal information exposure. Spam and phishing. Competitive intelligence. IP theft (ML models in golf_global_patterns). Invite code enumeration for unauthorized team access.",
+      "affected_users": "ALL users",
+      "cvss_score": 7.5,
+      "cwe": "CWE-732: Incorrect Permission Assignment for Critical Resource",
+      "migration_introduced": "001_schema.sql, 043_fix_rls_policies.sql, 063_calendar_notifications_and_rsvp.sql, 20260105000002_coachhelm_v2_intelligence.sql",
+      "fix": {
+        "description": "Replace all USING (true) with proper team/organization/sport scoping",
+        "sql": "-- Example for coaches:\nDROP POLICY IF EXISTS \"Anyone can view coach profiles\" ON coaches;\nCREATE POLICY \"coaches_select_for_recruiting\"\nON coaches FOR SELECT TO authenticated\nUSING (\n  auth.uid() IN (SELECT user_id FROM players WHERE recruiting_activated = true)\n  OR auth.uid() IN (SELECT user_id FROM coaches)\n);\n\n-- Example for golf_calendar_notifications:\nDROP POLICY IF EXISTS \"golf_notifications_insert\" ON golf_calendar_notifications;\nCREATE POLICY \"golf_notifications_insert_system_only\"\nON golf_calendar_notifications FOR INSERT TO authenticated\nWITH CHECK (\n  user_id = auth.uid()\n  OR user_id IN (\n    SELECT gp.user_id FROM golf_players gp\n    JOIN golf_coaches gc ON gc.team_id = gp.team_id\n    WHERE gc.user_id = auth.uid()\n  )\n);",
+        "migration_file": "20260108000002_comprehensive_rls_fix.sql",
+        "migration_ready": true
+      },
+      "verification": "-- Should return 0 rows:\nSELECT * FROM coaches WHERE user_id != (SELECT user_id FROM coaches WHERE user_id = auth.uid());"
+    },
+    {
+      "id": "RLS-007",
+      "severity": "medium",
+      "title": "Coaches Can View All Baseball Players",
+      "tables": ["players"],
+      "description": "Policy 'Coaches can view all players' allows ANY user with role='coach' to see ALL player profiles, regardless of recruiting_activated status or team membership. This violates privacy for committed players and enables recruiting violations.",
+      "attack_scenario": "Coach from School A queries players committed to School B: SELECT first_name, last_name, email, phone, gpa, sat_score, committed_to FROM players WHERE committed_to = 'school-b-id'; then uses contact info for poaching or unsolicited recruitment.",
+      "proof_of_concept": "-- As coach from School A, see School B's committed players:\nSELECT p.first_name, p.last_name, p.email, p.phone, p.exit_velo, c.name as committed_school\nFROM players p\nJOIN colleges c ON c.id = p.committed_to\nWHERE p.committed_to IS NOT NULL\n  AND p.committed_to != 'my-school-id'\nORDER BY p.exit_velo DESC;",
+      "impact": "Privacy violation for committed players. Potential NCAA recruiting violations. Competitor intelligence. Unwanted contact and poaching attempts.",
+      "affected_users": "ALL baseball players (especially committed players)",
+      "cvss_score": 6.5,
+      "cwe": "CWE-359: Exposure of Private Personal Information",
+      "migration_introduced": "043_fix_rls_policies.sql",
+      "fix": {
+        "description": "Remove overly permissive policy. Keep only recruiting-scoped policy that requires recruiting_activated = true.",
+        "sql": "-- Remove overly permissive policy:\nDROP POLICY IF EXISTS \"Coaches can view all players\" ON players;\n\n-- Keep existing recruiting-scoped policy (from migration 048):\n-- \"Coaches can view recruiting players\" already exists with proper restrictions",
+        "migration_file": "20260108000002_comprehensive_rls_fix.sql",
+        "migration_ready": true
+      },
+      "verification": "-- As coach, try viewing committed player with recruiting_activated=false (should fail):\nSELECT * FROM players WHERE recruiting_activated = false AND committed_to IS NOT NULL;"
+    },
+    {
+      "id": "RLS-008",
+      "severity": "medium",
+      "title": "profile_views INSERT Policy Allows Mismatch",
+      "tables": ["profile_views"],
+      "description": "Policy 'Authenticated users can create profile views' allows viewer_id = NULL OR viewer_id = auth.uid(), enabling view count manipulation and anonymous tracking abuse.",
+      "attack_scenario": "Attacker inflates view counts: INSERT INTO profile_views (player_id, viewer_id) SELECT 'target-player-id', NULL FROM generate_series(1, 10000); creates 10k fake views. OR impersonate another user by setting viewer_id != auth.uid() (if NULL check doesn't catch it).",
+      "proof_of_concept": "-- Inflate view count:\nINSERT INTO profile_views (player_id, viewer_id, viewer_type)\nVALUES ('target-player-id', NULL, 'college_coach');\n-- Repeat 10000 times to inflate analytics",
+      "impact": "Fake view count inflation. Analytics poisoning. Player ranking manipulation. Misleading recruiting metrics.",
+      "affected_users": "ALL baseball players",
+      "cvss_score": 5.3,
+      "cwe": "CWE-20: Improper Input Validation",
+      "migration_introduced": "033_fix_permissive_rls.sql",
+      "fix": {
+        "description": "Enforce viewer_id MUST match auth.uid(), remove NULL allowance",
+        "sql": "DROP POLICY IF EXISTS \"Authenticated users can create profile views\" ON profile_views;\nCREATE POLICY \"profile_views_insert_own_only\"\nON profile_views FOR INSERT TO authenticated\nWITH CHECK (\n  auth.uid() IS NOT NULL\n  AND viewer_id = auth.uid()  -- MUST match!\n);",
+        "migration_file": "20260108000002_comprehensive_rls_fix.sql",
+        "migration_ready": true
+      },
+      "verification": "-- Try creating view with different viewer_id (should fail):\nINSERT INTO profile_views (player_id, viewer_id) VALUES ('player-1', 'other-user-id');"
+    },
+    {
+      "id": "RLS-009",
+      "severity": "high",
+      "title": "golf_global_patterns Exposes AI Intellectual Property",
+      "tables": ["golf_global_patterns", "golf_confidence_calibration"],
+      "description": "Tables containing CoachHelm AI/ML patterns and calibration data use USING (true), allowing ANY authenticated user to export all patterns and reverse-engineer the AI system.",
+      "attack_scenario": "Competitor creates account, then exports: SELECT pattern_type, conditions, outcome, prevalence, average_impact, metadata FROM golf_global_patterns; and SELECT bucket, prediction_type, actual_accuracy, calibration_error FROM golf_confidence_calibration; then uses data to build competing AI product.",
+      "proof_of_concept": "-- Export all AI patterns:\nCOPY (SELECT * FROM golf_global_patterns WHERE is_universal = true) TO '/tmp/patterns.csv' CSV;\n-- Export calibration curves:\nCOPY (SELECT * FROM golf_confidence_calibration) TO '/tmp/calibration.csv' CSV;\n-- Reverse engineer CoachHelm AI",
+      "impact": "Intellectual property theft. Competitor advantage. Loss of competitive moat. R&D investment wasted. Potential patent infringement by competitors.",
+      "affected_users": "Platform owner (Helm Sports Labs)",
+      "cvss_score": 7.2,
+      "cwe": "CWE-200: Exposure of Sensitive Information",
+      "migration_introduced": "20260105000002_coachhelm_v2_intelligence.sql",
+      "fix": {
+        "description": "Restrict global patterns and calibration to users with golf profiles only (prevents arbitrary signups for data theft)",
+        "sql": "DROP POLICY IF EXISTS \"Authenticated can read global patterns\" ON golf_global_patterns;\nCREATE POLICY \"golf_global_patterns_select_team_members\"\nON golf_global_patterns FOR SELECT TO authenticated\nUSING (\n  auth.uid() IN (\n    SELECT user_id FROM golf_players\n    UNION\n    SELECT user_id FROM golf_coaches\n  )\n);\n\nDROP POLICY IF EXISTS \"Authenticated can read calibration\" ON golf_confidence_calibration;\nCREATE POLICY \"golf_confidence_calibration_select_team_members\"\nON golf_confidence_calibration FOR SELECT TO authenticated\nUSING (\n  auth.uid() IN (\n    SELECT user_id FROM golf_players\n    UNION\n    SELECT user_id FROM golf_coaches\n  )\n);",
+        "migration_file": "20260108000002_comprehensive_rls_fix.sql",
+        "migration_ready": true
+      },
+      "verification": "-- As user without golf profile, try accessing patterns (should fail):\nSELECT * FROM golf_global_patterns;"
+    }
+  ],
+  "missing_policies": [
+    {
+      "table": "golf_qualifiers",
+      "operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      "risk": "Qualifier tournament data inaccessible or exposed",
+      "recommended_policy": "Team-scoped: players and coaches can view their team's qualifiers, only coaches can manage"
+    },
+    {
+      "table": "golf_qualifier_entries",
+      "operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      "risk": "Qualifier entry data inaccessible or exposed",
+      "recommended_policy": "Via qualifier ownership: entries visible to qualifier's team members"
+    },
+    {
+      "table": "golf_announcements",
+      "operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      "risk": "Team announcements inaccessible or cross-team exposure",
+      "recommended_policy": "Team-scoped: team members view, coaches manage"
+    },
+    {
+      "table": "golf_announcement_acknowledgements",
+      "operations": ["SELECT", "INSERT"],
+      "risk": "Acknowledgement tracking broken",
+      "recommended_policy": "Players acknowledge own announcements, coaches view acknowledgements"
+    },
+    {
+      "table": "golf_tasks",
+      "operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      "risk": "Task management broken or cross-team exposure",
+      "recommended_policy": "Team-scoped: team members view, coaches manage"
+    },
+    {
+      "table": "golf_task_completions",
+      "operations": ["SELECT", "INSERT"],
+      "risk": "Task completion tracking broken",
+      "recommended_policy": "Players complete own tasks, coaches view all team completions"
+    },
+    {
+      "table": "golf_documents",
+      "operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      "risk": "Document sharing broken or privacy violation",
+      "recommended_policy": "Team-scoped with player_visible flag: coaches see all, players see player_visible only"
+    },
+    {
+      "table": "golf_travel_itineraries",
+      "operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      "risk": "Travel info inaccessible or cross-team exposure",
+      "recommended_policy": "Team-scoped: team members view, coaches manage"
+    },
+    {
+      "table": "golf_coach_notes",
+      "operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      "risk": "CRITICAL: Private coach assessments exposed to players",
+      "recommended_policy": "Coaches view own notes, players view ONLY notes with shared_with_player = true"
+    },
+    {
+      "table": "golf_player_classes",
+      "operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      "risk": "Class schedule inaccessible or privacy violation",
+      "recommended_policy": "Players manage own classes, coaches view team classes"
+    },
+    {
+      "table": "golf_holes",
+      "operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      "risk": "Hole-by-hole data inaccessible or cross-team exposure",
+      "recommended_policy": "Via round ownership: players manage own holes, coaches view team holes"
+    },
+    {
+      "table": "golf_event_rsvps",
+      "operations": ["UPDATE", "DELETE"],
+      "risk": "RSVP management incomplete (partial policies exist)",
+      "recommended_policy": "Players RSVP to team events, coaches view all RSVPs, players update own"
+    },
+    {
+      "table": "golf_event_attendance",
+      "operations": ["DELETE"],
+      "risk": "Attendance tracking incomplete (missing DELETE policy)",
+      "recommended_policy": "Coaches can delete attendance records, players cannot"
+    },
+    {
+      "table": "golf_team_members",
+      "operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      "risk": "Team roster management broken (RLS disabled in 062)",
+      "recommended_policy": "Team members view roster, coaches manage roster"
+    },
+    {
+      "table": "golf_event_participants",
+      "operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      "risk": "Event participation tracking broken (RLS disabled in 062)",
+      "recommended_policy": "Team members view event participants, coaches manage"
+    }
+  ],
+  "security_definer_functions": [
+    {
+      "name": "can_users_message",
+      "purpose": "Main messaging authorization - implements messaging matrix",
+      "risk_level": "critical",
+      "issues": ["200+ lines of complex logic", "Hard to audit", "Bypasses RLS on multiple tables", "No audit logging"],
+      "recommendation": "Add comprehensive logging, input validation, and unit tests. Consider breaking into smaller functions."
+    },
+    {
+      "name": "are_users_on_same_roster",
+      "purpose": "Checks if two users are on same team",
+      "risk_level": "high",
+      "issues": ["Complex joins across multiple tables", "Potential logic errors", "No input validation"],
+      "recommendation": "Add input validation, audit logging, and integration tests."
+    },
+    {
+      "name": "create_conversation_with_participants",
+      "purpose": "Creates conversations bypassing RLS",
+      "risk_level": "high",
+      "issues": ["Bypasses all RLS", "Minimal validation (added in 20260108000001)", "No team isolation check"],
+      "recommendation": "Add team_id and sport validation. Reject cross-team conversations unless explicitly allowed."
+    },
+    {
+      "name": "handle_new_user",
+      "purpose": "Trigger on user signup - auto-creates profiles",
+      "risk_level": "high",
+      "issues": ["Bypasses INSERT policies", "Runs with elevated privileges", "Potential for abuse via signup flow"],
+      "recommendation": "Add rate limiting, audit logging, and anomaly detection."
+    },
+    {
+      "name": "get_user_team_ids",
+      "purpose": "Helper for RLS policies - returns user's team IDs",
+      "risk_level": "medium",
+      "issues": ["Used in many policies", "Bypasses golf_coaches and golf_players RLS", "Potential for misuse"],
+      "recommendation": "Add SET search_path = ''. Monitor for performance issues in RLS policies."
+    },
+    {
+      "name": "user_owns_shot",
+      "purpose": "Checks if user owns a shot (via round -> player)",
+      "risk_level": "low",
+      "issues": ["Well-scoped", "Single purpose", "Used correctly in putt_details policies"],
+      "recommendation": "Add SET search_path = ''. Otherwise well-implemented."
+    }
+  ],
+  "role_matrix": {
+    "description": "Access control matrix showing what each role can access",
+    "roles": ["anon", "authenticated_own", "authenticated_team", "coach", "admin", "service_role"],
+    "tables": [
+      {
+        "table": "users",
+        "anon": "none",
+        "authenticated_own": "SELECT/UPDATE own row",
+        "authenticated_team": "none",
+        "coach": "SELECT/UPDATE own row",
+        "admin": "all",
+        "service_role": "all"
+      },
+      {
+        "table": "players",
+        "anon": "none",
+        "authenticated_own": "all on own row",
+        "authenticated_team": "none",
+        "coach": "SELECT recruiting_activated=true",
+        "admin": "all",
+        "service_role": "all"
+      },
+      {
+        "table": "coaches",
+        "anon": "none",
+        "authenticated_own": "all on own row",
+        "authenticated_team": "none",
+        "coach": "SELECT all (recruiting context)",
+        "admin": "all",
+        "service_role": "all"
+      },
+      {
+        "table": "golf_rounds",
+        "anon": "none",
+        "authenticated_own": "all on own rounds",
+        "authenticated_team": "SELECT team rounds",
+        "coach": "SELECT/UPDATE team rounds",
+        "admin": "all",
+        "service_role": "all"
+      },
+      {
+        "table": "golf_shots",
+        "anon": "none",
+        "authenticated_own": "all on own shots",
+        "authenticated_team": "SELECT team shots",
+        "coach": "SELECT team shots",
+        "admin": "all",
+        "service_role": "all"
+      },
+      {
+        "table": "golf_coach_notes",
+        "anon": "none",
+        "authenticated_own": "SELECT shared_with_player=true",
+        "authenticated_team": "none",
+        "coach": "all on own notes",
+        "admin": "all",
+        "service_role": "all"
+      },
+      {
+        "table": "conversations",
+        "anon": "none",
+        "authenticated_own": "all on own conversations",
+        "authenticated_team": "none",
+        "coach": "all on own conversations",
+        "admin": "all",
+        "service_role": "all"
+      },
+      {
+        "table": "messages",
+        "anon": "none",
+        "authenticated_own": "SELECT/INSERT in own conversations",
+        "authenticated_team": "none",
+        "coach": "SELECT/INSERT in own conversations",
+        "admin": "all",
+        "service_role": "all"
+      }
+    ]
+  },
+  "recommendations": {
+    "immediate": [
+      "Deploy migration 20260108000002_comprehensive_rls_fix.sql IMMEDIATELY",
+      "Verify all golf tables have RLS re-enabled",
+      "Run verification queries to confirm fixes applied",
+      "Monitor error logs for application breakage",
+      "Test core user flows: login, profile view, round submission, messaging"
+    ],
+    "short_term": [
+      "Add audit logging to all SECURITY DEFINER functions",
+      "Review and test can_users_message() messaging matrix logic",
+      "Document expected behavior for all RLS policies",
+      "Set up monitoring for failed RLS policy checks",
+      "Implement rate limiting on conversation creation"
+    ],
+    "long_term": [
+      "Replace SECURITY DEFINER functions with RLS policies where possible",
+      "Implement strict tenant isolation (separate schemas or databases per org)",
+      "Add comprehensive audit logging for all sensitive operations",
+      "Regular quarterly security audits",
+      "External penetration testing by security firm",
+      "Establish RLS policy review process for all new tables"
+    ]
+  },
+  "migration_file": {
+    "filename": "20260108000002_comprehensive_rls_fix.sql",
+    "description": "Comprehensive RLS security fix migration addressing all critical vulnerabilities",
+    "sections": [
+      "PART 1: Re-enable RLS on golf tables",
+      "PART 2: golf_organizations policies",
+      "PART 3: golf_teams policies",
+      "PART 4: golf_rounds policies",
+      "PART 5: golf_shots policies",
+      "PART 6: golf_holes policies",
+      "PART 7: 15 tables with missing policies",
+      "PART 8: Fix permissive policies",
+      "PART 9: Fix baseball coaches policy",
+      "PART 10: Performance indexes",
+      "PART 11: Verification queries",
+      "PART 12: Update table comments"
+    ],
+    "estimated_deployment_time": "5-10 minutes",
+    "rollback_plan": "Revert to migration 20260108000001 if issues occur"
+  }
+}

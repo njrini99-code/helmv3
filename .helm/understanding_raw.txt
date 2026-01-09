@@ -1,0 +1,1686 @@
+I'll conduct a thorough analysis of this Helm v3 codebase. Let me start systematically.
+Let me explore the directory structure and find the main application files:
+Now let me explore the source directory structure and key configuration files:
+Now let me explore the database migrations and schema:
+Let me continue exploring the database types and key feature implementations:
+Let me continue reading the feature checklist and explore more of the codebase structure:
+Let me explore the middleware, contexts, and state management:
+Now let me read more key files to understand the architecture:
+Let me explore more of the database schema and gather insights on the app routes:
+Now let me read more key files to understand the authentication and app structure:
+Now let me explore the component structure and read a few more critical implementation files:
+Now let me read the TODO and explore more migrations to understand the full database schema:
+Now let me gather more information about the key features and authentication flow:
+Now let me read more about the security and RLS policies:
+Now I have enough information to compile a comprehensive analysis. Let me gather a few more details about specific implementations:
+Perfect! Now I have gathered comprehensive information. Let me create the detailed analysis JSON report:
+
+```json
+{
+  "platform": {
+    "name": "Helm Sports Labs v3",
+    "description": "Helm Sports Labs is a dual-platform sports management and recruiting system that serves two distinct markets: (1) Baseball Recruiting - connecting high school, JUCO, and showcase baseball players with college coaches through a comprehensive recruiting pipeline, watchlist management, player discovery, and messaging system; (2) Golf Team Management - helping college golf coaches manage their teams with round tracking, shot-by-shot analysis, tournament qualifiers, calendar management, and player development tools. The platform uses a modern glassmorphic UI with kelly green (#16A34A) branding and warm cream backgrounds, providing a premium SaaS experience for both coaches and athletes.",
+    "problem_solved": "For baseball, it solves the fragmented college recruiting process by providing a centralized platform where players can showcase their skills and coaches can discover, evaluate, and track prospects systematically. For golf, it replaces manual spreadsheets and paper scorecards with a comprehensive digital team management system that provides shot-level analytics, AI-powered coaching insights (CoachHelm), and streamlined communication.",
+    "target_market": "Primary markets include: (1) College baseball coaches (D1, D2, D3, JUCO) seeking recruiting tools, (2) High school and showcase baseball coaches helping players get recruited, (3) Baseball players (HS/showcase/JUCO/college) managing their recruiting journey, (4) College golf coaches managing teams of 5-12 players, (5) College golfers tracking performance. Secondary market includes high school golf coaches.",
+    "business_model": "Freemium SaaS with tiered subscriptions. College coaches likely pay premium fees for recruiting tools (discovery, unlimited watchlist, advanced analytics, messaging). Players may have free profiles with premium features for video hosting, advanced analytics, or recruitment visibility boosts. Golf platform appears to be team-based subscriptions where the coach/program pays. Revenue streams: monthly/annual subscriptions, potential per-seat pricing for golf teams, possible camp registration fees (infrastructure exists), future opportunities for showcase event management and college program advertising."
+  },
+  "tech_stack": {
+    "framework": {
+      "name": "Next.js",
+      "version": "16.0.10",
+      "features_used": [
+        "App Router (full)",
+        "React Server Components",
+        "Server Actions (205+ actions)",
+        "Route Groups (extensive use)",
+        "Parallel Routes",
+        "Dynamic Routes",
+        "API Routes",
+        "Middleware",
+        "Streaming SSR",
+        "Image Optimization"
+      ]
+    },
+    "language": {
+      "name": "TypeScript",
+      "version": "5.9.3",
+      "strictness": "strict",
+      "notes": "Very strict configuration with noUncheckedIndexedAccess, noUnusedLocals, noUnusedParameters, noImplicitReturns enabled. 162+ custom type definitions. Database types auto-generated from Supabase (6,657 lines). Clean TypeScript with minimal any usage."
+    },
+    "database": {
+      "provider": "Supabase (PostgreSQL)",
+      "tables_count": 86,
+      "has_rls": true,
+      "notes": "ALL 86 tables have RLS enabled and verified in production. Extensive use of enums (20+). Complex schema with separate baseball and golf domains. 51 migrations total. Row-level security policies cover all operations."
+    },
+    "auth": {
+      "provider": "Supabase Auth",
+      "methods": [
+        "email/password"
+      ],
+      "roles": [
+        "coach (college, high_school, juco, showcase)",
+        "player (high_school, showcase, juco, college)",
+        "admin"
+      ],
+      "features": [
+        "Session management",
+        "Password reset",
+        "Email verification",
+        "Rate limiting",
+        "Account lockout",
+        "Session activity tracking"
+      ]
+    },
+    "styling": {
+      "framework": "Tailwind CSS 3.4.19",
+      "ui_library": "Custom + Radix UI primitives",
+      "design_system": "Glassmorphism with warm cream backgrounds (#FFFEFA), kelly green primary (#16A34A), extensive use of backdrop-blur, rounded-2xl cards, shadow-md, OKLCH color space for modern gamut"
+    },
+    "state_management": "Zustand (4 stores: auth, team, golf-auth, peek-panel) + React Context (sidebar, mobile-nav) + Supabase Realtime subscriptions",
+    "animations": "Framer Motion 12.24.0 + Lenis smooth scroll + tailwindcss-animate + custom spring animations",
+    "deployment": "Vercel (inferred from .vercel-trigger file and Next.js optimization)",
+    "monitoring": "Sentry 10.32.1 (full instrumentation for Node.js, Edge, and browser)",
+    "other_services": [
+      "Recharts 3.6.0 (data visualization)",
+      "@dnd-kit (drag-and-drop pipeline)",
+      "html2canvas + jspdf (PDF generation)",
+      "Playwright (E2E testing)",
+      "date-fns 4.1.0",
+      "Zod 4.2.1 (validation)",
+      "cmdk (command palette)",
+      "next-view-transitions",
+      "sonner (toast notifications)"
+    ]
+  },
+  "architecture": {
+    "pattern": "Feature-based monorepo with dual platform separation. Uses Next.js App Router with extensive server components and server actions. Data flows through Supabase client/server wrappers. Implements a hybrid approach: server components for initial data loading, client components for interactivity, server actions for mutations. Route-based code splitting with lazy loading utilities. RLS policies handle authorization at database level, middleware handles routing protection.",
+    "directory_structure": {
+      "src/app": "Next.js App Router - 72 pages split between baseball/ and golf/ platforms, plus shared routes (about, products, legal)",
+      "src/app/baseball": "105 files - College recruiting platform with discover, watchlist, pipeline, messaging, camps, roster, settings",
+      "src/app/golf": "75 files - Team management platform with rounds, stats, calendar, qualifiers, roster, documents, travel",
+      "src/components": "29 directories, 62 UI components - Organized by domain (auth, baseball, golf, coach, player, dashboard, landing, layout)",
+      "src/lib": "Core utilities - supabase clients, 8 query modules, auth helpers, validation, schemas, calendar logic, coachhelm AI, performance utilities",
+      "src/hooks": "35 custom hooks - Platform-specific (golf/, coachhelm/) and shared hooks for auth, teams, messages, stats, watchlist",
+      "src/stores": "4 Zustand stores for global state",
+      "src/contexts": "2 React contexts (sidebar, mobile-nav)",
+      "src/types": "Type definitions and database types (6,657 lines auto-generated)",
+      "supabase/migrations": "51 migrations tracking complete schema evolution",
+      "public": "Static assets including videos, images, OG images",
+      "docs": "47 documentation files tracking features, audits, implementation guides",
+      "e2e": "Playwright E2E tests with helpers",
+      "tools": "Development tools (ultra-agent-audit, ux-flow-auditor)"
+    },
+    "data_flow": "Request → Middleware (auth check, session refresh) → Server Component (initial data via Supabase server client with RLS) → Client Component (interactivity) → Server Action (mutations via Supabase server client) → Database (RLS enforced) → Realtime (subscriptions for live updates) → UI updates. Type safety maintained throughout with generated Database types.",
+    "key_abstractions": [
+      "Supabase client factory pattern (separate server/client/middleware instances)",
+      "Server actions pattern (205+ actions, consistent error handling with try/catch)",
+      "Custom hooks for data fetching with loading/error states",
+      "Glass morphism component wrappers (glass-standard, glass-card classes)",
+      "Protected route middleware with role-based routing",
+      "Lazy component loading utilities for performance",
+      "Zustand stores with persistence middleware",
+      "Query modules organizing database operations by domain",
+      "CoachHelm AI system for golf coaching insights"
+    ]
+  },
+  "database_schema": {
+    "tables": [
+      {
+        "name": "users",
+        "purpose": "Core user accounts linked to Supabase Auth",
+        "row_count_estimate": "medium (hundreds to low thousands)",
+        "key_columns": [
+          "id (references auth.users)",
+          "email",
+          "role (enum: player/coach/admin)"
+        ],
+        "relationships": [
+          "has_one coaches",
+          "has_one players",
+          "has_one golf_coaches",
+          "has_one golf_players"
+        ],
+        "has_rls": true,
+        "sensitive_data": [
+          "email"
+        ]
+      },
+      {
+        "name": "coaches",
+        "purpose": "Baseball coach profiles",
+        "row_count_estimate": "small (dozens to hundreds)",
+        "key_columns": [
+          "id",
+          "user_id",
+          "coach_type (college/high_school/juco/showcase)",
+          "organization_id",
+          "program_division",
+          "recruiting_class_needs"
+        ],
+        "relationships": [
+          "belongs_to users",
+          "belongs_to organizations",
+          "belongs_to colleges",
+          "has_many watchlists",
+          "has_many camps"
+        ],
+        "has_rls": true,
+        "sensitive_data": [
+          "email_contact",
+          "phone"
+        ]
+      },
+      {
+        "name": "players",
+        "purpose": "Baseball player profiles for recruiting",
+        "row_count_estimate": "large (thousands)",
+        "key_columns": [
+          "id",
+          "user_id",
+          "player_type (high_school/showcase/juco/college)",
+          "grad_year",
+          "primary_position",
+          "recruiting_activated (visibility flag)",
+          "profile_completion_percent"
+        ],
+        "relationships": [
+          "belongs_to users",
+          "belongs_to high_schools",
+          "has_many videos",
+          "has_many watchlists (from coaches)",
+          "has_many player_metrics"
+        ],
+        "has_rls": true,
+        "sensitive_data": [
+          "email",
+          "phone",
+          "gpa",
+          "sat_score",
+          "act_score"
+        ]
+      },
+      {
+        "name": "watchlists",
+        "purpose": "Coaches tracking players in recruiting pipeline",
+        "row_count_estimate": "large (thousands)",
+        "key_columns": [
+          "coach_id",
+          "player_id",
+          "pipeline_stage (watchlist/priority/offer_extended/committed)",
+          "notes",
+          "tags"
+        ],
+        "relationships": [
+          "belongs_to coaches",
+          "belongs_to players"
+        ],
+        "has_rls": true,
+        "sensitive_data": [
+          "notes (coach private notes)"
+        ]
+      },
+      {
+        "name": "conversations",
+        "purpose": "Messaging threads between coaches and players",
+        "row_count_estimate": "medium",
+        "key_columns": [
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "relationships": [
+          "has_many conversation_participants",
+          "has_many messages"
+        ],
+        "has_rls": true,
+        "sensitive_data": []
+      },
+      {
+        "name": "messages",
+        "purpose": "Individual messages within conversations",
+        "row_count_estimate": "large",
+        "key_columns": [
+          "conversation_id",
+          "sender_id",
+          "content",
+          "read_at"
+        ],
+        "relationships": [
+          "belongs_to conversations",
+          "belongs_to users (sender)"
+        ],
+        "has_rls": true,
+        "sensitive_data": [
+          "content (private messages)"
+        ]
+      },
+      {
+        "name": "golf_teams",
+        "purpose": "Golf team entities (Men's/Women's teams per school)",
+        "row_count_estimate": "small (dozens)",
+        "key_columns": [
+          "id",
+          "organization_id",
+          "name",
+          "season",
+          "invite_code (unique join code)"
+        ],
+        "relationships": [
+          "belongs_to golf_organizations",
+          "has_many golf_players",
+          "has_many golf_coaches",
+          "has_many golf_events",
+          "has_many golf_qualifiers"
+        ],
+        "has_rls": true,
+        "sensitive_data": []
+      },
+      {
+        "name": "golf_players",
+        "purpose": "College golf team members",
+        "row_count_estimate": "small to medium (hundreds)",
+        "key_columns": [
+          "id",
+          "user_id",
+          "team_id",
+          "year (freshman/sophomore/junior/senior/fifth_year/graduate)",
+          "handicap",
+          "scholarship_percentage",
+          "status (active/injured/redshirt/inactive)"
+        ],
+        "relationships": [
+          "belongs_to users",
+          "belongs_to golf_teams",
+          "has_many golf_rounds"
+        ],
+        "has_rls": true,
+        "sensitive_data": [
+          "scholarship_percentage",
+          "email",
+          "phone",
+          "gpa"
+        ]
+      },
+      {
+        "name": "golf_rounds",
+        "purpose": "Individual golf round scores with metadata",
+        "row_count_estimate": "large (thousands)",
+        "key_columns": [
+          "id",
+          "player_id",
+          "qualifier_id",
+          "round_type (tournament/qualifier/practice/casual)",
+          "course_name",
+          "round_date",
+          "total_score",
+          "total_to_par",
+          "is_verified (coach verification)"
+        ],
+        "relationships": [
+          "belongs_to golf_players",
+          "belongs_to golf_qualifiers",
+          "belongs_to golf_courses",
+          "has_many golf_holes (18 per round)",
+          "has_many golf_shots"
+        ],
+        "has_rls": true,
+        "sensitive_data": []
+      },
+      {
+        "name": "golf_holes",
+        "purpose": "Hole-by-hole scores within rounds",
+        "row_count_estimate": "very large (tens of thousands)",
+        "key_columns": [
+          "round_id",
+          "hole_number (1-18)",
+          "par",
+          "score",
+          "putts",
+          "fairway_hit",
+          "green_in_regulation"
+        ],
+        "relationships": [
+          "belongs_to golf_rounds",
+          "has_many golf_hole_shots"
+        ],
+        "has_rls": true,
+        "sensitive_data": []
+      },
+      {
+        "name": "golf_shots",
+        "purpose": "Shot-by-shot tracking within rounds (advanced feature)",
+        "row_count_estimate": "very large (hundreds of thousands potential)",
+        "key_columns": [
+          "round_id",
+          "hole_number",
+          "shot_number",
+          "club_used",
+          "result_type",
+          "distance_yards"
+        ],
+        "relationships": [
+          "belongs_to golf_rounds",
+          "has_one approach_miss_details",
+          "has_one putt_details"
+        ],
+        "has_rls": true,
+        "sensitive_data": []
+      },
+      {
+        "name": "golf_events",
+        "purpose": "Team calendar events (practices, tournaments, meetings)",
+        "row_count_estimate": "medium",
+        "key_columns": [
+          "team_id",
+          "title",
+          "event_type",
+          "start_date",
+          "location",
+          "is_mandatory"
+        ],
+        "relationships": [
+          "belongs_to golf_teams",
+          "has_many golf_event_attendance"
+        ],
+        "has_rls": true,
+        "sensitive_data": []
+      },
+      {
+        "name": "golf_qualifiers",
+        "purpose": "Tournament qualifiers to determine traveling lineup",
+        "row_count_estimate": "small",
+        "key_columns": [
+          "team_id",
+          "name",
+          "start_date",
+          "num_rounds",
+          "spots_available",
+          "status (upcoming/in_progress/completed)"
+        ],
+        "relationships": [
+          "belongs_to golf_teams",
+          "has_many golf_qualifier_entries",
+          "has_many golf_rounds"
+        ],
+        "has_rls": true,
+        "sensitive_data": []
+      },
+      {
+        "name": "camps",
+        "purpose": "Baseball camp/showcase events hosted by coaches",
+        "row_count_estimate": "small",
+        "key_columns": [
+          "coach_id",
+          "name",
+          "start_date",
+          "capacity",
+          "price",
+          "registration_count"
+        ],
+        "relationships": [
+          "belongs_to coaches",
+          "has_many camp_registrations"
+        ],
+        "has_rls": true,
+        "sensitive_data": []
+      },
+      {
+        "name": "videos",
+        "purpose": "Player highlight videos for recruiting",
+        "row_count_estimate": "medium",
+        "key_columns": [
+          "player_id",
+          "title",
+          "url",
+          "thumbnail_url",
+          "video_type",
+          "is_primary"
+        ],
+        "relationships": [
+          "belongs_to players"
+        ],
+        "has_rls": true,
+        "sensitive_data": []
+      },
+      {
+        "name": "organizations",
+        "purpose": "Schools/programs for both baseball and golf (shared table)",
+        "row_count_estimate": "medium",
+        "key_columns": [
+          "name",
+          "city",
+          "state",
+          "logo_url",
+          "type (college/high_school/showcase)"
+        ],
+        "relationships": [
+          "has_many coaches",
+          "has_many teams"
+        ],
+        "has_rls": true,
+        "sensitive_data": []
+      },
+      {
+        "name": "teams",
+        "purpose": "Teams within organizations (baseball)",
+        "row_count_estimate": "small to medium",
+        "key_columns": [
+          "organization_id",
+          "name",
+          "invite_code"
+        ],
+        "relationships": [
+          "belongs_to organizations",
+          "has_many team_members",
+          "has_many team_coach_staff"
+        ],
+        "has_rls": true,
+        "sensitive_data": []
+      }
+    ],
+    "relationships_diagram": "```mermaid\nerDiagram\n    users ||--o| coaches : \"has profile\"\n    users ||--o| players : \"has profile\"\n    users ||--o| golf_coaches : \"has profile\"\n    users ||--o| golf_players : \"has profile\"\n    \n    coaches ||--o{ watchlists : \"tracks\"\n    players ||--o{ watchlists : \"tracked by\"\n    coaches ||--o{ camps : \"hosts\"\n    players ||--o{ videos : \"uploads\"\n    \n    coaches }o--|| organizations : \"belongs to\"\n    organizations ||--o{ teams : \"has\"\n    \n    conversations ||--o{ conversation_participants : \"has\"\n    conversations ||--o{ messages : \"contains\"\n    users ||--o{ messages : \"sends\"\n    \n    golf_teams }o--|| golf_organizations : \"belongs to\"\n    golf_teams ||--o{ golf_players : \"has roster\"\n    golf_teams ||--o{ golf_events : \"schedules\"\n    golf_teams ||--o{ golf_qualifiers : \"runs\"\n    \n    golf_players ||--o{ golf_rounds : \"plays\"\n    golf_rounds ||--|{ golf_holes : \"has 18\"\n    golf_rounds ||--o{ golf_shots : \"tracks\"\n    golf_qualifiers ||--o{ golf_rounds : \"includes\"\n```"
+  },
+  "user_roles": [
+    {
+      "role": "college_coach",
+      "description": "College baseball recruiting coordinator managing discovery, watchlist, pipeline, and communication with prospects",
+      "permissions": [
+        "Discover all recruiting-activated players",
+        "Add/remove players from watchlist",
+        "Update pipeline stages",
+        "Send messages to prospects",
+        "Host camps",
+        "View player profiles and videos",
+        "Export data",
+        "Manage program settings"
+      ],
+      "typical_journey": "Login → Dashboard (see pipeline stats, recent activity) → Discover players (filter by position, grad year, location, metrics) → Add to watchlist → Move through pipeline stages → Message players → Review player videos → Extend offers → Track commitments",
+      "key_pages": [
+        "/baseball/dashboard (recruiting dashboard)",
+        "/baseball/dashboard/discover (player search)",
+        "/baseball/dashboard/watchlist (tracked players)",
+        "/baseball/dashboard/pipeline (kanban board)",
+        "/baseball/dashboard/messages (communications)",
+        "/baseball/dashboard/camps (event management)",
+        "/baseball/dashboard/settings (profile/preferences)"
+      ]
+    },
+    {
+      "role": "high_school_coach",
+      "description": "High school baseball coach helping players get recruited, managing roster, uploading videos, tracking college interest",
+      "permissions": [
+        "Manage team roster",
+        "Upload player videos",
+        "Track which colleges are interested",
+        "View recruiting analytics",
+        "Message college coaches on behalf of players",
+        "Manage developmental plans"
+      ],
+      "typical_journey": "Login → Redirected to /baseball/dashboard/team/high-school → Manage roster → Upload player highlight videos → Track college interest → Monitor player recruiting progress → Communicate with college coaches",
+      "key_pages": [
+        "/baseball/dashboard/team/high-school (HS coach dashboard)",
+        "/baseball/dashboard/roster (player management)",
+        "/baseball/dashboard/videos (video library)",
+        "/baseball/dashboard/college-interest (tracking)",
+        "/baseball/dashboard/dev-plans (player development)"
+      ]
+    },
+    {
+      "role": "juco_coach",
+      "description": "Junior college coach with dual role - recruiting players (recruiting mode) AND helping current players get recruited (team mode). Mode toggle NOT YET IMPLEMENTED (P0 blocker).",
+      "permissions": [
+        "Switch between recruiting and team modes (MISSING)",
+        "Recruiting mode: Same as college coach",
+        "Team mode: Same as high school coach",
+        "Manage JUCO roster",
+        "Track player transfers"
+      ],
+      "typical_journey": "Login → Mode selection (NOT IMPLEMENTED - blocks JUCO coaches) → If recruiting mode: College coach flow → If team mode: HS coach flow",
+      "key_pages": [
+        "Mode toggle: NOT BUILT",
+        "Recruiting: /baseball/dashboard/*",
+        "Team: /baseball/dashboard/team/*"
+      ]
+    },
+    {
+      "role": "showcase_coach",
+      "description": "Travel ball/showcase organization managing multiple teams, hosting events, uploading videos for players across teams",
+      "permissions": [
+        "Manage multiple teams (PARTIAL - infrastructure exists but incomplete)",
+        "Manage roster across teams",
+        "Upload videos for any player on teams",
+        "Host showcase events",
+        "Track recruiting for multiple players",
+        "View organization-level analytics"
+      ],
+      "typical_journey": "Login → Redirected to /baseball/dashboard/team → Select team → Manage roster → Upload videos → Track events → Monitor player recruiting progress",
+      "key_pages": [
+        "/baseball/dashboard/team (org dashboard)",
+        "/baseball/dashboard/roster (multi-team roster)",
+        "/baseball/dashboard/videos (video management)",
+        "/baseball/dashboard/events (showcase events)"
+      ]
+    },
+    {
+      "role": "baseball_player_hs_showcase",
+      "description": "High school or showcase baseball player building recruiting profile, connecting with coaches, tracking journey",
+      "permissions": [
+        "Manage own profile",
+        "Upload videos",
+        "Toggle recruiting activation",
+        "View profile views and interest",
+        "Message coaches who contact them",
+        "Track college interest",
+        "View analytics",
+        "Join teams via invite code"
+      ],
+      "typical_journey": "Sign up → Onboarding (5 steps: basic info, baseball info, physical/school, metrics, profile/goals) → Complete profile → Activate recruiting → Upload videos → Receive messages from coaches → Track interest → Commit to college",
+      "key_pages": [
+        "/baseball/dashboard (player dashboard - journey view)",
+        "/baseball/dashboard/profile (edit profile)",
+        "/baseball/dashboard/analytics (views, interest)",
+        "/baseball/dashboard/messages (coach communications)",
+        "/baseball/dashboard/journey (recruiting timeline)",
+        "/baseball/dashboard/colleges (dream schools)"
+      ]
+    },
+    {
+      "role": "baseball_player_juco_college",
+      "description": "JUCO or college player with limited recruiting features (already committed), focuses on profile and team management",
+      "permissions": [
+        "View own profile",
+        "Limited recruiting features (not actively recruiting)",
+        "Team roster access if on team",
+        "Basic analytics"
+      ],
+      "typical_journey": "Login → Dashboard → Profile management → Team participation",
+      "key_pages": [
+        "/baseball/dashboard",
+        "/baseball/dashboard/profile",
+        "/baseball/dashboard/team"
+      ]
+    },
+    {
+      "role": "golf_coach",
+      "description": "College golf coach managing team roster, tracking rounds, running qualifiers, analyzing player performance, scheduling events",
+      "permissions": [
+        "Manage team roster",
+        "Create/verify rounds",
+        "Create qualifiers to select traveling lineup",
+        "View team and individual statistics",
+        "Create calendar events",
+        "Manage documents",
+        "Send messages/announcements",
+        "Configure CoachHelm AI settings",
+        "View AI-generated insights"
+      ],
+      "typical_journey": "Login → Golf dashboard (see roster stats, upcoming qualifiers, recent rounds) → Create qualifier → Players log rounds → Review qualifier results → Select traveling lineup → View AI insights → Schedule practice → Message team",
+      "key_pages": [
+        "/golf/dashboard (coach overview)",
+        "/golf/dashboard/roster (team management)",
+        "/golf/dashboard/rounds (round review)",
+        "/golf/dashboard/qualifiers (lineup selection)",
+        "/golf/dashboard/stats (team analytics)",
+        "/golf/dashboard/calendar (event scheduling)",
+        "/golf/dashboard/messages (team communication)",
+        "/golf/dashboard/settings/coaching-intelligence (CoachHelm AI)"
+      ]
+    },
+    {
+      "role": "golf_player",
+      "description": "College golfer tracking personal rounds, viewing stats, seeing AI insights, checking team calendar, responding to events",
+      "permissions": [
+        "Log rounds (tournament, practice, casual)",
+        "Track shot-by-shot data",
+        "View personal statistics",
+        "View AI-generated coaching insights (CoachHelm)",
+        "Join team via invite code",
+        "View team calendar",
+        "RSVP to events",
+        "View team documents",
+        "Receive messages/announcements"
+      ],
+      "typical_journey": "Sign up → Onboarding (join team via invite code) → Dashboard → Start new round → Enter hole-by-hole scores → Review round stats → See AI insights about tendencies → Check calendar → RSVP to practice",
+      "key_pages": [
+        "/golf/dashboard (player overview with stats)",
+        "/golf/dashboard/rounds (round history)",
+        "/golf/dashboard/rounds/new (log new round)",
+        "/golf/dashboard/stats (personal analytics)",
+        "/golf/dashboard/calendar (team schedule)",
+        "/golf/dashboard/messages (team communications)",
+        "/golf/dashboard/team (team info)"
+      ]
+    }
+  ],
+  "features": [
+    {
+      "name": "User Authentication & Onboarding",
+      "category": "core",
+      "description": "Complete authentication system with email/password, role-based signup, password reset, and comprehensive onboarding flows for both baseball and golf. Baseball has separate coach and player onboarding (5 steps for players, 4 for coaches). Golf has simplified onboarding focused on team joining.",
+      "user_story": "As a new user, I want to sign up and complete onboarding so I can access platform features tailored to my role",
+      "status": "working",
+      "completeness_percent": 100,
+      "primary_route": "/baseball/signup, /baseball/coach-onboarding, /baseball/(onboarding)/player, /golf/signup",
+      "all_routes": [
+        "/baseball/login",
+        "/baseball/signup",
+        "/baseball/forgot-password",
+        "/baseball/reset-password",
+        "/baseball/(onboarding)/coach",
+        "/baseball/(onboarding)/player",
+        "/baseball/coach-onboarding (advanced)",
+        "/golf/login",
+        "/golf/signup",
+        "/golf/forgot-password",
+        "/golf/reset-password",
+        "/golf/(onboarding)/coach",
+        "/golf/(onboarding)/player"
+      ],
+      "primary_files": [
+        "src/app/baseball/(auth)/login/page.tsx",
+        "src/app/baseball/(auth)/signup/page.tsx",
+        "src/app/baseball/(onboarding)/coach-onboarding/page.tsx",
+        "src/app/baseball/(onboarding)/player/page.tsx",
+        "src/app/golf/(auth)/login/page.tsx",
+        "src/app/golf/(onboarding)/coach/page.tsx"
+      ],
+      "all_files": [
+        "All auth pages",
+        "src/app/baseball/actions/auth.ts",
+        "src/app/golf/actions/auth.ts",
+        "src/lib/auth/rate-limit.ts",
+        "src/lib/auth/account-lockout.ts",
+        "src/lib/auth/session-activity.ts",
+        "src/lib/schemas/auth.ts",
+        "src/components/auth/*",
+        "src/stores/auth-store.ts"
+      ],
+      "database_tables": [
+        "users",
+        "coaches",
+        "players",
+        "golf_coaches",
+        "golf_players",
+        "organizations",
+        "golf_organizations",
+        "login_attempts"
+      ],
+      "api_routes": [
+        "/auth/callback (Supabase callback)"
+      ],
+      "state_management": "Zustand auth store with persistence, separate golf-auth-store",
+      "dependencies": [
+        "Supabase Auth"
+      ],
+      "dependents": [
+        "All features depend on authentication"
+      ],
+      "known_issues": [
+        "Onboarding routes commented out in middleware (potential production issue)"
+      ],
+      "missing_functionality": [],
+      "code_quality_notes": "Excellent. Full Zod validation, proper error handling, rate limiting, account lockout protection",
+      "test_coverage": "partial (E2E tests exist for auth flow)"
+    },
+    {
+      "name": "Player Discovery System",
+      "category": "core",
+      "description": "College coaches search and filter baseball players by position, grad year, state, velocity, exit velo, GPA. Features interactive USA map, pagination, and watchlist integration directly from cards.",
+      "user_story": "As a college coach, I want to discover players matching my recruiting criteria so I can build my prospect list",
+      "status": "working",
+      "completeness_percent": 100,
+      "primary_route": "/baseball/dashboard/discover",
+      "all_routes": [
+        "/baseball/dashboard/discover"
+      ],
+      "primary_files": [
+        "src/app/baseball/(dashboard)/dashboard/discover/page.tsx",
+        "src/components/coach/discover/FilterPanel.tsx",
+        "src/components/coach/discover/DiscoverResults.tsx",
+        "src/components/coach/discover/PlayerCard.tsx",
+        "src/components/coach/discover/USAMap.tsx"
+      ],
+      "all_files": [
+        "All discover components",
+        "src/lib/queries/players.ts",
+        "src/app/baseball/actions/watchlist.ts",
+        "src/hooks/use-players.ts"
+      ],
+      "database_tables": [
+        "players",
+        "player_metrics",
+        "player_videos (for thumbnails)",
+        "watchlists (add/remove)"
+      ],
+      "api_routes": [],
+      "state_management": "URL params for filter state, React Query pattern via hooks",
+      "dependencies": [
+        "Authentication",
+        "Watchlist system"
+      ],
+      "dependents": [
+        "Watchlist",
+        "Pipeline"
+      ],
+      "known_issues": [],
+      "missing_functionality": [
+        "Saved searches (infrastructure exists but incomplete)"
+      ],
+      "code_quality_notes": "Excellent. Clean separation of concerns, performant queries with proper indexing",
+      "test_coverage": "partial (E2E test exists)"
+    },
+    {
+      "name": "Recruiting Watchlist",
+      "category": "core",
+      "description": "College coaches manage their prospect list with table view, inline status updates, notes editing, bulk actions, and filtering by pipeline stage. Real-time updates via Supabase.",
+      "user_story": "As a college coach, I want to organize and track my recruiting prospects in a watchlist so I can manage my pipeline efficiently",
+      "status": "working",
+      "completeness_percent": 100,
+      "primary_route": "/baseball/dashboard/watchlist",
+      "all_routes": [
+        "/baseball/dashboard/watchlist"
+      ],
+      "primary_files": [
+        "src/app/baseball/(dashboard)/dashboard/watchlist/page.tsx",
+        "src/components/coach/watchlist/WatchlistTable.tsx",
+        "src/components/coach/watchlist/WatchlistRow.tsx"
+      ],
+      "all_files": [
+        "All watchlist components",
+        "src/app/baseball/actions/watchlist.ts",
+        "src/hooks/use-watchlist.ts",
+        "src/lib/queries/watchlist.ts"
+      ],
+      "database_tables": [
+        "watchlists",
+        "players (joined data)",
+        "coaches"
+      ],
+      "api_routes": [],
+      "state_management": "Custom hook with real-time subscription",
+      "dependencies": [
+        "Authentication",
+        "Player Discovery"
+      ],
+      "dependents": [
+        "Pipeline board",
+        "Messaging"
+      ],
+      "known_issues": [],
+      "missing_functionality": [],
+      "code_quality_notes": "Very good. Inline editing works smoothly, bulk operations handled well",
+      "test_coverage": "partial (E2E test exists)"
+    },
+    {
+      "name": "Recruiting Pipeline Kanban",
+      "category": "core",
+      "description": "Drag-and-drop kanban board with 5 stages: Watchlist → High Priority → Offer Extended → Committed → Uninterested. Uses @dnd-kit with smooth animations and real-time database updates.",
+      "user_story": "As a college coach, I want to visualize and manage my recruiting pipeline stages so I can track prospect progression",
+      "status": "working",
+      "completeness_percent": 100,
+      "primary_route": "/baseball/dashboard/pipeline",
+      "all_routes": [
+        "/baseball/dashboard/pipeline"
+      ],
+      "primary_files": [
+        "src/app/baseball/(dashboard)/dashboard/pipeline/page.tsx",
+        "src/components/pipeline/PipelineBoard.tsx",
+        "src/components/pipeline/PipelineColumn.tsx",
+        "src/components/pipeline/PipelineCard.tsx"
+      ],
+      "all_files": [
+        "All pipeline components",
+        "src/app/baseball/actions/watchlist.ts",
+        "src/hooks/use-pipeline.ts"
+      ],
+      "database_tables": [
+        "watchlists (pipeline_stage updates)",
+        "players"
+      ],
+      "api_routes": [],
+      "state_management": "@dnd-kit context, optimistic updates",
+      "dependencies": [
+        "Watchlist system"
+      ],
+      "dependents": [],
+      "known_issues": [
+        "Mobile drag-drop may be suboptimal"
+      ],
+      "missing_functionality": [],
+      "code_quality_notes": "Good. Smooth DnD experience, proper keyboard accessibility",
+      "test_coverage": "none"
+    },
+    {
+      "name": "Player Comparison Tool",
+      "category": "core",
+      "description": "Side-by-side comparison of 2-4 players with physical stats, performance metrics, academics. URL-based state for shareable links.",
+      "user_story": "As a college coach, I want to compare multiple prospects side-by-side so I can make informed recruiting decisions",
+      "status": "partial",
+      "completeness_percent": 75,
+      "primary_route": "/baseball/dashboard/comparisons",
+      "all_routes": [
+        "/baseball/dashboard/comparisons",
+        "/baseball/dashboard/compare"
+      ],
+      "primary_files": [
+        "src/app/baseball/(dashboard)/dashboard/comparisons/page.tsx",
+        "src/components/comparison/PlayerComparison.tsx",
+        "src/components/comparison/ComparisonTable.tsx"
+      ],
+      "all_files": [
+        "All comparison components",
+        "src/lib/queries/players.ts"
+      ],
+      "database_tables": [
+        "players",
+        "player_metrics",
+        "player_comparisons (stores saved comparisons)"
+      ],
+      "api_routes": [],
+      "state_management": "URL search params",
+      "dependencies": [
+        "Player Discovery"
+      ],
+      "dependents": [],
+      "known_issues": [],
+      "missing_functionality": [
+        "Radar chart overlay (planned)",
+        "Save comparison feature (partial)",
+        "Video comparison side-by-side"
+      ],
+      "code_quality_notes": "Good. Clean implementation, responsive layout",
+      "test_coverage": "none"
+    },
+    {
+      "name": "Messaging System",
+      "category": "core",
+      "description": "Direct messaging between coaches and players with conversation threads, real-time updates, read receipts, and inbox/sent folders.",
+      "user_story": "As a coach or player, I want to send and receive messages so I can communicate privately about recruiting",
+      "status": "working",
+      "completeness_percent": 90,
+      "primary_route": "/baseball/dashboard/messages",
+      "all_routes": [
+        "/baseball/dashboard/messages",
+        "/baseball/dashboard/messages/[id]",
+        "/golf/dashboard/messages"
+      ],
+      "primary_files": [
+        "src/app/baseball/(dashboard)/dashboard/messages/page.tsx",
+        "src/app/baseball/(dashboard)/dashboard/messages/[id]/page.tsx",
+        "src/components/messages/*"
+      ],
+      "all_files": [
+        "All message components",
+        "src/app/baseball/actions/messages.ts",
+        "src/app/golf/actions/messages.ts",
+        "src/hooks/use-messages.ts",
+        "src/hooks/use-messages-subscription.ts"
+      ],
+      "database_tables": [
+        "conversations",
+        "conversation_participants",
+        "messages"
+      ],
+      "api_routes": [],
+      "state_management": "Realtime subscriptions via Supabase",
+      "dependencies": [
+        "Authentication"
+      ],
+      "dependents": [],
+      "known_issues": [],
+      "missing_functionality": [
+        "File attachments",
+        "Message reactions",
+        "Group messaging"
+      ],
+      "code_quality_notes": "Good. RLS properly secured after security fixes, real-time works well",
+      "test_coverage": "partial (E2E test exists)"
+    },
+    {
+      "name": "Golf Round Management",
+      "category": "core",
+      "description": "Complete round logging system with hole-by-hole scoring, shot tracking, course data, stats calculation, and coach verification. Supports tournament, qualifier, practice, and casual rounds.",
+      "user_story": "As a golf player, I want to log my rounds with detailed stats so I can track my progress and identify areas to improve",
+      "status": "working",
+      "completeness_percent": 95,
+      "primary_route": "/golf/dashboard/rounds",
+      "all_routes": [
+        "/golf/dashboard/rounds",
+        "/golf/dashboard/rounds/new",
+        "/golf/dashboard/rounds/[id]",
+        "/golf/dashboard/rounds/continue/[id]",
+        "/golf/dashboard/rounds/[id]/review"
+      ],
+      "primary_files": [
+        "src/app/golf/(dashboard)/dashboard/rounds/page.tsx",
+        "src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx",
+        "src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx",
+        "src/components/golf/rounds/*"
+      ],
+      "all_files": [
+        "All golf round components",
+        "src/app/golf/actions/golf.ts",
+        "src/hooks/golf/use-golf-rounds.ts",
+        "src/lib/golf/round-stats.ts"
+      ],
+      "database_tables": [
+        "golf_rounds",
+        "golf_holes",
+        "golf_shots",
+        "golf_courses",
+        "golf_course_holes",
+        "approach_miss_details",
+        "putt_details"
+      ],
+      "api_routes": [
+        "/api/golf/rounds/generate-review (AI insights)"
+      ],
+      "state_management": "Local state with server actions",
+      "dependencies": [
+        "Golf team membership",
+        "Course database"
+      ],
+      "dependents": [
+        "Golf stats",
+        "Qualifiers",
+        "CoachHelm AI"
+      ],
+      "known_issues": [],
+      "missing_functionality": [
+        "Photo uploads for holes",
+        "Weather data integration"
+      ],
+      "code_quality_notes": "Excellent. Complex state management handled well, good UX for multi-step flow",
+      "test_coverage": "partial (E2E tests exist)"
+    },
+    {
+      "name": "Golf Qualifiers",
+      "category": "core",
+      "description": "Tournament qualifier system where players compete to make the traveling lineup. Multi-round qualifiers with leaderboards, automatic scoring from rounds, and lineup selection by coach.",
+      "user_story": "As a golf coach, I want to run qualifiers so I can objectively select my traveling lineup for tournaments",
+      "status": "working",
+      "completeness_percent": 90,
+      "primary_route": "/golf/dashboard/qualifiers",
+      "all_routes": [
+        "/golf/dashboard/qualifiers",
+        "/golf/dashboard/qualifiers/[id]"
+      ],
+      "primary_files": [
+        "src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx",
+        "src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx",
+        "src/components/golf/qualifiers/*"
+      ],
+      "all_files": [
+        "All qualifier components",
+        "src/app/golf/actions/golf.ts"
+      ],
+      "database_tables": [
+        "golf_qualifiers",
+        "golf_qualifier_entries",
+        "golf_rounds (linked)"
+      ],
+      "api_routes": [],
+      "state_management": "Server components with server actions",
+      "dependencies": [
+        "Golf rounds",
+        "Golf team"
+      ],
+      "dependents": [],
+      "known_issues": [],
+      "missing_functionality": [
+        "Weather delay handling",
+        "Tiebreaker rules configuration"
+      ],
+      "code_quality_notes": "Good. Leaderboard calculations are accurate",
+      "test_coverage": "none"
+    },
+    {
+      "name": "CoachHelm AI (Golf Coaching Intelligence)",
+      "category": "secondary",
+      "description": "AI-powered coaching insights system that analyzes player rounds and provides pattern recognition, tendency analysis, and coaching recommendations. Uses custom ML-like algorithms (not actual AI API calls) to identify putting tendencies, approach shot patterns, and scoring correlations.",
+      "user_story": "As a golf coach, I want AI-generated insights about my players so I can provide data-driven coaching",
+      "status": "working",
+      "completeness_percent": 80,
+      "primary_route": "/golf/dashboard/settings/coaching-intelligence",
+      "all_routes": [
+        "/golf/dashboard/settings/coaching-intelligence"
+      ],
+      "primary_files": [
+        "src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/page.tsx",
+        "src/lib/coachhelm/*"
+      ],
+      "all_files": [
+        "src/lib/coachhelm/pattern-engine.ts",
+        "src/lib/coachhelm/insight-generator.ts",
+        "src/lib/coachhelm/confidence-calibrator.ts",
+        "src/hooks/coachhelm/*"
+      ],
+      "database_tables": [
+        "golf_coachhelm_settings",
+        "golf_patterns_v2",
+        "golf_learned_behavior",
+        "golf_predictions",
+        "golf_confidence_calibration",
+        "golf_validations"
+      ],
+      "api_routes": [
+        "/api/golf/rounds/generate-review",
+        "/api/golf/players/[playerId]/putt-tendencies"
+      ],
+      "state_management": "Server-side processing",
+      "dependencies": [
+        "Golf rounds with shot data"
+      ],
+      "dependents": [],
+      "known_issues": [],
+      "missing_functionality": [
+        "Actual AI/ML model integration",
+        "Historical pattern comparison",
+        "Coaching plan generation"
+      ],
+      "code_quality_notes": "Very good. Complex algorithm implementations, well-documented",
+      "test_coverage": "none"
+    },
+    {
+      "name": "Golf Team Calendar",
+      "category": "core",
+      "description": "Team event scheduling with practices, tournaments, meetings, travel. Features RSVP system, calendar feeds (iCal/CalDAV), recurring events, and availability polling.",
+      "user_story": "As a golf coach, I want to schedule team events and track attendance so I can manage the team calendar efficiently",
+      "status": "working",
+      "completeness_percent": 85,
+      "primary_route": "/golf/dashboard/calendar",
+      "all_routes": [
+        "/golf/dashboard/calendar"
+      ],
+      "primary_files": [
+        "src/app/golf/(dashboard)/dashboard/calendar/page.tsx",
+        "src/components/golf/calendar/*"
+      ],
+      "all_files": [
+        "All calendar components",
+        "src/app/golf/actions/recurring-events.ts",
+        "src/app/golf/actions/availability-polling.ts",
+        "src/app/golf/actions/caldav-sync.ts",
+        "src/app/golf/actions/calendar-feeds.ts",
+        "src/lib/calendar/*"
+      ],
+      "database_tables": [
+        "golf_events",
+        "golf_event_attendance",
+        "golf_event_rsvps",
+        "golf_availability_polls",
+        "golf_poll_responses",
+        "golf_calendar_feeds",
+        "golf_external_calendars"
+      ],
+      "api_routes": [
+        "/api/calendar/feeds/[token]",
+        "/api/calendar/coach/[token]",
+        "/api/calendar/team/[token]",
+        "/api/calendar/player/[token]"
+      ],
+      "state_management": "Server components with optimistic updates",
+      "dependencies": [
+        "Golf team membership"
+      ],
+      "dependents": [],
+      "known_issues": [],
+      "missing_functionality": [
+        "Google Calendar sync",
+        "Weather integration",
+        "Conflict detection"
+      ],
+      "code_quality_notes": "Good. Complex calendar logic handled well, iCal generation works",
+      "test_coverage": "none"
+    },
+    {
+      "name": "College Coach Dashboard",
+      "category": "core",
+      "description": "Beautiful bento grid dashboard for college coaches with pipeline stats, recent activity feed, engagement chart, USA map of recruits by state, saved searches, upcoming events/camps. Fully responsive with glassmorphic design.",
+      "user_story": "As a college coach, I want an overview of my recruiting activity so I can quickly see what needs attention",
+      "status": "working",
+      "completeness_percent": 95,
+      "primary_route": "/baseball/dashboard",
+      "all_routes": [
+        "/baseball/dashboard"
+      ],
+      "primary_files": [
+        "src/app/baseball/(dashboard)/dashboard/page.tsx",
+        "src/components/dashboard/EngagementChart.tsx"
+      ],
+      "all_files": [
+        "Dashboard components",
+        "src/hooks/use-dashboard.ts",
+        "src/hooks/use-stats.ts"
+      ],
+      "database_tables": [
+        "watchlists",
+        "player_engagement_events",
+        "coach_calendar_events",
+        "camps"
+      ],
+      "api_routes": [],
+      "state_management": "Multiple custom hooks",
+      "dependencies": [
+        "Authentication",
+        "Watchlist",
+        "Activity tracking"
+      ],
+      "dependents": [],
+      "known_issues": [],
+      "missing_functionality": [],
+      "code_quality_notes": "Excellent. Beautiful UI, performant with parallel data fetching",
+      "test_coverage": "none"
+    },
+    {
+      "name": "High School Coach Dashboard",
+      "category": "core",
+      "description": "Team management dashboard for HS coaches to manage roster, upload videos, track college interest, and help players get recruited. INCOMPLETE - redirects exist but full implementation missing.",
+      "user_story": "As a high school coach, I want to manage my team and help my players get recruited",
+      "status": "partial",
+      "completeness_percent": 40,
+      "primary_route": "/baseball/dashboard/team/high-school",
+      "all_routes": [
+        "/baseball/dashboard/team/high-school",
+        "/baseball/dashboard/team"
+      ],
+      "primary_files": [
+        "Routes exist but components incomplete"
+      ],
+      "all_files": [
+        "Scattered implementations"
+      ],
+      "database_tables": [
+        "teams",
+        "team_members",
+        "team_coach_staff",
+        "organizations"
+      ],
+      "api_routes": [],
+      "state_management": "Incomplete",
+      "dependencies": [
+        "Team system",
+        "Organization system"
+      ],
+      "dependents": [],
+      "known_issues": [
+        "Marked as P0 priority - CORE-003"
+      ],
+      "missing_functionality": [
+        "Complete dashboard layout",
+        "Roster management UI",
+        "College interest tracking UI",
+        "Video upload workflow"
+      ],
+      "code_quality_notes": "Incomplete",
+      "test_coverage": "none"
+    },
+    {
+      "name": "Video Management",
+      "category": "secondary",
+      "description": "Player video upload, management, and showcase. Supports multiple videos per player with titles, descriptions, thumbnails. Video clipping feature planned but not implemented.",
+      "user_story": "As a player, I want to upload highlight videos so coaches can evaluate my skills",
+      "status": "partial",
+      "completeness_percent": 60,
+      "primary_route": "/baseball/dashboard/videos",
+      "all_routes": [
+        "/baseball/dashboard/videos"
+      ],
+      "primary_files": [
+        "src/app/baseball/(dashboard)/dashboard/videos/page.tsx",
+        "src/components/player/video/*"
+      ],
+      "all_files": [
+        "Video components",
+        "src/lib/queries/videos.ts"
+      ],
+      "database_tables": [
+        "videos",
+        "video_views"
+      ],
+      "api_routes": [],
+      "state_management": "Server components",
+      "dependencies": [
+        "Supabase Storage"
+      ],
+      "dependents": [
+        "Player profiles",
+        "Discovery system"
+      ],
+      "known_issues": [],
+      "missing_functionality": [
+        "Video clipping tool (planned as FEATURE-001)",
+        "Video transcoding",
+        "Thumbnail generation",
+        "Video analytics"
+      ],
+      "code_quality_notes": "Basic implementation works but needs polish",
+      "test_coverage": "none"
+    },
+    {
+      "name": "Camps Management",
+      "category": "secondary",
+      "description": "Coaches can create and manage baseball camps/showcases with registration, pricing, capacity management, and attendee tracking.",
+      "user_story": "As a coach, I want to host camps and manage registrations so I can run showcase events",
+      "status": "working",
+      "completeness_percent": 85,
+      "primary_route": "/baseball/dashboard/camps",
+      "all_routes": [
+        "/baseball/dashboard/camps",
+        "/baseball/dashboard/camps/[id]"
+      ],
+      "primary_files": [
+        "src/app/baseball/(dashboard)/dashboard/camps/page.tsx"
+      ],
+      "all_files": [
+        "Camp components"
+      ],
+      "database_tables": [
+        "camps",
+        "camp_registrations"
+      ],
+      "api_routes": [],
+      "state_management": "Server components",
+      "dependencies": [
+        "Authentication",
+        "Coach profile"
+      ],
+      "dependents": [],
+      "known_issues": [],
+      "missing_functionality": [
+        "Payment processing (Stripe hooks exist but not integrated)",
+        "Email notifications",
+        "Check-in system"
+      ],
+      "code_quality_notes": "Good core implementation",
+      "test_coverage": "none"
+    },
+    {
+      "name": "Golf Team Roster Management",
+      "category": "core",
+      "description": "Coach manages golf team roster with player info, year, status (active/injured/redshirt), scholarship tracking, invite code system for players to join.",
+      "user_story": "As a golf coach, I want to manage my team roster so I can track all my players",
+      "status": "working",
+      "completeness_percent": 90,
+      "primary_route": "/golf/dashboard/roster",
+      "all_routes": [
+        "/golf/dashboard/roster"
+      ],
+      "primary_files": [
+        "src/app/golf/(dashboard)/dashboard/roster/page.tsx",
+        "src/components/golf/roster/*"
+      ],
+      "all_files": [
+        "Roster components",
+        "src/app/golf/actions/roster.ts"
+      ],
+      "database_tables": [
+        "golf_players",
+        "golf_teams"
+      ],
+      "api_routes": [],
+      "state_management": "Server actions",
+      "dependencies": [
+        "Golf team"
+      ],
+      "dependents": [
+        "All golf features"
+      ],
+      "known_issues": [],
+      "missing_functionality": [
+        "Bulk import",
+        "Player transfer system"
+      ],
+      "code_quality_notes": "Good",
+      "test_coverage": "partial"
+    },
+    {
+      "name": "Golf Statistics Dashboard",
+      "category": "core",
+      "description": "Comprehensive stats view for golf players and coaches showing scoring average, trends over time, putting stats, fairway/GIR percentages, best rounds, etc.",
+      "user_story": "As a golfer, I want to see my statistics so I can understand my performance trends",
+      "status": "working",
+      "completeness_percent": 85,
+      "primary_route": "/golf/dashboard/stats",
+      "all_routes": [
+        "/golf/dashboard/stats"
+      ],
+      "primary_files": [
+        "src/app/golf/(dashboard)/dashboard/stats/page.tsx",
+        "src/components/golf/stats/*"
+      ],
+      "all_files": [
+        "Stats components",
+        "src/lib/golf/stats-calculator.ts"
+      ],
+      "database_tables": [
+        "golf_rounds",
+        "golf_holes",
+        "golf_shots"
+      ],
+      "api_routes": [],
+      "state_management": "Server components",
+      "dependencies": [
+        "Golf rounds"
+      ],
+      "dependents": [],
+      "known_issues": [],
+      "missing_functionality": [
+        "Advanced analytics",
+        "Comparative stats vs team",
+        "Historical trends beyond current season"
+      ],
+      "code_quality_notes": "Good stats calculations",
+      "test_coverage": "partial"
+    }
+  ],
+  "api_inventory": [
+    {
+      "route": "/api/golf/rounds/generate-review",
+      "methods": [
+        "POST"
+      ],
+      "auth_required": true,
+      "rate_limited": false,
+      "file": "src/app/api/golf/rounds/generate-review/route.ts",
+      "description": "Generates AI coaching insights for a golf round using CoachHelm system",
+      "issues": "none"
+    },
+    {
+      "route": "/api/golf/players/[playerId]/putt-tendencies",
+      "methods": [
+        "GET"
+      ],
+      "auth_required": true,
+      "rate_limited": false,
+      "file": "src/app/api/golf/players/[playerId]/putt-tendencies/route.ts",
+      "description": "Returns putting tendency analysis for a player",
+      "issues": "Fixed - now has proper auth and authorization"
+    },
+    {
+      "route": "/api/golf/putts",
+      "methods": [
+        "POST"
+      ],
+      "auth_required": true,
+      "rate_limited": false,
+      "file": "src/app/api/golf/putts/route.ts",
+      "description": "Creates putt detail records with validation",
+      "issues": "Fixed - has proper auth and ownership verification"
+    },
+    {
+      "route": "/api/calendar/feeds/[token]",
+      "methods": [
+        "GET"
+      ],
+      "auth_required": false,
+      "rate_limited": false,
+      "file": "src/app/api/calendar/feeds/[token]/route.ts",
+      "description": "Returns iCal feed for subscriptions (token-based auth)",
+      "issues": "none"
+    },
+    {
+      "route": "/api/calendar/coach/[token]",
+      "methods": [
+        "GET"
+      ],
+      "auth_required": false,
+      "rate_limited": false,
+      "file": "src/app/api/calendar/coach/[token]/route.ts",
+      "description": "Coach-specific calendar feed",
+      "issues": "none"
+    },
+    {
+      "route": "/api/calendar/team/[token]",
+      "methods": [
+        "GET"
+      ],
+      "auth_required": false,
+      "rate_limited": false,
+      "file": "src/app/api/calendar/team/[token]/route.ts",
+      "description": "Team calendar feed",
+      "issues": "none"
+    },
+    {
+      "route": "/api/calendar/player/[token]",
+      "methods": [
+        "GET"
+      ],
+      "auth_required": false,
+      "rate_limited": false,
+      "file": "src/app/api/calendar/player/[token]/route.ts",
+      "description": "Player-specific calendar feed",
+      "issues": "none"
+    },
+    {
+      "route": "/api/calendar/events",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "auth_required": true,
+      "rate_limited": false,
+      "file": "src/app/api/calendar/events/route.ts",
+      "description": "CRUD for calendar events",
+      "issues": "none"
+    },
+    {
+      "route": "/api/health",
+      "methods": [
+        "GET"
+      ],
+      "auth_required": false,
+      "rate_limited": false,
+      "file": "src/app/api/health/route.ts",
+      "description": "Health check endpoint",
+      "issues": "none"
+    },
+    {
+      "route": "/api/log-error",
+      "methods": [
+        "POST"
+      ],
+      "auth_required": false,
+      "rate_limited": false,
+      "file": "src/app/api/log-error/route.ts",
+      "description": "Client-side error logging to Sentry",
+      "issues": "none"
+    },
+    {
+      "route": "/api/account/delete",
+      "methods": [
+        "POST"
+      ],
+      "auth_required": true,
+      "rate_limited": true,
+      "file": "src/app/api/account/delete/route.ts",
+      "description": "Account deletion",
+      "issues": "none"
+    },
+    {
+      "route": "/auth/callback",
+      "methods": [
+        "GET"
+      ],
+      "auth_required": false,
+      "rate_limited": false,
+      "file": "src/app/auth/callback/route.ts",
+      "description": "Supabase auth callback handler",
+      "issues": "none"
+    }
+  ],
+  "red_flags": [
+    {
+      "severity": "high",
+      "category": "maintainability",
+      "title": "JUCO Mode Toggle Not Implemented (P0)",
+      "description": "JUCO coaches need to switch between recruiting mode (acting as college coach) and team mode (acting as HS coach). The coach_mode toggle exists in the auth store but no UI or logic actually allows JUCO coaches to switch modes. This blocks all JUCO coach functionality.",
+      "location": "src/stores/auth-store.ts (store exists), baseball dashboard routing logic",
+      "impact": "JUCO coaches are completely blocked from using the platform effectively. They either get stuck in recruiting mode OR team mode but can't switch. Marked as CORE-001 in feature checklist - P0 priority.",
+      "suggested_fix": "Add mode toggle UI in header/settings for JUCO coaches. Update routing logic to respect mode selection. Add middleware checks for mode-specific routes.",
+      "effort_estimate": "medium (3-5 days)"
+    },
+    {
+      "severity": "high",
+      "category": "maintainability",
+      "title": "High School Coach Dashboard Incomplete (P0)",
+      "description": "HS coaches are redirected to /baseball/dashboard/team/high-school but this dashboard is barely implemented. Routing exists but core features missing: roster management UI, college interest tracking, video upload workflow for multiple players, team analytics.",
+      "location": "/baseball/dashboard/team/high-school route",
+      "impact": "High school coaches have poor experience, limited functionality. This is a key user segment for player-side revenue. Marked as CORE-003 - P0 priority.",
+      "suggested_fix": "Build complete HS coach dashboard with: (1) Roster table with player cards, (2) College interest tracker showing which schools viewed each player, (3) Video library with batch upload, (4) Team performance analytics, (5) Communication tools",
+      "effort_estimate": "significant (7-10 days)"
+    },
+    {
+      "severity": "high",
+      "category": "maintainability",
+      "title": "Multi-Team Support Not Built for Showcase Coaches (P0)",
+      "description": "Showcase organizations manage multiple teams but infrastructure is incomplete. Database tables exist (teams, team_members, organizations) but UI for switching between teams, cross-team roster management, and org-level analytics are missing or partial.",
+      "location": "Baseball team management system",
+      "impact": "Showcase coaches (large orgs like Perfect Game, PBR) cannot effectively use platform. Lost revenue opportunity from high-value customers. Marked as CORE-002 - P0 priority.",
+      "suggested_fix": "Build team selector UI, org dashboard with all teams, cross-team roster view, org-level analytics, multi-team video management",
+      "effort_estimate": "significant (5-7 days)"
+    },
+    {
+      "severity": "medium",
+      "category": "security",
+      "title": "Onboarding Routes Commented Out in Middleware",
+      "description": "Middleware has onboarding routes (/baseball/coach-onboarding, /golf/coach-onboarding) commented out with 'TEMPORARY: for development' note. This means onboarding pages might not be properly protected in production.",
+      "location": "src/lib/supabase/middleware.ts lines 88-94",
+      "impact": "Potential security issue if unauthenticated users can access onboarding pages, or authenticated users can re-run onboarding improperly.",
+      "suggested_fix": "Uncomment middleware routes and add proper onboarding state checks (only allow access if onboarding_completed = false)",
+      "effort_estimate": "quick (1-2 hours)"
+    },
+    {
+      "severity": "medium",
+      "category": "maintainability",
+      "title": "Golf Platform Not Separated from Baseball (P0)",
+      "description": "Golf and baseball platforms share routing structure (/golf and /baseball) but need clearer separation for maintenance and future scaling. Some shared components cause confusion. Documentation says 'separate golf platform' is CORE-004 priority.",
+      "location": "Entire src/app structure",
+      "impact": "Code organization becomes harder to maintain as both platforms grow. Risk of baseball changes breaking golf and vice versa.",
+      "suggested_fix": "Consider moving to /apps/baseball and /apps/golf structure, or create clear domain boundaries with separate component libraries. At minimum, document separation strategy clearly.",
+      "effort_estimate": "medium (3-5 days for refactor)"
+    },
+    {
+      "severity": "medium",
+      "category": "reliability",
+      "title": "Missing Payment Integration Despite Camp Infrastructure",
+      "description": "Camps table has price field and registration system, but no payment processing integrated. Stripe environment variables exist in .env.example but not used in code.",
+      "location": "Camps feature, payment system",
+      "impact": "Cannot monetize camps/showcase events. Coaches must handle payments externally. Lost revenue.",
+      "suggested_fix": "Integrate Stripe for camp registration payments. Add Stripe Checkout flow, webhook handlers, payment status tracking in database.",
+      "effort_estimate": "medium (4-6 days)"
+    },
+    {
+      "severity": "medium",
+      "category": "performance",
+      "title": "No Production Bundle Analysis or Monitoring",
+      "description": "Bundle analyzer exists but ANALYZE flag not documented. No monitoring of bundle size over time. Large dependencies like Recharts, Framer Motion could bloat client bundle.",
+      "location": "Build configuration",
+      "impact": "Risk of bundle size creeping up over time, hurting performance and Core Web Vitals scores.",
+      "suggested_fix": "Set up bundle size CI checks, monitor bundle size in each PR, add lazy loading for heavy features like charts/video players",
+      "effort_estimate": "quick (1-2 days)"
+    },
+    {
+      "severity": "low",
+      "category": "maintainability",
+      "title": "Many Routes Not Linked from Anywhere",
+      "description": "TODO.md generated by UX flow auditor shows 30+ routes that exist but aren't linked from navigation. Could be orphaned pages or incomplete features.",
+      "location": "Various routes listed in TODO.md",
+      "impact": "Users cannot discover features. Wasted development effort on unreachable pages. Confusing for maintenance.",
+      "suggested_fix": "Audit each unlisted route: either add to navigation/sidebar OR delete if obsolete. Mark as CORE-005 (remove dead code) - P0.",
+      "effort_estimate": "quick (1-2 days)"
+    },
+    {
+      "severity": "low",
+      "category": "reliability",
+      "title": "Console Logs Removal Disabled in Production",
+      "description": "next.config.mjs has removeConsole commented out 'temporarily for debugging PDF upload'. This leaves console.log statements in production bundle.",
+      "location": "next.config.mjs line 35",
+      "impact": "Cluttered production console, potential information leakage, larger bundle size.",
+      "suggested_fix": "Re-enable removeConsole after PDF debug complete, or use conditional removal (keep console.error/warn)",
+      "effort_estimate": "quick (15 minutes)"
+    },
+    {
+      "severity": "low",
+      "category": "reliability",
+      "title": "Limited Test Coverage",
+      "description": "Playwright E2E tests exist for some flows (auth, discover, watchlist, messages) but many features have no tests. No component tests (Vitest not set up). No API route tests.",
+      "location": "e2e/ directory, testing infrastructure",
+      "impact": "Regression risk when making changes. No CI/CD confidence. Technical debt item TECH-003 partially complete.",
+      "suggested_fix": "Add E2E tests for golf flows, critical user journeys. Set up Vitest for component tests. Add API integration tests.",
+      "effort_estimate": "significant (7-10 days for comprehensive coverage)"
+    }
+  ],
+  "technical_debt": [
+    {
+      "title": "Dead Code and Unused Routes",
+      "description": "TODO.md shows 126 tasks including many 'missing detail pages' and 'routes not linked from anywhere'. This indicates incomplete feature development, orphaned code, and poor code hygiene. Marked as CORE-005 - P0 priority.",
+      "files_affected": [
+        "src/app/**/[id] routes",
+        "Various component files",
+        "Unused actions"
+      ],
+      "suggested_resolution": "Systematic audit: (1) Identify all orphaned routes, (2) Delete truly unused routes, (3) Link discoverable routes to navigation, (4) Document intentionally unlisted routes. Set up linting for unused exports.",
+      "priority": "high"
+    },
+    {
+      "title": "Incomplete Multi-Platform Type Safety",
+      "description": "Database types are auto-generated (6,657 lines) but custom types scattered across src/lib/types and src/types. Golf types in separate file (golf.ts) but some overlap. Risk of type inconsistencies between baseball and golf domains.",
+      "files_affected": [
+        "src/lib/types/database.ts",
+        "src/lib/types/golf.ts",
+        "src/types/*"
+      ],
+      "suggested_resolution": "Consolidate type definitions strategy: (1) Keep database.ts as source of truth, (2) Use discriminated unions for baseball vs golf domains, (3) Create type guards for runtime checks, (4) Document type import patterns",
+      "priority": "medium"
+    },
+    {
+      "title": "Inconsistent State Management Patterns",
+      "description": "Mix of Zustand (4 stores), React Context (2), custom hooks with useState, Supabase Realtime subscriptions, and URL params for state. No clear pattern for when to use each approach.",
+      "files_affected": [
+        "src/stores/*",
+        "src/contexts/*",
+        "src/hooks/*",
+        "Various components"
+      ],
+      "suggested_resolution": "Document state management decision tree: (1) Zustand for global auth/UI state, (2) Context for feature-scoped state, (3) Realtime for collaborative data, (4) URL params for shareable filters, (5) Server actions for mutations. Refactor inconsistent patterns.",
+      "priority": "medium"
+    },
+    {
+      "title": "Documentation Fragmentation",
+      "description": "47 documentation files in docs/ with overlapping information. Multiple README files. CLAUDE.md exists but unclear if up to date with dual platform. Feature checklist detailed but TODO.md auto-generated. No single source of truth.",
+      "files_affected": [
+        "docs/*",
+        "README.md",
+        "CLAUDE.md",
+        "TODO.md",
+        "Various *_GUIDE.md files"
+      ],
+      "suggested_resolution": "Consolidate documentation: (1) README.md as primary entry, (2) FEATURE_CHECKLIST.md as implementation reference, (3) Archive old audit reports, (4) Update CLAUDE.md for AI context, (5) Create docs/architecture/README.md as architecture source of truth",
+      "priority": "medium"
+    },
+    {
+      "title": "Performance Optimization Incomplete",
+      "description": "Performance utilities created (lazy-components.tsx, performance.tsx) and applied to some components (Player Card memoized) but not systematically applied. Bundle analysis not part of CI. React.memo usage inconsistent.",
+      "files_affected": [
+        "src/lib/performance.tsx",
+        "src/lib/lazy-components.tsx",
+        "Various components"
+      ],
+      "suggested_resolution": "Systematic performance audit: (1) Identify re-render hotspots with React DevTools, (2) Apply React.memo to pure components, (3) Lazy load heavy features (Recharts, video player), (4) Add bundle size CI checks, (5) Implement route-based code splitting",
+      "priority": "medium"
+    }
+  ],
+  "immediate_priorities": [
+    "1. CORE-001: Implement JUCO Mode Toggle - JUCO coaches are completely blocked without ability to switch between recruiting and team modes. Add toggle UI, update routing logic, add middleware checks. (3-5 days, HIGH priority)",
+    "2. CORE-003: Complete High School Coach Dashboard - HS coaches have minimal functionality currently. Build complete dashboard with roster management, college interest tracking, video upload workflow, team analytics. This unlocks a key revenue segment. (7-10 days, HIGH priority)",
+    "3. CORE-002: Implement Multi-Team Support for Showcase Coaches - Large showcase organizations cannot manage multiple teams effectively. Build team selector, org dashboard, cross-team roster, org-level analytics. High-value customer segment. (5-7 days, HIGH priority)",
+    "4. CORE-005: Remove Dead Code and Fix Navigation - Clean up 30+ orphaned routes, link discoverable features to navigation, delete truly unused code. Improves maintenance and user discoverability. (1-2 days, MEDIUM priority but quick win)",
+    "5. Fix Middleware Onboarding Protection - Uncomment onboarding routes in middleware and add proper state checks. Quick security fix. (1-2 hours, MEDIUM priority but critical for production)"
+  ],
+  "confidence_notes": "High confidence in this analysis. I've read: (1) All key configuration files, (2) Database migrations showing complete schema evolution, (3) Feature checklist with detailed implementation specs, (4) Security audit showing all RLS issues fixed, (5) Package.json showing exact tech stack, (6) Directory structure showing dual-platform separation, (7) Representative code from both baseball and golf platforms, (8) Auth flows and middleware logic, (9) Multiple documentation files showing project history. \n\nAreas of lower confidence: (1) Actual user adoption/metrics - no analytics data reviewed, (2) Production deployment configuration beyond Vercel inference, (3) Actual Stripe integration status - hooks exist but unclear if functional, (4) Team collaboration patterns - multiple AI tool artifacts suggest heavy AI-assisted development. \n\nThe codebase is large (~7MB src/) with 86 database tables, 72 pages, 205 server actions, 62 UI components, and 51 migrations. Quality is generally high with strict TypeScript, comprehensive RLS, good separation of concerns. Main issues are incomplete features for HS/JUCO/Showcase coaches (blocking P0 priorities) rather than architectural problems."
+}
+```
+
+This comprehensive analysis captures the complete state of the Helm Sports Labs platform. The dual-platform architecture (Baseball recruiting + Golf team management) is well-structured with modern Next.js patterns, strict TypeScript, and secure database with RLS. The main gaps are incomplete implementations for certain coach types (HS, JUCO, Showcase) rather than fundamental technical issues.

@@ -12,11 +12,28 @@ interface V2PredictionCardProps {
 export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
   const predictedValue = prediction.predictedValue;
   const confidencePercent = Math.round(prediction.confidence * 100);
+  const lowerBound = prediction.lowerBound ?? prediction.predictedRangeLow;
+  const upperBound = prediction.upperBound ?? prediction.predictedRangeHigh;
+  const hasRange = Number.isFinite(lowerBound) && Number.isFinite(upperBound);
+  const trend =
+    prediction.trend ??
+    (prediction.predictedValue < 0
+      ? 'improving'
+      : prediction.predictedValue > 0
+        ? 'declining'
+        : 'stable');
+  const inputFeatureCount =
+    prediction.inputFeatures?.length ?? prediction.keyFactors?.length ?? 0;
+  const keyDrivers =
+    prediction.keyDrivers ??
+    prediction.keyFactors?.map((factor) => factor.name).filter(Boolean) ??
+    [];
   
   // Determine if prediction is positive or negative based on type
-  const isPositive = prediction.predictionType === 'round_score' 
-    ? predictedValue < 72 
-    : prediction.trend === 'improving';
+  const isPositive =
+    prediction.predictionType === 'round_score'
+      ? predictedValue < 0
+      : trend === 'improving';
 
   return (
     <motion.div
@@ -55,7 +72,7 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
             )}
           </div>
           <div className="text-xs text-slate-400 mt-1">
-            Range: {prediction.lowerBound?.toFixed(1)} - {prediction.upperBound?.toFixed(1)}
+            Range: {hasRange ? `${lowerBound.toFixed(1)} - ${upperBound.toFixed(1)}` : '--'}
           </div>
         </div>
 
@@ -64,27 +81,27 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
           <div className="text-xs text-slate-500 mb-1">Current Trend</div>
           <div className={cn(
             'text-lg font-semibold capitalize',
-            prediction.trend === 'improving' && 'text-green-600',
-            prediction.trend === 'declining' && 'text-red-600',
-            prediction.trend === 'stable' && 'text-slate-600',
+            trend === 'improving' && 'text-green-600',
+            trend === 'declining' && 'text-red-600',
+            trend === 'stable' && 'text-slate-600',
           )}>
-            {prediction.trend}
+            {trend}
           </div>
           <div className="text-xs text-slate-400 mt-1">
-            Based on {prediction.inputFeatures?.length || 0} factors
+            Based on {inputFeatureCount} factors
           </div>
         </div>
       </div>
 
       {/* Key Drivers */}
-      {prediction.keyDrivers && prediction.keyDrivers.length > 0 && (
+      {keyDrivers.length > 0 && (
         <div className="mt-4 pt-4 border-t border-slate-100">
           <div className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-1.5">
             <IconChartBar size={12} />
             Key Performance Drivers
           </div>
           <div className="flex flex-wrap gap-2">
-            {prediction.keyDrivers.slice(0, 4).map((driver: string, i: number) => (
+            {keyDrivers.slice(0, 4).map((driver: string, i: number) => (
               <span
                 key={i}
                 className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-md"

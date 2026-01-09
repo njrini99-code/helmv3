@@ -320,9 +320,11 @@ export default function DevPlansPage() {
                           </div>
                         </div>
                       </div>
-                      <Button variant="secondary" size="sm">
-                        View Plan
-                      </Button>
+                      <Link href={`/baseball/dashboard/dev-plans/${plan.id}`}>
+                        <Button variant="secondary" size="sm">
+                          View Plan
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 ))}

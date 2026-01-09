@@ -16,15 +16,18 @@ interface V2InsightsFeedProps {
   coachId: string;
   initialInsights?: ComposedInsight[];
   initialPatterns?: MinedPattern[];
+  initialPredictions?: Array<PerformancePrediction & { playerName?: string }>;
 }
 
 type TabType = 'insights' | 'patterns' | 'predictions';
+type TeamPrediction = PerformancePrediction & { playerName?: string };
 
 export function V2InsightsFeed({
   teamId: _teamId, // Reserved for future use
   coachId,
   initialInsights = [],
   initialPatterns = [],
+  initialPredictions = [],
 }: V2InsightsFeedProps) {
   void _teamId;
 
@@ -32,7 +35,7 @@ export function V2InsightsFeed({
   const [activeTab, setActiveTab] = useState<TabType>('insights');
   const [insights, setInsights] = useState<ComposedInsight[]>(initialInsights);
   const [patterns, setPatterns] = useState<MinedPattern[]>(initialPatterns);
-  const [predictions] = useState<PerformancePrediction[]>([]);
+  const [predictions, setPredictions] = useState<TeamPrediction[]>(initialPredictions);
   const [error, setError] = useState<string | null>(null);
   const [lastGenerated, setLastGenerated] = useState<Date | null>(null);
 
@@ -45,6 +48,7 @@ export function V2InsightsFeed({
       if (result.success) {
         setInsights(result.insights || []);
         setPatterns(result.patterns || []);
+        setPredictions(result.predictions || []);
         setLastGenerated(new Date());
         
         // Record interaction for learning
@@ -212,7 +216,11 @@ export function V2InsightsFeed({
             >
               {predictions.length > 0 ? (
                 predictions.map((prediction, i) => (
-                  <PredictionCard key={i} prediction={prediction} />
+                  <PredictionCard
+                    key={i}
+                    prediction={prediction}
+                    playerName={prediction.playerName}
+                  />
                 ))
               ) : (
                 <EmptyState

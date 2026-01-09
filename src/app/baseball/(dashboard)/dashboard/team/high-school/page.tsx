@@ -5,24 +5,27 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { StatCard } from '@/components/features/stat-card';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Avatar } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
+import { RosterTable } from '@/components/baseball/team/RosterTable';
+import { CollegeInterestTracker } from '@/components/baseball/team/CollegeInterestTracker';
+import { BatchVideoUpload } from '@/components/baseball/team/BatchVideoUpload';
+import { TeamAnalytics } from '@/components/baseball/team/TeamAnalytics';
 import {
   IconUsers,
-  IconCalendar,
   IconNote,
-  IconChevronRight,
   IconGraduationCap,
   IconEye,
+  IconMessage,
+  IconCalendar,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { createClient } from '@/lib/supabase/client';
-import { getFullName, formatRelativeTime } from '@/lib/utils';
+import { getFullName } from '@/lib/utils';
 
 interface TeamMember {
   id: string;
+  jersey_number: number | null;
   joined_at: string | null;
   player: {
     id: string;
@@ -66,7 +69,7 @@ export default function HSCoachDashboardPage() {
   const [devPlanCount, setDevPlanCount] = useState(0);
 
   // Data
-  const [recentMembers, setRecentMembers] = useState<TeamMember[]>([]);
+  const [roster, setRoster] = useState<TeamMember[]>([]);
   const [collegeInterests, setCollegeInterests] = useState<CollegeInterest[]>([]);
   const [devPlanProgress, setDevPlanProgress] = useState<DevPlanProgress[]>([]);
   const [academicAlerts, setAcademicAlerts] = useState<TeamMember[]>([]);
@@ -103,6 +106,7 @@ export default function HSCoachDashboardPage() {
       .from('team_members')
       .select(`
         id,
+        jersey_number,
         joined_at,
         player:players!inner(
           id,
@@ -119,8 +123,8 @@ export default function HSCoachDashboardPage() {
 
     if (roster) {
       const typedRoster = roster as TeamMember[];
+      setRoster(typedRoster);
       setRosterCount(typedRoster.length);
-      setRecentMembers(typedRoster.slice(0, 5));
 
       // Calculate stats
       const recruitingActive = typedRoster.filter((m) => m.player?.recruiting_activated).length;
@@ -264,229 +268,22 @@ export default function HSCoachDashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content - Left 2 columns */}
           <div className="lg:col-span-2 space-y-6">
-            {/* College Interest Feed */}
-            <Card variant="glass">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <h2 className="font-semibold text-slate-900">College Interest Feed</h2>
-                  <p className="text-sm leading-relaxed text-slate-500 mt-1">Recent activity from college coaches</p>
-                </div>
-                <Link href="/baseball/dashboard/college-interest">
-                  <Button variant="ghost" size="sm">
-                    View All <IconChevronRight size={16} className="ml-1" />
-                  </Button>
-                </Link>
-              </CardHeader>
-              <CardContent>
-                {collegeInterests.length === 0 ? (
-                  <div className="text-center py-8">
-                    <IconEye size={32} className="text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm leading-relaxed text-slate-500">No recent college interest</p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Interest events will appear here when college coaches view your players
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {collegeInterests.slice(0, 5).map((interest) => (
-                      <div
-                        key={interest.id}
-                        className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                          <IconEye size={16} className="text-green-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900">
-                            {interest.school_name}
-                            {interest.school_division && (
-                              <Badge variant="secondary" className="ml-2">{interest.school_division}</Badge>
-                            )}
-                          </p>
-                          <p className="text-sm leading-relaxed text-slate-600">
-                            {interest.coach_name || 'A coach'} {interest.event_type === 'profile_view' ? 'viewed' : 'added to watchlist'} <span className="font-medium">{interest.player_name}</span>
-                          </p>
-                          <p className="text-xs text-slate-400 mt-1">
-                            {formatRelativeTime(interest.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Academic Overview */}
-            <Card variant="glass">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <h2 className="font-semibold text-slate-900">Academic Overview</h2>
-                  <p className="text-sm leading-relaxed text-slate-500 mt-1">Monitor academic performance</p>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {academicAlerts.length > 0 && (
-                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <IconGraduationCap size={16} className="text-amber-600 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-amber-900">
-                          {academicAlerts.length} player{academicAlerts.length > 1 ? 's' : ''} below 2.5 GPA
-                        </p>
-                        <p className="text-xs text-amber-700 mt-1">
-                          Consider academic support or tutoring
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border border-slate-200 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">Team Average GPA</p>
-                      <p className="text-xs text-slate-500 mt-1">Based on {rosterCount} players</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-semibold tracking-tight text-slate-900">
-                        {avgGPA?.toFixed(2) || 'N/A'}
-                      </p>
-                      {avgGPA && (
-                        <Badge variant={avgGPA >= 3.0 ? 'success' : avgGPA >= 2.5 ? 'warning' : 'danger'}>
-                          {avgGPA >= 3.0 ? 'Excellent' : avgGPA >= 2.5 ? 'Good' : 'Needs Attention'}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {academicAlerts.length > 0 && (
-                    <>
-                      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400r">
-                        Players Needing Support
-                      </p>
-                      {academicAlerts.map((member) => (
-                        <div
-                          key={member.id}
-                          className="flex items-center justify-between p-3 border border-amber-200 bg-amber-50 rounded-lg"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Avatar
-                              name={getFullName(member.player?.first_name, member.player?.last_name)}
-                              src={member.player?.avatar_url || undefined}
-                              size="sm"
-                            />
-                            <div>
-                              <p className="text-sm font-medium text-slate-900">
-                                {getFullName(member.player?.first_name, member.player?.last_name)}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                {member.player?.primary_position} • Class of {member.player?.grad_year}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-semibold text-amber-900">
-                              {member.player?.gpa?.toFixed(2)} GPA
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Player Development Progress */}
-            <Card variant="glass">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <h2 className="font-semibold text-slate-900">Player Development</h2>
-                  <p className="text-sm leading-relaxed text-slate-500 mt-1">Track dev plan progress</p>
-                </div>
-                <Link href="/baseball/dashboard/dev-plans">
-                  <Button variant="ghost" size="sm">
-                    Manage Plans <IconChevronRight size={16} className="ml-1" />
-                  </Button>
-                </Link>
-              </CardHeader>
-              <CardContent>
-                {devPlanProgress.length === 0 ? (
-                  <div className="text-center py-8">
-                    <IconNote size={32} className="text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm leading-relaxed text-slate-500">No active development plans</p>
-                    <Link href="/baseball/dashboard/dev-plans">
-                      <Button className="mt-3">Create Dev Plan</Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {devPlanProgress.map((progress) => (
-                      <div key={progress.player_id} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-slate-900">{progress.player_name}</p>
-                          <p className="text-xs text-slate-500">
-                            {progress.completed_goals}/{progress.total_goals} goals
-                          </p>
-                        </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2">
-                          <div
-                            className="bg-green-600 h-2 rounded-full transition-all"
-                            style={{ width: `${progress.progress_percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <RosterTable roster={roster} />
+            <CollegeInterestTracker interests={collegeInterests} />
+            <BatchVideoUpload roster={roster} />
           </div>
 
           {/* Sidebar - Right column */}
           <div className="space-y-6">
-            {/* Recent Roster Additions */}
-            <Card variant="glass">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <h2 className="font-semibold text-slate-900">Recent Additions</h2>
-                <Link href="/baseball/dashboard/roster">
-                  <Button variant="ghost" size="sm">
-                    <IconChevronRight size={16} />
-                  </Button>
-                </Link>
-              </CardHeader>
-              <CardContent>
-                {recentMembers.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-sm leading-relaxed text-slate-500">No players yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {recentMembers.map((member) => (
-                      <div key={member.id} className="flex items-center gap-3">
-                        <Avatar
-                          name={getFullName(member.player?.first_name, member.player?.last_name)}
-                          src={member.player?.avatar_url || undefined}
-                          size="sm"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900 truncate">
-                            {getFullName(member.player?.first_name, member.player?.last_name)}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {member.player?.primary_position}
-                          </p>
-                        </div>
-                        {member.player?.recruiting_activated && (
-                          <Badge variant="success" className="text-xs">Active</Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <TeamAnalytics
+              rosterCount={rosterCount}
+              recruitingActiveCount={recruitingActiveCount}
+              avgGPA={avgGPA}
+              collegeInterestCount={collegeInterests.length}
+              devPlanCount={devPlanCount}
+              academicAlertCount={academicAlerts.length}
+              devPlanProgress={devPlanProgress}
+            />
 
             {/* Quick Actions */}
             <Card variant="glass">
@@ -507,6 +304,11 @@ export default function HSCoachDashboardPage() {
                 <Link href="/baseball/dashboard/college-interest" className="block">
                   <Button variant="secondary" className="w-full justify-start">
                     <IconEye size={16} className="mr-2" /> College Interest
+                  </Button>
+                </Link>
+                <Link href="/baseball/dashboard/messages" className="block">
+                  <Button variant="secondary" className="w-full justify-start">
+                    <IconMessage size={16} className="mr-2" /> Messages
                   </Button>
                 </Link>
                 <Link href="/baseball/dashboard/calendar" className="block">

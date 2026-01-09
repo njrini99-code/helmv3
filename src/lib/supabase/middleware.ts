@@ -14,12 +14,19 @@ function getSportFromPath(pathname: string): 'baseball' | 'golf' | null {
  * Coach types that can access recruiting features
  */
 type CoachType = 'college' | 'juco' | 'high_school' | 'showcase';
+type CoachMode = 'recruiting' | 'team';
 const RECRUITING_ROUTES = [
   '/baseball/dashboard/discover',
   '/baseball/dashboard/watchlist',
   '/baseball/dashboard/pipeline',
   '/baseball/dashboard/compare',
   '/baseball/dashboard/camps',
+];
+const ORG_ROUTES = [
+  '/baseball/dashboard/organization',
+];
+const TEAM_ROUTES = [
+  '/baseball/dashboard/team',
 ];
 const RECRUITING_ALLOWED_COACH_TYPES: CoachType[] = ['college', 'juco'];
 
@@ -39,14 +46,21 @@ interface SupabaseClient {
 async function checkRouteAuthorization(
   supabase: SupabaseClient,
   user: { id: string },
-  pathname: string
+  pathname: string,
+  coachMode: CoachMode
 ): Promise<{ authorized: boolean; redirectTo?: string }> {
   // Check if route requires recruiting access
   const isRecruitingRoute = RECRUITING_ROUTES.some(route =>
     pathname.startsWith(route)
   );
+  const isOrgRoute = ORG_ROUTES.some(route =>
+    pathname.startsWith(route)
+  );
+  const isTeamRoute = TEAM_ROUTES.some(route =>
+    pathname.startsWith(route)
+  );
 
-  if (!isRecruitingRoute) {
+  if (!isRecruitingRoute && !isTeamRoute && !isOrgRoute) {
     return { authorized: true };
   }
 
@@ -58,14 +72,60 @@ async function checkRouteAuthorization(
     .single();
 
   if (error || !coach) {
+    if (isTeamRoute || isOrgRoute) {
+      return { authorized: true };
+    }
     return { authorized: false, redirectTo: '/baseball/dashboard/team' };
   }
 
-  if (!RECRUITING_ALLOWED_COACH_TYPES.includes(coach.coach_type as CoachType)) {
+  if (isRecruitingRoute && !RECRUITING_ALLOWED_COACH_TYPES.includes(coach.coach_type as CoachType)) {
     return {
       authorized: false,
       redirectTo: '/baseball/dashboard/team'
     };
+  }
+
+  if (isOrgRoute && coach.coach_type !== 'showcase') {
+    return {
+      authorized: false,
+      redirectTo: '/baseball/dashboard/team',
+    };
+  }
+
+  if (isTeamRoute) {
+    if (coach.coach_type === 'college') {
+      return {
+        authorized: false,
+        redirectTo: '/baseball/dashboard',
+      };
+    }
+    if (coach.coach_type === 'juco' && coachMode === 'recruiting') {
+      return {
+        authorized: false,
+        redirectTo: '/baseball/dashboard',
+      };
+    }
+  }
+
+  if (coach.coach_type === 'juco') {
+    if (isRecruitingRoute && coachMode === 'team') {
+      return {
+        authorized: false,
+        redirectTo: '/baseball/dashboard/team',
+      };
+    }
+    if (isTeamRoute && coachMode === 'recruiting') {
+      return {
+        authorized: false,
+        redirectTo: '/baseball/dashboard',
+      };
+    }
+    if (pathname === '/baseball/dashboard' && coachMode === 'team') {
+      return {
+        authorized: false,
+        redirectTo: '/baseball/dashboard/team',
+      };
+    }
   }
 
   return { authorized: true };
@@ -134,6 +194,8 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const coachModeCookie = request.cookies.get('coach_mode')?.value;
+  const coachMode: CoachMode = coachModeCookie === 'team' ? 'team' : 'recruiting';
 
   // Protected routes check - sport-specific
   const isAuthPage = pathname === '/baseball/login' ||
@@ -171,7 +233,8 @@ export async function updateSession(request: NextRequest) {
     const authResult = await checkRouteAuthorization(
       supabase as unknown as SupabaseClient,
       user,
-      pathname
+      pathname,
+      coachMode
     );
     if (!authResult.authorized && authResult.redirectTo) {
       return NextResponse.redirect(

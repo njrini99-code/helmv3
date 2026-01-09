@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Avatar } from '@/components/ui/avatar';
 import { NotificationCenter } from '@/components/features/notification-center';
+import { JUCOModeToggle } from '@/components/baseball/coach/ModeToggle';
 import { useAuth } from '@/hooks/use-auth';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useSidebar } from '@/contexts/sidebar-context';
@@ -54,6 +55,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
   const email = user?.email || '';
   const avatarUrl = coach?.avatar_url || player?.avatar_url;
   const role = coach ? (coach.school_name || 'Coach') : (player ? `${player.primary_position} • ${player.grad_year}` : 'User');
+  const isJucoCoach = coach?.coach_type === 'juco';
 
   // Handle menu toggle based on screen size
   const handleMenuToggle = () => {
@@ -148,6 +150,12 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
           {children}
+
+          {isJucoCoach && (
+            <div className="hidden md:flex items-center rounded-lg bg-slate-100 p-1">
+              <JUCOModeToggle />
+            </div>
+          )}
 
           {/* Mobile search button */}
           <button
