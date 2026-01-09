@@ -66,6 +66,7 @@
   "exclude": [
     "node_modules",
     "next-shadcn-dashboard-starter",
-    "archive"
+    "archive",
+    "helm-intelligence"
   ]
 }
