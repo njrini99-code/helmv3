@@ -57,7 +57,11 @@ export default function RoundReviewPage() {
       if (data) {
         // Sort holes by hole_number
         const roundData = data as Record<string, unknown>;
-        const holes = roundData.holes as Array<{ hole_number: number }>;
+        const holes = roundData.holes as Array<{ 
+          hole_number: number; 
+          score: number | null; 
+          par: number | null;
+        }>;
         roundData.holes = holes?.sort((a, b) => a.hole_number - b.hole_number);
         setRound(roundData);
       }
@@ -131,7 +135,11 @@ export default function RoundReviewPage() {
     return null;
   }
 
-  const holes = round?.holes as Array<{ hole_number: number }> | undefined;
+  const holes = round?.holes as Array<{ 
+    hole_number: number; 
+    score: number | null; 
+    par: number | null;
+  }> | undefined;
 
   return (
     <motion.div 
