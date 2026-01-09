@@ -16,7 +16,7 @@
  * - Loading states for async operations
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { FeedCard, type CalendarFeed } from './FeedCard';
 import { CreateFeedSection } from './CreateFeedSection';
@@ -28,6 +28,8 @@ export interface CalendarFeedManagerProps {
   onCreateFeed: (type: FeedType, name: string) => Promise<CalendarFeed>;
   onRegenerateFeed: (feedId: string) => Promise<void>;
   onDeleteFeed: (feedId: string) => Promise<void>;
+  allowedTypes?: FeedType[];
+  showNameInput?: boolean;
   className?: string;
 }
 
@@ -38,12 +40,24 @@ export function CalendarFeedManager({
   onCreateFeed,
   onRegenerateFeed,
   onDeleteFeed,
+  allowedTypes,
+  showNameInput = true,
   className,
 }: CalendarFeedManagerProps) {
   const [showCreateSection, setShowCreateSection] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FeedType | 'all'>('all');
   const [loading, setLoading] = useState(false);
+  const allowedTypeList = useMemo(
+    () => allowedTypes ?? ['team', 'personal', 'tournament', 'all_events'],
+    [allowedTypes]
+  );
+
+  useEffect(() => {
+    if (filterType !== 'all' && !allowedTypeList.includes(filterType)) {
+      setFilterType('all');
+    }
+  }, [filterType, allowedTypeList]);
 
   // Filter feeds based on search and type
   const filteredFeeds = useMemo(() => {
@@ -122,23 +136,25 @@ export function CalendarFeedManager({
             </div>
 
             {/* Filter dropdown */}
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value as FeedType | 'all')}
-                className="pl-9 pr-10 py-2 rounded-lg border border-slate-200 text-sm font-medium
-                         bg-white text-slate-700 cursor-pointer
-                         hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-100
-                         focus:border-emerald-500 appearance-none"
-              >
-                <option value="all">All Types</option>
-                <option value="team">Team Events</option>
-                <option value="personal">Personal Events</option>
-                <option value="tournament">Tournaments</option>
-                <option value="all_events">All Events</option>
-              </select>
-            </div>
+            {allowedTypeList.length > 1 && (
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value as FeedType | 'all')}
+                  className="pl-9 pr-10 py-2 rounded-lg border border-slate-200 text-sm font-medium
+                           bg-white text-slate-700 cursor-pointer
+                           hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-100
+                           focus:border-emerald-500 appearance-none"
+                >
+                  <option value="all">All Types</option>
+                  {allowedTypeList.includes('team') && <option value="team">Team Events</option>}
+                  {allowedTypeList.includes('personal') && <option value="personal">Personal Events</option>}
+                  {allowedTypeList.includes('tournament') && <option value="tournament">Tournaments</option>}
+                  {allowedTypeList.includes('all_events') && <option value="all_events">All Events</option>}
+                </select>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -150,6 +166,8 @@ export function CalendarFeedManager({
             onCreate={handleCreateFeed}
             onCancel={() => setShowCreateSection(false)}
             loading={loading}
+            allowedTypes={allowedTypeList}
+            showNameInput={showNameInput}
           />
         </div>
       )}

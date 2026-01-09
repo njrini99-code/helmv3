@@ -328,15 +328,18 @@ export async function updateRSVP(
   status: RSVPStatus,
   supabase: SupabaseClient
 ): Promise<void> {
-  // Update attendance record
+  // Upsert attendance record so players can respond even if no invite exists yet
   await supabase
     .from('golf_event_attendance')
-    .update({
-      status,
-      responded_at: new Date().toISOString(),
-    })
-    .eq('event_id', eventId)
-    .eq('player_id', playerId);
+    .upsert(
+      {
+        event_id: eventId,
+        player_id: playerId,
+        status,
+        responded_at: new Date().toISOString(),
+      },
+      { onConflict: 'event_id,player_id' }
+    );
 
   // Get event and player details for notification
   const { data: eventData } = await supabase

@@ -18,13 +18,16 @@ export async function GET(
     // Find player by feed token
     const { data: player, error } = await supabase
       .from('golf_players')
-      .select('id, first_name, last_name, team_id')
+      .select('id, first_name, last_name, team_id, calendar_feed_enabled')
       .eq('calendar_feed_token', token)
       .single();
 
-    // For now, calendar_feed_enabled is not in the schema, so we just check if player exists
     if (error || !player) {
       return new NextResponse('Invalid or disabled feed', { status: 404 });
+    }
+
+    if (player.calendar_feed_enabled === false) {
+      return new NextResponse('Calendar feed is disabled', { status: 403 });
     }
 
     // Check if player has a team

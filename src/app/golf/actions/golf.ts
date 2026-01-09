@@ -11,6 +11,7 @@ import {
   NotFoundError
 } from '@/lib/auth/ownership';
 import { roundTypeToDb } from '@/lib/golf/round-type-utils';
+import type { RSVPStatus } from '@/lib/calendar/rsvp';
 
 // ============================================================================
 // RESULT TYPE
@@ -1083,6 +1084,10 @@ const golfEventUpdateSchema = z.object({
   courseName: z.string().max(200).optional(),
   description: z.string().max(5000).optional(),
   isMandatory: z.boolean().optional(),
+  requiresRsvp: z.boolean().optional(),
+  rsvpDeadline: z.string().optional(),
+  maxAttendees: z.number().int().optional(),
+  attendeeIds: z.array(z.string()).optional(),
 });
 
 export async function updateGolfEvent(
@@ -1159,6 +1164,9 @@ export async function updateGolfEvent(
     if (validatedData.courseName) updateData.course_name = validatedData.courseName;
     if (validatedData.description) updateData.description = validatedData.description;
     if (validatedData.isMandatory !== undefined) updateData.is_mandatory = validatedData.isMandatory;
+    if (validatedData.requiresRsvp !== undefined) updateData.requires_rsvp = validatedData.requiresRsvp;
+    if (validatedData.rsvpDeadline !== undefined) updateData.rsvp_deadline = validatedData.rsvpDeadline || null;
+    if (validatedData.maxAttendees !== undefined) updateData.max_attendees = validatedData.maxAttendees;
 
     let query = supabase
       .from('golf_events')
@@ -1176,6 +1184,35 @@ export async function updateGolfEvent(
 
     if (error) {
       return { success: false, error: 'Failed to update event' };
+    }
+
+    if (validatedData.attendeeIds) {
+      const { data: attendanceRows } = await supabase
+        .from('golf_event_attendance')
+        .select('player_id')
+        .eq('event_id', eventId);
+
+      const existingIds = new Set((attendanceRows || []).map(row => row.player_id));
+      const nextIds = new Set(validatedData.attendeeIds);
+      const toAdd = validatedData.attendeeIds.filter((id) => !existingIds.has(id));
+      const toRemove = Array.from(existingIds).filter((id) => !nextIds.has(id));
+
+      if (toAdd.length > 0) {
+        try {
+          const { sendEventInvitations } = await import('@/lib/calendar/rsvp');
+          await sendEventInvitations(eventId, toAdd, supabase);
+        } catch {
+          // Don't fail the whole update if invitations fail
+        }
+      }
+
+      if (toRemove.length > 0) {
+        await supabase
+          .from('golf_event_attendance')
+          .delete()
+          .eq('event_id', eventId)
+          .in('player_id', toRemove);
+      }
     }
 
     revalidatePath('/golf/dashboard/calendar');
@@ -1848,6 +1885,53 @@ export async function getPendingInvitations(): Promise<ActionResult<EventInvitat
 
   } catch {
     return { success: false, error: 'Failed to fetch invitations' };
+  }
+}
+
+/**
+ * Get the current player's RSVP status for an event
+ */
+export async function getPlayerEventRSVP(
+  eventId: string
+): Promise<ActionResult<{ status: RSVPStatus; respondedAt: string | null } | null>> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    const { data: attendance } = await supabase
+      .from('golf_event_attendance')
+      .select('status, responded_at')
+      .eq('event_id', eventId)
+      .eq('player_id', player.id)
+      .maybeSingle();
+
+    if (!attendance) {
+      return { success: true, data: null };
+    }
+
+    return {
+      success: true,
+      data: {
+        status: (attendance.status ?? 'pending') as RSVPStatus,
+        respondedAt: attendance.responded_at ?? null,
+      },
+    };
+  } catch {
+    return { success: false, error: 'Failed to fetch RSVP status' };
   }
 }
 

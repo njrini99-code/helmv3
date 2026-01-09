@@ -19,13 +19,16 @@ export async function GET(
     // Note: golf_coaches uses full_name instead of first_name/last_name
     const { data: coach, error } = await supabase
       .from('golf_coaches')
-      .select('id, full_name, team_id')
+      .select('id, full_name, team_id, calendar_feed_enabled')
       .eq('calendar_feed_token', token)
       .single();
 
-    // For now, calendar_feed_enabled is not in the schema, so we just check if coach exists
     if (error || !coach) {
       return new NextResponse('Invalid or disabled feed', { status: 404 });
+    }
+
+    if (coach.calendar_feed_enabled === false) {
+      return new NextResponse('Calendar feed is disabled', { status: 403 });
     }
 
     // Get events coach created (6 months range)

@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { PremiumCalendarClient, type TeamMember } from './PremiumCalendarClient';
+import { CalendarFeedManager, type FeedType } from './CalendarFeedManager';
+import type { CalendarFeed } from './FeedCard';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import {
   Dialog,
@@ -9,6 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useTeamContext } from '@/hooks/golf/use-team-context';
+import {
+  getCalendarFeeds,
+  createCalendarFeed,
+  regenerateCalendarFeed,
+  deleteCalendarFeed,
+} from '@/app/golf/actions/calendar-feeds';
 
 interface GolfCalendarWrapperProps {
   initialEvents: CalendarEvent[];
@@ -27,6 +36,88 @@ export function GolfCalendarWrapper({
   isCoach = true,
 }: GolfCalendarWrapperProps) {
   const [showFeedManager, setShowFeedManager] = useState(false);
+  const [feeds, setFeeds] = useState<CalendarFeed[]>([]);
+  const [feedsLoading, setFeedsLoading] = useState(false);
+  const [feedsError, setFeedsError] = useState<string | null>(null);
+  const { teamId, userRole } = useTeamContext();
+  const canManageTeamFeed = userRole === 'coach';
+  const allowedTypes: FeedType[] = teamId && canManageTeamFeed ? ['team', 'personal'] : ['personal'];
+
+  const loadFeeds = useCallback(async () => {
+    setFeedsLoading(true);
+    setFeedsError(null);
+
+    const result = await getCalendarFeeds();
+    if (result.success && result.data) {
+      setFeeds(result.data);
+    } else {
+      setFeeds([]);
+      setFeedsError(result.error || 'Failed to load calendar feeds');
+    }
+
+    setFeedsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (showFeedManager) {
+      void loadFeeds();
+    }
+  }, [showFeedManager, loadFeeds]);
+
+  const handleCreateFeed = useCallback(async (type: FeedType, _name: string) => {
+    void _name;
+    if (type === 'team' && !canManageTeamFeed) {
+      setFeedsError('Only coaches can manage team feeds');
+      throw new Error('Only coaches can manage team feeds');
+    }
+    const result = await createCalendarFeed(type);
+    if (!result.success || !result.data) {
+      setFeedsError(result.error || 'Failed to create feed');
+      throw new Error(result.error || 'Failed to create feed');
+    }
+    setFeeds((prev) => {
+      const existingIndex = prev.findIndex((feed) => feed.type === type);
+      if (existingIndex === -1) {
+        return [...prev, result.data];
+      }
+      const next = [...prev];
+      next[existingIndex] = result.data;
+      return next;
+    });
+    return result.data;
+  }, [canManageTeamFeed]);
+
+  const handleRegenerateFeed = useCallback(async (feedId: string) => {
+    const target = feeds.find((feed) => feed.id === feedId);
+    if (!target) return;
+    if (target.type === 'team' && !canManageTeamFeed) {
+      setFeedsError('Only coaches can manage team feeds');
+      return;
+    }
+
+    const result = await regenerateCalendarFeed(target.type);
+    if (!result.success || !result.data) {
+      setFeedsError(result.error || 'Failed to regenerate feed');
+      throw new Error(result.error || 'Failed to regenerate feed');
+    }
+    setFeeds((prev) => prev.map((feed) => (feed.id === feedId ? result.data : feed)));
+  }, [feeds, canManageTeamFeed]);
+
+  const handleDeleteFeed = useCallback(async (feedId: string) => {
+    const target = feeds.find((feed) => feed.id === feedId);
+    if (!target) return;
+    if (target.type === 'team' && !canManageTeamFeed) {
+      setFeedsError('Only coaches can manage team feeds');
+      return;
+    }
+
+    const result = await deleteCalendarFeed(target.type);
+    if (!result.success) {
+      setFeedsError(result.error || 'Failed to disable feed');
+      throw new Error(result.error || 'Failed to disable feed');
+    }
+    setFeeds((prev) => prev.filter((feed) => feed.id !== feedId));
+  }, [feeds, canManageTeamFeed]);
 
   return (
     <>
@@ -43,9 +134,23 @@ export function GolfCalendarWrapper({
             <DialogTitle>Calendar Feeds</DialogTitle>
           </DialogHeader>
           <div className="p-6">
-            <p className="text-sm text-slate-600">
-              Calendar feed management will be available soon. You'll be able to subscribe to your calendar in Apple Calendar, Google Calendar, or Outlook.
-            </p>
+            {feedsError && (
+              <p className="text-sm text-rose-600 mb-4">{feedsError}</p>
+            )}
+            {feedsLoading ? (
+              <div className="py-10 text-center text-sm text-slate-500">
+                Loading calendar feeds...
+              </div>
+            ) : (
+              <CalendarFeedManager
+                feeds={feeds}
+                onCreateFeed={handleCreateFeed}
+                onRegenerateFeed={handleRegenerateFeed}
+                onDeleteFeed={handleDeleteFeed}
+                allowedTypes={allowedTypes}
+                showNameInput={false}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>

@@ -24,6 +24,7 @@ export interface CalendarEvent {
   is_recurring?: boolean;
   requires_rsvp?: boolean;
   rsvp_deadline?: string | null;
+  max_attendees?: number | null;
 }
 
 export interface UseCalendarEventsOptions {

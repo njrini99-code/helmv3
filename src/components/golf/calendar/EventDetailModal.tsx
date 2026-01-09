@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { X, Trash2, MapPin, Calendar, Clock, Users, AlertCircle, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -8,6 +8,7 @@ import { RSVPStatusSection } from './RSVPStatusSection';
 import { PlayerRSVPCard } from './PlayerRSVPCard';
 import { ConflictWarning } from './ConflictWarning';
 import { checkScheduleConflicts } from '@/app/golf/actions/golf';
+import { useRSVP, usePlayerEventRSVP } from '@/hooks/useRSVP';
 
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
@@ -151,6 +152,27 @@ export function EventDetailModal({
   const [checkingConflicts, setCheckingConflicts] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const rsvpEnabled = Boolean(event?.id && formData.requiresRsvp && !isCreating);
+  const {
+    status: playerResponse,
+    isLoading: playerResponseLoading,
+    respond: respondToRSVP,
+  } = usePlayerEventRSVP(event?.id, rsvpEnabled && !isCoach);
+  const {
+    rsvpSummary,
+    isLoading: rsvpSummaryLoading,
+    error: rsvpSummaryError,
+  } = useRSVP({ eventId: event?.id, enabled: rsvpEnabled && isCoach });
+  const rsvpParticipants = useMemo(() => (
+    rsvpSummary?.attendees.map(attendee => ({
+      id: attendee.playerId,
+      user_id: attendee.playerId,
+      name: attendee.playerName,
+      avatar_url: attendee.avatarUrl,
+      response: attendee.status,
+      responded_at: attendee.respondedAt,
+    })) || []
+  ), [rsvpSummary]);
 
   // Handle keyboard escape
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -190,6 +212,9 @@ export function EventDetailModal({
         const endTime = endDateTime?.includes('T') ? endDateTime.split('T')[1]?.substring(0, 5) ?? null : null;
 
         const hasTime = startTime !== null || endTime !== null;
+        const rsvpDeadline = event.rsvp_deadline
+          ? new Date(event.rsvp_deadline).toISOString().slice(0, 16)
+          : null;
 
         setFormData({
           title: event.title || '',
@@ -203,9 +228,9 @@ export function EventDetailModal({
           courseName: null,
           description: event.description || null,
           isMandatory: false,
-          requiresRsvp: false, // Will be populated from event data if available
-          rsvpDeadline: null,
-          maxAttendees: null,
+          requiresRsvp: event.requires_rsvp ?? false,
+          rsvpDeadline,
+          maxAttendees: event.max_attendees ?? null,
           attendeeIds: [],
         });
       } else {
@@ -681,15 +706,25 @@ export function EventDetailModal({
                   title: event.title,
                   event_type: event.event_type,
                   status: event.status || 'confirmed',
-                  start_time: event.start_time || '',
+                  start_date: event.start_date || '',
+                  start_time: event.start_time || null,
+                  end_date: event.end_date,
                   end_time: event.end_time,
                   location: event.location,
                   description: event.description,
-                  rsvp_lock_time: event.rsvp_lock_time,
+                  rsvp_deadline: event.rsvp_deadline || null,
                 }}
-                currentResponse={null}
-                onRespond={async () => {}}
+                currentResponse={playerResponse === 'pending' ? null : playerResponse}
+                onRespond={async (response) => {
+                  const result = await respondToRSVP(response);
+                  if (!result.success) {
+                    throw new Error(result.error || 'Failed to update RSVP');
+                  }
+                }}
               />
+              {playerResponseLoading && (
+                <p className="text-xs text-slate-500 mt-2">Loading your RSVP status...</p>
+              )}
             </div>
           )}
 
@@ -697,10 +732,16 @@ export function EventDetailModal({
           {!isCreating && event?.id && formData.requiresRsvp && isCoach && (
             <div className="border-t border-slate-200 -mx-6 px-6 pt-4">
               <h4 className="text-sm font-semibold text-slate-900 mb-3">RSVP Status</h4>
+              {rsvpSummaryError && (
+                <p className="text-sm text-rose-600 mb-3">{rsvpSummaryError}</p>
+              )}
               <RSVPStatusSection
-                participants={[]}
-                totalInvited={0}
+                participants={rsvpParticipants}
+                totalInvited={rsvpSummary?.total || 0}
               />
+              {rsvpSummaryLoading && (
+                <p className="text-xs text-slate-500 mt-2">Loading RSVP summary...</p>
+              )}
             </div>
           )}
         </form>

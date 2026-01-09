@@ -4,14 +4,14 @@
  * RSVP Progress Ring Component
  *
  * SVG circular progress indicator showing RSVP breakdown:
- * - Confirmed segment (emerald)
+ * - Accepted segment (emerald)
  * - Declined segment (rose)
- * - Maybe segment (amber)
+ * - Tentative segment (amber)
  * - Pending segment (slate)
  *
  * Features:
  * - Color-coded arc segments
- * - Center stat display (confirmed/total)
+ * - Center stat display (accepted/total)
  * - Responsive sizing
  * - Smooth animations
  */
@@ -201,7 +201,7 @@ export function RSVPProgressRing({
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
               <span className="text-slate-700">
-                {confirmed} Confirmed
+                {confirmed} Accepted
               </span>
             </div>
           )}
@@ -209,7 +209,7 @@ export function RSVPProgressRing({
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-amber-500"></div>
               <span className="text-slate-700">
-                {maybe} Maybe
+                {maybe} Tentative
               </span>
             </div>
           )}

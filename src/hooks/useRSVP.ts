@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { respondToEvent, getPendingInvitations, getEventRSVP } from '@/app/golf/actions/golf';
+import { respondToEvent, getPendingInvitations, getEventRSVP, getPlayerEventRSVP } from '@/app/golf/actions/golf';
 
 // ============================================================================
 // TYPES
@@ -52,6 +52,15 @@ interface UseRSVPResult {
   error: string | null;
   refetch: () => Promise<void>;
   respond: (eventId: string, status: RSVPStatus) => Promise<{ success: boolean; error?: string }>;
+}
+
+interface PlayerEventRSVPResult {
+  status: RSVPStatus | null;
+  respondedAt: string | null;
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+  respond: (status: RSVPStatus) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================
@@ -203,4 +212,75 @@ export function usePendingInvitations() {
  */
 export function useEventRSVP(eventId: string) {
   return useRSVP({ eventId });
+}
+
+/**
+ * Hook for the current player's RSVP status on a specific event
+ */
+export function usePlayerEventRSVP(
+  eventId?: string,
+  enabled: boolean = true
+): PlayerEventRSVPResult {
+  const [status, setStatus] = useState<RSVPStatus | null>(null);
+  const [respondedAt, setRespondedAt] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStatus = useCallback(async () => {
+    if (!enabled || !eventId) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await getPlayerEventRSVP(eventId);
+
+      if (result.success) {
+        setStatus(result.data?.status ?? null);
+        setRespondedAt(result.data?.respondedAt ?? null);
+      } else {
+        setError(result.error);
+        setStatus(null);
+        setRespondedAt(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setStatus(null);
+      setRespondedAt(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [enabled, eventId]);
+
+  const respond = useCallback(async (
+    nextStatus: RSVPStatus
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!eventId) {
+      return { success: false, error: 'Missing event id' };
+    }
+
+    const result = await respondToEvent(eventId, nextStatus);
+
+    if (result.success) {
+      setStatus(nextStatus);
+      setRespondedAt(new Date().toISOString());
+    } else if (result.error) {
+      setError(result.error);
+    }
+
+    return result;
+  }, [eventId]);
+
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
+
+  return {
+    status,
+    respondedAt,
+    isLoading,
+    error,
+    refetch: fetchStatus,
+    respond,
+  };
 }

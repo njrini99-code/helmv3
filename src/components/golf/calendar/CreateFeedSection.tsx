@@ -29,6 +29,8 @@ export interface CreateFeedSectionProps {
   onCreate: (type: FeedType, name: string) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
+  allowedTypes?: FeedType[];
+  showNameInput?: boolean;
   className?: string;
 }
 
@@ -79,11 +81,16 @@ export function CreateFeedSection({
   onCreate,
   onCancel,
   loading = false,
+  allowedTypes,
+  showNameInput = true,
   className,
 }: CreateFeedSectionProps) {
   const [selectedType, setSelectedType] = useState<FeedType | null>(null);
   const [feedName, setFeedName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const availableOptions = allowedTypes
+    ? FEED_TYPE_OPTIONS.filter((option) => allowedTypes.includes(option.type))
+    : FEED_TYPE_OPTIONS;
 
   async function handleCreate() {
     if (!selectedType) {
@@ -91,14 +98,17 @@ export function CreateFeedSection({
       return;
     }
 
-    if (!feedName.trim()) {
+    const selectedOption = availableOptions.find((option) => option.type === selectedType);
+    const resolvedName = feedName.trim() || (selectedOption ? `My ${selectedOption.label}` : '');
+
+    if (!resolvedName) {
       setError('Please enter a feed name');
       return;
     }
 
     setError(null);
     try {
-      await onCreate(selectedType, feedName.trim());
+      await onCreate(selectedType, resolvedName);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create feed');
     }
@@ -110,7 +120,7 @@ export function CreateFeedSection({
 
     // Auto-generate feed name if empty
     if (!feedName) {
-      const option = FEED_TYPE_OPTIONS.find((opt) => opt.type === type);
+      const option = availableOptions.find((opt) => opt.type === type);
       if (option) {
         setFeedName(`My ${option.label}`);
       }
@@ -136,7 +146,7 @@ export function CreateFeedSection({
           Feed Type
         </label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {FEED_TYPE_OPTIONS.map((option) => {
+          {availableOptions.map((option) => {
             const Icon = option.icon;
             const isSelected = selectedType === option.type;
 
@@ -193,36 +203,38 @@ export function CreateFeedSection({
       </div>
 
       {/* Feed name */}
-      <div>
-        <label htmlFor="feed-name" className="block text-sm font-medium text-slate-700 mb-2">
-          Feed Name
-        </label>
-        <input
-          id="feed-name"
-          type="text"
-          value={feedName}
-          onChange={(e) => {
-            setFeedName(e.target.value);
-            setError(null);
-          }}
-          placeholder="e.g., My Team Events"
-          disabled={loading}
-          className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                   focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100
-                   text-slate-900 placeholder:text-slate-400 transition-colors
-                   disabled:opacity-50 disabled:cursor-not-allowed"
-        />
-        <p className="text-xs text-slate-500 mt-1.5">
-          This name will help you identify the feed in your calendar app
-        </p>
-      </div>
+      {showNameInput && (
+        <div>
+          <label htmlFor="feed-name" className="block text-sm font-medium text-slate-700 mb-2">
+            Feed Name
+          </label>
+          <input
+            id="feed-name"
+            type="text"
+            value={feedName}
+            onChange={(e) => {
+              setFeedName(e.target.value);
+              setError(null);
+            }}
+            placeholder="e.g., My Team Events"
+            disabled={loading}
+            className="w-full px-4 py-2.5 rounded-lg border border-slate-200
+                     focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100
+                     text-slate-900 placeholder:text-slate-400 transition-colors
+                     disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+          <p className="text-xs text-slate-500 mt-1.5">
+            This name will help you identify the feed in your calendar app
+          </p>
+        </div>
+      )}
 
       {/* Preview URL (when type is selected) */}
       {selectedType && (
         <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
           <p className="text-xs font-medium text-slate-700 mb-2">Feed URL Preview</p>
           <code className="text-xs text-slate-600 font-mono break-all">
-            webcal://helm.app/api/feeds/{selectedType}/[generated-id].ics
+            webcal://helmsportslabs.com/api/calendar/{selectedType}/[token]
           </code>
           <p className="text-xs text-slate-500 mt-2">
             The actual URL will be generated when you create the feed
@@ -254,7 +266,7 @@ export function CreateFeedSection({
         <button
           type="button"
           onClick={handleCreate}
-          disabled={loading || !selectedType || !feedName.trim()}
+          disabled={loading || !selectedType || (showNameInput && !feedName.trim())}
           className="px-4 py-2.5 rounded-lg font-medium text-sm
                    bg-emerald-600 text-white hover:bg-emerald-700
                    disabled:opacity-50 disabled:cursor-not-allowed

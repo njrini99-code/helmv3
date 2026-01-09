@@ -7,7 +7,7 @@
  * - RSVP Progress Ring showing breakdown
  * - Player list with avatars
  * - Response status dots
- * - Quick stats (confirmed/total)
+ * - Quick stats (accepted/total)
  * - Filter by response status
  * - Search functionality
  * - Export functionality
