@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  'https://dgvlnelygibgrrjehbyc.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRndmxuZWx5Z2liZ3JyamVoYnljIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTkzMDg2OCwiZXhwIjoyMDgxNTA2ODY4fQ.W23S_6Kn0lsSDOSV2Bvt21ooQrpwPs5Q6VNuw5tJPLs'
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 console.log('🔍 CHECKING CURRENT DATABASE POLICIES\n');
 console.log('='.repeat(80));
@@ -59,4 +64,3 @@ console.log('1. Run the SQL query above in Supabase Dashboard to see actual poli
 console.log('2. Look for duplicate policy names or conflicting FOR ALL vs FOR SELECT/INSERT/etc');
 console.log('3. If duplicates found, run fix-rls-completely.sql to wipe and recreate cleanly');
 console.log();
-

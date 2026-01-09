@@ -169,7 +169,6 @@ export default function GolfMessagesPage() {
                   conversations={groupedConversations.today}
                   selectedId={selectedConversationId}
                   onSelect={handleSelectConversation}
-                  currentUserId={userId}
                 />
               )}
               {groupedConversations.yesterday.length > 0 && (
@@ -178,7 +177,6 @@ export default function GolfMessagesPage() {
                   conversations={groupedConversations.yesterday}
                   selectedId={selectedConversationId}
                   onSelect={handleSelectConversation}
-                  currentUserId={userId}
                 />
               )}
               {groupedConversations.thisWeek.length > 0 && (
@@ -187,7 +185,6 @@ export default function GolfMessagesPage() {
                   conversations={groupedConversations.thisWeek}
                   selectedId={selectedConversationId}
                   onSelect={handleSelectConversation}
-                  currentUserId={userId}
                 />
               )}
               {groupedConversations.older.length > 0 && (
@@ -196,7 +193,6 @@ export default function GolfMessagesPage() {
                   conversations={groupedConversations.older}
                   selectedId={selectedConversationId}
                   onSelect={handleSelectConversation}
-                  currentUserId={userId}
                 />
               )}
             </div>
@@ -502,13 +498,11 @@ function ConversationGroup({
   conversations,
   selectedId,
   onSelect,
-  currentUserId: _currentUserId,
 }: {
   label: string;
   conversations: GolfConversationWithMeta[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  currentUserId?: string | null;
 }) {
   return (
     <div className="mb-2">

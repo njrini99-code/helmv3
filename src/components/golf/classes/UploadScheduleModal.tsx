@@ -5,6 +5,14 @@ import { Button } from '@/components/ui/button';
 import { IconX, IconUpload, IconFileText, IconSparkles } from '@/components/icons';
 import { parseScheduleText, type ParsedClass } from '@/lib/utils/schedule-parser';
 
+type PdfJsTextItem = { str: string; transform?: number[] };
+type PdfJsPage = { getTextContent: () => Promise<{ items: PdfJsTextItem[] }> };
+type PdfJsDocument = { numPages: number; getPage: (page: number) => Promise<PdfJsPage> };
+type PdfJsLib = {
+  getDocument: (src: { data: ArrayBuffer }) => { promise: Promise<PdfJsDocument> };
+  GlobalWorkerOptions: { workerSrc: string };
+};
+
 interface UploadScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,8 +25,9 @@ const loadPdfJs = async () => {
   const PDFJS_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}`;
   
   // Check if already loaded
-  if ((window as any).pdfjsLib) {
-    return (window as any).pdfjsLib;
+  const pdfWindow = window as Window & { pdfjsLib?: PdfJsLib };
+  if (pdfWindow.pdfjsLib) {
+    return pdfWindow.pdfjsLib;
   }
   
   // Load the main library
@@ -30,7 +39,10 @@ const loadPdfJs = async () => {
     document.head.appendChild(script);
   });
   
-  const pdfjsLib = (window as any).pdfjsLib;
+  const pdfjsLib = pdfWindow.pdfjsLib;
+  if (!pdfjsLib) {
+    throw new Error('PDF.js failed to load.');
+  }
   pdfjsLib.GlobalWorkerOptions.workerSrc = `${PDFJS_CDN}/pdf.worker.min.js`;
   
   return pdfjsLib;
@@ -77,7 +89,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
         console.log('[PDF] Page', i, '- items:', textContent.items.length);
         
         // Group text items by Y position to preserve rows
-        const items = textContent.items as Array<{ str: string; transform: number[] }>;
+        const items = textContent.items as PdfJsTextItem[];
         
         if (items.length === 0) {
           console.log('[PDF] Page', i, 'has no items, skipping');
@@ -219,7 +231,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
       }
       
       onParsed(classes);
-    } catch (err) {
+    } catch {
       setError('Failed to parse schedule. Please check the format.');
     } finally {
       setLoading(false);

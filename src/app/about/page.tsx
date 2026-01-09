@@ -229,6 +229,12 @@ export default function AboutPage() {
             Copyright {new Date().getFullYear()} Helm Sports Labs. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
+            <Link href="/privacy" className="text-slate-600 hover:text-slate-900 text-sm">
+              Privacy
+            </Link>
+            <Link href="/terms" className="text-slate-600 hover:text-slate-900 text-sm">
+              Terms
+            </Link>
             <Link href="/help" className="text-slate-600 hover:text-slate-900 text-sm">
               Help
             </Link>

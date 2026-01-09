@@ -2,8 +2,14 @@
 
 import { cn } from '@/lib/utils';
 
+interface ScorecardHole {
+  hole_number: number;
+  score: number | null;
+  par: number | null;
+}
+
 interface ReviewScorecardProps {
-  holes: any[]; // From round.holes
+  holes: ScorecardHole[]; // From round.holes
 }
 
 export function ReviewScorecard({ holes }: ReviewScorecardProps) {
@@ -52,7 +58,7 @@ export function ReviewScorecard({ holes }: ReviewScorecardProps) {
   );
 }
 
-function HoleChip({ hole, delay }: { hole: any; delay: number }) {
+function HoleChip({ hole, delay }: { hole: ScorecardHole; delay: number }) {
   const scoreDiff = (hole.score || 0) - (hole.par || 4);
 
   const colors = {

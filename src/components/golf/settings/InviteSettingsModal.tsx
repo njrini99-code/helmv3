@@ -58,7 +58,7 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
         // Generate new code if none exists
         await generateNewCode(coach.team_id);
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to load invite code', 'error');
     } finally {
       setLoadingData(false);
@@ -104,7 +104,7 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
       showToast('Invite link copied to clipboard', 'success');
 
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch {
       showToast('Failed to copy link', 'error');
     }
   }

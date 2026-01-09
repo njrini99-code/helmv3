@@ -176,7 +176,7 @@ export function MetricCard({
 // ============================================================================
 
 interface Column<T> {
-  key: string;
+  key: Extract<keyof T, string>;
   header: string;
   width?: string;
   align?: 'left' | 'center' | 'right';
@@ -270,9 +270,9 @@ export function DataTable<T extends { id: string }>({
                       col.align === 'right' && 'text-right'
                     )}
                   >
-                    {col.render 
-                      ? col.render(item, index) 
-                      : (item as any)[col.key]
+                    {col.render
+                      ? col.render(item, index)
+                      : item[col.key]
                     }
                   </td>
                 ))}

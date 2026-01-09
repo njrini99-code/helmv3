@@ -24,6 +24,7 @@ export function PlayerCard({ player, showWatchlistButton = true, usePeekPanel = 
   const onWatchlist = isOnWatchlist(player.id);
   const name = getFullName(player.first_name, player.last_name);
   const isCoach = user?.role === 'coach';
+  const highSchoolOrgName = (player as { high_school_org?: { name?: string | null } }).high_school_org?.name;
 
   const handleWatchlistClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -50,7 +51,7 @@ export function PlayerCard({ player, showWatchlistButton = true, usePeekPanel = 
                 <div>
                   <h3 className="font-semibold text-slate-900 truncate">{name}</h3>
                   <p className="text-sm leading-relaxed text-slate-500 truncate">
-                    {(player as any).high_school_org?.name || player.high_school_name || 'Unknown School'}
+                    {highSchoolOrgName || player.high_school_name || 'Unknown School'}
                   </p>
                   <p className="text-xs text-slate-400">{player.city}, {player.state}</p>
                 </div>

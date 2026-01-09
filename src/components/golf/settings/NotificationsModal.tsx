@@ -50,7 +50,7 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
       if (stored) {
         setPreferences(JSON.parse(stored));
       }
-    } catch (error) {
+    } catch {
       // Use defaults if no preferences exist
     } finally {
       setLoadingPrefs(false);

@@ -32,12 +32,13 @@ export interface TeamMember {
   avatar_url?: string;
 }
 
+type CalendarActionResult<T = unknown> = Promise<{ success: boolean; error?: string; data?: T }>;
+
 // Action handler types for different sports - use generic types for flexibility
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface CalendarActionHandlers {
-  createEvent: (data: any) => Promise<{ success: boolean; error?: string; data?: any }>;
-  updateEvent: (id: string, data: any) => Promise<{ success: boolean; error?: string }>;
-  deleteEvent: (id: string) => Promise<{ success: boolean; error?: string }>;
+  createEvent: (data: unknown) => CalendarActionResult<unknown>;
+  updateEvent: (id: string, data: unknown) => CalendarActionResult<unknown>;
+  deleteEvent: (id: string) => CalendarActionResult<unknown>;
 }
 
 // Default golf action handlers
@@ -80,10 +81,10 @@ export function PremiumCalendarClient({
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   // Coach busy periods (always for current coach)
-  const [coachBusyPeriods, setCoachBusyPeriods] = useState<any[]>([]);
+  const [coachBusyPeriods, setCoachBusyPeriods] = useState<Array<Record<string, unknown> & { start: Date; end: Date; ownerType?: 'coach' | 'player' }>>([]);
 
   // Player busy periods (only when player is selected)
-  const [playerBusyPeriods, setPlayerBusyPeriods] = useState<any[]>([]);
+  const [playerBusyPeriods, setPlayerBusyPeriods] = useState<Array<Record<string, unknown> & { start: Date; end: Date }>>([]);
 
   // Auto-switch to day view on mobile
   useEffect(() => {
@@ -128,7 +129,8 @@ export function PremiumCalendarClient({
 
       if (result.success && result.data) {
         // Convert ISO strings to Date objects
-        const periods = result.data.map((p: any) => ({
+        const rawPeriods = result.data as Array<Record<string, unknown> & { start: string; end: string }>;
+        const periods = rawPeriods.map((p) => ({
           ...p,
           start: new Date(p.start),
           end: new Date(p.end),
@@ -174,7 +176,8 @@ export function PremiumCalendarClient({
 
       if (result.success && result.data) {
         // Convert ISO strings to Date objects
-        const periods = result.data.map((p: any) => ({
+        const rawPeriods = result.data as Array<Record<string, unknown> & { start: string; end: string }>;
+        const periods = rawPeriods.map((p) => ({
           ...p,
           start: new Date(p.start),
           end: new Date(p.end),
@@ -245,6 +248,7 @@ export function PremiumCalendarClient({
 
   // Handle quick event creation from availability view
   const handleTimeSlotClick = (date: Date, _hour: number) => {
+    void _hour;
     setCurrentDate(date);
     setIsCreatingEvent(true);
     setSelectedEvent(null);

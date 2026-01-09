@@ -13,7 +13,7 @@
  */
 
 import { cn } from '@/lib/utils';
-import { StatusBadge } from './StatusBadge';
+import { StatusBadge, type StatusBadgeProps } from './StatusBadge';
 import { format, formatDistanceToNow } from 'date-fns';
 import { User, Clock, MessageSquare, Edit3, XCircle, CheckCircle } from 'lucide-react';
 
@@ -27,7 +27,7 @@ export interface StatusHistoryEntry {
   changed_by_avatar?: string | null;
   changed_at: string;
   reason?: string | null;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 export interface EventStatusTimelineProps {
@@ -89,9 +89,13 @@ function TimelineEntry({
   isLast: boolean;
   compact: boolean;
 }) {
+  void _isFirst;
+
   const changeDate = new Date(entry.changed_at);
   const relativeTime = formatDistanceToNow(changeDate, { addSuffix: true });
   const absoluteTime = format(changeDate, 'MMM d, yyyy h:mm a');
+  const oldStatus = entry.old_status as StatusBadgeProps['status'] | null;
+  const newStatus = entry.new_status as StatusBadgeProps['status'];
 
   const isCancellation = entry.new_status === 'cancelled';
   const isConfirmation = entry.new_status === 'confirmed';
@@ -153,17 +157,17 @@ function TimelineEntry({
 
           {/* Status badges */}
           <div className="flex items-center gap-2 shrink-0">
-            {entry.old_status && !isCreation && (
+            {oldStatus && !isCreation && (
               <>
                 <StatusBadge
-                  status={entry.old_status as any}
+                  status={oldStatus}
                   size="sm"
                   compact={compact}
                 />
                 <span className="text-slate-400">→</span>
               </>
             )}
-            <StatusBadge status={entry.new_status as any} size="sm" compact={compact} />
+            <StatusBadge status={newStatus} size="sm" compact={compact} />
           </div>
         </div>
 
@@ -240,7 +244,7 @@ export function CompactStatusTimeline({
 
         return (
           <div key={entry.id} className="flex items-center gap-2 text-xs">
-            <StatusBadge status={entry.new_status as any} compact size="sm" />
+            <StatusBadge status={entry.new_status as StatusBadgeProps['status']} compact size="sm" />
             <span className="text-slate-600">{relativeTime}</span>
           </div>
         );

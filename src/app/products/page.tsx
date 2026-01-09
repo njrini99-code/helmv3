@@ -867,7 +867,12 @@ function PlayerDiscoverySection() {
                       <div className="text-white">{player.stat1}</div>
                       <div className="text-white/40">{player.stat2}</div>
                     </div>
-                    <button className={`p-2 rounded-lg transition-colors ${player.watched ? 'bg-helm-amber-500/20 text-helm-amber-400' : 'bg-white/[0.04] text-white/40 hover:text-helm-amber-400'}`}>
+                    <button
+                      type="button"
+                      aria-label={player.watched ? 'Remove from watchlist' : 'Add to watchlist'}
+                      aria-pressed={player.watched}
+                      className={`p-3 rounded-lg transition-colors ${player.watched ? 'bg-helm-amber-500/20 text-helm-amber-400' : 'bg-white/[0.04] text-white/40 hover:text-helm-amber-400'}`}
+                    >
                       <Eye className="w-5 h-5" />
                     </button>
                   </motion.div>
@@ -916,10 +921,18 @@ function CommunicationSection() {
                   <div className="text-white/40 text-sm">RHP • Dallas Christian • 2026</div>
                 </div>
                 <div className="flex gap-2">
-                  <button className="p-2 rounded-lg bg-white/[0.04] text-white/50 hover:text-white transition-colors">
+                  <button
+                    type="button"
+                    aria-label="Call recruit"
+                    className="p-3 rounded-lg bg-white/[0.04] text-white/50 hover:text-white transition-colors"
+                  >
                     <Phone className="w-4 h-4" />
                   </button>
-                  <button className="p-2 rounded-lg bg-white/[0.04] text-white/50 hover:text-white transition-colors">
+                  <button
+                    type="button"
+                    aria-label="Email recruit"
+                    className="p-3 rounded-lg bg-white/[0.04] text-white/50 hover:text-white transition-colors"
+                  >
                     <Mail className="w-4 h-4" />
                   </button>
                 </div>

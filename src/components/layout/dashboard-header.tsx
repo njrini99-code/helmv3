@@ -35,7 +35,7 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ title, children }: DashboardHeaderProps) {
-  const { collapsed: _collapsed, toggle, toggleMobile, mobileOpen } = useSidebar();
+  const { toggle, toggleMobile, mobileOpen } = useSidebar();
 
   return (
     <header className="sticky top-0 z-30 glass-prominent border-b border-white/20">

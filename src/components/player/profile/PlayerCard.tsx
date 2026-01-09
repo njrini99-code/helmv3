@@ -24,6 +24,7 @@ interface Player {
   first_name: string;
   last_name: string;
   avatar_url?: string;
+  recruiting_activated?: boolean;
   city?: string;
   state?: string;
   high_school_name?: string;
@@ -78,7 +79,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
               size="xl"
             />
             {/* Green Recruiting Indicator */}
-            {(player as any).recruiting_activated && (
+            {player.recruiting_activated && (
               <div
                 className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-lg"
                 title="Actively recruiting"

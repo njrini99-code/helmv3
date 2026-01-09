@@ -89,7 +89,7 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
           }
         }
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to load team data', 'error');
     } finally {
       setLoadingData(false);

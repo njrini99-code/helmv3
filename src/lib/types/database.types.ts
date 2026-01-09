@@ -887,6 +887,33 @@ export type Database = {
           },
         ]
       }
+      golf_calendar_feed_access: {
+        Row: {
+          created_at: string | null
+          feed_token: string
+          feed_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          feed_token: string
+          feed_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          feed_token?: string
+          feed_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       golf_calendar_notifications: {
         Row: {
           action_url: string | null

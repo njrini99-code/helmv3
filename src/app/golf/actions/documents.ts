@@ -23,6 +23,26 @@ export interface UpdateDocumentInput {
   player_visible?: boolean;
 }
 
+const MAX_DOCUMENT_SIZE_MB = 2;
+const MAX_DOCUMENT_SIZE_BYTES = MAX_DOCUMENT_SIZE_MB * 1024 * 1024;
+const ALLOWED_DOCUMENT_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'text/plain',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+]);
+
 /**
  * Create a new golf document
  */
@@ -137,6 +157,20 @@ export async function uploadGolfDocument(
   teamId: string
 ): Promise<{ success: boolean; file_url?: string; file_path?: string; error?: string }> {
   const supabase = await createClient();
+
+  if (!file.type || !ALLOWED_DOCUMENT_MIME_TYPES.has(file.type)) {
+    return {
+      success: false,
+      error: 'Unsupported file type. Please upload a PDF, image, office document, or approved video format.',
+    };
+  }
+
+  if (file.size <= 0 || file.size > MAX_DOCUMENT_SIZE_BYTES) {
+    return {
+      success: false,
+      error: `File size must be between 1 byte and ${MAX_DOCUMENT_SIZE_MB}MB.`,
+    };
+  }
 
   // Generate unique file name
   const timestamp = Date.now();

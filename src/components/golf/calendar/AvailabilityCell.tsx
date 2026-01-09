@@ -45,6 +45,8 @@ export function AvailabilityCell({
   disabled = false,
   className,
 }: AvailabilityCellProps) {
+  void _timeSlot;
+
   const [showTooltip, setShowTooltip] = useState(false);
 
   // Calculate heat level

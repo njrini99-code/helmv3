@@ -25,7 +25,7 @@ export function SearchInput({
   className,
   onSearch,
   suggestions = [],
-  showTrending: _showTrending = true
+  showTrending = true
 }: SearchInputProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -60,14 +60,18 @@ export function SearchInput({
   const getFilteredSuggestions = useCallback((): SearchSuggestion[] => {
     if (!query.trim()) return [];
 
+    const baseSuggestions = showTrending
+      ? suggestions
+      : suggestions.filter((item) => item.type !== 'trending');
+
     const mockSuggestions: SearchSuggestion[] = [
       { id: '1', text: `${query} in California`, type: 'suggestion', url: `/dashboard/discover?q=${query}&state=CA` },
       { id: '2', text: `${query} pitchers`, type: 'suggestion', url: `/dashboard/discover?q=${query}&position=P` },
       { id: '3', text: `${query} 2025`, type: 'suggestion', url: `/dashboard/discover?q=${query}&year=2025` },
     ];
 
-    return [...suggestions, ...mockSuggestions].slice(0, 5);
-  }, [query, suggestions]);
+    return [...baseSuggestions, ...mockSuggestions].slice(0, 5);
+  }, [query, suggestions, showTrending]);
 
   const allSuggestions = getFilteredSuggestions();
   const showRecent = !query.trim() && recentSearches.length > 0;

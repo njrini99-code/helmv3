@@ -26,6 +26,8 @@ export function V2InsightsFeed({
   initialInsights = [],
   initialPatterns = [],
 }: V2InsightsFeedProps) {
+  void _teamId;
+
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<TabType>('insights');
   const [insights, setInsights] = useState<ComposedInsight[]>(initialInsights);

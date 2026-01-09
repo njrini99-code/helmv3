@@ -23,7 +23,8 @@ interface DreamSchoolsManagerProps {
   initialSchools?: DreamSchool[];
 }
 
-export function DreamSchoolsManager({ playerId: _playerId, initialSchools = [] }: DreamSchoolsManagerProps) {
+export function DreamSchoolsManager({ playerId, initialSchools = [] }: DreamSchoolsManagerProps) {
+  void playerId;
   const [schools, setSchools] = useState<DreamSchool[]>(initialSchools);
   const [saving, setSaving] = useState(false);
 
@@ -41,11 +42,9 @@ export function DreamSchoolsManager({ playerId: _playerId, initialSchools = [] }
   const removeSchool = async (schoolId: string) => {
     setSaving(true);
     const supabase = createClient();
+    const dreamSchoolsTable = supabase.from('player_dream_schools' as never);
 
-    const { error } = await (supabase as any)
-      .from('player_dream_schools')
-      .delete()
-      .eq('id', schoolId);
+    const { error } = await dreamSchoolsTable.delete().eq('id', schoolId);
 
     if (error) {
       toast.error('Failed to remove school');
@@ -80,6 +79,7 @@ export function DreamSchoolsManager({ playerId: _playerId, initialSchools = [] }
   const saveRankings = async (updatedSchools: DreamSchool[]) => {
     setSaving(true);
     const supabase = createClient();
+    const dreamSchoolsTable = supabase.from('player_dream_schools' as never);
 
     const updates = updatedSchools.map(school => ({
       id: school.id,
@@ -87,10 +87,7 @@ export function DreamSchoolsManager({ playerId: _playerId, initialSchools = [] }
     }));
 
     for (const update of updates) {
-      await (supabase as any)
-        .from('player_dream_schools')
-        .update({ rank: update.rank })
-        .eq('id', update.id);
+      await dreamSchoolsTable.update({ rank: update.rank }).eq('id', update.id);
     }
 
     setSaving(false);

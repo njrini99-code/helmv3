@@ -316,7 +316,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
 // Trigger button to show in UI
 export function CommandPaletteTrigger() {
-  const [_open, setOpen] = useState(false);
+  const [, setOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

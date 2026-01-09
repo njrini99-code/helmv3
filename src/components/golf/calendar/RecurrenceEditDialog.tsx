@@ -1,5 +1,3 @@
-// @ts-nocheck
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 /**
@@ -65,7 +63,10 @@ export function RecurrenceEditDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <RadioGroup value={scope} onValueChange={(v: any) => setScope(v)}>
+          <RadioGroup
+            value={scope}
+            onValueChange={(value) => setScope(value as RecurringEditScope)}
+          >
             {/* This event only */}
             <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
               <RadioGroupItem value="this" id="scope-this" className="mt-1" />

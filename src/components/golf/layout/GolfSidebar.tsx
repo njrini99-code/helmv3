@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -182,7 +183,13 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center flex-shrink-0 shadow-sm">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={userName} className="w-9 h-9 rounded-lg object-cover" />
+              <Image
+                src={avatarUrl}
+                alt={userName || 'User avatar'}
+                width={36}
+                height={36}
+                className="w-9 h-9 rounded-lg object-cover"
+              />
             ) : (
               <span className="text-white font-semibold text-sm">
                 {userName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U'}

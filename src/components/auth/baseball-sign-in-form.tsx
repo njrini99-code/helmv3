@@ -28,7 +28,7 @@ export function BaseballSignInForm() {
 
       router.push(result.redirectTo || '/baseball/dashboard');
       router.refresh();
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }

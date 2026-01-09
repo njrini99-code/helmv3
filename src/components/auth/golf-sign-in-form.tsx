@@ -28,7 +28,7 @@ export function GolfSignInForm() {
 
       router.push(result.redirectTo || '/golf/dashboard');
       router.refresh();
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }

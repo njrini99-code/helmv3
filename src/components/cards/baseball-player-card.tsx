@@ -92,12 +92,12 @@ function getPositionCategory(position: string): string {
 }
 
 // Format stat value
-function formatStat(key: string, value: any): string {
+function formatStat(key: string, value: number | string | null | undefined): string {
   if (value === null || value === undefined) return '—';
-  if (key === 'batting_avg' || key === 'fielding_pct' || key === 'whip') {
+  if ((key === 'batting_avg' || key === 'fielding_pct' || key === 'whip') && typeof value === 'number') {
     return value.toFixed(3).replace(/^0/, '');
   }
-  if (key === 'era') return value.toFixed(2);
+  if (key === 'era' && typeof value === 'number') return value.toFixed(2);
   if (key === 'fastball_velo') return `${value}`;
   if (key === 'pop_time' || key === 'sixty_time') return `${value}s`;
   return String(value);

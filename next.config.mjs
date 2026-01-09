@@ -35,9 +35,6 @@ const nextConfig = {
     // removeConsole: process.env.NODE_ENV === 'production',
   },
 
-  // Transpile specific packages that need compilation
-  transpilePackages: ['pdfjs-dist'],
-
   // Allow images from Supabase storage
   images: {
     remotePatterns: [

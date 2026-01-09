@@ -1,5 +1,3 @@
-// @ts-nocheck
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 /**
@@ -16,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { RecurrenceRule } from '@/lib/types/calendar';
-import { toRRULE, describeRecurrence } from '@/lib/calendar/recurrence';
+import { describeRecurrence } from '@/lib/calendar/recurrence';
 
 interface RecurrencePickerProps {
   value: RecurrenceRule | null;
@@ -126,7 +124,10 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
             onChange={(e) => setInterval(parseInt(e.target.value) || 1)}
             className="w-20"
           />
-          <Select value={frequency} onValueChange={(v: any) => setFrequency(v)}>
+          <Select
+            value={frequency}
+            onValueChange={(value) => setFrequency(value as RecurrenceRule['frequency'])}
+          >
             <SelectTrigger className="flex-1">
               <SelectValue />
             </SelectTrigger>

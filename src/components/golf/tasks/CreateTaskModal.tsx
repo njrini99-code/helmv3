@@ -55,8 +55,8 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
       if (!coach) throw new Error('Coach not found');
 
       // Create task
-      const { data: task, error: taskError } = await (supabase as any)
-        .from('golf_tasks')
+      const { data: task, error: taskError } = await supabase
+        .from('golf_tasks' as never)
         .insert({
           team_id: teamId,
           created_by: coach.id,
@@ -66,7 +66,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           status: 'active'
         })
         .select()
-        .single();
+        .single() as unknown as { data: { id: string } | null; error: { message?: string } | null };
 
       if (taskError) throw taskError;
 
@@ -79,9 +79,9 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
         assigned_at: new Date().toISOString()
       }));
 
-      const { error: assignError } = await (supabase as any)
-        .from('golf_task_assignments')
-        .insert(assignments);
+      const { error: assignError } = await supabase
+        .from('golf_task_assignments' as never)
+        .insert(assignments) as unknown as { error: { message?: string } | null };
 
       if (assignError) throw assignError;
 

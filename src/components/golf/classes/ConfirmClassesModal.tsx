@@ -249,9 +249,9 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                     /* View Mode */
                     <div className="p-4 flex items-center gap-4">
                       {/* Color indicator */}
-                      <div 
+                      <div
                         className="w-2 h-12 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: (cls as any).color || '#16A34A' }}
+                        style={{ backgroundColor: cls.color || '#16A34A' }}
                       />
                       
                       {/* Class info */}

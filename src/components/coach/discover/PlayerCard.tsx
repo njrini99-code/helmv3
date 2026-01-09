@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { StatusDot } from '@/components/ui/status-dot';
 import { usePeekPanelStore } from '@/stores/peek-panel-store';
@@ -98,6 +99,8 @@ const PlayerCardComponent = function PlayerCard({
         {/* Checkbox for compare mode */}
         {showCheckbox && (
           <button
+            type="button"
+            aria-label="Select player for comparison"
             onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
             className={cn(
               'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 flex-shrink-0',
@@ -146,6 +149,8 @@ const PlayerCardComponent = function PlayerCard({
         {showCheckbox && (
           <div className="absolute top-3 left-3 z-10">
             <button
+              type="button"
+              aria-label="Select player for comparison"
               onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
               className={cn(
                 'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200',
@@ -171,10 +176,12 @@ const PlayerCardComponent = function PlayerCard({
         {/* Cover Image */}
         <div className="h-32 bg-gradient-to-br from-slate-200 to-slate-300 relative">
           {player.coverImage && (
-            <img
+            <Image
               src={player.coverImage}
-              alt=""
-              className="w-full h-full object-cover"
+              alt={`${player.firstName} ${player.lastName} cover`}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 420px"
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -184,10 +191,11 @@ const PlayerCardComponent = function PlayerCard({
             <ActionButton
               icon={isOnWatchlist ? IconHeartFilled : IconHeart}
               onClick={onWatchlist}
+              label={isOnWatchlist ? 'Remove from watchlist' : 'Save to watchlist'}
               active={isOnWatchlist}
               activeClass="text-emerald-600"
             />
-            <ActionButton icon={IconMessage} onClick={onMessage} />
+            <ActionButton icon={IconMessage} onClick={onMessage} label="Message player" />
           </div>
         </div>
 
@@ -263,6 +271,8 @@ const PlayerCardComponent = function PlayerCard({
       {showCheckbox && (
         <div className="absolute top-3 left-3 z-10">
           <button
+            type="button"
+            aria-label="Select player for comparison"
             onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
             className={cn(
               'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200',
@@ -353,11 +363,12 @@ const PlayerCardComponent = function PlayerCard({
           <ActionButton
             icon={isOnWatchlist ? IconHeartFilled : IconHeart}
             onClick={onWatchlist}
+            label={isOnWatchlist ? 'Remove from watchlist' : 'Save to watchlist'}
             active={isOnWatchlist}
             activeClass="text-emerald-600"
             size="sm"
           />
-          <ActionButton icon={IconMessage} onClick={onMessage} size="sm" />
+          <ActionButton icon={IconMessage} onClick={onMessage} label="Message player" size="sm" />
         </div>
       </div>
     </div>
@@ -392,7 +403,13 @@ const PlayerAvatar = memo(function PlayerAvatar({
       border && "ring-4 ring-white shadow-md"
     )}>
       {player.avatar ? (
-        <img src={player.avatar} alt="" className="w-full h-full object-cover" />
+        <Image
+          src={player.avatar}
+          alt={`${player.firstName} ${player.lastName}`}
+          width={size === 'lg' ? 80 : size === 'md' ? 48 : 40}
+          height={size === 'lg' ? 80 : size === 'md' ? 48 : 40}
+          className="w-full h-full object-cover"
+        />
       ) : (
         <span className="font-medium text-slate-600">
           {player.firstName.charAt(0)}{player.lastName.charAt(0)}
@@ -445,12 +462,14 @@ const StatBadge = memo(function StatBadge({
 const ActionButton = memo(function ActionButton({
   icon: Icon,
   onClick,
+  label,
   active = false,
   activeClass = '',
   size = 'md'
 }: {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   onClick?: () => void;
+  label: string;
   active?: boolean;
   activeClass?: string;
   size?: 'sm' | 'md';
@@ -463,6 +482,7 @@ const ActionButton = memo(function ActionButton({
   return (
     <button
       type="button"
+      aria-label={label}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();

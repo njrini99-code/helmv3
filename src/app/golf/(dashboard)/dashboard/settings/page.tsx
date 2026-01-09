@@ -6,6 +6,7 @@ import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import {
   IconSettings,
@@ -52,7 +53,8 @@ interface UserProfile {
 export default function GolfSettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  useToast(); // Initialize toast context
+  const { showToast } = useToast();
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Modal state
   const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
@@ -156,6 +158,32 @@ export default function GolfSettingsPage() {
     const supabase = createClient();
     await supabase.auth.signOut();
     window.location.href = '/golf/login';
+  }
+
+  async function handleDeleteAccount() {
+    const confirmed = window.confirm(
+      'This will permanently delete your account and all associated data. This action cannot be undone.'
+    );
+
+    if (!confirmed) return;
+
+    setDeletingAccount(true);
+
+    try {
+      const response = await fetch('/api/account/delete', { method: 'DELETE' });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        showToast(payload.error || 'Failed to delete account', 'error');
+        return;
+      }
+
+      showToast('Account deleted successfully', 'success');
+      window.location.href = '/';
+    } catch {
+      showToast('Failed to delete account', 'error');
+    } finally {
+      setDeletingAccount(false);
+    }
   }
 
   if (loading) {
@@ -317,8 +345,53 @@ export default function GolfSettingsPage() {
           )}
         </div>
 
+        {/* Legal */}
+        <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '175ms', opacity: 0 }}>
+          <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Legal</h3>
+          <div className="relative glass-standard rounded-2xl overflow-hidden">
+            <ShineEffect />
+            <SettingsRow
+              icon={<IconShield size={18} />}
+              label="Privacy Policy"
+              description="Learn how we handle your data"
+              href="/privacy"
+            />
+            <SettingsRow
+              icon={<IconSettings size={18} />}
+              label="Terms of Service"
+              description="Read the terms for using Helm"
+              href="/terms"
+              isLast
+            />
+          </div>
+        </div>
+
+        {/* Danger Zone */}
+        <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '190ms', opacity: 0 }}>
+          <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Danger Zone</h3>
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-5">
+            <ShineEffect />
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <p className="font-medium text-slate-900">Delete account</p>
+                <p className="text-sm text-slate-500">
+                  Permanently remove your account and all associated data.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="danger"
+                isLoading={deletingAccount}
+                onClick={handleDeleteAccount}
+              >
+                Delete Account
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Sign Out */}
-        <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '200ms', opacity: 0 }}>
+        <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '210ms', opacity: 0 }}>
           <button
             onClick={handleSignOut}
             className="relative w-full glass-standard rounded-2xl overflow-hidden p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50 transition-all group"
@@ -334,7 +407,7 @@ export default function GolfSettingsPage() {
         {/* App Info */}
         <div 
           className="text-center text-sm text-slate-400 py-4"
-          style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '250ms', opacity: 0 }}
+          style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '260ms', opacity: 0 }}
         >
           <p>GolfHelm v1.0.0</p>
           <p className="text-xs mt-1">© 2024 Helm Sports Labs</p>

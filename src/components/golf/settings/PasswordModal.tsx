@@ -14,7 +14,7 @@ interface PasswordModalProps {
 
 export function PasswordModal({ isOpen, onClose }: PasswordModalProps) {
   const [loading, setLoading] = useState(false);
-  const [_currentPassword, setCurrentPassword] = useState('');
+  const [, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const { showToast } = useToast();

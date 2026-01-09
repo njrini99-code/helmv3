@@ -249,10 +249,10 @@ export default function ShotTrackingComprehensive({
   
   // Shot input state
   const [usedDriver, setUsedDriver] = useState<boolean | null>(null);
-  const [resultOfShot, setResultOfShot] = useState<string | null>(null);
+  const [resultOfShot, setResultOfShot] = useState<ShotRecord['result'] | null>(null);
   const [missDirection, setMissDirection] = useState<string | null>(null);
-  const [puttBreak, setPuttBreak] = useState<string | null>(null);
-  const [puttSlope, setPuttSlope] = useState<string | null>(null);
+  const [puttBreak, setPuttBreak] = useState<ShotRecord['puttBreak'] | null>(null);
+  const [puttSlope, setPuttSlope] = useState<ShotRecord['puttSlope'] | null>(null);
   // New putt classification state
   const [puttMissTags, setPuttMissTags] = useState<PuttMissTag[]>([]);
   const [puttDistanceFeet, setPuttDistanceFeet] = useState<number | undefined>(undefined);
@@ -448,6 +448,8 @@ export default function ShotTrackingComprehensive({
   };
 
   const handleNextShot = () => {
+    if (!resultOfShot) return;
+
     // Calculate distances
     let distanceAfter: number;
     let unitAfter: 'yards' | 'feet';
@@ -477,13 +479,13 @@ export default function ShotTrackingComprehensive({
       lieBefore: currentLie,
       distanceToHoleBefore: distanceToHole,
       distanceUnitBefore: distanceUnit,
-      result: resultOfShot as any,
+      result: resultOfShot,
       distanceToHoleAfter: distanceAfter,
       distanceUnitAfter: unitAfter,
       shotDistance: shotDistance,
       missDirection: missDirection || undefined, // Legacy field
-      puttBreak: isPutting ? puttBreak as any : undefined,
-      puttSlope: isPutting ? puttSlope as any : undefined,
+      puttBreak: isPutting ? (puttBreak ?? undefined) : undefined,
+      puttSlope: isPutting ? (puttSlope ?? undefined) : undefined,
       isPenalty: false,
       // New classification fields
       puttMissTags: isPutting && puttMissTags.length > 0 ? puttMissTags : undefined,

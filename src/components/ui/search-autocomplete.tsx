@@ -15,9 +15,7 @@ interface SearchAutocompleteProps {
   className?: string;
 }
 
-interface SearchResult extends Player {
-  // Extend if needed
-}
+type SearchResult = Player;
 
 export function SearchAutocomplete({
   value,

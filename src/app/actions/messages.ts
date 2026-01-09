@@ -202,9 +202,12 @@ export async function createConversation({
 
   // Create new conversation using SECURITY DEFINER function (bypasses RLS issues)
   const { data: conversationId, error: convError } = await supabase
-    .rpc('create_conversation_with_participants', {
-      participant_user_ids: participantUserIds
-    });
+    .rpc('create_conversation_with_participants' as never, {
+      participant_user_ids: participantUserIds,
+    }) as unknown as {
+      data: string | null;
+      error: { message?: string; code?: string; details?: string; hint?: string } | null;
+    };
 
   if (convError || !conversationId) {
     console.error('[Security] Conversation create error:', {

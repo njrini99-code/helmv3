@@ -38,7 +38,7 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
         setDateFormat(prefs.date_format || 'MM/DD/YYYY');
         setShowAnimations(prefs.show_animations ?? true);
       }
-    } catch (error) {
+    } catch {
       // Use defaults if no preferences exist
     } finally {
       setLoadingPrefs(false);

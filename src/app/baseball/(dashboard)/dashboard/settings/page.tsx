@@ -16,6 +16,7 @@ export default function SettingsPage() {
   const { user, loading } = useAuth();
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -67,6 +68,32 @@ export default function SettingsPage() {
       showToast('An unexpected error occurred', 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      'This will permanently delete your account and all associated data. This action cannot be undone.'
+    );
+
+    if (!confirmed) return;
+
+    setDeletingAccount(true);
+
+    try {
+      const response = await fetch('/api/account/delete', { method: 'DELETE' });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        showToast(payload.error || 'Failed to delete account', 'error');
+        return;
+      }
+
+      showToast('Account deleted successfully', 'success');
+      window.location.href = '/';
+    } catch {
+      showToast('Failed to delete account', 'error');
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -217,6 +244,33 @@ export default function SettingsPage() {
                 <Button type="submit" isLoading={saving}>Update Password</Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card variant="glass">
+          <CardHeader><h2 className="font-semibold text-slate-900">Legal & Data</h2></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-3 text-sm">
+              <Link href="/privacy" className="text-slate-600 hover:text-slate-900 transition-colors">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-slate-600 hover:text-slate-900 transition-colors">
+                Terms of Service
+              </Link>
+            </div>
+            <div className="pt-2 border-t border-slate-200/60">
+              <p className="text-sm text-slate-500 mb-3">
+                You can permanently delete your account and personal data. This action is irreversible.
+              </p>
+              <Button
+                type="button"
+                variant="danger"
+                isLoading={deletingAccount}
+                onClick={handleDeleteAccount}
+              >
+                Delete Account
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -85,13 +85,11 @@ export async function updateSession(request: NextRequest) {
                        pathname === '/baseball/signup' ||
                        pathname === '/golf/login' ||
                        pathname === '/golf/signup' ||
-                       // TEMPORARY: Onboarding routes commented out for development
-                       // pathname === '/baseball/coach-onboarding' ||
-                       // pathname === '/baseball/coach' ||
-                       // pathname === '/baseball/player' ||
-                       // pathname === '/golf/coach-onboarding' ||
-                       // pathname === '/golf/coach' ||
-                       // pathname === '/golf/player' ||
+                       pathname === '/baseball/coach-onboarding' ||
+                       pathname === '/baseball/coach' ||
+                       pathname === '/baseball/player' ||
+                       pathname === '/golf/coach' ||
+                       pathname === '/golf/player' ||
                        pathname.startsWith('/baseball/player/') ||  // Public player profiles
                        pathname.startsWith('/golf/player/');        // Public player profiles
 

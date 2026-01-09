@@ -17,7 +17,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { formatTime } from '@/lib/calendar/premium-utils';
-import { StatusBadge } from './StatusBadge';
+import { StatusBadge, type StatusBadgeProps } from './StatusBadge';
 import { RSVPLockIndicator, InlineRSVPLock } from './RSVPLockIndicator';
 import {
   CheckCircle2,
@@ -144,7 +144,7 @@ export function PlayerRSVPCard({
               {event.title}
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
-              <StatusBadge status={event.status as any} size="sm" />
+              <StatusBadge status={event.status as StatusBadgeProps['status']} size="sm" />
               <span className="text-xs text-slate-500 uppercase tracking-wide font-medium">
                 {event.event_type.replace('_', ' ')}
               </span>

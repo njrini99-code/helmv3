@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -13,12 +14,12 @@ interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const sizes = {
-  xs: { container: 'w-6 h-6', text: 'text-[10px]', ring: 'p-[1.5px]', dot: 'w-2 h-2' },
-  sm: { container: 'w-8 h-8', text: 'text-xs', ring: 'p-[2px]', dot: 'w-2.5 h-2.5' },
-  md: { container: 'w-10 h-10', text: 'text-sm', ring: 'p-[2px]', dot: 'w-3 h-3' },
-  lg: { container: 'w-12 h-12', text: 'text-base', ring: 'p-[2.5px]', dot: 'w-3.5 h-3.5' },
-  xl: { container: 'w-16 h-16', text: 'text-lg', ring: 'p-[3px]', dot: 'w-4 h-4' },
-  '2xl': { container: 'w-20 h-20', text: 'text-xl', ring: 'p-[3px]', dot: 'w-5 h-5' },
+  xs: { container: 'w-6 h-6', text: 'text-[10px]', ring: 'p-[1.5px]', dot: 'w-2 h-2', px: 24 },
+  sm: { container: 'w-8 h-8', text: 'text-xs', ring: 'p-[2px]', dot: 'w-2.5 h-2.5', px: 32 },
+  md: { container: 'w-10 h-10', text: 'text-sm', ring: 'p-[2px]', dot: 'w-3 h-3', px: 40 },
+  lg: { container: 'w-12 h-12', text: 'text-base', ring: 'p-[2.5px]', dot: 'w-3.5 h-3.5', px: 48 },
+  xl: { container: 'w-16 h-16', text: 'text-lg', ring: 'p-[3px]', dot: 'w-4 h-4', px: 64 },
+  '2xl': { container: 'w-20 h-20', text: 'text-xl', ring: 'p-[3px]', dot: 'w-5 h-5', px: 80 },
 };
 
 // Deterministic gradient based on name - gives each person a unique color
@@ -80,6 +81,7 @@ export function Avatar({
   const sizeConfig = sizes[size];
   const gradient = getGradientForName(name);
   const shouldShowRing = showStatusRing || ring;
+  const shouldUnoptimize = Boolean(src && (src.startsWith('data:') || src.startsWith('blob:')));
 
   // If showStatusRing is true, wrap avatar in a gradient ring
   if (shouldShowRing && status) {
@@ -104,10 +106,13 @@ export function Avatar({
             {...props}
           >
             {!showInitials ? (
-              <img
+              <Image
                 src={src!}
                 alt={name}
-                className="w-full h-full object-cover"
+                width={sizeConfig.px}
+                height={sizeConfig.px}
+                className="h-full w-full object-cover"
+                unoptimized={shouldUnoptimize}
                 onError={() => setImgError(true)}
               />
             ) : (
@@ -143,10 +148,13 @@ export function Avatar({
         {...props}
       >
         {!showInitials ? (
-          <img
+          <Image
             src={src!}
             alt={name}
-            className="w-full h-full object-cover"
+            width={sizeConfig.px}
+            height={sizeConfig.px}
+            className="h-full w-full object-cover"
+            unoptimized={shouldUnoptimize}
             onError={() => setImgError(true)}
           />
         ) : (

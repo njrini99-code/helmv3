@@ -405,7 +405,7 @@ export function SearchEmptyState({ query, filters, onClearFilters }: SearchEmpty
 // ============================================================================
 
 // Card wrapper (now just uses variant="card")
-export interface EmptyStateCardProps extends EmptyStateProps {}
+export type EmptyStateCardProps = EmptyStateProps;
 
 export function EmptyStateCard(props: EmptyStateCardProps) {
   return <EmptyState {...props} variant="card" glass />;

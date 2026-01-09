@@ -14,7 +14,7 @@ interface ActivityItem {
   title: string;
   subtitle?: string;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 interface RecentActivityFeedProps {
@@ -76,11 +76,12 @@ export function RecentActivityFeed({
         if (rounds) {
           for (const round of rounds) {
             if (round.player) {
+              const playerInfo = round.player as { first_name: string | null; last_name: string | null };
               const toPar = round.total_to_par ?? 0;
               items.push({
                 id: `round-${round.id}`,
                 type: 'round',
-                title: `${(round.player as any).first_name} ${(round.player as any).last_name}`,
+                title: `${playerInfo.first_name || ''} ${playerInfo.last_name || ''}`.trim(),
                 subtitle: `Shot ${round.total_score} (${toPar > 0 ? '+' : ''}${toPar}) at ${round.course_name}`,
                 timestamp: round.round_date,
                 metadata: { score: round.total_score, toPar },

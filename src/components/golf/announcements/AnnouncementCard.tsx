@@ -10,6 +10,9 @@ interface AnnouncementCardProps {
 }
 
 export function AnnouncementCard({ announcement, isCoach: _isCoach, playerId: _playerId }: AnnouncementCardProps) {
+  void _isCoach;
+  void _playerId;
+
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
       case 'urgent':

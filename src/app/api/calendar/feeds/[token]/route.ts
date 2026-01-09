@@ -39,9 +39,10 @@ type CalendarFeedEvent = Pick<
   | 'title'
   | 'description'
   | 'location'
-  | 'status'
   | 'event_type'
->;
+> & {
+  status?: string | null;
+};
 
 // Helper to format date for iCal (YYYYMMDDTHHMMSSZ format)
 function formatICalDate(dateStr: string | null): string {
@@ -189,9 +190,7 @@ export async function GET(
         break;
     }
 
-    // Only include confirmed and draft events (not cancelled)
-    eventsQuery = eventsQuery.neq('status', 'cancelled');
-
+    // Note: golf_events doesn't have a status column, so we fetch all events
     const { data: events, error: eventsError } = await eventsQuery;
 
     if (eventsError) {
@@ -201,7 +200,7 @@ export async function GET(
 
     // Generate iCal content
     const feedName = feed.name || 'Helm Golf Calendar';
-    const icalContent = generateICal((events || []) as CalendarFeedEvent[], feedName);
+    const icalContent = generateICal((events || []) as unknown as CalendarFeedEvent[], feedName);
 
     // Return iCal file with appropriate headers
     return new NextResponse(icalContent, {

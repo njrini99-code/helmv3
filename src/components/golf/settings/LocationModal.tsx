@@ -35,7 +35,7 @@ export function LocationModal({ isOpen, onClose }: LocationModalProps) {
         setDefaultCity(prefs.default_city || '');
         setDefaultState(prefs.default_state || '');
       }
-    } catch (error) {
+    } catch {
       // Use defaults if no preferences exist
     } finally {
       setLoadingData(false);

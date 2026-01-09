@@ -95,6 +95,16 @@ export default function SignupPage() {
             ← Back to HelmLabs
           </Link>
         </p>
+
+        <p className="text-center mt-3 text-white/50 text-xs">
+          <Link href="/privacy" className="hover:text-white/80 transition-colors">
+            Privacy
+          </Link>
+          <span className="mx-2">·</span>
+          <Link href="/terms" className="hover:text-white/80 transition-colors">
+            Terms
+          </Link>
+        </p>
       </div>
     </div>
   );

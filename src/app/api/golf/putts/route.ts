@@ -23,6 +23,11 @@ const puttDetailsSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     
     const body = await request.json();
     const result = puttDetailsSchema.safeParse(body);
@@ -31,10 +36,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: result.error.flatten() }, { status: 400 });
     }
 
-    // Use a loose client for tables not in generated types
-    const supabaseAny = supabase as unknown as { from: (table: string) => any };
-    const { data, error } = await supabaseAny
-      .from('putt_details')
+    const { data: shot, error: shotError } = await supabase
+      .from('golf_shots')
+      .select('id, round_id')
+      .eq('id', result.data.shotId)
+      .single();
+
+    if (shotError || !shot) {
+      return NextResponse.json({ error: 'Shot not found' }, { status: 404 });
+    }
+
+    const { data: round, error: roundError } = await supabase
+      .from('golf_rounds')
+      .select('id, player_id')
+      .eq('id', shot.round_id)
+      .single();
+
+    if (roundError || !round) {
+      return NextResponse.json({ error: 'Round not found' }, { status: 404 });
+    }
+
+    const { data: player, error: playerError } = await supabase
+      .from('golf_players')
+      .select('id, user_id')
+      .eq('id', round.player_id)
+      .single();
+
+    if (playerError || !player || player.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { data, error } = await supabase
+      .from('putt_details' as never)
       .upsert({
         shot_id: result.data.shotId,
         miss_tags: result.data.missTags,
@@ -46,7 +79,7 @@ export async function POST(request: NextRequest) {
         onConflict: 'shot_id'
       })
       .select()
-      .single();
+      .single() as unknown as { data: PuttDetailsRow | null; error: { message?: string } | null };
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

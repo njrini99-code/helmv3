@@ -31,7 +31,43 @@ export async function GET(
   try {
     const { playerId } = await params;
     const supabase = await createClient();
-    
+
+    // Authentication check
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Authorization: Check if user is the player or a coach on the player's team
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id, user_id, team_id')
+      .eq('id', playerId)
+      .single();
+
+    if (!player) {
+      return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+    }
+
+    // Check if user is the player themselves
+    const isOwnData = player.user_id === user.id;
+
+    // Check if user is a coach on the player's team
+    let isTeamCoach = false;
+    if (!isOwnData && player.team_id) {
+      const { data: coach } = await supabase
+        .from('golf_coaches')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('team_id', player.team_id)
+        .single();
+      isTeamCoach = !!coach;
+    }
+
+    if (!isOwnData && !isTeamCoach) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     // Use type assertion to bypass TypeScript type checking for views not in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)

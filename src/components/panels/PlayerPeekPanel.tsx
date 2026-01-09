@@ -159,6 +159,9 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
   };
 
   if (!playerId) return null;
+  const highSchoolOrgName = player
+    ? (player as { high_school_org?: { name?: string | null } }).high_school_org?.name
+    : null;
 
   return (
     <PeekPanelRoot isOpen={!!playerId} onClose={onClose} width="lg">
@@ -180,7 +183,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
                 {getFullName(player.first_name, player.last_name)}
               </h2>
               <p className="text-sm leading-relaxed text-slate-500 mt-1">
-                {(player as any).high_school_org?.name || player.high_school_name || 'Unknown School'} • {player.city}, {player.state}
+                {highSchoolOrgName || player.high_school_name || 'Unknown School'} • {player.city}, {player.state}
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="primary">{player.primary_position}</Badge>

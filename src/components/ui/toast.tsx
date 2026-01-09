@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 interface Toast {
@@ -11,12 +11,15 @@ interface Toast {
   action?: { label: string; onClick: () => void };
 }
 
-const ToastContext = createContext<{
+type ToastContextValue = {
   toasts: Toast[];
   addToast: (toast: Omit<Toast, 'id'>) => void;
   removeToast: (id: string) => void;
   showToast: (message: string, type: Toast['type']) => void;
-} | null>(null);
+};
+
+const ToastContext = createContext<ToastContextValue | null>(null);
+let toastApi: ToastContextValue | null = null;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -45,8 +48,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }, 5000);
   }, []);
 
+  const contextValue = { toasts, addToast, removeToast, showToast };
+
+  useEffect(() => {
+    toastApi = contextValue;
+    return () => {
+      if (toastApi === contextValue) {
+        toastApi = null;
+      }
+    };
+  }, [contextValue]);
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast, showToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <ToastContainerInternal toasts={toasts} onRemove={removeToast} />
     </ToastContext.Provider>
@@ -128,7 +142,9 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
       </div>
 
       <button
+        type="button"
         onClick={onRemove}
+        aria-label="Dismiss notification"
         className="
           w-6 h-6 flex-shrink-0
           rounded-md
@@ -146,27 +162,15 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
 // Helper functions for easy toast triggering
 export const toast = {
   success: (title: string, description?: string, action?: { label: string; onClick: () => void }) => {
-    const context = ToastContext as any;
-    if (context._currentValue) {
-      context._currentValue.addToast({ type: 'success', title, description, action });
-    }
+    toastApi?.addToast({ type: 'success', title, description, action });
   },
   error: (title: string, description?: string) => {
-    const context = ToastContext as any;
-    if (context._currentValue) {
-      context._currentValue.addToast({ type: 'error', title, description });
-    }
+    toastApi?.addToast({ type: 'error', title, description });
   },
   warning: (title: string, description?: string) => {
-    const context = ToastContext as any;
-    if (context._currentValue) {
-      context._currentValue.addToast({ type: 'warning', title, description });
-    }
+    toastApi?.addToast({ type: 'warning', title, description });
   },
   info: (title: string, description?: string, action?: { label: string; onClick: () => void }) => {
-    const context = ToastContext as any;
-    if (context._currentValue) {
-      context._currentValue.addToast({ type: 'info', title, description, action });
-    }
+    toastApi?.addToast({ type: 'info', title, description, action });
   },
 };

@@ -21,9 +21,16 @@ interface PlayerComparisonProps {
 // HELPERS
 // ============================================
 
+type StatValue = number | string | null | undefined;
+
 // Get nested value from object by path
-function getValue(obj: any, path: string) {
-  return path.split('.').reduce((acc, key) => acc?.[key], obj);
+function getValue(obj: Record<string, unknown>, path: string): StatValue {
+  return path.split('.').reduce<StatValue>((acc, key) => {
+    if (acc && typeof acc === 'object' && key in acc) {
+      return (acc as Record<string, unknown>)[key] as StatValue;
+    }
+    return undefined;
+  }, obj);
 }
 
 // ============================================
@@ -38,8 +45,6 @@ export function PlayerComparison({
 }: PlayerComparisonProps) {
   if (players.length < 2) return null;
 
-  const PlayerCard = sport === 'golf' ? GolfPlayerCard : BaseballPlayerCard;
-
   // Get comparison stats based on sport
   const getComparisonStats = () => {
     if (sport === 'golf') {
@@ -47,31 +52,31 @@ export function PlayerComparison({
         {
           key: 'handicap',
           label: 'Handicap',
-          format: (v: number) => (v?.toFixed(1) ?? '—'),
+          format: (v: StatValue) => (typeof v === 'number' ? v.toFixed(1) : '—'),
           lowerBetter: true,
         },
         {
           key: 'stats.avg_score',
           label: 'Avg Score',
-          format: (v: number) => (v?.toFixed(1) ?? '—'),
+          format: (v: StatValue) => (typeof v === 'number' ? v.toFixed(1) : '—'),
           lowerBetter: true,
         },
         {
           key: 'stats.fairways_hit_pct',
           label: 'FIR %',
-          format: (v: number) => (v ? `${(v * 100).toFixed(0)}%` : '—'),
+          format: (v: StatValue) => (typeof v === 'number' ? `${(v * 100).toFixed(0)}%` : '—'),
           lowerBetter: false,
         },
         {
           key: 'stats.gir_pct',
           label: 'GIR %',
-          format: (v: number) => (v ? `${(v * 100).toFixed(0)}%` : '—'),
+          format: (v: StatValue) => (typeof v === 'number' ? `${(v * 100).toFixed(0)}%` : '—'),
           lowerBetter: false,
         },
         {
           key: 'stats.avg_putts',
           label: 'Putts/Round',
-          format: (v: number) => (v?.toFixed(1) ?? '—'),
+          format: (v: StatValue) => (typeof v === 'number' ? v.toFixed(1) : '—'),
           lowerBetter: true,
         },
       ];
@@ -82,31 +87,31 @@ export function PlayerComparison({
       {
         key: 'stats.batting_avg',
         label: 'AVG',
-        format: (v: number) => (v ? v.toFixed(3).replace(/^0/, '') : '—'),
+        format: (v: StatValue) => (typeof v === 'number' ? v.toFixed(3).replace(/^0/, '') : '—'),
         lowerBetter: false,
       },
       {
         key: 'stats.era',
         label: 'ERA',
-        format: (v: number) => (v?.toFixed(2) ?? '—'),
+        format: (v: StatValue) => (typeof v === 'number' ? v.toFixed(2) : '—'),
         lowerBetter: true,
       },
       {
         key: 'stats.home_runs',
         label: 'HR',
-        format: (v: number) => (v?.toString() ?? '—'),
+        format: (v: StatValue) => (v !== null && v !== undefined ? String(v) : '—'),
         lowerBetter: false,
       },
       {
         key: 'stats.rbi',
         label: 'RBI',
-        format: (v: number) => (v?.toString() ?? '—'),
+        format: (v: StatValue) => (v !== null && v !== undefined ? String(v) : '—'),
         lowerBetter: false,
       },
       {
         key: 'stats.whip',
         label: 'WHIP',
-        format: (v: number) => (v ? v.toFixed(3).replace(/^0/, '') : '—'),
+        format: (v: StatValue) => (typeof v === 'number' ? v.toFixed(3).replace(/^0/, '') : '—'),
         lowerBetter: true,
       },
     ];
@@ -119,8 +124,11 @@ export function PlayerComparison({
     const values = players.map((p) => getValue(p, statKey));
     if (values.some((v) => v === null || v === undefined)) return -1;
 
-    const best = lowerBetter ? Math.min(...values) : Math.max(...values);
-    return values.indexOf(best);
+    const numericValues = values.map((v) => (typeof v === 'number' ? v : Number(v)));
+    if (numericValues.some((v) => Number.isNaN(v))) return -1;
+
+    const best = lowerBetter ? Math.min(...numericValues) : Math.max(...numericValues);
+    return numericValues.indexOf(best);
   };
 
   return (
@@ -176,7 +184,11 @@ export function PlayerComparison({
             >
               <XIcon className="w-4 h-4" />
             </button>
-            <PlayerCard player={player as any} variant="full" showActions={false} />
+            {sport === 'golf' ? (
+              <GolfPlayerCard player={player as GolfPlayer} variant="full" showActions={false} />
+            ) : (
+              <BaseballPlayerCard player={player as BaseballPlayer} variant="full" showActions={false} />
+            )}
           </div>
         ))}
       </div>

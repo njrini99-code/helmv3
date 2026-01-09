@@ -7,13 +7,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { IconX, IconCheck, IconDownload, IconBookmark, IconChartRadar } from '@/components/icons';
 import { getFullName, formatHeight, cn } from '@/lib/utils';
-import type { Player } from '@/lib/types';
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer } from 'recharts';
+import type { Player, ComparisonData } from '@/lib/types';
+import dynamic from 'next/dynamic';
 import { SaveComparisonModal } from './save-comparison-modal';
 import { saveComparison } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+
+const RadarChart = dynamic(() => import('recharts').then((mod) => mod.RadarChart), { ssr: false });
+const PolarGrid = dynamic(() => import('recharts').then((mod) => mod.PolarGrid), { ssr: false });
+const PolarAngleAxis = dynamic(() => import('recharts').then((mod) => mod.PolarAngleAxis), { ssr: false });
+const PolarRadiusAxis = dynamic(() => import('recharts').then((mod) => mod.PolarRadiusAxis), { ssr: false });
+const Radar = dynamic(() => import('recharts').then((mod) => mod.Radar), { ssr: false });
+const Legend = dynamic(() => import('recharts').then((mod) => mod.Legend), { ssr: false });
+const ResponsiveContainer = dynamic(() => import('recharts').then((mod) => mod.ResponsiveContainer), { ssr: false });
 
 interface PlayerComparisonProps {
   players: Player[];
@@ -155,7 +163,10 @@ export function PlayerComparison({
 
   // Prepare radar chart data
   const getRadarData = () => {
-    const radarMetrics = [
+    type RadarMetricKey = 'pitch_velo' | 'exit_velo' | 'sixty_time' | 'gpa' | 'height';
+    type PlayerMetricKey = Exclude<RadarMetricKey, 'height'>;
+
+    const radarMetrics: Array<{ key: RadarMetricKey; label: string; max: number; inverse?: boolean }> = [
       { key: 'pitch_velo', label: 'Pitch Velo', max: 100 },
       { key: 'exit_velo', label: 'Exit Velo', max: 110 },
       { key: 'sixty_time', label: '60 Time', max: 8, inverse: true },
@@ -174,9 +185,12 @@ export function PlayerComparison({
           value = (totalInches / metric.max) * 100;
         } else if (metric.key === 'sixty_time' && player.sixty_time) {
           // Inverse - lower is better, so invert the percentage
-          value = metric.inverse ? (1 - (player.sixty_time / metric.max)) * 100 : ((player as any)[metric.key] / metric.max) * 100;
-        } else if ((player as any)[metric.key]) {
-          value = ((player as any)[metric.key] / metric.max) * 100;
+          value = metric.inverse ? (1 - (player.sixty_time / metric.max)) * 100 : (player.sixty_time / metric.max) * 100;
+        } else if (metric.key !== 'height') {
+          const metricValue = player[metric.key as PlayerMetricKey];
+          if (typeof metricValue === 'number') {
+            value = (metricValue / metric.max) * 100;
+          }
         }
 
         dataPoint[`player${index + 1}`] = Math.min(100, Math.max(0, value));
@@ -199,7 +213,7 @@ export function PlayerComparison({
       const playerIds = players.map(p => p.id);
 
       // Prepare comparison data to cache (stats, radar data, etc.)
-      const comparisonData = {
+      const comparisonData: ComparisonData = {
         radarData: getRadarData(),
         stats: statComparisons.map(stat => ({
           label: stat.label,
@@ -216,7 +230,7 @@ export function PlayerComparison({
         name: data.name,
         description: data.description,
         playerIds,
-        comparisonData: comparisonData as any,
+        comparisonData,
       });
 
       if (result.error) {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { PlayerCardData } from './PlayerCard';
 import { Button } from '@/components/ui/button';
@@ -99,7 +100,13 @@ export function PlayerHoverPreview({
           {/* Avatar */}
           <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center flex-shrink-0 overflow-hidden">
             {player.avatar ? (
-              <img src={player.avatar} alt="" className="w-full h-full object-cover" />
+              <Image
+                src={player.avatar}
+                alt={`${player.firstName} ${player.lastName}`}
+                width={56}
+                height={56}
+                className="w-full h-full object-cover"
+              />
             ) : (
               <span className="text-lg font-medium text-slate-600">
                 {player.firstName.charAt(0)}{player.lastName.charAt(0)}
@@ -154,10 +161,12 @@ export function PlayerHoverPreview({
             onClick={onView}
           >
             {player.videoThumbnail ? (
-              <img 
-                src={player.videoThumbnail} 
-                alt="Video thumbnail" 
-                className="w-full h-full object-cover"
+              <Image
+                src={player.videoThumbnail}
+                alt={`${player.firstName} ${player.lastName} video thumbnail`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 320px"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">

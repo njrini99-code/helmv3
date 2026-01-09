@@ -13,7 +13,7 @@ import { Pagination } from './pagination';
 import { TableSkeleton } from './table-skeleton';
 import type { Column, TableProps } from '@/types/table';
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T extends Record<string, unknown>>({
   data,
   columns,
   selectable = false,
