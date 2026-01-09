@@ -1,19 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import type { Database } from '@/lib/types/database';
 
-interface PuttDetailsRow {
-  shot_id: string;
-  miss_tags: string[];
-  break_direction: string | null;
-  estimated_break_inches: number | null;
-  distance_feet: number | null;
-  made: boolean;
-}
+type PuttDetailsRow = Database['public']['Tables']['putt_details']['Row'];
 
 const puttDetailsSchema = z.object({
   shotId: z.string().uuid(),
-  missTags: z.array(z.enum(['low', 'high', 'short', 'long', 'pull', 'push'])),
+  missTags: z.array(z.enum(['short', 'low', 'high'])),
   breakDirection: z.enum(['left_to_right', 'right_to_left', 'straight']).optional(),
   estimatedBreakInches: z.number().int().min(0).max(36).optional(),
   distanceFeet: z.number().min(0).max(100).optional(),
@@ -67,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data, error } = await supabase
-      .from('putt_details' as never)
+      .from('putt_details')
       .upsert({
         shot_id: result.data.shotId,
         miss_tags: result.data.missTags,
@@ -79,13 +73,13 @@ export async function POST(request: NextRequest) {
         onConflict: 'shot_id'
       })
       .select()
-      .single() as unknown as { data: PuttDetailsRow | null; error: { message?: string } | null };
+      .single();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data as PuttDetailsRow | null);
+    return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },

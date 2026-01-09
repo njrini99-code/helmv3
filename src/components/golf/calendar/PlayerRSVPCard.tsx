@@ -36,19 +36,21 @@ export interface PlayerRSVPCardProps {
     title: string;
     event_type: string;
     status: string;
-    start_time: string;
+    start_date: string;
+    start_time: string | null;
+    end_date?: string | null;
     end_time?: string | null;
     location?: string | null;
     description?: string | null;
-    rsvp_lock_time?: string | null;
+    rsvp_deadline?: string | null;
   };
-  currentResponse?: 'confirmed' | 'maybe' | 'declined' | null;
-  onRespond: (response: 'confirmed' | 'maybe' | 'declined') => Promise<void>;
+  currentResponse?: 'accepted' | 'tentative' | 'declined' | null;
+  onRespond: (response: 'accepted' | 'tentative' | 'declined') => Promise<void>;
   className?: string;
   compact?: boolean;
 }
 
-type RSVPOption = 'confirmed' | 'maybe' | 'declined';
+type RSVPOption = 'accepted' | 'tentative' | 'declined';
 
 const RSVP_OPTIONS: Array<{
   value: RSVPOption;
@@ -61,7 +63,7 @@ const RSVP_OPTIONS: Array<{
   selectedClass: string;
 }> = [
   {
-    value: 'confirmed',
+    value: 'accepted',
     label: "I'm Going",
     shortLabel: 'Going',
     icon: CheckCircle2,
@@ -71,7 +73,7 @@ const RSVP_OPTIONS: Array<{
     selectedClass: 'bg-emerald-600 text-white ring-4 ring-emerald-200 shadow-lg',
   },
   {
-    value: 'maybe',
+    value: 'tentative',
     label: 'Maybe',
     shortLabel: 'Maybe',
     icon: HelpCircle,
@@ -104,9 +106,13 @@ export function PlayerRSVPCard({
   );
   const [loading, setLoading] = useState(false);
 
-  const eventDate = new Date(event.start_time);
-  const isLocked = event.rsvp_lock_time
-    ? new Date(event.rsvp_lock_time) < new Date()
+  const eventDate = new Date(event.start_date);
+  const startTime = event.start_time
+    || (event.start_date.includes('T') ? event.start_date.split('T')[1]?.slice(0, 5) ?? null : null);
+  const endTime = event.end_time
+    || (event.end_date && event.end_date.includes('T') ? event.end_date.split('T')[1]?.slice(0, 5) ?? null : null);
+  const isLocked = event.rsvp_deadline
+    ? new Date(event.rsvp_deadline) < new Date()
     : false;
 
   async function handleRespond(response: RSVPOption) {
@@ -151,8 +157,8 @@ export function PlayerRSVPCard({
             </div>
           </div>
 
-          {event.rsvp_lock_time && !isLocked && (
-            <InlineRSVPLock lockTime={event.rsvp_lock_time} />
+          {event.rsvp_deadline && !isLocked && (
+            <InlineRSVPLock lockTime={event.rsvp_deadline} />
           )}
         </div>
 
@@ -162,13 +168,15 @@ export function PlayerRSVPCard({
             <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
             <span className="font-medium">{format(eventDate, 'EEEE, MMMM d, yyyy')}</span>
           </div>
-          <div className="flex items-center gap-2.5 text-sm text-slate-700">
-            <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-            <span>
-              {formatTime(event.start_time)}
-              {event.end_time && ` - ${formatTime(event.end_time)}`}
-            </span>
-          </div>
+          {startTime && (
+            <div className="flex items-center gap-2.5 text-sm text-slate-700">
+              <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+              <span>
+                {formatTime(startTime)}
+                {endTime && ` - ${formatTime(endTime)}`}
+              </span>
+            </div>
+          )}
           {event.location && (
             <div className="flex items-center gap-2.5 text-sm text-slate-700">
               <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
@@ -270,9 +278,9 @@ export function PlayerRSVPCard({
             </div>
 
             {/* Lock countdown */}
-            {event.rsvp_lock_time && (
+            {event.rsvp_deadline && (
               <div className="mt-4">
-                <RSVPLockIndicator lockTime={event.rsvp_lock_time} compact />
+                <RSVPLockIndicator lockTime={event.rsvp_deadline} compact />
               </div>
             )}
 
@@ -300,6 +308,8 @@ export function CompactPlayerRSVPCard({
   onRespond,
 }: Omit<PlayerRSVPCardProps, 'className' | 'compact'>) {
   const [loading, setLoading] = useState(false);
+  const compactStartTime = event.start_time
+    || (event.start_date.includes('T') ? event.start_date.split('T')[1]?.slice(0, 5) ?? null : null);
 
   async function handleQuickRespond(response: RSVPOption) {
     setLoading(true);
@@ -316,7 +326,9 @@ export function CompactPlayerRSVPCard({
     <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm text-slate-900 truncate">{event.title}</p>
-        <p className="text-xs text-slate-500 mt-0.5">{formatTime(event.start_time)}</p>
+        {compactStartTime && (
+          <p className="text-xs text-slate-500 mt-0.5">{formatTime(compactStartTime)}</p>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">

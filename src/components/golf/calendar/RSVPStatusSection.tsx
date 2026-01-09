@@ -27,7 +27,7 @@ export interface RSVPParticipant {
   user_id: string;
   name: string;
   avatar_url?: string | null;
-  response: 'confirmed' | 'maybe' | 'declined' | 'pending';
+  response: 'accepted' | 'tentative' | 'declined' | 'pending';
   responded_at?: string | null;
   email?: string;
   phone?: string;
@@ -42,11 +42,11 @@ export interface RSVPStatusSectionProps {
   compact?: boolean;
 }
 
-type RSVPFilter = 'all' | 'confirmed' | 'maybe' | 'declined' | 'pending';
+type RSVPFilter = 'all' | 'accepted' | 'tentative' | 'declined' | 'pending';
 
 interface RSVPStats {
-  confirmed: number;
-  maybe: number;
+  accepted: number;
+  tentative: number;
   declined: number;
   pending: number;
   total: number;
@@ -54,14 +54,14 @@ interface RSVPStats {
 }
 
 const RESPONSE_CONFIGS = {
-  confirmed: {
-    label: 'Confirmed',
+  accepted: {
+    label: 'Accepted',
     color: 'bg-emerald-500',
     textColor: 'text-emerald-700',
     bgColor: 'bg-emerald-50',
   },
-  maybe: {
-    label: 'Maybe',
+  tentative: {
+    label: 'Tentative',
     color: 'bg-amber-500',
     textColor: 'text-amber-700',
     bgColor: 'bg-amber-50',
@@ -94,14 +94,14 @@ export function RSVPStatusSection({
 
   // Calculate stats
   const stats: RSVPStats = {
-    confirmed: participants.filter((p) => p.response === 'confirmed').length,
-    maybe: participants.filter((p) => p.response === 'maybe').length,
+    accepted: participants.filter((p) => p.response === 'accepted').length,
+    tentative: participants.filter((p) => p.response === 'tentative').length,
     declined: participants.filter((p) => p.response === 'declined').length,
     pending: participants.filter((p) => p.response === 'pending').length,
     total: totalInvited,
     percentage:
       totalInvited > 0
-        ? (participants.filter((p) => p.response === 'confirmed').length / totalInvited) * 100
+        ? (participants.filter((p) => p.response === 'accepted').length / totalInvited) * 100
         : 0,
   };
 
@@ -152,7 +152,7 @@ export function RSVPStatusSection({
               RSVP Status
             </h3>
             <p className="text-sm text-slate-500 mt-1">
-              {stats.confirmed} of {stats.total} confirmed
+              {stats.accepted} of {stats.total} accepted
             </p>
           </div>
 
@@ -170,8 +170,8 @@ export function RSVPStatusSection({
         {/* Progress Ring */}
         <div className="flex justify-center">
           <RSVPProgressRing
-            confirmed={stats.confirmed}
-            maybe={stats.maybe}
+            confirmed={stats.accepted}
+            maybe={stats.tentative}
             declined={stats.declined}
             pending={stats.pending}
             total={stats.total}
@@ -205,20 +205,20 @@ export function RSVPStatusSection({
             All
           </FilterButton>
           <FilterButton
-            active={filter === 'confirmed'}
-            onClick={() => setFilter('confirmed')}
-            count={stats.confirmed}
+            active={filter === 'accepted'}
+            onClick={() => setFilter('accepted')}
+            count={stats.accepted}
             color="emerald"
           >
-            Confirmed
+            Accepted
           </FilterButton>
           <FilterButton
-            active={filter === 'maybe'}
-            onClick={() => setFilter('maybe')}
-            count={stats.maybe}
+            active={filter === 'tentative'}
+            onClick={() => setFilter('tentative')}
+            count={stats.tentative}
             color="amber"
           >
-            Maybe
+            Tentative
           </FilterButton>
           <FilterButton
             active={filter === 'declined'}
@@ -435,14 +435,14 @@ export function CompactRSVPStatus({
   totalInvited: _totalInvited,
 }: Pick<RSVPStatusSectionProps, 'participants' | 'totalInvited'>) {
   void _totalInvited; // May be used in future for percentage calculations
-  const confirmed = participants.filter((p) => p.response === 'confirmed').length;
+  const accepted = participants.filter((p) => p.response === 'accepted').length;
   const pending = participants.filter((p) => p.response === 'pending').length;
 
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-        <span className="text-sm font-medium text-slate-700">{confirmed} confirmed</span>
+        <span className="text-sm font-medium text-slate-700">{accepted} accepted</span>
       </div>
       {pending > 0 && (
         <div className="flex items-center gap-2">

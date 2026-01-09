@@ -218,7 +218,7 @@ export interface RoundData {
 // PUTT MISS CLASSIFICATION TYPES
 // ============================================================================
 
-export type PuttMissTag = 'low' | 'high' | 'short' | 'long' | 'pull' | 'push';
+export type PuttMissTag = 'low' | 'high' | 'short';
 
 export type PuttBreakDirection = 'left_to_right' | 'right_to_left' | 'straight';
 
@@ -282,24 +282,6 @@ export const PUTT_MISS_TAG_CONFIG: Record<PuttMissTag, {
     description: 'Left it short', 
     category: 'speed',
     color: 'text-red-400'
-  },
-  long: { 
-    label: 'Long', 
-    description: 'Ran it past', 
-    category: 'speed',
-    color: 'text-orange-400'
-  },
-  pull: { 
-    label: 'Pull', 
-    description: 'Pulled left of line', 
-    category: 'stroke',
-    color: 'text-purple-400'
-  },
-  push: { 
-    label: 'Push', 
-    description: 'Pushed right of line', 
-    category: 'stroke',
-    color: 'text-pink-400'
   },
 };
 

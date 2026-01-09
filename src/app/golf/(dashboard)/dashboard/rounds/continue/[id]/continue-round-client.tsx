@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import ShotTrackingComprehensive, { type HoleStats } from '@/components/golf/ShotTrackingComprehensive';
+import ShotTrackingComprehensive, { type HoleStats, type ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound } from '@/app/golf/actions/golf';
 import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
@@ -72,6 +72,12 @@ export default function ContinueRoundClient({
   const [showSummary, setShowSummary] = useState(false);
   const [summaryData, setSummaryData] = useState<RoundSummary | null>(null);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [inProgressShotsByHole, setInProgressShotsByHole] = useState<Record<number, ShotRecord[]>>(() => {
+    if (initialShots.length === 0) {
+      return {};
+    }
+    return { [startHoleIndex]: initialShots };
+  });
 
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats) => {
     // Update holes with score
@@ -86,6 +92,14 @@ export default function ContinueRoundClient({
     const updatedStats = [...completedHoleStats];
     updatedStats[holeIndex] = holeStats;
     setCompletedHoleStats(updatedStats);
+    setInProgressShotsByHole((prev) => {
+      if (!prev[holeIndex]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[holeIndex];
+      return next;
+    });
 
     // Move to next hole or finish
     if (holeIndex < holes.length - 1) {
@@ -94,6 +108,17 @@ export default function ContinueRoundClient({
       // All holes complete, submit round
       await handleRoundSubmit(updatedStats);
     }
+  };
+
+  const handleSaveShot = (shot: ShotRecord) => {
+    if (completedHoleStats[currentHoleIndex]) {
+      return;
+    }
+
+    setInProgressShotsByHole((prev) => {
+      const existing = prev[currentHoleIndex] ?? [];
+      return { ...prev, [currentHoleIndex]: [...existing, shot] };
+    });
   };
 
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
@@ -171,6 +196,13 @@ export default function ContinueRoundClient({
   };
 
   const handleSaveForLater = async () => {
+    const inProgressShots = Object.entries(inProgressShotsByHole)
+      .filter(([, shots]) => shots.length > 0)
+      .map(([holeIndex, shots]) => ({
+        holeNumber: holes[Number(holeIndex)]?.number ?? Number(holeIndex) + 1,
+        shots,
+      }));
+
     const partialRoundData = {
       courseName: setupData.courseName,
       courseCity: setupData.courseCity || undefined,
@@ -183,6 +215,7 @@ export default function ContinueRoundClient({
       currentHole: currentHoleIndex + 1, // Next hole player will resume on
       holesToPlay: holes.length as 9 | 18,
       holes: completedHoleStats,
+      inProgressShots,
       holeConfigs: holes.map(hole => ({
         holeNumber: hole.number,
         par: hole.par,
@@ -201,6 +234,11 @@ export default function ContinueRoundClient({
     // Redirect to rounds page
     router.push('/golf/dashboard/rounds');
   };
+
+  const completedStatsForHole = completedHoleStats[currentHoleIndex];
+  const inProgressShots = inProgressShotsByHole[currentHoleIndex] ?? [];
+  const activeHoleShots = completedStatsForHole?.shots ?? inProgressShots;
+  const activeShotNumber = activeHoleShots.length > 0 ? activeHoleShots.length + 1 : initialShotNumber;
 
   const handleDeleteRound = async () => {
     await deleteInProgressRound(roundId);
@@ -280,10 +318,11 @@ export default function ContinueRoundClient({
         holes={holes}
         currentHoleIndex={currentHoleIndex}
         onHoleComplete={handleHoleComplete}
+        onSaveShot={handleSaveShot}
         onExit={() => setShowExitModal(true)}
         onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}
-        initialShots={currentHoleIndex === startHoleIndex ? initialShots : undefined}
-        initialShotNumber={currentHoleIndex === startHoleIndex ? initialShotNumber : undefined}
+        initialShots={activeHoleShots}
+        initialShotNumber={activeShotNumber}
       />
 
       {/* Save Round Modal */}

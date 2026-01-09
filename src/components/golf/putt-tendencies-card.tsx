@@ -96,7 +96,7 @@ export function PuttTendenciesCard({ data }: PuttTendenciesCardProps) {
 
       {/* Miss Distribution */}
       <div className="grid grid-cols-3 gap-3">
-        {(['low', 'high', 'short', 'long', 'pull', 'push'] as const).map((tag) => {
+        {(['low', 'high', 'short'] as const).map((tag) => {
           const config = PUTT_MISS_TAG_CONFIG[tag];
           const count = missByType[tag];
           const pct = totalMissedPutts > 0 

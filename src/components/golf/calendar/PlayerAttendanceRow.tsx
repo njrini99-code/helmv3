@@ -23,7 +23,7 @@ export interface PlayerAttendanceRowProps {
     id: string;
     name: string;
     avatar_url?: string | null;
-    rsvp_status?: 'confirmed' | 'maybe' | 'declined' | 'pending';
+    rsvp_status?: 'accepted' | 'tentative' | 'declined' | 'pending';
   };
   attendance: 'present' | 'absent' | 'excused' | null;
   onMarkPresent: () => void;
@@ -33,15 +33,15 @@ export interface PlayerAttendanceRowProps {
 }
 
 const RSVP_INDICATOR_COLORS = {
-  confirmed: 'bg-emerald-500',
-  maybe: 'bg-amber-500',
+  accepted: 'bg-emerald-500',
+  tentative: 'bg-amber-500',
   declined: 'bg-rose-400',
   pending: 'bg-slate-300',
 };
 
 const RSVP_LABELS = {
-  confirmed: 'Going',
-  maybe: 'Maybe',
+  accepted: 'Going',
+  tentative: 'Maybe',
   declined: "Can't Go",
   pending: 'No Response',
 };

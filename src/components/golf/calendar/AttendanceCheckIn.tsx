@@ -25,7 +25,7 @@ export interface AttendancePlayer {
   id: string;
   name: string;
   avatar_url?: string | null;
-  rsvp_status?: 'confirmed' | 'maybe' | 'declined' | 'pending';
+  rsvp_status?: 'accepted' | 'tentative' | 'declined' | 'pending';
   attendance?: {
     status: 'present' | 'absent' | 'excused' | null;
     reason?: string;

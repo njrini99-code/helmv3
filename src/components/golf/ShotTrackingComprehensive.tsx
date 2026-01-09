@@ -255,7 +255,6 @@ export default function ShotTrackingComprehensive({
   const [puttSlope, setPuttSlope] = useState<ShotRecord['puttSlope'] | null>(null);
   // New putt classification state
   const [puttMissTags, setPuttMissTags] = useState<PuttMissTag[]>([]);
-  const [puttDistanceFeet, setPuttDistanceFeet] = useState<number | undefined>(undefined);
   // New approach miss classification state
   const [approachMissDirection, setApproachMissDirection] = useState<ApproachMissDirection | null>(null);
   const [approachMissLieType, setApproachMissLieType] = useState<'fairway' | 'rough' | 'bunker' | 'hazard' | undefined>(undefined);
@@ -272,65 +271,43 @@ export default function ShotTrackingComprehensive({
   // RESET ON HOLE CHANGE
   // ============================================================================
   
-  // Track if we've initialized with initial shots
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const hydratedHoleIndexRef = useRef<number | null>(null);
+  const [selectedShotNumber, setSelectedShotNumber] = useState<number | null>(null);
+  const shotHistoryRefs = useRef<Record<number, HTMLDivElement | null>>({});
   
   useEffect(() => {
-    // On initial mount with initialShots, restore them
-    if (!hasInitialized && initialShots.length > 0) {
-      setCurrentShot(initialShotNumber);
-      setShotHistory(initialShots);
-      // Set distance to hole from last shot's distance after
-      const lastShot = initialShots[initialShots.length - 1];
-      if (lastShot?.distanceToHoleAfter) {
-        const parsed = typeof lastShot.distanceToHoleAfter === 'string' 
-          ? parseFloat(lastShot.distanceToHoleAfter) 
-          : lastShot.distanceToHoleAfter;
-        if (!isNaN(parsed)) {
-          setDistanceToHole(parsed);
-        }
-        setDistanceUnit(lastShot.distanceUnitAfter || 'yards');
-      }
-      // Set lie based on last shot result
-      if (lastShot?.result === 'green') {
-        setCurrentLie('green');
-      } else if (lastShot?.result === 'rough') {
-        setCurrentLie('rough');
-      } else if (lastShot?.result === 'sand') {
-        setCurrentLie('sand');
-      } else if (lastShot?.result === 'fairway') {
-        setCurrentLie('fairway');
-      }
-      setHasInitialized(true);
+    if (hydratedHoleIndexRef.current === currentHoleIndex) {
       return;
     }
-    
-    // Reset when changing holes (but not on initial load)
-    if (hasInitialized) {
-      setCurrentShot(1);
-      setShotHistory([]);
-      setDistanceToHole(currentHole.yardage);
-      setDistanceUnit('yards');
-      setCurrentLie('tee');
-      setUsedDriver(null);
-      setResultOfShot(null);
-      setMissDirection(null);
-      setPuttBreak(null);
-      setPuttSlope(null);
-      setDistanceAfterShot('');
-      setDistanceAfterUnit('yards');
-      setShowPenaltyModal(false);
-      setPenaltyType(null);
-      // Reset new classification fields
-      setPuttMissTags([]);
-      setPuttDistanceFeet(undefined);
-      setApproachMissDirection(null);
-      setApproachMissLieType(undefined);
-    } else {
-      // First load without initial shots - mark as initialized
-      setHasInitialized(true);
-    }
-  }, [currentHoleIndex, currentHole.yardage]);
+
+    hydratedHoleIndexRef.current = currentHoleIndex;
+
+    const hasSavedShots = initialShots.length > 0;
+    const initialLie = hasSavedShots ? getInitialLie() : 'tee';
+    const initialDistance = hasSavedShots ? getInitialDistance() : currentHole.yardage;
+    const initialUnit = hasSavedShots ? getInitialDistanceUnit() : 'yards';
+    const nextShotNumber = hasSavedShots ? initialShotNumber : 1;
+
+    setCurrentShot(nextShotNumber);
+    setShotHistory(hasSavedShots ? initialShots : []);
+    setDistanceToHole(initialDistance);
+    setDistanceUnit(initialUnit);
+    setCurrentLie(initialLie);
+
+    setUsedDriver(null);
+    setResultOfShot(null);
+    setMissDirection(null);
+    setPuttBreak(null);
+    setPuttSlope(null);
+    setDistanceAfterShot('');
+    setDistanceAfterUnit(initialLie === 'green' ? 'feet' : 'yards');
+    setShowPenaltyModal(false);
+    setPenaltyType(null);
+    setPuttMissTags([]);
+    setApproachMissDirection(null);
+    setApproachMissLieType(undefined);
+    setSelectedShotNumber(null);
+  }, [currentHoleIndex, currentHole.yardage, initialShots, initialShotNumber]);
 
   // ============================================================================
   // DERIVED VALUES
@@ -376,7 +353,7 @@ export default function ShotTrackingComprehensive({
       // Check if miss direction is needed
       const needsMissDirection =
         (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot)) ||
-        (isApproachOrAroundGreen && !['green', 'hole', 'fairway'].includes(resultOfShot)) ||
+        (isApproachOrAroundGreen && !['green', 'hole'].includes(resultOfShot)) ||
         (isPutting && resultOfShot !== 'hole');
 
       // Only auto-focus distance if miss direction not needed OR already filled
@@ -489,7 +466,9 @@ export default function ShotTrackingComprehensive({
       isPenalty: false,
       // New classification fields
       puttMissTags: isPutting && puttMissTags.length > 0 ? puttMissTags : undefined,
-      puttDistanceFeet: isPutting && puttDistanceFeet ? puttDistanceFeet : undefined,
+      puttDistanceFeet: isPutting
+        ? (distanceUnit === 'yards' ? distanceToHole * 3 : distanceToHole)
+        : undefined,
       approachMissDirection: (isApproachOrAroundGreen && approachMissDirection) ? approachMissDirection : undefined,
       approachMissLieType: (isApproachOrAroundGreen && approachMissLieType) ? approachMissLieType : undefined,
     };
@@ -901,7 +880,7 @@ export default function ShotTrackingComprehensive({
 
       {/* MAIN CONTENT */}
       <div className="flex">
-        <div className="flex-1 max-w-3xl mx-auto p-6 space-y-5">
+        <div className="flex-1 max-w-5xl mx-auto p-6 space-y-5">
 
           {/* Shot Pills - Sticky - Dynamic */}
           <div className="sticky top-[105px] lg:top-[81px] z-40 bg-white py-4 -mt-4 -mx-6 px-6 flex items-center gap-2 shadow-sm shadow-emerald-950/5 border-b border-slate-100">
@@ -910,13 +889,29 @@ export default function ShotTrackingComprehensive({
               const isActive = num === currentShot;
               const isCompleted = num < currentShot;
               const isFuture = num > currentShot;
+              const isRecorded = num <= shotHistory.length;
+              const isSelected = selectedShotNumber === num;
+
               return (
-                <div key={num} className={`flex-1 min-w-[44px] h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all
-                  ${isActive ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-950/5' : ''}
-                  ${isCompleted ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : ''}
-                  ${isFuture ? 'bg-slate-50 text-slate-400 ring-1 ring-slate-200' : ''}`}>
+                <button
+                  key={num}
+                  type="button"
+                  disabled={!isRecorded}
+                  onClick={() => {
+                    if (!isRecorded) return;
+                    setSelectedShotNumber(num);
+                    shotHistoryRefs.current[num]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }}
+                  className={`flex-1 min-w-[44px] h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all
+                    ${isActive ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-950/5' : ''}
+                    ${isCompleted ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : ''}
+                    ${isFuture ? 'bg-slate-50 text-slate-400 ring-1 ring-slate-200' : ''}
+                    ${isSelected ? 'ring-2 ring-emerald-500' : ''}
+                    ${isRecorded ? 'cursor-pointer' : 'cursor-default'}`}
+                  aria-label={isRecorded ? `View shot ${num}` : `Shot ${num} not recorded`}
+                >
                   {num}
-                </div>
+                </button>
               );
             })}
           </div>
@@ -970,7 +965,9 @@ export default function ShotTrackingComprehensive({
             </div>
           </div>
 
-          {/* Club Selection (Tee Shot Par 4/5) - Segmented Control */}
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="space-y-5">
+              {/* Club Selection (Tee Shot Par 4/5) - Segmented Control */}
           {isTeeShot && currentHole.par !== 3 && (
             <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
               {/* Shine effect */}
@@ -1042,14 +1039,16 @@ export default function ShotTrackingComprehensive({
                 // Smart result options based on shot type
                 let options: string[];
 
-                if (isTeeShot && currentHole.par !== 3) {
+                if (isPutting) {
+                  options = ['Hole', 'Green'];
+                } else if (isTeeShot && currentHole.par !== 3) {
                   // Par 4/5 tee shot - can't hit green from tee
                   options = ['Fairway', 'Rough', 'Sand', 'Other'];
                 } else if (isTeeShot && currentHole.par === 3) {
                   // Par 3 tee shot - aiming for green
                   options = ['Green', 'Rough', 'Sand', 'Other'];
                 } else {
-                  // All other shots (approach, around green, putting) - show all options
+                  // All other shots (approach, around green) - show all options
                   options = ['Fairway', 'Rough', 'Sand', 'Green', 'Hole', 'Other'];
                 }
 
@@ -1068,7 +1067,7 @@ export default function ShotTrackingComprehensive({
 
           {/* Miss Direction */}
           {((isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
-            (isApproachOrAroundGreen && resultOfShot && !['green', 'hole', 'fairway'].includes(resultOfShot)) ||
+            (isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot)) ||
             (isPutting && resultOfShot && resultOfShot !== 'hole')) && (
             <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
               {/* Shine effect */}
@@ -1092,7 +1091,7 @@ export default function ShotTrackingComprehensive({
                   ))}
                 </div>
               )}
-              {isApproachOrAroundGreen && resultOfShot && !['green', 'hole', 'fairway'].includes(resultOfShot) && (
+              {isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot) && (
                 <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
                   <ApproachMissSelector
                     selectedDirection={approachMissDirection}
@@ -1126,8 +1125,6 @@ export default function ShotTrackingComprehensive({
                   <PuttMissTagSelector
                     selectedTags={puttMissTags}
                     onTagsChange={setPuttMissTags}
-                    distanceFeet={puttDistanceFeet}
-                    onDistanceChange={setPuttDistanceFeet}
                   />
                 </div>
               )}
@@ -1139,11 +1136,15 @@ export default function ShotTrackingComprehensive({
             <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 border-2 border-emerald-200 shadow-lg shadow-emerald-950/5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-bold text-emerald-900 uppercase tracking-wide">
-                  📏 Final Step: Distance Remaining
+                  {isPutting ? '📏 Leave Distance' : '📏 Final Step: Distance Remaining'}
                 </p>
                 <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md">Required</span>
               </div>
-              <p className="text-xs text-slate-600 mb-4">Enter the distance to the hole after this shot</p>
+              <p className="text-xs text-slate-600 mb-4">
+                {isPutting
+                  ? 'Enter how many feet were left after the putt'
+                  : 'Enter the distance to the hole after this shot'}
+              </p>
               <div className="flex items-center gap-3 mb-3">
                 <input
                   ref={distanceInputRef}
@@ -1212,94 +1213,111 @@ export default function ShotTrackingComprehensive({
             ⚠️ Add Penalty Stroke
           </button>
 
-          {/* Shot History */}
-          {shotHistory.length > 0 && (
-            <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
-              {/* Shine effect */}
-              <div
-                className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-                }}
-              />
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-                  Shot History
-                </p>
-                <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
-                  Score: {currentShot}
-                </p>
-              </div>
-              <div className="space-y-2">
-                {shotHistory.map((shot, idx) => {
-                  // Determine icon and colors based on shot type
-                  const getShotIcon = () => {
-                    if (shot.isPenalty) return '⚠️';
-                    if (shot.shotType === 'tee') return '⛳';
-                    if (shot.shotType === 'putting') return '⛳';
-                    if (shot.result === 'green') return '🎯';
-                    if (shot.result === 'hole') return '🏆';
-                    return '🏌️';
-                  };
-
-                  const getIconBgColor = () => {
-                    if (shot.isPenalty) return 'bg-red-50 ring-red-200';
-                    if (shot.shotType === 'tee') return 'bg-blue-50 ring-blue-200';
-                    if (shot.shotType === 'putting') return 'bg-emerald-50 ring-emerald-200';
-                    if (shot.result === 'green') return 'bg-emerald-50 ring-emerald-200';
-                    return 'bg-slate-50 ring-slate-200';
-                  };
-
-                  return (
-                    <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100 transition-all">
-                      <div className="flex items-center gap-3">
-                        {/* Shot Icon */}
-                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-base ring-1 flex-shrink-0 ${getIconBgColor()}`}>
-                          {getShotIcon()}
-                        </div>
-
-                        {/* Shot Details */}
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-xs font-bold ${shot.isPenalty ? 'text-red-600' : 'text-emerald-600'}`}>
-                              Shot {shot.shotNumber}
-                            </span>
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-semibold uppercase tracking-wide">
-                              {shot.isPenalty ? 'Penalty' : shot.shotType.replace('_', ' ')}
-                            </span>
-                          </div>
-                          {!shot.isPenalty && (
-                            <span className="text-xs text-slate-600 capitalize mt-0.5 font-medium">
-                              {shot.lieBefore} → {shot.result}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Distance/Result */}
-                      <div className="text-right">
-                        {shot.result === 'hole' ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-base">🏆</span>
-                            <span className="font-bold text-xs text-emerald-600 uppercase tracking-wide">Holed</span>
-                          </div>
-                        ) : !shot.isPenalty && shot.shotDistance > 0 ? (
-                          <div className="flex flex-col items-end">
-                            <span className="font-bold text-sm text-slate-900">{shot.shotDistance}<span className="text-xs text-slate-500 ml-0.5 font-semibold">yds</span></span>
-                            <span className="text-xs text-slate-500 font-medium">{shot.distanceToHoleAfter}{shot.distanceUnitAfter === 'yards' ? 'y' : 'ft'} left</span>
-                          </div>
-                        ) : shot.isPenalty ? (
-                          <div className="px-2 py-0.5 bg-red-100 rounded ring-1 ring-red-200">
-                            <span className="text-xs font-bold text-red-700 uppercase tracking-wide">{shot.penaltyType}</span>
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
-          )}
+            <div className="space-y-5">
+              {/* Shot History */}
+              {shotHistory.length > 0 ? (
+                <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300 lg:sticky lg:top-28">
+                  {/* Shine effect */}
+                  <div
+                    className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+                    style={{
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                    }}
+                  />
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                      Shot History
+                    </p>
+                    <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
+                      Score: {currentShot}
+                    </p>
+                  </div>
+                  <div className="space-y-2 lg:max-h-[50vh] lg:overflow-y-auto lg:pr-1">
+                    {shotHistory.map((shot, idx) => {
+                      const isSelected = selectedShotNumber === shot.shotNumber;
+                      // Determine icon and colors based on shot type
+                      const getShotIcon = () => {
+                        if (shot.isPenalty) return '⚠️';
+                        if (shot.shotType === 'tee') return '⛳';
+                        if (shot.shotType === 'putting') return '⛳';
+                        if (shot.result === 'green') return '🎯';
+                        if (shot.result === 'hole') return '🏆';
+                        return '🏌️';
+                      };
+
+                      const getIconBgColor = () => {
+                        if (shot.isPenalty) return 'bg-red-50 ring-red-200';
+                        if (shot.shotType === 'tee') return 'bg-blue-50 ring-blue-200';
+                        if (shot.shotType === 'putting') return 'bg-emerald-50 ring-emerald-200';
+                        if (shot.result === 'green') return 'bg-emerald-50 ring-emerald-200';
+                        return 'bg-slate-50 ring-slate-200';
+                      };
+
+                      return (
+                        <div
+                          key={idx}
+                          ref={(node) => {
+                            shotHistoryRefs.current[shot.shotNumber] = node;
+                          }}
+                          onClick={() => setSelectedShotNumber(shot.shotNumber)}
+                          className={`flex justify-between items-center p-3 rounded-lg transition-all cursor-pointer
+                            ${isSelected ? 'bg-emerald-50/70 ring-2 ring-emerald-400' : 'bg-slate-50 ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100'}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {/* Shot Icon */}
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-base ring-1 flex-shrink-0 ${getIconBgColor()}`}>
+                              {getShotIcon()}
+                            </div>
+
+                            {/* Shot Details */}
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs font-bold ${shot.isPenalty ? 'text-red-600' : 'text-emerald-600'}`}>
+                                  Shot {shot.shotNumber}
+                                </span>
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-semibold uppercase tracking-wide">
+                                  {shot.isPenalty ? 'Penalty' : shot.shotType.replace('_', ' ')}
+                                </span>
+                              </div>
+                              {!shot.isPenalty && (
+                                <span className="text-xs text-slate-600 capitalize mt-0.5 font-medium">
+                                  {shot.lieBefore} → {shot.result}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Distance/Result */}
+                          <div className="text-right">
+                            {shot.result === 'hole' ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-base">🏆</span>
+                                <span className="font-bold text-xs text-emerald-600 uppercase tracking-wide">Holed</span>
+                              </div>
+                            ) : !shot.isPenalty && shot.shotDistance > 0 ? (
+                              <div className="flex flex-col items-end">
+                                <span className="font-bold text-sm text-slate-900">{shot.shotDistance}<span className="text-xs text-slate-500 ml-0.5 font-semibold">yds</span></span>
+                                <span className="text-xs text-slate-500 font-medium">{shot.distanceToHoleAfter}{shot.distanceUnitAfter === 'yards' ? 'y' : 'ft'} left</span>
+                              </div>
+                            ) : shot.isPenalty ? (
+                              <div className="px-2 py-0.5 bg-red-100 rounded ring-1 ring-red-200">
+                                <span className="text-xs font-bold text-red-700 uppercase tracking-wide">{shot.penaltyType}</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-6 text-center text-xs text-slate-500">
+                  Shot history will appear here after you record your first shot.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Right Sidebar - Mini Golf Course Visualization */}
