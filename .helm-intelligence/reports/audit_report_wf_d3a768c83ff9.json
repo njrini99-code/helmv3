@@ -1,0 +1,19 @@
+{
+  "title": "Helm Intelligence Audit Report - wf_d3a768c83ff9",
+  "generated_at": "2026-01-09T10:14:31.520018",
+  "executive_summary": "This automated audit of the Helm Sports Labs codebase identified 0 findings across code quality, database security, and UI/UX compliance.\n\n**Priority Items**: 0 critical issues require immediate attention, with 0 additional high-priority items. Critical issues primarily relate to database security (RLS policies) and authentication patterns.\n\n**Estimated Effort**: The roadmap estimates 6 weeks of focused work to address all significant findings, with quick wins achievable in the first week.",
+  "findings_summary": {},
+  "critical_issues": [],
+  "high_priority": [],
+  "quick_wins": [],
+  "roadmap": "",
+  "checklist": {},
+  "agent_stats": {
+    "workflow_id": "wf_d3a768c83ff9",
+    "agents_completed": 2,
+    "agents_failed": 1,
+    "total_input_tokens": 1207059,
+    "total_output_tokens": 12569,
+    "estimated_cost": "$3.81"
+  }
+}

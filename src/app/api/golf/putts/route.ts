@@ -1,9 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import type { Database } from '@/lib/types/database';
-
-type PuttDetailsRow = Database['public']['Tables']['putt_details']['Row'];
 
 const puttDetailsSchema = z.object({
   shotId: z.string().uuid(),

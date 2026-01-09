@@ -345,6 +345,7 @@ WHERE schemaname = 'public'
 
 ### FEAT-001: Video Clipping Tool
 **Priority:** P2 - FEATURE REQUEST
+**Status:** ✅ Complete (VideoClipper component + migration: 20260109000004_video_clips_support.sql)
 **Time:** 5 days
 **Impact:** Players want to create highlight reels without external tools
 
@@ -376,6 +377,7 @@ WHERE schemaname = 'public'
 
 ### FEAT-002: Email/Push Notifications
 **Priority:** P2 - USER ENGAGEMENT
+**Status:** ✅ Complete (src/lib/notifications/* + migration: 20260109000005_notification_preferences.sql)
 **Time:** 4 days
 **Impact:** Users miss important events without notifications
 
@@ -535,6 +537,7 @@ CREATE TABLE player_comparisons (
 
 ### TECH-001: Expand Test Coverage
 **Priority:** P2 - QUALITY
+**Status:** ✅ Complete (e2e/golf-round.spec.ts, golf-qualifier.spec.ts, baseball-pipeline.spec.ts, camps.spec.ts, roster.spec.ts)
 **Time:** 5 days
 **Impact:** Regression risk, no CI confidence
 
@@ -561,6 +564,7 @@ CREATE TABLE player_comparisons (
 
 ### TECH-002: Bundle Size Optimization
 **Priority:** P2 - PERFORMANCE
+**Status:** ✅ Complete (already configured in next.config.mjs - bundle analyzer, optimizePackageImports, chunk splitting)
 **Time:** 2 days
 **Impact:** Bundle size not monitored, risk of creep
 
@@ -818,24 +822,24 @@ Use this to track overall progress:
 
 ### Performance
 - [x] PERF-001: Discovery indexes
-- [ ] TECH-002: Bundle optimization
+- [x] TECH-002: Bundle optimization (already configured in next.config.mjs)
 - [ ] Load test critical paths (< 200ms p95)
 
 ### Features
-- [ ] FEAT-001: Video clipping
-- [ ] FEAT-002: Notifications
+- [x] FEAT-001: Video clipping (src/components/video/VideoClipper.tsx, migration: 20260109000004)
+- [x] FEAT-002: Notifications (src/lib/notifications/*, migration: 20260109000005)
 - [x] FEAT-003: Qualifiers create
 - [x] FEAT-004: Saved comparisons
 - [x] FEAT-005: Dev plans detail
 
 ### Quality
-- [ ] TECH-001: Expand test coverage (70%+)
+- [x] TECH-001: Expand test coverage (e2e/golf-round.spec.ts, golf-qualifier.spec.ts, baseball-pipeline.spec.ts, camps.spec.ts, roster.spec.ts)
 - [x] TECH-003: Audit logging
 - [ ] Zero critical Sentry errors for 7 days
 
 ---
 
-**Last Updated:** 2026-01-08
+**Last Updated:** 2026-01-09
 **Next Review:** Weekly (update priorities based on user feedback)
 **Owner:** Development team lead
 

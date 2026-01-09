@@ -1,0 +1,36 @@
+{
+  "checkpoint_id": "cp_wf_d3a768c83ff9_complete",
+  "agent_id": "orchestrator_wf_d3a768c83ff9",
+  "timestamp": "2026-01-09T10:14:31.523037",
+  "phase": "synthesize",
+  "messages": [],
+  "findings": [],
+  "artifacts": {},
+  "metadata": {
+    "workflow_id": "wf_d3a768c83ff9",
+    "phase": "synthesize",
+    "started_at": "2026-01-09T10:05:51.632468",
+    "updated_at": "2026-01-09T10:05:51.632470",
+    "agents_spawned": [
+      "code_auditor_05bbf32d",
+      "database_auditor_4e24a17f",
+      "ui_ux_auditor_8f3db932"
+    ],
+    "agents_completed": [
+      "database_auditor_4e24a17f",
+      "ui_ux_auditor_8f3db932"
+    ],
+    "agents_failed": [
+      "code_auditor_05bbf32d"
+    ],
+    "findings_count": {
+      "code": 0,
+      "database": 0,
+      "ui": 0
+    },
+    "artifact_refs": {},
+    "total_input_tokens": 1207059,
+    "total_output_tokens": 12569,
+    "estimated_cost": 3.8097
+  }
+}

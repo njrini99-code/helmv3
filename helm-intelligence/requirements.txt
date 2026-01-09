@@ -1,0 +1,20 @@
+# Helm Intelligence - Dependencies
+
+# Core
+anthropic>=0.40.0
+
+# Optional but recommended
+aiofiles>=23.0.0       # Async file operations
+structlog>=24.0.0      # Structured logging
+
+# For database introspection (if connecting directly)
+asyncpg>=0.29.0        # PostgreSQL async driver
+psycopg2-binary>=2.9.0 # PostgreSQL sync driver
+
+# For enhanced code analysis (optional)
+# These require Node.js installed
+# ts-morph via subprocess
+
+# Development
+pytest>=8.0.0
+pytest-asyncio>=0.23.0

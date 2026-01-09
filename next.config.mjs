@@ -31,8 +31,10 @@ const nextConfig = {
 
   compiler: {
     // Remove console logs in production for cleaner logs
-    // Temporarily disabled for debugging PDF upload
-    // removeConsole: process.env.NODE_ENV === 'production',
+    // Keep error and warn for debugging production issues
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
   },
 
   // Allow images from Supabase storage

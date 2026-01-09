@@ -1,0 +1,859 @@
+{
+  "cycle": 1,
+  "timestamp": "2026-01-09T12:29:13.996333",
+  "platform": "baseballhelm",
+  "issues": [
+    {
+      "id": "CORE-001",
+      "title": "Implement JUCO Mode Toggle",
+      "description": "JUCO coaches need dual functionality (recruiting mode vs team mode) but no UI or logic exists to switch modes. The coach_mode field exists in auth store but is unused, blocking 30% of JUCO coach features.",
+      "severity": "critical",
+      "category": "ux",
+      "location": {
+        "file": "src/stores/auth-store.ts",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_actions",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "original_priority": "P0 - BLOCKS 30% OF JUCO COACH FEATURES",
+        "status": "Complete",
+        "estimated_time": "2-3 days",
+        "suggested_fix": "Add mode toggle component in Header.tsx, implement routing logic in middleware.ts based on mode"
+      }
+    },
+    {
+      "id": "CORE-002",
+      "title": "Multi-Team Support for Showcase Coaches",
+      "description": "Showcase organizations like Perfect Game have 10-50 teams. Database schema exists but UI is incomplete: no team selector, no organization-level dashboard, no cross-team roster view, no org-level analytics.",
+      "severity": "critical",
+      "category": "ux",
+      "location": {
+        "file": "src/app/baseball/dashboard/organization/",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_actions",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "original_priority": "P0 - BLOCKS 35% OF SHOWCASE COACH FEATURES",
+        "status": "Complete",
+        "estimated_time": "3-4 days",
+        "suggested_fix": "Create TeamSelector.tsx, OrgDashboard.tsx, and organization page with aggregated stats"
+      }
+    },
+    {
+      "id": "CORE-003",
+      "title": "Complete High School Coach Dashboard",
+      "description": "Route exists at /baseball/dashboard/team/high-school but dashboard is barely implemented. Missing: roster management table, college interest tracker, batch video upload, team analytics, communication tools.",
+      "severity": "critical",
+      "category": "ux",
+      "location": {
+        "file": "src/app/baseball/dashboard/team/high-school/page.tsx",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_actions",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "original_priority": "P0 - BLOCKS HS COACH USER SEGMENT",
+        "status": "Complete",
+        "estimated_time": "3-4 days",
+        "suggested_fix": "Build RosterTable, CollegeInterestTracker, BatchVideoUpload, TeamAnalytics components"
+      }
+    },
+    {
+      "id": "RLS-001",
+      "title": "Golf Tables Completely Unprotected",
+      "description": "Migration 061 and 062 explicitly DISABLED ROW LEVEL SECURITY on all core golf tables. ANY authenticated user (even baseball coach) can see ALL rounds, shots, player profiles, and coach contact info from ALL teams.",
+      "severity": "critical",
+      "category": "security",
+      "location": {
+        "file": "supabase/migrations/061_*.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Complete data breach - horizontal privilege escalation",
+        "attack_scenario": "SELECT * FROM golf_rounds returns ALL rounds from ALL teams",
+        "impact": "GDPR violation, competitive intelligence leak, personal information exposure",
+        "suggested_fix": "Re-enable RLS and add team-scoped policies"
+      }
+    },
+    {
+      "id": "RLS-004",
+      "title": "Missing Policies on 15 Golf Tables",
+      "description": "15 golf tables have RLS ENABLED but NO POLICIES defined. Depending on Supabase defaults, tables are either completely inaccessible (blocks features) or completely open (data exposure).",
+      "severity": "critical",
+      "category": "security",
+      "location": {
+        "file": "supabase/migrations/",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Unpredictable security posture",
+        "affected_tables": "golf_qualifiers, golf_qualifier_entries, golf_announcements, golf_coach_notes (PRIVATE!), golf_documents, etc.",
+        "suggested_fix": "Add complete policy sets for all 15 tables with proper team scoping"
+      }
+    },
+    {
+      "id": "RLS-AUDIT-001",
+      "title": "Golf Organizations Horizontal Data Access",
+      "description": "golf_organizations table has RLS disabled. ANY authenticated user can query all organizations across all teams, exposing organizational structure and relationships.",
+      "severity": "critical",
+      "category": "security",
+      "location": {
+        "file": "supabase/migrations/062_*.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "rls_audit",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "RLS disabled - horizontal privilege escalation",
+        "security_score_impact": "-40 points",
+        "affected_data": "Organization names, contact info, team relationships",
+        "suggested_fix": "Enable RLS and add policy: users can view only their own organization via golf_coaches.organization_id or golf_players.team_id -> golf_teams.organization_id"
+      }
+    },
+    {
+      "id": "RLS-AUDIT-002",
+      "title": "Golf Shots Complete Exposure",
+      "description": "golf_shots table has RLS disabled. ANY authenticated user can see ALL shot-by-shot data from ALL players on ALL teams, exposing complete performance patterns and competitive intelligence.",
+      "severity": "critical",
+      "category": "security",
+      "location": {
+        "file": "supabase/migrations/062_*.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "rls_audit",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "RLS disabled - complete data breach",
+        "attack_scenario": "SELECT * FROM golf_shots WHERE shot_type = 'putting' returns ALL putts from ALL players",
+        "competitive_impact": "Opponents can analyze player weaknesses shot-by-shot",
+        "suggested_fix": "Enable RLS and add policies: players view own shots, coaches view team shots via round ownership"
+      }
+    },
+    {
+      "id": "RLS-AUDIT-009",
+      "title": "Overall RLS Security Score: 28/100",
+      "description": "Comprehensive RLS audit reveals 37 tables with RLS disabled or missing policies, 23 high severity permissive policies, 18 SECURITY DEFINER functions bypassing RLS. Security score: 28/100 (CRITICAL RISK).",
+      "severity": "critical",
+      "category": "security",
+      "location": {
+        "file": "supabase/",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "rls_audit",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Systemic RLS failure",
+        "security_breakdown": "RLS Coverage: 10/30, Policy Quality: 5/30, Consistency: 8/20, Function Security: 5/20",
+        "after_fix_score": "85/100",
+        "suggested_fix": "Apply comprehensive fix migration 20260108000002_comprehensive_rls_fix.sql"
+      }
+    },
+    {
+      "id": "SEC-001",
+      "title": "Re-Enable RLS on All Golf Tables",
+      "description": "Migrations 061 and 062 disabled RLS on 10 core golf tables with comment 'RLS disabled for development - re-enable in production'. This exposes ALL golf data to ANY authenticated user.",
+      "severity": "critical",
+      "category": "security",
+      "location": {
+        "file": "supabase/migrations/20260108000002_comprehensive_rls_fix.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_actions",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "original_priority": "P0 - BLOCKING PRODUCTION",
+        "status": "Complete",
+        "estimated_time": "30 minutes",
+        "affected_tables": [
+          "golf_organizations",
+          "golf_teams",
+          "golf_rounds",
+          "golf_shots",
+          "golf_courses",
+          "golf_events",
+          "golf_players",
+          "golf_coaches",
+          "golf_team_members",
+          "golf_event_participants"
+        ]
+      }
+    },
+    {
+      "id": "SEC-002",
+      "title": "Add Policies for 15 Golf Tables",
+      "description": "15 golf tables have RLS ENABLED but NO POLICIES defined, making them completely inaccessible or completely open depending on Supabase defaults.",
+      "severity": "critical",
+      "category": "security",
+      "location": {
+        "file": "supabase/migrations/",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_actions",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "original_priority": "P0 - BLOCKING PRODUCTION",
+        "status": "Complete",
+        "estimated_time": "1 hour",
+        "affected_tables": [
+          "golf_qualifiers",
+          "golf_qualifier_entries",
+          "golf_announcements",
+          "golf_announcement_acknowledgements",
+          "golf_tasks",
+          "golf_task_completions",
+          "golf_documents",
+          "golf_travel_itineraries",
+          "golf_coach_notes",
+          "golf_player_classes",
+          "golf_event_rsvps",
+          "golf_holes",
+          "golf_event_attendance",
+          "golf_course_tees",
+          "golf_player_stats"
+        ]
+      }
+    },
+    {
+      "id": "ISSUE-C003",
+      "title": "Calendar Sync iCal Format Invalid",
+      "description": "Golf calendar exports iCal feeds but format is invalid or non-standard. Users report feeds don't sync to Google Calendar or Apple Calendar with 'Invalid format' error.",
+      "severity": "high",
+      "category": "ux",
+      "location": {
+        "file": "src/app/api/calendar/feeds/[token]/route.ts",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Feature breakage",
+        "possible_issues": [
+          "Missing PRODID/VERSION",
+          "Incorrect date format",
+          "Missing VTIMEZONE",
+          "Incorrect line breaks"
+        ],
+        "suggested_fix": "Use ical-generator library instead of manual string building"
+      }
+    },
+    {
+      "id": "PERF-001",
+      "title": "Add Database Indexes for Discovery Page",
+      "description": "Player discovery with filters (position, grad year, state, velocity) is slow (2-3s) due to missing indexes. Would be 80% faster with proper indexing.",
+      "severity": "high",
+      "category": "performance",
+      "location": {
+        "file": "supabase/migrations/20260109000002_discovery_indexes.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_actions",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "original_priority": "P1 - USER EXPERIENCE",
+        "status": "Complete",
+        "estimated_time": "30 minutes",
+        "suggested_fix": "Add indexes on recruiting_activated, primary_position, grad_year, state, throwing_velocity, exit_velocity"
+      }
+    },
+    {
+      "id": "PERF-002",
+      "title": "Large Watchlists Render Slowly",
+      "description": "Watchlist table renders all rows at once. With 100+ prospects, the page becomes sluggish with janky scrolling and slow search due to DOM thrashing.",
+      "severity": "high",
+      "category": "performance",
+      "location": {
+        "file": "src/components/baseball/watchlist/WatchlistTable.tsx",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Performance degradation",
+        "root_cause": "No virtual scrolling, 100+ DOM nodes cause layout thrashing",
+        "suggested_fix": "Implement virtual scrolling with react-virtual or react-window"
+      }
+    },
+    {
+      "id": "RLS-002",
+      "title": "Conversation Participants RLS History Unstable",
+      "description": "Migration 078 DISABLED RLS on conversation_participants with comment 'Nuclear Option: Drop ALL Policies'. While migration 20260108000001 re-enabled it, history shows system couldn't maintain stable RLS without recursion issues.",
+      "severity": "high",
+      "category": "security",
+      "location": {
+        "file": "supabase/migrations/078_*.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Messaging privacy violation",
+        "status": "Fixed but needs monitoring",
+        "monitor_for": "Postgres errors containing 'infinite recursion', message send failures",
+        "suggested_fix": "Monitor for recursion errors, consider simplifying policy logic further"
+      }
+    },
+    {
+      "id": "RLS-003",
+      "title": "Permissive Conversation Creation",
+      "description": "Policy 'Users can create conversations' uses WITH CHECK (true), allowing ANY authenticated user to create conversations without validation. Combined with SECURITY DEFINER function, enables phishing and impersonation attacks.",
+      "severity": "high",
+      "category": "security",
+      "location": {
+        "file": "supabase/policies/conversations.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Unauthorized conversation creation, phishing",
+        "attack_scenario": "Attacker creates conversation with arbitrary users, injects messages appearing to be from coach",
+        "suggested_fix": "Add team/sport validation in WITH CHECK clause and application layer"
+      }
+    },
+    {
+      "id": "RLS-005",
+      "title": "Complex SECURITY DEFINER Functions",
+      "description": "18 SECURITY DEFINER functions bypass RLS with complex authorization logic. Functions are difficult to audit and may contain logic errors enabling cross-team or cross-sport data access.",
+      "severity": "high",
+      "category": "security",
+      "location": {
+        "file": "supabase/functions/",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Authorization bypass via logic errors",
+        "critical_functions": [
+          "can_users_message (200+ lines)",
+          "create_conversation_with_participants",
+          "handle_new_user",
+          "are_users_on_same_roster"
+        ],
+        "suggested_fix": "Add comprehensive logging, input validation, replace with RLS policies where possible"
+      }
+    },
+    {
+      "id": "RLS-006",
+      "title": "Permissive Policies Using USING (true)",
+      "description": "Multiple tables use USING (true) or WITH CHECK (true) making data completely public to authenticated users. Exposes coach contact info, invite codes, allows notification spam, exposes AI patterns and ML models.",
+      "severity": "high",
+      "category": "security",
+      "location": {
+        "file": "supabase/policies/",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Data exposure, spam, IP theft",
+        "affected_tables": [
+          "organizations",
+          "coaches (ALL emails/phones)",
+          "team_invitations",
+          "golf_calendar_notifications",
+          "golf_global_patterns",
+          "golf_confidence_calibration"
+        ],
+        "suggested_fix": "Replace all USING (true) with proper scoping based on team/role"
+      }
+    },
+    {
+      "id": "RLS-007",
+      "title": "Coaches Can View All Players (Baseball)",
+      "description": "Policy 'Coaches can view all players' allows ANY user with role='coach' to see ALL player profiles regardless of recruiting_activated status or commitment. NCAA violation risk for viewing committed players.",
+      "severity": "high",
+      "category": "security",
+      "location": {
+        "file": "supabase/policies/players.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Privacy violation, NCAA recruiting rules violation",
+        "attack_scenario": "Coach from School A views players committed to School B, gets contact info",
+        "status": "Partially fixed",
+        "suggested_fix": "Drop 'Coaches can view all players' policy, keep only recruiting-scoped policy"
+      }
+    },
+    {
+      "id": "RLS-AUDIT-003",
+      "title": "Coach Contact Information Fully Public",
+      "description": "coaches table has policy 'Anyone can view coach profiles' with USING (true), exposing ALL coach emails, phones, and personal info to ANY authenticated user.",
+      "severity": "high",
+      "category": "security",
+      "location": {
+        "file": "supabase/policies/coaches.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "rls_audit",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Permissive policy - PII exposure",
+        "attack_scenario": "SELECT email_contact, phone FROM coaches harvests ALL coach contact info",
+        "privacy_impact": "GDPR violation, enables spam and phishing",
+        "suggested_fix": "Replace USING (true) with recruiting-scoped policy: coaches visible only to recruiting-activated players and other coaches"
+      }
+    },
+    {
+      "id": "RLS-AUDIT-004",
+      "title": "Golf Coach Notes Privacy Violation",
+      "description": "golf_coach_notes table has RLS enabled but NO POLICIES. Depending on defaults, players may be able to see coach's private notes (shared_with_player = false) containing honest assessments.",
+      "severity": "high",
+      "category": "security",
+      "location": {
+        "file": "supabase/policies/golf_coach_notes.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "rls_audit",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Missing policies - privacy violation",
+        "attack_scenario": "Player queries private coach notes: 'Player has attitude problems, not starter material'",
+        "legal_risk": "Defamation liability if harsh notes exposed",
+        "suggested_fix": "Add policies: coaches view own notes, players view only shared_with_player = true notes"
+      }
+    },
+    {
+      "id": "RLS-AUDIT-005",
+      "title": "Team Invitation Code Enumeration",
+      "description": "team_invitations policy 'Active invitations viewable by code' uses USING (is_active = TRUE), allowing ANY authenticated user to enumerate ALL active invite codes and brute force team access.",
+      "severity": "high",
+      "category": "security",
+      "location": {
+        "file": "supabase/policies/team_invitations.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "rls_audit",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Permissive policy - enumeration attack",
+        "attack_scenario": "SELECT invite_code FROM team_invitations WHERE is_active = true returns ALL codes",
+        "suggested_fix": "Restrict to exact code match with parameterized query, enforce at application layer"
+      }
+    },
+    {
+      "id": "RLS-AUDIT-006",
+      "title": "Golf Global Patterns IP Theft",
+      "description": "golf_global_patterns table has policy 'Authenticated can read global patterns' with USING (true), exposing ALL analytics data and AI patterns to ANY authenticated user, enabling IP theft.",
+      "severity": "high",
+      "category": "security",
+      "location": {
+        "file": "supabase/policies/golf_global_patterns.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "rls_audit",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Permissive policy - intellectual property exposure",
+        "attack_scenario": "Competitor exports ALL pattern_type, conditions, outcome, average_impact to reverse engineer CoachHelm AI",
+        "business_impact": "Loss of competitive moat, R&D investment wasted",
+        "suggested_fix": "Restrict to golf users only: USING (auth.uid() IN (SELECT user_id FROM golf_players UNION SELECT user_id FROM golf_coaches))"
+      }
+    },
+    {
+      "id": "RLS-AUDIT-007",
+      "title": "Notification Spam Attack Vector",
+      "description": "golf_calendar_notifications has INSERT policy with WITH CHECK (true), allowing ANY authenticated user to create notifications for ANY user, enabling spam and phishing campaigns.",
+      "severity": "high",
+      "category": "security",
+      "location": {
+        "file": "supabase/policies/golf_calendar_notifications.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "rls_audit",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Permissive policy - notification spam",
+        "attack_scenario": "INSERT INTO golf_calendar_notifications (user_id, message) with phishing link sent to 10k users",
+        "suggested_fix": "Restrict to user_id = auth.uid() OR coach creating notifications for team members"
+      }
+    },
+    {
+      "id": "SEC-003",
+      "title": "Fix Permissive Policies",
+      "description": "8 tables use USING (true) or overly permissive policies, exposing data, allowing spam, and leaking competitive intelligence. Includes organization data, coach emails/phones, invite codes, notifications, AI patterns, and ML models.",
+      "severity": "high",
+      "category": "security",
+      "location": {
+        "file": "supabase/migrations/",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_actions",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "original_priority": "P1 - SECURITY",
+        "status": "Complete",
+        "estimated_time": "2 hours",
+        "affected_tables": [
+          "organizations",
+          "coaches",
+          "team_invitations",
+          "golf_calendar_notifications",
+          "golf_global_patterns",
+          "golf_confidence_calibration",
+          "profile_views",
+          "players"
+        ]
+      }
+    },
+    {
+      "id": "PERF-003",
+      "title": "Console.log Statements in Production",
+      "description": "next.config.mjs has removeConsole commented out with note 'temporarily for debugging PDF upload'. This leaves 28+ console.log statements in production bundle.",
+      "severity": "medium",
+      "category": "code_quality",
+      "location": {
+        "file": "next.config.mjs",
+        "line": 35
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Bundle size bloat, info leakage",
+        "impact": "Cluttered console, increased bundle size, potential info disclosure",
+        "suggested_fix": "Enable removeConsole for production, keep only error/warn"
+      }
+    },
+    {
+      "id": "RLS-008",
+      "title": "profile_views Insert Permissive",
+      "description": "Policy allows viewer_id to be NULL OR not match auth.uid(), enabling fake view inflation and analytics poisoning.",
+      "severity": "medium",
+      "category": "security",
+      "location": {
+        "file": "supabase/policies/profile_views.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "View count manipulation",
+        "attack_scenario": "INSERT 10k fake views with NULL viewer_id or mismatched viewer_id",
+        "suggested_fix": "Enforce viewer_id = auth.uid() in WITH CHECK clause"
+      }
+    },
+    {
+      "id": "RLS-AUDIT-008",
+      "title": "SECURITY DEFINER Function Logic Errors",
+      "description": "can_users_message() function has 200+ lines of complex logic implementing messaging matrix authorization. Difficult to audit and may contain logic errors enabling cross-team or cross-sport message access.",
+      "severity": "medium",
+      "category": "security",
+      "location": {
+        "file": "supabase/functions/can_users_message.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "rls_audit",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Complex authorization logic - potential bypass",
+        "suggested_fix": "Add comprehensive unit tests, add audit logging of all calls, consider replacing with RLS policies where possible"
+      }
+    },
+    {
+      "id": "TECH-003",
+      "title": "Add Audit Logging to SECURITY DEFINER Functions",
+      "description": "18 SECURITY DEFINER functions bypass RLS but have no logging. No visibility into function usage, making debugging and security auditing difficult.",
+      "severity": "medium",
+      "category": "security",
+      "location": {
+        "file": "supabase/migrations/20260109000003_function_audit_log.sql",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_actions",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "original_priority": "P2 - SECURITY",
+        "status": "Complete",
+        "estimated_time": "1 day",
+        "suggested_fix": "Create function_audit_log table, add logging to can_users_message(), create_conversation_with_participants(), are_users_on_same_roster(), handle_new_user()"
+      }
+    },
+    {
+      "id": "TECH-DEBT-001",
+      "title": "Dead Code and Unused Routes",
+      "description": "126 tasks in TODO.md including many 'missing detail pages' and 'routes not linked from anywhere'. Indicates incomplete features, orphaned code, and poor code hygiene.",
+      "severity": "medium",
+      "category": "code_quality",
+      "location": {
+        "file": "src/app/",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Technical debt, maintenance burden",
+        "examples": [
+          "30+ routes not in navigation",
+          "Detail pages created but never linked",
+          "Components imported but never rendered"
+        ],
+        "suggested_fix": "Systematic audit: delete unused routes, link discoverable routes, document unlisted routes, set up linting for unused exports"
+      }
+    },
+    {
+      "id": "TECH-DEBT-002",
+      "title": "Inconsistent State Management",
+      "description": "Mix of Zustand (4 stores), React Context (2), custom hooks with useState, Supabase Realtime subscriptions, and URL params. No clear pattern for when to use each approach.",
+      "severity": "medium",
+      "category": "code_quality",
+      "location": {
+        "file": "src/stores/",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Architecture inconsistency",
+        "impact": "New developers don't know which to use, state synchronization bugs",
+        "suggested_fix": "Document decision tree: Zustand for global auth/UI, Context for feature-scoped, Realtime for collaborative, URL params for shareable filters"
+      }
+    },
+    {
+      "id": "TECH-DEBT-004",
+      "title": "Limited Test Coverage",
+      "description": "E2E tests exist for auth, discover, watchlist, messages but missing golf flows, pipeline, camps, roster. No component tests (Vitest not set up), no API route tests.",
+      "severity": "medium",
+      "category": "code_quality",
+      "location": {
+        "file": "e2e/",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Regression risk",
+        "impact": "Low CI confidence, manual testing burden",
+        "suggested_fix": "Add tests for golf round submission, qualifier creation, pipeline drag-drop, camp registration, roster CRUD"
+      }
+    },
+    {
+      "id": "ISSUE-MINOR-001",
+      "title": "Middleware Onboarding Routes Commented Out",
+      "description": "Middleware has onboarding routes commented out with 'TEMPORARY: for development' note. Onboarding pages might not be properly protected in production, enabling unauthenticated access or state corruption.",
+      "severity": "low",
+      "category": "security",
+      "location": {
+        "file": "src/lib/supabase/middleware.ts",
+        "line": 88
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Potential unauthenticated access",
+        "suggested_fix": "Uncomment onboarding route checks, add proper authentication and onboarding_completed checks"
+      }
+    },
+    {
+      "id": "ISSUE-MINOR-002",
+      "title": "Mobile Drag-Drop Suboptimal",
+      "description": "Pipeline board uses @dnd-kit for drag-and-drop. Desktop experience is smooth but mobile touch interactions may be suboptimal (small touch targets, scroll vs drag conflict, no haptic feedback).",
+      "severity": "low",
+      "category": "accessibility",
+      "location": {
+        "file": "src/components/baseball/pipeline/",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Poor mobile UX",
+        "suggested_fix": "Increase card touch targets (min 44x44px), add touch delay, add visual feedback, consider mobile-specific UI"
+      }
+    },
+    {
+      "id": "ISSUE-MINOR-003",
+      "title": "Duplicate Database Type Definitions",
+      "description": "Database types auto-generated in src/types/supabase.ts (6,657 lines) but custom types scattered in src/lib/types/database.ts and src/lib/types/golf.ts. Risk of type drift between generated and manual types.",
+      "severity": "low",
+      "category": "code_quality",
+      "location": {
+        "file": "src/types/supabase.ts",
+        "line": null
+      },
+      "found_in_cycle": 1,
+      "source": "overnight_issues",
+      "state": "open",
+      "fix_details": null,
+      "fixed_in_cycle": null,
+      "verified_in_cycle": null,
+      "regression_of": null,
+      "context": {
+        "vulnerability_type": "Type inconsistency",
+        "suggested_fix": "Always use generated types as source of truth, custom types extend/transform generated types, document import guidelines"
+      }
+    }
+  ]
+}

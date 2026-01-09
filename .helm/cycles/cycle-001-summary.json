@@ -1,0 +1,25 @@
+{
+  "cycle": 1,
+  "total_issues": 34,
+  "by_severity": {
+    "critical": 10,
+    "high": 14,
+    "medium": 7,
+    "low": 3
+  },
+  "by_source": {
+    "overnight_actions": 8,
+    "overnight_issues": 17,
+    "rls_audit": 9
+  },
+  "by_category": {
+    "security": 22,
+    "ux": 4,
+    "performance": 2,
+    "code_quality": 5,
+    "accessibility": 1
+  },
+  "verified_from_previous": 0,
+  "regressions_found": 0,
+  "new_issues_found": 34
+}

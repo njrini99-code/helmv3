@@ -1,0 +1,152 @@
+{
+  "timestamp": "2026-01-09T10:32:35.138740",
+  "duration_seconds": 474.500449,
+  "cost_usd": 4.5749759999999995,
+  "tokens": {
+    "input": 1469667,
+    "output": 11065
+  },
+  "summary": {
+    "critical": 3,
+    "high": 4,
+    "medium": 7,
+    "low": 1
+  },
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "type_safety",
+      "title": "Explicit 'any' type usage in recurring events",
+      "file": "/Users/ricknini/Downloads/helmv3/src/app/golf/actions/recurring-events.ts",
+      "line": 255,
+      "evidence": "const updates: any = {};",
+      "fix": "Use a properly typed interface: const updates: Partial<GolfEvent> = {};"
+    },
+    {
+      "severity": "critical",
+      "category": "type_safety",
+      "title": "Array of any types in recurring events",
+      "file": "/Users/ricknini/Downloads/helmv3/src/app/golf/actions/recurring-events.ts",
+      "line": 449,
+      "evidence": "let exclusions: any[] = [];",
+      "fix": "Use proper typing: let exclusions: AcademicExclusion[] = [];"
+    },
+    {
+      "severity": "high",
+      "category": "type_safety",
+      "title": "TypeScript errors suppressed with @ts-nocheck",
+      "file": "/Users/ricknini/Downloads/helmv3/src/app/golf/actions/recurring-events.ts",
+      "line": 3,
+      "evidence": "//@ts-nocheck",
+      "fix": "Remove @ts-nocheck and fix the TypeScript errors properly with correct types"
+    },
+    {
+      "severity": "high",
+      "category": "type_safety",
+      "title": "ESLint any rule disabled globally",
+      "file": "/Users/ricknini/Downloads/helmv3/src/app/golf/actions/recurring-events.ts",
+      "line": 4,
+      "evidence": "/* eslint-disable @typescript-eslint/no-explicit-any */",
+      "fix": "Remove the global disable and fix individual any usages with proper types"
+    },
+    {
+      "severity": "medium",
+      "category": "type_safety",
+      "title": "Extensive use of 'as any' type assertions in CoachHelm V2",
+      "file": "/Users/ricknini/Downloads/helmv3/src/lib/coachhelm/v2/gate.ts",
+      "line": 275,
+      "evidence": "const table = supabase.from('golf_coachhelm_settings' as any) as any;",
+      "fix": "Generate proper database types for new tables or create proper type interfaces instead of using 'as any'"
+    },
+    {
+      "severity": "critical",
+      "category": "security",
+      "title": "Golf Tables Had RLS Completely Disabled",
+      "file": "/Users/ricknini/Downloads/helmv3/supabase/migrations/061_disable_golf_rls.sql",
+      "line": null,
+      "evidence": "ALTER TABLE golf_players DISABLE ROW LEVEL SECURITY;\nALTER TABLE golf_coaches DISABLE ROW LEVEL SECURITY;\nALTER TABLE golf_teams DISABLE ROW LEVEL SECURITY;\nALTER TABLE golf_organizations DISABLE ROW LEVEL SECURITY;\nALTER TABLE golf_rounds DISABLE ROW LEVEL SECURITY;\nALTER TABLE golf_shots DISABLE ROW LEVEL SECURITY;\nALTER TABLE golf_courses DISABLE ROW LEVEL SECURITY;\nALTER TABLE golf_events DISABLE ROW LEVEL SECURITY;",
+      "fix": "RLS has since been re-enabled in migration 20260108000002_comprehensive_rls_fix.sql, but this indicates a serious security lapse where all golf data was accessible without authorization for a period of time."
+    },
+    {
+      "severity": "high",
+      "category": "security",
+      "title": "Overly Permissive Conversation Creation Policy",
+      "file": "/Users/ricknini/Downloads/helmv3/supabase/migrations/20260104000003_fix_messaging_rls_definitive.sql",
+      "line": null,
+      "evidence": "CREATE POLICY \"Users can create conversations\"\n  ON conversations FOR INSERT\n  TO authenticated\n  WITH CHECK (true);\n\nCREATE POLICY \"Users can create participations\"\n  ON conversation_participants FOR INSERT\n  TO authenticated\n  WITH CHECK (true);",
+      "fix": "Replace WITH CHECK (true) with proper authorization checks. Users should only be able to create conversations with participants they are authorized to message, based on the can_users_message function logic."
+    },
+    {
+      "severity": "high",
+      "category": "security",
+      "title": "Login Attempts Table Has Overly Restrictive Policy",
+      "file": "/Users/ricknini/Downloads/helmv3/supabase/migrations/040_create_login_attempts.sql",
+      "line": null,
+      "evidence": "CREATE POLICY \"Service role only\" ON login_attempts\n  FOR ALL\n  USING (false);",
+      "fix": "The policy USING (false) blocks all access. It should specify service_role access: USING (auth.role() = 'service_role') or use proper service role grants instead of RLS."
+    },
+    {
+      "severity": "medium",
+      "category": "security",
+      "title": "Function Audit Log May Allow Unauthorized Data Access",
+      "file": "/Users/ricknini/Downloads/helmv3/supabase/migrations/20260109000003_function_audit_log.sql",
+      "line": null,
+      "evidence": "ALTER TABLE public.function_audit_log ENABLE ROW LEVEL SECURITY;\nREVOKE ALL ON public.function_audit_log FROM authenticated;\nGRANT SELECT, INSERT ON public.function_audit_log TO service_role;",
+      "fix": "The table has RLS enabled but no policies defined, and only service_role has access. This is correct for audit logs, but should be documented that this table should remain service_role only."
+    },
+    {
+      "severity": "medium",
+      "category": "security",
+      "title": "Incomplete RLS Policies on Intelligence Tables",
+      "file": "/Users/ricknini/Downloads/helmv3/supabase/migrations/20260105000002_coachhelm_v2_intelligence.sql",
+      "line": null,
+      "evidence": "ALTER TABLE golf_validations ENABLE ROW LEVEL SECURITY;\nALTER TABLE golf_global_patterns ENABLE ROW LEVEL SECURITY;\nALTER TABLE golf_confidence_calibration ENABLE ROW LEVEL SECURITY;\n-- No policies defined for these tables in the truncated file",
+      "fix": "Ensure all intelligence tables have complete RLS policies. Tables with RLS enabled but no policies will block all access."
+    },
+    {
+      "severity": "medium",
+      "category": "security",
+      "title": "SECURITY DEFINER Functions Lack Sufficient Input Validation",
+      "file": "/Users/ricknini/Downloads/helmv3/supabase/migrations/20260108000001_rls_audit_fixes.sql",
+      "line": null,
+      "evidence": "CREATE OR REPLACE FUNCTION public.create_conversation_with_participants(\n  participant_user_ids uuid[]\n)\nRETURNS uuid\nLANGUAGE plpgsql\nSECURITY DEFINER",
+      "fix": "While the function validates that users exist, it doesn't validate that the current user can message those participants. Should call can_users_message() for each participant before adding them."
+    },
+    {
+      "severity": "low",
+      "category": "security",
+      "title": "Multiple RLS Policy Iterations Indicate Instability",
+      "file": "/Users/ricknini/Downloads/helmv3/supabase/migrations",
+      "line": null,
+      "evidence": "Migration files show repeated RLS fixes:\n- 043_fix_rls_policies.sql\n- 044_restore_complete_rls_policies.sql  \n- 048_rls_security_fix.sql\n- 058_nuclear_rls_fix.sql\n- 20260108000001_rls_audit_fixes.sql\n- 20260108000002_comprehensive_rls_fix.sql",
+      "fix": "Implement comprehensive testing for RLS policies before deployment. Consider using a test framework that validates each policy with different user contexts."
+    },
+    {
+      "severity": "medium",
+      "category": "accessibility",
+      "title": "Pagination buttons lack aria-labels",
+      "file": "/Users/ricknini/Downloads/helmv3/src/components/ui/pagination.tsx",
+      "line": 71,
+      "evidence": "      <button\n        type=\"button\"\n        onClick={() => onPageChange(1)}\n        disabled={currentPage === 1}\n        className={...}\n      >\n        <span className=\"flex items-center gap-0.5\">\n          <IconChevronLeft size={14} />\n          <IconChevronLeft size={14} className=\"-ml-2\" />\n        </span>\n      </button>",
+      "fix": "Add aria-label attributes to buttons with only icon content: aria-label=\"Go to first page\""
+    },
+    {
+      "severity": "medium",
+      "category": "accessibility",
+      "title": "Clickable div elements lack keyboard accessibility",
+      "file": "/Users/ricknini/Downloads/helmv3/src/components/CommandPalette.tsx",
+      "line": 248,
+      "evidence": "    <div className=\"cmdk-overlay\" onClick={() => setOpen(false)}>\n      <div className=\"cmdk-dialog\" onClick={(e) => e.stopPropagation()}>",
+      "fix": "Use button elements instead of div elements for clickable elements, or add role=\"button\", tabIndex={0}, and keyboard event handlers (onKeyDown)"
+    },
+    {
+      "severity": "medium",
+      "category": "accessibility",
+      "title": "Modal overlay clickable div lacks keyboard accessibility",
+      "file": "/Users/ricknini/Downloads/helmv3/src/components/ui/confirm-dialog.tsx",
+      "line": 50,
+      "evidence": "    <div\n      className=\"fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4\"\n      onClick={onCancel}\n    >",
+      "fix": "Add role=\"button\", tabIndex={0}, and keyboard event handlers (onKeyDown) to make it accessible via keyboard, or use a button element as the overlay"
+    }
+  ]
+}
