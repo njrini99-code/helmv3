@@ -4,7 +4,19 @@ import { useState, useEffect } from 'react';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive, { type HoleStats, type ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
-import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound } from '@/app/golf/actions/golf';
+import {
+  submitGolfRoundComprehensive,
+  savePartialRound,
+  deleteInProgressRound,
+  getPlayerQualifiers,
+  getNextQualifierRoundNumber,
+  getPlayerSavedCourses,
+  savePlayerCourse,
+  touchSavedCourse,
+  type PlayerQualifierInfo,
+  type SavedCourse,
+  type SavedCourseHoleConfig
+} from '@/app/golf/actions/golf';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
@@ -72,6 +84,121 @@ export default function NewRoundClient() {
   const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
   const [inProgressShotsByHole, setInProgressShotsByHole] = useState<Record<number, ShotRecord[]>>({});
 
+  // Qualifier state
+  const [qualifiers, setQualifiers] = useState<PlayerQualifierInfo[]>([]);
+  const [loadingQualifiers, setLoadingQualifiers] = useState(false);
+  const [selectedQualifierId, setSelectedQualifierId] = useState<string | null>(null);
+  const [selectedRoundNumber, setSelectedRoundNumber] = useState<number | null>(null);
+  const [availableRounds, setAvailableRounds] = useState<number[]>([]);
+  const [qualifierError, setQualifierError] = useState<string | null>(null);
+
+  // Saved courses state
+  const [savedCourses, setSavedCourses] = useState<SavedCourse[]>([]);
+  const [loadingSavedCourses, setLoadingSavedCourses] = useState(true);
+  const [courseMode, setCourseMode] = useState<'new' | 'saved'>('new');
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [preloadedHoleConfigs, setPreloadedHoleConfigs] = useState<SavedCourseHoleConfig[] | null>(null);
+  const [saveCourseChecked, setSaveCourseChecked] = useState(false);
+
+  // Fetch qualifiers when round type changes to 'qualifier'
+  useEffect(() => {
+    if (setupData.roundType === 'qualifier') {
+      setLoadingQualifiers(true);
+      setQualifierError(null);
+      getPlayerQualifiers().then(result => {
+        setLoadingQualifiers(false);
+        if (!result.success) {
+          setQualifierError(result.error);
+          return;
+        }
+        // Filter to only active/in-progress qualifiers with remaining rounds
+        const activeQualifiers = result.data.filter(
+          q => q.status !== 'completed' && q.roundsCompleted < q.numRounds
+        );
+        setQualifiers(activeQualifiers);
+        if (activeQualifiers.length === 0) {
+          setQualifierError('You have no active qualifiers to enter rounds for.');
+        }
+      });
+    } else {
+      // Reset qualifier state when switching away from qualifier
+      setSelectedQualifierId(null);
+      setSelectedRoundNumber(null);
+      setAvailableRounds([]);
+      setQualifierError(null);
+    }
+  }, [setupData.roundType]);
+
+  // Fetch available round numbers when qualifier is selected
+  useEffect(() => {
+    if (selectedQualifierId) {
+      getNextQualifierRoundNumber(selectedQualifierId).then(result => {
+        if (result.success && result.data) {
+          setAvailableRounds(result.data.availableRounds);
+          // Auto-select the next round number
+          if (result.data.nextRoundNumber > 0) {
+            setSelectedRoundNumber(result.data.nextRoundNumber);
+          }
+        }
+      });
+    } else {
+      setAvailableRounds([]);
+      setSelectedRoundNumber(null);
+    }
+  }, [selectedQualifierId]);
+
+  // Fetch saved courses on mount
+  useEffect(() => {
+    getPlayerSavedCourses().then(result => {
+      setLoadingSavedCourses(false);
+      if (result.success) {
+        setSavedCourses(result.data);
+        // Auto-select "saved" mode if they have saved courses
+        if (result.data.length > 0) {
+          setCourseMode('saved');
+        }
+      }
+    });
+  }, []);
+
+  // Handle saved course selection
+  const handleSavedCourseSelect = (courseId: string | null) => {
+    setSelectedCourseId(courseId);
+
+    if (!courseId) {
+      // Cleared selection - reset form
+      setSetupData(prev => ({
+        ...prev,
+        courseName: '',
+        courseCity: '',
+        courseState: '',
+        courseRating: '',
+        courseSlope: '',
+        teesPlayed: 'White',
+      }));
+      setPreloadedHoleConfigs(null);
+      return;
+    }
+
+    const course = savedCourses.find(c => c.id === courseId);
+    if (course) {
+      // Populate form with saved course data
+      setSetupData(prev => ({
+        ...prev,
+        courseName: course.courseName,
+        courseCity: course.courseCity || '',
+        courseState: course.courseState || '',
+        courseRating: course.courseRating?.toString() || '',
+        courseSlope: course.courseSlope?.toString() || '',
+        teesPlayed: course.teesPlayed || 'White',
+      }));
+      // Store hole configs to use in next step
+      setPreloadedHoleConfigs(course.holeConfigs);
+      // Update last used timestamp
+      touchSavedCourse(courseId);
+    }
+  };
+
   // Draft recovery removed - users should resume from "My Rounds" tab
 
   // Auto-save draft whenever state changes
@@ -97,16 +224,42 @@ export default function NewRoundClient() {
   }, [step, setupData, holes, completedHoleStats, currentHoleIndex, saveDraftDebounced]);
 
 
-  const handleSetupSubmit = (e: React.FormEvent) => {
+  const handleSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!setupData.courseName) {
       setError('Please enter a course name');
       return;
     }
-    setStep('holes');
+    // Validate qualifier selection if round type is qualifier
+    if (setupData.roundType === 'qualifier') {
+      if (!selectedQualifierId) {
+        setError('Please select a qualifier');
+        return;
+      }
+      if (!selectedRoundNumber) {
+        setError('Please select which round of the qualifier this is');
+        return;
+      }
+    }
+
+    // If using a saved course with hole configs, skip the hole configuration step
+    if (preloadedHoleConfigs && preloadedHoleConfigs.length > 0) {
+      const initialHoles: Hole[] = preloadedHoleConfigs.map((h) => ({
+        number: h.holeNumber,
+        par: h.par,
+        yardage: h.yardage,
+        score: null,
+      }));
+      setHoles(initialHoles);
+      setCompletedHoleStats([]);
+      setStep('tracking');
+    } else {
+      // Go to hole configuration step for new courses
+      setStep('holes');
+    }
   };
 
-  const handleHolesSave = (configuredHoles: HoleConfig[]) => {
+  const handleHolesSave = async (configuredHoles: HoleConfig[]) => {
     // Convert HoleConfig to Hole format
     const initialHoles: Hole[] = configuredHoles.map((h) => ({
       number: h.holeNumber,
@@ -116,6 +269,32 @@ export default function NewRoundClient() {
     }));
     setHoles(initialHoles);
     setCompletedHoleStats([]);
+
+    // Save course configuration if user opted in
+    if (saveCourseChecked && setupData.courseName) {
+      const holeConfigs: SavedCourseHoleConfig[] = configuredHoles.map((h) => ({
+        holeNumber: h.holeNumber,
+        par: h.par,
+        yardage: h.yardage,
+      }));
+
+      const result = await savePlayerCourse({
+        courseName: setupData.courseName,
+        courseCity: setupData.courseCity || undefined,
+        courseState: setupData.courseState || undefined,
+        courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
+        courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
+        teesPlayed: setupData.teesPlayed || undefined,
+        holesPerRound: configuredHoles.length,
+        holeConfigs,
+      });
+
+      if (result.success) {
+        // Add to local state so it appears if they start another round
+        setSavedCourses(prev => [result.data, ...prev.filter(c => c.id !== result.data.id)]);
+      }
+    }
+
     setStep('tracking');
   };
 
@@ -176,6 +355,9 @@ export default function NewRoundClient() {
         roundType: setupData.roundType,
         roundDate: setupData.roundDate,
         holes: allHoleStats,
+        // Include qualifier info if this is a qualifier round
+        qualifierId: setupData.roundType === 'qualifier' ? selectedQualifierId ?? undefined : undefined,
+        qualifierRoundNumber: setupData.roundType === 'qualifier' ? selectedRoundNumber ?? undefined : undefined,
       };
 
       const result = await submitGolfRoundComprehensive(roundData);
@@ -338,9 +520,88 @@ export default function NewRoundClient() {
             </p>
 
             <form onSubmit={handleSetupSubmit} className="space-y-6">
+              {/* Course Selection Mode Toggle */}
+              {!loadingSavedCourses && savedCourses.length > 0 && (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <div className="flex items-center gap-4 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCourseMode('saved');
+                        if (!selectedCourseId && savedCourses.length > 0) {
+                          handleSavedCourseSelect(savedCourses[0]!.id);
+                        }
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        courseMode === 'saved'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      ⭐ Saved Course
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCourseMode('new');
+                        setSelectedCourseId(null);
+                        setPreloadedHoleConfigs(null);
+                        setSetupData(prev => ({
+                          ...prev,
+                          courseName: '',
+                          courseCity: '',
+                          courseState: '',
+                          courseRating: '',
+                          courseSlope: '',
+                          teesPlayed: 'White',
+                        }));
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        courseMode === 'new'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      ➕ New Course
+                    </button>
+                  </div>
+
+                  {courseMode === 'saved' && (
+                    <div>
+                      <label htmlFor="savedCourse" className="text-sm font-medium text-slate-700 block mb-2">
+                        Select a Saved Course
+                      </label>
+                      <select
+                        id="savedCourse"
+                        value={selectedCourseId || ''}
+                        onChange={(e) => handleSavedCourseSelect(e.target.value || null)}
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
+                      >
+                        <option value="">Choose a course...</option>
+                        {savedCourses.map(course => (
+                          <option key={course.id} value={course.id}>
+                            {course.courseName}
+                            {course.teesPlayed && ` (${course.teesPlayed})`}
+                            {course.courseCity && ` - ${course.courseCity}`}
+                            {course.courseState && `, ${course.courseState}`}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedCourseId && preloadedHoleConfigs && (
+                        <p className="text-xs text-green-600 mt-2">
+                          ✓ {preloadedHoleConfigs.length} holes configured • Ready to start
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Course Info */}
               <div>
-                <h2 className="text-lg font-medium text-slate-900 mb-4">Course Information</h2>
+                <h2 className="text-lg font-medium text-slate-900 mb-4">
+                  {courseMode === 'saved' && selectedCourseId ? 'Course Details' : 'Course Information'}
+                </h2>
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="courseName" className="text-sm font-medium text-slate-700 block mb-2">
@@ -351,7 +612,10 @@ export default function NewRoundClient() {
                       type="text"
                       value={setupData.courseName}
                       onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
+                      disabled={courseMode === 'saved' && !!selectedCourseId}
+                      className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
+                        courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
+                      }`}
                       placeholder="Pebble Beach Golf Links"
                       required
                     />
@@ -367,7 +631,10 @@ export default function NewRoundClient() {
                         type="text"
                         value={setupData.courseCity}
                         onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
+                        disabled={courseMode === 'saved' && !!selectedCourseId}
+                        className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
+                          courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
+                        }`}
                         placeholder="Pebble Beach"
                       />
                     </div>
@@ -380,7 +647,10 @@ export default function NewRoundClient() {
                         type="text"
                         value={setupData.courseState}
                         onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
+                        disabled={courseMode === 'saved' && !!selectedCourseId}
+                        className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
+                          courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
+                        }`}
                         placeholder="CA"
                         maxLength={2}
                       />
@@ -398,7 +668,10 @@ export default function NewRoundClient() {
                         step="0.1"
                         value={setupData.courseRating}
                         onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
+                        disabled={courseMode === 'saved' && !!selectedCourseId}
+                        className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
+                          courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
+                        }`}
                         placeholder="72.1"
                       />
                     </div>
@@ -411,7 +684,10 @@ export default function NewRoundClient() {
                         type="number"
                         value={setupData.courseSlope}
                         onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
+                        disabled={courseMode === 'saved' && !!selectedCourseId}
+                        className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
+                          courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
+                        }`}
                         placeholder="133"
                         aria-label="Course slope rating"
                       />
@@ -424,7 +700,10 @@ export default function NewRoundClient() {
                         id="teesPlayed"
                         value={setupData.teesPlayed}
                         onChange={(e) => setSetupData({ ...setupData, teesPlayed: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
+                        disabled={courseMode === 'saved' && !!selectedCourseId}
+                        className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
+                          courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
+                        }`}
                       >
                         <option>Championship</option>
                         <option>Black</option>
@@ -435,6 +714,21 @@ export default function NewRoundClient() {
                       </select>
                     </div>
                   </div>
+
+                  {/* Save Course Checkbox - only show for new courses */}
+                  {courseMode === 'new' && (
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={saveCourseChecked}
+                        onChange={(e) => setSaveCourseChecked(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-sm text-slate-600">
+                        Save this course for next time (including hole pars & yardages)
+                      </span>
+                    </label>
+                  )}
                 </div>
               </div>
 
@@ -473,6 +767,101 @@ export default function NewRoundClient() {
                 </div>
               </div>
 
+              {/* Qualifier Selection (shown when round type is qualifier) */}
+              {setupData.roundType === 'qualifier' && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <h3 className="font-medium text-amber-800 mb-3">🏆 Qualifier Round</h3>
+
+                  {loadingQualifiers ? (
+                    <div className="flex items-center gap-2 text-sm text-amber-700">
+                      <div className="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+                      Loading your qualifiers...
+                    </div>
+                  ) : qualifierError ? (
+                    <p className="text-sm text-amber-700">{qualifierError}</p>
+                  ) : qualifiers.length === 0 ? (
+                    <p className="text-sm text-amber-700">
+                      You are not entered in any active qualifiers. Please contact your coach.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Qualifier Selection */}
+                      <div>
+                        <label htmlFor="qualifier" className="text-sm font-medium text-amber-800 block mb-2">
+                          Select Qualifier *
+                        </label>
+                        <select
+                          id="qualifier"
+                          value={selectedQualifierId || ''}
+                          onChange={(e) => setSelectedQualifierId(e.target.value || null)}
+                          className="w-full px-4 py-2.5 rounded-lg border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                          required
+                        >
+                          <option value="">Choose a qualifier...</option>
+                          {qualifiers.map(q => (
+                            <option key={q.id} value={q.id}>
+                              {q.name} ({q.roundsCompleted}/{q.numRounds} rounds completed)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Round Number Selection */}
+                      {selectedQualifierId && availableRounds.length > 0 && (
+                        <div>
+                          <label htmlFor="roundNumber" className="text-sm font-medium text-amber-800 block mb-2">
+                            Round Number *
+                          </label>
+                          <select
+                            id="roundNumber"
+                            value={selectedRoundNumber || ''}
+                            onChange={(e) => setSelectedRoundNumber(Number(e.target.value) || null)}
+                            className="w-full px-4 py-2.5 rounded-lg border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                            required
+                          >
+                            <option value="">Select round...</option>
+                            {availableRounds.map(num => (
+                              <option key={num} value={num}>
+                                Round {num}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-amber-600 mt-1">
+                            This is round {selectedRoundNumber} of {qualifiers.find(q => q.id === selectedQualifierId)?.numRounds || '?'}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Show selected qualifier info */}
+                      {selectedQualifierId && (
+                        <div className="bg-white/50 rounded-lg p-3 mt-2">
+                          {(() => {
+                            const selected = qualifiers.find(q => q.id === selectedQualifierId);
+                            if (!selected) return null;
+                            return (
+                              <>
+                                <p className="text-sm text-amber-800">
+                                  <span className="font-medium">{selected.name}</span>
+                                </p>
+                                {selected.courseName && (
+                                  <p className="text-xs text-amber-700 mt-1">Course: {selected.courseName}</p>
+                                )}
+                                <p className="text-xs text-amber-700 mt-1">
+                                  Progress: {selected.roundsCompleted} of {selected.numRounds} rounds completed
+                                  {selected.completedRoundNumbers.length > 0 && (
+                                    <> (Rounds: {selected.completedRoundNumbers.join(', ')})</>
+                                  )}
+                                </p>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Stats Info Box */}
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                 <h3 className="font-medium text-green-800 mb-2">📊 Comprehensive Stats Tracking</h3>
@@ -500,7 +889,9 @@ export default function NewRoundClient() {
                   type="submit"
                   className="flex-1 px-4 py-2.5 rounded-lg bg-green-600 font-medium text-white hover:bg-green-700 transition-colors shadow-sm shadow-green-950/10 ring-1 ring-green-700"
                 >
-                  Next: Configure Holes →
+                  {preloadedHoleConfigs && preloadedHoleConfigs.length > 0
+                    ? 'Start Round →'
+                    : 'Next: Configure Holes →'}
                 </button>
               </div>
             </form>

@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 
-export function MobileNav() {
+interface MobileNavProps {
+  isProductsPage?: boolean
+}
+
+export function MobileNav({ isProductsPage = false }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   // Lock body scroll when menu is open
@@ -28,22 +32,30 @@ export function MobileNav() {
                    rounded-full backdrop-blur-2xl transition-all duration-200
                    ${isOpen
                      ? 'bg-warm-100'
-                     : 'bg-white/[0.08] border border-white/[0.12] shadow-[0_2px_20px_rgba(0,0,0,0.15)]'
+                     : isProductsPage
+                       ? 'bg-white/80 border border-neutral-200/50 shadow-[0_2px_20px_rgba(0,0,0,0.1)]'
+                       : 'bg-white/[0.08] border border-white/[0.12] shadow-[0_2px_20px_rgba(0,0,0,0.15)]'
                    }`}
         aria-label={isOpen ? 'Close menu' : 'Open menu'}
       >
         <div className="w-5 h-4 relative flex flex-col justify-between">
           <motion.span
             animate={isOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }}
-            className={`w-full h-[2px] rounded-full origin-left transition-colors ${isOpen ? 'bg-warm-900' : 'bg-white'}`}
+            className={`w-full h-[2px] rounded-full origin-left transition-colors ${
+              isOpen ? 'bg-warm-900' : isProductsPage ? 'bg-neutral-900' : 'bg-white'
+            }`}
           />
           <motion.span
             animate={isOpen ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }}
-            className={`w-full h-[2px] rounded-full transition-colors ${isOpen ? 'bg-warm-900' : 'bg-white'}`}
+            className={`w-full h-[2px] rounded-full transition-colors ${
+              isOpen ? 'bg-warm-900' : isProductsPage ? 'bg-neutral-900' : 'bg-white'
+            }`}
           />
           <motion.span
             animate={isOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }}
-            className={`w-full h-[2px] rounded-full origin-left transition-colors ${isOpen ? 'bg-warm-900' : 'bg-white'}`}
+            className={`w-full h-[2px] rounded-full origin-left transition-colors ${
+              isOpen ? 'bg-warm-900' : isProductsPage ? 'bg-neutral-900' : 'bg-white'
+            }`}
           />
         </div>
       </button>

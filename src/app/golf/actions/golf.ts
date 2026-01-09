@@ -365,6 +365,9 @@ interface GolfRoundInputComprehensive {
   roundType: 'practice' | 'tournament' | 'qualifier';
   roundDate: string;
   holes: HoleStats[];
+  // Qualifier-specific fields
+  qualifierId?: string;
+  qualifierRoundNumber?: number;
 }
 
 interface GolfEventInput {
@@ -433,6 +436,9 @@ type GolfEventUpdateData = {
   course_name?: string;
   description?: string;
   is_mandatory?: boolean;
+  requires_rsvp?: boolean;
+  rsvp_deadline?: string | null;
+  max_attendees?: number | null;
 }
 
 // ============================================================================
@@ -597,6 +603,9 @@ export async function submitGolfRoundComprehensive(
     longest_drive: longestDrive,
     longest_putt_made: longestPuttMade,
     longest_hole_out: longestHoleOut,
+    // Qualifier fields (null if not a qualifier round)
+    qualifier_id: data.qualifierId || null,
+    qualifier_round_number: data.qualifierRoundNumber || null,
   };
 
   // Insert or update round
@@ -2499,10 +2508,16 @@ export async function savePartialRound(
             .insert(shotsData);
 
           if (shotsError) {
-            console.error('Error saving shots for hole', hole.holeNumber, shotsError);
+            console.error('Error saving shots for hole', holeNumber, shotsError);
           }
         }
       }
+    }
+
+    // If this is a qualifier round, update the qualifier entry stats
+    if (data.qualifierId) {
+      await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
+      revalidatePath(`/golf/dashboard/qualifiers/${data.qualifierId}`);
     }
 
     revalidatePath('/golf/dashboard/rounds');
@@ -2678,4 +2693,713 @@ export async function deleteInProgressRound(roundId: string): Promise<ActionResu
       error: error instanceof Error ? error.message : 'Failed to delete round'
     };
   }
+}
+
+// ============================================================================
+// QUALIFIER ACTIONS (PLAYER)
+// ============================================================================
+
+/** Qualifier info with player's progress */
+export interface PlayerQualifierInfo {
+  id: string;
+  name: string;
+  description: string | null;
+  courseName: string | null;
+  location: string | null;
+  numRounds: number;
+  holesPerRound: number;
+  startDate: string;
+  endDate: string | null;
+  status: 'upcoming' | 'in_progress' | 'completed';
+  showLiveLeaderboard: boolean;
+  // Player's progress
+  roundsCompleted: number;
+  completedRoundNumbers: number[];
+  totalScore: number | null;
+  totalToPar: number | null;
+}
+
+/**
+ * Get all qualifiers the current player is entered in
+ * Returns qualifier info along with player's round completion status
+ */
+export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifierInfo[]>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    // Get player record
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    // Get all qualifier entries for this player
+    const { data: entries, error: entriesError } = await supabase
+      .from('golf_qualifier_entries')
+      .select(`
+        qualifier_id,
+        qualifier:golf_qualifiers(
+          id,
+          name,
+          description,
+          course_name,
+          location,
+          num_rounds,
+          holes_per_round,
+          start_date,
+          end_date,
+          status,
+          show_live_leaderboard
+        )
+      `)
+      .eq('player_id', player.id);
+
+    if (entriesError) {
+      return { success: false, error: 'Failed to fetch qualifiers' };
+    }
+
+    if (!entries || entries.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    // Get all qualifier rounds for this player
+    const qualifierIds = entries.map(e => e.qualifier_id);
+    const { data: rounds } = await supabase
+      .from('golf_rounds')
+      .select('qualifier_id, qualifier_round_number, total_score, total_to_par')
+      .eq('player_id', player.id)
+      .in('qualifier_id', qualifierIds)
+      .eq('status', 'completed');
+
+    // Build result with progress info
+    const qualifiers: PlayerQualifierInfo[] = entries
+      .filter(e => e.qualifier && typeof e.qualifier === 'object' && !('error' in e.qualifier))
+      .map(entry => {
+        const q = entry.qualifier as {
+          id: string;
+          name: string;
+          description: string | null;
+          course_name: string | null;
+          location: string | null;
+          num_rounds: number;
+          holes_per_round: number;
+          start_date: string;
+          end_date: string | null;
+          status: string;
+          show_live_leaderboard: boolean | null;
+        };
+
+        // Get rounds for this qualifier
+        const qualifierRounds = (rounds || []).filter(r => r.qualifier_id === q.id);
+        const completedRoundNumbers = qualifierRounds
+          .filter(r => r.qualifier_round_number !== null)
+          .map(r => r.qualifier_round_number as number)
+          .sort((a, b) => a - b);
+
+        const totalScore = qualifierRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
+        const totalToPar = qualifierRounds.reduce((sum, r) => sum + (r.total_to_par || 0), 0);
+
+        return {
+          id: q.id,
+          name: q.name,
+          description: q.description,
+          courseName: q.course_name,
+          location: q.location,
+          numRounds: q.num_rounds,
+          holesPerRound: q.holes_per_round,
+          startDate: q.start_date,
+          endDate: q.end_date,
+          status: (q.status || 'upcoming') as 'upcoming' | 'in_progress' | 'completed',
+          showLiveLeaderboard: q.show_live_leaderboard ?? true,
+          roundsCompleted: qualifierRounds.length,
+          completedRoundNumbers,
+          totalScore: qualifierRounds.length > 0 ? totalScore : null,
+          totalToPar: qualifierRounds.length > 0 ? totalToPar : null,
+        };
+      });
+
+    return { success: true, data: qualifiers };
+
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch qualifiers'
+    };
+  }
+}
+
+/**
+ * Get the next available round number for a qualifier
+ */
+export async function getNextQualifierRoundNumber(
+  qualifierId: string
+): Promise<ActionResult<{ nextRoundNumber: number; availableRounds: number[] }>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    // Get player record
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    // Verify player is entered in this qualifier
+    const { data: entry } = await supabase
+      .from('golf_qualifier_entries')
+      .select('id')
+      .eq('qualifier_id', qualifierId)
+      .eq('player_id', player.id)
+      .single();
+
+    if (!entry) {
+      return { success: false, error: 'You are not entered in this qualifier' };
+    }
+
+    // Get qualifier details
+    const { data: qualifier } = await supabase
+      .from('golf_qualifiers')
+      .select('num_rounds')
+      .eq('id', qualifierId)
+      .single();
+
+    if (!qualifier) {
+      return { success: false, error: 'Qualifier not found' };
+    }
+
+    // Get completed rounds for this player in this qualifier
+    const { data: completedRounds } = await supabase
+      .from('golf_rounds')
+      .select('qualifier_round_number')
+      .eq('qualifier_id', qualifierId)
+      .eq('player_id', player.id)
+      .eq('status', 'completed');
+
+    const completedRoundNumbers = new Set(
+      (completedRounds || [])
+        .filter(r => r.qualifier_round_number !== null)
+        .map(r => r.qualifier_round_number as number)
+    );
+
+    // Calculate available rounds (1 to num_rounds, excluding completed)
+    const allRounds = Array.from({ length: qualifier.num_rounds }, (_, i) => i + 1);
+    const availableRounds = allRounds.filter(r => !completedRoundNumbers.has(r));
+
+    // Next round is the first available
+    const nextRoundNumber = availableRounds.length > 0 ? availableRounds[0]! : 0;
+
+    return {
+      success: true,
+      data: { nextRoundNumber, availableRounds }
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get round number'
+    };
+  }
+}
+
+/**
+ * Get qualifier leaderboard (accessible to both coaches and players)
+ */
+export interface QualifierLeaderboardEntry {
+  playerId: string;
+  playerName: string;
+  avatarUrl: string | null;
+  position: number;
+  isTied: boolean;
+  roundsCompleted: number;
+  totalScore: number;
+  totalToPar: number;
+  averageScore: number;
+  roundScores: Array<{
+    roundNumber: number;
+    score: number;
+    toPar: number;
+  }>;
+}
+
+export interface QualifierLeaderboardData {
+  qualifier: {
+    id: string;
+    name: string;
+    description: string | null;
+    courseName: string | null;
+    location: string | null;
+    numRounds: number;
+    holesPerRound: number;
+    startDate: string;
+    endDate: string | null;
+    status: string;
+    showLiveLeaderboard: boolean;
+  };
+  leaderboard: QualifierLeaderboardEntry[];
+  isPlayerEntered: boolean;
+  currentPlayerId: string | null;
+}
+
+export async function getQualifierLeaderboard(
+  qualifierId: string
+): Promise<ActionResult<QualifierLeaderboardData>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    // Get qualifier details
+    const { data: qualifier, error: qualifierError } = await supabase
+      .from('golf_qualifiers')
+      .select('*')
+      .eq('id', qualifierId)
+      .single();
+
+    if (qualifierError || !qualifier) {
+      return { success: false, error: 'Qualifier not found' };
+    }
+
+    // Get current player (if exists)
+    const { data: currentPlayer } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    // Get all entries with player info
+    const { data: entries } = await supabase
+      .from('golf_qualifier_entries')
+      .select(`
+        player_id,
+        player:golf_players(
+          id,
+          first_name,
+          last_name,
+          avatar_url
+        )
+      `)
+      .eq('qualifier_id', qualifierId);
+
+    if (!entries || entries.length === 0) {
+      return {
+        success: true,
+        data: {
+          qualifier: {
+            id: qualifier.id,
+            name: qualifier.name,
+            description: qualifier.description,
+            courseName: qualifier.course_name,
+            location: qualifier.location,
+            numRounds: qualifier.num_rounds,
+            holesPerRound: qualifier.holes_per_round,
+            startDate: qualifier.start_date,
+            endDate: qualifier.end_date,
+            status: qualifier.status || 'upcoming',
+            showLiveLeaderboard: qualifier.show_live_leaderboard ?? true,
+          },
+          leaderboard: [],
+          isPlayerEntered: false,
+          currentPlayerId: currentPlayer?.id || null,
+        }
+      };
+    }
+
+    // Get all rounds for this qualifier
+    const { data: rounds } = await supabase
+      .from('golf_rounds')
+      .select('player_id, qualifier_round_number, total_score, total_to_par')
+      .eq('qualifier_id', qualifierId)
+      .eq('status', 'completed');
+
+    // Build leaderboard
+    const leaderboard: QualifierLeaderboardEntry[] = entries
+      .filter(e => e.player && typeof e.player === 'object' && !('error' in e.player))
+      .map(entry => {
+        const player = entry.player as {
+          id: string;
+          first_name: string;
+          last_name: string;
+          avatar_url: string | null;
+        };
+
+        const playerRounds = (rounds || [])
+          .filter(r => r.player_id === entry.player_id)
+          .sort((a, b) => (a.qualifier_round_number || 0) - (b.qualifier_round_number || 0));
+
+        const totalScore = playerRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
+        const totalToPar = playerRounds.reduce((sum, r) => sum + (r.total_to_par || 0), 0);
+        const roundsCompleted = playerRounds.length;
+        const averageScore = roundsCompleted > 0 ? totalScore / roundsCompleted : 0;
+
+        const roundScores = playerRounds.map(r => ({
+          roundNumber: r.qualifier_round_number || 0,
+          score: r.total_score || 0,
+          toPar: r.total_to_par || 0,
+        }));
+
+        return {
+          playerId: entry.player_id,
+          playerName: `${player.first_name} ${player.last_name}`,
+          avatarUrl: player.avatar_url,
+          position: 0, // Will be set after sorting
+          isTied: false,
+          roundsCompleted,
+          totalScore,
+          totalToPar,
+          averageScore,
+          roundScores,
+        };
+      })
+      // Sort by total score (lower is better), then by rounds completed (more is better for tie-breaking)
+      .sort((a, b) => {
+        if (a.totalScore !== b.totalScore) {
+          return a.totalScore - b.totalScore;
+        }
+        return b.roundsCompleted - a.roundsCompleted;
+      });
+
+    // Assign positions and mark ties
+    let currentPosition = 1;
+    for (let i = 0; i < leaderboard.length; i++) {
+      const entry = leaderboard[i]!;
+
+      if (i > 0) {
+        const prevEntry = leaderboard[i - 1]!;
+        if (entry.totalScore === prevEntry.totalScore && entry.roundsCompleted === prevEntry.roundsCompleted) {
+          entry.position = prevEntry.position;
+          entry.isTied = true;
+          prevEntry.isTied = true;
+        } else {
+          entry.position = currentPosition;
+        }
+      } else {
+        entry.position = currentPosition;
+      }
+      currentPosition++;
+    }
+
+    // Check if current player is entered
+    const isPlayerEntered = currentPlayer
+      ? entries.some(e => e.player_id === currentPlayer.id)
+      : false;
+
+    return {
+      success: true,
+      data: {
+        qualifier: {
+          id: qualifier.id,
+          name: qualifier.name,
+          description: qualifier.description,
+          courseName: qualifier.course_name,
+          location: qualifier.location,
+          numRounds: qualifier.num_rounds,
+          holesPerRound: qualifier.holes_per_round,
+          startDate: qualifier.start_date,
+          endDate: qualifier.end_date,
+          status: qualifier.status || 'upcoming',
+          showLiveLeaderboard: qualifier.show_live_leaderboard ?? true,
+        },
+        leaderboard,
+        isPlayerEntered,
+        currentPlayerId: currentPlayer?.id || null,
+      }
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch leaderboard'
+    };
+  }
+}
+
+/**
+ * Update qualifier entry statistics after a round is submitted
+ * This is called automatically after submitGolfRoundComprehensive
+ */
+async function updateQualifierEntryStats(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  qualifierId: string,
+  playerId: string
+): Promise<void> {
+  try {
+    // Get all completed rounds for this player in this qualifier
+    const { data: rounds } = await supabase
+      .from('golf_rounds')
+      .select('total_score, total_to_par')
+      .eq('qualifier_id', qualifierId)
+      .eq('player_id', playerId)
+      .eq('status', 'completed');
+
+    if (!rounds) return;
+
+    const totalScore = rounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
+    const totalToPar = rounds.reduce((sum, r) => sum + (r.total_to_par || 0), 0);
+    const roundsCompleted = rounds.length;
+
+    // Update the qualifier entry
+    await supabase
+      .from('golf_qualifier_entries')
+      .update({
+        total_score: totalScore,
+        total_to_par: totalToPar,
+        rounds_completed: roundsCompleted,
+      })
+      .eq('qualifier_id', qualifierId)
+      .eq('player_id', playerId);
+
+  } catch (error) {
+    console.error('Failed to update qualifier entry stats:', error);
+    // Don't throw - this is a non-critical operation
+  }
+}
+
+// ============================================================================
+// SAVED COURSES - Player's saved course configurations
+// ============================================================================
+
+/** Hole configuration for a saved course */
+export interface SavedCourseHoleConfig {
+  holeNumber: number;
+  par: number;
+  yardage: number;
+}
+
+/** Saved course data returned to client */
+export interface SavedCourse {
+  id: string;
+  courseName: string;
+  courseCity: string | null;
+  courseState: string | null;
+  courseRating: number | null;
+  courseSlope: number | null;
+  teesPlayed: string | null;
+  holesPerRound: number;
+  holeConfigs: SavedCourseHoleConfig[];
+  lastUsedAt: string;
+  createdAt: string;
+}
+
+/** Input for saving a course configuration */
+export interface SaveCourseInput {
+  courseName: string;
+  courseCity?: string;
+  courseState?: string;
+  courseRating?: number;
+  courseSlope?: number;
+  teesPlayed?: string;
+  holesPerRound: number;
+  holeConfigs: SavedCourseHoleConfig[];
+}
+
+/**
+ * Get all saved courses for the current player
+ * Returns courses sorted by most recently used
+ */
+export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[]>> {
+  const supabase = await createClient();
+
+  // Get the current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'You must be logged in' };
+  }
+
+  // Get the player record
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!player) {
+    return { success: false, error: 'Player profile not found' };
+  }
+
+  // Fetch saved courses
+  const { data: courses, error } = await supabase
+    .from('golf_player_courses')
+    .select('*')
+    .eq('player_id', player.id)
+    .order('last_used_at', { ascending: false });
+
+  if (error) {
+    return { success: false, error: 'Failed to load saved courses' };
+  }
+
+  // Transform to client format
+  const savedCourses: SavedCourse[] = (courses || []).map(course => ({
+    id: course.id,
+    courseName: course.course_name,
+    courseCity: course.course_city,
+    courseState: course.course_state,
+    courseRating: course.course_rating ? parseFloat(course.course_rating) : null,
+    courseSlope: course.course_slope,
+    teesPlayed: course.tees_played,
+    holesPerRound: course.holes_per_round,
+    holeConfigs: (course.hole_configs as SavedCourseHoleConfig[]) || [],
+    lastUsedAt: course.last_used_at,
+    createdAt: course.created_at,
+  }));
+
+  return { success: true, data: savedCourses };
+}
+
+/**
+ * Save a new course configuration or update existing one
+ */
+export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionResult<SavedCourse>> {
+  const supabase = await createClient();
+
+  // Get the current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'You must be logged in' };
+  }
+
+  // Get the player record
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!player) {
+    return { success: false, error: 'Player profile not found' };
+  }
+
+  // Check if course with same name and tees already exists
+  const { data: existing } = await supabase
+    .from('golf_player_courses')
+    .select('id')
+    .eq('player_id', player.id)
+    .ilike('course_name', input.courseName)
+    .eq('tees_played', input.teesPlayed || '')
+    .single();
+
+  const courseData = {
+    player_id: player.id,
+    course_name: input.courseName,
+    course_city: input.courseCity || null,
+    course_state: input.courseState || null,
+    course_rating: input.courseRating || null,
+    course_slope: input.courseSlope || null,
+    tees_played: input.teesPlayed || null,
+    holes_per_round: input.holesPerRound,
+    hole_configs: input.holeConfigs,
+    last_used_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  let result;
+  if (existing) {
+    // Update existing course
+    result = await supabase
+      .from('golf_player_courses')
+      .update(courseData)
+      .eq('id', existing.id)
+      .select()
+      .single();
+  } else {
+    // Insert new course
+    result = await supabase
+      .from('golf_player_courses')
+      .insert(courseData)
+      .select()
+      .single();
+  }
+
+  if (result.error) {
+    console.error('Failed to save course:', result.error);
+    return { success: false, error: 'Failed to save course configuration' };
+  }
+
+  const course = result.data;
+  const savedCourse: SavedCourse = {
+    id: course.id,
+    courseName: course.course_name,
+    courseCity: course.course_city,
+    courseState: course.course_state,
+    courseRating: course.course_rating ? parseFloat(course.course_rating) : null,
+    courseSlope: course.course_slope,
+    teesPlayed: course.tees_played,
+    holesPerRound: course.holes_per_round,
+    holeConfigs: (course.hole_configs as SavedCourseHoleConfig[]) || [],
+    lastUsedAt: course.last_used_at,
+    createdAt: course.created_at,
+  };
+
+  return { success: true, data: savedCourse };
+}
+
+/**
+ * Update the last_used_at timestamp for a saved course
+ */
+export async function touchSavedCourse(courseId: string): Promise<ActionResult<void>> {
+  const supabase = await createClient();
+
+  // Get the current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'You must be logged in' };
+  }
+
+  // Update last_used_at (RLS will ensure ownership)
+  const { error } = await supabase
+    .from('golf_player_courses')
+    .update({ last_used_at: new Date().toISOString() })
+    .eq('id', courseId);
+
+  if (error) {
+    return { success: false, error: 'Failed to update course' };
+  }
+
+  return { success: true, data: undefined };
+}
+
+/**
+ * Delete a saved course configuration
+ */
+export async function deletePlayerCourse(courseId: string): Promise<ActionResult<void>> {
+  const supabase = await createClient();
+
+  // Get the current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'You must be logged in' };
+  }
+
+  // Delete the course (RLS will ensure ownership)
+  const { error } = await supabase
+    .from('golf_player_courses')
+    .delete()
+    .eq('id', courseId);
+
+  if (error) {
+    return { success: false, error: 'Failed to delete course' };
+  }
+
+  return { success: true, data: undefined };
 }
