@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import type { HoleStats } from '@/components/golf/ShotTrackingComprehensive';
+import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 import { z } from 'zod';
 import {
   requireGolfCoach,
@@ -188,9 +188,6 @@ export interface InProgressRound {
   created_at: string | null;
   updated_at: string | null;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type PendingMigrationTable = any; // Tables that exist in migration but not yet in generated types
 
 /** Shot data from golf_shots table */
 interface ShotData {
@@ -767,14 +764,14 @@ export async function submitGolfRoundComprehensive(
         }
       }
 
-      // Insert putt details (using type assertion for tables not in generated types)
+      // Insert putt details
       if (puttDetails.length > 0) {
-        await (supabase as PendingMigrationTable).from('putt_details').insert(puttDetails);
+        await supabase.from('putt_details').insert(puttDetails);
       }
 
-      // Insert approach miss details (using type assertion for tables not in generated types)
+      // Insert approach miss details
       if (approachMissDetails.length > 0) {
-        await (supabase as PendingMigrationTable).from('approach_miss_details').insert(approachMissDetails);
+        await supabase.from('approach_miss_details').insert(approachMissDetails);
       }
     }
   }
@@ -2125,6 +2122,11 @@ export interface PartialRoundData {
   holesToPlay: number; // 9 or 18
   // Completed holes data
   holes: HoleStats[];
+  // In-progress holes with recorded shots
+  inProgressShots?: Array<{
+    holeNumber: number;
+    shots: ShotRecord[];
+  }>;
   // Hole configuration for full round (completed + remaining)
   holeConfigs?: Array<{
     holeNumber: number;
@@ -2363,20 +2365,34 @@ export async function savePartialRound(
 
         // Save shots for ALL holes that have shots (completed and incomplete)
         // This ensures we can resume exactly where we left off
-        // Use data.holes instead of completedHoles to include incomplete holes with shots
-        const allHolesWithShots = data.holes.filter(hole => hole.shots && hole.shots.length > 0);
-        
-        for (const hole of allHolesWithShots) {
-          const holeId = holeIdMap.get(hole.holeNumber);
+        const holesWithShotsByNumber = new Map<number, ShotRecord[]>();
+
+        for (const hole of data.holes) {
+          if (hole.shots && hole.shots.length > 0) {
+            holesWithShotsByNumber.set(hole.holeNumber, hole.shots);
+          }
+        }
+
+        for (const hole of data.inProgressShots || []) {
+          if (hole.shots.length === 0) {
+            continue;
+          }
+          if (!holesWithShotsByNumber.has(hole.holeNumber)) {
+            holesWithShotsByNumber.set(hole.holeNumber, hole.shots);
+          }
+        }
+
+        for (const [holeNumber, shots] of holesWithShotsByNumber) {
+          const holeId = holeIdMap.get(holeNumber);
           if (!holeId) {
             // If hole doesn't exist in map, skip (shouldn't happen, but safety check)
             continue;
           }
 
-          const shotsData = hole.shots.map(shot => ({
+          const shotsData = shots.map(shot => ({
             round_id: roundId,
             hole_id: holeId,
-            hole_number: hole.holeNumber,
+            hole_number: holeNumber,
             shot_number: shot.shotNumber,
             shot_type: shot.shotType,
             club_type: shot.clubType,
