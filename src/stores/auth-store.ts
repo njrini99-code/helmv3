@@ -4,6 +4,16 @@ import type { User, Coach, Player } from '@/lib/types';
 
 export type CoachMode = 'recruiting' | 'team';
 
+/**
+ * Sync coach mode to a cookie for middleware access
+ * The middleware reads from cookies since it runs on the server
+ */
+function syncModeToCookie(mode: CoachMode) {
+  if (typeof document !== 'undefined') {
+    document.cookie = `coach_mode=${mode}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+  }
+}
+
 interface AuthState {
   user: User | null;
   coach: Coach | null;
@@ -30,7 +40,10 @@ export const useAuthStore = create<AuthState>()(
       setCoach: (coach) => set({ coach }),
       setPlayer: (player) => set({ player }),
       setLoading: (loading) => set({ loading }),
-      setCoachMode: (mode) => set({ coachMode: mode }),
+      setCoachMode: (mode) => {
+        syncModeToCookie(mode);
+        set({ coachMode: mode });
+      },
       clear: () => set({ user: null, coach: null, player: null }),
     }),
     {
@@ -41,6 +54,12 @@ export const useAuthStore = create<AuthState>()(
         player: state.player,
         coachMode: state.coachMode,
       }),
+      // Sync cookie on rehydration
+      onRehydrateStorage: () => (state) => {
+        if (state?.coachMode) {
+          syncModeToCookie(state.coachMode);
+        }
+      },
     }
   )
 );

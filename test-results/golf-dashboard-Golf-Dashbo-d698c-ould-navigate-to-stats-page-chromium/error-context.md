@@ -11,33 +11,35 @@
         - heading "Welcome back" [level=2] [ref=e11]
         - paragraph [ref=e12]: Sign in to continue to your dashboard
       - generic [ref=e13]:
-        - generic [ref=e14]:
+        - generic [ref=e14]: Invalid email or password
+        - generic [ref=e15]:
           - text: Email
-          - textbox "you@example.com" [ref=e15]: rinin376@gmail.com
-        - generic [ref=e16]:
-          - generic [ref=e17]:
-            - generic [ref=e18]: Password
-            - link "Forgot password?" [ref=e19] [cursor=pointer]:
+          - textbox "you@example.com" [ref=e16]: rinin376@gmail.com
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - generic [ref=e19]: Password
+            - link "Forgot password?" [ref=e20] [cursor=pointer]:
               - /url: /golf/forgot-password
-          - textbox "••••••••" [ref=e20]: Pirates#09!!
-        - button [disabled] [ref=e21]
-        - generic [ref=e28]: or
-        - button "Continue with Google" [disabled] [ref=e30]:
-          - img [ref=e31]
+          - textbox "••••••••" [ref=e21]: Pirates#09!!
+        - button "Sign in" [ref=e22] [cursor=pointer]
+        - generic [ref=e25]: or
+        - button "Continue with Google" [disabled] [ref=e27]:
+          - img [ref=e28]
           - text: Continue with Google
-    - paragraph [ref=e36]:
+    - paragraph [ref=e33]:
       - text: Don't have an account?
-      - link "Sign up" [ref=e37] [cursor=pointer]:
+      - link "Sign up" [ref=e34] [cursor=pointer]:
         - /url: /golf/signup
-    - paragraph [ref=e38]:
-      - link "← Back to HelmLabs" [ref=e39] [cursor=pointer]:
+    - paragraph [ref=e35]:
+      - link "← Back to HelmLabs" [ref=e36] [cursor=pointer]:
         - /url: /
+    - paragraph [ref=e37]:
+      - link "Privacy" [ref=e38] [cursor=pointer]:
+        - /url: /privacy
+      - text: ·
+      - link "Terms" [ref=e39] [cursor=pointer]:
+        - /url: /terms
   - button "Open Next.js Dev Tools" [ref=e45] [cursor=pointer]:
-    - generic [ref=e48]:
-      - text: Rendering
-      - generic [ref=e49]:
-        - generic [ref=e50]: .
-        - generic [ref=e51]: .
-        - generic [ref=e52]: .
-  - alert [ref=e53]
+    - img [ref=e46]
+  - alert [ref=e49]
 ```

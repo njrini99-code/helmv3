@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
-Helm Intelligence - Enhanced Cycle Agent with Full Context Loading
+Helm Intelligence - Enhanced Cycle Agent with Full Context Loading + MD Parsing
 
-Now reads ALL .helm/ files from overnight analysis:
-- UNDERSTANDING.json (structured app knowledge)
-- HELM_ESSAY.md (comprehensive technical doc)
-- ACTIONS.md (prioritized work items)
-- ISSUES.md (detailed issue descriptions)
-- security/RLS_AUDIT.md (security vulnerabilities)
+FIXED: Now reads MD file to see what Claude Code documented!
 
-This provides MUCH richer context for issue detection and verification.
+Key improvement: The agent now parses the issues-cycle-XXX.md file to see which
+issues Claude Code marked as "✅ Fixed" in the FIX STATUS sections, then verifies
+those fixes by actually reading the code.
+
+This creates the proper closed-loop: MD file → verification → next cycle.
 """
 
 import asyncio
@@ -144,7 +143,7 @@ class Issue:
                  category: str,
                  location: Dict,
                  found_in_cycle: int,
-                 source: str = "cycle_analysis",  # NEW: track where issue came from
+                 source: str = "cycle_analysis",
                  context: Dict = None):
         self.id = id
         self.title = title
@@ -153,7 +152,7 @@ class Issue:
         self.category = category
         self.location = location
         self.found_in_cycle = found_in_cycle
-        self.source = source  # "cycle_analysis", "overnight_actions", "overnight_issues", "rls_audit"
+        self.source = source
         self.context = context or {}
         
         # State tracking
@@ -205,6 +204,7 @@ class Issue:
 class EnhancedCycleAgent:
     """
     Enhanced cycle agent that uses FULL overnight analysis context
+    AND parses MD files to see what Claude Code documented
     """
     
     def __init__(self, project_path: str, platform_name: str):
@@ -251,6 +251,49 @@ class EnhancedCycleAgent:
         with open(prev_file) as f:
             return json.load(f)
     
+    def _parse_md_file_for_fixes(self, cycle_number: int) -> Dict[str, str]:
+        """
+        🔧 NEW: Parse the MD file to see which issues Claude Code claimed to fix.
+        
+        This is the KEY fix - we read the actual MD file that Claude Code updated
+        to see which issues are marked as "✅ Fixed" in their FIX STATUS sections.
+        
+        Returns: {issue_id: fix_documentation}
+        """
+        md_file = self.cycle_dir / f"issues-cycle-{cycle_number:03d}.md"
+        
+        if not md_file.exists():
+            return {}
+        
+        print(f"📄 Reading {md_file.name} to find documented fixes...")
+        
+        with open(md_file) as f:
+            content = f.read()
+        
+        # Find all FIX STATUS sections
+        fixes = {}
+        
+        # Split by FIX STATUS sections: ### FIX STATUS: ISSUE-XXX
+        sections = re.split(r'### FIX STATUS:\s*([A-Z]+-\d+)', content)
+        
+        for i in range(1, len(sections), 2):
+            if i + 1 >= len(sections):
+                break
+                
+            issue_id = sections[i].strip()
+            status_content = sections[i + 1]
+            
+            # Look for Status line with checkmark or "Fixed"
+            # Matches: **Status:** ✅ Fixed, Status: ✅ Fixed, **Status:** Fixed, etc.
+            if ('✅' in status_content and 'Fixed' in status_content) or \
+               ('**Status:** Fixed' in status_content) or \
+               ('Status: Fixed' in status_content):
+                # Extract fix details for verification (first 2000 chars)
+                fixes[issue_id] = status_content[:2000]
+                print(f"  📝 {issue_id}: Marked as ✅ Fixed by Claude Code")
+        
+        return fixes
+    
     async def run_cycle(self, mode: str = "full"):
         """Run a complete improvement cycle with FULL context"""
         
@@ -278,7 +321,7 @@ class EnhancedCycleAgent:
                 print("Cancelled. Run overnight.py first for better results.")
                 return
         
-        # Phase 1: Load previous cycle
+        # Phase 1: Load previous cycle and verify fixes
         prev_cycle = self._load_previous_cycle()
         if prev_cycle:
             await self.verify_previous_fixes(prev_cycle)
@@ -332,7 +375,7 @@ class EnhancedCycleAgent:
             cwd=str(self.project_path),
             allowed_tools=["Read", "Bash", "Glob", "LS"],
             permission_mode="default",
-            max_turns=30,
+            max_turns=20,
         )
         
         prompt = f"""
@@ -417,7 +460,11 @@ These will become the initial issues for the cycle system to track.
         print(f"\n✅ Imported {imported_count} issues from overnight analysis")
     
     async def verify_previous_fixes(self, prev_cycle: Dict):
-        """Verify that previous fixes actually worked"""
+        """
+        🔧 FIXED: Verify that previous fixes actually worked
+        
+        Now reads the MD file FIRST to see what Claude Code documented!
+        """
         from claude_agent_sdk import query, ClaudeAgentOptions
         
         print(f"""
@@ -427,28 +474,46 @@ These will become the initial issues for the cycle system to track.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         """)
         
+        # Load previous issues from JSON
         prev_issues = [Issue.from_dict(i) for i in prev_cycle.get("issues", [])]
-        fixed_issues = [i for i in prev_issues if i.state == "fixed"]
         
-        if not fixed_issues:
-            print("⚠️  No fixed issues to verify from previous cycle")
+        # 🔧 NEW: Parse MD file to see what Claude Code claimed to fix
+        md_fixes = self._parse_md_file_for_fixes(self.current_cycle - 1)
+        
+        if not md_fixes:
+            print("\n⚠️  No fixed issues found in MD file")
+            print("   Claude Code needs to update FIX STATUS sections with '✅ Fixed'")
+            print("   Or no fixes were made yet.")
             return
         
-        print(f"Found {len(fixed_issues)} issues marked as fixed")
-        print("Verifying each one...\n")
+        print(f"\n✅ Found {len(md_fixes)} issues marked as fixed in MD file")
+        print("Now verifying each one by reading the actual code...\n")
+        
+        # Update issue states based on MD file
+        fixed_issues = []
+        for issue in prev_issues:
+            if issue.id in md_fixes:
+                issue.state = "fixed"
+                issue.fix_details = md_fixes[issue.id]
+                issue.fixed_in_cycle = self.current_cycle - 1
+                fixed_issues.append(issue)
+        
+        if not fixed_issues:
+            print("⚠️  No matching issues found")
+            return
         
         options = ClaudeAgentOptions(
             cwd=str(self.project_path),
             allowed_tools=["Read", "Bash", "Glob", "Grep", "LS"],
             permission_mode="default",
-            max_turns=50,
+            max_turns=30,
         )
         
-        # Build verification context WITH full helm context
+        # Build verification context
         issues_summary = "\n\n".join([
             f"ISSUE {i.id}: {i.title}\n"
             f"Location: {i.location.get('file', 'unknown')}\n"
-            f"Fix Details: {i.fix_details}\n"
+            f"Fix Details: {i.fix_details[:500]}...\n"
             f"Original Problem: {i.description}"
             for i in fixed_issues
         ])
@@ -465,7 +530,7 @@ Platform: {self.platform_name}
 Project: {self.project_path}
 Cycle: {self.current_cycle} (verifying fixes from cycle {self.current_cycle - 1})
 
-Previous cycle claimed these issues were fixed:
+Claude Code claimed these issues were fixed:
 
 {issues_summary}
 
@@ -584,7 +649,7 @@ Verification Summary:
             cwd=str(self.project_path),
             allowed_tools=["Read", "Bash", "Glob", "Grep", "LS"],
             permission_mode="default",
-            max_turns=100,
+            max_turns=60,
         )
         
         # Get FULL context
@@ -764,10 +829,14 @@ This file contains issues for you to fix. For EACH issue:
 2. **Consult the context files** mentioned above for full understanding
 3. **Fix the code** according to the suggested fix
 4. **Update this file** in the "FIX STATUS" section with:
-   - ✅ What you changed
-   - 📁 Which files you modified
-   - 🧪 How you tested it
-   - ⚠️ Any concerns or limitations
+   - Status: ✅ Fixed
+   - Changes Made: [what you changed]
+   - Files Modified: [which files]
+   - Testing: [how you verified]
+   - Context Used: [which docs you referenced]
+
+**IMPORTANT:** Always update the FIX STATUS section with "Status: ✅ Fixed" when you complete each fix.
+This is how the cycle agent knows to verify your work in the next cycle.
 
 **Before fixing, read these context files:**
 ```bash
@@ -785,7 +854,9 @@ cat .helm/security/RLS_AUDIT.md
 
 **Format for documenting your fix:**
 ```markdown
-### ✅ FIXED: [Issue ID]
+### FIX STATUS: [Issue ID]
+
+**Status:** ✅ Fixed
 
 **Changes Made:**
 - Added loading state to dashboard
@@ -941,7 +1012,7 @@ async def main():
     import argparse
     
     parser = argparse.ArgumentParser(
-        description="Enhanced Helm Intelligence - Continuous Improvement Cycle with Full Context",
+        description="Enhanced Helm Intelligence - Continuous Improvement Cycle with Full Context + MD Parsing",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     

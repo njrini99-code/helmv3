@@ -1,0 +1,22 @@
+{
+  "cycle": 2,
+  "total_issues": 15,
+  "by_severity": {
+    "critical": 5,
+    "high": 6,
+    "medium": 3,
+    "low": 0
+  },
+  "by_platform": {
+    "unknown": 14,
+    "baseballhelm|golfhelm|helm": 1
+  },
+  "by_source": {
+    "overnight_actions": 5,
+    "overnight_issues": 6,
+    "feature_check": 3,
+    "comprehensive_scan": 1
+  },
+  "verified_from_previous": 5,
+  "new_issues_found": 4
+}

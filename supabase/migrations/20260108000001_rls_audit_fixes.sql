@@ -177,18 +177,21 @@ AS $$
 $$;
 
 -- Policy: Players can view their own putt details
+DROP POLICY IF EXISTS "putt_details_select_own" ON putt_details;
 CREATE POLICY "putt_details_select_own"
 ON putt_details FOR SELECT
 TO authenticated
 USING (public.user_owns_shot(shot_id));
 
 -- Policy: Players can insert their own putt details
+DROP POLICY IF EXISTS "putt_details_insert_own" ON putt_details;
 CREATE POLICY "putt_details_insert_own"
 ON putt_details FOR INSERT
 TO authenticated
 WITH CHECK (public.user_owns_shot(shot_id));
 
 -- Policy: Players can update their own putt details
+DROP POLICY IF EXISTS "putt_details_update_own" ON putt_details;
 CREATE POLICY "putt_details_update_own"
 ON putt_details FOR UPDATE
 TO authenticated
@@ -196,6 +199,7 @@ USING (public.user_owns_shot(shot_id))
 WITH CHECK (public.user_owns_shot(shot_id));
 
 -- Policy: Players can delete their own putt details
+DROP POLICY IF EXISTS "putt_details_delete_own" ON putt_details;
 CREATE POLICY "putt_details_delete_own"
 ON putt_details FOR DELETE
 TO authenticated

@@ -10,16 +10,31 @@
 -- ============================================================================
 
 -- Re-enable RLS on all golf tables disabled in migrations 061/062
-ALTER TABLE golf_organizations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE golf_teams ENABLE ROW LEVEL SECURITY;
-ALTER TABLE golf_rounds ENABLE ROW LEVEL SECURITY;
-ALTER TABLE golf_shots ENABLE ROW LEVEL SECURITY;
-ALTER TABLE golf_courses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE golf_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE golf_players ENABLE ROW LEVEL SECURITY;
-ALTER TABLE golf_coaches ENABLE ROW LEVEL SECURITY;
-ALTER TABLE golf_team_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE golf_event_participants ENABLE ROW LEVEL SECURITY;
+-- Use DO blocks to handle tables that may not exist
+
+DO $$ BEGIN
+  -- Core golf tables (these should all exist)
+  EXECUTE 'ALTER TABLE golf_organizations ENABLE ROW LEVEL SECURITY';
+  EXECUTE 'ALTER TABLE golf_teams ENABLE ROW LEVEL SECURITY';
+  EXECUTE 'ALTER TABLE golf_rounds ENABLE ROW LEVEL SECURITY';
+  EXECUTE 'ALTER TABLE golf_shots ENABLE ROW LEVEL SECURITY';
+  EXECUTE 'ALTER TABLE golf_courses ENABLE ROW LEVEL SECURITY';
+  EXECUTE 'ALTER TABLE golf_events ENABLE ROW LEVEL SECURITY';
+  EXECUTE 'ALTER TABLE golf_players ENABLE ROW LEVEL SECURITY';
+  EXECUTE 'ALTER TABLE golf_coaches ENABLE ROW LEVEL SECURITY';
+EXCEPTION WHEN undefined_table THEN
+  RAISE NOTICE 'Some core golf tables do not exist, continuing...';
+END $$;
+
+-- Optional tables that may not exist
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'golf_event_participants') THEN
+    ALTER TABLE golf_event_participants ENABLE ROW LEVEL SECURITY;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'golf_team_members') THEN
+    ALTER TABLE golf_team_members ENABLE ROW LEVEL SECURITY;
+  END IF;
+END $$;
 
 COMMENT ON TABLE golf_organizations IS 'RLS re-enabled 2026-01-08 - properly secured with team scoping';
 COMMENT ON TABLE golf_teams IS 'RLS re-enabled 2026-01-08 - properly secured with team scoping';
@@ -60,7 +75,7 @@ CREATE POLICY "golf_organizations_insert_coaches"
 ON golf_organizations FOR INSERT
 TO authenticated
 WITH CHECK (
-  auth.uid() IN (SELECT user_id FROM users WHERE role = 'coach')
+  auth.uid() IN (SELECT id FROM users WHERE role = 'coach')
 );
 
 -- UPDATE: Only coaches from the organization can update it
@@ -108,7 +123,7 @@ CREATE POLICY "golf_teams_insert_coaches"
 ON golf_teams FOR INSERT
 TO authenticated
 WITH CHECK (
-  auth.uid() IN (SELECT user_id FROM users WHERE role = 'coach')
+  auth.uid() IN (SELECT id FROM users WHERE role = 'coach')
 );
 
 -- UPDATE: Coaches can update their team

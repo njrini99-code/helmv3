@@ -97,10 +97,10 @@ class MultiPlatformOrchestrator:
         
         # Import here to use the enhanced agent
         sys.path.insert(0, str(Path(__file__).parent))
-        from enhanced_cycle_agent import EnhancedCycleAgent
+        from working_cycle_agent import WorkingCycleAgent
         
         try:
-            agent = EnhancedCycleAgent(str(self.project_path), platform)
+            agent = WorkingCycleAgent(str(self.project_path), platform)
             await agent.run_cycle(mode=mode)
             return True, None
         except Exception as e:

@@ -3,6 +3,16 @@
 -- Pattern mining, causal discovery, predictions, and learning tables
 -- ============================================================================
 
+-- Drop existing tables (they were created with incomplete schemas)
+-- These are AI/analytics tables, not user data - safe to recreate
+DROP TABLE IF EXISTS golf_validations CASCADE;
+DROP TABLE IF EXISTS golf_predictions CASCADE;
+DROP TABLE IF EXISTS golf_confidence_calibration CASCADE;
+DROP TABLE IF EXISTS golf_global_patterns CASCADE;
+DROP TABLE IF EXISTS golf_learned_behavior CASCADE;
+DROP TABLE IF EXISTS golf_causal_relationships CASCADE;
+DROP TABLE IF EXISTS golf_patterns_v2 CASCADE;
+
 -- Pattern storage (V2 - multi-dimensional mining)
 CREATE TABLE IF NOT EXISTS golf_patterns_v2 (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

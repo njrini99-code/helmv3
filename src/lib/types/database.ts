@@ -755,6 +755,39 @@ export type Database = {
           },
         ]
       }
+      function_audit_log: {
+        Row: {
+          called_at: string | null
+          called_by: string | null
+          error: string | null
+          execution_time_ms: number | null
+          function_name: string
+          id: string
+          input_params: Json | null
+          output_result: Json | null
+        }
+        Insert: {
+          called_at?: string | null
+          called_by?: string | null
+          error?: string | null
+          execution_time_ms?: number | null
+          function_name: string
+          id?: string
+          input_params?: Json | null
+          output_result?: Json | null
+        }
+        Update: {
+          called_at?: string | null
+          called_by?: string | null
+          error?: string | null
+          execution_time_ms?: number | null
+          function_name?: string
+          id?: string
+          input_params?: Json | null
+          output_result?: Json | null
+        }
+        Relationships: []
+      }
       golf_academic_exclusions: {
         Row: {
           created_at: string | null
@@ -1246,69 +1279,66 @@ export type Database = {
         Row: {
           cause: string
           cause_metric: string | null
-          confidence: number
+          confidence: number | null
           confounders: Json | null
-          created_at: string
+          created_at: string | null
           dose_response: boolean | null
           effect: string
           effect_metric: string | null
           evidence: Json | null
           id: string
           intervention_potential: number | null
-          is_active: boolean | null
-          mechanism: string
+          mechanism: string | null
           player_id: string | null
-          relationship_type: string
-          strength: number
+          relationship_type: string | null
+          strength: number | null
           team_id: string | null
           temporal_lag_days: number | null
-          updated_at: string
+          updated_at: string | null
           validated_at: string | null
           validation_count: number | null
         }
         Insert: {
           cause: string
           cause_metric?: string | null
-          confidence: number
+          confidence?: number | null
           confounders?: Json | null
-          created_at?: string
+          created_at?: string | null
           dose_response?: boolean | null
           effect: string
           effect_metric?: string | null
           evidence?: Json | null
           id?: string
           intervention_potential?: number | null
-          is_active?: boolean | null
-          mechanism: string
+          mechanism?: string | null
           player_id?: string | null
-          relationship_type: string
-          strength: number
+          relationship_type?: string | null
+          strength?: number | null
           team_id?: string | null
           temporal_lag_days?: number | null
-          updated_at?: string
+          updated_at?: string | null
           validated_at?: string | null
           validation_count?: number | null
         }
         Update: {
           cause?: string
           cause_metric?: string | null
-          confidence?: number
+          confidence?: number | null
           confounders?: Json | null
-          created_at?: string
+          created_at?: string | null
           dose_response?: boolean | null
           effect?: string
           effect_metric?: string | null
           evidence?: Json | null
           id?: string
           intervention_potential?: number | null
-          is_active?: boolean | null
-          mechanism?: string
+          mechanism?: string | null
           player_id?: string | null
-          relationship_type?: string
-          strength?: number
+          relationship_type?: string | null
+          strength?: number | null
           team_id?: string | null
           temporal_lag_days?: number | null
-          updated_at?: string
+          updated_at?: string | null
           validated_at?: string | null
           validation_count?: number | null
         }
@@ -1802,34 +1832,43 @@ export type Database = {
       }
       golf_confidence_calibration: {
         Row: {
-          accurate_predictions: number
           actual_accuracy: number | null
+          bucket: number
           calibration_error: number | null
-          confidence_bucket: number
+          correct_count: number | null
+          created_at: string | null
           id: string
-          last_updated: string
+          last_recalibrated_at: string | null
           prediction_type: string
-          total_predictions: number
+          predictions_count: number | null
+          sample_size: number | null
+          updated_at: string | null
         }
         Insert: {
-          accurate_predictions?: number
           actual_accuracy?: number | null
+          bucket: number
           calibration_error?: number | null
-          confidence_bucket: number
+          correct_count?: number | null
+          created_at?: string | null
           id?: string
-          last_updated?: string
+          last_recalibrated_at?: string | null
           prediction_type: string
-          total_predictions?: number
+          predictions_count?: number | null
+          sample_size?: number | null
+          updated_at?: string | null
         }
         Update: {
-          accurate_predictions?: number
           actual_accuracy?: number | null
+          bucket?: number
           calibration_error?: number | null
-          confidence_bucket?: number
+          correct_count?: number | null
+          created_at?: string | null
           id?: string
-          last_updated?: string
+          last_recalibrated_at?: string | null
           prediction_type?: string
-          total_predictions?: number
+          predictions_count?: number | null
+          sample_size?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -2497,52 +2536,61 @@ export type Database = {
       }
       golf_global_patterns: {
         Row: {
-          applicable_to: Json | null
+          average_impact: number | null
           conditions: Json
-          confidence: number
-          created_at: string
+          confidence: number | null
+          created_at: string | null
           id: string
-          is_active: boolean | null
+          instance_count: number | null
+          is_universal: boolean | null
+          metadata: Json | null
           outcome: Json
           pattern_type: string
-          player_count: number
-          stroke_impact_avg: number | null
-          stroke_impact_stddev: number | null
-          support: number
-          total_observations: number
-          updated_at: string
+          player_count: number | null
+          prevalence: number | null
+          signature: string
+          updated_at: string | null
+          varied_by_handicap: Json | null
+          varied_by_style: Json | null
+          varied_by_tier: Json | null
         }
         Insert: {
-          applicable_to?: Json | null
+          average_impact?: number | null
           conditions?: Json
-          confidence: number
-          created_at?: string
+          confidence?: number | null
+          created_at?: string | null
           id?: string
-          is_active?: boolean | null
-          outcome: Json
+          instance_count?: number | null
+          is_universal?: boolean | null
+          metadata?: Json | null
+          outcome?: Json
           pattern_type: string
-          player_count?: number
-          stroke_impact_avg?: number | null
-          stroke_impact_stddev?: number | null
-          support: number
-          total_observations?: number
-          updated_at?: string
+          player_count?: number | null
+          prevalence?: number | null
+          signature: string
+          updated_at?: string | null
+          varied_by_handicap?: Json | null
+          varied_by_style?: Json | null
+          varied_by_tier?: Json | null
         }
         Update: {
-          applicable_to?: Json | null
+          average_impact?: number | null
           conditions?: Json
-          confidence?: number
-          created_at?: string
+          confidence?: number | null
+          created_at?: string | null
           id?: string
-          is_active?: boolean | null
+          instance_count?: number | null
+          is_universal?: boolean | null
+          metadata?: Json | null
           outcome?: Json
           pattern_type?: string
-          player_count?: number
-          stroke_impact_avg?: number | null
-          stroke_impact_stddev?: number | null
-          support?: number
-          total_observations?: number
-          updated_at?: string
+          player_count?: number | null
+          prevalence?: number | null
+          signature?: string
+          updated_at?: string | null
+          varied_by_handicap?: Json | null
+          varied_by_style?: Json | null
+          varied_by_tier?: Json | null
         }
         Relationships: []
       }
@@ -2780,46 +2828,55 @@ export type Database = {
       }
       golf_learned_behavior: {
         Row: {
-          confidence: number | null
-          created_at: string
+          active_features: Json | null
+          content_preferences: Json | null
+          created_at: string | null
+          engagement_patterns: Json | null
+          engagement_score: number | null
           entity_id: string
           entity_type: string
-          first_observed: string
           id: string
-          last_observed: string
-          observation_count: number | null
-          preference_category: string
-          preference_key: string
-          preference_value: Json
-          updated_at: string
+          insight_feedback: Json | null
+          interaction_count: number | null
+          interactions: Json | null
+          last_interaction_at: string | null
+          learned_thresholds: Json | null
+          preferences: Json | null
+          updated_at: string | null
         }
         Insert: {
-          confidence?: number | null
-          created_at?: string
+          active_features?: Json | null
+          content_preferences?: Json | null
+          created_at?: string | null
+          engagement_patterns?: Json | null
+          engagement_score?: number | null
           entity_id: string
           entity_type: string
-          first_observed?: string
           id?: string
-          last_observed?: string
-          observation_count?: number | null
-          preference_category: string
-          preference_key: string
-          preference_value: Json
-          updated_at?: string
+          insight_feedback?: Json | null
+          interaction_count?: number | null
+          interactions?: Json | null
+          last_interaction_at?: string | null
+          learned_thresholds?: Json | null
+          preferences?: Json | null
+          updated_at?: string | null
         }
         Update: {
-          confidence?: number | null
-          created_at?: string
+          active_features?: Json | null
+          content_preferences?: Json | null
+          created_at?: string | null
+          engagement_patterns?: Json | null
+          engagement_score?: number | null
           entity_id?: string
           entity_type?: string
-          first_observed?: string
           id?: string
-          last_observed?: string
-          observation_count?: number | null
-          preference_category?: string
-          preference_key?: string
-          preference_value?: Json
-          updated_at?: string
+          insight_feedback?: Json | null
+          interaction_count?: number | null
+          interactions?: Json | null
+          last_interaction_at?: string | null
+          learned_thresholds?: Json | null
+          preferences?: Json | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -2863,68 +2920,68 @@ export type Database = {
         Row: {
           actionability: number | null
           conditions: Json
-          confidence: number
+          confidence: number | null
           conviction: number | null
-          created_at: string
-          first_detected: string
+          created_at: string | null
+          first_detected: string | null
           id: string
           is_active: boolean | null
-          last_occurrence: string
+          last_occurrence: string | null
           lift: number | null
           metadata: Json | null
-          occurrence_count: number
+          occurrence_count: number | null
           outcome: Json
           pattern_type: string
           player_id: string
           sample_size: number
-          stroke_impact: number
-          support: number
+          stroke_impact: number | null
+          support: number | null
           trend: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           actionability?: number | null
           conditions?: Json
-          confidence: number
+          confidence?: number | null
           conviction?: number | null
-          created_at?: string
-          first_detected?: string
+          created_at?: string | null
+          first_detected?: string | null
           id?: string
           is_active?: boolean | null
-          last_occurrence?: string
+          last_occurrence?: string | null
           lift?: number | null
           metadata?: Json | null
-          occurrence_count?: number
-          outcome: Json
+          occurrence_count?: number | null
+          outcome?: Json
           pattern_type: string
           player_id: string
-          sample_size: number
-          stroke_impact: number
-          support: number
+          sample_size?: number
+          stroke_impact?: number | null
+          support?: number | null
           trend?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           actionability?: number | null
           conditions?: Json
-          confidence?: number
+          confidence?: number | null
           conviction?: number | null
-          created_at?: string
-          first_detected?: string
+          created_at?: string | null
+          first_detected?: string | null
           id?: string
           is_active?: boolean | null
-          last_occurrence?: string
+          last_occurrence?: string | null
           lift?: number | null
           metadata?: Json | null
-          occurrence_count?: number
+          occurrence_count?: number | null
           outcome?: Json
           pattern_type?: string
           player_id?: string
           sample_size?: number
-          stroke_impact?: number
-          support?: number
+          stroke_impact?: number | null
+          support?: number | null
           trend?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -3810,70 +3867,85 @@ export type Database = {
       }
       golf_predictions: {
         Row: {
-          accuracy: number | null
           actual_value: number | null
           calibrated_confidence: number | null
-          confidence: number
-          created_at: string
+          confidence: number | null
+          confidence_interval: Json | null
+          context: Json | null
+          created_at: string | null
+          direction_correct: boolean | null
+          due_date: string | null
+          error_absolute: number | null
+          error_relative: number | null
+          features_snapshot: Json | null
           id: string
-          input_features: Json | null
-          key_drivers: Json | null
-          lower_bound: number | null
+          key_factors: Json | null
+          metric: string
           model_version: string | null
           player_id: string
-          predicted_value: number
-          prediction_horizon: string | null
+          predicted_range_high: number | null
+          predicted_range_low: number | null
+          predicted_value: number | null
           prediction_type: string
-          target_metric: string
-          trend: string | null
-          upper_bound: number | null
-          valid_from: string
-          valid_until: string | null
+          sensitivities: Json | null
+          target_round_id: string | null
           validated_at: string | null
+          was_correct: boolean | null
+          within_interval: boolean | null
         }
         Insert: {
-          accuracy?: number | null
           actual_value?: number | null
           calibrated_confidence?: number | null
-          confidence: number
-          created_at?: string
+          confidence?: number | null
+          confidence_interval?: Json | null
+          context?: Json | null
+          created_at?: string | null
+          direction_correct?: boolean | null
+          due_date?: string | null
+          error_absolute?: number | null
+          error_relative?: number | null
+          features_snapshot?: Json | null
           id?: string
-          input_features?: Json | null
-          key_drivers?: Json | null
-          lower_bound?: number | null
+          key_factors?: Json | null
+          metric: string
           model_version?: string | null
           player_id: string
-          predicted_value: number
-          prediction_horizon?: string | null
+          predicted_range_high?: number | null
+          predicted_range_low?: number | null
+          predicted_value?: number | null
           prediction_type: string
-          target_metric: string
-          trend?: string | null
-          upper_bound?: number | null
-          valid_from?: string
-          valid_until?: string | null
+          sensitivities?: Json | null
+          target_round_id?: string | null
           validated_at?: string | null
+          was_correct?: boolean | null
+          within_interval?: boolean | null
         }
         Update: {
-          accuracy?: number | null
           actual_value?: number | null
           calibrated_confidence?: number | null
-          confidence?: number
-          created_at?: string
+          confidence?: number | null
+          confidence_interval?: Json | null
+          context?: Json | null
+          created_at?: string | null
+          direction_correct?: boolean | null
+          due_date?: string | null
+          error_absolute?: number | null
+          error_relative?: number | null
+          features_snapshot?: Json | null
           id?: string
-          input_features?: Json | null
-          key_drivers?: Json | null
-          lower_bound?: number | null
+          key_factors?: Json | null
+          metric?: string
           model_version?: string | null
           player_id?: string
-          predicted_value?: number
-          prediction_horizon?: string | null
+          predicted_range_high?: number | null
+          predicted_range_low?: number | null
+          predicted_value?: number | null
           prediction_type?: string
-          target_metric?: string
-          trend?: string | null
-          upper_bound?: number | null
-          valid_from?: string
-          valid_until?: string | null
+          sensitivities?: Json | null
+          target_round_id?: string | null
           validated_at?: string | null
+          was_correct?: boolean | null
+          within_interval?: boolean | null
         }
         Relationships: [
           {
@@ -3903,6 +3975,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "player_putt_tendencies"
             referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "golf_predictions_target_round_id_fkey"
+            columns: ["target_round_id"]
+            isOneToOne: false
+            referencedRelation: "golf_rounds"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -4727,62 +4806,48 @@ export type Database = {
       }
       golf_validations: {
         Row: {
-          accuracy_score: number | null
-          actual_value: number | null
-          error_magnitude: number | null
+          absolute_error: number | null
+          actual_confidence_bucket: number | null
+          created_at: string | null
+          direction_correct: boolean | null
           id: string
-          insight_id: string | null
-          metadata: Json | null
-          pattern_id: string | null
-          predicted_value: number | null
-          prediction_id: string | null
-          validated_at: string
-          validation_type: string
-          was_accurate: boolean | null
+          learning_signals: Json | null
+          model_adjustments: Json | null
+          prediction_id: string
+          relative_error: number | null
+          stated_confidence: number | null
+          was_correct: boolean
+          within_confidence_interval: boolean | null
         }
         Insert: {
-          accuracy_score?: number | null
-          actual_value?: number | null
-          error_magnitude?: number | null
+          absolute_error?: number | null
+          actual_confidence_bucket?: number | null
+          created_at?: string | null
+          direction_correct?: boolean | null
           id?: string
-          insight_id?: string | null
-          metadata?: Json | null
-          pattern_id?: string | null
-          predicted_value?: number | null
-          prediction_id?: string | null
-          validated_at?: string
-          validation_type: string
-          was_accurate?: boolean | null
+          learning_signals?: Json | null
+          model_adjustments?: Json | null
+          prediction_id: string
+          relative_error?: number | null
+          stated_confidence?: number | null
+          was_correct: boolean
+          within_confidence_interval?: boolean | null
         }
         Update: {
-          accuracy_score?: number | null
-          actual_value?: number | null
-          error_magnitude?: number | null
+          absolute_error?: number | null
+          actual_confidence_bucket?: number | null
+          created_at?: string | null
+          direction_correct?: boolean | null
           id?: string
-          insight_id?: string | null
-          metadata?: Json | null
-          pattern_id?: string | null
-          predicted_value?: number | null
-          prediction_id?: string | null
-          validated_at?: string
-          validation_type?: string
-          was_accurate?: boolean | null
+          learning_signals?: Json | null
+          model_adjustments?: Json | null
+          prediction_id?: string
+          relative_error?: number | null
+          stated_confidence?: number | null
+          was_correct?: boolean
+          within_confidence_interval?: boolean | null
         }
         Relationships: [
-          {
-            foreignKeyName: "golf_validations_insight_id_fkey"
-            columns: ["insight_id"]
-            isOneToOne: false
-            referencedRelation: "golf_coach_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_validations_pattern_id_fkey"
-            columns: ["pattern_id"]
-            isOneToOne: false
-            referencedRelation: "golf_patterns_v2"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "golf_validations_prediction_id_fkey"
             columns: ["prediction_id"]
@@ -5872,6 +5937,7 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          notification_preferences: Json | null
           role: Database["public"]["Enums"]["user_role"]
           sport: string | null
           updated_at: string | null
@@ -5880,6 +5946,7 @@ export type Database = {
           created_at?: string | null
           email: string
           id: string
+          notification_preferences?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
           sport?: string | null
           updated_at?: string | null
@@ -5888,6 +5955,7 @@ export type Database = {
           created_at?: string | null
           email?: string
           id?: string
+          notification_preferences?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
           sport?: string | null
           updated_at?: string | null
@@ -5932,11 +6000,15 @@ export type Database = {
       }
       videos: {
         Row: {
+          clip_end_time: number | null
+          clip_start_time: number | null
           created_at: string | null
           description: string | null
           duration: number | null
           id: string
+          is_clip: boolean | null
           is_primary: boolean | null
+          parent_video_id: string | null
           player_id: string
           thumbnail_url: string | null
           title: string
@@ -5946,11 +6018,15 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          clip_end_time?: number | null
+          clip_start_time?: number | null
           created_at?: string | null
           description?: string | null
           duration?: number | null
           id?: string
+          is_clip?: boolean | null
           is_primary?: boolean | null
+          parent_video_id?: string | null
           player_id: string
           thumbnail_url?: string | null
           title: string
@@ -5960,11 +6036,15 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          clip_end_time?: number | null
+          clip_start_time?: number | null
           created_at?: string | null
           description?: string | null
           duration?: number | null
           id?: string
+          is_clip?: boolean | null
           is_primary?: boolean | null
+          parent_video_id?: string | null
           player_id?: string
           thumbnail_url?: string | null
           title?: string
@@ -5974,6 +6054,13 @@ export type Database = {
           view_count?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "videos_parent_video_id_fkey"
+            columns: ["parent_video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "videos_player_id_fkey"
             columns: ["player_id"]
@@ -6152,6 +6239,10 @@ export type Database = {
       }
     }
     Functions: {
+      are_users_on_same_roster: {
+        Args: { user1: string; user2: string }
+        Returns: boolean
+      }
       auto_resolve_conflict: {
         Args: { p_strategy?: string; p_sync_state_id: string }
         Returns: boolean
@@ -6181,6 +6272,10 @@ export type Database = {
             Returns: number
           }
         | { Args: { player_id_param: string }; Returns: number }
+      can_users_message: {
+        Args: { recipient_uuid: string; sender_uuid: string }
+        Returns: boolean
+      }
       can_view_golf_player: { Args: { player_uuid: string }; Returns: boolean }
       check_player_availability: {
         Args: {
@@ -6293,6 +6388,18 @@ export type Database = {
       get_golf_coach_team_id: { Args: never; Returns: string }
       get_golf_player_id: { Args: never; Returns: string }
       get_golf_player_team_id: { Args: never; Returns: string }
+      get_player_active_patterns: {
+        Args: { p_player_id: string }
+        Returns: {
+          conditions: Json
+          confidence: number
+          id: string
+          outcome: Json
+          pattern_type: string
+          stroke_impact: number
+          trend: string
+        }[]
+      }
       get_player_engagement_summary: {
         Args: { p_days?: number; p_player_id: string }
         Returns: {
@@ -6356,6 +6463,10 @@ export type Database = {
       get_user_golf_team_id: { Args: never; Returns: string }
       get_user_team_ids: { Args: never; Returns: string[] }
       increment_video_view: { Args: { vid_id: string }; Returns: undefined }
+      is_coachhelm_enabled_for_user: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       is_golf_coach_of_team: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_player_of_team: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_member: { Args: { team_uuid: string }; Returns: boolean }
@@ -6364,6 +6475,18 @@ export type Database = {
       needs_sync: {
         Args: { p_external_calendar_id: string; p_golf_event_id: string }
         Returns: boolean
+      }
+      record_prediction: {
+        Args: {
+          p_confidence: number
+          p_context?: Json
+          p_due_date?: string
+          p_metric: string
+          p_player_id: string
+          p_predicted_value: number
+          p_prediction_type: string
+        }
+        Returns: string
       }
       record_profile_view:
         | {
@@ -6381,11 +6504,16 @@ export type Database = {
           }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      update_calibration: { Args: never; Returns: undefined }
       user_is_in_conversation: {
         Args: { conv_id: string; user_id_to_check: string }
         Returns: boolean
       }
       user_owns_shot: { Args: { shot_uuid: string }; Returns: boolean }
+      validate_prediction: {
+        Args: { p_actual_value: number; p_prediction_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       coach_type: "college" | "high_school" | "juco" | "showcase"
