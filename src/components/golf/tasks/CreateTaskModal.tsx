@@ -54,9 +54,9 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
 
       if (!coach) throw new Error('Coach not found');
 
-      // Create task
-      const { data: task, error: taskError } = await supabase
-        .from('golf_tasks' as never)
+      // Create task - cast to any to break type inference chain
+      const taskResult = await (supabase
+        .from('golf_tasks' as any)
         .insert({
           team_id: teamId,
           created_by: coach.id,
@@ -66,9 +66,12 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           status: 'active'
         })
         .select()
-        .single() as unknown as { data: { id: string } | null; error: { message?: string } | null };
+        .single()) as unknown as { data: { id: string } | null; error: { message?: string } | null };
+      
+      const { data: task, error: taskError } = taskResult;
 
       if (taskError) throw taskError;
+      if (!task || !task.id) throw new Error('Failed to create task: no task ID returned');
 
       // Assign to players
       const playerIds = assignToAll ? players.map(p => p.id) : selectedPlayers;
@@ -79,9 +82,12 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
         assigned_at: new Date().toISOString()
       }));
 
-      const { error: assignError } = await supabase
-        .from('golf_task_assignments' as never)
-        .insert(assignments) as unknown as { error: { message?: string } | null };
+      // Cast to any to break type inference chain
+      const assignResult = await (supabase
+        .from('golf_task_assignments' as any)
+        .insert(assignments)) as unknown as { error: { message?: string } | null };
+      
+      const { error: assignError } = assignResult;
 
       if (assignError) throw assignError;
 
