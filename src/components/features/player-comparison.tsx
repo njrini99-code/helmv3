@@ -217,7 +217,7 @@ export function PlayerComparison({
       const comparisonData: ComparisonData = {
         players: players.map(p => ({
           playerId: p.id,
-          name: getFullName(p),
+          name: getFullName(p.first_name, p.last_name),
           position: p.position || 'Unknown',
           gradYear: p.grad_year || new Date().getFullYear(),
           stats: {
