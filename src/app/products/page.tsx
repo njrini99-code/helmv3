@@ -4,10 +4,7 @@ import { useState } from 'react'
 import { SplitFlapIntro } from '@/components/products/SplitFlapIntro'
 import { Navigation } from '@/components/landing/Navigation'
 import { Footer } from '@/components/landing/Footer'
-import { 
-  Flag, Trophy, Brain, Sparkles, TrendingUp, Check, ChevronRight,
-  ArrowRight, Monitor, Tablet, Smartphone, Zap, Database, GripVertical
-} from 'lucide-react'
+import { Check } from 'lucide-react'
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import Link from 'next/link'
