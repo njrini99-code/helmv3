@@ -51,7 +51,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
   const handleSave = () => {
     const rule: RecurrenceRule = {
       frequency,
-      interval: interval > 1 ? interval : undefined,
+      interval: (interval ?? 1) > 1 ? interval : undefined,
       byDay: frequency === 'weekly' && byDay.length > 0 ? byDay : undefined,
     };
 
@@ -240,7 +240,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
           <span className="font-medium">Preview: </span>
           {describeRecurrence({
             frequency,
-            interval: interval > 1 ? interval : undefined,
+            interval: (interval ?? 1) > 1 ? interval : undefined,
             byDay: frequency === 'weekly' && byDay.length > 0 ? byDay : undefined,
             until: endType === 'on' && until ? until : undefined,
             count: endType === 'after' && count > 0 ? count : undefined,
