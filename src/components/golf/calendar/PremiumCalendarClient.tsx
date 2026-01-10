@@ -129,7 +129,7 @@ export function PremiumCalendarClient({
 
       if (result.success && result.data) {
         // Keep as ISO strings for BusyPeriod interface
-        const rawPeriods = result.data as Array<Record<string, unknown> & { start: string; end: string }>;
+        const rawPeriods = result.data as unknown as Array<Record<string, unknown> & { start: string; end: string }>;
         const periods = rawPeriods.map((p) => ({
           ...p,
           start: p.start,
@@ -177,7 +177,7 @@ export function PremiumCalendarClient({
 
       if (result.success && result.data) {
         // Keep as ISO strings for BusyPeriod interface
-        const rawPeriods = result.data as Array<Record<string, unknown> & { start: string; end: string }>;
+        const rawPeriods = result.data as unknown as Array<Record<string, unknown> & { start: string; end: string }>;
         const periods = rawPeriods.map((p) => ({
           ...p,
           start: p.start,

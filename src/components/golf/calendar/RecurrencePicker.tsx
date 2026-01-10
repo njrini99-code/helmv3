@@ -9,8 +9,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { RecurrenceRule } from '@/lib/types/calendar';
@@ -39,7 +38,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
 
   // Local state for building the rule
   const [frequency, setFrequency] = useState<RecurrenceRule['frequency']>(value?.frequency || 'weekly');
-  const [interval, setInterval] = useState(value?.interval || 1);
+  const [interval, setInterval] = useState<number>(value?.interval || 1);
   const [byDay, setByDay] = useState<string[]>(value?.byDay || []);
   const [endType, setEndType] = useState<EndType>(() => {
     if (value?.until) return 'on';
@@ -85,7 +84,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
   if (!isOpen) {
     return (
       <div className="space-y-2">
-        <Label>Recurrence</Label>
+        <label className="text-sm font-medium text-slate-700">Recurrence</label>
         <Button
           type="button"
           variant="secondary"
@@ -101,7 +100,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
   return (
     <div className="space-y-4 p-4 border border-slate-200 rounded-lg bg-white">
       <div className="flex items-center justify-between">
-        <Label className="text-base font-semibold">Repeat Pattern</Label>
+        <label className="text-base font-semibold text-slate-700">Repeat Pattern</label>
         <Button
           type="button"
           variant="ghost"
@@ -114,7 +113,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
 
       {/* Frequency */}
       <div className="grid grid-cols-[auto_1fr] gap-3 items-center">
-        <Label className="text-sm">Repeat every</Label>
+        <label className="text-sm text-slate-700">Repeat every</label>
         <div className="flex gap-2">
           <Input
             type="number"
@@ -126,33 +125,22 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
           />
           <Select
             value={frequency}
-            onValueChange={(value) => setFrequency(value as RecurrenceRule['frequency'])}
-          >
-            <SelectTrigger className="flex-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">
-                {interval === 1 ? 'Day' : 'Days'}
-              </SelectItem>
-              <SelectItem value="weekly">
-                {interval === 1 ? 'Week' : 'Weeks'}
-              </SelectItem>
-              <SelectItem value="monthly">
-                {interval === 1 ? 'Month' : 'Months'}
-              </SelectItem>
-              <SelectItem value="yearly">
-                {interval === 1 ? 'Year' : 'Years'}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+            onChange={(value) => setFrequency(value as RecurrenceRule['frequency'])}
+            options={[
+              { value: 'daily', label: interval === 1 ? 'Day' : 'Days' },
+              { value: 'weekly', label: interval === 1 ? 'Week' : 'Weeks' },
+              { value: 'monthly', label: interval === 1 ? 'Month' : 'Months' },
+              { value: 'yearly', label: interval === 1 ? 'Year' : 'Years' },
+            ]}
+            className="flex-1"
+          />
         </div>
       </div>
 
       {/* Weekday selection (for weekly) */}
       {frequency === 'weekly' && (
         <div className="space-y-2">
-          <Label className="text-sm">Repeat on</Label>
+          <label className="text-sm text-slate-700">Repeat on</label>
           <div className="flex gap-2">
             {WEEKDAYS.map((day) => (
               <button
@@ -183,18 +171,18 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
 
       {/* End condition */}
       <div className="space-y-3">
-        <Label className="text-sm">Ends</Label>
+        <label className="text-sm text-slate-700">Ends</label>
 
         {/* Never */}
         <div className="flex items-center gap-2">
           <Checkbox
             id="end-never"
             checked={endType === 'never'}
-            onCheckedChange={() => setEndType('never')}
+            onChange={() => setEndType('never')}
           />
-          <Label htmlFor="end-never" className="font-normal cursor-pointer">
+          <label htmlFor="end-never" className="font-normal cursor-pointer text-sm text-slate-700">
             Never
-          </Label>
+          </label>
         </div>
 
         {/* On date */}
@@ -202,11 +190,11 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
           <Checkbox
             id="end-on"
             checked={endType === 'on'}
-            onCheckedChange={() => setEndType('on')}
+            onChange={() => setEndType('on')}
           />
-          <Label htmlFor="end-on" className="font-normal cursor-pointer">
+          <label htmlFor="end-on" className="font-normal cursor-pointer text-sm text-slate-700">
             On
-          </Label>
+          </label>
           <Input
             type="date"
             value={until}
@@ -225,11 +213,11 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
           <Checkbox
             id="end-after"
             checked={endType === 'after'}
-            onCheckedChange={() => setEndType('after')}
+            onChange={() => setEndType('after')}
           />
-          <Label htmlFor="end-after" className="font-normal cursor-pointer">
+          <label htmlFor="end-after" className="font-normal cursor-pointer text-sm text-slate-700">
             After
-          </Label>
+          </label>
           <Input
             type="number"
             min="1"

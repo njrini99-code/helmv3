@@ -12,8 +12,7 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+// RadioGroup and Label components not available - using standard HTML
 import type { RecurringEditScope } from '@/app/golf/actions/recurring-events';
 import { Calendar, CalendarDays, CalendarRange } from 'lucide-react';
 
@@ -63,14 +62,18 @@ export function RecurrenceEditDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <RadioGroup
-            value={scope}
-            onValueChange={(value) => setScope(value as RecurringEditScope)}
-          >
+          <div className="space-y-2">
             {/* This event only */}
-            <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
-              <RadioGroupItem value="this" id="scope-this" className="mt-1" />
-              <Label htmlFor="scope-this" className="flex-1 cursor-pointer">
+            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+              <input
+                type="radio"
+                name="scope"
+                value="this"
+                checked={scope === 'this'}
+                onChange={(e) => setScope(e.target.value as RecurringEditScope)}
+                className="mt-1"
+              />
+              <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <Calendar className="h-4 w-4 text-slate-400" />
                   <span className="font-medium">This event only</span>
@@ -79,13 +82,20 @@ export function RecurrenceEditDialog({
                   {action === 'edit' ? 'Edit' : 'Delete'} only the event on{' '}
                   {formatDate(originalDate)}
                 </p>
-              </Label>
-            </div>
+              </div>
+            </label>
 
             {/* This and future events */}
-            <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
-              <RadioGroupItem value="thisAndFuture" id="scope-future" className="mt-1" />
-              <Label htmlFor="scope-future" className="flex-1 cursor-pointer">
+            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+              <input
+                type="radio"
+                name="scope"
+                value="thisAndFuture"
+                checked={scope === 'thisAndFuture'}
+                onChange={(e) => setScope(e.target.value as RecurringEditScope)}
+                className="mt-1"
+              />
+              <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <CalendarRange className="h-4 w-4 text-slate-400" />
                   <span className="font-medium">This and future events</span>
@@ -93,13 +103,20 @@ export function RecurrenceEditDialog({
                 <p className="text-sm text-slate-500">
                   {action === 'edit' ? 'Edit' : 'Delete'} this event and all future occurrences
                 </p>
-              </Label>
-            </div>
+              </div>
+            </label>
 
             {/* All events */}
-            <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
-              <RadioGroupItem value="all" id="scope-all" className="mt-1" />
-              <Label htmlFor="scope-all" className="flex-1 cursor-pointer">
+            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+              <input
+                type="radio"
+                name="scope"
+                value="all"
+                checked={scope === 'all'}
+                onChange={(e) => setScope(e.target.value as RecurringEditScope)}
+                className="mt-1"
+              />
+              <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <CalendarDays className="h-4 w-4 text-slate-400" />
                   <span className="font-medium">All events in the series</span>
@@ -107,9 +124,9 @@ export function RecurrenceEditDialog({
                 <p className="text-sm text-slate-500">
                   {action === 'edit' ? 'Edit' : 'Delete'} all occurrences of this recurring event
                 </p>
-              </Label>
-            </div>
-          </RadioGroup>
+              </div>
+            </label>
+          </div>
         </div>
 
         <div className="flex gap-3">
