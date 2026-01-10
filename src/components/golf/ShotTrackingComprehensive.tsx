@@ -354,7 +354,7 @@ export default function ShotTrackingComprehensive({
       const needsMissDirection =
         (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot)) ||
         (isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot)) ||
-        (isPutting && resultOfShot !== 'hole' && resultOfShot !== null);
+        (isPutting && resultOfShot !== null);
 
       // Only auto-focus distance if miss direction not needed OR already filled
       if (!needsMissDirection || missDirection) {
