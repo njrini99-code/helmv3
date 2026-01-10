@@ -30,7 +30,7 @@ function getValue(obj: Record<string, unknown>, path: string): StatValue {
       return (acc as Record<string, unknown>)[key] as StatValue;
     }
     return undefined;
-  }, obj);
+  }, obj as StatValue);
 }
 
 // ============================================
