@@ -255,7 +255,7 @@ export async function createCalendarFeed(
         calendar_feed_token: token,
       })
       .eq('id', coach.id)
-      .select('id, full_name, calendar_feed_token, calendar_feed_enabled, created_at')
+      .select('id, full_name, team_id, calendar_feed_token, calendar_feed_enabled, created_at')
       .single();
 
     if (error || !updatedCoach?.calendar_feed_token) {
@@ -269,7 +269,7 @@ export async function createCalendarFeed(
         token: updatedCoach.calendar_feed_token,
         role,
         id: `coach:${updatedCoach.id}`,
-        name: formatPersonalName(role, updatedCoach, null),
+        name: formatPersonalName(role, updatedCoach as CoachRecord, null),
         createdAt: updatedCoach.created_at,
       }),
     };
@@ -284,7 +284,7 @@ export async function createCalendarFeed(
         calendar_feed_token: token,
       })
       .eq('id', player.id)
-      .select('id, first_name, last_name, calendar_feed_token, calendar_feed_enabled, created_at')
+      .select('id, first_name, last_name, team_id, calendar_feed_token, calendar_feed_enabled, created_at')
       .single();
 
     if (error || !updatedPlayer?.calendar_feed_token) {
@@ -298,7 +298,7 @@ export async function createCalendarFeed(
         token: updatedPlayer.calendar_feed_token,
         role,
         id: `player:${updatedPlayer.id}`,
-        name: formatPersonalName(role, null, updatedPlayer),
+        name: formatPersonalName(role, null, updatedPlayer as PlayerRecord),
         createdAt: updatedPlayer.created_at,
       }),
     };
@@ -360,7 +360,7 @@ export async function regenerateCalendarFeed(type: FeedType): Promise<ActionResu
         calendar_feed_enabled: true,
       })
       .eq('id', coach.id)
-      .select('id, full_name, calendar_feed_token, calendar_feed_enabled, created_at')
+      .select('id, full_name, team_id, calendar_feed_token, calendar_feed_enabled, created_at')
       .single();
 
     if (error || !updatedCoach?.calendar_feed_token) {
@@ -374,7 +374,7 @@ export async function regenerateCalendarFeed(type: FeedType): Promise<ActionResu
         token: updatedCoach.calendar_feed_token,
         role,
         id: `coach:${updatedCoach.id}`,
-        name: formatPersonalName(role, updatedCoach, null),
+        name: formatPersonalName(role, updatedCoach as CoachRecord, null),
         createdAt: updatedCoach.created_at,
       }),
     };
@@ -388,7 +388,7 @@ export async function regenerateCalendarFeed(type: FeedType): Promise<ActionResu
         calendar_feed_enabled: true,
       })
       .eq('id', player.id)
-      .select('id, first_name, last_name, calendar_feed_token, calendar_feed_enabled, created_at')
+      .select('id, first_name, last_name, team_id, calendar_feed_token, calendar_feed_enabled, created_at')
       .single();
 
     if (error || !updatedPlayer?.calendar_feed_token) {
@@ -402,7 +402,7 @@ export async function regenerateCalendarFeed(type: FeedType): Promise<ActionResu
         token: updatedPlayer.calendar_feed_token,
         role,
         id: `player:${updatedPlayer.id}`,
-        name: formatPersonalName(role, null, updatedPlayer),
+        name: formatPersonalName(role, null, updatedPlayer as PlayerRecord),
         createdAt: updatedPlayer.created_at,
       }),
     };
