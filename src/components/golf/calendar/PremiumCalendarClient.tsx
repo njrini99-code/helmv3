@@ -41,10 +41,10 @@ export interface CalendarActionHandlers {
   deleteEvent: (id: string) => CalendarActionResult<unknown>;
 }
 
-// Default golf action handlers
+// Default golf action handlers - wrap to match CalendarActionHandlers signature
 const defaultActionHandlers: CalendarActionHandlers = {
-  createEvent: createGolfEvent,
-  updateEvent: updateGolfEvent,
+  createEvent: (data: unknown) => createGolfEvent(data as Parameters<typeof createGolfEvent>[0]),
+  updateEvent: (id: string, data: unknown) => updateGolfEvent(id, data as Parameters<typeof updateGolfEvent>[1]),
   deleteEvent: deleteGolfEvent,
 };
 
@@ -81,10 +81,10 @@ export function PremiumCalendarClient({
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   // Coach busy periods (always for current coach)
-  const [coachBusyPeriods, setCoachBusyPeriods] = useState<Array<Record<string, unknown> & { start: Date; end: Date; ownerType?: 'coach' | 'player' }>>([]);
+  const [coachBusyPeriods, setCoachBusyPeriods] = useState<Array<Record<string, unknown> & { start: string; end: string; ownerType?: 'coach' | 'player' }>>([]);
 
   // Player busy periods (only when player is selected)
-  const [playerBusyPeriods, setPlayerBusyPeriods] = useState<Array<Record<string, unknown> & { start: Date; end: Date }>>([]);
+  const [playerBusyPeriods, setPlayerBusyPeriods] = useState<Array<Record<string, unknown> & { start: string; end: string }>>([]);
 
   // Auto-switch to day view on mobile
   useEffect(() => {
@@ -128,13 +128,14 @@ export function PremiumCalendarClient({
       );
 
       if (result.success && result.data) {
-        // Convert ISO strings to Date objects
+        // Keep as ISO strings for BusyPeriod interface
         const rawPeriods = result.data as Array<Record<string, unknown> & { start: string; end: string }>;
         const periods = rawPeriods.map((p) => ({
           ...p,
-          start: new Date(p.start),
-          end: new Date(p.end),
-        }));
+          start: p.start,
+          end: p.end,
+          type: (p.type as 'event' | 'class' | 'blocked') || 'event',
+        })) as Array<Record<string, unknown> & { start: string; end: string }>;
         setPlayerBusyPeriods(periods);
       }
     };
@@ -175,14 +176,15 @@ export function PremiumCalendarClient({
       );
 
       if (result.success && result.data) {
-        // Convert ISO strings to Date objects
+        // Keep as ISO strings for BusyPeriod interface
         const rawPeriods = result.data as Array<Record<string, unknown> & { start: string; end: string }>;
         const periods = rawPeriods.map((p) => ({
           ...p,
-          start: new Date(p.start),
-          end: new Date(p.end),
+          start: p.start,
+          end: p.end,
+          type: (p.type as 'event' | 'class' | 'blocked') || 'event',
           ownerType: isCoach ? 'coach' : 'player',
-        }));
+        })) as Array<Record<string, unknown> & { start: string; end: string; ownerType?: 'coach' | 'player' }>;
         setCoachBusyPeriods(periods);
       }
     };
@@ -520,8 +522,8 @@ export function PremiumCalendarClient({
               <div className="flex-1 overflow-y-auto p-6 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
                 <AvailabilityDayView
                   date={currentDate}
-                  coachBusyPeriods={coachBusyPeriods}
-                  playerBusyPeriods={playerBusyPeriods}
+                  coachBusyPeriods={coachBusyPeriods as unknown as import('./AvailabilityDayView').BusyPeriod[]}
+                  playerBusyPeriods={playerBusyPeriods as unknown as import('./AvailabilityDayView').BusyPeriod[]}
                   selectedPlayer={selectedPlayer}
                   onTimeSlotClick={handleTimeSlotClick}
                 />
@@ -534,7 +536,7 @@ export function PremiumCalendarClient({
                     events={filteredEvents}
                     onEventClick={handleEventClick}
                     isDraggable={true}
-                    playerBusyPeriods={selectedPlayer ? playerBusyPeriods : []}
+                    playerBusyPeriods={selectedPlayer ? (playerBusyPeriods as unknown as import('./WeekView').BusyPeriod[]) : []}
                     selectedPlayerName={selectedPlayer ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}` : undefined}
                   />
                 )}

@@ -241,7 +241,7 @@ export function DataTable<T extends Record<string, unknown>>({
                     column.align === 'right' && 'text-right',
                   )}
                 >
-                  {getCellValue(row, column)}
+                  {getCellValue(row, column) as React.ReactNode}
                 </div>
               ))}
 

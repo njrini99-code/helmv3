@@ -49,7 +49,7 @@ export function CalendarFeedManager({
   const [filterType, setFilterType] = useState<FeedType | 'all'>('all');
   const [loading, setLoading] = useState(false);
   const allowedTypeList = useMemo(
-    () => allowedTypes ?? ['team', 'personal', 'tournament', 'all_events'],
+    () => allowedTypes ?? (['team', 'personal', 'tournament', 'all_events'] as FeedType[]),
     [allowedTypes]
   );
 

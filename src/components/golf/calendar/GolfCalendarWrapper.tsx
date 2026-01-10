@@ -70,7 +70,7 @@ export function GolfCalendarWrapper({
       setFeedsError('Only coaches can manage team feeds');
       throw new Error('Only coaches can manage team feeds');
     }
-    const result = await createCalendarFeed(type);
+    const result = await createCalendarFeed(type as 'team' | 'personal');
     if (!result.success || !result.data) {
       setFeedsError(result.error || 'Failed to create feed');
       throw new Error(result.error || 'Failed to create feed');
@@ -78,10 +78,10 @@ export function GolfCalendarWrapper({
     setFeeds((prev) => {
       const existingIndex = prev.findIndex((feed) => feed.type === type);
       if (existingIndex === -1) {
-        return [...prev, result.data];
+        return [...prev, result.data!];
       }
       const next = [...prev];
-      next[existingIndex] = result.data;
+      next[existingIndex] = result.data!;
       return next;
     });
     return result.data;
@@ -95,12 +95,12 @@ export function GolfCalendarWrapper({
       return;
     }
 
-    const result = await regenerateCalendarFeed(target.type);
+    const result = await regenerateCalendarFeed(target.type as 'team' | 'personal');
     if (!result.success || !result.data) {
       setFeedsError(result.error || 'Failed to regenerate feed');
       throw new Error(result.error || 'Failed to regenerate feed');
     }
-    setFeeds((prev) => prev.map((feed) => (feed.id === feedId ? result.data : feed)));
+    setFeeds((prev) => prev.map((feed) => (feed.id === feedId ? result.data! : feed)));
   }, [feeds, canManageTeamFeed]);
 
   const handleDeleteFeed = useCallback(async (feedId: string) => {
@@ -111,7 +111,7 @@ export function GolfCalendarWrapper({
       return;
     }
 
-    const result = await deleteCalendarFeed(target.type);
+    const result = await deleteCalendarFeed(target.type as 'team' | 'personal');
     if (!result.success) {
       setFeedsError(result.error || 'Failed to disable feed');
       throw new Error(result.error || 'Failed to disable feed');
