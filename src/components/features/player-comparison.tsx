@@ -229,7 +229,7 @@ export function PlayerComparison({
           },
         })),
         metrics: statComparisons.map(stat => ({
-          key: stat.key || stat.label.toLowerCase().replace(/\s+/g, '_'),
+          key: stat.label.toLowerCase().replace(/\s+/g, '_'),
           label: stat.label,
           values: players.reduce((acc, p) => {
             const value = stat.getValue(p);
