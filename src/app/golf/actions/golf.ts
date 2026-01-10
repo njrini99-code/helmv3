@@ -2895,7 +2895,6 @@ export async function getNextQualifierRoundNumber(
     }
 
     // Get completed rounds for this player in this qualifier
-    // @ts-expect-error - qualifier_round_number column not in generated types
     const completedRoundsResult = await supabase
       .from('golf_rounds')
       .select('qualifier_round_number')
@@ -3002,7 +3001,6 @@ export async function getQualifierLeaderboard(
       .maybeSingle();
 
     // Get all entries with player info
-    // @ts-expect-error - relation between golf_qualifier_entries and golf_players not in generated types
     const { data: entries } = await supabase
       .from('golf_qualifier_entries')
       .select(`
@@ -3041,7 +3039,6 @@ export async function getQualifierLeaderboard(
     }
 
     // Get all rounds for this qualifier
-    // @ts-expect-error - qualifier columns not in generated types
     const roundsResult = await supabase
       .from('golf_rounds')
       .select('player_id, qualifier_round_number, total_score, total_to_par')
@@ -3168,7 +3165,6 @@ async function updateQualifierEntryStats(
 ): Promise<void> {
   try {
     // Get all completed rounds for this player in this qualifier
-    // @ts-expect-error - qualifier_id column not in generated types
     const roundsResult = await supabase
       .from('golf_rounds')
       .select('total_score, total_to_par')
@@ -3267,7 +3263,6 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
   }
 
   // Fetch saved courses
-  // @ts-expect-error - golf_player_courses table not in generated types
   const coursesResult = await supabase
     .from('golf_player_courses')
     .select('*')
@@ -3322,7 +3317,6 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
   }
 
   // Check if course with same name and tees already exists
-  // @ts-expect-error - golf_player_courses table not in generated types
   const existingResult = await supabase
     .from('golf_player_courses')
     .select('id')
@@ -3350,7 +3344,6 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
   let result;
   if (existing) {
     // Update existing course
-    // @ts-expect-error - golf_player_courses table not in generated types
     result = await supabase
       .from('golf_player_courses')
       .update(courseData)
@@ -3359,7 +3352,6 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
       .single();
   } else {
     // Insert new course
-    // @ts-expect-error - golf_player_courses table not in generated types
     result = await supabase
       .from('golf_player_courses')
       .insert(courseData)
@@ -3405,7 +3397,6 @@ export async function touchSavedCourse(courseId: string): Promise<ActionResult<v
   }
 
   // Update last_used_at (RLS will ensure ownership)
-  // @ts-expect-error - golf_player_courses table not in generated types
   const { error } = await supabase
     .from('golf_player_courses')
     .update({ last_used_at: new Date().toISOString() })
@@ -3431,7 +3422,6 @@ export async function deletePlayerCourse(courseId: string): Promise<ActionResult
   }
 
   // Delete the course (RLS will ensure ownership)
-  // @ts-expect-error - golf_player_courses table not in generated types
   const { error } = await supabase
     .from('golf_player_courses')
     .delete()
