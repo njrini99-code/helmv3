@@ -6,10 +6,11 @@ import { IconArrowLeft, IconMessage } from '@/components/icons';
 import Link from 'next/link';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function PlayerProfilePage({ params }: PageProps) {
+  const { id } = await params;
   const supabase = await createClient();
 
   // Get player with their settings
@@ -19,7 +20,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       *,
       player_settings (*)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!player) {

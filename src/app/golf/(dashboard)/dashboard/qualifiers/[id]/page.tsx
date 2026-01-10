@@ -18,13 +18,18 @@ interface QualifierWithEntries extends GolfQualifier {
   entries: QualifierEntryWithPlayer[];
 }
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
   const supabase = await createClient();
 
   const { data: qualifier } = await supabase
     .from('golf_qualifiers')
     .select('name, description')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   return {
@@ -33,7 +38,8 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   };
 }
 
-export default async function QualifierDetailPage({ params }: { params: { id: string } }) {
+export default async function QualifierDetailPage({ params }: PageProps) {
+  const { id } = await params;
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -49,7 +55,7 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
         player:golf_players(id, first_name, last_name)
       )
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (error || !qualifier) {
@@ -80,7 +86,7 @@ export default async function QualifierDetailPage({ params }: { params: { id: st
   const { data: rounds } = await supabase
     .from('golf_rounds')
     .select('player_id, total_score, total_to_par')
-    .eq('qualifier_id', params.id);
+    .eq('qualifier_id', id);
 
   // Calculate leaderboard
   const leaderboard = qualifierData.entries && qualifierData.entries.length > 0

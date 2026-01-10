@@ -14,16 +14,17 @@ import {
 import { Metadata } from 'next';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
   const supabase = await createClient();
 
   const { data: org } = await supabase
     .from('organizations')
     .select('name, type')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!org) {
@@ -39,6 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PublicProgramProfilePage({ params }: PageProps) {
+  const { id } = await params;
   const supabase = await createClient();
 
   // Fetch organization with settings and related data
@@ -79,7 +81,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
         is_signed
       )
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (error || !organization) {
