@@ -339,7 +339,7 @@ export default function ShotTrackingComprehensive({
     } else if (resultOfShot === 'hole') {
       setDistanceAfterShot('0');
       setDistanceAfterUnit('feet');
-    } else if (resultOfShot && resultOfShot !== 'hole') {
+    } else if (resultOfShot) {
       // Keep yards for non-green results unless we're already putting
       if (!isPutting) {
         setDistanceAfterUnit('yards');
@@ -353,8 +353,8 @@ export default function ShotTrackingComprehensive({
       // Check if miss direction is needed
       const needsMissDirection =
         (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot)) ||
-        (isApproachOrAroundGreen && !['green', 'hole'].includes(resultOfShot)) ||
-        (isPutting && resultOfShot !== 'hole');
+        (isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot)) ||
+        (isPutting && resultOfShot !== 'hole' && resultOfShot !== null);
 
       // Only auto-focus distance if miss direction not needed OR already filled
       if (!needsMissDirection || missDirection) {
@@ -674,7 +674,7 @@ export default function ShotTrackingComprehensive({
   };
 
   const handleResultSelect = (result: string) => {
-    setResultOfShot(result);
+    setResultOfShot(result as ShotRecord['result']);
     // Clear miss direction if not needed
     if (!['rough', 'sand', 'other'].includes(result) && !isPutting) {
       setMissDirection(null);
@@ -1009,7 +1009,7 @@ export default function ShotTrackingComprehensive({
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Break</p>
                 <div className="inline-flex bg-white rounded-lg p-1 w-full border border-emerald-200">
                   {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
-                    <button key={b.v} onClick={() => setPuttBreak(b.v)}
+                    <button key={b.v} onClick={() => setPuttBreak(b.v as ShotRecord['puttBreak'])}
                       className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                         puttBreak === b.v
                           ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
