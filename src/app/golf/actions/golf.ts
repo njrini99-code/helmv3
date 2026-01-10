@@ -3263,8 +3263,8 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
   }
 
   // Fetch saved courses
-  const coursesResult = await supabase
-    .from('golf_player_courses')
+  // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
+  const coursesResult = await (supabase.from('golf_player_courses') as any)
     .select('*')
     .eq('player_id', player.id)
     .order('last_used_at', { ascending: false });
@@ -3317,8 +3317,8 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
   }
 
   // Check if course with same name and tees already exists
-  const existingResult = await supabase
-    .from('golf_player_courses')
+  // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
+  const existingResult = await (supabase.from('golf_player_courses') as any)
     .select('id')
     .eq('player_id', player.id)
     .ilike('course_name', input.courseName)
@@ -3344,16 +3344,16 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
   let result;
   if (existing) {
     // Update existing course
-    result = await supabase
-      .from('golf_player_courses')
+    // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
+    result = await (supabase.from('golf_player_courses') as any)
       .update(courseData)
       .eq('id', (existing as any).id)
       .select()
       .single();
   } else {
     // Insert new course
-    result = await supabase
-      .from('golf_player_courses')
+    // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
+    result = await (supabase.from('golf_player_courses') as any)
       .insert(courseData)
       .select()
       .single();
@@ -3397,8 +3397,8 @@ export async function touchSavedCourse(courseId: string): Promise<ActionResult<v
   }
 
   // Update last_used_at (RLS will ensure ownership)
-  const { error } = await supabase
-    .from('golf_player_courses')
+  // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
+  const { error } = await (supabase.from('golf_player_courses') as any)
     .update({ last_used_at: new Date().toISOString() })
     .eq('id', courseId);
 
@@ -3422,8 +3422,8 @@ export async function deletePlayerCourse(courseId: string): Promise<ActionResult
   }
 
   // Delete the course (RLS will ensure ownership)
-  const { error } = await supabase
-    .from('golf_player_courses')
+  // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
+  const { error } = await (supabase.from('golf_player_courses') as any)
     .delete()
     .eq('id', courseId);
 
