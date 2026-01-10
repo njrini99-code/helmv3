@@ -272,7 +272,7 @@ export function DataTable<T extends { id: string }>({
                   >
                     {col.render
                       ? col.render(item, index)
-                      : item[col.key]
+                      : (item[col.key] as React.ReactNode)
                     }
                   </td>
                 ))}
