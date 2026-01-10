@@ -213,17 +213,32 @@ export function PlayerComparison({
       const playerIds = players.map(p => p.id);
 
       // Prepare comparison data to cache (stats, radar data, etc.)
+      const now = new Date().toISOString();
       const comparisonData: ComparisonData = {
-        radarData: getRadarData(),
-        stats: statComparisons.map(stat => ({
-          label: stat.label,
-          values: players.map(p => ({
-            playerId: p.id,
-            value: stat.getValue(p),
-            formatted: stat.format ? stat.format(stat.getValue(p)) : stat.getValue(p),
-          })),
+        players: players.map(p => ({
+          playerId: p.id,
+          name: getFullName(p),
+          position: p.position || 'Unknown',
+          gradYear: p.grad_year || new Date().getFullYear(),
+          stats: {
+            batting_avg: p.batting_avg || 0,
+            era: p.era || 0,
+            home_runs: p.home_runs || 0,
+            rbi: p.rbi || 0,
+            whip: p.whip || 0,
+          },
         })),
-        timestamp: new Date().toISOString(),
+        metrics: statComparisons.map(stat => ({
+          key: stat.key || stat.label.toLowerCase().replace(/\s+/g, '_'),
+          label: stat.label,
+          values: players.reduce((acc, p) => {
+            const value = stat.getValue(p);
+            acc[p.id] = typeof value === 'number' ? value : (value || 0);
+            return acc;
+          }, {} as Record<string, number | string>),
+        })),
+        createdAt: now,
+        updatedAt: now,
       };
 
       const result = await saveComparison({
