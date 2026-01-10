@@ -12,10 +12,10 @@ interface BaseballCalendarWrapperProps {
   isCoach?: boolean;
 }
 
-// Baseball-specific action handlers
+// Baseball-specific action handlers - wrap to match CalendarActionHandlers signature
 const baseballActionHandlers: CalendarActionHandlers = {
-  createEvent: createBaseballEvent,
-  updateEvent: updateBaseballEvent,
+  createEvent: (data: unknown) => createBaseballEvent(data as Parameters<typeof createBaseballEvent>[0]),
+  updateEvent: (id: string, data: unknown) => updateBaseballEvent(id, data as Parameters<typeof updateBaseballEvent>[1]),
   deleteEvent: deleteBaseballEvent,
 };
 
