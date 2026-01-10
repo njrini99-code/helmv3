@@ -31,7 +31,7 @@ export function formatTime(seconds: number): string {
  */
 export function parseTime(timeStr: string): number {
   const parts = timeStr.split(':');
-  if (parts.length === 2) {
+  if (parts.length === 2 && parts[0] && parts[1]) {
     return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
   }
   return parseFloat(timeStr) || 0;

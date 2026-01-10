@@ -10,7 +10,8 @@ import type { NotificationPreferences, NotificationType, EmailTemplate } from '.
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
 
 // Resend client - lazy loaded
-let resendClient: { emails: { send: (opts: Record<string, unknown>) => Promise<unknown> } } | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let resendClient: any = null;
 
 async function getResendClient() {
   if (!process.env.RESEND_API_KEY) {
@@ -40,10 +41,10 @@ export async function getUserNotificationPreferences(
     .eq('id', userId)
     .single();
 
-  if (data?.notification_preferences) {
+  if (data?.notification_preferences && typeof data.notification_preferences === 'object') {
     return {
       ...DEFAULT_NOTIFICATION_PREFERENCES,
-      ...data.notification_preferences,
+      ...(data.notification_preferences as Partial<NotificationPreferences>),
     };
   }
 

@@ -176,7 +176,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
   };
 
   const handleSaveClip = async () => {
-    if (!user || !video.player_id) return;
+    if (!user || !video.player_id || !video.url) return;
 
     // Validate
     const validationError = validateClipRange(clipRange, duration);
@@ -246,7 +246,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
       <div className="relative bg-black aspect-video">
         <video
           ref={videoRef}
-          src={video.url}
+          src={video.url ?? undefined}
           className="w-full h-full object-contain"
           onClick={handlePlayPause}
         />

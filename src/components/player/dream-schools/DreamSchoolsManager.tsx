@@ -42,9 +42,11 @@ export function DreamSchoolsManager({ playerId, initialSchools = [] }: DreamScho
   const removeSchool = async (schoolId: string) => {
     setSaving(true);
     const supabase = createClient();
-    const dreamSchoolsTable = supabase.from('player_dream_schools' as never);
 
-    const { error } = await dreamSchoolsTable.delete().eq('id', schoolId);
+    // @ts-expect-error - table not in generated types yet
+    const { error } = await supabase.from('player_dream_schools')
+      .delete()
+      .eq('id', schoolId);
 
     if (error) {
       toast.error('Failed to remove school');
@@ -79,15 +81,11 @@ export function DreamSchoolsManager({ playerId, initialSchools = [] }: DreamScho
   const saveRankings = async (updatedSchools: DreamSchool[]) => {
     setSaving(true);
     const supabase = createClient();
-    const dreamSchoolsTable = supabase.from('player_dream_schools' as never);
 
-    const updates = updatedSchools.map(school => ({
-      id: school.id,
-      rank: school.rank,
-    }));
-
-    for (const update of updates) {
-      await dreamSchoolsTable.update({ rank: update.rank }).eq('id', update.id);
+    for (const school of updatedSchools) {
+      const table = supabase.from('player_dream_schools' as 'players');
+      // @ts-expect-error - table not in generated types yet
+      await table.update({ rank: school.rank }).eq('id', school.id);
     }
 
     setSaving(false);

@@ -40,7 +40,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
+        className="fixed inset-0 z-[100] bg-[#FAFAF9] flex items-center justify-center"
         initial={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.8 }}
@@ -55,7 +55,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-              <span className="text-white">Built for the sports </span>
+              <span className="text-neutral-900">Built for the sports </span>
               <span className="text-helm-green-500">you coach</span>
             </h1>
           </motion.div>
@@ -70,7 +70,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
             transition={{ duration: 0.8 }}
           >
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-              <span className="text-white opacity-0">Built for the sports </span>
+              <span className="text-neutral-900 opacity-0">Built for the sports </span>
               <span className="text-helm-green-500">you coach</span>
             </h1>
           </motion.div>
@@ -109,7 +109,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 className="text-center"
               >
-                <div className="text-[#FFF8E7] text-3xl md:text-4xl font-bold tracking-tight">
+                <div className="text-neutral-900 text-3xl md:text-4xl font-bold tracking-tight">
                   Baseball
                 </div>
                 <div className="text-amber-500 text-xs md:text-sm font-semibold mt-1 tracking-wide">
@@ -117,7 +117,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
                 </div>
               </motion.div>
 
-              <div className="w-px h-16 bg-neutral-700" />
+              <div className="w-px h-16 bg-neutral-300" />
 
               {/* GolfHelm */}
               <motion.div
@@ -126,7 +126,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 className="text-center"
               >
-                <div className="text-[#FFF8E7] text-3xl md:text-4xl font-bold tracking-tight">
+                <div className="text-neutral-900 text-3xl md:text-4xl font-bold tracking-tight">
                   Golf
                 </div>
                 <div className="text-helm-green-500 text-xs md:text-sm font-semibold mt-1 tracking-wide">
@@ -140,7 +140,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-neutral-400 text-lg md:text-xl"
+              className="text-neutral-500 text-lg md:text-xl"
             >
               Two products. One platform.
             </motion.p>
@@ -153,7 +153,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
             sessionStorage.setItem('products-intro-seen', 'true')
             onComplete()
           }}
-          className="absolute bottom-8 right-8 text-neutral-500 hover:text-white text-sm transition-colors"
+          className="absolute bottom-8 right-8 text-neutral-400 hover:text-neutral-900 text-sm transition-colors"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
