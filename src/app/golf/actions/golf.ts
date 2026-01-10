@@ -2808,17 +2808,13 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
         };
 
         // Get rounds for this qualifier
-        // @ts-expect-error - qualifier_id column not in generated types
         const qualifierRounds = (rounds || []).filter((r: any) => r.qualifier_id === q.id);
-        // @ts-expect-error - qualifier_round_number column not in generated types
         const completedRoundNumbers = qualifierRounds
           .filter((r: any) => r.qualifier_round_number !== null)
           .map((r: any) => r.qualifier_round_number as number)
           .sort((a, b) => a - b);
 
-        // @ts-expect-error - total_score column not in generated types
         const totalScore = qualifierRounds.reduce((sum: number, r: any) => sum + (r.total_score || 0), 0);
-        // @ts-expect-error - total_to_par column not in generated types
         const totalToPar = qualifierRounds.reduce((sum: number, r: any) => sum + (r.total_to_par || 0), 0);
 
         return {
@@ -2911,7 +2907,6 @@ export async function getNextQualifierRoundNumber(
       qualifier_round_number: number | null;
     }> | null;
 
-    // @ts-expect-error - qualifier_round_number column not in generated types
     const completedRoundNumbers = new Set(
       (completedRounds || [])
         .filter((r: any) => r.qualifier_round_number !== null)
@@ -3061,7 +3056,6 @@ export async function getQualifierLeaderboard(
     }> | null;
 
     // Build leaderboard
-    // @ts-expect-error - relation between golf_qualifier_entries and golf_players not in generated types
     const leaderboard: QualifierLeaderboardEntry[] = (entries as any[])
       .filter((e: any) => e.player && typeof e.player === 'object' && !('error' in e.player))
       .map((entry: any) => {
@@ -3072,19 +3066,15 @@ export async function getQualifierLeaderboard(
           avatar_url: string | null;
         };
 
-        // @ts-expect-error - qualifier columns not in generated types
         const playerRounds = ((rounds || []) as any[])
           .filter((r: any) => r.player_id === entry.player_id)
           .sort((a: any, b: any) => (a.qualifier_round_number || 0) - (b.qualifier_round_number || 0));
 
-        // @ts-expect-error - total_score column not in generated types
         const totalScore = playerRounds.reduce((sum: number, r: any) => sum + (r.total_score || 0), 0);
-        // @ts-expect-error - total_to_par column not in generated types
         const totalToPar = playerRounds.reduce((sum: number, r: any) => sum + (r.total_to_par || 0), 0);
         const roundsCompleted = playerRounds.length;
         const averageScore = roundsCompleted > 0 ? totalScore / roundsCompleted : 0;
 
-        // @ts-expect-error - qualifier columns not in generated types
         const roundScores = playerRounds.map((r: any) => ({
           roundNumber: r.qualifier_round_number || 0,
           score: r.total_score || 0,
