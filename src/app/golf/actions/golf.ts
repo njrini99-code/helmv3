@@ -2775,7 +2775,6 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
 
     // Get all qualifier rounds for this player
     const qualifierIds = entries.map(e => e.qualifier_id);
-    // @ts-expect-error - qualifier_id column not in generated types
     const roundsResult = await supabase
       .from('golf_rounds')
       .select('qualifier_id, qualifier_round_number, total_score, total_to_par')
