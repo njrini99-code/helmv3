@@ -2783,7 +2783,7 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
       .in('qualifier_id', qualifierIds)
       .eq('status', 'completed');
     
-    const rounds = (roundsResult.data as any) as Array<{
+    const rounds = (roundsResult.data as unknown) as Array<{
       qualifier_id: string | null;
       qualifier_round_number: number | null;
       total_score: number | null;
@@ -2909,7 +2909,7 @@ export async function getNextQualifierRoundNumber(
       .eq('player_id', player.id)
       .eq('status', 'completed');
     
-    const completedRounds = (completedRoundsResult.data as any) as Array<{
+    const completedRounds = (completedRoundsResult.data as unknown) as Array<{
       qualifier_round_number: number | null;
     }> | null;
 
@@ -3055,7 +3055,7 @@ export async function getQualifierLeaderboard(
       .eq('qualifier_id', qualifierId)
       .eq('status', 'completed');
     
-    const rounds = (roundsResult.data as any) as Array<{
+    const rounds = (roundsResult.data as unknown) as Array<{
       player_id: string;
       qualifier_round_number: number | null;
       total_score: number | null;
@@ -3188,7 +3188,7 @@ async function updateQualifierEntryStats(
       .eq('player_id', playerId)
       .eq('status', 'completed');
     
-    const rounds = (roundsResult.data as any) as Array<{
+    const rounds = (roundsResult.data as unknown) as Array<{
       total_score: number | null;
       total_to_par: number | null;
     }> | null;
@@ -3286,7 +3286,7 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
     .eq('player_id', player.id)
     .order('last_used_at', { ascending: false });
   
-  const { data: courses, error } = coursesResult as any;
+  const { data: courses, error } = coursesResult as { data: any; error: any };
 
   if (error) {
     return { success: false, error: 'Failed to load saved courses' };
@@ -3343,7 +3343,7 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
     .eq('tees_played', input.teesPlayed || '')
     .single();
   
-  const existing = (existingResult as any).data;
+  const existing = ((existingResult as unknown) as { data: any }).data;
 
   const courseData = {
     player_id: player.id,
@@ -3379,7 +3379,7 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
       .single();
   }
   
-  result = result as any;
+  result = (result as unknown) as { data: any; error: any };
 
   if (result.error) {
     console.error('Failed to save course:', result.error);
