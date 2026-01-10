@@ -2210,6 +2210,7 @@ export interface PartialRoundData {
   courseId?: string;
   roundType: 'practice' | 'tournament' | 'qualifier';
   roundDate: string;
+  qualifierId?: string;
   // Progress tracking
   currentHole: number;
   holesToPlay: number; // 9 or 18
