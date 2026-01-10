@@ -43,9 +43,11 @@ const loadPdfJs = async () => {
   if (!pdfjsLib) {
     throw new Error('PDF.js failed to load.');
   }
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `${PDFJS_CDN}/pdf.worker.min.js`;
+  // Type assertion needed because TypeScript can't infer the type after dynamic script load
+  const typedPdfjsLib = pdfjsLib as PdfJsLib;
+  typedPdfjsLib.GlobalWorkerOptions.workerSrc = `${PDFJS_CDN}/pdf.worker.min.js`;
   
-  return pdfjsLib;
+  return typedPdfjsLib;
 };
 
 export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadScheduleModalProps) {
