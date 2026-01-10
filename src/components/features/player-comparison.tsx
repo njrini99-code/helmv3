@@ -221,11 +221,11 @@ export function PlayerComparison({
           position: p.primary_position || 'Unknown',
           gradYear: p.grad_year || new Date().getFullYear(),
           stats: {
-            batting_avg: p.batting_avg || 0,
-            era: p.era || 0,
-            home_runs: p.home_runs || 0,
-            rbi: p.rbi || 0,
-            whip: p.whip || 0,
+            batting_avg: (p as any).batting_avg || (p as any).stats?.batting_avg || 0,
+            era: (p as any).era || (p as any).stats?.era || 0,
+            home_runs: (p as any).home_runs || (p as any).stats?.home_runs || 0,
+            rbi: (p as any).rbi || (p as any).stats?.rbi || 0,
+            whip: (p as any).whip || (p as any).stats?.whip || 0,
           },
         })),
         metrics: statComparisons.map(stat => ({
