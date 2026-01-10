@@ -2790,7 +2790,6 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
     }> | null;
 
     // Build result with progress info
-    // @ts-expect-error - qualifier relation not in generated types
     const qualifiers: PlayerQualifierInfo[] = (entries as any[])
       .filter((e: any) => e.qualifier && typeof e.qualifier === 'object' && !('error' in e.qualifier))
       .map((entry: any) => {
