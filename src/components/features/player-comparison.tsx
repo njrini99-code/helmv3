@@ -218,7 +218,7 @@ export function PlayerComparison({
         players: players.map(p => ({
           playerId: p.id,
           name: getFullName(p.first_name, p.last_name),
-          position: p.position || 'Unknown',
+          position: p.primary_position || 'Unknown',
           gradYear: p.grad_year || new Date().getFullYear(),
           stats: {
             batting_avg: p.batting_avg || 0,
