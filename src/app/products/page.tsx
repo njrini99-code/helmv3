@@ -5,7 +5,7 @@ import { SplitFlapIntro } from '@/components/products/SplitFlapIntro'
 import { Navigation } from '@/components/landing/Navigation'
 import { Footer } from '@/components/landing/Footer'
 import { 
-  Target, Flag, Trophy, Brain, Sparkles, TrendingUp, Check, ChevronRight,
+  Flag, Trophy, Brain, Sparkles, TrendingUp, Check, ChevronRight,
   ArrowRight, Monitor, Tablet, Smartphone, Zap, Database, GripVertical
 } from 'lucide-react'
 import { useRef } from 'react'
