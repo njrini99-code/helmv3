@@ -25,6 +25,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconTrophy,
+  IconTarget,
 } from '@/components/icons';
 
 interface NavItem {
@@ -39,6 +40,7 @@ const coachNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
   { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
   { name: 'Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
+  { name: 'Development', href: '/golf/dashboard/development', icon: IconTarget },
   { name: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
   { name: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
   { name: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
@@ -56,6 +58,7 @@ const coachSecondaryNav: NavItem[] = [
 const playerNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
   { name: 'My Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
+  { name: 'My Development', href: '/golf/dashboard/my-development', icon: IconTarget },
   { name: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
   { name: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
   { name: 'My Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
@@ -124,6 +127,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       {!isMobile && (
         <button
           onClick={() => setCollapsed(!collapsed)}
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={cn(
             'absolute -right-3 top-7 z-50',
             'w-6 h-6 rounded-full bg-[#1C1917] border border-white/20',
@@ -134,9 +138,9 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           )}
         >
           {isCollapsed ? (
-            <IconChevronRight size={14} className="text-white/70" />
+            <IconChevronRight size={14} className="text-white/70" aria-hidden="true" />
           ) : (
-            <IconChevronLeft size={14} className="text-white/70" />
+            <IconChevronLeft size={14} className="text-white/70" aria-hidden="true" />
           )}
         </button>
       )}
@@ -148,16 +152,24 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         isCollapsed ? 'px-3 justify-center' : 'px-5'
       )}>
         <Link href="/golf/dashboard" prefetch={true} className="flex items-center gap-3" onClick={handleNavClick}>
-          <div className="relative h-9 flex items-center">
+          <div className="relative h-14 flex items-center">
             {/* Icon version (shown when collapsed OR as fallback) */}
             <div
               className={cn(
-                'w-9 h-9 rounded-[10px] bg-primary-600 flex items-center justify-center',
-                'shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                'w-14 h-14 flex items-center justify-center flex-shrink-0',
+                'transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 absolute'
               )}
             >
-              <span className="text-white font-bold text-lg">G</span>
+              <Image
+                src="/helm.transparent. golf-logo.png"
+                alt="GolfHelm Logo"
+                width={56}
+                height={56}
+                className="w-14 h-14 object-contain"
+                priority
+                unoptimized
+              />
             </div>
             {/* Full logo + text (shown when expanded) */}
             <div
@@ -166,10 +178,20 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 isCollapsed ? 'opacity-0 scale-75 absolute' : 'opacity-100 scale-100'
               )}
             >
-              <div className="w-9 h-9 rounded-[10px] bg-primary-600 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">G</span>
+              <div className="w-14 h-14 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Image
+                  src="/helm.transparent. golf-logo.png"
+                  alt="GolfHelm Logo"
+                  width={56}
+                  height={56}
+                  className="w-14 h-14 object-contain"
+                  priority
+                  unoptimized
+                />
               </div>
-              <span className="text-white font-bold text-base">GolfHelm</span>
+              <span className="text-white font-bold text-lg">
+                Golf<span className="text-sm font-normal opacity-80">helm</span>
+              </span>
             </div>
           </div>
         </Link>
