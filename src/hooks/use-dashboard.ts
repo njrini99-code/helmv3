@@ -38,7 +38,7 @@ export function useActivityFeed(limit = 10) {
       // Use watchlists as activity source since player_engagement_events may not exist
       // This shows recent watchlist additions as activity
       const { data: watchlistData, error } = await supabase
-        .from('watchlists')
+        .from('baseball_watchlists')
         .select('id, player_id, coach_id, created_at, updated_at')
         .eq('coach_id', coach.id)
         .order('updated_at', { ascending: false })
@@ -56,7 +56,7 @@ export function useActivityFeed(limit = 10) {
 
         // Fetch player details
         const { data: playersData } = await supabase
-          .from('players')
+          .from('baseball_players')
           .select('id, first_name, last_name, primary_position, avatar_url')
           .in('id', playerIds);
 
@@ -169,7 +169,7 @@ export function useUpcomingEvents(limit = 5) {
       } else if (player?.id) {
         // Get player's team
         const { data: teamMember } = await supabase
-          .from('team_members')
+          .from('baseball_team_members')
           .select('team_id')
           .eq('player_id', player.id)
           .single();
@@ -253,7 +253,7 @@ export function useEngagementChart(days = 7) {
 
       // Use watchlists since player_engagement_events may not exist
       const { data: watchlistEvents } = await supabase
-        .from('watchlists')
+        .from('baseball_watchlists')
         .select('created_at, updated_at')
         .eq('coach_id', coach.id)
         .gte('created_at', startDate.toISOString());
@@ -376,46 +376,39 @@ export function useSavedSearches() {
 }
 
 // Player Distribution by State Hook
-export function usePlayersByState() {
+// Respects discoverability rules based on coach type
+export function usePlayersByState(coachId?: string, coachType?: string) {
   const [stateCounts, setStateCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     async function fetchStateCounts() {
       setLoading(true);
 
-      // Get all players with recruiting activated, grouped by state
-      const { data, error } = await supabase
-        .from('players')
-        .select('state')
-        .eq('recruiting_activated', true)
-        .not('state', 'is', null);
+      try {
+        // Use server action to avoid RLS recursion issues
+        const { getStateCounts } = await import('@/app/baseball/actions/discover');
+        // coachType is already typed as string, getStateCounts accepts it
+        const counts = await getStateCounts('players', coachId, coachType as 'college' | 'juco' | 'high_school' | 'showcase' | undefined);
 
-      if (error) {
-        // Only log if there's meaningful error info
-        if (error.message) {
-          console.error('Error fetching player distribution:', error.message);
-        }
-        setStateCounts({});
-      } else {
-        // Count players per state
-        const counts: Record<string, number> = {};
-        (data || []).forEach((player) => {
-          if (player.state) {
-            // Normalize state to uppercase abbreviation
-            const stateCode = player.state.toUpperCase().trim();
-            counts[stateCode] = (counts[stateCode] || 0) + 1;
-          }
+        // Normalize state codes to uppercase
+        const normalizedCounts: Record<string, number> = {};
+        Object.entries(counts).forEach(([state, count]) => {
+          const stateCode = state.toUpperCase().trim();
+          normalizedCounts[stateCode] = count;
         });
-        setStateCounts(counts);
-      }
 
-      setLoading(false);
+        setStateCounts(normalizedCounts);
+      } catch (error) {
+        console.error('Error fetching player distribution:', error);
+        setStateCounts({});
+      } finally {
+        setLoading(false);
+      }
     }
 
     fetchStateCounts();
-  }, []);
+  }, [coachId, coachType]);
 
   return { stateCounts, loading };
 }

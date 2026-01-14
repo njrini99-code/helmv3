@@ -121,7 +121,7 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
       const fileExt = file.name.split('.').pop()?.toLowerCase() || 'mp4';
       const fileName = user.id + '/' + Date.now() + '-' + Math.random().toString(36).substr(2, 9) + '.' + fileExt;
 
-      const result = await supabase.storage.from('videos').upload(fileName, file, {
+      const result = await supabase.storage.from('baseball_videos').upload(fileName, file, {
         cacheControl: '3600',
         upsert: false,
       });
@@ -129,14 +129,14 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
       if (result.error) throw result.error;
       setProgress(70);
 
-      const urlData = supabase.storage.from('videos').getPublicUrl(fileName);
+      const urlData = supabase.storage.from('baseball_videos').getPublicUrl(fileName);
       const publicUrl = urlData.data.publicUrl;
 
       if (form.is_primary) {
-        await supabase.from('videos').update({ is_primary: false }).eq('player_id', player.id);
+        await supabase.from('baseball_videos').update({ is_primary: false }).eq('player_id', player.id);
       }
 
-      const insertResult = await supabase.from('videos').insert({
+      const insertResult = await supabase.from('baseball_videos').insert({
         player_id: player.id,
         title: form.title.trim(),
         description: form.description.trim() || null,
@@ -149,7 +149,7 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
       if (insertResult.error) throw insertResult.error;
       setProgress(90);
 
-      await supabase.from('players').update({ has_video: true }).eq('id', player.id);
+      await supabase.from('baseball_players').update({ has_video: true }).eq('id', player.id);
       setProgress(100);
 
       if (preview) URL.revokeObjectURL(preview);

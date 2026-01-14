@@ -115,7 +115,19 @@ export async function loginAction(
   // For LOGIN (not signup), always redirect to dashboard
   // Onboarding is handled separately and is optional for existing users
   // The dashboard will show a banner to complete onboarding if needed
+  const adminAllowlist = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+
   let redirectTo = '/golf/dashboard';
+
+  if (userData?.role === 'admin' || adminAllowlist.includes(normalizedEmail)) {
+    return {
+      success: true,
+      redirectTo: '/admin/command-center',
+    };
+  }
 
   // Check if user has a profile record - if not, they need onboarding
   if (userData?.role === 'coach') {
@@ -212,6 +224,25 @@ export async function signupAction(
   });
 
   if (error) {
+    // Handle Supabase rate limiting with user-friendly message
+    if (error.message.includes('security purposes') || error.message.includes('rate limit')) {
+      // Extract seconds from error message like "...after 57 seconds"
+      const match = error.message.match(/after (\d+) seconds/);
+      const seconds = match ? match[1] : '60';
+      return {
+        success: false,
+        error: `Please wait ${seconds} seconds before trying again.`,
+      };
+    }
+
+    // Handle duplicate email
+    if (error.message.includes('already registered') || error.message.includes('already exists')) {
+      return {
+        success: false,
+        error: 'An account with this email already exists. Please sign in instead.',
+      };
+    }
+
     return {
       success: false,
       error: error.message,

@@ -179,13 +179,13 @@ export async function GET(request: NextRequest) {
 
       // Check for BASEBALL profiles
       const { data: coach } = await supabase
-        .from('coaches')
+        .from('baseball_coaches')
         .select('id, onboarding_completed')
         .eq('user_id', data.user.id)
         .single();
 
       const { data: player } = await supabase
-        .from('players')
+        .from('baseball_players')
         .select('id, onboarding_completed')
         .eq('user_id', data.user.id)
         .single();

@@ -293,8 +293,8 @@ export function EventDetailModal({
         if (result.success && result.data) {
           setConflicts(result.data as ConflictData);
         }
-      } catch (err) {
-        console.error('Error checking conflicts:', err);
+      } catch {
+        // Conflict check failed - continue without warning
       } finally {
         setCheckingConflicts(false);
       }

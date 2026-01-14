@@ -160,36 +160,49 @@ export async function loginAction(
   // For LOGIN (not signup), always redirect to dashboard
   // Onboarding is handled separately and is optional for existing users
   // The dashboard will show a banner to complete onboarding if needed
+  const adminAllowlist = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+
   let redirectTo = '/baseball/dashboard';
 
-  // Check if user has a profile record - if not, they need onboarding
+  if (userData?.role === 'admin' || adminAllowlist.includes(normalizedEmail)) {
+    return {
+      success: true,
+      redirectTo: '/admin/command-center',
+    };
+  }
+
+  // Check if user has a profile record and if onboarding is complete
   if (userData?.role === 'coach') {
-    const { error: coachError } = await supabase
-      .from('coaches')
+    const { data: coachData, error: coachError } = await supabase
+      .from('baseball_coaches')
       .select('id, onboarding_completed')
       .eq('user_id', data.user.id)
       .single();
 
-    // Only redirect to onboarding if NO profile exists at all
-    // (this handles edge case of trigger failure)
     if (coachError && coachError.code === 'PGRST116') {
       // No record found - need onboarding
       redirectTo = '/baseball/coach-onboarding';
+    } else if (coachData && !coachData.onboarding_completed) {
+      // Profile exists but onboarding not complete - redirect to finish it
+      redirectTo = '/baseball/coach-onboarding';
     }
-    // If record exists (even with onboarding_completed=false), go to dashboard
   } else if (userData?.role === 'player') {
-    const { error: playerError } = await supabase
-      .from('players')
+    const { data: playerData, error: playerError } = await supabase
+      .from('baseball_players')
       .select('id, onboarding_completed')
       .eq('user_id', data.user.id)
       .single();
 
-    // Only redirect to onboarding if NO profile exists at all
     if (playerError && playerError.code === 'PGRST116') {
       // No record found - need onboarding
       redirectTo = '/baseball/player';
+    } else if (playerData && !playerData.onboarding_completed) {
+      // Profile exists but onboarding not complete - redirect to finish it
+      redirectTo = '/baseball/player';
     }
-    // If record exists (even with onboarding_completed=false), go to dashboard
   }
 
   revalidatePath('/baseball/dashboard');
@@ -272,6 +285,25 @@ export async function signupAction(
       error: error.message,
       ip,
     });
+
+    // Handle Supabase rate limiting with user-friendly message
+    if (error.message.includes('security purposes') || error.message.includes('rate limit')) {
+      // Extract seconds from error message like "...after 57 seconds"
+      const match = error.message.match(/after (\d+) seconds/);
+      const seconds = match ? match[1] : '60';
+      return {
+        success: false,
+        error: `Please wait ${seconds} seconds before trying again.`,
+      };
+    }
+
+    // Handle duplicate email
+    if (error.message.includes('already registered') || error.message.includes('already exists')) {
+      return {
+        success: false,
+        error: 'An account with this email already exists. Please sign in instead.',
+      };
+    }
 
     return {
       success: false,

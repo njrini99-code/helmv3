@@ -17,6 +17,7 @@ import {
   type SavedCourse,
   type SavedCourseHoleConfig
 } from '@/app/golf/actions/golf';
+import { IconBookmark, IconCheck, IconChevronDown, IconMapPin, IconPlus } from '@/components/icons';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
@@ -421,14 +422,6 @@ export default function NewRoundClient() {
   };
 
   const handleSaveForLater = async () => {
-    console.log('[NewRoundClient] handleSaveForLater called', {
-      currentHoleIndex,
-      holesCount: holes.length,
-      completedHolesCount: completedHoleStats.length,
-      savedRoundId,
-      setupData,
-    });
-    
     try {
       const inProgressShots = Object.entries(inProgressShotsByHole)
         .filter(([, shots]) => shots.length > 0)
@@ -457,22 +450,12 @@ export default function NewRoundClient() {
         })),
       };
 
-      console.log('[NewRoundClient] Calling savePartialRound with data:', {
-        ...partialRoundData,
-        holes: `[${completedHoleStats.length} holes]`,
-        holeConfigs: `[${holes.length} configs]`,
-      });
-
       const result = await savePartialRound(partialRoundData, savedRoundId || undefined);
 
-      console.log('[NewRoundClient] savePartialRound result:', result);
-
       if (!result.success) {
-        console.error('[NewRoundClient] Save failed:', result.error);
         throw new Error(result.error);
       }
-      
-      console.log('[NewRoundClient] Save successful, roundId:', result.data.roundId);
+
       setSavedRoundId(result.data.roundId);
 
       // Clear local draft since it's saved to database
@@ -480,11 +463,9 @@ export default function NewRoundClient() {
       setShowExitModal(false);
 
       // Redirect to rounds page and refresh to show the new unfinished round
-      console.log('[NewRoundClient] Redirecting to rounds page...');
       router.push('/golf/dashboard/rounds');
       router.refresh();
     } catch (err) {
-      console.error('[NewRoundClient] Error in handleSaveForLater:', err);
       throw err; // Let modal handle error display
     }
   };
@@ -502,6 +483,10 @@ export default function NewRoundClient() {
     // Redirect to rounds page
     router.push('/golf/dashboard/rounds');
   };
+
+  const selectedCourse = selectedCourseId
+    ? savedCourses.find(course => course.id === selectedCourseId) || null
+    : null;
 
   // ============================================================================
   // SETUP STEP
@@ -522,75 +507,117 @@ export default function NewRoundClient() {
             <form onSubmit={handleSetupSubmit} className="space-y-6">
               {/* Course Selection Mode Toggle */}
               {!loadingSavedCourses && savedCourses.length > 0 && (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                  <div className="flex items-center gap-4 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCourseMode('saved');
-                        if (!selectedCourseId && savedCourses.length > 0) {
-                          handleSavedCourseSelect(savedCourses[0]!.id);
-                        }
-                      }}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        courseMode === 'saved'
-                          ? 'bg-green-600 text-white'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      ⭐ Saved Course
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCourseMode('new');
-                        setSelectedCourseId(null);
-                        setPreloadedHoleConfigs(null);
-                        setSetupData(prev => ({
-                          ...prev,
-                          courseName: '',
-                          courseCity: '',
-                          courseState: '',
-                          courseRating: '',
-                          courseSlope: '',
-                          teesPlayed: 'White',
-                        }));
-                      }}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        courseMode === 'new'
-                          ? 'bg-green-600 text-white'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      ➕ New Course
-                    </button>
+                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                        {courseMode === 'saved' ? <IconBookmark size={18} /> : <IconPlus size={18} />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Course setup</p>
+                        <p className="text-xs text-slate-500">Use a saved layout or start fresh.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center rounded-full bg-slate-100 p-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCourseMode('saved');
+                          if (!selectedCourseId && savedCourses.length > 0) {
+                            handleSavedCourseSelect(savedCourses[0]!.id);
+                          }
+                        }}
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                          courseMode === 'saved'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                        aria-pressed={courseMode === 'saved'}
+                      >
+                        <IconBookmark size={14} />
+                        Saved
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCourseMode('new');
+                          setSelectedCourseId(null);
+                          setPreloadedHoleConfigs(null);
+                          setSetupData(prev => ({
+                            ...prev,
+                            courseName: '',
+                            courseCity: '',
+                            courseState: '',
+                            courseRating: '',
+                            courseSlope: '',
+                            teesPlayed: 'White',
+                          }));
+                        }}
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                          courseMode === 'new'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                        aria-pressed={courseMode === 'new'}
+                      >
+                        <IconPlus size={14} />
+                        New
+                      </button>
+                    </div>
                   </div>
 
                   {courseMode === 'saved' && (
-                    <div>
-                      <label htmlFor="savedCourse" className="text-sm font-medium text-slate-700 block mb-2">
-                        Select a Saved Course
+                    <div className="mt-4 space-y-3">
+                      <label htmlFor="savedCourse" className="text-sm font-medium text-slate-700 block">
+                        Saved course
                       </label>
-                      <select
-                        id="savedCourse"
-                        value={selectedCourseId || ''}
-                        onChange={(e) => handleSavedCourseSelect(e.target.value || null)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
-                      >
-                        <option value="">Choose a course...</option>
-                        {savedCourses.map(course => (
-                          <option key={course.id} value={course.id}>
-                            {course.courseName}
-                            {course.teesPlayed && ` (${course.teesPlayed})`}
-                            {course.courseCity && ` - ${course.courseCity}`}
-                            {course.courseState && `, ${course.courseState}`}
-                          </option>
-                        ))}
-                      </select>
-                      {selectedCourseId && preloadedHoleConfigs && (
-                        <p className="text-xs text-green-600 mt-2">
-                          ✓ {preloadedHoleConfigs.length} holes configured • Ready to start
-                        </p>
+                      <div className="relative">
+                        <IconMapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <select
+                          id="savedCourse"
+                          value={selectedCourseId || ''}
+                          onChange={(e) => handleSavedCourseSelect(e.target.value || null)}
+                          className="w-full appearance-none px-10 py-3 rounded-xl border border-slate-200 bg-white/80 text-sm font-medium text-slate-900 shadow-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                        >
+                          <option value="">Choose a saved course</option>
+                          {savedCourses.map(course => (
+                            <option key={course.id} value={course.id}>
+                              {course.courseName}
+                              {course.teesPlayed && ` (${course.teesPlayed})`}
+                            </option>
+                          ))}
+                        </select>
+                        <IconChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                      </div>
+                      {selectedCourse && (
+                        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2 text-xs text-emerald-800">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-0.5">
+                            <IconCheck size={12} className="text-emerald-600" />
+                            {selectedCourse.holeConfigs.length > 0
+                              ? `${selectedCourse.holeConfigs.length} holes configured`
+                              : 'Hole setup required'}
+                          </span>
+                          {selectedCourse.teesPlayed && (
+                            <span className="inline-flex items-center rounded-full bg-white/80 px-2 py-0.5">
+                              {selectedCourse.teesPlayed} tees
+                            </span>
+                          )}
+                          {selectedCourse.courseRating !== null && (
+                            <span className="inline-flex items-center rounded-full bg-white/80 px-2 py-0.5">
+                              Rating {selectedCourse.courseRating}
+                            </span>
+                          )}
+                          {selectedCourse.courseSlope !== null && (
+                            <span className="inline-flex items-center rounded-full bg-white/80 px-2 py-0.5">
+                              Slope {selectedCourse.courseSlope}
+                            </span>
+                          )}
+                          {selectedCourse.courseCity && (
+                            <span className="inline-flex items-center rounded-full bg-white/80 px-2 py-0.5">
+                              {selectedCourse.courseCity}{selectedCourse.courseState ? `, ${selectedCourse.courseState}` : ''}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}

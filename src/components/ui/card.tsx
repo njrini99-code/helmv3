@@ -12,7 +12,7 @@ export function Card({ className, variant = 'base', padding = 'lg', children, ..
     return (
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-md border border-white/30 rounded-[20px] transition-all duration-200',
+          'bg-white/70 backdrop-blur-glass border border-white/30 rounded-2xl transition-all duration-200',
           padding === 'none' && 'p-0',
           padding === 'sm' && 'p-4',
           padding === 'md' && 'p-6',
@@ -31,7 +31,7 @@ export function Card({ className, variant = 'base', padding = 'lg', children, ..
     return (
       <div
         className={cn(
-          'bg-white border border-warm-200 rounded-[20px] transition-all duration-200 cursor-pointer',
+          'bg-white border border-warm-200 rounded-2xl transition-all duration-200 cursor-pointer',
           'hover:shadow-lg hover:-translate-y-0.5 hover:border-primary-200',
           padding === 'none' && 'p-0',
           padding === 'sm' && 'p-4',
@@ -51,7 +51,7 @@ export function Card({ className, variant = 'base', padding = 'lg', children, ..
     return (
       <div
         className={cn(
-          'bg-white border border-warm-200 border-l-2 border-l-primary-600 rounded-[20px]',
+          'bg-white border border-warm-200 border-l-2 border-l-primary-600 rounded-2xl',
           padding === 'none' && 'p-0',
           padding === 'sm' && 'p-4',
           padding === 'md' && 'p-6',
@@ -69,7 +69,7 @@ export function Card({ className, variant = 'base', padding = 'lg', children, ..
   return (
     <div
       className={cn(
-        'bg-white border border-warm-200 rounded-[20px] transition-all duration-200',
+        'bg-white border border-warm-200 rounded-2xl transition-all duration-200',
         padding === 'none' && 'p-0',
         padding === 'sm' && 'p-4',
         padding === 'md' && 'p-6',

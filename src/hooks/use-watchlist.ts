@@ -20,7 +20,7 @@ export function useWatchlist() {
 
     setLoading(true);
     const { data } = await supabase
-      .from('watchlists')
+      .from('baseball_watchlists')
       .select(`
         id,
         coach_id,
@@ -32,7 +32,7 @@ export function useWatchlist() {
         added_at,
         created_at,
         updated_at,
-        player:players(*)
+        player:baseball_players(*)
       `)
       .eq('coach_id', coach.id)
       .order('priority', { ascending: false });
@@ -51,7 +51,7 @@ export function useWatchlist() {
       return false;
     }
 
-    const { error } = await supabase.from('watchlists').insert({
+    const { error } = await supabase.from('baseball_watchlists').insert({
       coach_id: coach.id,
       player_id: playerId,
       notes: notes || null,
@@ -75,7 +75,7 @@ export function useWatchlist() {
     }
 
     const { error } = await supabase
-      .from('watchlists')
+      .from('baseball_watchlists')
       .delete()
       .eq('coach_id', coach.id)
       .eq('player_id', playerId);
@@ -98,7 +98,7 @@ export function useWatchlist() {
     }
 
     const { error } = await supabase
-      .from('watchlists')
+      .from('baseball_watchlists')
       .update({ pipeline_stage: stage })
       .eq('coach_id', coach.id)
       .eq('player_id', playerId);
@@ -121,7 +121,7 @@ export function useWatchlist() {
     }
 
     const { error } = await supabase
-      .from('watchlists')
+      .from('baseball_watchlists')
       .update({ notes })
       .eq('coach_id', coach.id)
       .eq('player_id', playerId);

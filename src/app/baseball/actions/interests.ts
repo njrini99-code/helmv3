@@ -14,7 +14,7 @@ export async function addToInterests(collegeId: string, schoolName: string, divi
 
   // Get player record
   const { data: player } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select('id')
     .eq('user_id', user.id)
     .single();
@@ -25,7 +25,7 @@ export async function addToInterests(collegeId: string, schoolName: string, divi
 
   // Check if already in interests
   const { data: existing } = await supabase
-    .from('recruiting_interests')
+    .from('baseball_recruiting_interests')
     .select('id')
     .eq('player_id', player.id)
     .eq('organization_id', collegeId)
@@ -37,7 +37,7 @@ export async function addToInterests(collegeId: string, schoolName: string, divi
 
   // Add to interests
   const { error } = await supabase
-    .from('recruiting_interests')
+    .from('baseball_recruiting_interests')
     .insert({
       player_id: player.id,
       organization_id: collegeId,
@@ -71,7 +71,7 @@ export async function removeFromInterests(collegeId: string) {
 
   // Get player record
   const { data: player } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select('id')
     .eq('user_id', user.id)
     .single();
@@ -82,7 +82,7 @@ export async function removeFromInterests(collegeId: string) {
 
   // Remove from interests
   const { error } = await supabase
-    .from('recruiting_interests')
+    .from('baseball_recruiting_interests')
     .delete()
     .eq('player_id', player.id)
     .eq('organization_id', collegeId);
@@ -108,7 +108,7 @@ export async function getPlayerInterests() {
 
   // Get player record
   const { data: player } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select('id')
     .eq('user_id', user.id)
     .maybeSingle();
@@ -119,7 +119,7 @@ export async function getPlayerInterests() {
 
   // Get interests
   const { data: interests } = await supabase
-    .from('recruiting_interests')
+    .from('baseball_recruiting_interests')
     .select('*')
     .eq('player_id', player.id);
 

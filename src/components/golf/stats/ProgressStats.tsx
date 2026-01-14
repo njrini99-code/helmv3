@@ -1,6 +1,30 @@
 'use client';
 
+import { useState, memo, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import { IconChevronDown, IconChevronUp, IconTrendingUp, IconTrendingDown } from '@/components/icons';
+
+// Dynamic imports for recharts - reduces initial bundle size by ~150KB
+const Line = dynamic(() => import('recharts').then(mod => mod.Line), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false });
+const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false });
+const Area = dynamic(() => import('recharts').then(mod => mod.Area), { ssr: false });
+const BarChart = dynamic(() => import('recharts').then(mod => mod.BarChart), { ssr: false });
+const Bar = dynamic(() => import('recharts').then(mod => mod.Bar), { ssr: false });
+const ComposedChart = dynamic(() => import('recharts').then(mod => mod.ComposedChart), { ssr: false });
+
+// Chart loading skeleton
+function ChartSkeleton() {
+  return (
+    <div className="h-64 bg-slate-100/50 rounded-xl animate-pulse flex items-center justify-center">
+      <span className="text-slate-400 text-sm">Loading chart...</span>
+    </div>
+  );
+}
 
 interface RoundData {
   id: string;
@@ -15,156 +39,276 @@ interface ProgressStatsProps {
   rounds: RoundData[];
 }
 
-function TrendLine({ data, label, color = 'emerald' }: { data: number[]; label: string; color?: string }) {
-  if (data.length === 0) return null;
+function formatDate(dateStr: string, short = false) {
+  const date = new Date(dateStr);
+  if (short) {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+}
 
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
+function getScoreColor(toPar: number) {
+  if (toPar <= -5) return 'text-emerald-700 bg-emerald-50';
+  if (toPar < 0) return 'text-emerald-600 bg-emerald-50';
+  if (toPar === 0) return 'text-slate-700 bg-slate-50';
+  if (toPar <= 5) return 'text-amber-600 bg-amber-50';
+  return 'text-red-600 bg-red-50';
+}
 
-  const points = data.map((value, index) => {
-    const x = (index / (data.length - 1 || 1)) * 100;
-    const y = 100 - ((value - min) / range) * 80;
-    return `${x},${y}`;
-  }).join(' ');
+function calculateMovingAverage(data: number[], window: number): (number | null)[] {
+  return data.map((_, index) => {
+    if (index < window - 1) return null;
+    const slice = data.slice(index - window + 1, index + 1);
+    return slice.reduce((a, b) => a + b, 0) / window;
+  });
+}
 
-  const colorClasses = {
-    emerald: { bg: 'bg-emerald-50', line: 'stroke-emerald-600', dot: 'fill-emerald-600', text: 'text-emerald-700' },
-    blue: { bg: 'bg-blue-50', line: 'stroke-blue-600', dot: 'fill-blue-600', text: 'text-blue-700' },
-    purple: { bg: 'bg-purple-50', line: 'stroke-purple-600', dot: 'fill-purple-600', text: 'text-purple-700' },
-    amber: { bg: 'bg-amber-50', line: 'stroke-amber-600', dot: 'fill-amber-600', text: 'text-amber-700' },
-  };
+function calculateTrend(data: number[]): { direction: 'up' | 'down' | 'stable'; percentage: number } {
+  if (data.length < 2) return { direction: 'stable', percentage: 0 };
 
-  const colors = colorClasses[color as keyof typeof colorClasses] || colorClasses.emerald;
+  const recentHalf = data.slice(-Math.ceil(data.length / 2));
+  const olderHalf = data.slice(0, Math.floor(data.length / 2));
+
+  if (recentHalf.length === 0 || olderHalf.length === 0) return { direction: 'stable', percentage: 0 };
+
+  const recentAvg = recentHalf.reduce((a, b) => a + b, 0) / recentHalf.length;
+  const olderAvg = olderHalf.reduce((a, b) => a + b, 0) / olderHalf.length;
+
+  const diff = recentAvg - olderAvg;
+  const percentage = Math.abs((diff / olderAvg) * 100);
+
+  // For golf scores, lower is better
+  if (diff < -1) return { direction: 'up', percentage };
+  if (diff > 1) return { direction: 'down', percentage };
+  return { direction: 'stable', percentage };
+}
+
+// Custom tooltip for charts
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string }[]; label?: string }) {
+  if (!active || !payload?.length) return null;
 
   return (
-    <div className={`relative glass-standard rounded-2xl overflow-hidden p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5`}>
-      {/* Shine effect */}
-      <div
-        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-        }}
-      />
-      <h3 className="text-sm font-semibold text-slate-700 mb-3">{label}</h3>
-      <div className="relative h-32 bg-white rounded-lg p-2">
-        <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
-          <polyline
-            points={points}
-            fill="none"
-            className={colors.line}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {data.map((value, index) => {
-            const x = (index / (data.length - 1 || 1)) * 100;
-            const y = 100 - ((value - min) / range) * 80;
-            return (
-              <circle
-                key={index}
-                cx={x}
-                cy={y}
-                r="2"
-                className={colors.dot}
-              />
-            );
-          })}
-        </svg>
-      </div>
-      <div className="flex justify-between mt-2 text-xs text-slate-500">
-        <span>Oldest</span>
-        <span className={`font-semibold ${colors.text}`}>
-          Latest: {data[data.length - 1]?.toFixed(1)}
-        </span>
-      </div>
+    <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 p-3">
+      <p className="text-xs font-medium text-slate-500 mb-1">{label}</p>
+      {payload.map((entry, index) => (
+        <p key={index} className="text-sm font-semibold" style={{ color: entry.color }}>
+          {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(1) : entry.value}
+        </p>
+      ))}
     </div>
   );
 }
 
-function ScoreDistributionChart({ stats }: { stats: GolfStats }) {
+const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: RoundData[] }) {
+  const [showMovingAvg, setShowMovingAvg] = useState(true);
+
+  if (rounds.length < 2) return null;
+
+  const sortedRounds = [...rounds].reverse(); // Oldest to newest
+  const scores = sortedRounds.map(r => r.total_score);
+  const movingAvg = calculateMovingAverage(scores, 3);
+
+  const chartData = sortedRounds.map((round, index) => ({
+    date: formatDate(round.round_date, true),
+    fullDate: formatDate(round.round_date),
+    course: round.course_name,
+    score: round.total_score,
+    toPar: round.total_to_par,
+    movingAvg: movingAvg[index],
+  }));
+
+  const trend = calculateTrend(scores);
+
+  return (
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
+      />
+
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-base font-semibold text-slate-900">Scoring Trend</h3>
+          <p className="text-sm text-slate-500 mt-0.5">Last {rounds.length} rounds</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {trend.direction !== 'stable' && (
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+              trend.direction === 'up' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+            }`}>
+              {trend.direction === 'up' ? (
+                <IconTrendingDown size={14} />
+              ) : (
+                <IconTrendingUp size={14} />
+              )}
+              {trend.percentage.toFixed(1)}%
+            </div>
+          )}
+          <button
+            onClick={() => setShowMovingAvg(!showMovingAvg)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              showMovingAvg ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            3-Round Avg
+          </button>
+        </div>
+      </div>
+
+      <Suspense fallback={<ChartSkeleton />}>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+              <defs>
+                <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#16a34a" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                axisLine={{ stroke: '#e2e8f0' }}
+                tickLine={false}
+              />
+              <YAxis
+                domain={['dataMin - 2', 'dataMax + 2']}
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                axisLine={{ stroke: '#e2e8f0' }}
+                tickLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="score"
+                stroke="#16a34a"
+                strokeWidth={2}
+                fill="url(#scoreGradient)"
+                name="Score"
+                dot={{ fill: '#16a34a', strokeWidth: 0, r: 4 }}
+                activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+              />
+              {showMovingAvg && (
+                <Line
+                  type="monotone"
+                  dataKey="movingAvg"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={false}
+                  name="3-Round Avg"
+                  connectNulls
+                />
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      </Suspense>
+    </div>
+  );
+});
+
+const ScoreDistributionChart = memo(function ScoreDistributionChart({ stats }: { stats: GolfStats }) {
   const total = stats.totalEagles + stats.totalBirdies + stats.totalPars + stats.totalBogeys + stats.totalDoublePlus;
   if (total === 0) return null;
 
   const distribution = [
-    { label: 'Eagles', count: stats.totalEagles, color: 'bg-yellow-500', pct: (stats.totalEagles / total) * 100 },
-    { label: 'Birdies', count: stats.totalBirdies, color: 'bg-emerald-500', pct: (stats.totalBirdies / total) * 100 },
-    { label: 'Pars', count: stats.totalPars, color: 'bg-slate-400', pct: (stats.totalPars / total) * 100 },
-    { label: 'Bogeys', count: stats.totalBogeys, color: 'bg-orange-500', pct: (stats.totalBogeys / total) * 100 },
-    { label: 'Double+', count: stats.totalDoublePlus, color: 'bg-red-500', pct: (stats.totalDoublePlus / total) * 100 },
+    { label: 'Eagles', count: stats.totalEagles, color: '#eab308', pct: (stats.totalEagles / total) * 100 },
+    { label: 'Birdies', count: stats.totalBirdies, color: '#16a34a', pct: (stats.totalBirdies / total) * 100 },
+    { label: 'Pars', count: stats.totalPars, color: '#64748b', pct: (stats.totalPars / total) * 100 },
+    { label: 'Bogeys', count: stats.totalBogeys, color: '#f97316', pct: (stats.totalBogeys / total) * 100 },
+    { label: 'Double+', count: stats.totalDoublePlus, color: '#dc2626', pct: (stats.totalDoublePlus / total) * 100 },
   ].filter(d => d.count > 0);
 
-  return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
-      {/* Shine effect */}
-      <div
-        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-        }}
-      />
-      <h3 className="text-sm font-semibold text-slate-700 mb-4">Score Distribution</h3>
+  const chartData = distribution.map(d => ({
+    name: d.label,
+    value: d.count,
+    pct: d.pct,
+    fill: d.color,
+  }));
 
-      {/* Horizontal Bar */}
-      <div className="h-12 bg-slate-100 rounded-lg overflow-hidden flex mb-4">
-        {distribution.map((d, i) => (
-          <div
-            key={i}
-            className={`${d.color} flex items-center justify-center text-white text-xs font-bold`}
-            style={{ width: `${d.pct}%` }}
-          >
-            {d.pct >= 8 && d.count}
-          </div>
-        ))}
-      </div>
+  return (
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
+      />
+      <h3 className="text-base font-semibold text-slate-900 mb-4">Score Distribution</h3>
+
+      <Suspense fallback={<ChartSkeleton />}>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
+              <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                tick={{ fontSize: 12, fill: '#374151', fontWeight: 500 }}
+                axisLine={false}
+                tickLine={false}
+                width={60}
+              />
+              <Tooltip
+                formatter={(value, _name, props) => {
+                  const payload = props?.payload as { pct: number } | undefined;
+                  return [
+                    `${value} (${payload?.pct?.toFixed(1) ?? 0}%)`,
+                    'Count'
+                  ];
+                }}
+              />
+              <Bar dataKey="value" radius={[0, 6, 6, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Suspense>
 
       {/* Legend */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+      <div className="flex flex-wrap justify-center gap-4 mt-4 pt-4 border-t border-slate-100">
         {distribution.map((d, i) => (
           <div key={i} className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-sm ${d.color}`}></div>
-            <div className="text-xs">
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: d.color }} />
+            <span className="text-sm">
               <span className="font-semibold text-slate-700">{d.count}</span>
               <span className="text-slate-500 ml-1">{d.label}</span>
-            </div>
+            </span>
           </div>
         ))}
       </div>
     </div>
   );
-}
+});
 
-function RecentRounds({ rounds }: { rounds: RoundData[] }) {
-  const recentRounds = rounds.slice(0, 5);
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const getScoreColor = (toPar: number) => {
-    if (toPar <= -5) return 'text-emerald-700 bg-emerald-50';
-    if (toPar < 0) return 'text-emerald-600 bg-emerald-50';
-    if (toPar === 0) return 'text-slate-700 bg-slate-50';
-    if (toPar <= 5) return 'text-amber-600 bg-amber-50';
-    return 'text-red-600 bg-red-50';
-  };
+const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const displayRounds = expanded ? rounds : rounds.slice(0, 5);
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
-      {/* Shine effect */}
-      <div
-        className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-        }}
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
-      <h3 className="text-sm font-semibold text-slate-700 mb-4">Recent Rounds</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-base font-semibold text-slate-900">Recent Rounds</h3>
+        {rounds.length > 5 && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium transition-colors"
+          >
+            {expanded ? (
+              <>Show Less <IconChevronUp size={16} /></>
+            ) : (
+              <>Show All ({rounds.length}) <IconChevronDown size={16} /></>
+            )}
+          </button>
+        )}
+      </div>
       <div className="space-y-2">
-        {recentRounds.map((round) => (
-          <div key={round.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+        {displayRounds.map((round, index) => (
+          <div
+            key={round.id}
+            className="flex items-center justify-between p-3 bg-slate-50/80 rounded-xl hover:bg-slate-100/80 transition-colors"
+            style={{ animation: `fadeIn 0.3s ease-out forwards`, animationDelay: `${index * 50}ms` }}
+          >
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-900 truncate">{round.course_name}</p>
               <p className="text-xs text-slate-500">{formatDate(round.round_date)}</p>
@@ -173,56 +317,249 @@ function RecentRounds({ rounds }: { rounds: RoundData[] }) {
               <div className="text-right">
                 <p className="text-lg font-bold text-slate-900">{round.total_score}</p>
               </div>
-              <div className={`px-2.5 py-1 rounded-md text-sm font-semibold ${getScoreColor(round.total_to_par)}`}>
+              <div className={`px-2.5 py-1 rounded-lg text-sm font-semibold ${getScoreColor(round.total_to_par)}`}>
                 {round.total_to_par === 0 ? 'E' : round.total_to_par > 0 ? `+${round.total_to_par}` : round.total_to_par}
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(5px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
-}
+});
 
-function ProgressMetrics({ stats }: { stats: GolfStats }) {
+const ProgressMetrics = memo(function ProgressMetrics({ stats }: { stats: GolfStats }) {
   const metrics = [
-    { label: 'Avg Score', value: stats.scoringAverage?.toFixed(1) || '-', subtext: 'per round' },
-    { label: 'Best Round', value: stats.bestRound?.toString() || '-', subtext: 'career low' },
-    { label: 'GIR %', value: stats.girPercentage?.toFixed(0) || '-', subtext: 'hit greens' },
-    { label: 'Putts/Round', value: stats.puttsPerRound?.toFixed(1) || '-', subtext: 'average' },
-    { label: 'Fairway %', value: stats.fairwayPercentage?.toFixed(0) || '-', subtext: 'accuracy' },
-    { label: 'Scrambling', value: stats.scramblingPercentage?.toFixed(0) || '-', subtext: 'save %' },
+    { label: 'Avg Score', value: stats.scoringAverage?.toFixed(1) || '-', subtext: 'per round', color: 'text-green-600' },
+    { label: 'Best Round', value: stats.bestRound?.toString() || '-', subtext: 'career low', color: 'text-emerald-600' },
+    { label: 'GIR %', value: stats.girPercentage ? `${stats.girPercentage.toFixed(0)}%` : '-', subtext: 'hit greens', color: 'text-blue-600' },
+    { label: 'Putts/Round', value: stats.puttsPerRound?.toFixed(1) || '-', subtext: 'average', color: 'text-purple-600' },
+    { label: 'Fairway %', value: stats.fairwayPercentage ? `${stats.fairwayPercentage.toFixed(0)}%` : '-', subtext: 'accuracy', color: 'text-amber-600' },
+    { label: 'Scrambling', value: stats.scramblingPercentage ? `${stats.scramblingPercentage.toFixed(0)}%` : '-', subtext: 'save %', color: 'text-rose-600' },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
       {metrics.map((m, i) => (
-        <div key={i} className="relative glass-standard rounded-xl overflow-hidden p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
-          {/* Shine effect */}
-          <div
-            className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-            }}
+        <div
+          key={i}
+          className="relative glass-standard rounded-xl overflow-hidden p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+          style={{ animation: `scaleIn 0.3s ease-out forwards`, animationDelay: `${i * 50}ms` }}
+        >
+          <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+            style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
           />
-          <p className="text-2xl font-bold text-emerald-600">{m.value}</p>
+          <p className={`text-2xl font-bold ${m.color}`}>{m.value}</p>
           <p className="text-xs font-medium text-slate-700 mt-1">{m.label}</p>
           <p className="text-xs text-slate-400">{m.subtext}</p>
         </div>
       ))}
+
+      <style jsx>{`
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
     </div>
   );
-}
+});
 
-export default function ProgressStats({ stats, rounds }: ProgressStatsProps) {
-  // Calculate trend data from rounds (last 10 rounds)
-  const recentRounds = [...rounds].reverse().slice(-10);
-  const scoreTrend = recentRounds.map(r => r.total_score);
+const RoundComparisonTable = memo(function RoundComparisonTable({ rounds }: { rounds: RoundData[] }) {
+  const [sortBy, setSortBy] = useState<'date' | 'score'>('date');
+  const [sortAsc, setSortAsc] = useState(false);
 
+  if (rounds.length < 2) return null;
+
+  const sortedRounds = [...rounds].sort((a, b) => {
+    if (sortBy === 'date') {
+      const diff = new Date(b.round_date).getTime() - new Date(a.round_date).getTime();
+      return sortAsc ? -diff : diff;
+    }
+    const diff = a.total_score - b.total_score;
+    return sortAsc ? diff : -diff;
+  });
+
+  const handleSort = (column: 'date' | 'score') => {
+    if (sortBy === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortBy(column);
+      setSortAsc(column === 'score'); // Default ascending for score (lower is better)
+    }
+  };
+
+  return (
+    <div className="relative glass-standard rounded-2xl overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
+      />
+      <div className="p-6 pb-4">
+        <h3 className="text-base font-semibold text-slate-900">Round Comparison</h3>
+        <p className="text-sm text-slate-500 mt-0.5">Click column headers to sort</p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-y border-slate-100 bg-slate-50/50">
+              <th
+                className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700"
+                onClick={() => handleSort('date')}
+              >
+                <div className="flex items-center gap-1">
+                  Date
+                  {sortBy === 'date' && (sortAsc ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />)}
+                </div>
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                Course
+              </th>
+              <th
+                className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700"
+                onClick={() => handleSort('score')}
+              >
+                <div className="flex items-center justify-center gap-1">
+                  Score
+                  {sortBy === 'score' && (sortAsc ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />)}
+                </div>
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                To Par
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {sortedRounds.slice(0, 10).map((round) => (
+              <tr key={round.id} className="hover:bg-slate-50/50 transition-colors">
+                <td className="px-6 py-3 text-sm text-slate-600">
+                  {formatDate(round.round_date)}
+                </td>
+                <td className="px-6 py-3 text-sm font-medium text-slate-900">
+                  {round.course_name}
+                </td>
+                <td className="px-6 py-3 text-center">
+                  <span className="text-lg font-bold text-slate-900">{round.total_score}</span>
+                </td>
+                <td className="px-6 py-3 text-center">
+                  <span className={`inline-flex px-2.5 py-1 rounded-lg text-sm font-semibold ${getScoreColor(round.total_to_par)}`}>
+                    {round.total_to_par === 0 ? 'E' : round.total_to_par > 0 ? `+${round.total_to_par}` : round.total_to_par}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+});
+
+const InsightCard = memo(function InsightCard({ stats }: { stats: GolfStats }) {
+  if (stats.roundsPlayed < 3) return null;
+
+  const insights: { icon: string; text: string; type: 'positive' | 'neutral' | 'improvement' }[] = [];
+
+  // Add relevant insights
+  if (stats.birdiesPerRound && stats.birdiesPerRound >= 2) {
+    insights.push({
+      icon: '🐦',
+      text: `Averaging ${stats.birdiesPerRound.toFixed(1)} birdies per round - great birdie making!`,
+      type: 'positive'
+    });
+  }
+
+  if (stats.girPercentage && stats.girPercentage >= 50) {
+    insights.push({
+      icon: '🎯',
+      text: `${stats.girPercentage.toFixed(0)}% GIR - solid approach game!`,
+      type: 'positive'
+    });
+  } else if (stats.girPercentage && stats.girPercentage < 40) {
+    insights.push({
+      icon: '📈',
+      text: `Focus on approach shots - GIR at ${stats.girPercentage.toFixed(0)}%`,
+      type: 'improvement'
+    });
+  }
+
+  if (stats.puttsPerRound && stats.puttsPerRound <= 30) {
+    insights.push({
+      icon: '⛳',
+      text: `${stats.puttsPerRound.toFixed(1)} putts per round - excellent putting!`,
+      type: 'positive'
+    });
+  } else if (stats.puttsPerRound && stats.puttsPerRound > 34) {
+    insights.push({
+      icon: '🏌️',
+      text: `Work on putting - averaging ${stats.puttsPerRound.toFixed(1)} per round`,
+      type: 'improvement'
+    });
+  }
+
+  if (stats.scramblingPercentage && stats.scramblingPercentage >= 50) {
+    insights.push({
+      icon: '💪',
+      text: `${stats.scramblingPercentage.toFixed(0)}% scrambling - great recovery skills!`,
+      type: 'positive'
+    });
+  }
+
+  if (stats.longestNo3PuttStreak && stats.longestNo3PuttStreak >= 18) {
+    insights.push({
+      icon: '🔥',
+      text: `${stats.longestNo3PuttStreak} hole streak without 3-putting!`,
+      type: 'positive'
+    });
+  }
+
+  if (insights.length === 0) {
+    insights.push({
+      icon: '📊',
+      text: `${stats.roundsPlayed} rounds played with a ${stats.scoringAverage?.toFixed(1)} average. Keep tracking!`,
+      type: 'neutral'
+    });
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-2xl border border-green-200/50 p-6">
+      <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center gap-2">
+        <span>💡</span> Performance Insights
+      </h3>
+      <div className="space-y-3">
+        {insights.slice(0, 4).map((insight, i) => (
+          <div
+            key={i}
+            className={`flex items-start gap-3 p-3 rounded-xl ${
+              insight.type === 'positive' ? 'bg-green-100/50' :
+              insight.type === 'improvement' ? 'bg-amber-100/50' :
+              'bg-white/50'
+            }`}
+          >
+            <span className="text-xl">{insight.icon}</span>
+            <p className="text-sm text-slate-700">{insight.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+export default memo(function ProgressStats({ stats, rounds }: ProgressStatsProps) {
   return (
     <div className="space-y-6">
       {/* Quick Metrics */}
       <ProgressMetrics stats={stats} />
+
+      {/* Scoring Trend Chart */}
+      <ScoringTrendChart rounds={rounds} />
 
       {/* Recent Rounds */}
       {rounds.length > 0 && <RecentRounds rounds={rounds} />}
@@ -230,37 +567,27 @@ export default function ProgressStats({ stats, rounds }: ProgressStatsProps) {
       {/* Score Distribution */}
       <ScoreDistributionChart stats={stats} />
 
-      {/* Trend Charts */}
-      {scoreTrend.length >= 2 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TrendLine data={scoreTrend} label="Scoring Trend (Last 10 Rounds)" color="emerald" />
-        </div>
-      )}
+      {/* Round Comparison Table */}
+      <RoundComparisonTable rounds={rounds} />
 
-      {/* Improvement Insights */}
-      {stats.roundsPlayed >= 3 && (
-        <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl border-2 border-emerald-200 p-6">
-          <h3 className="text-lg font-semibold text-emerald-900 mb-2">📈 Keep It Up!</h3>
-          <p className="text-sm text-emerald-700">
-            You've played {stats.roundsPlayed} rounds. Your best score is {stats.bestRound} and you're averaging {stats.scoringAverage?.toFixed(1)}.
-            {stats.totalBirdies > 0 && ` You've made ${stats.totalBirdies} birdies so far!`}
-          </p>
-        </div>
-      )}
+      {/* Performance Insights */}
+      <InsightCard stats={stats} />
 
       {/* Empty State */}
       {stats.roundsPlayed < 3 && (
-        <div className="relative text-center py-12 glass-standard rounded-2xl overflow-hidden transition-all duration-300">
-          {/* Shine effect */}
-          <div
-            className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-            }}
+        <div className="relative text-center py-12 glass-standard rounded-2xl overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+            style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
           />
-          <p className="text-slate-500">Play more rounds to see trend visualizations</p>
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">📈</span>
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">More Data Needed</h3>
+          <p className="text-slate-500 max-w-sm mx-auto">
+            Play more rounds to unlock detailed trend visualizations and insights
+          </p>
         </div>
       )}
     </div>
   );
-}
+});

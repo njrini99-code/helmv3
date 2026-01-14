@@ -60,10 +60,10 @@ export function TableEmptyState({ type, searchQuery, onAction }: TableEmptyState
       flex flex-col items-center justify-center
       py-16 px-4
       bg-white border border-warm-100
-      rounded-[20px]
+      rounded-2xl
     ">
       <div className="
-        w-16 h-16 rounded-[16px]
+        w-16 h-16 rounded-xl
         bg-primary-50
         flex items-center justify-center
         mb-4
@@ -90,7 +90,7 @@ export function TableEmptyState({ type, searchQuery, onAction }: TableEmptyState
             px-5 py-2.5
             bg-primary-600 text-white
             font-medium text-sm
-            rounded-[10px]
+            rounded-md
             shadow-sm
             transition-all duration-200
             hover:bg-primary-700 hover:shadow-md

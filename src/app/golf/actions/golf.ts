@@ -952,7 +952,8 @@ export async function deleteGolfRound(roundId: string): Promise<ActionResult> {
 
     return { success: true, data: undefined };
 
-  } catch {
+  } catch (error) {
+    console.error('Unexpected error in golf action:', error);
     return {
       success: false,
       error: 'An unexpected error occurred'
@@ -1059,8 +1060,9 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       try {
         const { sendEventInvitations } = await import('@/lib/calendar/rsvp');
         await sendEventInvitations(event.id, validatedData.attendeeIds, supabase);
-      } catch {
+      } catch (inviteError) {
         // Don't fail the whole operation if invitations fail
+        console.error('Failed to send event invitations:', inviteError);
       }
     }
 
@@ -1210,8 +1212,9 @@ export async function updateGolfEvent(
         try {
           const { sendEventInvitations } = await import('@/lib/calendar/rsvp');
           await sendEventInvitations(eventId, toAdd, supabase);
-        } catch {
+        } catch (inviteError) {
           // Don't fail the whole update if invitations fail
+          console.error('Failed to send event invitations:', inviteError);
         }
       }
 
@@ -1313,7 +1316,8 @@ export async function deleteGolfEvent(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
 
-  } catch {
+  } catch (error) {
+    console.error('Unexpected error in golf action:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1538,9 +1542,14 @@ export async function invitePlayerToTeam(
       .single();
 
     // Generate invite code if not exists
+    // Uses 8-char readable format (no confusing chars like 0/O, 1/I/L)
     let inviteCode = team?.invite_code;
     if (!inviteCode) {
-      inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      inviteCode = '';
+      for (let i = 0; i < 8; i++) {
+        inviteCode += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
       const { error: updateError } = await supabase
         .from('golf_teams')
         .update({ invite_code: inviteCode })
@@ -1642,7 +1651,8 @@ export async function respondToEvent(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: undefined };
 
-  } catch {
+  } catch (error) {
+    console.error('Failed to update RSVP:', error);
     return { success: false, error: 'Failed to update RSVP' };
   }
 }
@@ -1675,7 +1685,8 @@ export async function checkScheduleConflicts(
 
     return { success: true, data: result as unknown as ConflictResult };
 
-  } catch {
+  } catch (error) {
+    console.error('Failed to check conflicts:', error);
     return { success: false, error: 'Failed to check conflicts' };
   }
 }
@@ -1738,7 +1749,8 @@ export async function getPlayerAvailability(
 
     return { success: true, data: serialized };
 
-  } catch {
+  } catch (error) {
+    console.error('Failed to get availability:', error);
     return { success: false, error: 'Failed to get availability' };
   }
 }
@@ -1781,7 +1793,8 @@ export async function getCurrentUserBusyPeriods(
 
     return { success: true, data: serialized };
 
-  } catch {
+  } catch (error) {
+    console.error('Failed to get availability:', error);
     return { success: false, error: 'Failed to get availability' };
   }
 }
@@ -1811,7 +1824,8 @@ export async function getNotifications(limit: number = 50): Promise<ActionResult
 
     return { success: true, data: data || [] };
 
-  } catch {
+  } catch (error) {
+    console.error('Failed to fetch notifications:', error);
     return { success: false, error: 'Failed to fetch notifications' };
   }
 }
@@ -1833,7 +1847,8 @@ export async function markNotificationRead(
     revalidatePath('/golf/dashboard');
     return { success: true, data: undefined };
 
-  } catch {
+  } catch (error) {
+    console.error('Failed to mark notification read:', error);
     return { success: false, error: 'Failed to mark notification read' };
   }
 }
@@ -1859,7 +1874,8 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
     revalidatePath('/golf/dashboard');
     return { success: true, data: undefined };
 
-  } catch {
+  } catch (error) {
+    console.error('Failed to mark notifications read:', error);
     return { success: false, error: 'Failed to mark notifications read' };
   }
 }
@@ -1892,7 +1908,8 @@ export async function getPendingInvitations(): Promise<ActionResult<EventInvitat
 
     return { success: true, data: invitations };
 
-  } catch {
+  } catch (error) {
+    console.error('Failed to fetch invitations:', error);
     return { success: false, error: 'Failed to fetch invitations' };
   }
 }
@@ -1939,7 +1956,8 @@ export async function getPlayerEventRSVP(
         respondedAt: attendance.responded_at ?? null,
       },
     };
-  } catch {
+  } catch (error) {
+    console.error('Failed to fetch RSVP status:', error);
     return { success: false, error: 'Failed to fetch RSVP status' };
   }
 }
@@ -1956,7 +1974,8 @@ export async function getEventRSVP(eventId: string): Promise<ActionResult<RSVPSt
 
     return { success: true, data: stats };
 
-  } catch {
+  } catch (error) {
+    console.error('Failed to fetch RSVP data:', error);
     return { success: false, error: 'Failed to fetch RSVP data' };
   }
 }
@@ -2312,15 +2331,9 @@ export async function savePartialRound(
         .maybeSingle();
 
       if (roundError) {
-        console.error('Update round error:', {
-          code: roundError.code,
-          message: roundError.message,
-          details: roundError.details,
-          hint: roundError.hint,
-        });
-        return { 
-          success: false, 
-          error: roundError.message || 'Failed to update round. Please try again.' 
+        return {
+          success: false,
+          error: roundError.message || 'Failed to update round. Please try again.'
         };
       }
 
@@ -2333,15 +2346,9 @@ export async function savePartialRound(
           .single();
 
         if (insertError) {
-          console.error('Insert round error (fallback):', {
-            code: insertError.code,
-            message: insertError.message,
-            details: insertError.details,
-            hint: insertError.hint,
-          });
-          return { 
-            success: false, 
-            error: insertError.message || 'Failed to save round. Please try again.' 
+          return {
+            success: false,
+            error: insertError.message || 'Failed to save round. Please try again.'
           };
         }
 
@@ -2370,19 +2377,9 @@ export async function savePartialRound(
         .single();
 
       if (roundError) {
-        console.error('Insert round error:', {
-          code: roundError.code,
-          message: roundError.message,
-          details: roundError.details,
-          hint: roundError.hint,
-          roundData: {
-            ...roundData,
-            player_id: '[REDACTED]',
-          },
-        });
-        return { 
-          success: false, 
-          error: roundError.message || 'Failed to save round. Please try again.' 
+        return {
+          success: false,
+          error: roundError.message || 'Failed to save round. Please try again.'
         };
       }
 
@@ -2509,7 +2506,7 @@ export async function savePartialRound(
             .insert(shotsData);
 
           if (shotsError) {
-            console.error('Error saving shots for hole', holeNumber, shotsError);
+            // Shot saving failed - continue with other holes
           }
         }
       }
@@ -3195,8 +3192,8 @@ async function updateQualifierEntryStats(
       .eq('player_id', playerId);
 
   } catch (error) {
-    console.error('Failed to update qualifier entry stats:', error);
-    // Don't throw - this is a non-critical operation
+    // Non-critical operation - log but continue
+    console.error('Non-critical operation failed:', error);
   }
 }
 
@@ -3362,7 +3359,6 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
   result = (result as unknown) as { data: any; error: any };
 
   if (result.error) {
-    console.error('Failed to save course:', result.error);
     return { success: false, error: 'Failed to save course configuration' };
   }
 

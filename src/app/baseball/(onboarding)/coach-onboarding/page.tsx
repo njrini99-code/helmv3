@@ -85,16 +85,55 @@ export default function CoachOnboarding() {
 
       if (authError) {
         console.error('❌ Auth signup error:', authError);
-        console.error('❌ Error name:', authError.name);
-        console.error('❌ Error status:', authError.status);
-        console.error('❌ Full error:', JSON.stringify(authError, null, 2));
+
+        // Handle user already exists - try to sign them in instead
+        if (authError.status === 422 || authError.message?.includes('already registered') || (authError as any).code === 'user_already_exists') {
+          // Try signing in with the provided credentials
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: data.email?.trim() || '',
+            password: data.password || '',
+          });
+
+          if (signInError) {
+            setError(
+              'An account with this email already exists. Please go to the login page to sign in, or use a different email address.'
+            );
+            setIsSubmitting(false);
+            return;
+          }
+
+          // Successfully signed in - check if they have a coach profile
+          if (signInData.user) {
+            const { data: existingCoach } = await supabase
+              .from('baseball_coaches')
+              .select('id')
+              .eq('user_id', signInData.user.id)
+              .single();
+
+            if (existingCoach) {
+              // Already has a coach profile, redirect to dashboard
+              clearOnboarding();
+              router.push('/baseball/dashboard');
+              router.refresh();
+              return;
+            }
+
+            // No coach profile yet, continue with setup using existing user
+            // Skip the auth signup and continue from Step 2
+            // Continue to create coach profile (code continues below)
+            // We need to restructure to handle this case
+            setError(
+              'Account exists but coach profile is incomplete. Please contact support or try a different email.'
+            );
+            setIsSubmitting(false);
+            return;
+          }
+        }
 
         // Check if this is an auth hook error
-        if (authError.message.includes('validate email') || authError.message.includes('invalid format')) {
+        if (authError.message?.includes('validate email') || authError.message?.includes('invalid format')) {
           setError(
-            'Email validation failed. This is likely due to a Supabase Auth Hook. ' +
-            'Please go to Supabase Dashboard > Authentication > Hooks and disable any email validation hooks, ' +
-            'or try a different email address.'
+            'Email validation failed. Please check your email format and try again.'
           );
         } else {
           setError(`Failed to create account: ${authError.message}`);
@@ -178,7 +217,7 @@ export default function CoachOnboarding() {
 
       // Step 4: Create coach record
       const { error: coachError } = await supabase
-        .from('coaches')
+        .from('baseball_coaches')
         .insert({
           user_id: userId,
           coach_type: coachType,
@@ -202,8 +241,18 @@ export default function CoachOnboarding() {
       // Clear onboarding data from localStorage
       clearOnboarding();
 
-      // Redirect to dashboard
-      router.push('/baseball/dashboard');
+      // Check for stored returnTo URL (from invite link flow)
+      const storedReturnTo = sessionStorage.getItem('baseball_signup_returnTo');
+
+      if (storedReturnTo) {
+        // Clear the stored URL
+        sessionStorage.removeItem('baseball_signup_returnTo');
+        // Redirect to the stored URL
+        router.push(storedReturnTo);
+      } else {
+        // Redirect to dashboard
+        router.push('/baseball/dashboard');
+      }
       router.refresh();
 
     } catch (err) {

@@ -8,7 +8,7 @@ interface ActiveFiltersBarProps {
   filters: {
     gradYear?: number;
     position?: string;
-    state?: string;
+    states?: string[]; // Now supports multiple states
     minVelo?: number;
     maxVelo?: number;
     minExit?: number;
@@ -37,7 +37,7 @@ export function ActiveFiltersBar({ filters, totalCount, className }: ActiveFilte
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const removeFilter = (key: string) => {
+  const removeFilter = (key: string, value?: string) => {
     const params = new URLSearchParams(searchParams.toString());
     // Handle velocity filters (remove both min and max when removing velocity)
     if (key === 'minVelo' || key === 'maxVelo') {
@@ -46,6 +46,14 @@ export function ActiveFiltersBar({ filters, totalCount, className }: ActiveFilte
     } else if (key === 'minExit' || key === 'maxExit') {
       params.delete('minExit');
       params.delete('maxExit');
+    } else if (key === 'state' && value && filters.states) {
+      // Handle removing individual state from multiple states
+      const remainingStates = filters.states.filter(s => s !== value);
+      if (remainingStates.length > 0) {
+        params.set('state', remainingStates.join(','));
+      } else {
+        params.delete('state');
+      }
     } else {
       params.delete(key);
     }
@@ -54,14 +62,27 @@ export function ActiveFiltersBar({ filters, totalCount, className }: ActiveFilte
   };
 
   const clearAll = () => {
-    router.push('/baseball/dashboard/discover');
+    const params = new URLSearchParams(searchParams.toString());
+    // Keep mode but clear all filters
+    const mode = params.get('mode');
+    params.forEach((_, key) => params.delete(key));
+    if (mode) params.set('mode', mode);
+    router.push(`/baseball/dashboard/discover?${params.toString()}`);
   };
 
   // Build filter chips
-  const chips: { key: string; label: string; value: string }[] = [];
+  const chips: { key: string; label: string; value: string; removeValue?: string }[] = [];
 
-  if (filters.state) {
-    chips.push({ key: 'state', label: 'State', value: STATE_NAMES[filters.state] || filters.state });
+  // Add individual state chips for each selected state
+  if (filters.states && filters.states.length > 0) {
+    filters.states.forEach(stateCode => {
+      chips.push({
+        key: 'state',
+        label: 'State',
+        value: STATE_NAMES[stateCode] || stateCode,
+        removeValue: stateCode
+      });
+    });
   }
   if (filters.gradYear) {
     chips.push({ key: 'gradYear', label: 'Class', value: filters.gradYear.toString() });
@@ -106,7 +127,7 @@ export function ActiveFiltersBar({ filters, totalCount, className }: ActiveFilte
       <div className="flex items-center gap-2 flex-wrap flex-1">
         {chips.map((chip, index) => (
           <div
-            key={chip.key}
+            key={`${chip.key}-${chip.removeValue || index}`}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg
                        bg-white border border-slate-200 text-sm
                        animate-scale-in shadow-sm"
@@ -117,8 +138,8 @@ export function ActiveFiltersBar({ filters, totalCount, className }: ActiveFilte
             )}
             <span className="font-medium text-slate-700">{chip.value}</span>
             <button
-              onClick={() => removeFilter(chip.key)}
-              className="ml-0.5 p-0.5 rounded hover:bg-slate-100 text-slate-400 
+              onClick={() => removeFilter(chip.key, chip.removeValue)}
+              className="ml-0.5 p-0.5 rounded hover:bg-slate-100 text-slate-400
                          hover:text-slate-600 transition-colors"
             >
               <IconX size={12} />

@@ -7,7 +7,7 @@ import { useTeamStore, type Team } from '@/stores/team-store';
 
 /**
  * Hook to load and manage teams for a player
- * Players can be members of up to 2 teams (HS + Showcase)
+ * Players can be members of up to 2 baseball_teams (HS + Showcase)
  */
 export function usePlayerTeams() {
   const { player } = useAuthStore();
@@ -25,12 +25,12 @@ export function usePlayerTeams() {
 
       // Get teams where this player is a member
       const { data: memberData, error: memberError } = await supabase
-        .from('team_members')
+        .from('baseball_team_members')
         .select(`
           team_id,
           jersey_number,
           joined_at,
-          teams (
+          baseball_teams (
             id,
             name,
             team_type,

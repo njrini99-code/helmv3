@@ -9,15 +9,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
 import { PageLoading } from '@/components/ui/loading';
-import { IconArrowRight, IconCheck, IconUser, IconUpload } from '@/components/icons';
+import { IconArrowRight, IconCheck, IconUser, IconUpload, IconUsers } from '@/components/icons';
+import { processTeamInvitation } from '@/app/baseball/actions/teams';
 
-type Step = 'welcome' | 'basic' | 'baseball' | 'physical' | 'metrics' | 'photo' | 'complete';
+type Step = 'welcome' | 'basic' | 'baseball' | 'physical' | 'metrics' | 'photo' | 'team' | 'complete';
 
 const positions = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'OF', 'INF', 'UTIL'];
 const handedness = ['R', 'L', 'S'];
 const gradYears = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i);
 
-const STEPS = ['welcome', 'basic', 'baseball', 'physical', 'metrics', 'photo', 'complete'] as const;
+const STEPS = ['welcome', 'basic', 'baseball', 'physical', 'metrics', 'photo', 'team', 'complete'] as const;
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -67,6 +68,13 @@ export default function PlayerOnboarding() {
   const [exitVelo, setExitVelo] = useState<string>(player?.exit_velo?.toString() || '');
   const [sixtyTime, setSixtyTime] = useState<string>(player?.sixty_time?.toString() || '');
 
+  // Team join state
+  const [inviteCode, setInviteCode] = useState('');
+  const [joiningTeam, setJoiningTeam] = useState(false);
+  const [teamJoinError, setTeamJoinError] = useState('');
+  const [teamJoined, setTeamJoined] = useState(false);
+  const [teamName, setTeamName] = useState('');
+
   if (authLoading) return <PageLoading />;
 
   if (!user || user.role !== 'player') {
@@ -82,6 +90,49 @@ export default function PlayerOnboarding() {
   const currentStepIndex = STEPS.indexOf(step);
   const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
 
+  const handleJoinTeam = async () => {
+    if (!inviteCode.trim() || !player?.id) return;
+
+    setJoiningTeam(true);
+    setTeamJoinError('');
+
+    try {
+      const result = await processTeamInvitation(inviteCode.trim(), player.id);
+
+      if (!result.success) {
+        setTeamJoinError(result.error || 'Failed to join team');
+        setJoiningTeam(false);
+        return;
+      }
+
+      // Fetch the team name after joining
+      // Note: Using type assertion due to Supabase types not including baseball_* tables
+      type TeamMemberWithTeam = { team_id: string; baseball_teams: { name: string } };
+      const { data: teamMember } = await supabase
+        .from('baseball_team_members' as 'teams')
+        .select(`
+          team_id,
+          baseball_teams!inner (
+            name
+          )
+        `)
+        .eq('player_id', player.id)
+        .order('joined_at', { ascending: false })
+        .limit(1)
+        .single() as { data: TeamMemberWithTeam | null };
+
+      if (teamMember?.baseball_teams) {
+        setTeamName(teamMember.baseball_teams.name);
+      }
+
+      setTeamJoined(true);
+      setJoiningTeam(false);
+    } catch (err) {
+      setTeamJoinError(err instanceof Error ? err.message : 'Failed to join team');
+      setJoiningTeam(false);
+    }
+  };
+
   const handleComplete = async () => {
     setLoading(true);
     setError('');
@@ -96,7 +147,7 @@ export default function PlayerOnboarding() {
       if (pitchVelo && exitVelo && sixtyTime) completionScore += 10;
 
       const { error: updateError } = await supabase
-        .from('players')
+        .from('baseball_players')
         .update({
           first_name: firstName,
           last_name: lastName,
@@ -124,7 +175,17 @@ export default function PlayerOnboarding() {
         return;
       }
 
-      router.push('/baseball/dashboard');
+      // Check for stored returnTo URL (from invite link flow)
+      const storedReturnTo = sessionStorage.getItem('baseball_signup_returnTo');
+
+      if (storedReturnTo) {
+        // Clear the stored URL
+        sessionStorage.removeItem('baseball_signup_returnTo');
+        // Redirect to the invite join page
+        router.push(storedReturnTo);
+      } else {
+        router.push('/baseball/dashboard');
+      }
       router.refresh();
     } catch {
       setError('An error occurred. Please try again.');
@@ -238,7 +299,7 @@ export default function PlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 1 of 5
+                    Step 1 of 6
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Basic Information</h2>
                 </motion.div>
@@ -361,7 +422,7 @@ export default function PlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 2 of 5
+                    Step 2 of 6
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Baseball Info</h2>
                 </motion.div>
@@ -494,7 +555,7 @@ export default function PlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 3 of 5
+                    Step 3 of 6
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Physical Measurements</h2>
                 </motion.div>
@@ -587,7 +648,7 @@ export default function PlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 4 of 5
+                    Step 4 of 6
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Metrics</h2>
                   <p className="text-sm text-slate-600 mt-2">
@@ -685,7 +746,7 @@ export default function PlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 5 of 5
+                    Step 5 of 6
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Profile Photo</h2>
                   <p className="text-sm text-slate-600 mt-2">
@@ -723,16 +784,150 @@ export default function PlayerOnboarding() {
                     </Button>
                     <Button
                       variant="ghost"
-                      onClick={() => setStep('complete')}
+                      onClick={() => setStep('team')}
                       className="flex-1"
                     >
                       Skip
                     </Button>
                     <Button
+                      onClick={() => setStep('team')}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {step === 'team' && (
+            <motion.div
+              key="team"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-md"
+            >
+              <motion.div
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+                className="space-y-6"
+              >
+                <motion.div variants={staggerItem} className="text-center mb-8">
+                  <div className="text-sm font-medium text-slate-500 mb-2">
+                    Step 6 of 6
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">Join a Team</h2>
+                  <p className="text-sm text-slate-600 mt-2">
+                    {teamJoined
+                      ? "You're on a team!"
+                      : "Have an invite code from your coach? Enter it below to join your team."}
+                  </p>
+                </motion.div>
+
+                <motion.div
+                  variants={staggerItem}
+                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
+                >
+                  {teamJoined ? (
+                    // Already on a team - show success state
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-center py-4"
+                    >
+                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <IconCheck size={32} className="text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                        Team Joined!
+                      </h3>
+                      <p className="text-slate-600">
+                        You are now a member of <span className="font-medium text-green-600">{teamName}</span>
+                      </p>
+                    </motion.div>
+                  ) : (
+                    // No team yet - show join form
+                    <div className="space-y-5">
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="flex flex-col items-center mb-6"
+                      >
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center mb-4 shadow-sm">
+                          <IconUsers size={28} className="text-green-600" />
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <Input
+                          label="Team Invite Code"
+                          value={inviteCode}
+                          onChange={(e) => {
+                            setInviteCode(e.target.value.toUpperCase());
+                            setTeamJoinError('');
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && inviteCode.trim() && !joiningTeam) {
+                              e.preventDefault();
+                              handleJoinTeam();
+                            }
+                          }}
+                          placeholder="Enter code (e.g. ABC123)"
+                          maxLength={20}
+                          className="text-center tracking-widest font-mono text-lg"
+                        />
+                      </motion.div>
+
+                      {teamJoinError && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-sm text-red-600 text-center bg-red-50 border border-red-200 rounded-xl px-4 py-3"
+                        >
+                          {teamJoinError}
+                        </motion.p>
+                      )}
+
+                      <Button
+                        onClick={handleJoinTeam}
+                        disabled={!inviteCode.trim() || joiningTeam}
+                        isLoading={joiningTeam}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      >
+                        Join Team
+                      </Button>
+
+                      <div className="text-center">
+                        <p className="text-xs text-slate-500">
+                          Don't have a code? You can join a team later from your Dashboard.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 mt-8">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setStep('photo')}
+                      className="flex-1"
+                    >
+                      Back
+                    </Button>
+                    <Button
                       onClick={() => setStep('complete')}
                       className="flex-1 bg-green-600 hover:bg-green-700"
                     >
-                      Complete
+                      {teamJoined ? 'Continue' : 'Skip for Now'}
                     </Button>
                   </div>
                 </motion.div>

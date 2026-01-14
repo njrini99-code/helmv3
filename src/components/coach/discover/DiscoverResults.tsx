@@ -20,7 +20,7 @@ import { addToWatchlist, removeFromWatchlist } from '@/app/baseball/actions/watc
 // Extended player type with joined data from discover query
 interface DiscoverPlayer extends Player {
   high_school_org?: { name: string } | null;
-  player_videos?: Array<{ thumbnail_url: string | null }> | null;
+  videos?: Array<{ thumbnail_url: string | null }> | null;
 }
 
 interface DiscoverResultsProps {
@@ -34,7 +34,7 @@ interface DiscoverResultsProps {
   filters?: {
     gradYear?: number;
     position?: string;
-    state?: string;
+    states?: string[]; // Now supports multiple states
     minVelo?: number;
     maxVelo?: number;
     minExit?: number;
@@ -110,7 +110,7 @@ export function DiscoverResults({
     verified: p.recruiting_activated || false,
     status: watchlistIds.includes(p.id) ? 'watchlist' : undefined,
     hasVideo: p.has_video || false,
-    videoThumbnail: p.player_videos?.[0]?.thumbnail_url || undefined,
+    videoThumbnail: p.videos?.[0]?.thumbnail_url || undefined,
   }));
 
   // Sort players
@@ -244,13 +244,29 @@ export function DiscoverResults({
   }, [players]);
 
   const handleStateClick = (stateCode: string) => {
+    // Toggle state selection (supports multiple states)
+    const currentStates = filters.states || [];
+    let newStates: string[];
+
+    if (currentStates.includes(stateCode)) {
+      // Remove the state if already selected
+      newStates = currentStates.filter(s => s !== stateCode);
+    } else {
+      // Add the state
+      newStates = [...currentStates, stateCode];
+    }
+
     const params = new URLSearchParams(searchParams.toString());
-    params.set('state', stateCode);
+    if (newStates.length > 0) {
+      params.set('state', newStates.join(','));
+    } else {
+      params.delete('state');
+    }
     params.delete('page'); // Reset to page 1
     router.push(`?${params.toString()}`);
   };
 
-  const handleClearState = () => {
+  const handleClearStates = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete('state');
     params.delete('page');
@@ -324,11 +340,11 @@ export function DiscoverResults({
             <p className="text-sm leading-relaxed text-slate-500">Click a state to filter players by location</p>
           </div>
           <div className="relative">
-            <USAMap 
-              stateData={stateData} 
+            <USAMap
+              stateData={stateData}
               onStateClick={handleStateClick}
-              onClearState={handleClearState}
-              selectedState={filters.state || null}
+              onClearStates={handleClearStates}
+              selectedStates={filters.states || []}
             />
           </div>
         </div>

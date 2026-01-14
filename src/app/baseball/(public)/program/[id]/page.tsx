@@ -12,6 +12,8 @@ import {
   IconBuilding,
 } from '@/components/icons';
 import { Metadata } from 'next';
+import { ProgramTabs } from '@/components/baseball/program/ProgramTabs';
+import { ProgramRoster } from '@/components/baseball/program/ProgramRoster';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -43,44 +45,32 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // Fetch organization with settings and related data
+  // ============================================================
+  // AUTH CHECK: Only college/juco coaches can view program profiles
+  // ============================================================
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    notFound(); // Block unauthenticated access
+  }
+
+  // Check if user is a recruiting coach (college or juco)
+  const { data: coach } = await supabase
+    .from('baseball_coaches')
+    .select('coach_type')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coach || !['college', 'juco'].includes(coach.coach_type)) {
+    notFound(); // Block non-recruiting coaches
+  }
+
+  // Fetch organization data
+  // Note: organization_settings, organization_staff, organization_facilities,
+  // and program_commitments tables don't exist yet - will be added in future
   const { data: organization, error } = await supabase
     .from('organizations')
-    .select(`
-      *,
-      organization_settings (*),
-      organization_staff (
-        id,
-        name,
-        title,
-        bio,
-        headshot_url,
-        email,
-        phone,
-        display_order,
-        is_public
-      ),
-      organization_facilities (
-        id,
-        name,
-        facility_type,
-        description,
-        capacity,
-        image_url,
-        display_order
-      ),
-      program_commitments (
-        id,
-        player_name,
-        position,
-        grad_year,
-        high_school,
-        city,
-        state,
-        commitment_date,
-        is_signed
-      )
-    `)
+    .select('*')
     .eq('id', id)
     .single();
 
@@ -88,22 +78,12 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  type OrganizationSettings = {
-    show_description?: boolean;
-    show_staff_bios?: boolean;
-    show_staff_photos?: boolean;
-    show_facilities?: boolean;
-    show_commitments?: boolean;
-  };
+  // Default settings (tables don't exist yet)
+  const showDescription = true;
 
-  const settings = ((organization as unknown as { organization_settings?: OrganizationSettings }).organization_settings || {}) as OrganizationSettings;
-  const showDescription = settings.show_description !== false;
-  const showStaffBios = settings.show_staff_bios !== false;
-  const showStaffPhotos = settings.show_staff_photos !== false;
-  const showFacilities = settings.show_facilities !== false;
-  const showCommitments = settings.show_commitments !== false;
-
-  // Sort staff by display order
+  // Empty arrays for features not yet implemented
+  // These will be populated when organization_staff, organization_facilities,
+  // and program_commitments tables are created
   type OrganizationStaff = {
     id: string;
     name: string;
@@ -116,11 +96,6 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
     is_public: boolean;
   };
 
-  const staff = ((organization as unknown as { organization_staff?: OrganizationStaff[] }).organization_staff || [])
-    .filter((s: OrganizationStaff) => s.is_public)
-    .sort((a: OrganizationStaff, b: OrganizationStaff) => a.display_order - b.display_order);
-
-  // Sort facilities by display order
   type OrganizationFacility = {
     id: string;
     name: string;
@@ -131,10 +106,6 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
     display_order: number;
   };
 
-  const facilities = ((organization as unknown as { organization_facilities?: OrganizationFacility[] }).organization_facilities || [])
-    .sort((a: OrganizationFacility, b: OrganizationFacility) => a.display_order - b.display_order);
-
-  // Filter public commitments
   type ProgramCommitment = {
     id: string;
     player_name: string;
@@ -148,8 +119,9 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
     is_public?: boolean;
   };
 
-  const commitments = ((organization as unknown as { program_commitments?: ProgramCommitment[] }).program_commitments || [])
-    .filter((c: ProgramCommitment) => c.is_public);
+  const staff: OrganizationStaff[] = [];
+  const facilities: OrganizationFacility[] = [];
+  const commitments: ProgramCommitment[] = [];
 
   return (
     <div className="min-h-screen bg-[#FAF6F1]">
@@ -220,136 +192,158 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
               )}
             </Card>
 
-            {/* Coaching Staff */}
-            {staff.length > 0 && (
-              <Card className="overflow-hidden">
-                <div className="p-6 border-b border-slate-200 bg-white">
-                  <div className="flex items-center gap-2">
-                    <IconUsers size={20} className="text-green-600" />
-                    <h2 className="text-lg font-semibold tracking-tight text-slate-900">Coaching Staff</h2>
-                  </div>
-                </div>
-                <div className="p-6 bg-slate-50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {staff.map((member: OrganizationStaff) => (
-                      <div
-                        key={member.id}
-                        className="bg-white rounded-lg border border-slate-200 p-4"
-                      >
-                        <div className="flex items-start gap-4">
-                          {showStaffPhotos && member.headshot_url ? (
-                            <img
-                              src={member.headshot_url}
-                              alt={member.name}
-                              className="w-16 h-16 rounded-full object-cover"
-                            />
-                          ) : (
-                            <Avatar
-                              name={member.name}
-                              size="lg"
-                              className="flex-shrink-0"
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-slate-900 truncate">
-                              {member.name}
-                            </h3>
-                            <p className="text-sm leading-relaxed text-green-600 mb-2">{member.title}</p>
-                            {showStaffBios && member.bio && (
-                              <p className="text-xs text-slate-600 line-clamp-3">
-                                {member.bio}
-                              </p>
-                            )}
-                          </div>
+            {/* Tabs: Overview and Roster */}
+            <ProgramTabs
+              coachType={coach.coach_type}
+              overviewContent={
+                <div className="space-y-6">
+                  {/* Coaching Staff */}
+                  {staff.length > 0 && (
+                    <Card className="overflow-hidden">
+                      <div className="p-6 border-b border-slate-200 bg-white">
+                        <div className="flex items-center gap-2">
+                          <IconUsers size={20} className="text-green-600" />
+                          <h2 className="text-lg font-semibold tracking-tight text-slate-900">Coaching Staff</h2>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            )}
+                      <div className="p-6 bg-slate-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {staff.map((member: OrganizationStaff) => (
+                            <div
+                              key={member.id}
+                              className="bg-white rounded-lg border border-slate-200 p-4"
+                            >
+                              <div className="flex items-start gap-4">
+                                {member.headshot_url ? (
+                                  <img
+                                    src={member.headshot_url}
+                                    alt={member.name}
+                                    className="w-16 h-16 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <Avatar
+                                    name={member.name}
+                                    size="lg"
+                                    className="flex-shrink-0"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-semibold text-slate-900 truncate">
+                                    {member.name}
+                                  </h3>
+                                  <p className="text-sm leading-relaxed text-green-600 mb-2">{member.title}</p>
+                                  {member.bio && (
+                                    <p className="text-xs text-slate-600 line-clamp-3">
+                                      {member.bio}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </Card>
+                  )}
 
-            {/* Facilities */}
-            {showFacilities && facilities.length > 0 && (
-              <Card className="overflow-hidden">
-                <div className="p-6 border-b border-slate-200 bg-white">
-                  <h2 className="text-lg font-semibold tracking-tight text-slate-900">Facilities</h2>
-                </div>
-                <div className="p-6 bg-slate-50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {facilities.map((facility: OrganizationFacility) => (
-                      <div
-                        key={facility.id}
-                        className="bg-white rounded-lg border border-slate-200 overflow-hidden"
-                      >
-                        {facility.image_url ? (
-                          <img
-                            src={facility.image_url}
-                            alt={facility.name}
-                            className="w-full h-40 object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-40 bg-slate-100 flex items-center justify-center">
-                            <IconBuilding size={32} className="text-slate-400" />
-                          </div>
-                        )}
-                        <div className="p-4">
-                          <h3 className="font-semibold text-slate-900 mb-1">
-                            {facility.name}
-                          </h3>
-                          {facility.capacity && (
-                            <p className="text-xs text-slate-500 mb-2">
-                              Capacity: {facility.capacity}
-                            </p>
-                          )}
-                          {facility.description && (
-                            <p className="text-sm leading-relaxed text-slate-600 line-clamp-2">
-                              {facility.description}
-                            </p>
-                          )}
+                  {/* Facilities */}
+                  {facilities.length > 0 && (
+                    <Card className="overflow-hidden">
+                      <div className="p-6 border-b border-slate-200 bg-white">
+                        <h2 className="text-lg font-semibold tracking-tight text-slate-900">Facilities</h2>
+                      </div>
+                      <div className="p-6 bg-slate-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {facilities.map((facility: OrganizationFacility) => (
+                            <div
+                              key={facility.id}
+                              className="bg-white rounded-lg border border-slate-200 overflow-hidden"
+                            >
+                              {facility.image_url ? (
+                                <img
+                                  src={facility.image_url}
+                                  alt={facility.name}
+                                  className="w-full h-40 object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-40 bg-slate-100 flex items-center justify-center">
+                                  <IconBuilding size={32} className="text-slate-400" />
+                                </div>
+                              )}
+                              <div className="p-4">
+                                <h3 className="font-semibold text-slate-900 mb-1">
+                                  {facility.name}
+                                </h3>
+                                {facility.capacity && (
+                                  <p className="text-xs text-slate-500 mb-2">
+                                    Capacity: {facility.capacity}
+                                  </p>
+                                )}
+                                {facility.description && (
+                                  <p className="text-sm leading-relaxed text-slate-600 line-clamp-2">
+                                    {facility.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            )}
+                    </Card>
+                  )}
 
-            {/* Commitments */}
-            {showCommitments && commitments.length > 0 && (
-              <Card className="overflow-hidden">
-                <div className="p-6 border-b border-slate-200 bg-white">
-                  <div className="flex items-center gap-2">
-                    <IconStar size={20} className="text-green-600" />
-                    <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-                      Class of {new Date().getFullYear()} Commits
-                    </h2>
-                  </div>
-                </div>
-                <div className="p-6 bg-white">
-                  <div className="divide-y divide-slate-200">
-                    {commitments.slice(0, 10).map((commit: ProgramCommitment) => (
-                      <div key={commit.id} className="py-3 first:pt-0 last:pb-0">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-slate-900">{commit.player_name}</p>
-                            <p className="text-sm leading-relaxed text-slate-600">
-                              {commit.position} • {commit.high_school}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {commit.city}, {commit.state}
-                            </p>
-                          </div>
-                          {commit.is_signed && (
-                            <Badge variant="success">Signed</Badge>
-                          )}
+                  {/* Commitments */}
+                  {commitments.length > 0 && (
+                    <Card className="overflow-hidden">
+                      <div className="p-6 border-b border-slate-200 bg-white">
+                        <div className="flex items-center gap-2">
+                          <IconStar size={20} className="text-green-600" />
+                          <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+                            Class of {new Date().getFullYear()} Commits
+                          </h2>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      <div className="p-6 bg-white">
+                        <div className="divide-y divide-slate-200">
+                          {commitments.slice(0, 10).map((commit: ProgramCommitment) => (
+                            <div key={commit.id} className="py-3 first:pt-0 last:pb-0">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium text-slate-900">{commit.player_name}</p>
+                                  <p className="text-sm leading-relaxed text-slate-600">
+                                    {commit.position} • {commit.high_school}
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    {commit.city}, {commit.state}
+                                  </p>
+                                </div>
+                                {commit.is_signed && (
+                                  <Badge variant="success">Signed</Badge>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Empty state when no additional info */}
+                  {staff.length === 0 && facilities.length === 0 && commitments.length === 0 && (
+                    <Card className="p-8 text-center">
+                      <p className="text-slate-500">No additional program information available.</p>
+                    </Card>
+                  )}
                 </div>
-              </Card>
-            )}
+              }
+              rosterContent={
+                <ProgramRoster
+                  organizationId={organization.id}
+                  organizationType={organization.type || 'high_school'}
+                  coachType={coach.coach_type}
+                />
+              }
+            />
           </div>
 
           {/* Right Column - Sidebar */}

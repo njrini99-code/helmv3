@@ -51,7 +51,7 @@ export function NewMessageModal({
       // If current user is a player, search for coaches
       if (currentUserRole === 'coach') {
         const { data: players } = await supabase
-          .from('players')
+          .from('baseball_players')
           .select('id, user_id, first_name, last_name, primary_position, grad_year, avatar_url, recruiting_activated')
           .eq('recruiting_activated', true)
           .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
@@ -70,7 +70,7 @@ export function NewMessageModal({
       } else {
         // Player searching for coaches
         const { data: coaches } = await supabase
-          .from('coaches')
+          .from('baseball_coaches')
           .select('id, user_id, full_name, school_name, program_division, avatar_url')
           .or(`full_name.ilike.%${query}%,school_name.ilike.%${query}%`)
           .limit(20);

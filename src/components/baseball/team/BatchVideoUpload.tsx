@@ -127,14 +127,14 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
       const fileExt = file.name.split('.').pop()?.toLowerCase() || 'mp4';
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${fileExt}`;
 
-      const uploadResult = await supabase.storage.from('videos').upload(fileName, file, {
+      const uploadResult = await supabase.storage.from('baseball_videos').upload(fileName, file, {
         cacheControl: '3600',
         upsert: false,
       });
 
       if (uploadResult.error) throw uploadResult.error;
 
-      const { data: urlData } = supabase.storage.from('videos').getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from('baseball_videos').getPublicUrl(fileName);
       const publicUrl = urlData.publicUrl;
 
       const insertPayload = selectedPlayers.map((playerId) => ({
@@ -146,11 +146,11 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
         is_primary: false,
       }));
 
-      const { error: insertError } = await supabase.from('videos').insert(insertPayload);
+      const { error: insertError } = await supabase.from('baseball_videos').insert(insertPayload);
       if (insertError) throw insertError;
 
       const { error: updateError } = await supabase
-        .from('players')
+        .from('baseball_players')
         .update({ has_video: true })
         .in('id', selectedPlayers);
 

@@ -59,6 +59,7 @@ export function CalendarHeader({
         <div className="flex items-center gap-1">
           <button
             onClick={() => onNavigate('prev')}
+            aria-label="Previous"
             style={{
               width: '32px',
               height: '32px',
@@ -75,10 +76,11 @@ export function CalendarHeader({
               transition: 'all 0.2s ease',
             }}
           >
-            <ChevronLeft className="w-4 h-4 text-stone-600" />
+            <ChevronLeft className="w-4 h-4 text-stone-600" aria-hidden="true" />
           </button>
           <button
             onClick={() => onNavigate('next')}
+            aria-label="Next"
             style={{
               width: '32px',
               height: '32px',
@@ -95,7 +97,7 @@ export function CalendarHeader({
               transition: 'all 0.2s ease',
             }}
           >
-            <ChevronRight className="w-4 h-4 text-stone-600" />
+            <ChevronRight className="w-4 h-4 text-stone-600" aria-hidden="true" />
           </button>
         </div>
 

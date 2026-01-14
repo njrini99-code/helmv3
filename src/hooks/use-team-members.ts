@@ -22,11 +22,11 @@ export function useTeamMembers(teamId?: string) {
         // If teamId is provided, fetch members for that team
         if (teamId) {
           const { data, error: membersError } = await supabase
-            .from('team_members')
+            .from('baseball_team_members')
             .select(`
               id,
               player_id,
-              players:player_id (
+              baseball_players:player_id (
                 id,
                 first_name,
                 last_name,

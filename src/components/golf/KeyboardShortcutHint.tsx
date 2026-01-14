@@ -49,8 +49,9 @@ export function KeyboardShortcutHint() {
       <button
         onClick={handleDismiss}
         className="p-1 hover:bg-slate-800 rounded transition-colors"
+        aria-label="Dismiss hint"
       >
-        <IconX size={14} />
+        <IconX size={14} aria-hidden="true" />
       </button>
     </div>
   );

@@ -112,7 +112,7 @@ export async function createAvailabilityPoll(input: {
       return { success: false, error: createError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { pollId: poll.id } };
   } catch (error) {
     return {
@@ -177,7 +177,7 @@ export async function submitPollResponses(
       return { success: false, error: insertError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {
@@ -327,7 +327,7 @@ export async function scheduleEventFromPoll(
       })
       .eq('id', pollId);
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
     return {
@@ -359,7 +359,7 @@ export async function closePoll(pollId: string): Promise<ActionResult> {
       return { success: false, error: updateError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {

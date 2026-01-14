@@ -11,112 +11,173 @@ function LoginContent() {
   const successMessage = searchParams.get('message');
 
   return (
-    <div
-      className="
-        min-h-screen
-        flex items-center justify-center
-        bg-cover bg-center bg-no-repeat
-        relative
-        p-4
-      "
-      style={{
-        backgroundImage: "url('/images/auth-bg-baseball.jpg')",
-        backgroundColor: '#0F172A', // Fallback while image loads
-      }}
-    >
-      {/* Dark gradient overlay */}
+    <div className="min-h-screen flex items-center justify-center relative p-4 bg-auth-baseball">
+      {/* Animated floating orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Large primary orb - top right */}
+        <motion.div
+          className="auth-orb auth-orb-1 w-[500px] h-[500px] -top-32 -right-32 bg-gradient-to-br from-amber-400/40 to-orange-400/30"
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -20, 0],
+            scale: [1, 1.05, 1],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        {/* Medium orb - bottom left */}
+        <motion.div
+          className="auth-orb auth-orb-2 w-[400px] h-[400px] -bottom-24 -left-24 bg-gradient-to-tr from-yellow-400/30 to-amber-400/25"
+          animate={{
+            x: [0, -25, 0],
+            y: [0, 25, 0],
+            scale: [1, 0.95, 1],
+          }}
+          transition={{
+            duration: 18,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2
+          }}
+        />
+        {/* Small accent orb - top left */}
+        <motion.div
+          className="auth-orb auth-orb-3 w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-orange-300/25 to-amber-400/20"
+          animate={{
+            x: [0, 20, 0],
+            y: [0, -15, 0],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1
+          }}
+        />
+        {/* Tiny floating dot */}
+        <motion.div
+          className="absolute w-3 h-3 rounded-full bg-amber-500/40 top-[30%] right-[20%]"
+          animate={{
+            y: [0, -10, 0],
+            opacity: [0.4, 0.8, 0.4],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+      </div>
+
+      {/* Grid pattern overlay */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
         style={{
-          background: 'conic-gradient(from 0deg at 50% 50%, rgba(22, 162, 108, 1) 8%, rgba(235, 220, 178, 1) 100%)',
-          border: '1px solid rgba(0, 0, 0, 1)',
-          boxShadow: 'inset 0px 4px 12px 0px rgba(0, 0, 0, 0.15)',
+          backgroundImage: `linear-gradient(rgba(245, 158, 11, 0.5) 1px, transparent 1px),
+                           linear-gradient(90deg, rgba(245, 158, 11, 0.5) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px'
         }}
       />
-
-      {/* Decorative elements - subtle */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary-600/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary-600/5 rounded-full blur-3xl" />
-      </div>
 
       {/* Glass card */}
       <div className="relative z-10 w-full max-w-[420px]">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="
-            bg-white/85
-            backdrop-blur-xl
-            border border-white/40
-            rounded-[24px]
-            p-10
-            shadow-2xl
-          "
+          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="auth-glass-card rounded-3xl p-8 sm:p-10"
         >
-          {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 rounded-[12px] bg-primary-600 flex items-center justify-center mb-4 overflow-hidden">
-              <img
-                src="/helm-baseball-logo.png"
-                alt="BaseballHelm"
-                className="w-full h-full object-cover"
-              />
+          {/* Logo with glow effect */}
+          <motion.div
+            className="flex flex-col items-center mb-8"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-amber-500/30 rounded-2xl blur-xl scale-150" />
+              <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-4 shadow-lg overflow-hidden">
+                <img
+                  src="/helm-baseball-logo.png"
+                  alt="BaseballHelm"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
-            <h1 className="text-xl font-bold text-warm-900">BaseballHelm</h1>
-          </div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
+              BaseballHelm
+            </h1>
+          </motion.div>
 
           {/* Header */}
-          <div className="text-center mb-8">
+          <motion.div
+            className="text-center mb-8"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
             <h2 className="text-2xl font-bold text-warm-900 mb-2">
               Welcome back
             </h2>
             <p className="text-warm-500">Sign in to continue to your dashboard</p>
-          </div>
+          </motion.div>
 
           {/* Success message */}
           {successMessage && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-[10px] text-sm mb-6"
+              className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl text-sm mb-6"
             >
               {successMessage}
             </motion.div>
           )}
 
           {/* Form */}
-          <BaseballSignInForm />
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            <BaseballSignInForm />
+          </motion.div>
         </motion.div>
 
-        {/* Footer link outside card */}
-        <p className="text-center mt-6 text-white/80 text-sm">
-          Don't have an account?{' '}
-          <Link
-            href="/baseball/signup"
-            className="text-white font-medium hover:underline transition-all"
-          >
-            Sign up
-          </Link>
-        </p>
+        {/* Footer links with stagger animation */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+        >
+          <p className="text-center mt-6 text-warm-600 text-sm">
+            Don&apos;t have an account?{' '}
+            <Link
+              href="/baseball/signup"
+              className="text-amber-600 font-semibold hover:text-amber-700 transition-colors"
+            >
+              Sign up
+            </Link>
+          </p>
 
-        {/* Back to home */}
-        <p className="text-center mt-4 text-white/60 text-sm">
-          <Link href="/" className="hover:text-white/90 transition-colors">
-            ← Back to HelmLabs
-          </Link>
-        </p>
+          <p className="text-center mt-4 text-warm-500 text-sm">
+            <Link href="/" className="hover:text-warm-700 transition-colors">
+              ← Back to HelmLabs
+            </Link>
+          </p>
 
-        <p className="text-center mt-3 text-white/50 text-xs">
-          <Link href="/privacy" className="hover:text-white/80 transition-colors">
-            Privacy
-          </Link>
-          <span className="mx-2">·</span>
-          <Link href="/terms" className="hover:text-white/80 transition-colors">
-            Terms
-          </Link>
-        </p>
+          <p className="text-center mt-3 text-warm-400 text-xs">
+            <Link href="/privacy" className="hover:text-warm-600 transition-colors">
+              Privacy
+            </Link>
+            <span className="mx-2">·</span>
+            <Link href="/terms" className="hover:text-warm-600 transition-colors">
+              Terms
+            </Link>
+          </p>
+        </motion.div>
       </div>
     </div>
   );

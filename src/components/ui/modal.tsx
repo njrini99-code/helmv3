@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { X, AlertTriangle, HelpCircle } from 'lucide-react';
 
 interface ModalProps {
@@ -20,6 +20,20 @@ const sizeClasses = {
   xl: 'max-w-xl',
 };
 
+// Get all focusable elements within a container
+function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  const focusableSelectors = [
+    'button:not([disabled])',
+    'input:not([disabled])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    'a[href]',
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(',');
+
+  return Array.from(container.querySelectorAll<HTMLElement>(focusableSelectors));
+}
+
 export function Modal({
   open,
   isOpen, // Backward compatibility
@@ -30,16 +44,65 @@ export function Modal({
   size = 'md'
 }: ModalProps) {
   const isModalOpen = open ?? isOpen ?? false;
-  // Close on Escape key
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
+
+  // Focus trap handler
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+      return;
+    }
+
+    if (e.key === 'Tab' && modalRef.current) {
+      const focusableElements = getFocusableElements(modalRef.current);
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey) {
+        // Shift + Tab: if on first element, go to last
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        // Tab: if on last element, go to first
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    }
+  }, [onClose]);
+
+  // Focus management and keyboard handling
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+    if (!isModalOpen) {
+      // Restore focus when modal closes
+      previousActiveElement.current?.focus();
+      return;
     }
-    if (isModalOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-    }
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isModalOpen, onClose]);
+
+    // Store the currently focused element to restore later
+    previousActiveElement.current = document.activeElement as HTMLElement;
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Focus the first focusable element after a short delay
+    const timer = setTimeout(() => {
+      if (modalRef.current) {
+        const focusableElements = getFocusableElements(modalRef.current);
+        focusableElements[0]?.focus();
+      }
+    }, 0);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timer);
+    };
+  }, [isModalOpen, handleKeyDown]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -67,24 +130,31 @@ export function Modal({
       />
 
       {/* Modal Content */}
-      <div className={`
-        relative z-10
-        w-full ${sizeClasses[size]}
-        bg-white/95 backdrop-blur-xl
-        border border-white/40
-        rounded-[24px]
-        shadow-2xl
-        transform transition-all duration-200
-        animate-in fade-in zoom-in-95
-      `}>
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'modal-title' : undefined}
+        aria-describedby={description ? 'modal-description' : undefined}
+        className={`
+          relative z-10
+          w-full ${sizeClasses[size]}
+          bg-white/95 backdrop-blur-xl
+          border border-white/40
+          rounded-[24px]
+          shadow-2xl
+          transform transition-all duration-200
+          animate-in fade-in zoom-in-95
+        `}
+      >
         {/* Header */}
         {(title || description) && (
           <div className="px-6 pt-6 pb-4">
             {title && (
-              <h2 className="text-lg font-bold text-warm-900">{title}</h2>
+              <h2 id="modal-title" className="text-lg font-bold text-warm-900">{title}</h2>
             )}
             {description && (
-              <p className="text-sm text-warm-500 mt-1">{description}</p>
+              <p id="modal-description" className="text-sm text-warm-500 mt-1">{description}</p>
             )}
           </div>
         )}
@@ -92,6 +162,7 @@ export function Modal({
         {/* Close Button */}
         <button
           onClick={onClose}
+          aria-label="Close modal"
           className="
             absolute top-4 right-4
             w-8 h-8 rounded-[10px]
@@ -100,7 +171,7 @@ export function Modal({
             transition-all duration-200
           "
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
 
         {/* Body */}

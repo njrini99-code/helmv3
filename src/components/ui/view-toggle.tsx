@@ -20,6 +20,14 @@ export function ViewToggle({ value, onChange, className, showMap = true }: ViewT
         className
       )}
     >
+      {showMap && (
+        <ToggleButton
+          active={value === 'map'}
+          onClick={() => onChange('map')}
+          icon={IconMap}
+          label="Map view"
+        />
+      )}
       <ToggleButton
         active={value === 'grid'}
         onClick={() => onChange('grid')}
@@ -32,14 +40,6 @@ export function ViewToggle({ value, onChange, className, showMap = true }: ViewT
         icon={IconList}
         label="List view"
       />
-      {showMap && (
-        <ToggleButton
-          active={value === 'map'}
-          onClick={() => onChange('map')}
-          icon={IconMap}
-          label="Map view"
-        />
-      )}
     </div>
   );
 }

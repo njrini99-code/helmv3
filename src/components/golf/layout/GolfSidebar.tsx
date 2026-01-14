@@ -189,8 +189,8 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                   unoptimized
                 />
               </div>
-              <span className="text-white font-bold text-lg">
-                Golf<span className="text-sm font-normal opacity-80">helm</span>
+              <span className="text-xl font-bold leading-none tracking-tight text-white">
+                Golf<span className="text-primary-400">Helm</span>
               </span>
             </div>
           </div>

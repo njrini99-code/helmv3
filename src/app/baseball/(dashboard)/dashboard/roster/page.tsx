@@ -67,12 +67,12 @@ export default function RosterPage() {
     const supabase = createClient();
 
     const { data, error } = await supabase
-      .from('team_members')
+      .from('baseball_team_members')
       .select(`
         id,
         jersey_number,
         joined_at,
-        player:players (
+        player:baseball_players (
           id,
           first_name,
           last_name,

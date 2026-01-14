@@ -37,7 +37,7 @@ export async function createBaseballEvent(input: CreateEventInput) {
 
   // Get the coach's team
   const { data: coach } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
@@ -48,7 +48,7 @@ export async function createBaseballEvent(input: CreateEventInput) {
 
   // Get team for this coach
   const { data: team } = await supabase
-    .from('teams')
+    .from('baseball_teams')
     .select('id')
     .eq('organization_id', coach.organization_id)
     .single();
@@ -69,7 +69,7 @@ export async function createBaseballEvent(input: CreateEventInput) {
       : null;
 
   const { data, error } = await supabase
-    .from('events')
+    .from('baseball_events')
     .insert({
       team_id: team.id,
       coach_id: coach.id,
@@ -125,7 +125,7 @@ export async function updateBaseballEvent(eventId: string, input: UpdateEventInp
   }
 
   const { data, error } = await supabase
-    .from('events')
+    .from('baseball_events')
     .update(updateData)
     .eq('id', eventId)
     .select()
@@ -148,7 +148,7 @@ export async function deleteBaseballEvent(eventId: string) {
   }
 
   const { error } = await supabase
-    .from('events')
+    .from('baseball_events')
     .delete()
     .eq('id', eventId);
 

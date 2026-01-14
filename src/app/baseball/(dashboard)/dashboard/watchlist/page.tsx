@@ -88,7 +88,7 @@ export default function WatchlistPage() {
 
       // Fetch watchlist with player details
       const { data, error: watchlistError } = await supabase
-        .from('watchlists')
+        .from('baseball_watchlists')
         .select(`
           id,
           coach_id,
@@ -100,7 +100,7 @@ export default function WatchlistPage() {
           added_at,
           created_at,
           updated_at,
-          player:players (*)
+          player:baseball_players (*)
         `)
         .eq('coach_id', coach.id)
         .order('added_at', { ascending: false });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { PeekPanelRoot } from './PeekPanelRoot';
 import { Avatar } from '@/components/ui/avatar';
@@ -19,6 +19,7 @@ import { getFullName, formatHeight } from '@/lib/utils';
 import type { Player } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { toggleWatchlistPlayer } from '@/app/baseball/actions/watchlist';
 
 interface PlayerPeekPanelProps {
   playerId: string | null;
@@ -30,7 +31,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
   const [player, setPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
-  const [watchlistLoading, setWatchlistLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (playerId) {
@@ -46,7 +47,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
     const supabase = createClient();
 
     const { data, error } = await supabase
-      .from('players')
+      .from('baseball_players')
       .select(`
         *,
         high_school_org:organizations!players_high_school_org_id_fkey(id, name, location_city, location_state),
@@ -72,7 +73,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
     if (!user) return;
 
     const { data: coach } = await supabase
-      .from('coaches')
+      .from('baseball_coaches')
       .select('id')
       .eq('user_id', user.id)
       .single();
@@ -81,7 +82,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
 
     // Check if player is in watchlist
     const { data } = await supabase
-      .from('watchlists')
+      .from('baseball_watchlists')
       .select('id')
       .eq('coach_id', coach.id)
       .eq('player_id', id)
@@ -90,65 +91,25 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
     setIsInWatchlist(!!data);
   };
 
-  const handleToggleWatchlist = async () => {
+  const handleToggleWatchlist = () => {
     if (!player) return;
 
-    setWatchlistLoading(true);
-    const supabase = createClient();
+    startTransition(async () => {
+      const result = await toggleWatchlistPlayer(player.id);
 
-    // Get current coach
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error('You must be logged in');
-      setWatchlistLoading(false);
-      return;
-    }
-
-    const { data: coach } = await supabase
-      .from('coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      toast.error('Coach not found');
-      setWatchlistLoading(false);
-      return;
-    }
-
-    if (isInWatchlist) {
-      // Remove from watchlist
-      const { error } = await supabase
-        .from('watchlists')
-        .delete()
-        .eq('coach_id', coach.id)
-        .eq('player_id', player.id);
-
-      if (error) {
-        toast.error('Failed to remove from watchlist');
+      if (result.success) {
+        setIsInWatchlist(result.action === 'added');
+        toast.success(
+          result.action === 'added'
+            ? 'Added to watchlist'
+            : 'Removed from watchlist'
+        );
+        // Refresh the router to update any server components
+        router.refresh();
       } else {
-        setIsInWatchlist(false);
-        toast.success('Removed from watchlist');
+        toast.error(result.error || 'Failed to update watchlist');
       }
-    } else {
-      // Add to watchlist
-      const { error } = await supabase
-        .from('watchlists')
-        .insert({
-          coach_id: coach.id,
-          player_id: player.id,
-          pipeline_stage: 'watchlist',
-        });
-
-      if (error) {
-        toast.error('Failed to add to watchlist');
-      } else {
-        setIsInWatchlist(true);
-        toast.success('Added to watchlist');
-      }
-    }
-
-    setWatchlistLoading(false);
+    });
   };
 
   const handleViewFullProfile = () => {
@@ -275,10 +236,15 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
             <Button
               variant={isInWatchlist ? 'secondary' : 'secondary'}
               onClick={handleToggleWatchlist}
-              disabled={watchlistLoading}
+              disabled={isPending}
               className="w-full"
             >
-              {isInWatchlist ? (
+              {isPending ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full mr-2" />
+                  Updating...
+                </>
+              ) : isInWatchlist ? (
                 <>
                   <IconStarFilled size={16} className="mr-2 text-green-600" />
                   Remove from Watchlist

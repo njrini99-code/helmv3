@@ -75,7 +75,7 @@ export function SchoolPeekPanel() {
 
         // Fetch coaches for this organization
         const { data: coachData } = await supabase
-          .from('coaches')
+          .from('baseball_coaches')
           .select('id, full_name, coach_title, avatar_url, email_contact, phone')
           .eq('organization_id', selectedId)
           .limit(5);

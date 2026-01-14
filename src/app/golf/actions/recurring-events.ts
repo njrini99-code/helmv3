@@ -1,8 +1,5 @@
 'use server';
 
-//@ts-nocheck
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Server Actions for Recurring Events
  *
@@ -121,7 +118,7 @@ export async function createRecurringEvent(
       return { success: false, error: eventError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
     return {
@@ -282,7 +279,7 @@ export async function editRecurringEvent(
       }
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {
@@ -395,7 +392,7 @@ export async function deleteRecurringEvent(
       }
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {
@@ -573,7 +570,7 @@ export async function createAcademicExclusion(input: {
       return { success: false, error: insertError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { id: exclusion.id } };
   } catch (error) {
     return {
@@ -601,7 +598,7 @@ export async function deleteAcademicExclusion(id: string): Promise<ActionResult>
       return { success: false, error: deleteError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {

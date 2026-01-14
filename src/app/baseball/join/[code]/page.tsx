@@ -24,7 +24,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
 
   // Get player record
   const { data: player } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select('id, first_name, last_name, player_type')
     .eq('user_id', user.id)
     .single();
@@ -42,7 +42,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
       invite_code,
       expires_at,
       is_active,
-      teams!inner (
+      baseball_teams!inner (
         id,
         name,
         team_type,

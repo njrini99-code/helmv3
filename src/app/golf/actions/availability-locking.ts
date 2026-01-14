@@ -197,7 +197,7 @@ export async function createEventWithConflictCheck(eventData: {
       return { success: false, error: createError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
     return {
@@ -256,7 +256,7 @@ export async function createAvailabilityBlock(
       return { success: false, error: insertError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { blockId: block.id } };
   } catch (error) {
     return {
@@ -287,7 +287,7 @@ export async function deleteAvailabilityBlock(
       return { success: false, error: deleteError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {

@@ -98,7 +98,7 @@ export default function CollegeInterestPage() {
 
     // Get team players
     const { data: teamMembers } = await supabase
-      .from('team_members')
+      .from('baseball_team_members')
       .select('player_id')
       .eq('team_id', teamId);
 
@@ -120,14 +120,14 @@ export default function CollegeInterestPage() {
         engagement_date,
         is_anonymous,
         coach_id,
-        coaches:coach_id (
+        coaches:baseball_coaches!coach_id (
           id,
           first_name,
           last_name,
           school_name,
           division
         ),
-        players:player_id (
+        players:baseball_players!player_id (
           id,
           first_name,
           last_name,

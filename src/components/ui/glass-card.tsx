@@ -12,27 +12,27 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const variants = {
   primary: cn(
-    "bg-white/70 backdrop-blur-[12px]",
-    "border border-white/40",
-    "rounded-[20px]",
-    "shadow-[0_1px_2px_rgba(0,0,0,0.02),0_4px_8px_rgba(0,0,0,0.02),0_8px_16px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.6)]"
+    "bg-glass backdrop-blur-glass",
+    "border border-glass-border-strong",
+    "rounded-2xl",
+    "shadow-glass"
   ),
   secondary: cn(
-    "bg-white/50 backdrop-blur-[8px]",
-    "border border-white/30",
-    "rounded-[14px]",
-    "shadow-[0_1px_3px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.4)]"
+    "bg-glass-subtle backdrop-blur-glass-subtle",
+    "border border-glass-border",
+    "rounded-lg",
+    "shadow-glass-sm"
   ),
   subtle: cn(
-    "bg-white/60 backdrop-blur-[4px]",
-    "border border-white/25",
-    "rounded-[10px]"
+    "bg-glass-subtle backdrop-blur-xs",
+    "border border-glass-border",
+    "rounded-md"
   ),
   accent: cn(
-    "bg-white/70 backdrop-blur-[12px]",
-    "border border-white/40 border-l-[3px] border-l-primary-600",
-    "rounded-[20px]",
-    "shadow-[0_4px_12px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.6)]"
+    "bg-glass backdrop-blur-glass",
+    "border border-glass-border-strong border-l-[3px] border-l-primary-600",
+    "rounded-2xl",
+    "shadow-glass"
   ),
 };
 
@@ -45,10 +45,10 @@ const paddings = {
 
 const hoverEffect = cn(
   "transition-all duration-300",
-  "hover:bg-white/75",
-  "hover:border-white/50",
+  "hover:bg-glass-prominent",
+  "hover:border-glass-border-prominent",
   "hover:-translate-y-0.5",
-  "hover:shadow-[0_2px_4px_rgba(0,0,0,0.02),0_8px_16px_rgba(0,0,0,0.03),0_16px_32px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]"
+  "hover:shadow-glass-hover"
 );
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
@@ -72,8 +72,8 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
           variants[variant],
           paddings[padding],
           hover && hoverEffect,
-          glow === 'green' && "before:absolute before:inset-0 before:-z-10 before:rounded-[24px] before:bg-primary-500/8 before:blur-2xl",
-          glow === 'subtle' && "before:absolute before:inset-0 before:-z-10 before:rounded-[24px] before:bg-white/30 before:blur-xl",
+          glow === 'green' && "before:absolute before:inset-0 before:-z-10 before:rounded-3xl before:bg-primary-500/8 before:blur-2xl",
+          glow === 'subtle' && "before:absolute before:inset-0 before:-z-10 before:rounded-3xl before:bg-white/30 before:blur-xl",
           className
         )}
         {...props}

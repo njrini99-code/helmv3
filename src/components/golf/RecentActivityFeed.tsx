@@ -136,8 +136,8 @@ export function RecentActivityFeed({
           }
         }
       }
-    } catch (error) {
-      console.error('Error loading activities:', error);
+    } catch {
+      // Error loading activities - will show empty state
     }
 
     // Sort by timestamp and limit

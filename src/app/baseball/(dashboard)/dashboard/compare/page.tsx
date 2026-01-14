@@ -40,7 +40,7 @@ function CompareContent() {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from('players')
+          .from('baseball_players')
           .select('*')
           .in('id', playerIds);
 
@@ -76,7 +76,7 @@ function CompareContent() {
     setSearching(true);
     try {
       let queryBuilder = supabase
-        .from('players')
+        .from('baseball_players')
         .select('*')
         .eq('recruiting_activated', true)
         .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,high_school_name.ilike.%${query}%`)

@@ -216,7 +216,6 @@ export default function GolfPlayerOnboarding() {
           });
 
         if (usersError) {
-          console.error('Users table error:', usersError);
           // Continue anyway - the record might already exist
         }
       }
@@ -254,7 +253,6 @@ export default function GolfPlayerOnboarding() {
 
         if (existingPlayer) {
           // Update existing record
-          console.log('🔍 Updating existing golf_players record:', existingPlayer.id);
           const { error: updateError } = await supabase
             .from('golf_players')
             .update({
@@ -266,12 +264,10 @@ export default function GolfPlayerOnboarding() {
             .eq('id', existingPlayer.id);
 
           if (updateError) {
-            console.error('❌ Update failed:', updateError);
             throw updateError;
           }
         } else {
           // Insert new record
-          console.log('🔍 Inserting new golf_players record for user:', userId);
           const { error: insertError } = await supabase
             .from('golf_players')
             .insert({
@@ -282,19 +278,14 @@ export default function GolfPlayerOnboarding() {
             });
 
           if (insertError) {
-            console.error('❌ Insert failed:', insertError);
             throw insertError;
           }
         }
       }
 
-      console.log('✅ Onboarding complete, redirecting to dashboard');
       router.push('/golf/dashboard');
       router.refresh();
     } catch (err: unknown) {
-      console.error('❌ Onboarding error:', err);
-      console.error('❌ Error type:', typeof err);
-      console.error('❌ Error details:', JSON.stringify(err, null, 2));
       const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
       setError(errorMessage);
       setLoading(false);

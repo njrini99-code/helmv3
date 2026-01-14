@@ -22,7 +22,7 @@ interface Player {
   bats?: string | null;
   throws?: string | null;
   gpa?: number | null;
-  player_videos?: { id: string }[];
+  videos?: { id: string }[];
   recruiting_activated?: boolean;
 }
 
@@ -54,7 +54,7 @@ export function PlayerRow({
   const height = player.height_feet && player.height_inches
     ? `${player.height_feet}'${player.height_inches}"`
     : null;
-  const videoCount = player.player_videos?.length || 0;
+  const videoCount = player.videos?.length || 0;
 
   if (compact) {
     return (

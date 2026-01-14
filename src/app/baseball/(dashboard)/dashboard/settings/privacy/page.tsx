@@ -15,7 +15,7 @@ export default async function PrivacySettingsPage() {
 
   // Get player record
   const { data: player } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select('id')
     .eq('user_id', user.id)
     .single();

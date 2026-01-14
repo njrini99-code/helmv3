@@ -81,7 +81,7 @@ export default function TeamsPage() {
 
       // Get teams where this coach is the head coach
       const { data: teamsData, error } = await supabase
-        .from('teams')
+        .from('baseball_teams')
         .select('*')
         .eq('head_coach_id', coach.id)
         .order('created_at', { ascending: false });
@@ -95,7 +95,7 @@ export default function TeamsPage() {
       const teamIds = teamsData?.map((t) => t.id) || [];
       if (teamIds.length > 0) {
         const { data: members } = await supabase
-          .from('team_members')
+          .from('baseball_team_members')
           .select('team_id')
           .in('team_id', teamIds)
           .eq('status', 'active');
@@ -141,7 +141,7 @@ export default function TeamsPage() {
     const supabase = createClient();
 
     const { data, error } = await supabase
-      .from('teams')
+      .from('baseball_teams')
       .insert({
         name: newTeam.name.trim(),
         team_type: 'showcase',

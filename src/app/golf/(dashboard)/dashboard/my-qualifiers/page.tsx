@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import Link from 'next/link';
 import { getPlayerQualifiers, type PlayerQualifierInfo } from '@/app/golf/actions/golf';
 import { IconTrophy, IconChevronRight, IconCalendar, IconMapPin, IconGolf } from '@/components/icons';
 
 export default function MyQualifiersPage() {
+  const router = useRouter();
   const [qualifiers, setQualifiers] = useState<PlayerQualifierInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -183,13 +185,17 @@ export default function MyQualifiersPage() {
 
                       <div className="flex items-center gap-2">
                         {canEnterRounds && (
-                          <Link
-                            href="/golf/dashboard/rounds/new"
-                            onClick={(e) => e.stopPropagation()}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              router.push('/golf/dashboard/rounds/new');
+                            }}
                             className="px-3 py-1.5 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
                           >
                             Enter Round
-                          </Link>
+                          </button>
                         )}
                         <IconChevronRight size={20} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
                       </div>

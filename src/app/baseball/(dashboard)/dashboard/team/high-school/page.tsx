@@ -103,12 +103,12 @@ export default function HSCoachDashboardPage() {
 
     // Fetch roster with player details
     const { data: roster } = await supabase
-      .from('team_members')
+      .from('baseball_team_members')
       .select(`
         id,
         jersey_number,
         joined_at,
-        player:players!inner(
+        player:baseball_players!inner(
           id,
           first_name,
           last_name,
@@ -154,8 +154,8 @@ export default function HSCoachDashboardPage() {
         id,
         created_at,
         engagement_type,
-        coach:coaches(full_name, school_name, division),
-        player:players!inner(first_name, last_name, id)
+        coach:baseball_coaches(full_name, school_name, division),
+        player:baseball_players!inner(first_name, last_name, id)
       `)
       .in('player_id', (roster as TeamMember[] | null)?.map((m) => m.player.id) || [])
       .gte('created_at', thirtyDaysAgo.toISOString())
@@ -188,7 +188,7 @@ export default function HSCoachDashboardPage() {
       .select(`
         player_id,
         status,
-        player:players!inner(first_name, last_name)
+        player:baseball_players!inner(first_name, last_name)
       `)
       .eq('coach_id', coach.id)
       .in('status', ['active', 'in_progress']);

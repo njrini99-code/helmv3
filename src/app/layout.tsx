@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Playfair_Display, DM_Sans } from 'next/font/google';
 import './globals.css';
 import { ToastContainer } from '@/components/ui/toast';
+import { DatadogProvider } from '@/components/providers/DatadogProvider';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -69,7 +70,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased" suppressHydrationWarning>
-        {children}
+        <DatadogProvider>
+          {children}
+        </DatadogProvider>
         <ToastContainer />
       </body>
     </html>

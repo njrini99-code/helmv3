@@ -22,7 +22,7 @@ export async function saveComparison(params: SaveComparisonParams) {
 
   // Get coach record
   const { data: coach, error: coachError } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id')
     .eq('user_id', user.id)
     .single();
@@ -90,7 +90,7 @@ export async function deleteComparison(comparisonId: string) {
 
   // Get coach record
   const { data: coach, error: coachError } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id')
     .eq('user_id', user.id)
     .single();
@@ -129,7 +129,7 @@ export async function getSavedComparisons() {
 
   // Get coach record
   const { data: coach, error: coachError } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id')
     .eq('user_id', user.id)
     .single();

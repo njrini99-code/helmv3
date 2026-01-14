@@ -120,15 +120,16 @@ export default function GolfDashboardLayout({
       }
 
       // OPTIMIZATION: Query both coach and player in parallel
+      // Include onboarding_completed to check if they need to finish onboarding
       const [coachResult, playerResult] = await Promise.all([
         supabase
           .from('golf_coaches')
-          .select('id, full_name, avatar_url, team_id')
+          .select('id, full_name, avatar_url, team_id, onboarding_completed')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase
           .from('golf_players')
-          .select('id, first_name, last_name, avatar_url, team_id')
+          .select('id, first_name, last_name, avatar_url, team_id, onboarding_completed')
           .eq('user_id', user.id)
           .maybeSingle(),
       ]);
@@ -137,7 +138,13 @@ export default function GolfDashboardLayout({
       const player = playerResult.data;
 
       if (coach) {
-        // Get team name if team_id exists (parallel with player query if needed)
+        // Check if onboarding is complete - redirect to onboarding if not
+        if (!coach.onboarding_completed) {
+          router.push('/golf/coach');
+          return;
+        }
+
+        // Get team name if team_id exists
         let teamName: string | undefined;
         if (coach.team_id) {
           const { data: team } = await supabase
@@ -159,6 +166,12 @@ export default function GolfDashboardLayout({
       }
 
       if (player) {
+        // Check if onboarding is complete - redirect to onboarding if not
+        if (!player.onboarding_completed) {
+          router.push('/golf/player');
+          return;
+        }
+
         // Get team name if team_id exists
         let teamName: string | undefined;
         if (player.team_id) {
@@ -180,7 +193,22 @@ export default function GolfDashboardLayout({
         return;
       }
 
-      router.push('/golf/signup');
+      // No profile at all - check users table to determine where to send them
+      // This handles edge cases where the trigger failed to create a profile
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (userData?.role === 'coach') {
+        router.push('/golf/coach');
+      } else if (userData?.role === 'player') {
+        router.push('/golf/player');
+      } else {
+        // Truly unknown state - go to signup
+        router.push('/golf/signup');
+      }
     }
 
     loadUser();

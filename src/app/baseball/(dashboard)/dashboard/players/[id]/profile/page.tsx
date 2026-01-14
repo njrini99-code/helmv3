@@ -15,7 +15,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
   // Get player with their settings
   const { data: player } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select(`
       *,
       player_settings (*)

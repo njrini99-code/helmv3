@@ -309,7 +309,7 @@ export function PremiumCalendarClient({
       setSelectedEvent(null);
       router.refresh();
     } catch (error) {
-      console.error('Error saving event:', error);
+      // Event save failed - re-throw for error handling
       throw error;
     } finally {
       setIsSavingEvent(false);
@@ -329,7 +329,7 @@ export function PremiumCalendarClient({
       setSelectedEvent(null);
       router.refresh();
     } catch (error) {
-      console.error('Error deleting event:', error);
+      // Event delete failed - re-throw for error handling
       throw error;
     } finally {
       setIsSavingEvent(false);
@@ -378,13 +378,13 @@ export function PremiumCalendarClient({
       });
 
       if (!result.success) {
-        console.error('Failed to reschedule event:', result.error);
+        // Reschedule failed - exit silently
         return;
       }
 
       router.refresh();
-    } catch (error) {
-      console.error('Error rescheduling event:', error);
+    } catch {
+      // Reschedule failed - events will not update
     }
   };
 

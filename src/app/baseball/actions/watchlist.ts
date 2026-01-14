@@ -24,7 +24,7 @@ export async function addToWatchlist(coachId: string, playerId: string) {
 
   // Verify coach belongs to user
   const { data: coach } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id')
     .eq('id', coachId)
     .eq('user_id', user.id)
@@ -36,7 +36,7 @@ export async function addToWatchlist(coachId: string, playerId: string) {
 
   // Check if already in watchlist
   const { data: existing } = await supabase
-    .from('watchlists')
+    .from('baseball_watchlists')
     .select('id')
     .eq('coach_id', coachId)
     .eq('player_id', playerId)
@@ -48,7 +48,7 @@ export async function addToWatchlist(coachId: string, playerId: string) {
 
   // Add to watchlist
   const { error } = await supabase
-    .from('watchlists')
+    .from('baseball_watchlists')
     .insert({
       coach_id: coachId,
       player_id: playerId,
@@ -62,7 +62,7 @@ export async function addToWatchlist(coachId: string, playerId: string) {
 
   // Log engagement event
   await supabase
-    .from('player_engagement_events')
+    .from('baseball_player_engagement_events')
     .insert({
       player_id: playerId,
       coach_id: coachId,
@@ -89,7 +89,7 @@ export async function removeFromWatchlist(coachId: string, playerId: string) {
 
   // Verify coach belongs to user
   const { data: coach } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id')
     .eq('id', coachId)
     .eq('user_id', user.id)
@@ -100,7 +100,7 @@ export async function removeFromWatchlist(coachId: string, playerId: string) {
   }
 
   const { error } = await supabase
-    .from('watchlists')
+    .from('baseball_watchlists')
     .delete()
     .eq('coach_id', coachId)
     .eq('player_id', playerId);
@@ -141,7 +141,7 @@ export async function updateWatchlistStatus(
     });
 
     const { error } = await supabase
-      .from('watchlists')
+      .from('baseball_watchlists')
       .update({
         pipeline_stage: validatedData.status as PipelineStage,
         updated_at: new Date().toISOString(),
@@ -187,7 +187,7 @@ export async function updateWatchlistPriority(
     });
 
     const { error } = await supabase
-      .from('watchlists')
+      .from('baseball_watchlists')
       .update({
         priority: validatedData.is_high_priority ? 1 : 0,
         updated_at: new Date().toISOString(),
@@ -232,7 +232,7 @@ export async function addWatchlistNote(
     });
 
     const { error } = await supabase
-      .from('watchlists')
+      .from('baseball_watchlists')
       .update({
         notes: validatedData.note,
         updated_at: new Date().toISOString(),
@@ -250,5 +250,132 @@ export async function addWatchlistNote(
 
   } catch (err) {
     return formatSafeErrorResponse(err);
+  }
+}
+
+// Simplified actions that get coach internally - for use in client components
+export async function toggleWatchlistPlayer(playerId: string): Promise<{
+  success: boolean;
+  action?: 'added' | 'removed';
+  error?: string
+}> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const { data: coach } = await supabase
+      .from('baseball_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    // Check if already in watchlist
+    const { data: existing } = await supabase
+      .from('baseball_watchlists')
+      .select('id')
+      .eq('coach_id', coach.id)
+      .eq('player_id', playerId)
+      .maybeSingle();
+
+    if (existing) {
+      // Remove from watchlist
+      const { error } = await supabase
+        .from('baseball_watchlists')
+        .delete()
+        .eq('coach_id', coach.id)
+        .eq('player_id', playerId);
+
+      if (error) {
+        return { success: false, error: 'Failed to remove from watchlist' };
+      }
+
+      revalidatePath('/baseball/dashboard/discover');
+      revalidatePath('/baseball/dashboard/watchlist');
+      revalidatePath('/baseball/dashboard/pipeline');
+
+      return { success: true, action: 'removed' };
+    } else {
+      // Add to watchlist
+      const { error } = await supabase
+        .from('baseball_watchlists')
+        .insert({
+          coach_id: coach.id,
+          player_id: playerId,
+          pipeline_stage: 'watchlist',
+          priority: 0,
+        });
+
+      if (error) {
+        return { success: false, error: 'Failed to add to watchlist' };
+      }
+
+      // Log engagement event
+      await supabase
+        .from('baseball_player_engagement_events')
+        .insert({
+          player_id: playerId,
+          coach_id: coach.id,
+          engagement_type: 'watchlist_add',
+          engagement_date: new Date().toISOString(),
+          is_anonymous: false,
+          metadata: { source: 'player_profile' },
+        });
+
+      revalidatePath('/baseball/dashboard/discover');
+      revalidatePath('/baseball/dashboard/watchlist');
+      revalidatePath('/baseball/dashboard/pipeline');
+
+      return { success: true, action: 'added' };
+    }
+  } catch (err) {
+    console.error('Error toggling watchlist:', err);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+export async function checkWatchlistStatus(playerId: string): Promise<{
+  isInWatchlist: boolean;
+  watchlistId?: string;
+}> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { isInWatchlist: false };
+    }
+
+    const { data: coach } = await supabase
+      .from('baseball_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { isInWatchlist: false };
+    }
+
+    const { data } = await supabase
+      .from('baseball_watchlists')
+      .select('id')
+      .eq('coach_id', coach.id)
+      .eq('player_id', playerId)
+      .maybeSingle();
+
+    return {
+      isInWatchlist: !!data,
+      watchlistId: data?.id
+    };
+  } catch (err) {
+    console.error('Error checking watchlist status:', err);
+    return { isInWatchlist: false };
   }
 }

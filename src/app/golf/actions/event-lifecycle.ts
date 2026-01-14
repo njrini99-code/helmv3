@@ -78,7 +78,7 @@ export async function publishEvent(eventId: string): Promise<ActionResult> {
       return { success: false, error: updateError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {
@@ -168,7 +168,7 @@ export async function cancelEvent(
       }
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {
@@ -219,7 +219,7 @@ export async function reinstateEvent(eventId: string): Promise<ActionResult> {
       return { success: false, error: updateError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {
@@ -325,7 +325,7 @@ export async function createDraftEvent(eventData: {
       return { success: false, error: createError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
     return {

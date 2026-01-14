@@ -59,15 +59,30 @@ export async function generateTeamInsights() {
       return { success: false, error: 'No team assigned' };
     }
 
-    // 2. Get coach philosophy
-    const { data: philosophy, error: philError } = await supabase
-      .from('golf_coach_philosophy')
-      .select('*')
-      .eq('coach_id', coach.id)
-      .single();
+    // 2. PARALLELIZED: Fetch philosophy and players simultaneously
+    // Previously: 2 sequential queries
+    // Now: 1 parallel batch
+    const [philosophyResult, playersResult] = await Promise.all([
+      supabase
+        .from('golf_coach_philosophy')
+        .select('*')
+        .eq('coach_id', coach.id)
+        .single(),
+      supabase
+        .from('golf_players')
+        .select('id, first_name, last_name')
+        .eq('team_id', coach.team_id),
+    ]);
+
+    const { data: philosophy, error: philError } = philosophyResult;
+    const { data: players, error: playersError } = playersResult;
 
     if (philError || !philosophy) {
       return { success: false, error: 'Coach philosophy not found. Please configure your settings first.' };
+    }
+
+    if (playersError || !players || players.length === 0) {
+      return { success: false, error: 'No players found' };
     }
 
     // Map database fields to TypeScript
@@ -105,17 +120,7 @@ export async function generateTeamInsights() {
       updatedAt: philosophy.updated_at ?? new Date().toISOString(),
     };
 
-    // 3. Get all players on team
-    const { data: players, error: playersError } = await supabase
-      .from('golf_players')
-      .select('id, first_name, last_name')
-      .eq('team_id', coach.team_id);
-
-    if (playersError || !players || players.length === 0) {
-      return { success: false, error: 'No players found' };
-    }
-
-    // 4. Get rounds for all players (last 20 rounds each)
+    // 3. Get rounds for all players (last 20 rounds each)
     const playerIds = players.map((p) => p.id);
 
     const { data: rounds, error: roundsError } = await supabase
@@ -156,25 +161,36 @@ export async function generateTeamInsights() {
     });
 
     // 6. Generate insights for each player
+    // OPTIMIZATION: Batch fetch ALL existing active insights once instead of N queries per player
+    // Previously: 15 players × 8 insights = 120 queries
+    // Now: 1 query regardless of player/insight count
     let totalInsightsCreated = 0;
     const allInsights: InsightRecord[] = [];
+
+    // Batch fetch existing active insights for all players on this team
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existingInsights } = await (supabase as any)
+      .from('golf_coach_insights')
+      .select('player_id, insight_type')
+      .eq('coach_id', coach.id)
+      .eq('status', 'active')
+      .in('player_id', playerIds);
+
+    // Create a Set for O(1) duplicate lookup
+    const existingInsightKeys = new Set(
+      (existingInsights || []).map(
+        (i: { player_id: string; insight_type: string }) => `${i.player_id}:${i.insight_type}`
+      )
+    );
 
     for (const [playerId, playerData] of playerDataMap.entries()) {
       const insights = generateInsightsForPlayer(playerData, coachPhilosophy, players.length);
 
       for (const insight of insights) {
-        // Check if similar insight already exists (avoid duplicates)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: existing } = await (supabase as any)
-          .from('golf_coach_insights')
-          .select('id')
-          .eq('coach_id', coach.id)
-          .eq('player_id', playerId)
-          .eq('insight_type', insight.insight_type)
-          .eq('status', 'active')
-          .maybeSingle();
+        // Check if similar insight already exists using in-memory Set (O(1) lookup)
+        const insightKey = `${playerId}:${insight.insight_type}`;
 
-        if (!existing) {
+        if (!existingInsightKeys.has(insightKey)) {
           // Calculate expiration date
           const expiresAt = insight.expires_in_days
             ? new Date(Date.now() + insight.expires_in_days * 24 * 60 * 60 * 1000).toISOString()
@@ -195,6 +211,8 @@ export async function generateTeamInsights() {
           });
 
           totalInsightsCreated++;
+          // Add to set to prevent duplicates within this generation run
+          existingInsightKeys.add(insightKey);
         }
       }
     }
@@ -234,7 +252,8 @@ export async function generateTeamInsights() {
       players_analyzed: players.length,
       execution_time_ms: executionTime,
     };
-  } catch {
+  } catch (error) {
+    console.error('Unexpected error in insights action:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -285,7 +304,8 @@ export async function getActiveInsights(limit: number = 10) {
     }
 
     return { success: true, insights: insights || [] };
-  } catch {
+  } catch (error) {
+    console.error('Unexpected error in insights action:', error);
     return { success: false, error: 'An unexpected error occurred', insights: [] };
   }
 }
@@ -313,7 +333,8 @@ export async function acknowledgeInsight(insightId: string) {
 
     revalidatePath('/golf/dashboard');
     return { success: true };
-  } catch {
+  } catch (error) {
+    console.error('Unexpected error in insights action:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -340,7 +361,8 @@ export async function dismissInsight(insightId: string) {
 
     revalidatePath('/golf/dashboard');
     return { success: true };
-  } catch {
+  } catch (error) {
+    console.error('Unexpected error in insights action:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -368,7 +390,8 @@ export async function resolveInsight(insightId: string) {
 
     revalidatePath('/golf/dashboard');
     return { success: true };
-  } catch {
+  } catch (error) {
+    console.error('Unexpected error in insights action:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -394,7 +417,8 @@ export async function getPlayerFocusAreas(playerId: string) {
     }
 
     return { success: true, focus_areas: focusAreas || [] };
-  } catch {
+  } catch (error) {
+    console.error('Unexpected error in insights action:', error);
     return { success: false, error: 'An unexpected error occurred', focus_areas: [] };
   }
 }

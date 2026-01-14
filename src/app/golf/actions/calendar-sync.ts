@@ -3,6 +3,18 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface CalendarSyncResult<T = void> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  eventsCreated?: number;
+  skipped?: boolean;
+}
+
 interface ClassFormData {
   id?: string;
   course_code: string;
@@ -25,27 +37,32 @@ interface ClassFormData {
  * Sync a class to the golf calendar by creating recurring event entries
  * Creates one event per class occurrence (for each day the class meets)
  */
-export async function syncClassToCalendar(classData: ClassFormData, classId: string, playerId: string, teamId: string) {
+export async function syncClassToCalendar(
+  classData: ClassFormData,
+  classId: string,
+  playerId: string,
+  teamId: string
+): Promise<CalendarSyncResult> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('Unauthorized');
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
   }
 
   // Verify user is a golf player
-  const { data: player } = await supabase
+  const { data: player, error: playerError } = await supabase
     .from('golf_players')
     .select('id, team_id')
     .eq('user_id', user.id)
     .single();
 
-  if (!player || player.id !== playerId) {
-    throw new Error('Unauthorized: player mismatch');
+  if (playerError || !player || player.id !== playerId) {
+    return { success: false, error: 'Not authorized to sync this calendar' };
   }
 
   if (!teamId) {
-    throw new Error('Player must be on a team to sync calendar');
+    return { success: false, error: 'Player must be on a team to sync calendar' };
   }
 
   // Parse semester to determine start and end dates
@@ -91,7 +108,8 @@ export async function syncClassToCalendar(classData: ClassFormData, classId: str
   const { error } = await supabase.from('golf_events').insert(events);
 
   if (error) {
-    throw error;
+    console.error('Failed to sync class to calendar:', error);
+    return { success: false, error: 'Failed to sync class to calendar. Please try again.' };
   }
 
   revalidatePath('/golf/dashboard/calendar');
@@ -101,15 +119,20 @@ export async function syncClassToCalendar(classData: ClassFormData, classId: str
 /**
  * Remove calendar events for a deleted class
  */
-export async function removeClassFromCalendar(classId: string) {
+export async function removeClassFromCalendar(classId: string): Promise<CalendarSyncResult> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
 
   const { error } = await supabase.from('golf_events').delete().eq('class_id', classId);
 
-  if (error) throw error;
+  if (error) {
+    console.error('Failed to remove class from calendar:', error);
+    return { success: false, error: 'Failed to remove class from calendar. Please try again.' };
+  }
 
   revalidatePath('/golf/dashboard/calendar');
   return { success: true };

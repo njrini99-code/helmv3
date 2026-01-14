@@ -1,12 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconCopy, IconCheck, IconRefresh } from '@/components/icons';
-import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
+import {
+  createTeam,
+  updateTeam,
+  regenerateInviteCode,
+} from '@/app/golf/actions/teams';
 
 interface TeamSettingsClientProps {
   coach: {
@@ -23,80 +27,50 @@ interface TeamSettingsClientProps {
   } | null;
 }
 
-export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
+export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
   const router = useRouter();
   const { showToast } = useToast();
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
 
   // Form state for creating/editing team
   const [teamName, setTeamName] = useState(team?.name || '');
   const [season, setSeason] = useState(team?.season || '2024-2025');
 
-  const handleCreateTeam = async () => {
+  const handleCreateTeam = () => {
     if (!teamName.trim()) {
       showToast('Please enter a team name', 'error');
       return;
     }
 
-    setLoading(true);
-    const supabase = createClient();
+    startTransition(async () => {
+      const result = await createTeam(teamName, season);
 
-    try {
-      // 1. Create the team
-      const { data: newTeam, error: teamError } = await supabase
-        .from('golf_teams')
-        .insert({
-          name: teamName.trim(),
-          season: season,
-          invite_code: generateInviteCode(),
-        })
-        .select()
-        .single();
-
-      if (teamError) throw teamError;
-
-      // 2. Update coach's team_id
-      const { error: coachError } = await supabase
-        .from('golf_coaches')
-        .update({ team_id: newTeam.id })
-        .eq('id', coach.id);
-
-      if (coachError) throw coachError;
-
-      showToast('Team created successfully!', 'success');
-      router.refresh();
-    } catch {
-      showToast('Failed to create team', 'error');
-    } finally {
-      setLoading(false);
-    }
+      if (result.success) {
+        showToast('Team created successfully!', 'success');
+        router.refresh();
+      } else {
+        showToast(result.error || 'Failed to create team', 'error');
+      }
+    });
   };
 
-  const handleUpdateTeam = async () => {
+  const handleUpdateTeam = () => {
     if (!team) return;
 
-    setLoading(true);
-    const supabase = createClient();
+    startTransition(async () => {
+      const result = await updateTeam(team.id, {
+        name: teamName.trim(),
+        season: season,
+      });
 
-    try {
-      const { error } = await supabase
-        .from('golf_teams')
-        .update({
-          name: teamName.trim(),
-          season: season,
-        })
-        .eq('id', team.id);
-
-      if (error) throw error;
-
-      showToast('Team updated successfully!', 'success');
-      router.refresh();
-    } catch {
-      showToast('Failed to update team', 'error');
-    } finally {
-      setLoading(false);
-    }
+      if (result.success) {
+        showToast('Team updated successfully!', 'success');
+        router.refresh();
+      } else {
+        showToast(result.error || 'Failed to update team', 'error');
+      }
+    });
   };
 
   const handleCopyInviteCode = async () => {
@@ -108,27 +82,19 @@ export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleRegenerateInviteCode = async () => {
+  const handleRegenerateInviteCode = () => {
     if (!team) return;
 
-    setLoading(true);
-    const supabase = createClient();
+    startTransition(async () => {
+      const result = await regenerateInviteCode(team.id);
 
-    try {
-      const { error } = await supabase
-        .from('golf_teams')
-        .update({ invite_code: generateInviteCode() })
-        .eq('id', team.id);
-
-      if (error) throw error;
-
-      showToast('Invite code regenerated', 'success');
-      router.refresh();
-    } catch {
-      showToast('Failed to regenerate invite code', 'error');
-    } finally {
-      setLoading(false);
-    }
+      if (result.success) {
+        showToast('Invite code regenerated', 'success');
+        router.refresh();
+      } else {
+        showToast(result.error || 'Failed to regenerate invite code', 'error');
+      }
+    });
   };
 
   // No team - show create form
@@ -151,6 +117,7 @@ export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
               placeholder="e.g., University Golf Team"
+              disabled={isPending}
             />
           </div>
 
@@ -162,15 +129,16 @@ export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
               value={season}
               onChange={(e) => setSeason(e.target.value)}
               placeholder="e.g., 2024-2025"
+              disabled={isPending}
             />
           </div>
 
           <Button
             onClick={handleCreateTeam}
-            disabled={loading || !teamName.trim()}
+            disabled={isPending || !teamName.trim()}
             className="w-full"
           >
-            {loading ? 'Creating...' : 'Create Team'}
+            {isPending ? 'Creating...' : 'Create Team'}
           </Button>
         </div>
       </div>
@@ -199,6 +167,7 @@ export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
             placeholder="Team name"
+            disabled={isPending}
           />
         </div>
 
@@ -210,17 +179,18 @@ export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
             value={season}
             onChange={(e) => setSeason(e.target.value)}
             placeholder="Season"
+            disabled={isPending}
           />
         </div>
 
         <Button
           onClick={handleUpdateTeam}
-          disabled={loading}
+          disabled={isPending}
           variant="secondary"
           className="gap-2"
         >
           <IconCheck size={16} />
-          Save Changes
+          {isPending ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
 
@@ -248,11 +218,11 @@ export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
         <Button
           variant="secondary"
           onClick={handleRegenerateInviteCode}
-          disabled={loading}
+          disabled={isPending}
           className="gap-2"
         >
           <IconRefresh size={16} />
-          Regenerate Invite Code
+          {isPending ? 'Regenerating...' : 'Regenerate Invite Code'}
         </Button>
 
         <p className="text-xs text-slate-400">
@@ -261,14 +231,4 @@ export function TeamSettingsClient({ coach, team }: TeamSettingsClientProps) {
       </div>
     </div>
   );
-}
-
-// Helper to generate random invite code
-function generateInviteCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
 }

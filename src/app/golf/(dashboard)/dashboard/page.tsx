@@ -326,7 +326,6 @@ export default function GolfDashboardPage() {
                 }
 
             } catch (error) {
-                console.error('Dashboard loading error:', error);
                 if (mounted) {
                     setError(error instanceof Error ? error.message : 'Failed to load dashboard');
                     setLoading(false);

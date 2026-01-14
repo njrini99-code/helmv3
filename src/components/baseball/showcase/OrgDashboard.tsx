@@ -84,13 +84,13 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
       setLoading(true);
 
       const { data: rosterData, error: rosterError } = await supabase
-        .from('team_members')
+        .from('baseball_team_members')
         .select(`
           id,
           team_id,
           jersey_number,
           joined_at,
-          player:players (
+          player:baseball_players (
             id,
             first_name,
             last_name,
@@ -99,7 +99,7 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
             grad_year,
             recruiting_activated
           ),
-          team:teams (
+          team:baseball_teams (
             id,
             name,
             age_group
@@ -134,7 +134,7 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
       let videoCount = 0;
       if (playerIds.length > 0) {
         const { count } = await supabase
-          .from('videos')
+          .from('baseball_videos')
           .select('*', { count: 'exact', head: true })
           .in('player_id', playerIds);
         videoCount = count || 0;

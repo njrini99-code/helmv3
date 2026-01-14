@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { IconChevronLeft } from '@/components/icons';
 import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
 import type { Metadata } from 'next';
+import { QualifierViewTabs } from './QualifierViewTabs';
 
 interface QualifierEntryWithPlayer extends GolfQualifierEntry {
   player: {
@@ -217,86 +218,15 @@ export default async function QualifierDetailPage({ params }: PageProps) {
           )}
         </div>
 
-        {/* Leaderboard */}
+        {/* Leaderboard with Bracket/Table Toggle */}
         <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
           <ShineEffect />
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-slate-900">Leaderboard</h2>
-            {qualifierData.show_live_leaderboard && (
-              <span className="inline-flex items-center gap-2 text-sm font-medium text-green-600">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </span>
-                Live
-              </span>
-            )}
-          </div>
-
-          {!leaderboard || leaderboard.length === 0 ? (
-            <p className="text-center text-slate-400 py-8">No entries yet</p>
-          ) : (
-            <div className="overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="pb-3 pr-4 text-left text-xs font-semibold text-slate-500 uppercase">Pos</th>
-                    <th className="pb-3 pr-4 text-left text-xs font-semibold text-slate-500 uppercase">Player</th>
-                    <th className="pb-3 pr-4 text-right text-xs font-semibold text-slate-500 uppercase">Rounds</th>
-                    <th className="pb-3 pr-4 text-right text-xs font-semibold text-slate-500 uppercase">Total</th>
-                    <th className="pb-3 pr-4 text-right text-xs font-semibold text-slate-500 uppercase">To Par</th>
-                    <th className="pb-3 pr-4 text-right text-xs font-semibold text-slate-500 uppercase">Avg</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {leaderboard.map((entry, index) => {
-                    const position = index + 1;
-                    const isLeader = position === 1;
-                    const showPosition = !entry.isTied || index === 0 || leaderboard[index - 1]!.totalScore !== entry.totalScore;
-
-                    return (
-                      <tr
-                        key={entry.playerId}
-                        className={`hover:bg-slate-50 transition-colors ${
-                          isLeader ? 'bg-green-50' : ''
-                        }`}
-                      >
-                        <td className="py-3 pr-4 text-sm">
-                          {showPosition ? (
-                            <span className={isLeader ? 'font-bold text-green-600' : 'text-slate-600'}>
-                              {position}
-                              {entry.isTied && 'T'}
-                            </span>
-                          ) : (
-                            <span className="text-slate-600">T</span>
-                          )}
-                        </td>
-                        <td className="py-3 pr-4 text-sm font-medium text-slate-900">
-                          {entry.playerName}
-                        </td>
-                        <td className="py-3 pr-4 text-sm text-slate-600 text-right">
-                          {entry.roundsCompleted} / {qualifierData.num_rounds}
-                        </td>
-                        <td className="py-3 pr-4 text-sm font-semibold text-slate-900 text-right">
-                          {entry.totalScore > 0 ? entry.totalScore : '-'}
-                        </td>
-                        <td className="py-3 pr-4 text-sm text-slate-600 text-right">
-                          {entry.totalToPar !== 0 ? (
-                            entry.totalToPar > 0 ? `+${entry.totalToPar}` :
-                            entry.totalToPar === 0 ? 'E' :
-                            entry.totalToPar
-                          ) : '-'}
-                        </td>
-                        <td className="py-3 pr-4 text-sm text-slate-600 text-right">
-                          {entry.averageScore > 0 ? entry.averageScore.toFixed(1) : '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Leaderboard</h2>
+          <QualifierViewTabs
+            leaderboard={leaderboard}
+            numRounds={qualifierData.num_rounds}
+            showLiveLeaderboard={qualifierData.show_live_leaderboard ?? false}
+          />
         </div>
       </div>
     </div>

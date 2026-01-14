@@ -30,7 +30,7 @@ export function useTeams() {
           team_id,
           role,
           is_primary,
-          teams (
+          baseball_teams (
             id,
             name,
             team_type,
@@ -49,7 +49,7 @@ export function useTeams() {
 
       // Also check if coach is head_coach of any teams
       const { data: headCoachData, error: headError } = await supabase
-        .from('teams')
+        .from('baseball_teams')
         .select('id, name, team_type, logo_url, primary_color, age_group, city, state')
         .eq('head_coach_id', coach.id);
 
@@ -77,7 +77,7 @@ export function useTeams() {
       const teamIds = Array.from(teamMap.keys());
       if (teamIds.length > 0) {
         const { data: memberCounts } = await supabase
-          .from('team_members')
+          .from('baseball_team_members')
           .select('team_id')
           .in('team_id', teamIds)
           .eq('status', 'active');

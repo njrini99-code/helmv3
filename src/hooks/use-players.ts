@@ -24,7 +24,7 @@ export function usePlayers(options: UsePlayersOptions = {}) {
     setError(null);
 
     let query = supabase
-      .from('players')
+      .from('baseball_players')
       .select('*')
       .eq('recruiting_activated', true)
       .order('created_at', { ascending: false });
@@ -69,7 +69,7 @@ export function usePlayer(id: string) {
 
   useEffect(() => {
     const fetchPlayer = async () => {
-      const { data } = await supabase.from('players').select('*').eq('id', id).single();
+      const { data } = await supabase.from('baseball_players').select('*').eq('id', id).single();
       setPlayer(data);
       setLoading(false);
     };

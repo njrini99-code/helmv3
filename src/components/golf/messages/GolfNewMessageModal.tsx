@@ -68,7 +68,6 @@ export function GolfNewMessageModal({
         const { data: players, error } = await playerQuery.limit(20);
 
         if (error) {
-          console.error('Error searching players:', error);
           setResults([]);
           return;
         }
@@ -99,7 +98,6 @@ export function GolfNewMessageModal({
         const { data: coaches, error } = await coachQuery.limit(20);
 
         if (error) {
-          console.error('Error searching coaches:', error);
           setResults([]);
           return;
         }
@@ -117,8 +115,7 @@ export function GolfNewMessageModal({
 
         setResults(coachResults);
       }
-    } catch (error) {
-      console.error('Error searching users:', error);
+    } catch {
       setResults([]);
     } finally {
       setLoading(false);

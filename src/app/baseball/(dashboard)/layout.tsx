@@ -1,10 +1,14 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { CommandPalette } from '@/components/CommandPalette';
 import { ToastProvider } from '@/components/ui/toast';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
+import { PageLoading } from '@/components/ui/loading';
+import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -12,6 +16,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-dashboard-gradient">
+      {/* Skip Links for Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-green-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+      >
+        Skip to main content
+      </a>
+
       {/* Command Palette */}
       <CommandPalette />
 
@@ -29,7 +41,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         )}
         onClick={() => setMobileOpen(false)}
       />
-      
+
       {/* Mobile Sidebar */}
       <div
         className={cn(
@@ -49,7 +61,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'
         )}
       >
-        <main className="flex-1">
+        <main id="main-content" className="flex-1">
           {children}
         </main>
       </div>
@@ -58,6 +70,76 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const supabase = createClient();
+  const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.push('/baseball/login');
+        return;
+      }
+
+      // Check if user has completed onboarding
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (userData?.role === 'coach') {
+        const { data: coachData } = await supabase
+          .from('baseball_coaches')
+          .select('id, onboarding_completed')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!coachData) {
+          router.push('/baseball/coach-onboarding');
+          return;
+        }
+
+        if (!coachData.onboarding_completed) {
+          router.push('/baseball/coach-onboarding');
+          return;
+        }
+      } else if (userData?.role === 'player') {
+        const { data: playerData } = await supabase
+          .from('baseball_players')
+          .select('id, onboarding_completed')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!playerData) {
+          router.push('/baseball/player');
+          return;
+        }
+
+        if (!playerData.onboarding_completed) {
+          router.push('/baseball/player');
+          return;
+        }
+      } else {
+        // Unknown role - redirect to signup
+        router.push('/baseball/signup');
+        return;
+      }
+
+      setAuthorized(true);
+      setLoading(false);
+    }
+
+    checkAuth();
+  }, [router, supabase]);
+
+  if (loading || !authorized) {
+    return <PageLoading />;
+  }
+
   return (
     <SidebarProvider>
       <ToastProvider>

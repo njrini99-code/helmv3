@@ -66,7 +66,7 @@ async function checkRouteAuthorization(
 
   // Fetch coach type
   const { data: coach, error } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('coach_type')
     .eq('user_id', user.id)
     .single();
@@ -207,20 +207,9 @@ export async function updateSession(request: NextRequest) {
                            pathname.startsWith('/golf/dashboard');
   const isProtectedRoute = isDashboardRoute;
 
-  // Check if this is a hard refresh (navigation request with no referer from same origin)
-  const referer = request.headers.get('referer');
-  const isHardRefresh = !referer || !referer.includes(request.nextUrl.origin);
-
-  // ALLOW onboarding pages for authenticated users to create their records
-  // if (user && isOnboardingPage && sport) {
-  //   const url = request.nextUrl.clone();
-  //   url.pathname = `/${sport}/dashboard`;
-  //   return NextResponse.redirect(url);
-  // }
-
   // Redirect to login if accessing protected route without auth
-  // BUT: Skip redirect on hard refreshes to allow the page to load and client-side auth to handle it
-  if (!user && isProtectedRoute && !isHardRefresh) {
+  // Always redirect unauthenticated users - client-side will handle auth state
+  if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
     // Redirect to the sport-specific login page
     url.pathname = sport ? `/${sport}/login` : '/baseball/login';

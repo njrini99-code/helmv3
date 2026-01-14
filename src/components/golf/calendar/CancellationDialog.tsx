@@ -89,8 +89,8 @@ export function CancellationDialog({
       setReason('');
       setNotifyParticipants(true);
       onClose();
-    } catch (error) {
-      console.error('Failed to cancel event:', error);
+    } catch {
+      // Cancellation failed - UI will show original state
     } finally {
       setLoading(false);
     }

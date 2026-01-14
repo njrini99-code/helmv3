@@ -50,7 +50,7 @@ export async function getPlayersOptimized(params: {
 
   // Select only columns needed for player cards
   let query = supabase
-    .from('players')
+    .from('baseball_players')
     .select(
       `
       id,
@@ -109,11 +109,11 @@ export async function getPlayerByIdOptimized(playerId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select(
       `
       *,
-      videos:videos(
+      videos:baseball_videos(
         id,
         title,
         thumbnail_url,
@@ -127,9 +127,9 @@ export async function getPlayerByIdOptimized(playerId: string) {
     `
     )
     .eq('id', playerId)
-    .limit(4, { foreignTable: 'videos' }) // Limit videos to 4 for performance
-    .order('is_primary', { ascending: false, foreignTable: 'videos' })
-    .order('created_at', { ascending: false, foreignTable: 'videos' })
+    .limit(4, { foreignTable: 'baseball_videos' }) // Limit videos to 4 for performance
+    .order('is_primary', { ascending: false, foreignTable: 'baseball_videos' })
+    .order('created_at', { ascending: false, foreignTable: 'baseball_videos' })
     .single();
 
   if (error) throw error;
@@ -152,13 +152,13 @@ export async function getWatchlistOptimized(
   const to = from + pageSize - 1;
 
   const { data, error, count } = await supabase
-    .from('watchlists')
+    .from('baseball_watchlists')
     .select(
       `
       id,
       status,
       created_at,
-      player:players(
+      player:baseball_players(
         id,
         first_name,
         last_name,
@@ -233,7 +233,7 @@ export async function searchPlayersOptimized(query: string, limit = 10) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select(
       `
       id,
@@ -264,7 +264,7 @@ export async function batchLoadPlayers(playerIds: string[]) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select(
       `
       id,
@@ -291,7 +291,7 @@ export async function getAnalyticsCounts(userId: string, role: 'coach' | 'player
   if (role === 'coach') {
     const [watchlistCount, messagesCount] = await Promise.all([
       supabase
-        .from('watchlists')
+        .from('baseball_watchlists')
         .select('id', { count: 'exact', head: true })
         .eq('coach_id', userId),
       supabase
@@ -307,7 +307,7 @@ export async function getAnalyticsCounts(userId: string, role: 'coach' | 'player
   } else {
     const [videosCount, messagesCount] = await Promise.all([
       supabase
-        .from('videos')
+        .from('baseball_videos')
         .select('id', { count: 'exact', head: true })
         .eq('player_id', userId),
       supabase
@@ -332,7 +332,7 @@ export async function prefetchPlayerData(playerId: string) {
 
   // Fire off prefetch queries in parallel (don't await)
   supabase
-    .from('videos')
+    .from('baseball_videos')
     .select('id, title, thumbnail_url')
     .eq('player_id', playerId)
     .limit(4)

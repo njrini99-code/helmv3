@@ -73,7 +73,7 @@ export function SubscriptionInstructions({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy URL:', error);
+      // Copy failed - button will remain in default state
     }
   }
 
@@ -379,7 +379,7 @@ export function CompactSubscriptionHelp({ feedUrl }: { feedUrl: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy URL:', error);
+      // Copy failed - button will remain in default state
     }
   }
 

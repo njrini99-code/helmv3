@@ -118,9 +118,10 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
           {backHref && (
             <Link
               href={backHref}
+              aria-label="Go back"
               className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-all duration-200 active:scale-95"
             >
-              <IconChevronLeft size={20} />
+              <IconChevronLeft size={20} aria-hidden="true" />
             </Link>
           )}
 
@@ -162,9 +163,10 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
             onClick={() => {
               document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
             }}
+            aria-label="Open search"
             className="md:hidden p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            <IconSearch size={20} />
+            <IconSearch size={20} aria-hidden="true" />
           </button>
 
           {/* Notifications */}
@@ -179,6 +181,8 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
+              aria-label="User menu"
+              aria-expanded={showUserMenu}
               className={cn(
                 "flex items-center gap-2 p-1.5 rounded-xl transition-all duration-200",
                 showUserMenu ? "bg-slate-100" : "hover:bg-slate-50"

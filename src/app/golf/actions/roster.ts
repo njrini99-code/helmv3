@@ -3,39 +3,70 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface RosterActionResult {
+  success: boolean;
+  error?: string;
+}
+
+// ============================================================================
+// ROSTER OPERATIONS
+// ============================================================================
+
 /**
  * Removes a player from the team by setting their team_id to null.
  * Does NOT delete the player account, just removes them from the team.
+ *
+ * Authorization:
+ * - Must be authenticated
+ * - Must be a coach
+ * - Coach must have a team
+ * - Player must be on coach's team
  */
-export async function removePlayerFromTeam(playerId: string) {
+export async function removePlayerFromTeam(playerId: string): Promise<RosterActionResult> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+  // 1. Verify user is authenticated
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
 
-  // Verify user is a coach
-  const { data: coach } = await supabase
+  // 2. Verify user is a coach with a team
+  const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, team_id')
     .eq('user_id', user.id)
     .single();
 
-  if (!coach) throw new Error('Only coaches can remove players');
+  if (coachError || !coach) {
+    return { success: false, error: 'Only coaches can remove players' };
+  }
 
-  // Verify player is on coach's team
-  const { data: player } = await supabase
+  if (!coach.team_id) {
+    return { success: false, error: 'You must have a team to remove players' };
+  }
+
+  // 3. Verify player exists and is on coach's team
+  const { data: player, error: playerError } = await supabase
     .from('golf_players')
-    .select('id, team_id')
+    .select('id, team_id, first_name, last_name')
     .eq('id', playerId)
     .single();
 
-  if (!player) throw new Error('Player not found');
-  if (player.team_id !== coach.team_id) {
-    throw new Error('Player is not on your team');
+  if (playerError || !player) {
+    return { success: false, error: 'Player not found' };
   }
 
-  // Remove player from team (set team_id to null, don't delete account)
-  const { error } = await supabase
+  if (player.team_id !== coach.team_id) {
+    return { success: false, error: 'Player is not on your team' };
+  }
+
+  // 4. Remove player from team (set team_id to null, don't delete account)
+  const { error: updateError } = await supabase
     .from('golf_players')
     .update({
       team_id: null,
@@ -43,55 +74,75 @@ export async function removePlayerFromTeam(playerId: string) {
     })
     .eq('id', playerId);
 
-  if (error) throw error;
+  if (updateError) {
+    console.error('Failed to remove player from team:', updateError);
+    return { success: false, error: 'Failed to remove player. Please try again.' };
+  }
 
+  // 5. Revalidate relevant paths
+  revalidatePath('/golf/dashboard');
   revalidatePath('/golf/dashboard/roster');
+
   return { success: true };
 }
 
 /**
- * Updates a player's status (active, inactive, redshirt, etc.)
+ * Get all players on the coach's team
+ *
+ * Authorization:
+ * - Must be authenticated
+ * - Must be a coach with a team
  */
-export async function updatePlayerStatus(
-  playerId: string,
-  status: 'active' | 'injured' | 'redshirt' | 'inactive'
-) {
+export async function getTeamPlayers(): Promise<{
+  success: boolean;
+  data?: Array<{
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    status: string | null;
+    handicap: number | null;
+    avatar_url: string | null;
+  }>;
+  error?: string;
+}> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+  // 1. Verify user is authenticated
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
 
-  // Verify user is a coach
-  const { data: coach } = await supabase
+  // 2. Verify user is a coach with a team
+  const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, team_id')
     .eq('user_id', user.id)
     .single();
 
-  if (!coach) throw new Error('Only coaches can update player status');
-
-  // Verify player is on coach's team
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id, team_id')
-    .eq('id', playerId)
-    .single();
-
-  if (!player) throw new Error('Player not found');
-  if (player.team_id !== coach.team_id) {
-    throw new Error('Player is not on your team');
+  if (coachError || !coach) {
+    return { success: false, error: 'Coach profile not found' };
   }
 
-  const { error } = await supabase
+  if (!coach.team_id) {
+    return { success: true, data: [] };
+  }
+
+  // 3. Get all players on the team
+  const { data: players, error: playersError } = await supabase
     .from('golf_players')
-    .update({
-      status,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', playerId);
+    .select('id, first_name, last_name, email, status, handicap, avatar_url')
+    .eq('team_id', coach.team_id)
+    .order('last_name', { ascending: true });
 
-  if (error) throw error;
+  if (playersError) {
+    console.error('Failed to fetch team players:', playersError);
+    return { success: false, error: 'Failed to load roster' };
+  }
 
-  revalidatePath('/golf/dashboard/roster');
-  return { success: true };
+  return { success: true, data: players || [] };
 }
+
+// NOTE: updatePlayerStatus is in golf.ts
+// import { updatePlayerStatus } from '@/app/golf/actions/golf';

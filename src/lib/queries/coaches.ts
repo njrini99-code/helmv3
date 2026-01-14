@@ -7,7 +7,7 @@ export async function getCoachProfile(coachId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select(
       `
       *,
@@ -34,12 +34,12 @@ export async function getCoachTeams(coachId: string) {
 
   // Get teams where coach is head coach
   const { data: headCoachTeams, error: headCoachError } = await supabase
-    .from('teams')
+    .from('baseball_teams')
     .select(
       `
       *,
       organization:organizations(*),
-      members:team_members(count)
+      members:baseball_team_members(count)
     `
     )
     .eq('head_coach_id', coachId)
@@ -56,10 +56,10 @@ export async function getCoachTeams(coachId: string) {
     .select(
       `
       *,
-      team:teams(
+      team:baseball_teams(
         *,
         organization:organizations(*),
-        members:team_members(count)
+        members:baseball_team_members(count)
       )
     `
     )
@@ -154,7 +154,7 @@ export async function updateCoachProfile(
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .update({
       ...updates,
       updated_at: new Date().toISOString(),

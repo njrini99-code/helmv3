@@ -61,9 +61,9 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
     const supabase = createClient();
 
     const { data } = await supabase
-      .from('team_members')
+      .from('baseball_team_members')
       .select(`
-        player:players (
+        player:baseball_players (
           id,
           first_name,
           last_name,

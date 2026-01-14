@@ -122,8 +122,8 @@ export function PlayerRSVPCard({
     try {
       await onRespond(response);
       setSelectedResponse(response);
-    } catch (error) {
-      console.error('Failed to submit RSVP:', error);
+    } catch {
+      // RSVP submission failed - UI will show previous state
     } finally {
       setLoading(false);
     }
@@ -315,8 +315,8 @@ export function CompactPlayerRSVPCard({
     setLoading(true);
     try {
       await onRespond(response);
-    } catch (error) {
-      console.error('Failed to submit RSVP:', error);
+    } catch {
+      // RSVP submission failed
     } finally {
       setLoading(false);
     }

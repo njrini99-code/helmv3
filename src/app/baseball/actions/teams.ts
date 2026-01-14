@@ -42,12 +42,34 @@ export async function validatePlayerCanJoinTeam(
 ): Promise<TeamValidationResult> {
   const supabase = await createClient();
 
-  // Get player type
-  const { data: player, error: playerError } = await supabase
-    .from('players')
-    .select('player_type')
-    .eq('id', playerId)
-    .single();
+  // Fetch all required data in parallel (3 queries → 1 round trip)
+  const [playerResult, teamResult, membershipsResult] = await Promise.all([
+    supabase
+      .from('baseball_players')
+      .select('player_type')
+      .eq('id', playerId)
+      .single(),
+    supabase
+      .from('baseball_teams')
+      .select('id, name, team_type')
+      .eq('id', teamId)
+      .single(),
+    supabase
+      .from('baseball_team_members')
+      .select(`
+        team_id,
+        teams!inner (
+          id,
+          name,
+          team_type
+        )
+      `)
+      .eq('player_id', playerId),
+  ]);
+
+  const { data: player, error: playerError } = playerResult;
+  const { data: targetTeam, error: teamError } = teamResult;
+  const { data: currentMemberships } = membershipsResult;
 
   if (playerError || !player) {
     return {
@@ -56,32 +78,12 @@ export async function validatePlayerCanJoinTeam(
     };
   }
 
-  // Get team being joined
-  const { data: targetTeam, error: teamError } = await supabase
-    .from('teams')
-    .select('id, name, team_type')
-    .eq('id', teamId)
-    .single();
-
   if (teamError || !targetTeam) {
     return {
       canJoin: false,
       reason: 'Team not found',
     };
   }
-
-  // Get player's current teams
-  const { data: currentMemberships } = await supabase
-    .from('team_members')
-    .select(`
-      team_id,
-      teams!inner (
-        id,
-        name,
-        team_type
-      )
-    `)
-    .eq('player_id', playerId);
 
   const currentTeams: TeamInfo[] = (currentMemberships as TeamMembershipWithTeam[] || []).map((m) => ({
     id: m.teams.id,
@@ -219,6 +221,7 @@ export async function validatePlayerCanJoinTeam(
 
 /**
  * Add a player to a team with validation
+ * JUCO teams automatically enable recruiting for players
  */
 export async function joinTeam(playerId: string, teamId: string) {
   const supabase = await createClient();
@@ -233,9 +236,16 @@ export async function joinTeam(playerId: string, teamId: string) {
     };
   }
 
+  // Get team type to check if JUCO (auto-enable recruiting)
+  const { data: team } = await supabase
+    .from('baseball_teams')
+    .select('team_type')
+    .eq('id', teamId)
+    .single();
+
   // Add player to team
   const { error } = await supabase
-    .from('team_members')
+    .from('baseball_team_members')
     .insert({
       team_id: teamId,
       player_id: playerId,
@@ -248,6 +258,39 @@ export async function joinTeam(playerId: string, teamId: string) {
       success: false,
       error: 'Failed to join team. Please try again.',
     };
+  }
+
+  // JUCO teams auto-enable recruiting for players
+  // This is because JUCO players are automatically discoverable for transfer recruiting
+  if (team?.team_type === 'juco') {
+    // Check if player has settings that disable discoverability
+    const { data: settings } = await supabase
+      .from('baseball_player_settings')
+      .select('is_discoverable')
+      .eq('player_id', playerId)
+      .single();
+
+    // Only auto-enable if they haven't explicitly turned it off
+    // (settings not found means no explicit preference, so we enable)
+    const shouldAutoEnable = !settings || settings.is_discoverable !== false;
+
+    if (shouldAutoEnable) {
+      await supabase
+        .from('baseball_players')
+        .update({
+          recruiting_activated: true,
+          recruiting_activated_at: new Date().toISOString(),
+        })
+        .eq('id', playerId);
+
+      // Also ensure player_settings has is_discoverable = true
+      await supabase
+        .from('baseball_player_settings')
+        .upsert({
+          player_id: playerId,
+          is_discoverable: true,
+        }, { onConflict: 'player_id' });
+    }
   }
 
   // Revalidate relevant paths
@@ -285,7 +328,7 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
 
     // Find the invitation
     const { data: invitation, error: inviteError } = await supabase
-      .from('team_invitations')
+      .from('baseball_team_invitations')
       .select(`
         id,
         team_id,
@@ -328,7 +371,7 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
     // Check max uses (if applicable)
     if (invitation.max_uses) {
       const { count } = await supabase
-        .from('team_members')
+        .from('baseball_team_members')
         .select('*', { count: 'exact', head: true })
         .eq('team_id', invitation.team_id);
 
@@ -345,4 +388,262 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
   } catch (err) {
     return formatSafeErrorResponse(err);
   }
+}
+
+// ============================================================================
+// INVITE CODE MANAGEMENT (for College/JUCO Coaches Team Management)
+// ============================================================================
+
+/**
+ * Generate a readable invite code
+ * Uses uppercase letters and numbers, excluding ambiguous characters (O, 0, I, 1, L)
+ */
+function generateInviteCode(): string {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+export interface TeamInviteResult {
+  success: boolean;
+  data?: {
+    inviteCode: string;
+    inviteLink: string;
+    teamName: string;
+  };
+  error?: string;
+}
+
+/**
+ * Generate or retrieve an invite code for a coach's team
+ * Used by College and JUCO coaches for team management
+ */
+export async function generateTeamInviteCode(teamId: string): Promise<TeamInviteResult> {
+  const supabase = await createClient();
+
+  // Verify user is authenticated
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Get coach and verify they own this team
+  const { data: coach, error: coachError } = await supabase
+    .from('baseball_coaches')
+    .select('id, coach_type, organization_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (coachError || !coach) {
+    return { success: false, error: 'Coach profile not found' };
+  }
+
+  // Only college and JUCO coaches can use team management
+  if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') {
+    return { success: false, error: 'Only college and JUCO coaches can manage teams' };
+  }
+
+  // Verify the team exists and belongs to this coach's organization
+  // Note: invite_code column added via migration - types will be regenerated
+  type TeamWithInviteCode = { id: string; name: string; organization_id: string | null; invite_code: string | null };
+  const { data: team, error: teamError } = await supabase
+    .from('baseball_teams')
+    .select('id, name, organization_id, invite_code')
+    .eq('id', teamId)
+    .single() as { data: TeamWithInviteCode | null; error: unknown };
+
+  if (teamError || !team) {
+    return { success: false, error: 'Team not found' };
+  }
+
+  if (team.organization_id !== coach.organization_id) {
+    return { success: false, error: 'You can only manage teams in your organization' };
+  }
+
+  // If invite code already exists, return it
+  if (team.invite_code) {
+    return {
+      success: true,
+      data: {
+        inviteCode: team.invite_code,
+        inviteLink: `/baseball/join/${team.invite_code}`,
+        teamName: team.name,
+      },
+    };
+  }
+
+  // Generate new invite code
+  const inviteCode = generateInviteCode();
+
+  const { error: updateError } = await supabase
+    .from('baseball_teams')
+    .update({ invite_code: inviteCode } as Record<string, unknown>)
+    .eq('id', teamId);
+
+  if (updateError) {
+    console.error('Failed to generate invite code:', updateError);
+    return { success: false, error: 'Failed to generate invite code. Please try again.' };
+  }
+
+  revalidatePath('/baseball/dashboard/team');
+  revalidatePath('/baseball/dashboard/command-center');
+
+  return {
+    success: true,
+    data: {
+      inviteCode,
+      inviteLink: `/baseball/join/${inviteCode}`,
+      teamName: team.name,
+    },
+  };
+}
+
+/**
+ * Regenerate team invite code (invalidates old code)
+ */
+export async function regenerateTeamInviteCode(teamId: string): Promise<TeamInviteResult> {
+  const supabase = await createClient();
+
+  // Verify user is authenticated
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Get coach and verify they own this team
+  const { data: coach, error: coachError } = await supabase
+    .from('baseball_coaches')
+    .select('id, coach_type, organization_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (coachError || !coach) {
+    return { success: false, error: 'Coach profile not found' };
+  }
+
+  // Verify the team
+  type TeamBasic = { id: string; name: string; organization_id: string | null };
+  const { data: team, error: teamError } = await supabase
+    .from('baseball_teams')
+    .select('id, name, organization_id')
+    .eq('id', teamId)
+    .single() as { data: TeamBasic | null; error: unknown };
+
+  if (teamError || !team) {
+    return { success: false, error: 'Team not found' };
+  }
+
+  if (team.organization_id !== coach.organization_id) {
+    return { success: false, error: 'You can only manage teams in your organization' };
+  }
+
+  // Generate new invite code
+  const inviteCode = generateInviteCode();
+
+  const { error: updateError } = await supabase
+    .from('baseball_teams')
+    .update({ invite_code: inviteCode } as Record<string, unknown>)
+    .eq('id', teamId);
+
+  if (updateError) {
+    console.error('Failed to regenerate invite code:', updateError);
+    return { success: false, error: 'Failed to regenerate invite code. Please try again.' };
+  }
+
+  revalidatePath('/baseball/dashboard/team');
+  revalidatePath('/baseball/dashboard/command-center');
+
+  return {
+    success: true,
+    data: {
+      inviteCode,
+      inviteLink: `/baseball/join/${inviteCode}`,
+      teamName: team.name,
+    },
+  };
+}
+
+/**
+ * Get the coach's team for team management
+ */
+export async function getCoachTeamForManagement() {
+  const supabase = await createClient();
+
+  // Verify user is authenticated
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Get coach
+  const { data: coach, error: coachError } = await supabase
+    .from('baseball_coaches')
+    .select('id, coach_type, organization_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (coachError || !coach) {
+    return { success: false, error: 'Coach profile not found' };
+  }
+
+  // Only college and JUCO coaches can use team management
+  if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') {
+    return { success: false, error: 'Only college and JUCO coaches can manage teams' };
+  }
+
+  if (!coach.organization_id) {
+    return { success: false, error: 'No organization linked to your profile' };
+  }
+
+  // Get team for this organization
+  // Note: invite_code column added via migration - types will be regenerated
+  type TeamFullWithInvite = { id: string; name: string; team_type: string; invite_code: string | null; organization_id: string | null };
+  const { data: team, error: teamError } = await supabase
+    .from('baseball_teams')
+    .select('id, name, team_type, invite_code, organization_id')
+    .eq('organization_id', coach.organization_id)
+    .single() as { data: TeamFullWithInvite | null; error: unknown };
+
+  if (teamError || !team) {
+    // Try to find or create a team
+    return { success: true, data: null };
+  }
+
+  return {
+    success: true,
+    data: {
+      id: team.id,
+      name: team.name,
+      teamType: team.team_type,
+      inviteCode: team.invite_code,
+      organizationId: team.organization_id,
+    },
+  };
+}
+
+/**
+ * Process team join via direct invite code (for baseball)
+ * This is for the simpler code-based join (like golf) vs the invitation table
+ */
+export async function joinTeamByCode(inviteCode: string, playerId: string) {
+  const supabase = await createClient();
+
+  // Find team by invite code
+  // Note: invite_code column added via migration - types will be regenerated
+  type TeamByCode = { id: string; name: string; team_type: string };
+  const { data: team, error: teamError } = await supabase
+    .from('baseball_teams')
+    .select('id, name, team_type')
+    .eq('invite_code' as 'id', inviteCode)
+    .single() as { data: TeamByCode | null; error: unknown };
+
+  if (teamError || !team) {
+    return { success: false, error: 'Invalid invite code' };
+  }
+
+  // Use existing join logic with validation
+  return await joinTeam(playerId, team.id);
 }

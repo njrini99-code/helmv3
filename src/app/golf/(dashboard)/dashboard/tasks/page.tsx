@@ -87,8 +87,8 @@ export default function GolfTasksPage() {
           await loadPlayerData(user.id);
         }
       }
-    } catch (error) {
-      console.error('Error loading data:', error);
+    } catch {
+      // Error loading data - will show empty state
     } finally {
       setLoading(false);
     }

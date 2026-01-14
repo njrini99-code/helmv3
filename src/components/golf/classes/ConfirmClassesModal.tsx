@@ -31,7 +31,6 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
   // Update classes when parsedClasses prop changes
   useEffect(() => {
     if (parsedClasses.length > 0) {
-      console.log('[ConfirmModal] Received', parsedClasses.length, 'classes');
       setClasses(parsedClasses.map(c => ({ ...c, color: generateClassColor() })));
 
       // Set default semester start date to next Monday
@@ -78,7 +77,6 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
 
   const handleConfirm = async () => {
     if (classes.length === 0) {
-      console.log('[ConfirmModal] No classes to confirm');
       return;
     }
 
@@ -87,7 +85,6 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
       return;
     }
 
-    console.log('[ConfirmModal] Confirming', classes.length, 'classes with start date:', semesterStartDate);
     setLoading(true);
 
     try {
@@ -97,9 +94,8 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         semesterStartDate, // Add custom start date
       }));
       await onConfirm(classesWithStartDate);
-      console.log('[ConfirmModal] Confirm completed successfully');
-    } catch (error) {
-      console.error('[ConfirmModal] Error during confirm:', error);
+    } catch {
+      // Error handled by parent component
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { PlayerCard, PlayerCardData } from './PlayerCard';
 import { IconUsers } from '@/components/icons';
@@ -28,7 +28,63 @@ interface PlayerCardGridProps {
   onCardLeave?: () => void;
 }
 
-export function PlayerCardGrid({
+// Memoized card item to prevent unnecessary re-renders
+const MemoizedCardItem = memo(function CardItem({
+  player,
+  variant,
+  onWatchlist,
+  onMessage,
+  onPlayerClick,
+  isOnWatchlist,
+  showCheckbox,
+  isSelected,
+  onSelect,
+  isFeatured,
+  onMouseEnter,
+  onMouseLeave,
+}: {
+  player: PlayerCardData;
+  variant: 'default' | 'compact' | 'featured';
+  onWatchlist?: (playerId: string) => void;
+  onMessage?: (playerId: string) => void;
+  onPlayerClick?: (playerId: string) => void;
+  isOnWatchlist: boolean;
+  showCheckbox: boolean;
+  isSelected: boolean;
+  onSelect?: (playerId: string) => void;
+  isFeatured: boolean;
+  onMouseEnter: (player: PlayerCardData, event: React.MouseEvent) => void;
+  onMouseLeave: () => void;
+}) {
+  const handleWatchlist = useCallback(() => onWatchlist?.(player.id), [onWatchlist, player.id]);
+  const handleMessage = useCallback(() => onMessage?.(player.id), [onMessage, player.id]);
+  const handleClick = useCallback(() => onPlayerClick?.(player.id), [onPlayerClick, player.id]);
+  const handleSelect = useCallback(() => onSelect?.(player.id), [onSelect, player.id]);
+  const handleMouseEnter = useCallback((e: React.MouseEvent) => onMouseEnter(player, e), [onMouseEnter, player]);
+
+  return (
+    <div
+      className="transition-opacity duration-200"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      <PlayerCard
+        player={player}
+        variant={variant}
+        onWatchlist={onWatchlist ? handleWatchlist : undefined}
+        onMessage={onMessage ? handleMessage : undefined}
+        onPlayerClick={onPlayerClick ? handleClick : undefined}
+        isOnWatchlist={isOnWatchlist}
+        showCheckbox={showCheckbox}
+        isSelected={isSelected}
+        onSelect={onSelect ? handleSelect : undefined}
+        isFeatured={isFeatured}
+      />
+    </div>
+  );
+});
+
+function PlayerCardGridComponent({
   players,
   variant = 'default',
   columns = 3,
@@ -107,66 +163,50 @@ export function PlayerCardGrid({
     );
   }
 
-  // Compact variant uses list layout with stagger
+  // Compact variant uses list layout
   if (variant === 'compact') {
     return (
       <div className={cn('space-y-2', className)}>
-        {players.map((player, index) => (
-          <div
+        {players.map((player) => (
+          <MemoizedCardItem
             key={player.id}
-            className="animate-fade-up opacity-0"
-            style={{
-              animationDelay: `${Math.min(index * 30, 300)}ms`,
-              animationFillMode: 'forwards'
-            }}
-            onMouseEnter={(e) => handleMouseEnter(player, e)}
+            player={player}
+            variant="compact"
+            onWatchlist={onWatchlist}
+            onMessage={onMessage}
+            onPlayerClick={onPlayerClick}
+            isOnWatchlist={watchlistIds.includes(player.id)}
+            showCheckbox={showCheckbox}
+            isSelected={selectedIds.includes(player.id)}
+            onSelect={onSelect}
+            isFeatured={featuredIds.includes(player.id)}
+            onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-          >
-            <PlayerCard
-              player={player}
-              variant="compact"
-              onWatchlist={onWatchlist ? () => onWatchlist(player.id) : undefined}
-              onMessage={onMessage ? () => onMessage(player.id) : undefined}
-              onPlayerClick={onPlayerClick ? () => onPlayerClick(player.id) : undefined}
-              isOnWatchlist={watchlistIds.includes(player.id)}
-              showCheckbox={showCheckbox}
-              isSelected={selectedIds.includes(player.id)}
-              onSelect={onSelect ? () => onSelect(player.id) : undefined}
-              isFeatured={featuredIds.includes(player.id)}
-            />
-          </div>
+          />
         ))}
       </div>
     );
   }
 
-  // Grid layout for default and featured variants with stagger animation
+  // Grid layout for default and featured variants
   return (
     <div className={cn('grid gap-6', gridCols[columns], className)}>
-      {players.map((player, index) => (
-        <div
+      {players.map((player) => (
+        <MemoizedCardItem
           key={player.id}
-          className="animate-fade-up opacity-0"
-          style={{
-            animationDelay: `${Math.min(index * 50, 500)}ms`,
-            animationFillMode: 'forwards'
-          }}
-          onMouseEnter={(e) => handleMouseEnter(player, e)}
+          player={player}
+          variant={variant}
+          onWatchlist={onWatchlist}
+          onMessage={onMessage}
+          onPlayerClick={onPlayerClick}
+          isOnWatchlist={watchlistIds.includes(player.id)}
+          showCheckbox={showCheckbox}
+          isSelected={selectedIds.includes(player.id)}
+          onSelect={onSelect}
+          isFeatured={featuredIds.includes(player.id)}
+          onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-        >
-          <PlayerCard
-            player={player}
-            variant={variant}
-            onWatchlist={onWatchlist ? () => onWatchlist(player.id) : undefined}
-            onMessage={onMessage ? () => onMessage(player.id) : undefined}
-            onPlayerClick={onPlayerClick ? () => onPlayerClick(player.id) : undefined}
-            isOnWatchlist={watchlistIds.includes(player.id)}
-            showCheckbox={showCheckbox}
-            isSelected={selectedIds.includes(player.id)}
-            onSelect={onSelect ? () => onSelect(player.id) : undefined}
-            isFeatured={featuredIds.includes(player.id)}
-          />
-        </div>
+        />
       ))}
     </div>
   );
@@ -230,5 +270,6 @@ function PlayerCardSkeleton({ variant = 'default' }: { variant?: string }) {
   );
 }
 
-// Export skeleton for standalone use
+// Export memoized grid and skeleton
+export const PlayerCardGrid = memo(PlayerCardGridComponent);
 export { PlayerCardSkeleton };

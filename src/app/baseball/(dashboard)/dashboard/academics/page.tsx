@@ -77,11 +77,11 @@ export default function AcademicsPage() {
     try {
       // Get team members with player details and academic info
       const { data: membersData, error: fetchError } = await supabase
-        .from('team_members')
+        .from('baseball_team_members')
         .select(`
           id,
           player_id,
-          players (
+          baseball_players (
             id,
             first_name,
             last_name,
@@ -166,7 +166,7 @@ export default function AcademicsPage() {
     try {
       // Update player record with academic information
       const { error: updateError } = await supabase
-        .from('players')
+        .from('baseball_players')
         .update({
           gpa: editValues.gpa !== undefined ? editValues.gpa : student.gpa,
           credits_completed: editValues.credits_completed !== undefined ? editValues.credits_completed : student.credits_completed,

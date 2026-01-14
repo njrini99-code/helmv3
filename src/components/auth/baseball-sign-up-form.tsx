@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Users, GraduationCap } from 'lucide-react';
@@ -10,6 +10,7 @@ type Role = 'player' | 'coach' | null;
 
 export function BaseballSignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [role, setRole] = useState<Role>(null);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -19,6 +20,16 @@ export function BaseballSignUpForm() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get returnTo from URL params (e.g., /baseball/signup?returnTo=/baseball/join/ABC123)
+  const returnTo = searchParams.get('returnTo');
+
+  // Store returnTo in sessionStorage so it persists through signup and onboarding
+  useEffect(() => {
+    if (returnTo) {
+      sessionStorage.setItem('baseball_signup_returnTo', returnTo);
+    }
+  }, [returnTo]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

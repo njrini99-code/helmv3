@@ -57,7 +57,7 @@ export function useJourney() {
 
     // Get player record
     const { data: player } = await supabase
-      .from('players')
+      .from('baseball_players')
       .select('id, recruiting_activated')
       .eq('user_id', user.id)
       .maybeSingle();
@@ -76,10 +76,10 @@ export function useJourney() {
 
     // Fetch engagement events for this player
     const { data: engagementEvents } = await supabase
-      .from('player_engagement_events')
+      .from('baseball_player_engagement_events')
       .select(`
         *,
-        coaches (
+        baseball_coaches (
           full_name,
           school_name
         )

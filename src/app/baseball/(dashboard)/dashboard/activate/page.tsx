@@ -55,7 +55,7 @@ export default function ActivateRecruitingPage() {
       const supabase = createClient();
 
       const { error: updateError } = await supabase
-        .from('players')
+        .from('baseball_players')
         .update({
           recruiting_activated: true,
           recruiting_activated_at: new Date().toISOString(),

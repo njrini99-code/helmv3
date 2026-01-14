@@ -62,8 +62,8 @@ export function PlayerStatusBadge({
     try {
       await updatePlayerStatus(playerId, newStatus);
       router.refresh();
-    } catch (err) {
-      console.error('Failed to update status:', err);
+    } catch {
+      // Status update failed - UI will show original status
     } finally {
       setLoading(false);
     }

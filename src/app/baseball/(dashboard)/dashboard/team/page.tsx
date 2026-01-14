@@ -78,20 +78,20 @@ export default function TeamDashboardPage() {
     ] = await Promise.all([
       // Roster count
       supabase
-        .from('team_members')
+        .from('baseball_team_members')
         .select('*', { count: 'exact', head: true })
         .eq('team_id', selectedTeamId),
 
       // Video count (from all team players)
       supabase
-        .from('team_members')
+        .from('baseball_team_members')
         .select('player_id')
         .eq('team_id', selectedTeamId)
         .then(async ({ data: members }) => {
           if (!members || members.length === 0) return { count: 0 };
           const playerIds = members.map(m => m.player_id);
           return supabase
-            .from('videos')
+            .from('baseball_videos')
             .select('*', { count: 'exact', head: true })
             .in('player_id', playerIds);
         }),
@@ -115,11 +115,11 @@ export default function TeamDashboardPage() {
 
       // Recent members (last 5)
       supabase
-        .from('team_members')
+        .from('baseball_team_members')
         .select(`
           id,
           joined_at,
-          player:players (
+          player:baseball_players (
             id,
             first_name,
             last_name,
@@ -156,7 +156,7 @@ export default function TeamDashboardPage() {
     ] = await Promise.all([
       // Player video count
       supabase
-        .from('videos')
+        .from('baseball_videos')
         .select('*', { count: 'exact', head: true })
         .eq('player_id', player.id),
 
@@ -170,7 +170,7 @@ export default function TeamDashboardPage() {
 
       // Team member count
       supabase
-        .from('team_members')
+        .from('baseball_team_members')
         .select('*', { count: 'exact', head: true })
         .eq('team_id', selectedTeamId),
 

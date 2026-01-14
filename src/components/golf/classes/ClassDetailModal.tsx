@@ -45,8 +45,8 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
       await onDelete();
       setShowDeleteConfirm(false);
       onClose();
-    } catch (error) {
-      console.error('Error deleting class:', error);
+    } catch {
+      // Delete failed - dialog remains open
     } finally {
       setDeleting(false);
     }

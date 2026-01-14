@@ -7,19 +7,19 @@ export async function getTeamDetails(teamId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('teams')
+    .from('baseball_teams')
     .select(
       `
       *,
       organization:organizations(*),
-      head_coach:coaches(*),
-      members:team_members(
+      head_coach:baseball_coaches(*),
+      members:baseball_team_members(
         *,
-        player:players(*)
+        player:baseball_players(*)
       ),
       coaching_staff:team_coach_staff(
         *,
-        coach:coaches(*)
+        coach:baseball_coaches(*)
       )
     `
     )
@@ -41,11 +41,11 @@ export async function getTeamRoster(teamId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('team_members')
+    .from('baseball_team_members')
     .select(
       `
       *,
-      player:players(
+      player:baseball_players(
         *,
         metrics:player_metrics(*),
         achievements:player_achievements(*)
@@ -113,7 +113,7 @@ export async function createTeamInvitation(
   const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
   const { data, error } = await supabase
-    .from('team_invitations')
+    .from('baseball_team_invitations')
     .insert({
       team_id: teamId,
       invite_code: inviteCode,
@@ -140,14 +140,14 @@ export async function getTeamInvitation(inviteCode: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('team_invitations')
+    .from('baseball_team_invitations')
     .select(
       `
       *,
-      team:teams(
+      team:baseball_teams(
         *,
         organization:organizations(*),
-        head_coach:coaches(*)
+        head_coach:baseball_coaches(*)
       )
     `
     )
@@ -184,7 +184,7 @@ export async function joinTeam(playerId: string, inviteCode: string) {
 
   // Get the team being joined
   const { data: team, error: teamError } = await supabase
-    .from('teams')
+    .from('baseball_teams')
     .select('id, name, team_type')
     .eq('id', invitation.team_id)
     .single();
@@ -195,7 +195,7 @@ export async function joinTeam(playerId: string, inviteCode: string) {
 
   // Get player info
   const { data: player, error: playerError } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select('id, player_type')
     .eq('id', playerId)
     .single();
@@ -206,7 +206,7 @@ export async function joinTeam(playerId: string, inviteCode: string) {
 
   // Check if player is already a member
   const { data: existing } = await supabase
-    .from('team_members')
+    .from('baseball_team_members')
     .select('id')
     .eq('team_id', invitation.team_id)
     .eq('player_id', playerId)
@@ -218,8 +218,8 @@ export async function joinTeam(playerId: string, inviteCode: string) {
 
   // Get player's current teams
   const { data: currentTeams, error: teamsError } = await supabase
-    .from('team_members')
-    .select('team:teams(id, name, team_type)')
+    .from('baseball_team_members')
+    .select('team:baseball_teams(id, name, team_type)')
     .eq('player_id', playerId)
     .eq('status', 'active');
 
@@ -261,7 +261,7 @@ export async function joinTeam(playerId: string, inviteCode: string) {
 
   // Add player to team
   const { data: member, error: memberError } = await supabase
-    .from('team_members')
+    .from('baseball_team_members')
     .insert({
       team_id: invitation.team_id,
       player_id: playerId,
@@ -278,7 +278,7 @@ export async function joinTeam(playerId: string, inviteCode: string) {
 
   // Increment invitation uses
   await supabase
-    .from('team_invitations')
+    .from('baseball_team_invitations')
     .update({
       current_uses: (invitation.current_uses || 0) + 1,
     })
@@ -294,7 +294,7 @@ export async function leaveTeam(teamId: string, playerId: string) {
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from('team_members')
+    .from('baseball_team_members')
     .update({
       status: 'inactive',
       left_at: new Date().toISOString(),
@@ -321,8 +321,8 @@ export async function getTeamDevelopmentalPlans(teamId: string) {
     .select(
       `
       *,
-      coach:coaches(id, full_name),
-      player:players(id, first_name, last_name)
+      coach:baseball_coaches(id, full_name),
+      player:baseball_players(id, first_name, last_name)
     `
     )
     .eq('team_id', teamId)
@@ -352,7 +352,7 @@ export async function createTeam(
   const supabase = await createClient();
 
   const { data: team, error } = await supabase
-    .from('teams')
+    .from('baseball_teams')
     .insert({
       organization_id: organizationId,
       head_coach_id: headCoachId,

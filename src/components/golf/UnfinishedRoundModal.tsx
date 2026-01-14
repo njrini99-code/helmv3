@@ -84,8 +84,9 @@ export function UnfinishedRoundModal({
               onClick={onClose}
               className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
               disabled={deleting}
+              aria-label="Close dialog"
             >
-              <IconX size={20} className="text-slate-400" />
+              <IconX size={20} className="text-slate-400" aria-hidden="true" />
             </button>
           </div>
 

@@ -98,8 +98,8 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
       await navigator.clipboard.writeText(feed.url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy URL:', error);
+    } catch {
+      // Copy failed - button will remain in default state
     }
   }
 
@@ -107,8 +107,8 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
     setLoading(true);
     try {
       await onRegenerate();
-    } catch (error) {
-      console.error('Failed to regenerate feed:', error);
+    } catch {
+      // Regenerate failed
     } finally {
       setLoading(false);
     }
@@ -118,8 +118,8 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
     setLoading(true);
     try {
       await onDelete();
-    } catch (error) {
-      console.error('Failed to delete feed:', error);
+    } catch {
+      // Delete failed
       setLoading(false);
     }
   }
@@ -191,11 +191,12 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               )}
               title="Copy URL"
+              aria-label={copied ? 'URL copied' : 'Copy feed URL'}
             >
               {copied ? (
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4" aria-hidden="true" />
               ) : (
-                <Copy className="w-4 h-4" />
+                <Copy className="w-4 h-4" aria-hidden="true" />
               )}
             </button>
           </div>
@@ -274,8 +275,9 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                   loading && 'animate-spin'
                 )}
                 title="Regenerate URL"
+                aria-label="Regenerate feed URL"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-4 h-4" aria-hidden="true" />
               </button>
 
               {/* Delete button */}
@@ -287,8 +289,9 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                          text-rose-600 hover:text-rose-700 hover:bg-rose-50
                          disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Delete feed"
+                aria-label="Delete feed"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           </>
@@ -318,8 +321,8 @@ export function CompactFeedCard({
       await navigator.clipboard.writeText(feed.url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy:', error);
+    } catch {
+      // Copy failed - button remains in default state
     }
   }
 
@@ -350,8 +353,9 @@ export function CompactFeedCard({
             ? 'bg-emerald-100 text-emerald-700'
             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
         )}
+        aria-label={copied ? 'URL copied' : 'Copy feed URL'}
       >
-        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+        {copied ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
       </button>
     </div>
   );

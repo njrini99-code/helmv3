@@ -42,7 +42,7 @@ export async function requireCoach() {
   const { supabase, user } = await requireAuth();
 
   const { data: coach, error } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id, user_id, coach_type, organization_id')
     .eq('user_id', user.id)
     .single();
@@ -61,7 +61,7 @@ export async function requirePlayer() {
   const { supabase, user } = await requireAuth();
 
   const { data: player, error } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select('id, user_id')
     .eq('user_id', user.id)
     .single();
@@ -101,7 +101,7 @@ export async function verifyWatchlistOwnership(
   coachId: string
 ): Promise<void> {
   const { data: watchlist, error } = await supabase
-    .from('watchlists')
+    .from('baseball_watchlists')
     .select('id, coach_id')
     .eq('id', watchlistId)
     .single();
@@ -137,7 +137,7 @@ export async function verifyOrganizationAdmin(
   if (org.admin_user_id !== userId) {
     // Also check if user is a coach for this org
     const { data: coach } = await supabase
-      .from('coaches')
+      .from('baseball_coaches')
       .select('id')
       .eq('user_id', userId)
       .eq('organization_id', organizationId)
@@ -183,7 +183,7 @@ export async function verifyTeamInvitationForCurrentUser(
 ): Promise<{ playerId: string; teamId: string }> {
   // Get current user's player profile
   const { data: player, error: playerError } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select('id')
     .eq('user_id', userId)
     .single();

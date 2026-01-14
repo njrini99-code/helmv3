@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { format } from 'date-fns';
 import { Header } from '@/components/layout/header';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -18,24 +17,21 @@ import {
   IconEdit,
   IconTarget,
   IconStar,
-  IconCalendar,
   IconArrowRight,
   IconEye,
   IconActivity,
   IconSearch,
-  IconClock,
   IconMapPin,
-  IconBuilding,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
-import { useWatchlist } from '@/hooks/use-watchlist';
-import { usePlayers } from '@/hooks/use-players';
-import { useCoachStats, usePlayerStats } from '@/hooks/use-stats';
-import { useActivityFeed, useUpcomingEvents, useEngagementChart, useSavedSearches, usePlayersByState } from '@/hooks/use-dashboard';
+import { useBaseballCoachDashboard, useBaseballPlayerDashboard } from '@/hooks/use-baseball-dashboard';
+import { useSavedSearches, usePlayersByState } from '@/hooks/use-dashboard';
 import { EngagementChart } from '@/components/dashboard/EngagementChart';
 import { USAMap } from '@/components/coach/discover/USAMap';
 import { ShineEffect } from '@/components/ui/shine-effect';
+import { HotLeadsSection, PositionNeedsMatrix } from '@/components/baseball/dashboard';
 import { getFullName, formatHeight, getPipelineStageLabel, pluralize, formatRelativeTime } from '@/lib/utils';
+import type { WatchlistWithPlayer } from '@/lib/types';
 
 // Animated number component
 function AnimatedStat({ value, suffix = '' }: { value: number; suffix?: string }) {
@@ -100,17 +96,28 @@ export default function DashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, coach, player, loading: authLoading, coachMode } = useAuth();
-  const { watchlist } = useWatchlist();
-  const { players, loading: playersLoading } = usePlayers({ limit: 5 });
-  const { stats: coachStats } = useCoachStats();
-  const { stats: playerStats } = usePlayerStats();
 
-  // New dashboard hooks
-  const { activities, loading: activitiesLoading } = useActivityFeed(8);
-  const { events: upcomingEvents, camps: upcomingCamps, loading: upcomingLoading } = useUpcomingEvents(5);
-  const { chartData, loading: chartLoading } = useEngagementChart(7);
+  // OPTIMIZED: Single consolidated hook replaces 6+ individual hooks
+  // Reduces from ~15 sequential queries to 5-6 parallel batches
+  const {
+    watchlist,
+    stats: coachStats,
+    activities,
+    chartData,
+    pipelineCounts,
+    loading: coachDashboardLoading,
+  } = useBaseballCoachDashboard();
+
+  const { stats: playerStats } = useBaseballPlayerDashboard();
+
+  // These hooks remain separate (localStorage-based / special queries)
   const { searches: savedSearches } = useSavedSearches();
-  const { stateCounts, loading: stateCountsLoading } = usePlayersByState();
+  const { stateCounts, loading: stateCountsLoading } = usePlayersByState(coach?.id, coach?.coach_type);
+
+  // Combined loading state
+  const activitiesLoading = coachDashboardLoading;
+  const chartLoading = coachDashboardLoading;
+  const playersLoading = coachDashboardLoading;
 
   // Redirect based on coach type and mode
   useEffect(() => {
@@ -158,13 +165,7 @@ export default function DashboardPage() {
 
   // Coach Dashboard
   if (user?.role === 'coach') {
-    const pipelineCounts = {
-      watchlist: watchlist.filter(w => w.pipeline_stage === 'watchlist').length,
-      high_priority: watchlist.filter(w => w.pipeline_stage === 'high_priority').length,
-      offer_extended: watchlist.filter(w => w.pipeline_stage === 'offer_extended').length,
-      committed: watchlist.filter(w => w.pipeline_stage === 'committed').length,
-    };
-
+    // pipelineCounts now comes from the consolidated hook (already calculated)
     return (
       <>
         <Header title="Dashboard" subtitle={`Welcome back, ${coach?.full_name?.split(' ')[0] || 'Coach'}`} />
@@ -227,187 +228,16 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Second Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Recent Players - Large Card */}
-            <div className="lg:col-span-2 relative glass-standard rounded-2xl overflow-hidden">
-              <ShineEffect />
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
-                    <IconUsers size={18} className="text-slate-600" />
-                  </div>
-                  <h2 className="font-semibold text-slate-900 tracking-tight">Recent Players</h2>
-                </div>
-                <Link href="/baseball/dashboard/discover" className="text-sm leading-relaxed text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors group">
-                  View all <IconChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </div>
-              <div className="divide-y divide-slate-100/50">
-                {playersLoading ? (
-                  <div className="p-6">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="flex items-center gap-4 py-4 animate-pulse">
-                        <div className="w-12 h-12 rounded-full bg-slate-200" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-4 w-1/3 bg-slate-200 rounded" />
-                          <div className="h-3 w-1/2 bg-slate-100 rounded" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : players.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 px-6">
-                    <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                      <IconUsers size={24} className="text-slate-400" />
-                    </div>
-                    <h3 className="text-base font-medium text-slate-900 mb-1">No players yet</h3>
-                    <p className="text-sm leading-relaxed text-slate-500 text-center mb-4 max-w-xs">
-                      Start discovering players to build your recruiting pipeline
-                    </p>
-                    <Link href="/baseball/dashboard/discover">
-                      <Button size="sm" className="gap-2">
-                        <IconSearch size={14} /> Discover Players
-                      </Button>
-                    </Link>
-                  </div>
-                ) : (
-                  players.slice(0, 5).map((p, index) => (
-                    <Link
-                      key={p.id}
-                      href={`/baseball/dashboard/players/${p.id}`}
-                      className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/50 transition-all duration-200 group animate-fade-in"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <Avatar name={getFullName(p.first_name, p.last_name)} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900 group-hover:text-green-600 transition-colors">
-                          {p.first_name} {p.last_name}
-                        </p>
-                        <p className="text-xs text-slate-500 truncate">{p.high_school_name} • {p.city}, {p.state}</p>
-                      </div>
-                      <div className="text-right flex items-center gap-3">
-                        <div>
-                          <Badge variant="secondary" className="bg-slate-100">{p.primary_position}</Badge>
-                          <p className="text-xs text-slate-400 mt-1">{p.grad_year}</p>
-                        </div>
-                        <IconChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </div>
+          {/* Second Row - Hot Leads + Position Needs */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Hot Leads - Replaces Recent Players with actionable intelligence */}
+            <HotLeadsSection watchlist={watchlist as WatchlistWithPlayer[]} loading={playersLoading} />
 
-            {/* Quick Actions + Upcoming Events */}
-            <div className="space-y-4">
-              {/* Quick Actions */}
-              <div className="relative glass-standard rounded-2xl p-5 overflow-hidden">
-                <ShineEffect />
-                <h3 className="font-semibold text-slate-900 tracking-tight mb-4">Quick Actions</h3>
-                <div className="space-y-2">
-                  <Link href="/baseball/dashboard/discover">
-                    <Button variant="secondary" className="w-full justify-start gap-3 bg-slate-50 hover:bg-slate-100 border-0">
-                      <IconUsers size={16} /> Discover Players
-                    </Button>
-                  </Link>
-                  <Link href="/baseball/dashboard/messages">
-                    <Button variant="secondary" className="w-full justify-start gap-3 bg-slate-50 hover:bg-slate-100 border-0">
-                      <IconMessage size={16} /> Send Message
-                    </Button>
-                  </Link>
-                  <Link href="/baseball/dashboard/calendar">
-                    <Button variant="secondary" className="w-full justify-start gap-3 bg-slate-50 hover:bg-slate-100 border-0">
-                      <IconCalendar size={16} /> Schedule Event
-                    </Button>
-                  </Link>
-                  <Link href="/baseball/dashboard/program">
-                    <Button variant="secondary" className="w-full justify-start gap-3 bg-slate-50 hover:bg-slate-100 border-0">
-                      <IconBuilding size={16} /> Edit Program Profile
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Upcoming Events Widget */}
-              <div className="relative glass-standard rounded-2xl p-5 overflow-hidden">
-                <ShineEffect />
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <IconCalendar size={16} className="text-green-500" />
-                    <h3 className="font-semibold text-slate-900 tracking-tight">Upcoming</h3>
-                  </div>
-                  <Link href="/baseball/dashboard/calendar" className="text-xs text-slate-500 hover:text-slate-900 transition-colors">
-                    View all
-                  </Link>
-                </div>
-                <div className="space-y-3">
-                  {upcomingLoading ? (
-                    <div className="animate-pulse space-y-2">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className="h-12 bg-slate-100 rounded-lg" />
-                      ))}
-                    </div>
-                  ) : upcomingEvents.length === 0 && upcomingCamps.length === 0 ? (
-                    <div className="flex flex-col items-center py-6">
-                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
-                        <IconCalendar size={18} className="text-slate-400" />
-                      </div>
-                      <p className="text-sm leading-relaxed text-slate-500 mb-3">No upcoming events</p>
-                      <Link href="/baseball/dashboard/calendar">
-                        <Button variant="secondary" size="sm" className="text-xs">
-                          Add Event
-                        </Button>
-                      </Link>
-                    </div>
-                  ) : (
-                    <>
-                      {upcomingEvents.slice(0, 3).map(event => (
-                        <Link
-                          key={event.id}
-                          href="/baseball/dashboard/calendar"
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors group"
-                        >
-                          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                            <IconClock size={16} className="text-blue-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate group-hover:text-green-600 transition-colors">
-                              {event.name}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {format(new Date(event.start_time), 'MMM d, h:mm a')}
-                            </p>
-                          </div>
-                        </Link>
-                      ))}
-                      {upcomingCamps.slice(0, 2).map(camp => (
-                        <Link
-                          key={camp.id}
-                          href="/baseball/dashboard/camps"
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors group"
-                        >
-                          <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
-                            <IconTarget size={16} className="text-purple-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate group-hover:text-green-600 transition-colors">
-                              {camp.name}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {format(new Date(camp.start_date), 'MMM d, yyyy')}
-                            </p>
-                          </div>
-                        </Link>
-                      ))}
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
+            {/* Position Needs Matrix - Shows recruiting progress by position */}
+            <PositionNeedsMatrix watchlist={watchlist as WatchlistWithPlayer[]} loading={playersLoading} />
           </div>
 
-          {/* Third Row - Analytics Chart + Activity Feed + Saved Searches */}
+          {/* Third Row - Engagement Chart + Activity Feed */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Engagement Chart */}
             <div className="lg:col-span-2 relative glass-standard rounded-2xl overflow-hidden">

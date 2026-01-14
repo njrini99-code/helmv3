@@ -83,8 +83,8 @@ export function CalendarFeedManager({
     try {
       await onCreateFeed(type, name);
       setShowCreateSection(false);
-    } catch (error) {
-      console.error('Failed to create feed:', error);
+    } catch {
+      // Feed creation failed - UI will show original state
     } finally {
       setLoading(false);
     }

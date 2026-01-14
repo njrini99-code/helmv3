@@ -38,25 +38,19 @@ export function SaveRoundModal({
   const handleSaveForLater = async (e?: React.MouseEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
-    
-    console.log('[SaveRoundModal] handleSaveForLater called', { saving, isOpen });
-    
+
     if (saving) {
-      console.log('[SaveRoundModal] Already saving, ignoring click');
       return;
     }
-    
+
     try {
-      console.log('[SaveRoundModal] Starting save...');
       setSaving(true);
       setError(null);
       await onSaveForLater();
-      console.log('[SaveRoundModal] Save completed successfully');
       // Show nav after save
       show();
       // Modal will be closed by parent component after successful save
     } catch (err) {
-      console.error('[SaveRoundModal] Save for later error:', err);
       const errorMessage = err instanceof Error 
         ? err.message 
         : typeof err === 'string' 
@@ -83,8 +77,8 @@ export function SaveRoundModal({
       />
 
       {/* Modal */}
-      <div 
-        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+      <div
+        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => {
           // Prevent clicks inside modal from closing it
           e.stopPropagation();
@@ -99,8 +93,9 @@ export function SaveRoundModal({
               onClick={onClose}
               className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
               disabled={saving}
+              aria-label="Close dialog"
             >
-              <IconX size={20} className="text-slate-400" />
+              <IconX size={20} className="text-slate-400" aria-hidden="true" />
             </button>
           </div>
 
@@ -130,10 +125,7 @@ export function SaveRoundModal({
             <div className="space-y-3">
               {/* Save for Later */}
               <button
-                onClick={(e) => {
-                  console.log('[SaveRoundModal] Button clicked');
-                  handleSaveForLater(e);
-                }}
+                onClick={handleSaveForLater}
                 disabled={saving}
                 type="button"
                 className={cn(

@@ -45,7 +45,7 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
 
     // Search players
     const { data: players } = await supabase
-      .from('players')
+      .from('baseball_players')
       .select('user_id, first_name, last_name, primary_position, grad_year, avatar_url, recruiting_activated')
       .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
       .eq('recruiting_activated', true)
@@ -53,7 +53,7 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
 
     // Search coaches
     const { data: coaches } = await supabase
-      .from('coaches')
+      .from('baseball_coaches')
       .select('user_id, full_name, school_name, avatar_url')
       .or(`full_name.ilike.%${query}%,school_name.ilike.%${query}%`)
       .limit(10);

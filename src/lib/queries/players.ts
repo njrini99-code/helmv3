@@ -14,7 +14,7 @@ export async function getDiscoverPlayers(
   const offset = (page - 1) * limit;
 
   let query = supabase
-    .from('players')
+    .from('baseball_players')
     .select(
       `
       id,
@@ -39,7 +39,9 @@ export async function getDiscoverPlayers(
     `,
       { count: 'exact' }
     )
-    .eq('recruiting_activated', true);
+    .eq('recruiting_activated', true)
+    // Exclude players who are already on college teams - they're not prospects
+    .eq('is_on_college_team', false);
 
   // Apply filters
   if (filters.gradYear) {
@@ -115,7 +117,7 @@ export async function getPlayerProfile(playerId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select(
       `
       *,
@@ -146,14 +148,14 @@ export async function getPlayerTeams(playerId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('team_members')
+    .from('baseball_team_members')
     .select(
       `
       *,
-      team:teams(
+      team:baseball_teams(
         *,
         organization:organizations(*),
-        head_coach:coaches(*)
+        head_coach:baseball_coaches(*)
       )
     `
     )
@@ -183,7 +185,7 @@ export async function getPlayerEngagement(
     .select(
       `
       *,
-      coach:coaches(
+      coach:baseball_coaches(
         id,
         full_name,
         coach_type,
@@ -238,7 +240,7 @@ export async function updatePlayerProfile(
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('players')
+    .from('baseball_players')
     .update({
       ...updates,
       updated_at: new Date().toISOString(),
@@ -262,7 +264,7 @@ export async function activateRecruiting(playerId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('players')
+    .from('baseball_players')
     .update({
       recruiting_activated: true,
       recruiting_activated_at: new Date().toISOString(),

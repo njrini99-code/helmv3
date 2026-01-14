@@ -28,7 +28,7 @@ export async function saveLineup({ teamId, name, positions }: SaveLineupParams) 
 
   // Get coach record
   const { data: coach } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id')
     .eq('user_id', user.id)
     .single();
@@ -37,7 +37,7 @@ export async function saveLineup({ teamId, name, positions }: SaveLineupParams) 
 
   // Verify coach has access to this team
   const { data: teamCoach } = await supabase
-    .from('team_coach_staff')
+    .from('baseball_team_coach_staff')
     .select('id')
     .eq('team_id', teamId)
     .eq('coach_id', coach.id)
@@ -68,7 +68,7 @@ export async function saveLineup({ teamId, name, positions }: SaveLineupParams) 
 
   // Create lineup
   // @ts-expect-error - team_lineups table will exist after migration
-  const { data: lineup, error: lineupError } = await (supabase.from('team_lineups') as PendingMigrationTable).insert({
+  const { data: lineup, error: lineupError } = await (supabase.from('baseball_team_lineups') as PendingMigrationTable).insert({
     team_id: teamId,
     coach_id: coach.id,
     name: name || 'Untitled Lineup',
@@ -84,12 +84,12 @@ export async function saveLineup({ teamId, name, positions }: SaveLineupParams) 
   }));
 
   // @ts-expect-error - lineup_positions table will exist after migration
-  const { error: positionsError } = await (supabase.from('lineup_positions') as PendingMigrationTable).insert(positionsData);
+  const { error: positionsError } = await (supabase.from('baseball_lineup_positions') as PendingMigrationTable).insert(positionsData);
 
   if (positionsError) {
     // Rollback: delete the lineup if positions insert failed
     // @ts-expect-error - team_lineups table will exist after migration
-    await (supabase.from('team_lineups') as PendingMigrationTable).delete().eq('id', lineup.id);
+    await (supabase.from('baseball_team_lineups') as PendingMigrationTable).delete().eq('id', lineup.id);
     throw positionsError;
   }
 
@@ -111,7 +111,7 @@ export async function updateLineup(
 
   // Get coach record
   const { data: coach } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id')
     .eq('user_id', user.id)
     .single();
@@ -120,7 +120,7 @@ export async function updateLineup(
 
   // Verify coach owns this lineup
   // @ts-expect-error - team_lineups table will exist after migration
-  const { data: lineup } = await (supabase.from('team_lineups') as PendingMigrationTable).select('id, coach_id').eq('id', lineupId).single();
+  const { data: lineup } = await (supabase.from('baseball_team_lineups') as PendingMigrationTable).select('id, coach_id').eq('id', lineupId).single();
 
   if (!lineup) throw new Error('Lineup not found');
   if (lineup.coach_id !== coach.id) {
@@ -149,13 +149,13 @@ export async function updateLineup(
 
   // Update lineup name
   // @ts-expect-error - team_lineups table will exist after migration
-  const { error: updateError } = await (supabase.from('team_lineups') as PendingMigrationTable).update({ name }).eq('id', lineupId);
+  const { error: updateError } = await (supabase.from('baseball_team_lineups') as PendingMigrationTable).update({ name }).eq('id', lineupId);
 
   if (updateError) throw updateError;
 
   // Delete existing positions
   // @ts-expect-error - lineup_positions table will exist after migration
-  const { error: deleteError } = await (supabase.from('lineup_positions') as PendingMigrationTable).delete().eq('lineup_id', lineupId);
+  const { error: deleteError } = await (supabase.from('baseball_lineup_positions') as PendingMigrationTable).delete().eq('lineup_id', lineupId);
 
   if (deleteError) throw deleteError;
 
@@ -167,7 +167,7 @@ export async function updateLineup(
   }));
 
   // @ts-expect-error - lineup_positions table will exist after migration
-  const { error: insertError } = await (supabase.from('lineup_positions') as PendingMigrationTable).insert(positionsData);
+  const { error: insertError } = await (supabase.from('baseball_lineup_positions') as PendingMigrationTable).insert(positionsData);
 
   if (insertError) throw insertError;
 
@@ -186,7 +186,7 @@ export async function deleteLineup(lineupId: string) {
 
   // Get coach record
   const { data: coach } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id')
     .eq('user_id', user.id)
     .single();
@@ -195,7 +195,7 @@ export async function deleteLineup(lineupId: string) {
 
   // Verify coach owns this lineup
   // @ts-expect-error - team_lineups table will exist after migration
-  const { data: lineup } = await (supabase.from('team_lineups') as PendingMigrationTable).select('id, coach_id').eq('id', lineupId).single();
+  const { data: lineup } = await (supabase.from('baseball_team_lineups') as PendingMigrationTable).select('id, coach_id').eq('id', lineupId).single();
 
   if (!lineup) throw new Error('Lineup not found');
   if (lineup.coach_id !== coach.id) {
@@ -204,7 +204,7 @@ export async function deleteLineup(lineupId: string) {
 
   // Delete lineup (positions will cascade)
   // @ts-expect-error - team_lineups table will exist after migration
-  const { error } = await (supabase.from('team_lineups') as PendingMigrationTable).delete().eq('id', lineupId);
+  const { error } = await (supabase.from('baseball_team_lineups') as PendingMigrationTable).delete().eq('id', lineupId);
 
   if (error) throw error;
 
@@ -223,15 +223,15 @@ export async function getTeamLineups(teamId: string) {
 
   // Get lineups with positions
   // @ts-expect-error - team_lineups table will exist after migration
-  const { data: lineups, error } = await (supabase.from('team_lineups') as PendingMigrationTable)
+  const { data: lineups, error } = await (supabase.from('baseball_team_lineups') as PendingMigrationTable)
     .select(`
       id,
       name,
       created_at,
       updated_at,
-      lineup_positions (
+      baseball_lineup_positions (
         batting_order,
-        player:players (
+        player:baseball_players (
           id,
           first_name,
           last_name,

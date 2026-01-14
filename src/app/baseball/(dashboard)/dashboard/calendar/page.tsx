@@ -31,14 +31,14 @@ export default async function BaseballCalendarPage() {
   if (isCoach) {
     // Get coach and their team
     const { data: coach } = await supabase
-      .from('coaches')
+      .from('baseball_coaches')
       .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
 
     if (coach?.organization_id) {
       const { data: team } = await supabase
-        .from('teams')
+        .from('baseball_teams')
         .select('id')
         .eq('organization_id', coach.organization_id)
         .single();
@@ -48,7 +48,7 @@ export default async function BaseballCalendarPage() {
   } else {
     // Get player's team
     const { data: teamMember } = await supabase
-      .from('team_members')
+      .from('baseball_team_members')
       .select('team_id')
       .eq('player_id', user.id)
       .single();
@@ -80,10 +80,10 @@ export default async function BaseballCalendarPage() {
 
     // Fetch team members (players on this team)
     const { data: playersData } = await supabase
-      .from('team_members')
+      .from('baseball_team_members')
       .select(`
         player_id,
-        players:player_id (
+        baseball_players:player_id (
           id,
           first_name,
           last_name,
@@ -94,7 +94,7 @@ export default async function BaseballCalendarPage() {
 
     // Get organization_id for coaches
     const { data: teamData } = await supabase
-      .from('teams')
+      .from('baseball_teams')
       .select('organization_id')
       .eq('id', teamId)
       .single();
@@ -102,7 +102,7 @@ export default async function BaseballCalendarPage() {
     // Also fetch coaches on this team (coaches use full_name, not first_name/last_name)
     const { data: coachesData } = teamData?.organization_id
       ? await supabase
-          .from('coaches')
+          .from('baseball_coaches')
           .select('id, full_name, avatar_url')
           .eq('organization_id', teamData.organization_id)
       : { data: [] };

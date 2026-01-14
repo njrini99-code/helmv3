@@ -11,11 +11,11 @@ export async function getWatchlist(
   const supabase = await createClient();
 
   let query = supabase
-    .from('watchlists')
+    .from('baseball_watchlists')
     .select(
       `
       *,
-      player:players(
+      player:baseball_players(
         id,
         first_name,
         last_name,
@@ -80,7 +80,7 @@ export async function addToWatchlist(
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('watchlists')
+    .from('baseball_watchlists')
     .upsert({
       coach_id: coachId,
       player_id: playerId,
@@ -119,7 +119,7 @@ export async function removeFromWatchlist(coachId: string, playerId: string) {
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from('watchlists')
+    .from('baseball_watchlists')
     .delete()
     .eq('coach_id', coachId)
     .eq('player_id', playerId);
@@ -158,7 +158,7 @@ export async function updateWatchlistItem(
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('watchlists')
+    .from('baseball_watchlists')
     .update({
       ...updates,
       updated_at: new Date().toISOString(),
@@ -183,7 +183,7 @@ export async function getWatchlistStats(coachId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('watchlists')
+    .from('baseball_watchlists')
     .select('pipeline_stage')
     .eq('coach_id', coachId);
 
@@ -211,7 +211,7 @@ export async function isInWatchlist(coachId: string, playerId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('watchlists')
+    .from('baseball_watchlists')
     .select('id')
     .eq('coach_id', coachId)
     .eq('player_id', playerId)

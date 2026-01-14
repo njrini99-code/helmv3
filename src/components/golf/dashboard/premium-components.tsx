@@ -85,11 +85,11 @@ export const PremiumGlassCard = memo(function PremiumGlassCard({
             className={cn(
                 'relative overflow-hidden',
                 // Enhanced Premium Glass - More transparent and glass-like
-                'bg-white/50 backdrop-blur-[20px]',
+                'bg-glass-subtle backdrop-blur-glass-prominent',
                 'border border-white/30',
                 'rounded-2xl', // Standardized: 16px
                 // Premium shadow with inset highlight
-                'shadow-[0_1px_2px_rgba(0,0,0,0.02),0_4px_8px_rgba(0,0,0,0.02),0_8px_16px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.5)]',
+                'shadow-glass-md',
                 !noPadding && 'p-5',
                 className
             )}
@@ -148,11 +148,11 @@ export const PremiumStatCard = memo(function PremiumStatCard({
             className={cn(
                 // Enhanced Premium glass effect - More transparent
                 "relative overflow-hidden group cursor-pointer",
-                "bg-white/45 backdrop-blur-[20px]",
+                "bg-glass-subtle backdrop-blur-glass-prominent",
                 "border rounded-2xl", // Standardized: 16px
                 "p-5",
                 // Premium multi-layer shadow with inset highlight
-                "shadow-[0_1px_2px_rgba(0,0,0,0.02),0_4px_8px_rgba(0,0,0,0.02),0_8px_16px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.5)]",
+                "shadow-glass-md",
                 // Accent border
                 accent
                     ? "border-l-[3px] border-l-primary-600 border-t-white/30 border-r-white/30 border-b-white/30"
@@ -251,9 +251,9 @@ export const QuickActionCard = memo(function QuickActionCard({
                             'shadow-[0_4px_12px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.1)]'
                         ]
                         : [
-                            'bg-white/45 backdrop-blur-[16px]', // More transparent glass
+                            'bg-glass-subtle backdrop-blur-glass', // Standard glass
                             'border border-white/30',
-                            'shadow-[0_1px_3px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.5)]'
+                            'shadow-glass-sm'
                         ]
                 )}
                 whileHover={{

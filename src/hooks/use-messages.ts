@@ -19,9 +19,10 @@ export function useMessages(conversationId: string) {
     }
 
     setLoading(true);
+    // Use explicit columns instead of SELECT * for better performance
     const { data } = await supabase
       .from('messages')
-      .select('*')
+      .select('id, conversation_id, sender_id, content, read, sent_at, updated_at')
       .eq('conversation_id', conversationId)
       .order('sent_at', { ascending: true });
 
@@ -84,102 +85,138 @@ export function useConversations() {
 
     setLoading(true);
 
-    // Get all conversation IDs the user is part of
-    const { data: participantData } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id')
-      .eq('user_id', user.id);
+    // Use optimized DB function - single query replaces N+1 pattern (was 30+ queries)
+    // Note: Function added in migration, types may need regeneration with `npm run db:types`
+    interface ConversationRow {
+      id: string;
+      created_at: string;
+      updated_at: string;
+      creator_id: string | null;
+      last_message_content: string | null;
+      last_message_at: string | null;
+      last_message_sender_id: string | null;
+      unread_count: number;
+      participant_ids: string[];
+      participant_names: string[];
+    }
 
-    if (!participantData || participantData.length === 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rawData, error } = await (supabase.rpc as any)(
+      'get_conversations_with_details',
+      { p_user_id: user.id }
+    );
+    const conversationsData = rawData as ConversationRow[] | null;
+
+    if (error) {
+      console.error('Error fetching conversations:', error);
       setConversations([]);
       setLoading(false);
       return;
     }
 
-    const conversationIds = participantData.map(p => p.conversation_id);
+    if (!conversationsData || conversationsData.length === 0) {
+      setConversations([]);
+      setLoading(false);
+      return;
+    }
 
-    // Fetch conversations with participants and last message
-    const { data: conversationsData } = await supabase
-      .from('conversations')
+    // We need to fetch the other user details for display (coach/player info)
+    // Get unique participant IDs (excluding current user)
+    const otherUserIds = new Set<string>();
+    conversationsData.forEach((conv: { participant_ids: string[] }) => {
+      conv.participant_ids?.forEach((id: string) => {
+        if (id !== user.id) otherUserIds.add(id);
+      });
+    });
+
+    // Batch fetch user details (single query for all users)
+    const { data: usersData } = await supabase
+      .from('users')
       .select(`
-        *,
-        conversation_participants!inner (
-          user_id,
-          users (
-            id,
-            email,
-            role,
-            coaches (
-              id,
-              full_name,
-              school_name,
-              avatar_url
-            ),
-            players (
-              id,
-              first_name,
-              last_name,
-              primary_position,
-              grad_year,
-              avatar_url
-            )
-          )
+        id,
+        email,
+        role,
+        baseball_coaches (
+          id,
+          full_name,
+          school_name,
+          avatar_url
+        ),
+        baseball_players (
+          id,
+          first_name,
+          last_name,
+          primary_position,
+          grad_year,
+          avatar_url
         )
       `)
-      .in('id', conversationIds)
-      .order('updated_at', { ascending: false });
+      .in('id', Array.from(otherUserIds));
 
-    if (!conversationsData) {
-      setConversations([]);
-      setLoading(false);
-      return;
+    // Define user detail type for the map
+    interface UserDetail {
+      id: string;
+      email: string | null;
+      role: string;
+      baseball_coaches: {
+        id: string;
+        full_name: string | null;
+        school_name: string | null;
+        avatar_url: string | null;
+      } | null;
+      baseball_players: {
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        primary_position: string | null;
+        grad_year: number | null;
+        avatar_url: string | null;
+      } | null;
     }
 
-    // Fetch last message for each conversation
-    const conversationsWithMessages = await Promise.all(
-      conversationsData.map(async (conv) => {
-        const { data: lastMessage } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('conversation_id', conv.id)
-          .order('sent_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        // Get unread count
-        const { data: participant } = await supabase
-          .from('conversation_participants')
-          .select('last_read_at')
-          .eq('conversation_id', conv.id)
-          .eq('user_id', user.id)
-          .single();
-
-        const { count: unreadCount } = await supabase
-          .from('messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('conversation_id', conv.id)
-          .neq('sender_id', user.id)
-          .gt('sent_at', participant?.last_read_at || '1970-01-01');
-
-        // Find the other user in the conversation
-        const participants = Array.isArray(conv.conversation_participants)
-          ? conv.conversation_participants
-          : [conv.conversation_participants];
-
-        const otherParticipant = participants.find(
-          (p: { user_id: string; users?: unknown }) => p.user_id !== user.id
-        );
-
-        return {
-          ...conv,
-          last_message: lastMessage,
-          unread_count: unreadCount || 0,
-          other_user: otherParticipant?.users,
-        };
-      })
+    // Create a lookup map for user details
+    const userDetailsMap = new Map<string, UserDetail>(
+      (usersData || []).map((u: UserDetail) => [u.id, u])
     );
 
-    setConversations(conversationsWithMessages as ConversationWithMeta[]);
+    // Transform to ConversationWithMeta format
+    const transformedConversations = conversationsData.map((conv: {
+      id: string;
+      created_at: string;
+      updated_at: string;
+      creator_id: string | null;
+      last_message_content: string | null;
+      last_message_at: string | null;
+      last_message_sender_id: string | null;
+      unread_count: number;
+      participant_ids: string[];
+      participant_names: string[];
+    }) => {
+      // Find the other user in this conversation
+      const otherUserId = conv.participant_ids?.find((id: string) => id !== user.id);
+      const otherUser = otherUserId ? userDetailsMap.get(otherUserId) : null;
+
+      return {
+        id: conv.id,
+        created_at: conv.created_at,
+        updated_at: conv.updated_at,
+        creator_id: conv.creator_id,
+        last_message: conv.last_message_content ? {
+          content: conv.last_message_content,
+          sent_at: conv.last_message_at,
+          sender_id: conv.last_message_sender_id || '',
+        } : null,
+        unread_count: conv.unread_count || 0,
+        other_user: otherUser ? {
+          id: otherUser.id,
+          email: otherUser.email,
+          coaches: otherUser.baseball_coaches,
+          players: otherUser.baseball_players,
+        } : null,
+      };
+    });
+
+    setConversations(transformedConversations as ConversationWithMeta[]);
     setLoading(false);
   }, [user]);
 

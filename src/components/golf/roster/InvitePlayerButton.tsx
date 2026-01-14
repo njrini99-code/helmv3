@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { IconPlus, IconCopy, IconCheck, IconX } from '@/components/icons';
 import { invitePlayerToTeam } from '@/app/golf/actions/golf';
+import { useToast } from '@/components/ui/toast';
 
 interface InvitePlayerButtonProps {
   teamName: string;
@@ -14,6 +15,7 @@ interface InvitePlayerButtonProps {
 
 export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButtonProps) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -44,13 +46,15 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
       if (result.success) {
         setInviteCode(result.data.inviteCode);
         setInviteLink(`${window.location.origin}${result.data.inviteLink}`);
+        addToast({ type: 'success', title: 'Invite link generated', description: 'Share this link with players to invite them to your team.' });
         router.refresh();
       } else {
         setError(result.error);
+        addToast({ type: 'error', title: 'Failed to generate invite', description: result.error });
       }
-    } catch (err) {
-      console.error('Failed to generate invite:', err);
+    } catch {
       setError('An unexpected error occurred');
+      addToast({ type: 'error', title: 'Error', description: 'An unexpected error occurred' });
     } finally {
       setLoading(false);
     }
@@ -60,6 +64,7 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
     if (inviteLink) {
       await navigator.clipboard.writeText(inviteLink);
       setCopied(true);
+      addToast({ type: 'success', title: 'Copied to clipboard', description: 'Invite link copied successfully.' });
       setTimeout(() => setCopied(false), 2000);
     }
   };

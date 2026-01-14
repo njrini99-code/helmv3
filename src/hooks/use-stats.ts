@@ -56,13 +56,13 @@ export function useCoachStats() {
           .eq('viewer_id', user.id).gte('created_at', weekAgo.toISOString()),
         supabase.from('profile_views').select('*', { count: 'exact', head: true })
           .eq('viewer_id', user.id).gte('created_at', twoWeeksAgo.toISOString()).lt('created_at', weekAgo.toISOString()),
-        supabase.from('watchlists').select('*', { count: 'exact', head: true })
+        supabase.from('baseball_watchlists').select('*', { count: 'exact', head: true })
           .eq('coach_id', coach.id),
         convIds.length > 0
           ? supabase.from('messages').select('*', { count: 'exact', head: true })
               .eq('read', false).neq('sender_id', user.id).in('conversation_id', convIds)
           : { count: 0 },
-        supabase.from('watchlists').select('*', { count: 'exact', head: true })
+        supabase.from('baseball_watchlists').select('*', { count: 'exact', head: true })
           .eq('coach_id', coach.id).eq('pipeline_stage', 'committed'),
       ]);
 
@@ -116,9 +116,9 @@ export function usePlayerStats() {
           .eq('player_id', player.id).gte('created_at', weekAgo.toISOString()),
         supabase.from('profile_views').select('*', { count: 'exact', head: true })
           .eq('player_id', player.id).gte('created_at', twoWeeksAgo.toISOString()).lt('created_at', weekAgo.toISOString()),
-        supabase.from('watchlists').select('*', { count: 'exact', head: true })
+        supabase.from('baseball_watchlists').select('*', { count: 'exact', head: true })
           .eq('player_id', player.id),
-        supabase.from('videos').select('view_count').eq('player_id', player.id),
+        supabase.from('baseball_videos').select('view_count').eq('player_id', player.id),
         convIds.length > 0
           ? supabase.from('messages').select('*', { count: 'exact', head: true })
               .eq('read', false).neq('sender_id', user.id).in('conversation_id', convIds)

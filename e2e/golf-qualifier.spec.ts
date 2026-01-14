@@ -77,8 +77,7 @@ test.describe('Golf Qualifier - Player Flow', () => {
       // Should see qualifier details
       await expect(page.locator('h1, h2')).toBeVisible();
 
-      // Should see leaderboard section
-      const leaderboardSection = page.locator('text=Leaderboard, text=Standings').first();
+      // Should see leaderboard section (visibility depends on qualifier state)
       // Leaderboard may or may not be visible depending on qualifier state
     }
   });
@@ -136,7 +135,6 @@ test.describe('Golf Qualifier - Leaderboard', () => {
       await qualifierLink.click();
 
       // Look for "bubble line" or qualifying position indicator
-      const bubbleLine = page.locator('[data-testid="bubble-line"], .bubble-line, tr.qualifying');
       // Bubble line visibility depends on qualifier configuration
     }
   });

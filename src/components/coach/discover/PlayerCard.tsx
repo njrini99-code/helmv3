@@ -39,6 +39,8 @@ export interface PlayerCardData {
   status?: 'watchlist' | 'high_priority' | 'offer_extended' | 'committed' | 'uninterested';
   hasVideo?: boolean;
   videoThumbnail?: string | null;
+  // Match score from recruiting philosophy (0-100)
+  matchScore?: number;
 }
 
 interface PlayerCardProps {

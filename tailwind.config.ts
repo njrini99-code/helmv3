@@ -70,19 +70,31 @@ const config: Config = {
         danger: '#DC2626',   // Red
         info: '#3B82F6',     // Blue
 
-        // GLASS EFFECTS
+        // GLASS EFFECTS - Standardized System
+        // Use with backdrop-blur-glass, backdrop-blur-glass-subtle, or backdrop-blur-glass-prominent
         glass: {
+          // Background opacities
+          subtle: 'rgba(255, 255, 255, 0.55)',      // Large surfaces, filters
+          DEFAULT: 'rgba(255, 255, 255, 0.7)',      // Standard cards, panels
+          prominent: 'rgba(255, 255, 255, 0.8)',    // Nav, modals
+          // Legacy aliases (backward compat)
           white: 'rgba(255, 255, 255, 0.7)',
           'white-strong': 'rgba(255, 255, 255, 0.85)',
           medium: 'rgba(255, 255, 255, 0.5)',
-          subtle: 'rgba(255, 255, 255, 0.3)',
+          // Borders
+          border: 'rgba(255, 255, 255, 0.4)',       // Subtle border
+          'border-strong': 'rgba(255, 255, 255, 0.5)', // Standard border
+          'border-prominent': 'rgba(255, 255, 255, 0.6)', // Prominent border
+          // Dark glass
           dark: 'rgba(28, 25, 23, 0.97)',
-          border: 'rgba(255, 255, 255, 0.2)',
-          'border-strong': 'rgba(255, 255, 255, 0.3)',
+          // Input fields
           input: 'rgba(255, 255, 255, 0.6)',
         },
 
-        // Legacy colors for backward compatibility
+        // ═══════════════════════════════════════════════════════════════
+        // LEGACY COLORS - Keep for backward compatibility
+        // These reference CSS variables defined in globals.css
+        // ═══════════════════════════════════════════════════════════════
         'warm-cream': 'rgb(var(--warm-cream) / <alpha-value>)',
         'warm-stone': 'rgb(var(--warm-stone) / <alpha-value>)',
         'golden': {
@@ -96,20 +108,23 @@ const config: Config = {
         },
         'field': 'rgb(var(--field) / <alpha-value>)',
         'fairway': 'rgb(var(--fairway) / <alpha-value>)',
+        // Onboarding-specific colors (consider migrating to primary/warm)
         onboarding: {
-          'kelly-green': '#169B45',
-          'kelly-green-hover': '#128A3D',
+          'kelly-green': '#169B45',      // Similar to primary-600
+          'kelly-green-hover': '#128A3D', // Similar to primary-700
           'kelly-green-muted': 'rgba(22, 155, 69, 0.1)',
           'cream': '#FFFDF7',
           'warm-white': '#FAFAF8',
           'black': '#000000',
           'rich-black': '#0A0A0A',
-          'text-primary': '#1A1A1A',
-          'text-secondary': '#6B6B6B',
-          'text-muted': '#9B9B9B',
+          'text-primary': '#1A1A1A',     // Similar to warm-900
+          'text-secondary': '#6B6B6B',   // Similar to warm-500
+          'text-muted': '#9B9B9B',       // Similar to warm-400
           'border-light': 'rgba(0, 0, 0, 0.08)',
           'border-medium': 'rgba(0, 0, 0, 0.12)',
         },
+        // DEPRECATED: Use 'primary' instead. Kept for backward compatibility.
+        // TODO: Migrate 51 usages in 10 files, then remove.
         brand: {
           50: '#F0FDF4',
           100: '#DCFCE7',
@@ -192,35 +207,53 @@ const config: Config = {
         'full': '9999px',
       },
       boxShadow: {
-        'sm': '0 1px 2px rgba(0,0,0,0.05)',
-        'DEFAULT': '0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)',
-        'md': '0 4px 6px rgba(0,0,0,0.07)',
-        'lg': '0 10px 15px rgba(0,0,0,0.1)',
-        'xl': '0 20px 25px rgba(0,0,0,0.1)',
-        'glass': '0 8px 32px rgba(0,0,0,0.08)',
-        'card-hover': '0 12px 24px rgba(0,0,0,0.12)',
-        // Legacy shadows
-        'subtle': '0 1px 2px rgba(0,0,0,0.04)',
-        'glow-amber': '0 0 30px rgba(217,119,6,0.15)',
-        'glow-emerald': '0 0 30px rgba(16,185,129,0.15)',
-        'xs': '0 1px 2px rgba(0,0,0,0.04)',
-        '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+        // ═══════════════════════════════════════════════════════════════
+        // CORE ELEVATION SYSTEM - Use these for standard elevation
+        // ═══════════════════════════════════════════════════════════════
+        'sm': '0 1px 2px rgba(0,0,0,0.04)',                // Subtle elevation
+        'DEFAULT': '0 1px 3px rgba(0,0,0,0.08)',           // Base elevation
+        'md': '0 4px 8px rgba(0,0,0,0.06)',                // Medium elevation
+        'lg': '0 12px 24px rgba(0,0,0,0.08)',              // Large elevation
+        'xl': '0 20px 40px rgba(0,0,0,0.1)',               // Extra large
+        '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.15)',    // Maximum elevation
+
+        // ═══════════════════════════════════════════════════════════════
+        // GLASS SHADOW SYSTEM - Use with glass backgrounds
+        // ═══════════════════════════════════════════════════════════════
+        'glass': '0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6)',
+        'glass-hover': '0 8px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7)',
+        'glass-sm': '0 1px 2px rgba(0,0,0,0.02), 0 2px 4px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.6)',
+        'glass-lg': '0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7)',
+
+        // ═══════════════════════════════════════════════════════════════
+        // INTERACTIVE SHADOWS - Cards, buttons, focus states
+        // ═══════════════════════════════════════════════════════════════
+        'card': '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
+        'card-hover': '0 8px 24px rgba(0,0,0,0.1)',
+        'focus': '0 0 0 3px rgba(22, 163, 74, 0.1)',       // Accessibility focus ring
+        'focus-ring': '0 0 0 3px rgba(22, 163, 74, 0.1)',  // Alias for focus
+
+        // ═══════════════════════════════════════════════════════════════
+        // GLOW EFFECTS - Use sparingly for emphasis
+        // ═══════════════════════════════════════════════════════════════
+        'glow-green': '0 0 20px rgba(22, 163, 74, 0.3)',
+        'glow-green-lg': '0 0 40px rgba(22, 163, 74, 0.4)',
+
+        // ═══════════════════════════════════════════════════════════════
+        // LEGACY ALIASES - Backward compatibility (prefer canonical names)
+        // ═══════════════════════════════════════════════════════════════
+        'xs': '0 1px 2px rgba(0,0,0,0.04)',               // Use 'sm' instead
+        'subtle': '0 1px 2px rgba(0,0,0,0.04)',           // Use 'sm' instead
+        'inner-highlight': 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         'elevation-1': '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
         'elevation-2': '0 4px 8px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03)',
         'elevation-3': '0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)',
         'elevation-4': '0 16px 32px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06)',
-        'glow-green': '0 0 20px rgba(22, 163, 74, 0.3)',
-        'glow-green-lg': '0 0 40px rgba(22, 163, 74, 0.4)',
-        'glow-green-intense': '0 0 60px rgba(22, 163, 74, 0.5)',
-        'inner-highlight': 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-        'focus-ring': '0 0 0 3px rgba(22, 163, 74, 0.1)',
-        'glass-lg': '0 16px 48px rgba(0, 0, 0, 0.12)',
-        'card': '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
-        // BATCH 5: Premium Glass Shadow System
-        'glass-sm': '0 1px 2px rgba(0,0,0,0.02), 0 2px 4px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.6)',
         'glass-md': '0 1px 2px rgba(0,0,0,0.02), 0 4px 8px rgba(0,0,0,0.02), 0 8px 16px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.6)',
-        'glass-lg-batch5': '0 2px 4px rgba(0,0,0,0.02), 0 8px 16px rgba(0,0,0,0.03), 0 16px 32px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.7)',
-        'glass-xl': '0 4px 8px rgba(0,0,0,0.02), 0 12px 24px rgba(0,0,0,0.04), 0 24px 48px rgba(0,0,0,0.06), 0 48px 96px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)',
+        'glass-xl': '0 4px 8px rgba(0,0,0,0.02), 0 12px 24px rgba(0,0,0,0.04), 0 24px 48px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)',
+        'glow-amber': '0 0 30px rgba(217,119,6,0.15)',
+        'glow-emerald': '0 0 30px rgba(16,185,129,0.15)',
+        'glow-green-intense': '0 0 60px rgba(22, 163, 74, 0.5)',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
@@ -237,7 +270,9 @@ const config: Config = {
         'cream-gradient': 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 35%, #F5F0E6 70%, #EDE8DD 100%)',
       },
       animation: {
-        shake: 'shake 0.4s ease-in-out',
+        // ═══════════════════════════════════════════════════════════════
+        // ENTRANCE ANIMATIONS - Use for elements entering view
+        // ═══════════════════════════════════════════════════════════════
         'fade-in': 'fade-in 0.3s ease-out',
         'fade-in-slow': 'fade-in 0.6s ease-out',
         'fade-up': 'fade-up 0.4s ease-out',
@@ -247,21 +282,30 @@ const config: Config = {
         'slide-down': 'slide-down 0.3s ease-out',
         'slide-in-right': 'slide-in-right 0.3s ease-out',
         'slide-in-left': 'slide-in-left 0.3s ease-out',
-        'shimmer': 'shimmer 2s infinite',
-        'pulse-subtle': 'pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'bounce-in': 'bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+
+        // ═══════════════════════════════════════════════════════════════
+        // INTERACTIVE ANIMATIONS - Use for user feedback
+        // ═══════════════════════════════════════════════════════════════
+        'shake': 'shake 0.4s ease-in-out',
+        'card-hover': 'card-hover 0.2s ease-out',
+        'check-bounce': 'check-bounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+        'number-tick': 'number-tick 0.5s ease-out',
+        'count-up': 'count-up 2s ease-out forwards',
+
+        // ═══════════════════════════════════════════════════════════════
+        // CONTINUOUS ANIMATIONS - Use for background effects
+        // ═══════════════════════════════════════════════════════════════
+        'pulse-subtle': 'pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'shimmer': 'shimmer 2s infinite',
         'spin-slow': 'spin 3s linear infinite',
-        'aurora': 'aurora 15s ease-in-out infinite alternate',
+        'glow': 'glow 2s ease-in-out infinite alternate',
         'float': 'float 6s ease-in-out infinite',
         'float-complex': 'float-complex 20s ease-in-out infinite',
         'float-delayed': 'float-delayed 20s ease-in-out infinite',
-        'glow': 'glow 2s ease-in-out infinite alternate',
-        'count-up': 'count-up 2s ease-out forwards',
+        'aurora': 'aurora 15s ease-in-out infinite alternate',
         'scroll-bounce': 'scroll-bounce 2s ease-in-out infinite',
         'gradient-shift': 'gradient-shift 8s ease infinite',
-        'card-hover': 'card-hover 0.2s ease-out',
-        'number-tick': 'number-tick 0.5s ease-out',
-        'check-bounce': 'check-bounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
       },
       keyframes: {
         shake: {
@@ -364,25 +408,33 @@ const config: Config = {
           '33%': { transform: 'translate(-10px, 10px)' },
           '66%': { transform: 'translate(10px, -5px)' },
         },
+        // ═══════════════════════════════════════════════════════════════
+        // LEGACY KEYFRAMES - Keep for backward compatibility
+        // Prefer kebab-case equivalents: fade-in, fade-up
+        // ═══════════════════════════════════════════════════════════════
         'glowPulse': {
           '0%': { boxShadow: '0 0 20px rgba(251, 191, 36, 0.2)' },
           '100%': { boxShadow: '0 0 40px rgba(251, 191, 36, 0.4)' },
         },
-        'fadeUp': {
+        'fadeUp': {  // Use 'fade-up' instead
           '0%': { opacity: '0', transform: 'translateY(20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        'fadeIn': {
+        'fadeIn': {  // Use 'fade-in' instead
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
-        'slideUp': {
+        'slideUp': {  // Use 'slide-up' instead
           '0%': { opacity: '0', transform: 'translateY(30px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
       backdropBlur: {
         xs: '2px',
+        // Standardized glass blur values
+        'glass-subtle': '12px',    // Large surfaces, filters
+        'glass': '16px',           // Default for cards, panels
+        'glass-prominent': '20px', // Nav, modals
       },
       transitionDuration: {
         'fast': '150ms',

@@ -36,11 +36,13 @@ import { useSidebar } from '@/contexts/sidebar-context';
 // College/JUCO Coach - Recruiting Mode
 const coachRecruitingNav = [
   { name: 'Dashboard', href: '/baseball/dashboard', icon: IconHome },
+  { name: 'Command Center', href: '/baseball/dashboard/command-center', icon: IconLayers },
+  { name: 'Upload Stats', href: '/baseball/dashboard/stats/upload', icon: IconChart },
   { name: 'Discover', href: '/baseball/dashboard/discover', icon: IconSearch },
-  { name: 'Watchlist', href: '/baseball/dashboard/watchlist', icon: IconStar },
-  { name: 'Pipeline', href: '/baseball/dashboard/pipeline', icon: IconUsers },
+  { name: 'Pipeline', href: '/baseball/dashboard/pipeline', icon: IconStar },
   { name: 'Compare', href: '/baseball/dashboard/compare', icon: IconTarget },
-  { name: 'Camps', href: '/baseball/dashboard/camps', icon: IconCalendar },
+  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
+  { name: 'Camps', href: '/baseball/dashboard/camps', icon: IconBuilding },
   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
 ];
 
@@ -226,6 +228,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
       {!isMobile && (
         <button
           onClick={() => setCollapsed(!collapsed)}
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={cn(
             'absolute -right-3 top-7 z-50',
             'w-6 h-6 rounded-full bg-[#1C1917] border border-white/20',
@@ -236,9 +239,9 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
           )}
         >
           {isCollapsed ? (
-            <IconChevronRight size={14} className="text-white/70" />
+            <IconChevronRight size={14} className="text-white/70" aria-hidden="true" />
           ) : (
-            <IconChevronLeft size={14} className="text-white/70" />
+            <IconChevronLeft size={14} className="text-white/70" aria-hidden="true" />
           )}
         </button>
       )}
@@ -487,6 +490,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         {/* Sign out */}
         <button
           onClick={handleSignOut}
+          aria-label="Sign out"
           title={isCollapsed ? 'Sign out' : undefined}
           className={cn(
             'w-full flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
@@ -495,7 +499,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             isCollapsed ? 'justify-center px-2' : 'px-3'
           )}
         >
-          <IconLogOut size={18} className="flex-shrink-0 text-white/50" />
+          <IconLogOut size={18} className="flex-shrink-0 text-white/50" aria-hidden="true" />
           <span
             className={cn(
               'whitespace-nowrap transition-all duration-300',

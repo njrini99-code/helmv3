@@ -263,7 +263,7 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                         trend={stats.previousAverage && stats.teamScoringAverage
                             ? { value: stats.previousAverage - stats.teamScoringAverage, positive: stats.teamScoringAverage < stats.previousAverage }
                             : null}
-                        href="/golf/dashboard/stats"
+                        href="/golf/dashboard/stats/team"
                     />
                 </motion.div>
 
@@ -327,7 +327,7 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                         <div>
                             <SectionHeader
                                 title="Top Performers"
-                                action={{ label: 'View All', href: '/golf/dashboard/stats' }}
+                                action={{ label: 'View All', href: '/golf/dashboard/stats/team' }}
                             />
                             <PremiumGlassCard noPadding>
                                 <ShineEffect />

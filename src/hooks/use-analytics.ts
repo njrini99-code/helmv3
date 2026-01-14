@@ -70,7 +70,7 @@ export function useAnalytics() {
 
       // Get player record with recruiting_activated status
       const { data: player } = await supabase
-        .from('players')
+        .from('baseball_players')
         .select('id, recruiting_activated')
         .eq('user_id', user.id)
         .single();
@@ -88,10 +88,10 @@ export function useAnalytics() {
 
       // Fetch all engagement events from last 30 days
       const { data: events } = await supabase
-        .from('player_engagement_events')
+        .from('baseball_player_engagement_events')
         .select(`
           *,
-          coaches (
+          baseball_coaches (
             id,
             school_name,
             program_division,

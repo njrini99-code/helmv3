@@ -84,8 +84,8 @@ export function AbsenceReasonSheet({
       setIsExcused(false);
       setNotes('');
       onClose();
-    } catch (error) {
-      console.error('Failed to submit absence:', error);
+    } catch {
+      // Submission failed - dialog remains open
     } finally {
       setLoading(false);
     }

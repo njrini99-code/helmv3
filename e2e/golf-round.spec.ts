@@ -152,7 +152,6 @@ test.describe('Golf Round - Stats Calculation', () => {
     await page.click('button:has-text("Putting")');
 
     // Should see putting stats (if rounds exist)
-    const statsContent = page.locator('text=Putts per Round, text=3-Putt, text=Make Rate').first();
     // Stats visibility depends on having rounds
   });
 

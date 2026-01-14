@@ -172,30 +172,30 @@ export async function createConversation({
   }
 
   // Check if conversation already exists between these users
+  // Optimized: Single query instead of N+1 pattern
   if (participantUserIds.length === 1 && participantUserIds[0]) {
-    // One-on-one conversation
     const otherUserId = participantUserIds[0];
 
-    // Find existing conversation
-    const { data: existingParticipants } = await supabase
+    // Get all conversation IDs where current user participates
+    const { data: myConversations } = await supabase
       .from('conversation_participants')
-      .select('conversation_id, conversations!inner(*)')
+      .select('conversation_id')
       .eq('user_id', user.id);
 
-    if (existingParticipants) {
-      for (const p of existingParticipants) {
-        // Check if other user is also in this conversation
-        const { data: otherInConv } = await supabase
-          .from('conversation_participants')
-          .select('id')
-          .eq('conversation_id', p.conversation_id)
-          .eq('user_id', otherUserId)
-          .single();
+    if (myConversations && myConversations.length > 0) {
+      const conversationIds = myConversations.map(c => c.conversation_id);
 
-        if (otherInConv) {
-          // Found existing conversation
-          return { conversationId: p.conversation_id };
-        }
+      // Find conversations where the other user also participates (single query)
+      const { data: sharedConversations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', otherUserId)
+        .in('conversation_id', conversationIds)
+        .limit(1);
+
+      if (sharedConversations && sharedConversations.length > 0 && sharedConversations[0]) {
+        // Found existing conversation
+        return { conversationId: sharedConversations[0].conversation_id };
       }
     }
   }
@@ -247,18 +247,28 @@ export async function markMessagesAsRead({
   }
 
   // Update last_read_at for this participant
-  await supabase
+  const { error: participantError } = await supabase
     .from('conversation_participants')
     .update({ last_read_at: new Date().toISOString() })
     .eq('conversation_id', conversationId)
     .eq('user_id', user.id);
 
+  if (participantError) {
+    console.error('[Messages] Failed to update last_read_at:', participantError);
+    throw new Error('Failed to mark messages as read');
+  }
+
   // Mark all messages in this conversation as read
-  await supabase
+  const { error: messagesError } = await supabase
     .from('messages')
     .update({ read: true })
     .eq('conversation_id', conversationId)
     .neq('sender_id', user.id);
+
+  if (messagesError) {
+    console.error('[Messages] Failed to mark messages as read:', messagesError);
+    throw new Error('Failed to mark messages as read');
+  }
 
   revalidatePath(`/${sport}/dashboard/messages/${conversationId}`);
   revalidatePath(`/${sport}/dashboard/messages`);

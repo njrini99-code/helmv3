@@ -46,7 +46,7 @@ export async function updatePlayerPrivacySettings(playerId: string, settings: Pl
 
     // Verify player belongs to user
     const { data: player } = await supabase
-      .from('players')
+      .from('baseball_players')
       .select('id')
       .eq('id', playerId)
       .eq('user_id', user.id)
@@ -58,7 +58,7 @@ export async function updatePlayerPrivacySettings(playerId: string, settings: Pl
 
     // Update settings
     const { error } = await supabase
-      .from('player_settings')
+      .from('baseball_player_settings')
       .upsert({
         player_id: playerId,
         ...validatedSettings,

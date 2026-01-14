@@ -155,7 +155,7 @@ export async function connectExternalCalendar(input: {
     // Trigger initial sync
     await syncExternalCalendar(connection.id);
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { connectionId: connection.id } };
   } catch (error) {
     return {
@@ -253,7 +253,7 @@ export async function syncExternalCalendar(
           .eq('id', syncLog.id);
       }
 
-      revalidatePath('/golf/(dashboard)/dashboard/calendar');
+      revalidatePath('/golf/dashboard/calendar');
       return { success: true, data: { imported, exported, conflicts } };
     } catch (error) {
       // Log failure
@@ -345,8 +345,9 @@ async function importFromExternal(
         });
         imported++;
       }
-    } catch {
+    } catch (eventError) {
       // Ignore individual event import errors - continue with other events
+      console.error('Error importing individual event:', eventError);
     }
   }
 
@@ -460,7 +461,7 @@ export async function resolveConflict(
       });
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {
@@ -508,7 +509,7 @@ export async function disconnectExternalCalendar(
       .eq('id', connectionId)
       .eq('user_id', user.id);
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {

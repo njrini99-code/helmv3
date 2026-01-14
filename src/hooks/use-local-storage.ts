@@ -40,10 +40,10 @@ interface DiscoverPreferences {
   sortBy: string;
 }
 
-const DISCOVER_PREFS_KEY = 'helm-discover-preferences';
+const DISCOVER_PREFS_KEY = 'helm-discover-preferences-v2';
 
 const DEFAULT_PREFS: DiscoverPreferences = {
-  viewMode: 'grid',
+  viewMode: 'map',
   sortBy: 'updated',
 };
 

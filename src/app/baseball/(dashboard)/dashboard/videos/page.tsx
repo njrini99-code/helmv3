@@ -52,7 +52,7 @@ export default function VideosPage() {
     if (isCoach && selectedTeamId) {
       // Coach: fetch videos from all team players
       const { data: teamMembers } = await supabase
-        .from('team_members')
+        .from('baseball_team_members')
         .select('player_id')
         .eq('team_id', selectedTeamId);
 
@@ -60,10 +60,10 @@ export default function VideosPage() {
         const playerIds = teamMembers.map(m => m.player_id);
 
         const result = await supabase
-          .from('videos')
+          .from('baseball_videos')
           .select(`
             *,
-            player:players (
+            player:baseball_players (
               id,
               first_name,
               last_name,
@@ -82,7 +82,7 @@ export default function VideosPage() {
     } else if (player) {
       // Player: fetch their own videos
       const result = await supabase
-        .from('videos')
+        .from('baseball_videos')
         .select('*')
         .eq('player_id', player.id)
         .order('is_primary', { ascending: false })
@@ -108,9 +108,9 @@ export default function VideosPage() {
     try {
       const urlParts = deleteConfirm.url.split('/');
       const filePath = urlParts.slice(-2).join('/');
-      await supabase.storage.from('videos').remove([filePath]);
-      await supabase.from('videos').delete().eq('id', deleteConfirm.id);
-      const countResult = await supabase.from('videos').select('*', { count: 'exact', head: true }).eq('player_id', player.id);
+      await supabase.storage.from('baseball_videos').remove([filePath]);
+      await supabase.from('baseball_videos').delete().eq('id', deleteConfirm.id);
+      const countResult = await supabase.from('baseball_videos').select('*', { count: 'exact', head: true }).eq('player_id', player.id);
       if (countResult.count === 0) {
         await supabase.from('players').update({ has_video: false }).eq('id', player.id);
       }
@@ -126,8 +126,8 @@ export default function VideosPage() {
 
   const setPrimary = async (videoId: string) => {
     if (!player) return;
-    await supabase.from('videos').update({ is_primary: false }).eq('player_id', player.id);
-    await supabase.from('videos').update({ is_primary: true }).eq('id', videoId);
+    await supabase.from('baseball_videos').update({ is_primary: false }).eq('player_id', player.id);
+    await supabase.from('baseball_videos').update({ is_primary: true }).eq('id', videoId);
     fetchVideos();
   };
 

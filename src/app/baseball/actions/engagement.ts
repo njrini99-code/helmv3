@@ -13,7 +13,7 @@ export async function trackProfileView(playerId: string) {
 
   // Check if user is a coach
   const { data: coach } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id')
     .eq('user_id', user.id)
     .single();
@@ -27,7 +27,7 @@ export async function trackProfileView(playerId: string) {
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   const { data: recentView } = await supabase
-    .from('player_engagement_events')
+    .from('baseball_player_engagement_events')
     .select('id')
     .eq('player_id', playerId)
     .eq('coach_id', coach.id)
@@ -42,7 +42,7 @@ export async function trackProfileView(playerId: string) {
 
   // Log the profile view
   const { error } = await supabase
-    .from('player_engagement_events')
+    .from('baseball_player_engagement_events')
     .insert({
       player_id: playerId,
       coach_id: coach.id,
@@ -68,7 +68,7 @@ export async function trackContactClick(playerId: string, contactType: 'email' |
   }
 
   const { data: coach } = await supabase
-    .from('coaches')
+    .from('baseball_coaches')
     .select('id')
     .eq('user_id', user.id)
     .single();
@@ -78,7 +78,7 @@ export async function trackContactClick(playerId: string, contactType: 'email' |
   }
 
   const { error } = await supabase
-    .from('player_engagement_events')
+    .from('baseball_player_engagement_events')
     .insert({
       player_id: playerId,
       coach_id: coach.id,

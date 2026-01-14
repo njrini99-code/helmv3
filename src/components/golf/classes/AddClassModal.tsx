@@ -102,8 +102,8 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
         location,
       });
       onClose();
-    } catch (error) {
-      console.error('Failed to save class:', error);
+    } catch {
+      // Save failed - UI will show original state
     } finally {
       setLoading(false);
     }

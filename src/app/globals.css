@@ -2007,6 +2007,153 @@ body {
 }
 
 /* ========================================
+   AUTH PAGE BACKGROUNDS - PREMIUM
+   ======================================== */
+
+/* Golf Auth - Animated mesh gradient */
+.bg-auth-golf {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(34, 197, 94, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 60% at 80% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 80% at 60% 80%, rgba(52, 211, 153, 0.1) 0%, transparent 50%),
+    linear-gradient(160deg, #FFFEFA 0%, #F8FDF9 50%, #F0FDF4 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-auth-golf::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(34, 197, 94, 0.08) 0%, transparent 25%),
+    radial-gradient(circle at 70% 60%, rgba(16, 185, 129, 0.06) 0%, transparent 25%);
+  animation: auth-float 20s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Baseball Auth - Animated mesh gradient */
+.bg-auth-baseball {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 60% at 80% 20%, rgba(245, 158, 11, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 80% at 60% 80%, rgba(252, 211, 77, 0.1) 0%, transparent 50%),
+    linear-gradient(160deg, #FFFEFA 0%, #FFFDF7 50%, #FFFBEB 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-auth-baseball::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(251, 191, 36, 0.08) 0%, transparent 25%),
+    radial-gradient(circle at 70% 60%, rgba(245, 158, 11, 0.06) 0%, transparent 25%);
+  animation: auth-float 20s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes auth-float {
+  0%, 100% {
+    transform: translate(0%, 0%) rotate(0deg);
+  }
+  25% {
+    transform: translate(2%, 1%) rotate(1deg);
+  }
+  50% {
+    transform: translate(0%, 2%) rotate(0deg);
+  }
+  75% {
+    transform: translate(-2%, 1%) rotate(-1deg);
+  }
+}
+
+/* Premium glass card for auth */
+.auth-glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 15px -3px rgba(0, 0, 0, 0.08),
+    0 20px 25px -5px rgba(0, 0, 0, 0.06);
+}
+
+/* Floating orb animations */
+.auth-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.6;
+  animation: orb-drift 15s ease-in-out infinite;
+}
+
+.auth-orb-1 {
+  animation-delay: 0s;
+}
+
+.auth-orb-2 {
+  animation-delay: -5s;
+}
+
+.auth-orb-3 {
+  animation-delay: -10s;
+}
+
+@keyframes orb-drift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -20px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.95);
+  }
+}
+
+/* ========================================
+   USA MAP PREMIUM ANIMATIONS
+   ======================================== */
+
+@keyframes map-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(10px, -10px) scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes map-pulse-ring {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes map-dash-rotate {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+/* ========================================
    MOTION DESIGN TOKENS
    ======================================== */
 

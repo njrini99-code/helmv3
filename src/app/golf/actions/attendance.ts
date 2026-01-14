@@ -168,7 +168,7 @@ export async function checkInPlayer(
       }
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {
@@ -204,19 +204,39 @@ export async function bulkCheckIn(
       return { success: false, error: 'Coach not found' };
     }
 
-    let successCount = 0;
-    let failureCount = 0;
+    // OPTIMIZED: Batch upsert instead of sequential individual check-ins
+    // Previously: 30 players = 30+ separate database operations
+    // Now: Single batch operation regardless of player count
+    const now = new Date().toISOString();
 
-    for (const playerId of playerIds) {
-      const result = await checkInPlayer(eventId, playerId, 'manual');
-      if (result.success) {
-        successCount++;
-      } else {
-        failureCount++;
-      }
+    const upsertRecords = playerIds.map((playerId) => ({
+      event_id: eventId,
+      player_id: playerId,
+      checked_in: true,
+      checked_in_at: now,
+      check_in_method: 'manual' as const,
+      checked_in_by: coach.id,
+    }));
+
+    const { error: upsertError, data: upsertedData } = await supabase
+      .from('golf_event_attendance')
+      .upsert(upsertRecords, {
+        onConflict: 'event_id,player_id',
+        ignoreDuplicates: false,
+      })
+      .select('id');
+
+    if (upsertError) {
+      return {
+        success: false,
+        error: `Bulk check-in failed: ${upsertError.message}`,
+      };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    const successCount = upsertedData?.length || playerIds.length;
+    const failureCount = playerIds.length - successCount;
+
+    revalidatePath('/golf/dashboard/calendar');
     return {
       success: true,
       data: { successCount, failureCount },
@@ -270,7 +290,7 @@ export async function markNoShow(
       return { success: false, error: updateError.message };
     }
 
-    revalidatePath('/golf/(dashboard)/dashboard/calendar');
+    revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
     return {

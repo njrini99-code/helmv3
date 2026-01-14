@@ -91,7 +91,6 @@ export default function GolfCoachOnboarding() {
         });
 
       if (usersError) {
-        console.error('Users table error:', usersError);
         // Continue anyway - the record might already exist
       }
 

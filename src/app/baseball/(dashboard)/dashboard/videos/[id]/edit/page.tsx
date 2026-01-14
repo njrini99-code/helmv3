@@ -21,8 +21,8 @@ export default async function VideoEditPage({ params }: PageProps) {
 
   // Get the video
   const { data: video, error } = await supabase
-    .from('videos')
-    .select('*, player:players(*)')
+    .from('baseball_videos')
+    .select('*, player:baseball_players(*)')
     .eq('id', id)
     .single();
 
@@ -32,7 +32,7 @@ export default async function VideoEditPage({ params }: PageProps) {
 
   // Verify ownership - user must own this video's player
   const { data: player } = await supabase
-    .from('players')
+    .from('baseball_players')
     .select('id')
     .eq('user_id', user.id)
     .single();
