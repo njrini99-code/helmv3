@@ -1,0 +1,103 @@
+{
+  "commands": [
+    {
+      "name": "audit-golf",
+      "description": "Run complete production audit on GolfHelm with all three genius agents",
+      "agents": ["database-sentinel", "feature-maestro", "experience-architect"],
+      "platform": "golf",
+      "output_dir": ".production-team/GOLFHELM_AUDIT_ROUND_01"
+    },
+    {
+      "name": "audit-baseball",
+      "description": "Run complete production audit on BaseballHelm with all three genius agents",
+      "agents": ["database-sentinel", "feature-maestro", "experience-architect"],
+      "platform": "baseball",
+      "output_dir": ".production-team/BASEBALLHELM_AUDIT_ROUND_01"
+    },
+    {
+      "name": "audit-both",
+      "description": "Run complete production audit on both platforms with all three genius agents",
+      "agents": ["database-sentinel", "feature-maestro", "experience-architect"],
+      "platform": "both",
+      "output_dir": ".production-team/ROUND_01"
+    },
+    {
+      "name": "cleanup",
+      "description": "Run Code Janitor to clean up dead code, organize files, and consolidate documentation",
+      "agents": ["code-janitor"],
+      "platform": "both",
+      "output_dir": ".production-team/CODE_CLEANUP"
+    },
+    {
+      "name": "cleanup-golf",
+      "description": "Clean up GolfHelm code and docs only",
+      "agents": ["code-janitor"],
+      "platform": "golf",
+      "output_dir": ".production-team/CODE_CLEANUP_GOLF"
+    },
+    {
+      "name": "cleanup-baseball",
+      "description": "Clean up BaseballHelm code and docs only",
+      "agents": ["code-janitor"],
+      "platform": "baseball",
+      "output_dir": ".production-team/CODE_CLEANUP_BASEBALL"
+    }
+  ],
+  "agents": {
+    "database-sentinel": {
+      "name": "Database Sentinel",
+      "emoji": "🛡️",
+      "personality_file": ".production-team/DATABASE_SENTINEL.md",
+      "prompt_file": ".production-team/prompts/DATABASE_SENTINEL_PROMPT.md",
+      "memory_file": ".production-team/memory/database_sentinel_memory.json",
+      "output_file": "01_DATABASE_SENTINEL_FINDINGS.md"
+    },
+    "feature-maestro": {
+      "name": "Feature Maestro",
+      "emoji": "🎯",
+      "personality_file": ".production-team/FEATURE_MAESTRO.md",
+      "prompt_file": ".production-team/prompts/FEATURE_MAESTRO_PROMPT.md",
+      "memory_file": ".production-team/memory/feature_maestro_memory.json",
+      "output_file": "02_FEATURE_MAESTRO_FINDINGS.md"
+    },
+    "experience-architect": {
+      "name": "Experience Architect",
+      "emoji": "✨",
+      "personality_file": ".production-team/EXPERIENCE_ARCHITECT.md",
+      "prompt_file": ".production-team/prompts/EXPERIENCE_ARCHITECT_PROMPT.md",
+      "memory_file": ".production-team/memory/experience_architect_memory.json",
+      "output_file": "03_EXPERIENCE_ARCHITECT_FINDINGS.md"
+    },
+    "code-janitor": {
+      "name": "Code Janitor",
+      "emoji": "🧹",
+      "personality_file": ".production-team/CODE_JANITOR.md",
+      "prompt_file": ".production-team/prompts/CODE_JANITOR_PROMPT.md",
+      "memory_file": ".production-team/memory/code_janitor_memory.json",
+      "output_file": "CODE_JANITOR_AUDIT.md"
+    }
+  },
+  "platform_scopes": {
+    "golf": {
+      "name": "GolfHelm",
+      "tables": "golf_%",
+      "routes": "src/app/golf",
+      "components": "src/components/golf",
+      "features": ["team_management", "round_scoring", "statistics", "tournaments"]
+    },
+    "baseball": {
+      "name": "BaseballHelm",
+      "tables": "NOT LIKE 'golf_%'",
+      "routes": "src/app/baseball",
+      "components": "src/components/baseball",
+      "features": ["recruiting_pipeline", "player_profiles", "messaging", "coach_dashboards"]
+    },
+    "both": {
+      "name": "Both Platforms",
+      "tables": "%",
+      "routes": "src/app",
+      "components": "src/components",
+      "features": ["all"]
+    }
+  }
+}

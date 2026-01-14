@@ -59,7 +59,7 @@ export default async function BaseballCalendarPage() {
   if (teamId) {
     // Fetch events from events table
     const { data: eventsData } = await supabase
-      .from('events')
+      .from('baseball_events')
       .select('*')
       .eq('team_id', teamId)
       .order('start_time', { ascending: true });

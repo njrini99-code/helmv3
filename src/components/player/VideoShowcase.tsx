@@ -43,7 +43,7 @@ export function VideoShowcase({
     async function fetchVideos() {
       const supabase = createClient();
       const { data } = await supabase
-        .from('videos')
+        .from('baseball_videos')
         .select('*')
         .eq('player_id', playerId)
         .order('is_primary', { ascending: false })

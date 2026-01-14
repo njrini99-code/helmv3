@@ -69,7 +69,7 @@ export function useJourney() {
 
     // Fetch recruiting interests
     const { data: interests } = await supabase
-      .from('recruiting_interests')
+      .from('baseball_recruiting_interests')
       .select('*')
       .eq('player_id', player.id)
       .order('created_at', { ascending: false });
@@ -204,7 +204,7 @@ export async function updateInterestStatus(interestId: string, status: string) {
   const supabase = createClient();
 
   const { error } = await supabase
-    .from('recruiting_interests')
+    .from('baseball_recruiting_interests')
     .update({
       status,
       updated_at: new Date().toISOString(),
@@ -222,7 +222,7 @@ export async function updateInterestNotes(interestId: string, notes: string) {
   const supabase = createClient();
 
   const { error } = await supabase
-    .from('recruiting_interests')
+    .from('baseball_recruiting_interests')
     .update({
       notes,
       updated_at: new Date().toISOString(),

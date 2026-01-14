@@ -40,7 +40,7 @@ export default function DevPlanDetailPage() {
       setLoading(true);
 
       const { data, error } = await supabase
-        .from('developmental_plans')
+        .from('baseball_developmental_plans')
         .select(`
           id,
           title,

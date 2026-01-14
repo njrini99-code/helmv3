@@ -194,20 +194,20 @@ export async function getConversationsOptimized(userId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('conversations')
+    .from('baseball_conversations')
     .select(
       `
       id,
       created_at,
       updated_at,
-      participants:conversation_participants(
+      participants:baseball_conversation_participants(
         user:users(
           id,
           email,
           role
         )
       ),
-      last_message:messages(
+      last_message:baseball_messages(
         id,
         content,
         sent_at,
@@ -216,7 +216,7 @@ export async function getConversationsOptimized(userId: string) {
       )
     `
     )
-    .or(`id.in.(select conversation_id from conversation_participants where user_id=${userId})`)
+    .or(`id.in.(select conversation_id from baseball_conversation_participants where user_id=${userId})`)
     .limit(1, { foreignTable: 'last_message' })
     .order('sent_at', { ascending: false, foreignTable: 'last_message' })
     .order('updated_at', { ascending: false });
@@ -295,7 +295,7 @@ export async function getAnalyticsCounts(userId: string, role: 'coach' | 'player
         .select('id', { count: 'exact', head: true })
         .eq('coach_id', userId),
       supabase
-        .from('conversations')
+        .from('baseball_conversations')
         .select('id', { count: 'exact', head: true })
         .contains('participant_ids', [userId]),
     ]);
@@ -311,7 +311,7 @@ export async function getAnalyticsCounts(userId: string, role: 'coach' | 'player
         .select('id', { count: 'exact', head: true })
         .eq('player_id', userId),
       supabase
-        .from('conversations')
+        .from('baseball_conversations')
         .select('id', { count: 'exact', head: true })
         .contains('participant_ids', [userId]),
     ]);
@@ -341,7 +341,7 @@ export async function prefetchPlayerData(playerId: string) {
     });
 
   supabase
-    .from('player_metrics')
+    .from('baseball_player_metrics')
     .select('*')
     .eq('player_id', playerId)
     .then(() => {

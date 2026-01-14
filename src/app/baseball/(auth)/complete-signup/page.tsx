@@ -42,7 +42,7 @@ export default function CompleteSignupPage() {
 
         // Check if profile already exists
         const { data: coach, error: coachError } = await supabase
-          .from('coaches')
+          .from('baseball_coaches')
           .select('id')
           .eq('user_id', user.id)
           .single();
@@ -58,7 +58,7 @@ export default function CompleteSignupPage() {
         }
 
         const { data: player, error: playerError } = await supabase
-          .from('players')
+          .from('baseball_players')
           .select('id')
           .eq('user_id', user.id)
           .single();
@@ -120,7 +120,7 @@ export default function CompleteSignupPage() {
 
       // Create profile
       if (role === 'coach') {
-        const { error: coachError } = await supabase.from('coaches').insert({
+        const { error: coachError } = await supabase.from('baseball_coaches').insert({
           user_id: user.id,
           coach_type: coachType!,
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Coach',
@@ -139,7 +139,7 @@ export default function CompleteSignupPage() {
         const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Player';
         const [firstName, ...lastParts] = fullName.split(' ');
         
-        const { error: playerError } = await supabase.from('players').insert({
+        const { error: playerError } = await supabase.from('baseball_players').insert({
           user_id: user.id,
           player_type: playerType!,
           first_name: firstName,

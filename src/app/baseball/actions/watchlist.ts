@@ -297,6 +297,18 @@ export async function toggleWatchlistPlayer(playerId: string): Promise<{
         return { success: false, error: 'Failed to remove from watchlist' };
       }
 
+      // Log engagement event for removal
+      await supabase
+        .from('baseball_player_engagement_events')
+        .insert({
+          player_id: playerId,
+          coach_id: coach.id,
+          engagement_type: 'watchlist_remove',
+          engagement_date: new Date().toISOString(),
+          is_anonymous: false,
+          metadata: { source: 'toggle_action' },
+        });
+
       revalidatePath('/baseball/dashboard/discover');
       revalidatePath('/baseball/dashboard/watchlist');
       revalidatePath('/baseball/dashboard/pipeline');
@@ -335,8 +347,7 @@ export async function toggleWatchlistPlayer(playerId: string): Promise<{
 
       return { success: true, action: 'added' };
     }
-  } catch (err) {
-    console.error('Error toggling watchlist:', err);
+  } catch {
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -374,8 +385,7 @@ export async function checkWatchlistStatus(playerId: string): Promise<{
       isInWatchlist: !!data,
       watchlistId: data?.id
     };
-  } catch (err) {
-    console.error('Error checking watchlist status:', err);
+  } catch {
     return { isInWatchlist: false };
   }
 }

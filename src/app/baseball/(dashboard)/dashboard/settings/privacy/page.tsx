@@ -26,7 +26,7 @@ export default async function PrivacySettingsPage() {
 
   // Get existing privacy settings
   const { data: settings } = await supabase
-    .from('player_settings')
+    .from('baseball_player_settings')
     .select('*')
     .eq('player_id', player.id)
     .maybeSingle();

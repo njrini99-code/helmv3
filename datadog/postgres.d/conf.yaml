@@ -1,0 +1,34 @@
+## Datadog PostgreSQL Integration for Supabase
+## Copy this file to your Datadog Agent's conf.d/postgres.d/ directory
+
+init_config:
+
+instances:
+  - host: db.cwkrcnbgjvahchzzzetw.supabase.co
+    port: 6543
+    username: datadog.cwkrcnbgjvahchzzzetw
+    password: "IbkLonWqtUc9N6GA8Yc2XXs7VfCQdrrr"
+    dbname: postgres
+
+    ## Enable database metrics collection
+    collect_database_size_metrics: true
+    collect_default_database: true
+
+    ## Query metrics (requires pg_stat_statements extension)
+    deep_database_monitoring: true
+
+    ## Custom tags for filtering in Datadog
+    tags:
+      - env:production
+      - service:helm-sports-labs
+      - db:supabase
+      - project:cwkrcnbgjvahchzzzetw
+
+    ## Relations to monitor (optional - add your main tables)
+    relations:
+      - relation_regex: ".*"
+        schemas:
+          - public
+
+    ## SSL configuration for Supabase
+    ssl: require

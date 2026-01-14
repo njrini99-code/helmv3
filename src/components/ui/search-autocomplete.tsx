@@ -45,7 +45,7 @@ export function SearchAutocomplete({
     const supabase = createClient();
 
     const { data } = await supabase
-      .from('players')
+      .from('baseball_players')
       .select(`
         id,
         first_name,

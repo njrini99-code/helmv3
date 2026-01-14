@@ -57,7 +57,7 @@ export default function DevPlansPage() {
     const supabase = createClient();
 
     let query = supabase
-      .from('developmental_plans')
+      .from('baseball_developmental_plans')
       .select(`
         id,
         title,

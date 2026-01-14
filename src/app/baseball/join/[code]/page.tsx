@@ -35,7 +35,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
 
   // Find team by invite code (baseball uses team_invitations table)
   const { data: invitation } = await supabase
-    .from('team_invitations')
+    .from('baseball_team_invitations')
     .select(`
       id,
       team_id,

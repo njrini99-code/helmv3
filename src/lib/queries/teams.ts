@@ -17,7 +17,7 @@ export async function getTeamDetails(teamId: string) {
         *,
         player:baseball_players(*)
       ),
-      coaching_staff:team_coach_staff(
+      coaching_staff:baseball_team_coach_staff(
         *,
         coach:baseball_coaches(*)
       )
@@ -47,8 +47,8 @@ export async function getTeamRoster(teamId: string) {
       *,
       player:baseball_players(
         *,
-        metrics:player_metrics(*),
-        achievements:player_achievements(*)
+        metrics:baseball_player_metrics(*),
+        achievements:baseball_player_achievements(*)
       )
     `
     )
@@ -75,7 +75,7 @@ export async function getTeamEvents(
   const supabase = await createClient();
 
   let query = supabase
-    .from('events')
+    .from('baseball_events')
     .select('*')
     .eq('team_id', teamId);
 
@@ -232,16 +232,19 @@ export async function joinTeam(playerId: string, inviteCode: string) {
   const teamTypes = activeTeams.map((t) => t?.team_type);
 
   // Validate team limits based on player type
-  if (player.player_type === 'college' || player.player_type === 'juco') {
+  const playerType = player.player_type;
+  if (playerType === 'college' || playerType === 'juco') {
     // College and JUCO players can only be on 1 team
     if (activeTeams.length >= 1) {
-      throw new Error(`${player.player_type === 'college' ? 'College' : 'JUCO'} players can only be on one team`);
+      const label = playerType === 'college' ? 'College' : 'JUCO';
+      throw new Error(`${label} players can only be on one team`);
     }
     // Must match their player type
-    if (team.team_type !== player.player_type) {
-      throw new Error(`${player.player_type === 'college' ? 'College' : 'JUCO'} players can only join ${player.player_type} teams`);
+    if (team.team_type !== playerType) {
+      const label = playerType === 'college' ? 'College' : 'JUCO';
+      throw new Error(`${label} players can only join ${playerType} teams`);
     }
-  } else if (player.player_type === 'high_school' || player.player_type === 'showcase') {
+  } else if (playerType === 'high_school' || playerType === 'showcase') {
     // HS and Showcase players can be on max 2 teams
     if (activeTeams.length >= 2) {
       throw new Error('You can only be on 2 teams maximum');
@@ -317,7 +320,7 @@ export async function getTeamDevelopmentalPlans(teamId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('developmental_plans')
+    .from('baseball_developmental_plans')
     .select(
       `
       *,

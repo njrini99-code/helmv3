@@ -113,7 +113,7 @@ export default function TeamsPage() {
 
         // Get active invites for each team
         const { data: invitesData } = await supabase
-          .from('team_invitations')
+          .from('baseball_team_invitations')
           .select('*')
           .in('team_id', teamIds)
           .eq('is_active', true);
@@ -162,7 +162,7 @@ export default function TeamsPage() {
     }
 
     // Also add coach to team_coach_staff
-    await supabase.from('team_coach_staff').insert({
+    await supabase.from('baseball_team_coach_staff').insert({
       team_id: data.id,
       coach_id: coach.id,
       role: 'Head Coach',
@@ -191,7 +191,7 @@ export default function TeamsPage() {
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     const { data, error } = await supabase
-      .from('team_invitations')
+      .from('baseball_team_invitations')
       .insert({
         team_id: teamId,
         invite_code: code,

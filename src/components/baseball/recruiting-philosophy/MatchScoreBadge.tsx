@@ -1,0 +1,242 @@
+'use client';
+
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { getMatchScoreTier, formatMatchScore } from '@/lib/recruiting/match-calculator';
+import type { MatchScoreBreakdown } from '@/lib/types';
+import { RECRUITING_METRIC_LABELS } from '@/lib/types';
+import { ChevronDown, Target, AlertCircle } from 'lucide-react';
+
+interface MatchScoreBadgeProps {
+  score: number;
+  breakdown?: MatchScoreBreakdown;
+  meetsStandards?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  showBreakdown?: boolean;
+  className?: string;
+}
+
+export function MatchScoreBadge({
+  score,
+  breakdown,
+  meetsStandards = true,
+  size = 'md',
+  showBreakdown = false,
+  className,
+}: MatchScoreBadgeProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const tier = getMatchScoreTier(score);
+
+  const sizeClasses = {
+    sm: 'px-2 py-0.5 text-xs',
+    md: 'px-3 py-1 text-sm',
+    lg: 'px-4 py-1.5 text-base',
+  };
+
+  const tierColors = {
+    excellent: 'bg-green-100 text-green-700 border-green-200',
+    good: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    average: 'bg-amber-50 text-amber-700 border-amber-200',
+    below_average: 'bg-orange-50 text-orange-700 border-orange-200',
+    poor: 'bg-red-50 text-red-700 border-red-200',
+  };
+
+  const tierBgGradient = {
+    excellent: 'from-green-500 to-green-600',
+    good: 'from-emerald-400 to-emerald-500',
+    average: 'from-amber-400 to-amber-500',
+    below_average: 'from-orange-400 to-orange-500',
+    poor: 'from-red-400 to-red-500',
+  };
+
+  // Compact badge for list view
+  if (!showBreakdown) {
+    return (
+      <div
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-full font-semibold border',
+          sizeClasses[size],
+          tierColors[tier.tier],
+          !meetsStandards && 'opacity-60',
+          className
+        )}
+      >
+        <Target className={cn('flex-shrink-0', size === 'sm' ? 'w-3 h-3' : 'w-4 h-4')} />
+        <span className="tabular-nums">{formatMatchScore(score)}</span>
+        {!meetsStandards && (
+          <AlertCircle className={cn('flex-shrink-0', size === 'sm' ? 'w-3 h-3' : 'w-4 h-4')} />
+        )}
+      </div>
+    );
+  }
+
+  // Expandable badge with breakdown
+  return (
+    <div className={cn('relative', className)}>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={cn(
+          'flex items-center gap-2 rounded-xl font-semibold border transition-all',
+          sizeClasses[size],
+          tierColors[tier.tier],
+          isExpanded && 'rounded-b-none',
+          !meetsStandards && 'opacity-80'
+        )}
+      >
+        <Target className="w-4 h-4" />
+        <span className="tabular-nums">{formatMatchScore(score)}</span>
+        <span className="text-xs font-normal opacity-75">{tier.label}</span>
+        {breakdown && (
+          <ChevronDown
+            className={cn('w-4 h-4 transition-transform', isExpanded && 'rotate-180')}
+          />
+        )}
+      </button>
+
+      {/* Breakdown dropdown */}
+      {isExpanded && breakdown && (
+        <div className="absolute top-full left-0 right-0 z-10 bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-lg overflow-hidden">
+          {/* Score bar */}
+          <div className="p-3 bg-slate-50">
+            <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
+              <div
+                className={cn('h-full rounded-full bg-gradient-to-r', tierBgGradient[tier.tier])}
+                style={{ width: `${score}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Breakdown items */}
+          <div className="divide-y divide-slate-100">
+            {Object.entries(breakdown).map(([key, detail]) => {
+              if (!detail) return null;
+              const label = RECRUITING_METRIC_LABELS[key as keyof typeof RECRUITING_METRIC_LABELS];
+              return (
+                <div key={key} className="flex items-center justify-between px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-600">{label}</span>
+                    <span className="text-xs text-slate-400">×{detail.weight}%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-green-500 rounded-full"
+                        style={{ width: `${detail.percentile}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-slate-700 tabular-nums w-10 text-right">
+                      {detail.percentile}%
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Standards warning */}
+          {!meetsStandards && (
+            <div className="px-3 py-2 bg-amber-50 border-t border-amber-100">
+              <p className="text-xs text-amber-700 flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5" />
+                Below minimum standards
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Compact inline match score for player cards in list view.
+ */
+export function MatchScoreInline({
+  score,
+  className,
+}: {
+  score: number;
+  className?: string;
+}) {
+  const tier = getMatchScoreTier(score);
+
+  return (
+    <div className={cn('flex items-center gap-1', className)}>
+      <div
+        className={cn(
+          'w-2 h-2 rounded-full',
+          tier.tier === 'excellent' && 'bg-green-500',
+          tier.tier === 'good' && 'bg-emerald-500',
+          tier.tier === 'average' && 'bg-amber-500',
+          tier.tier === 'below_average' && 'bg-orange-500',
+          tier.tier === 'poor' && 'bg-red-500'
+        )}
+      />
+      <span className={cn('text-sm font-semibold tabular-nums', tier.color)}>
+        {formatMatchScore(score)}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Match score progress ring for larger displays.
+ */
+export function MatchScoreRing({
+  score,
+  size = 64,
+  className,
+}: {
+  score: number;
+  size?: number;
+  className?: string;
+}) {
+  const tier = getMatchScoreTier(score);
+  const strokeWidth = size / 8;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (score / 100) * circumference;
+
+  const strokeColors = {
+    excellent: '#16a34a',
+    good: '#10b981',
+    average: '#f59e0b',
+    below_average: '#f97316',
+    poor: '#ef4444',
+  };
+
+  return (
+    <div className={cn('relative inline-flex items-center justify-center', className)}>
+      <svg width={size} height={size} className="transform -rotate-90">
+        {/* Background ring */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#e2e8f0"
+          strokeWidth={strokeWidth}
+        />
+        {/* Progress ring */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={strokeColors[tier.tier]}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-all duration-500"
+        />
+      </svg>
+      {/* Center text */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className={cn('font-bold tabular-nums', tier.color)} style={{ fontSize: size / 4 }}>
+          {Math.round(score)}
+        </span>
+      </div>
+    </div>
+  );
+}

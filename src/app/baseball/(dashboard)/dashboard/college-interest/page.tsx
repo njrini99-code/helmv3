@@ -80,7 +80,7 @@ export default function CollegeInterestPage() {
 
     const supabase = createClient();
     const { data } = await supabase
-      .from('team_coach_staff')
+      .from('baseball_team_coach_staff')
       .select('team_id')
       .eq('coach_id', coach.id)
       .single();
@@ -112,7 +112,7 @@ export default function CollegeInterestPage() {
 
     // Fetch engagement events for team players
     const { data: events } = await supabase
-      .from('player_engagement_events')
+      .from('baseball_player_engagement_events')
       .select(`
         id,
         player_id,

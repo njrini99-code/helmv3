@@ -125,9 +125,9 @@ export async function getPlayerProfile(playerId: string) {
       high_school_org:organizations!players_high_school_org_id_fkey(*),
       showcase_org:organizations!players_showcase_org_id_fkey(*),
       college_org:organizations!players_college_org_id_fkey(*),
-      settings:player_settings(*),
-      metrics:player_metrics(*),
-      achievements:player_achievements(*)
+      settings:baseball_player_settings(*),
+      metrics:baseball_player_metrics(*),
+      achievements:baseball_player_achievements(*)
     `
     )
     .eq('id', playerId)
@@ -181,7 +181,7 @@ export async function getPlayerEngagement(
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('player_engagement_events')
+    .from('baseball_player_engagement_events')
     .select(
       `
       *,
@@ -212,7 +212,7 @@ export async function getPlayerRecruitingInterests(playerId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('recruiting_interests')
+    .from('baseball_recruiting_interests')
     .select(
       `
       *,

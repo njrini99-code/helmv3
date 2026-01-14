@@ -1,0 +1,193 @@
+import { createClient } from '@/lib/supabase/server';
+import { cached, golfCache, invalidateGolf } from './index';
+
+/**
+ * Get qualifier leaderboard with caching
+ */
+export async function getCachedLeaderboard(qualifierId: string) {
+  return cached(
+    golfCache.leaderboard.key(qualifierId),
+    async () => {
+      const supabase = await createClient();
+      // Use raw SQL call since RPC types may not be generated
+      const { data, error } = await supabase
+        .from('golf_qualifier_entries')
+        .select(`
+          id,
+          player_id,
+          position,
+          total_score,
+          player:golf_players(id, first_name, last_name)
+        `)
+        .eq('qualifier_id', qualifierId)
+        .order('position', { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return data;
+    },
+    { ttl: golfCache.leaderboard.ttl }
+  );
+}
+
+/**
+ * Get team roster with caching
+ */
+export async function getCachedRoster(teamId: string) {
+  return cached(
+    golfCache.roster.key(teamId),
+    async () => {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from('golf_players')
+        .select(`
+          id,
+          first_name,
+          last_name,
+          email,
+          phone,
+          avatar_url,
+          handicap,
+          status,
+          year,
+          jersey_number,
+          created_at
+        `)
+        .eq('team_id', teamId)
+        .order('last_name');
+      if (error) throw error;
+      return data;
+    },
+    { ttl: golfCache.roster.ttl }
+  );
+}
+
+/**
+ * Get player stats summary with caching
+ */
+export async function getCachedPlayerStats(playerId: string) {
+  return cached(
+    golfCache.playerStats.key(playerId),
+    async () => {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from('golf_rounds')
+        .select(`
+          id,
+          round_date,
+          total_score,
+          total_putts,
+          fairways_hit,
+          greens_in_regulation,
+          round_type,
+          course_name
+        `)
+        .eq('player_id', playerId)
+        .eq('round_status', 'completed')
+        .order('round_date', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+
+      // Calculate aggregates
+      if (!data || data.length === 0) {
+        return { rounds: [], stats: null };
+      }
+
+      const validScores = data.filter((r) => r.total_score != null);
+      const stats = {
+        totalRounds: data.length,
+        avgScore: validScores.length > 0
+          ? Math.round(validScores.reduce((acc, r) => acc + (r.total_score || 0), 0) / validScores.length * 10) / 10
+          : null,
+        avgPutts: validScores.length > 0
+          ? Math.round(validScores.reduce((acc, r) => acc + (r.total_putts || 0), 0) / validScores.length * 10) / 10
+          : null,
+        bestScore: validScores.length > 0
+          ? Math.min(...validScores.map((r) => r.total_score || 999))
+          : null,
+      };
+
+      return { rounds: data, stats };
+    },
+    { ttl: golfCache.playerStats.ttl }
+  );
+}
+
+/**
+ * Get team events for a month with caching
+ */
+export async function getCachedTeamEvents(teamId: string, startDate: string, endDate: string) {
+  const monthKey = startDate.slice(0, 7); // YYYY-MM
+  return cached(
+    golfCache.events.key(teamId, monthKey),
+    async () => {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from('golf_events')
+        .select(`
+          id,
+          title,
+          event_type,
+          status,
+          start_date,
+          end_date,
+          location,
+          description,
+          rsvp_confirmed_count,
+          rsvp_total_count
+        `)
+        .eq('team_id', teamId)
+        .gte('start_date', startDate)
+        .lte('start_date', endDate)
+        .order('start_date');
+      if (error) throw error;
+      return data;
+    },
+    { ttl: golfCache.events.ttl }
+  );
+}
+
+/**
+ * Get course data with caching
+ */
+export async function getCachedCourse(courseId: string) {
+  return cached(
+    golfCache.course.key(courseId),
+    async () => {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from('golf_courses')
+        .select(`
+          *,
+          holes:golf_course_holes(*)
+        `)
+        .eq('id', courseId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    { ttl: golfCache.course.ttl }
+  );
+}
+
+/**
+ * Get team settings with caching
+ */
+export async function getCachedTeamSettings(teamId: string) {
+  return cached(
+    golfCache.teamSettings.key(teamId),
+    async () => {
+      const supabase = await createClient();
+      // Query as any to bypass type generation issues
+      const { data, error } = await (supabase as any)
+        .from('golf_team_settings')
+        .select('*')
+        .eq('team_id', teamId)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error; // Ignore not found
+      return data;
+    },
+    { ttl: golfCache.teamSettings.ttl }
+  );
+}
+
+// Re-export invalidation helpers
+export { invalidateGolf };

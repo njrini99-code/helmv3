@@ -95,14 +95,14 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
 
   // Fetch player settings separately (may not have relationship)
   const { data: playerSettings } = await supabase
-    .from('player_settings')
+    .from('baseball_player_settings')
     .select('*')
     .eq('player_id', id)
     .maybeSingle();
 
   // Fetch recruiting interests separately
   const { data: recruitingInterests } = await supabase
-    .from('recruiting_interests')
+    .from('baseball_recruiting_interests')
     .select(`
       id,
       interest_level,
@@ -138,7 +138,7 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
 
       // Log profile view engagement
       await supabase
-        .from('player_engagement_events')
+        .from('baseball_player_engagement_events')
         .insert({
           player_id: player.id,
           coach_id: coach.id,
@@ -163,7 +163,7 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
 
   // Get engagement stats for the player
   const { count: profileViewCount } = await supabase
-    .from('player_engagement_events')
+    .from('baseball_player_engagement_events')
     .select('*', { count: 'exact', head: true })
     .eq('player_id', player.id)
     .eq('engagement_type', 'profile_view');

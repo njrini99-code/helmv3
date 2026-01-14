@@ -55,7 +55,7 @@ export function useColleges(options: UseCollegesOptions = {}) {
 
     // Get interests - use organization_id to match against college id
     const { data: interestsData } = await supabase
-      .from('recruiting_interests')
+      .from('baseball_recruiting_interests')
       .select('organization_id')
       .eq('player_id', player.id);
 

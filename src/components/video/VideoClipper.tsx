@@ -207,7 +207,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
 
       // Save clip to database
       const { data: newClip, error: insertError } = await supabase
-        .from('videos')
+        .from('baseball_videos')
         .insert({
           player_id: video.player_id,
           title: clipData.title,

@@ -120,7 +120,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
   // Get coach notes
   const { data: notes } = await supabase
-    .from('coach_notes')
+    .from('baseball_coach_notes')
     .select('*')
     .eq('player_id', playerId)
     .eq('coach_id', coach.id)

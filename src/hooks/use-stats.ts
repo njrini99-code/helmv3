@@ -39,7 +39,7 @@ export function useCoachStats() {
 
       // Get conversation IDs for this user
       const { data: conversations } = await supabase
-        .from('conversations')
+        .from('baseball_conversations')
         .select('id')
         .or(`coach_id.eq.${coach.id},player_id.eq.${coach.id}`);
       const convIds = conversations?.map(c => c.id) || [];
@@ -59,7 +59,7 @@ export function useCoachStats() {
         supabase.from('baseball_watchlists').select('*', { count: 'exact', head: true })
           .eq('coach_id', coach.id),
         convIds.length > 0
-          ? supabase.from('messages').select('*', { count: 'exact', head: true })
+          ? supabase.from('baseball_messages').select('*', { count: 'exact', head: true })
               .eq('read', false).neq('sender_id', user.id).in('conversation_id', convIds)
           : { count: 0 },
         supabase.from('baseball_watchlists').select('*', { count: 'exact', head: true })
@@ -100,7 +100,7 @@ export function usePlayerStats() {
       const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
       const { data: conversations } = await supabase
-        .from('conversations')
+        .from('baseball_conversations')
         .select('id')
         .or(`coach_id.eq.${player.id},player_id.eq.${player.id}`);
       const convIds = conversations?.map(c => c.id) || [];
@@ -120,7 +120,7 @@ export function usePlayerStats() {
           .eq('player_id', player.id),
         supabase.from('baseball_videos').select('view_count').eq('player_id', player.id),
         convIds.length > 0
-          ? supabase.from('messages').select('*', { count: 'exact', head: true })
+          ? supabase.from('baseball_messages').select('*', { count: 'exact', head: true })
               .eq('read', false).neq('sender_id', user.id).in('conversation_id', convIds)
           : { count: 0 },
       ]);

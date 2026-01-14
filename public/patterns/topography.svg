@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <defs>
+    <pattern id="topo" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+      <path fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" d="
+        M0 90 Q 25 85, 50 90 T 100 90
+        M0 70 Q 20 75, 40 70 T 80 70 T 100 70
+        M0 50 Q 30 45, 60 50 T 100 50
+        M0 30 Q 15 35, 30 30 T 60 30 T 100 30
+        M0 10 Q 25 15, 50 10 T 100 10
+      "/>
+    </pattern>
+  </defs>
+  <rect width="100" height="100" fill="url(#topo)"/>
+</svg>

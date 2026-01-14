@@ -19,7 +19,7 @@ export function useUnreadCount() {
     try {
       // Get all conversation IDs the user is part of
       const { data: participantData } = await supabase
-        .from('conversation_participants')
+        .from('baseball_conversation_participants')
         .select('conversation_id, last_read_at')
         .eq('user_id', user.id);
 
@@ -34,7 +34,7 @@ export function useUnreadCount() {
 
       for (const participant of participantData) {
         const { count } = await supabase
-          .from('messages')
+          .from('baseball_messages')
           .select('*', { count: 'exact', head: true })
           .eq('conversation_id', participant.conversation_id)
           .neq('sender_id', user.id)
@@ -63,7 +63,7 @@ export function useUnreadCount() {
           {
             event: 'INSERT',
             schema: 'public',
-            table: 'messages',
+            table: 'baseball_messages',
           },
           () => {
             fetchUnreadCount();
@@ -74,7 +74,7 @@ export function useUnreadCount() {
           {
             event: 'UPDATE',
             schema: 'public',
-            table: 'conversation_participants',
+            table: 'baseball_conversation_participants',
           },
           () => {
             fetchUnreadCount();

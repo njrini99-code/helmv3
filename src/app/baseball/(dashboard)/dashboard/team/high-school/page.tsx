@@ -88,7 +88,7 @@ export default function HSCoachDashboardPage() {
 
     // Get team ID
     const { data: staffData } = await supabase
-      .from('team_coach_staff')
+      .from('baseball_team_coach_staff')
       .select('team_id')
       .eq('coach_id', coach.id)
       .single();
@@ -149,7 +149,7 @@ export default function HSCoachDashboardPage() {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const { data: interests } = await supabase
-      .from('player_engagement_events')
+      .from('baseball_player_engagement_events')
       .select(`
         id,
         created_at,
@@ -184,7 +184,7 @@ export default function HSCoachDashboardPage() {
 
     // Fetch dev plan progress
     const { data: devPlans } = await supabase
-      .from('developmental_plans')
+      .from('baseball_developmental_plans')
       .select(`
         player_id,
         status,

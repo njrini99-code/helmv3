@@ -56,7 +56,7 @@ export async function saveComparison(params: SaveComparisonParams) {
 
   // Insert into database
   const { data: comparison, error: insertError } = await supabase
-    .from('player_comparisons')
+    .from('baseball_player_comparisons')
     .insert({
       coach_id: comparisonInsert.coach_id,
       name: comparisonInsert.name,
@@ -101,7 +101,7 @@ export async function deleteComparison(comparisonId: string) {
 
   // Delete comparison (RLS will ensure only coach's own comparisons can be deleted)
   const { error: deleteError } = await supabase
-    .from('player_comparisons')
+    .from('baseball_player_comparisons')
     .delete()
     .eq('id', comparisonId)
     .eq('coach_id', coach.id);
@@ -140,7 +140,7 @@ export async function getSavedComparisons() {
 
   // Fetch comparisons
   const { data: comparisons, error: fetchError } = await supabase
-    .from('player_comparisons')
+    .from('baseball_player_comparisons')
     .select('*')
     .eq('coach_id', coach.id)
     .order('created_at', { ascending: false });

@@ -106,7 +106,7 @@ export default function EventsPage() {
       }
 
       const query = supabase
-        .from('events')
+        .from('baseball_events')
         .select(`
           *,
           team:teams (id, name, primary_color)
@@ -139,7 +139,7 @@ export default function EventsPage() {
     const supabase = createClient();
 
     const { data, error } = await supabase
-      .from('events')
+      .from('baseball_events')
       .insert({
         team_id: newEvent.team_id,
         name: newEvent.name.trim(),
@@ -184,7 +184,7 @@ export default function EventsPage() {
     if (!confirm('Are you sure you want to delete this event?')) return;
 
     const supabase = createClient();
-    const { error } = await supabase.from('events').delete().eq('id', eventId);
+    const { error } = await supabase.from('baseball_events').delete().eq('id', eventId);
 
     if (error) {
       return;

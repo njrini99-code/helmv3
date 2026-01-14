@@ -52,7 +52,7 @@ export async function getCoachTeams(coachId: string) {
 
   // Get teams where coach is staff
   const { data: staffTeams, error: staffError } = await supabase
-    .from('team_coach_staff')
+    .from('baseball_team_coach_staff')
     .select(
       `
       *,
@@ -88,7 +88,7 @@ export async function getCoachCalendarEvents(
   const supabase = await createClient();
 
   let query = supabase
-    .from('coach_calendar_events')
+    .from('baseball_coach_calendar_events')
     .select('*')
     .eq('coach_id', coachId);
 
@@ -118,12 +118,12 @@ export async function getCoachCamps(coachId: string, status?: string) {
   const supabase = await createClient();
 
   let query = supabase
-    .from('camps')
+    .from('baseball_camps')
     .select(
       `
       *,
       organization:organizations(*),
-      registrations:camp_registrations(count)
+      registrations:baseball_camp_registrations(count)
     `
     )
     .eq('coach_id', coachId);

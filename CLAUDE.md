@@ -10,8 +10,23 @@
 - **BaseballHelm**: College baseball recruiting (coaches ↔ players)
 - **GolfHelm**: College golf team management + CoachHelm AI layer
 
-**Stack**: Next.js 14 (App Router) • TypeScript strict • Supabase • Tailwind
+**Stack**: Next.js 16 (App Router) • TypeScript strict • Supabase • Tailwind
 **Design**: Linear/Vercel-inspired, glassmorphism, premium aesthetics
+
+---
+
+## 🗺 Codebase Overview
+
+**1,752 files | 3.4M tokens** - Large multi-sport SaaS platform
+
+**Key Directories:**
+- `src/app/` - Routes (340 files): baseball/, golf/, api/
+- `src/components/` - React components (392 files): ui/, baseball/, golf/
+- `src/lib/` - Infrastructure (98 files): supabase/, types/, queries/, coachhelm/
+- `src/hooks/` - React hooks (41 files): use-auth, use-players, use-watchlist
+- `supabase/migrations/` - 41 production migrations with RLS
+
+**For detailed architecture, module guides, and navigation help, see [docs/CODEBASE_MAP.md](docs/CODEBASE_MAP.md).**
 
 ---
 
@@ -47,15 +62,30 @@ import { useState } from 'react';
 
 ### 4. Table Names
 ```typescript
-// CORRECT
-.from('watchlists')      // Coach's saved players
-.from('videos')          // Player videos  
+// CORRECT - Baseball tables use 'baseball_' prefix
+.from('baseball_watchlists')      // Coach's saved players
+.from('baseball_videos')          // Player videos
+.from('baseball_coaches')         // Coach profiles
+.from('baseball_players')         // Player profiles
+.from('baseball_teams')           // Teams
+.from('baseball_team_members')    // Team membership
+.from('baseball_player_engagement_events')  // Analytics/engagement
+
+// CORRECT - Shared tables (no prefix)
 .from('organizations')   // Schools/programs
+.from('users')           // Auth-linked user records
+
+// CORRECT - Golf tables use 'golf_' prefix
 .from('golf_players')    // Golf team players
 .from('golf_rounds')     // Round data
 .from('golf_events')     // Calendar events
+.from('golf_teams')      // Golf teams
+.from('golf_coaches')    // Golf coach profiles
 
-// WRONG (don't exist)
+// WRONG (don't exist - outdated names)
+.from('watchlists')      // Use baseball_watchlists
+.from('coaches')         // Use baseball_coaches or golf_coaches
+.from('players')         // Use baseball_players or golf_players
 .from('recruit_watchlist')
 .from('player_videos')
 .from('colleges')

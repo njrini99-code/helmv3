@@ -100,7 +100,7 @@ export async function addToWatchlist(
 
   // Log engagement event
   await supabase
-    .from('player_engagement_events')
+    .from('baseball_player_engagement_events')
     .insert({
       player_id: playerId,
       coach_id: coachId,
@@ -131,7 +131,7 @@ export async function removeFromWatchlist(coachId: string, playerId: string) {
 
   // Log engagement event
   await supabase
-    .from('player_engagement_events')
+    .from('baseball_player_engagement_events')
     .insert({
       player_id: playerId,
       coach_id: coachId,

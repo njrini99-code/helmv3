@@ -190,7 +190,7 @@ export default function CampsPage() {
       if (isCoach && coach) {
         // Fetch coach's own camps
         const { data } = await supabase
-          .from('camps')
+          .from('baseball_camps')
           .select(`
             *,
             organization:organizations(id, name, logo_url),
@@ -203,7 +203,7 @@ export default function CampsPage() {
       } else if (isPlayer && player) {
         // Fetch all active camps for players
         const { data } = await supabase
-          .from('camps')
+          .from('baseball_camps')
           .select(`
             *,
             organization:organizations(id, name, logo_url),
@@ -215,7 +215,7 @@ export default function CampsPage() {
 
         // Fetch player's registrations
         const { data: playerRegs } = await supabase
-          .from('camp_registrations')
+          .from('baseball_camp_registrations')
           .select('camp_id')
           .eq('player_id', player.id)
           .is('cancelled_at', null);
@@ -237,7 +237,7 @@ export default function CampsPage() {
     if (!player) return;
 
     const { error } = await supabase
-      .from('camp_registrations')
+      .from('baseball_camp_registrations')
       .insert({
         camp_id: campId,
         player_id: player.id,
@@ -260,7 +260,7 @@ export default function CampsPage() {
     if (!player) return;
 
     const { error } = await supabase
-      .from('camp_registrations')
+      .from('baseball_camp_registrations')
       .update({ cancelled_at: new Date().toISOString() })
       .eq('camp_id', campId)
       .eq('player_id', player.id);
@@ -291,13 +291,13 @@ export default function CampsPage() {
     try {
       // First delete all registrations for this camp
       await supabase
-        .from('camp_registrations')
+        .from('baseball_camp_registrations')
         .delete()
         .eq('camp_id', deleteConfirm);
 
       // Then delete the camp
       const { error } = await supabase
-        .from('camps')
+        .from('baseball_camps')
         .delete()
         .eq('id', deleteConfirm);
 
@@ -389,7 +389,7 @@ export default function CampsPage() {
           // Refresh camps list
           if (isCoach && coach) {
             supabase
-              .from('camps')
+              .from('baseball_camps')
               .select(`
                 *,
                 organization:organizations(id, name, logo_url),

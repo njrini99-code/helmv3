@@ -98,14 +98,14 @@ export default function TeamDashboardPage() {
 
       // Dev plan count
       supabase
-        .from('developmental_plans')
+        .from('baseball_developmental_plans')
         .select('*', { count: 'exact', head: true })
         .eq('coach_id', coach.id)
         .in('status', ['sent', 'in_progress']),
 
       // Upcoming events (next 7 days)
       supabase
-        .from('events')
+        .from('baseball_events')
         .select('id, name, event_type, start_time')
         .eq('team_id', selectedTeamId)
         .gte('start_time', new Date().toISOString())
@@ -162,7 +162,7 @@ export default function TeamDashboardPage() {
 
       // Player dev plan tasks
       supabase
-        .from('developmental_plans')
+        .from('baseball_developmental_plans')
         .select('goals')
         .eq('player_id', player.id)
         .in('status', ['sent', 'in_progress'])
@@ -176,7 +176,7 @@ export default function TeamDashboardPage() {
 
       // Upcoming events
       supabase
-        .from('events')
+        .from('baseball_events')
         .select('id, name, event_type, start_time')
         .eq('team_id', selectedTeamId)
         .gte('start_time', new Date().toISOString())

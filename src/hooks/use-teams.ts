@@ -67,7 +67,7 @@ export function useTeams() {
 
       // Add staff teams
       (staffData || []).forEach((item) => {
-        const team = item.teams as Team | null;
+        const team = item.baseball_teams as Team | null;
         if (team && !teamMap.has(team.id)) {
           teamMap.set(team.id, team);
         }

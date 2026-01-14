@@ -21,7 +21,7 @@ export function useMessages(conversationId: string) {
     setLoading(true);
     // Use explicit columns instead of SELECT * for better performance
     const { data } = await supabase
-      .from('messages')
+      .from('baseball_messages')
       .select('id, conversation_id, sender_id, content, read, sent_at, updated_at')
       .eq('conversation_id', conversationId)
       .order('sent_at', { ascending: true });
@@ -44,7 +44,7 @@ export function useMessages(conversationId: string) {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'messages',
+          table: 'baseball_messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
@@ -232,7 +232,7 @@ export function useConversations() {
           {
             event: 'INSERT',
             schema: 'public',
-            table: 'messages',
+            table: 'baseball_messages',
           },
           () => {
             fetchConversations();

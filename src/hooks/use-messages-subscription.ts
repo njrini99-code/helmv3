@@ -41,7 +41,7 @@ export function useMessagesSubscription({
 
     try {
       const { data, error: fetchError } = await supabase
-        .from('messages')
+        .from('baseball_messages')
         .select('*')
         .eq('conversation_id', conversationId)
         .order('sent_at', { ascending: true })
@@ -67,7 +67,7 @@ export function useMessagesSubscription({
       if (!oldestMessage || !oldestMessage.sent_at) return;
 
       const { data, error: fetchError } = await supabase
-        .from('messages')
+        .from('baseball_messages')
         .select('*')
         .eq('conversation_id', conversationId)
         .lt('sent_at', oldestMessage.sent_at)
@@ -98,7 +98,7 @@ export function useMessagesSubscription({
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'messages',
+          table: 'baseball_messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload: RealtimePostgresChangesPayload<Message>) => {
@@ -120,7 +120,7 @@ export function useMessagesSubscription({
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'messages',
+          table: 'baseball_messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload: RealtimePostgresChangesPayload<Message>) => {
@@ -140,7 +140,7 @@ export function useMessagesSubscription({
         {
           event: 'DELETE',
           schema: 'public',
-          table: 'messages',
+          table: 'baseball_messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload: RealtimePostgresChangesPayload<Message>) => {
@@ -167,7 +167,7 @@ export function useMessagesSubscription({
   ): Promise<Message | null> => {
     try {
       const { data, error: insertError } = await supabase
-        .from('messages')
+        .from('baseball_messages')
         .insert({
           conversation_id: conversationId,
           sender_id: senderId,
@@ -190,7 +190,7 @@ export function useMessagesSubscription({
   const deleteMessage = async (messageId: string): Promise<boolean> => {
     try {
       const { error: deleteError } = await supabase
-        .from('messages')
+        .from('baseball_messages')
         .delete()
         .eq('id', messageId);
 
@@ -208,7 +208,7 @@ export function useMessagesSubscription({
   const markAsRead = async (messageId: string): Promise<boolean> => {
     try {
       const { error: updateError } = await supabase
-        .from('messages')
+        .from('baseball_messages')
         .update({ read: true })
         .eq('id', messageId);
 

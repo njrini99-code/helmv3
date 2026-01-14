@@ -112,7 +112,7 @@ export default function VideosPage() {
       await supabase.from('baseball_videos').delete().eq('id', deleteConfirm.id);
       const countResult = await supabase.from('baseball_videos').select('*', { count: 'exact', head: true }).eq('player_id', player.id);
       if (countResult.count === 0) {
-        await supabase.from('players').update({ has_video: false }).eq('id', player.id);
+        await supabase.from('baseball_players').update({ has_video: false }).eq('id', player.id);
       }
       showToast('Video deleted successfully', 'success');
       fetchVideos();
