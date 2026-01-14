@@ -50,8 +50,10 @@ export async function sendMessage({
     const sanitizedContent = sanitizeHtml(validatedData.content);
 
     // Verify user is a participant in this conversation
+    // Use sport-specific table names (baseball_conversation_participants or golf_conversation_participants)
+    const participantsTable = sport === 'golf' ? 'golf_conversation_participants' : 'baseball_conversation_participants';
     const { data: participant, error: participantError } = await supabase
-      .from('conversation_participants')
+      .from(participantsTable)
       .select('id')
       .eq('conversation_id', validatedData.conversation_id)
       .eq('user_id', user.id)
@@ -75,8 +77,9 @@ export async function sendMessage({
     });
 
     // Insert message
+    const messagesTable = sport === 'golf' ? 'golf_messages' : 'baseball_messages';
     const { data: insertedMessage, error: messageError } = await supabase
-      .from('messages')
+      .from(messagesTable)
       .insert({
         conversation_id: validatedData.conversation_id,
         sender_id: user.id,
@@ -105,15 +108,16 @@ export async function sendMessage({
     }
 
     // Update conversation updated_at
+    const conversationsTable = sport === 'golf' ? 'golf_conversations' : 'baseball_conversations';
     await supabase
-      .from('conversations')
+      .from(conversationsTable)
       .update({ updated_at: new Date().toISOString() })
       .eq('id', validatedData.conversation_id);
 
     // Create notifications for other participants (if enabled)
     if (createNotifications) {
       const { data: otherParticipants } = await supabase
-        .from('conversation_participants')
+        .from(participantsTable)
         .select('user_id')
         .eq('conversation_id', validatedData.conversation_id)
         .neq('user_id', user.id);
@@ -173,12 +177,13 @@ export async function createConversation({
 
   // Check if conversation already exists between these users
   // Optimized: Single query instead of N+1 pattern
+  const participantsTable = sport === 'golf' ? 'golf_conversation_participants' : 'baseball_conversation_participants';
   if (participantUserIds.length === 1 && participantUserIds[0]) {
     const otherUserId = participantUserIds[0];
 
     // Get all conversation IDs where current user participates
     const { data: myConversations } = await supabase
-      .from('conversation_participants')
+      .from(participantsTable)
       .select('conversation_id')
       .eq('user_id', user.id);
 
@@ -187,7 +192,7 @@ export async function createConversation({
 
       // Find conversations where the other user also participates (single query)
       const { data: sharedConversations } = await supabase
-        .from('conversation_participants')
+        .from(participantsTable)
         .select('conversation_id')
         .eq('user_id', otherUserId)
         .in('conversation_id', conversationIds)
@@ -247,8 +252,9 @@ export async function markMessagesAsRead({
   }
 
   // Update last_read_at for this participant
+  const participantsTable = sport === 'golf' ? 'golf_conversation_participants' : 'baseball_conversation_participants';
   const { error: participantError } = await supabase
-    .from('conversation_participants')
+    .from(participantsTable)
     .update({ last_read_at: new Date().toISOString() })
     .eq('conversation_id', conversationId)
     .eq('user_id', user.id);
@@ -259,8 +265,9 @@ export async function markMessagesAsRead({
   }
 
   // Mark all messages in this conversation as read
+  const messagesTable = sport === 'golf' ? 'golf_messages' : 'baseball_messages';
   const { error: messagesError } = await supabase
-    .from('messages')
+    .from(messagesTable)
     .update({ read: true })
     .eq('conversation_id', conversationId)
     .neq('sender_id', user.id);
