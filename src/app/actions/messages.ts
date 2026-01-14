@@ -130,10 +130,9 @@ export async function sendMessage({
 
         const notifications = otherParticipants.map(p => ({
           user_id: p.user_id,
-          type: 'new_message',
+          type: 'message' as const,
           title: 'New Message',
           body: notificationBody,
-          action_url: `/${sport}/dashboard/messages/${validatedData.conversation_id}`,
           read: false,
           created_at: new Date().toISOString(),
         }));
