@@ -204,15 +204,19 @@ export async function createConversation({
     }
   }
 
-  // Create new conversation using SECURITY DEFINER function (bypasses RLS issues)
-  const { data: conversationId, error: convError } = await supabase.rpc('create_conversation_with_participants', {
-    participant_user_ids: participantUserIds,
-  }) as {
-    data: string | null;
-    error: { message?: string; code?: string; details?: string; hint?: string } | null;
-  };
+  // Create new conversation using direct insert
+  const conversationsTable = sport === 'golf' ? 'golf_conversations' : 'baseball_conversations';
+  const { data: newConversation, error: convError } = await supabase
+    .from(conversationsTable)
+    .insert({
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
 
-  if (convError || !conversationId) {
+  if (convError || !newConversation) {
     console.error('[Security] Conversation create error:', {
       error: convError?.message,
       code: convError?.code,
@@ -222,6 +226,31 @@ export async function createConversation({
       participantUserIds,
     });
     throw new Error(`Failed to create conversation: ${convError?.message || 'Unknown error'}`);
+  }
+
+  const conversationId = newConversation.id;
+
+  // Add all participants (including current user)
+  const allParticipantIds = [user.id, ...participantUserIds.filter(id => id !== user.id)];
+  const participantInserts = allParticipantIds.map(userId => ({
+    conversation_id: conversationId,
+    user_id: userId,
+    joined_at: new Date().toISOString(),
+  }));
+
+  const { error: participantsError } = await supabase
+    .from(participantsTable)
+    .insert(participantInserts);
+
+  if (participantsError) {
+    console.error('[Security] Participants insert error:', {
+      error: participantsError.message,
+      conversationId,
+      userId: user.id,
+    });
+    // Clean up the conversation if participants failed
+    await supabase.from(conversationsTable).delete().eq('id', conversationId);
+    throw new Error(`Failed to add participants: ${participantsError.message}`);
   }
 
   revalidatePath(`/${sport}/dashboard/messages`);
