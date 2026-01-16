@@ -79,14 +79,14 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       return { success: false, error: 'Session not found. Please try logging in again, or check if email confirmation is required in Supabase settings.' };
     }
 
-    // Ensure users table record exists with correct sport
+    // Ensure users table record exists with correct role
+    // Note: 'sport' column doesn't exist on users table, role is sufficient
     const { error: usersError } = await supabase
       .from('users')
       .upsert({
         id: user.id,
         email: user.email || '',
         role: 'coach',
-        sport: 'golf',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, {
@@ -230,14 +230,13 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
       return { success: false, error: 'You must be signed in to complete onboarding.' };
     }
 
-    // Ensure users table record exists with correct sport
+    // Ensure users table record exists with correct role
     const { error: usersError } = await supabase
       .from('users')
       .upsert({
         id: user.id,
         email: user.email || '',
         role: 'player',
-        sport: 'golf',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, {
