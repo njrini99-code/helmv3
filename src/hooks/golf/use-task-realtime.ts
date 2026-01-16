@@ -465,184 +465,17 @@ export function useTaskCountsRealtime(teamId: string | null, playerId?: string |
 
   return { counts, loading, refetch: fetchCounts };
 }
-'use client';
-
-import { useEffect, useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import type { GolfTask, GolfTaskWithAssignee } from '@/lib/types/golf';
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-
-interface UseTaskRealtimeOptions {
-  teamId: string;
-  onInsert?: (task: GolfTask) => void;
-  onUpdate?: (task: GolfTask) => void;
-  onDelete?: (task: GolfTask) => void;
-  enabled?: boolean;
-}
-
-interface UseTaskRealtimeReturn {
-  tasks: GolfTaskWithAssignee[];
-  setTasks: React.Dispatch<React.SetStateAction<GolfTaskWithAssignee[]>>;
-  loading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-}
-
-/**
- * Hook for real-time task updates
- * Subscribes to changes on the golf_tasks table for a specific team
- */
-export function useTaskRealtime({
-  teamId,
-  onInsert,
-  onUpdate,
-  onDelete,
-  enabled = true,
-}: UseTaskRealtimeOptions): UseTaskRealtimeReturn {
-  const [tasks, setTasks] = useState<GolfTaskWithAssignee[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch tasks
-  const fetchTasks = useCallback(async () => {
-    if (!teamId) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const supabase = createClient();
-      const { data, error: fetchError } = await supabase
-        .from('golf_tasks')
-        .select(`
-          *,
-          assignee:users!assigned_to(id, full_name, avatar_url),
-          creator:users!created_by(id, full_name, avatar_url)
-        `)
-        .eq('team_id', teamId)
-        .order('created_at', { ascending: false });
-
-      if (fetchError) {
-        setError(fetchError.message);
-        return;
-      }
-
-      setTasks(data as GolfTaskWithAssignee[]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch tasks');
-    } finally {
-      setLoading(false);
-    }
-  }, [teamId]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
-
-  // Set up real-time subscription
-  useEffect(() => {
-    if (!enabled || !teamId) return;
-
-    const supabase = createClient();
-
-    const channel = supabase
-      .channel(`golf_tasks:team_${teamId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'golf_tasks',
-          filter: `team_id=eq.${teamId}`,
-        },
-        async (payload: RealtimePostgresChangesPayload<GolfTask>) => {
-          const { eventType, new: newRecord, old: oldRecord } = payload;
-
-          switch (eventType) {
-            case 'INSERT':
-              if (newRecord) {
-                // Fetch the complete task with relations
-                const { data: fullTask } = await supabase
-                  .from('golf_tasks')
-                  .select(`
-                    *,
-                    assignee:users!assigned_to(id, full_name, avatar_url),
-                    creator:users!created_by(id, full_name, avatar_url)
-                  `)
-                  .eq('id', (newRecord as GolfTask).id)
-                  .single();
-
-                if (fullTask) {
-                  setTasks((prev) => [fullTask as GolfTaskWithAssignee, ...prev]);
-                  onInsert?.(fullTask as GolfTask);
-                }
-              }
-              break;
-
-            case 'UPDATE':
-              if (newRecord) {
-                // Fetch the complete updated task with relations
-                const { data: fullTask } = await supabase
-                  .from('golf_tasks')
-                  .select(`
-                    *,
-                    assignee:users!assigned_to(id, full_name, avatar_url),
-                    creator:users!created_by(id, full_name, avatar_url)
-                  `)
-                  .eq('id', (newRecord as GolfTask).id)
-                  .single();
-
-                if (fullTask) {
-                  setTasks((prev) =>
-                    prev.map((task) =>
-                      task.id === fullTask.id
-                        ? (fullTask as GolfTaskWithAssignee)
-                        : task
-                    )
-                  );
-                  onUpdate?.(fullTask as GolfTask);
-                }
-              }
-              break;
-
-            case 'DELETE':
-              if (oldRecord) {
-                const deletedTask = oldRecord as GolfTask;
-                setTasks((prev) => prev.filter((task) => task.id !== deletedTask.id));
-                onDelete?.(deletedTask);
-              }
-              break;
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [teamId, enabled, onInsert, onUpdate, onDelete]);
-
-  return {
-    tasks,
-    setTasks,
-    loading,
-    error,
-    refetch: fetchTasks,
-  };
-}
 
 /**
  * Hook for real-time reminder updates
  */
 export function useReminderRealtime(userId: string, enabled = true) {
-  const [reminders, setReminders] = useState<any[]>([]);
+  const [reminders, setReminders] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
   useEffect(() => {
     if (!enabled || !userId) return;
-
-    const supabase = createClient();
 
     const fetchReminders = async () => {
       setLoading(true);
@@ -658,7 +491,7 @@ export function useReminderRealtime(userId: string, enabled = true) {
         .limit(10);
 
       // Filter to user's tasks
-      const filtered = (data || []).filter((r: any) => {
+      const filtered = (data || []).filter((r: { task?: { created_by?: string; assigned_to?: string } }) => {
         const task = r.task;
         return task && (task.created_by === userId || task.assigned_to === userId);
       });
@@ -679,7 +512,6 @@ export function useReminderRealtime(userId: string, enabled = true) {
           table: 'golf_task_reminders',
         },
         () => {
-          // Refetch on any change
           fetchReminders();
         }
       )
@@ -688,7 +520,7 @@ export function useReminderRealtime(userId: string, enabled = true) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, enabled]);
+  }, [userId, enabled, supabase]);
 
   return { reminders, loading };
 }
@@ -697,13 +529,12 @@ export function useReminderRealtime(userId: string, enabled = true) {
  * Hook for real-time template updates
  */
 export function useTemplateRealtime(teamId: string, enabled = true) {
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
   useEffect(() => {
     if (!enabled || !teamId) return;
-
-    const supabase = createClient();
 
     const fetchTemplates = async () => {
       setLoading(true);
@@ -731,7 +562,6 @@ export function useTemplateRealtime(teamId: string, enabled = true) {
           filter: `team_id=eq.${teamId}`,
         },
         () => {
-          // Refetch on any change
           fetchTemplates();
         }
       )
@@ -740,9 +570,7 @@ export function useTemplateRealtime(teamId: string, enabled = true) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teamId, enabled]);
+  }, [teamId, enabled, supabase]);
 
   return { templates, loading };
 }
-
-export default useTaskRealtime;
