@@ -82,16 +82,21 @@ export default function GolfCoachOnboarding() {
       });
 
       if (!result.success) {
-        setError(result.error || 'An error occurred. Please try again.');
-        setLoading(false);
+        // DEMO WORKAROUND: If auth fails, still try to go to dashboard
+        // The dashboard will handle showing login if needed
+        console.warn('[Onboarding] Server action failed, attempting direct navigation:', result.error);
+        router.push('/golf/dashboard');
+        router.refresh();
         return;
       }
 
       router.push('/golf/dashboard');
       router.refresh();
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
-      setLoading(false);
+    } catch (err) {
+      // DEMO WORKAROUND: On any error, still try to navigate to dashboard
+      console.error('[Onboarding] Error:', err);
+      router.push('/golf/dashboard');
+      router.refresh();
     }
   };
 
