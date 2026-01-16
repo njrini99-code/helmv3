@@ -222,6 +222,8 @@ export async function signupAction(
         first_name: firstName || '',
         last_name: lastName || '',
       },
+      // Skip email confirmation redirect - user will be auto-confirmed if disabled in Supabase
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/golf/dashboard`,
     },
   });
 
@@ -258,6 +260,16 @@ export async function signupAction(
       success: false,
       error: 'Failed to create account',
     };
+  }
+
+  // Check if email confirmation is required (session will be null)
+  // If no session, user needs to confirm email first
+  if (!data.session) {
+    // For demo/development: Log this so we know email confirmation is the issue
+    console.warn('[Golf Auth] No session after signup - email confirmation may be required. Disable in Supabase Dashboard: Authentication > Providers > Email > Confirm email = OFF');
+
+    // Still return success but note that email confirmation might be needed
+    // The onboarding page will handle the auth check
   }
 
   // Redirect based on role - coaches go to coach onboarding, players go to player onboarding
