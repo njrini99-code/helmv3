@@ -45,7 +45,7 @@ interface PlayerStats {
 
 interface StatsClientProps {
   initialPlayers?: (Player & { stats?: PlayerStats })[];
-  initialUserRole: 'coach' | 'player' | null;
+  initialUserRole?: 'coach' | 'player' | null;
   initialPlayerId?: string | null;
   initialPlayerName?: string;
   initialSummary?: StatsSummary;
@@ -61,7 +61,7 @@ export default function StatsClient({
   initialRounds = [],
 }: StatsClientProps) {
   // Core state
-  const [userRole, setUserRole] = useState<'coach' | 'player' | null>(initialUserRole);
+  const [userRole, setUserRole] = useState<'coach' | 'player' | null>(initialUserRole ?? null);
   const [players, setPlayers] = useState<(Player & { stats?: PlayerStats })[]>(initialPlayers);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(initialPlayerId ?? null);
   const [playerName, setPlayerName] = useState(initialPlayerName);
@@ -207,6 +207,7 @@ export default function StatsClient({
     const supabase = createClient();
 
     // Fast query - no shot data
+    // Note: scramble stats are only in golf_round_stats_cache, not in golf_rounds
     const { data: roundsData } = await supabase
       .from('golf_rounds')
       .select(`
@@ -216,13 +217,11 @@ export default function StatsClient({
         round_type,
         total_score,
         score_to_par,
-        fairways_hit,
-        fairway_opportunities,
-        greens_in_regulation,
-        gir_opportunities,
-        total_putts,
-        scrambles_made,
-        scramble_opportunities
+        total_fairways_hit,
+        total_fairways,
+        total_gir,
+        total_gir_possible,
+        total_putts
       `)
       .eq('player_id', playerId)
       .eq('status', 'completed')
@@ -250,23 +249,18 @@ export default function StatsClient({
     let totalFairwaysHit = 0, totalFairwayOpp = 0;
     let totalGir = 0, totalGirOpp = 0;
     let totalPutts = 0;
-    let totalScramblesMade = 0, totalScrambleOpp = 0;
 
     for (const round of roundsData) {
-      if (round.fairways_hit !== null && round.fairway_opportunities !== null) {
-        totalFairwaysHit += round.fairways_hit;
-        totalFairwayOpp += round.fairway_opportunities;
+      if (round.total_fairways_hit !== null && round.total_fairways !== null) {
+        totalFairwaysHit += round.total_fairways_hit;
+        totalFairwayOpp += round.total_fairways;
       }
-      if (round.greens_in_regulation !== null && round.gir_opportunities !== null) {
-        totalGir += round.greens_in_regulation;
-        totalGirOpp += round.gir_opportunities;
+      if (round.total_gir !== null && round.total_gir_possible !== null) {
+        totalGir += round.total_gir;
+        totalGirOpp += round.total_gir_possible;
       }
       if (round.total_putts !== null) {
         totalPutts += round.total_putts;
-      }
-      if (round.scrambles_made !== null && round.scramble_opportunities !== null) {
-        totalScramblesMade += round.scrambles_made;
-        totalScrambleOpp += round.scramble_opportunities;
       }
     }
 
@@ -287,9 +281,8 @@ export default function StatsClient({
       puttsPerRound: scores.length > 0
         ? Math.round((totalPutts / scores.length) * 10) / 10
         : null,
-      scramblingPercentage: totalScrambleOpp > 0
-        ? Math.round((totalScramblesMade / totalScrambleOpp) * 1000) / 10
-        : null,
+      // Note: scramblingPercentage requires data from golf_round_stats_cache
+      scramblingPercentage: null,
     });
 
     setRounds(roundsData.map(r => ({

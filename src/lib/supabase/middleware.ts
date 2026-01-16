@@ -139,26 +139,21 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const sport = getSportFromPath(pathname);
 
-  // Public routes that should always be accessible
-  const isPublicRoute = pathname === '/' ||
-                       pathname === '/baseball/login' ||
-                       pathname === '/baseball/signup' ||
-                       pathname === '/golf/login' ||
-                       pathname === '/golf/signup' ||
-                       pathname === '/baseball/coach-onboarding' ||
-                       pathname === '/baseball/coach' ||
-                       pathname === '/baseball/player' ||
-                       pathname === '/golf/coach' ||
-                       pathname === '/golf/player' ||
-                       pathname.startsWith('/baseball/player/') ||  // Public player profiles
-                       pathname.startsWith('/golf/player/');        // Public player profiles
+  // Public routes that don't need any session handling at all
+  const isStaticPublicRoute = pathname === '/';
 
-  // Allow public routes even in production
-  if (isPublicRoute) {
+  // Allow truly static public routes without any session handling
+  if (isStaticPublicRoute) {
     return NextResponse.next({
       request,
     });
   }
+
+  // Auth pages - need session handling for redirect logic
+  const isAuthPage = pathname === '/baseball/login' ||
+                     pathname === '/baseball/signup' ||
+                     pathname === '/golf/login' ||
+                     pathname === '/golf/signup';
 
   let supabaseResponse = NextResponse.next({
     request,
@@ -197,11 +192,6 @@ export async function updateSession(request: NextRequest) {
   const coachModeCookie = request.cookies.get('coach_mode')?.value;
   const coachMode: CoachMode = coachModeCookie === 'team' ? 'team' : 'recruiting';
 
-  // Protected routes check - sport-specific
-  const isAuthPage = pathname === '/baseball/login' ||
-                     pathname === '/baseball/signup' ||
-                     pathname === '/golf/login' ||
-                     pathname === '/golf/signup';
   // Dashboard routes require full authentication (not onboarding routes)
   const isDashboardRoute = pathname.startsWith('/baseball/dashboard') ||
                            pathname.startsWith('/golf/dashboard');
