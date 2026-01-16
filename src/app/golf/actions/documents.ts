@@ -505,6 +505,72 @@ export async function getPreviewUrl(
   }
 }
 
+// ============================================
+// EXPORT ALIASES for backwards compatibility
+// ============================================
+
+export const uploadGolfDocument = createDocument;
+export const createGolfDocument = createDocument;
+export const deleteGolfDocument = deleteDocument;
+export const updateGolfDocument = updateDocument;
+export const getVersionHistory = getDocumentVersions;
+
+// Delete a specific version
+export async function deleteVersion(
+  documentId: string,
+  versionNumber: number
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const supabase = await createClient();
+
+    // Get the version to delete
+    const { data: version, error: fetchError } = await supabase
+      .from('golf_document_versions')
+      .select('storage_path')
+      .eq('document_id', documentId)
+      .eq('version_number', versionNumber)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Get current document version
+    const { data: document, error: docError } = await supabase
+      .from('golf_documents')
+      .select('current_version')
+      .eq('id', documentId)
+      .single();
+
+    if (docError) throw docError;
+
+    // Cannot delete current version
+    if (document.current_version === versionNumber) {
+      throw new Error('Cannot delete the current version');
+    }
+
+    // Delete from storage
+    if (version.storage_path) {
+      await supabase.storage.from('documents').remove([version.storage_path]);
+    }
+
+    // Delete version record
+    const { error: deleteError } = await supabase
+      .from('golf_document_versions')
+      .delete()
+      .eq('document_id', documentId)
+      .eq('version_number', versionNumber);
+
+    if (deleteError) throw deleteError;
+
+    revalidatePath('/golf/dashboard/documents');
+    return { success: true, error: null };
+  } catch (error) {
+    return { success: false, error: handleError(error) };
+  }
+}
+
+// Re-export type for backwards compatibility
+export type { DocumentVersion, VersionComparison } from '@/lib/types/golf';
+
 export async function getTextFileContent(
   documentId: string,
   versionNumber?: number
