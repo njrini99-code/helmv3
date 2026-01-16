@@ -11,8 +11,6 @@ import {
   updateGolfDocument,
   uploadNewVersion,
   getVersionHistory,
-  revertToVersion,
-  deleteVersion,
 } from '@/app/golf/actions/documents';
 import type { DocumentVersion } from '@/app/golf/actions/documents';
 import { DocumentPreview } from '@/components/golf/documents/DocumentPreview';
@@ -84,7 +82,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
   const [versionHistoryDocument, setVersionHistoryDocument] = useState<Document | null>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
-  const [loadingVersions, setLoadingVersions] = useState(false);
+  const [, setLoadingVersions] = useState(false);
 
   // Upload new version modal state
   const [uploadVersionDocument, setUploadVersionDocument] = useState<Document | null>(null);
@@ -295,40 +293,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     setVersions([]);
   };
 
-  const handleRevert = async (versionId: string) => {
-    if (!versionHistoryDocument) return;
-
-    const result = await revertToVersion(versionHistoryDocument.id, versionId, coachId);
-    if (result.success) {
-      // Refresh version history
-      const historyResult = await getVersionHistory(versionHistoryDocument.id);
-      if (historyResult.success && historyResult.versions) {
-        setVersions(historyResult.versions);
-      }
-      router.refresh();
-    } else {
-      throw new Error(result.error || 'Failed to revert');
-    }
-  };
-
-  const handleDeleteVersion = async (versionId: string) => {
-    if (!versionHistoryDocument) return;
-
-    const result = await deleteVersion(versionHistoryDocument.id, versionId);
-    if (result.success) {
-      // Refresh version history
-      const historyResult = await getVersionHistory(versionHistoryDocument.id);
-      if (historyResult.success && historyResult.versions) {
-        setVersions(historyResult.versions);
-      }
-      router.refresh();
-    } else {
-      throw new Error(result.error || 'Failed to delete version');
-    }
-  };
-
   const handlePreviewVersion = (version: DocumentVersion) => {
     if (!versionHistoryDocument) return;
+    if (!version.file_url) return;
 
     // Create a temporary document object for preview
     const versionDoc: Document = {
@@ -823,34 +790,39 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       {previewDocument && (
         <DocumentPreview
           open={showPreview}
-          onClose={closePreview}
-          document={previewDocument}
-          onShowVersionHistory={isCoach ? () => {
-            closePreview();
-            openVersionHistory(previewDocument);
-          } : undefined}
-          onUploadNewVersion={isCoach ? () => {
-            closePreview();
-            openUploadVersionModal(previewDocument);
-          } : undefined}
-          isCoach={isCoach}
-          versionCount={previewDocument.version_count}
+          onOpenChange={(open) => {
+            if (!open) closePreview();
+          }}
+          document={previewDocument as any}
         />
       )}
 
       {/* Version History Modal */}
-      {versionHistoryDocument && (
-        <VersionHistory
-          open={showVersionHistory}
-          onClose={closeVersionHistory}
-          documentTitle={versionHistoryDocument.title}
-          versions={versions}
-          currentVersionId={versionHistoryDocument.current_version_id || null}
-          isCoach={isCoach}
-          onRevert={handleRevert}
-          onDelete={handleDeleteVersion}
-          onPreviewVersion={handlePreviewVersion}
-        />
+      {showVersionHistory && versionHistoryDocument && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl max-h-[90vh] overflow-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-slate-900">Version History</h2>
+              <button
+                onClick={closeVersionHistory}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <IconX size={20} />
+              </button>
+            </div>
+            <VersionHistory
+              document={versionHistoryDocument as any}
+              versions={versions}
+              onPreviewVersion={handlePreviewVersion}
+              onReverted={() => {
+                // Refresh versions after revert
+                if (versionHistoryDocument) {
+                  openVersionHistory(versionHistoryDocument);
+                }
+              }}
+            />
+          </div>
+        </div>
       )}
 
       {/* Upload New Version Modal */}

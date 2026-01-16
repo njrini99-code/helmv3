@@ -71,13 +71,14 @@ CREATE TRIGGER golf_task_reminders_updated_at
 -- RLS Policies
 ALTER TABLE golf_task_reminders ENABLE ROW LEVEL SECURITY;
 
--- Coaches can view reminders for their team's tasks
+-- Coaches can view reminders for their team's tasks (via organization)
 CREATE POLICY "Coaches can view team task reminders" ON golf_task_reminders
     FOR SELECT
     USING (
         EXISTS (
             SELECT 1 FROM golf_tasks t
-            JOIN golf_coaches c ON c.team_id = t.team_id
+            JOIN golf_teams tm ON tm.id = t.team_id
+            JOIN golf_coaches c ON c.organization_id = tm.organization_id
             WHERE t.id = golf_task_reminders.task_id
             AND c.user_id = auth.uid()
         )
@@ -89,7 +90,8 @@ CREATE POLICY "Coaches can create team task reminders" ON golf_task_reminders
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM golf_tasks t
-            JOIN golf_coaches c ON c.team_id = t.team_id
+            JOIN golf_teams tm ON tm.id = t.team_id
+            JOIN golf_coaches c ON c.organization_id = tm.organization_id
             WHERE t.id = golf_task_reminders.task_id
             AND c.user_id = auth.uid()
         )
@@ -101,7 +103,8 @@ CREATE POLICY "Coaches can update team task reminders" ON golf_task_reminders
     USING (
         EXISTS (
             SELECT 1 FROM golf_tasks t
-            JOIN golf_coaches c ON c.team_id = t.team_id
+            JOIN golf_teams tm ON tm.id = t.team_id
+            JOIN golf_coaches c ON c.organization_id = tm.organization_id
             WHERE t.id = golf_task_reminders.task_id
             AND c.user_id = auth.uid()
         )
@@ -113,7 +116,8 @@ CREATE POLICY "Coaches can delete team task reminders" ON golf_task_reminders
     USING (
         EXISTS (
             SELECT 1 FROM golf_tasks t
-            JOIN golf_coaches c ON c.team_id = t.team_id
+            JOIN golf_teams tm ON tm.id = t.team_id
+            JOIN golf_coaches c ON c.organization_id = tm.organization_id
             WHERE t.id = golf_task_reminders.task_id
             AND c.user_id = auth.uid()
         )

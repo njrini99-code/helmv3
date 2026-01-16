@@ -4951,6 +4951,50 @@ export type Database = {
           },
         ]
       }
+      golf_task_reminders: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          reminder_type: Database["public"]["Enums"]["reminder_type"]
+          scheduled_for: string
+          sent: boolean
+          sent_at: string | null
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          reminder_type?: Database["public"]["Enums"]["reminder_type"]
+          scheduled_for: string
+          sent?: boolean
+          sent_at?: string | null
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          reminder_type?: Database["public"]["Enums"]["reminder_type"]
+          scheduled_for?: string
+          sent?: boolean
+          sent_at?: string | null
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_task_reminders_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "golf_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_tasks: {
         Row: {
           assigned_by: string | null
@@ -4961,6 +5005,9 @@ export type Database = {
           due_date: string | null
           id: string
           priority: string | null
+          reminder_at: string | null
+          reminder_sent: boolean | null
+          reminder_type: Database["public"]["Enums"]["reminder_type"] | null
           status: string | null
           task_type: string | null
           team_id: string
@@ -4976,6 +5023,9 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string | null
+          reminder_at?: string | null
+          reminder_sent?: boolean | null
+          reminder_type?: Database["public"]["Enums"]["reminder_type"] | null
           status?: string | null
           task_type?: string | null
           team_id: string
@@ -4991,6 +5041,9 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string | null
+          reminder_at?: string | null
+          reminder_sent?: boolean | null
+          reminder_type?: Database["public"]["Enums"]["reminder_type"] | null
           status?: string | null
           task_type?: string | null
           team_id?: string
@@ -5701,6 +5754,7 @@ export type Database = {
         | "event_reminder"
         | "dev_plan_assigned"
       organization_type: "college" | "juco" | "high_school" | "showcase"
+      reminder_type: "in_app" | "email" | "push" | "all"
       team_member_status: "pending" | "active" | "inactive" | "removed"
       user_role: "coach" | "player"
     }
@@ -5851,9 +5905,9 @@ export const Constants = {
         "dev_plan_assigned",
       ],
       organization_type: ["college", "juco", "high_school", "showcase"],
+      reminder_type: ["in_app", "email", "push", "all"],
       team_member_status: ["pending", "active", "inactive", "removed"],
       user_role: ["coach", "player"],
     },
   },
 } as const
-

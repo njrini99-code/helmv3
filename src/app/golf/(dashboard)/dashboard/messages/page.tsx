@@ -363,9 +363,6 @@ export default function GolfMessagesPage() {
                     // Only show time on last message of group
                     const showTime = isLastInGroup;
 
-                    // Check if this is the last message from current user (for read receipt)
-                    const isLastOwnMessage = isOwn && (!nextMsg || nextMsg.sender_id !== msg.sender_id);
-
                     return (
                       <div
                         key={msg.id}

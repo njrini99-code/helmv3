@@ -112,6 +112,11 @@ export type Conversation = Tables['baseball_conversations']['Row'];
 export type ConversationParticipant = Tables['baseball_conversation_participants']['Row'];
 export type Notification = Tables['notifications']['Row'];
 
+// Golf Messaging types
+export type GolfMessageRow = Tables['golf_messages']['Row'];
+export type GolfConversationRow = Tables['golf_conversations']['Row'];
+export type GolfConversationParticipantRow = Tables['golf_conversation_participants']['Row'];
+
 // Insert types (what you send when creating)
 export type UserInsert = Tables['users']['Insert'];
 export type CoachInsert = Tables['baseball_coaches']['Insert'];

@@ -118,7 +118,7 @@ export async function sendMessage({
         .from(participantsTable as any)
         .select('user_id')
         .eq('conversation_id', validatedData.conversation_id)
-        .neq('user_id', user.id);
+        .neq('user_id', user.id) as { data: { user_id: string }[] | null };
 
       if (otherParticipants && otherParticipants.length > 0) {
         // Use sanitized content for notification preview
@@ -182,7 +182,7 @@ export async function createConversation({
     const { data: myConversations } = await supabase
       .from(participantsTable as any)
       .select('conversation_id')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id) as { data: { conversation_id: string }[] | null };
 
     if (myConversations && myConversations.length > 0) {
       const conversationIds = myConversations.map(c => c.conversation_id);
@@ -193,7 +193,7 @@ export async function createConversation({
         .select('conversation_id')
         .eq('user_id', otherUserId)
         .in('conversation_id', conversationIds)
-        .limit(1);
+        .limit(1) as { data: { conversation_id: string }[] | null };
 
       if (sharedConversations && sharedConversations.length > 0 && sharedConversations[0]) {
         // Found existing conversation
@@ -212,7 +212,7 @@ export async function createConversation({
       updated_at: new Date().toISOString(),
     })
     .select('id')
-    .single();
+    .single() as { data: { id: string } | null; error: any };
 
   if (convError || !newConversation) {
     console.error('[Security] Conversation create error:', {
@@ -620,17 +620,18 @@ export async function updateMessage({
       .from(messagesTable as any)
       .select('id, sender_id, conversation_id')
       .eq('id', messageId)
-      .single();
+      .single() as { data: { id: string; sender_id: string; conversation_id: string } | null; error: any };
 
     if (fetchError || !existingMessage) {
       throw new Error('Message not found');
     }
 
-    if (existingMessage.sender_id !== user.id) {
+    const msg = existingMessage as { id: string; sender_id: string; conversation_id: string };
+    if (msg.sender_id !== user.id) {
       console.warn('[Security] Unauthorized message edit attempt:', {
         userId: user.id,
         messageId,
-        actualSenderId: existingMessage.sender_id,
+        actualSenderId: msg.sender_id,
       });
       throw new Error('You can only edit your own messages');
     }
@@ -694,17 +695,18 @@ export async function deleteMessage({
       .from(messagesTable as any)
       .select('id, sender_id, conversation_id')
       .eq('id', messageId)
-      .single();
+      .single() as { data: { id: string; sender_id: string; conversation_id: string } | null; error: any };
 
     if (fetchError || !existingMessage) {
       throw new Error('Message not found');
     }
 
-    if (existingMessage.sender_id !== user.id) {
+    const msg = existingMessage as { id: string; sender_id: string; conversation_id: string };
+    if (msg.sender_id !== user.id) {
       console.warn('[Security] Unauthorized message delete attempt:', {
         userId: user.id,
         messageId,
-        actualSenderId: existingMessage.sender_id,
+        actualSenderId: msg.sender_id,
       });
       throw new Error('You can only delete your own messages');
     }

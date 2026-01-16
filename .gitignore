@@ -52,3 +52,5 @@ next-shadcn-dashboard-starter/
 # TaskMaster
 .taskmaster/logs/*.log
 .taskmaster/tasks.backup.json
+.vercel
+.env*.local

@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useRef, useCallback } from 'react';
 import type { HoleStats } from '@/components/golf/ShotTrackingComprehensive';
 

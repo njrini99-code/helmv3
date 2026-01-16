@@ -107,3 +107,6 @@ export function IconVolume2({ size = 18, ...p }: IconProps) { return <svg width=
 export function IconVolumeX({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M11 5 6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" /></svg>; }
 export function IconMaximize({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" /></svg>; }
 export function IconMinimize({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" /></svg>; }
+
+// Sport-specific icons
+export function IconBaseball({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="12" cy="12" r="10" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10" /><path d="M12 2a15.3 15.3 0 0 0-4 10 15.3 15.3 0 0 0 4 10" /></svg>; }

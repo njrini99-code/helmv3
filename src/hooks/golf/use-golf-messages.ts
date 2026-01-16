@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage } from '@/app/golf/actions/messages';
 import { getSignedUrlsForAttachments } from '@/app/golf/actions/message-attachments';
-import type { Message } from '@/lib/types';
+import type { GolfMessageRow } from '@/lib/types';
 import type { MessageAttachmentData } from '@/components/golf/messages/MessageAttachment';
 
 export interface GolfConversationParticipant {
@@ -19,7 +19,7 @@ export interface GolfConversationWithMeta {
   id: string;
   created_at: string;
   updated_at: string;
-  last_message?: Message | null;
+  last_message?: GolfMessageRow | null;
   unread_count: number;
   other_participant?: GolfConversationParticipant;
   // Group conversation fields
@@ -29,7 +29,7 @@ export interface GolfConversationWithMeta {
 }
 
 // Extended message type with read receipt info, edit/delete status, and attachments
-export interface GolfMessage extends Message {
+export interface GolfMessage extends GolfMessageRow {
   isRead?: boolean; // Whether the other participant has read this message
   edited_at?: string | null; // When the message was last edited
   is_deleted?: boolean; // Whether the message has been deleted

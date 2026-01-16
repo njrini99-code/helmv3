@@ -409,6 +409,7 @@ export interface DocumentVersion {
   file_size: number;
   mime_type: string;
   storage_path: string;
+  file_url?: string;
   created_by: string;
   created_at: string;
   notes?: string;

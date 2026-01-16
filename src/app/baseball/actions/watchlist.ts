@@ -69,7 +69,7 @@ export async function addToWatchlist(coachId: string, playerId: string) {
       engagement_type: 'watchlist_add',
       engagement_date: new Date().toISOString(),
       is_anonymous: false,
-      metametadata: { source: 'discover' },
+      metadata: { source: 'discover' },
     });
 
   revalidatePath('/baseball/dashboard/discover');

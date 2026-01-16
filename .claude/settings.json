@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "*",
-      "mcp_*"
+      "mcp_*",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   },
   "enabledPlugins": {

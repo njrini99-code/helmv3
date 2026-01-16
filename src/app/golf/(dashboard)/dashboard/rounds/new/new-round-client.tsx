@@ -21,7 +21,7 @@ import { checkForDraft, clearRoundDraft } from '@/app/golf/actions/round-drafts'
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useOfflineSyncStore, useOfflineSyncStatus, useOfflineSyncActions } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
-import { saveOfflineShot, saveOfflineHole, saveOfflineRound, type OfflineShot } from '@/lib/offline/shot-storage';
+import { saveOfflineShot, saveOfflineRound, type OfflineShot } from '@/lib/offline/shot-storage';
 import { OfflineSyncStatus, OfflineWarningBanner } from '@/components/golf';
 import { IconBookmark, IconCheck, IconChevronDown, IconMapPin, IconPlus } from '@/components/icons';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';

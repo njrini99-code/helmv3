@@ -233,8 +233,10 @@ export async function deleteDocument(documentId: string): Promise<{ success: boo
 export async function uploadNewVersion(
   documentId: string,
   file: File,
+  _teamId?: string,  // Not used, kept for backwards compatibility
+  _coachId?: string, // Not used, uses authenticated user
   changeNotes?: string
-): Promise<{ data: DocumentVersion | null; error: string | null }> {
+): Promise<{ success: boolean; version?: DocumentVersion & { file_url?: string }; error?: string }> {
   try {
     const supabase = await createClient();
 
@@ -308,9 +310,16 @@ export async function uploadNewVersion(
     if (updateError) throw updateError;
 
     revalidatePath('/golf/dashboard/documents');
-    return { data: version as DocumentVersion, error: null };
+    return {
+      success: true,
+      version: {
+        ...version as DocumentVersion,
+        file_url: urlData.publicUrl,
+        file_size: file.size,
+      }
+    };
   } catch (error) {
-    return { data: null, error: handleError(error) };
+    return { success: false, error: handleError(error) };
   }
 }
 
@@ -332,7 +341,18 @@ export async function getDocumentVersions(documentId: string): Promise<{ data: D
 
     if (error) throw error;
 
-    return { data: data as DocumentVersion[], error: null };
+    // Add file_url to each version
+    const versionsWithUrls = (data || []).map(version => {
+      const { data: urlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(version.storage_path);
+      return {
+        ...version,
+        file_url: urlData.publicUrl,
+      };
+    });
+
+    return { data: versionsWithUrls as DocumentVersion[], error: null };
   } catch (error) {
     return { data: null, error: handleError(error) };
   }
@@ -340,7 +360,8 @@ export async function getDocumentVersions(documentId: string): Promise<{ data: D
 
 export async function revertToVersion(
   documentId: string,
-  versionNumber: number
+  versionId: string,
+  _coachId?: string  // Not used, uses authenticated user
 ): Promise<{ success: boolean; error: string | null }> {
   try {
     const supabase = await createClient();
@@ -349,12 +370,12 @@ export async function revertToVersion(
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error('Not authenticated');
 
-    // Get the version to revert to
+    // Get the version to revert to by ID
     const { data: version, error: versionError } = await supabase
       .from('golf_document_versions')
       .select('*')
       .eq('document_id', documentId)
-      .eq('version_number', versionNumber)
+      .eq('id', versionId)
       .single();
 
     if (versionError) throw versionError;
@@ -385,7 +406,7 @@ export async function revertToVersion(
         file_size: version.file_size,
         mime_type: version.mime_type,
         storage_path: version.storage_path,
-        change_notes: `Reverted to version ${versionNumber}`,
+        change_notes: `Reverted to version ${version.version_number}`,
         uploaded_by: user.id,
       });
 
@@ -509,26 +530,173 @@ export async function getPreviewUrl(
 // EXPORT ALIASES for backwards compatibility
 // ============================================
 
-export const uploadGolfDocument = createDocument;
-export const createGolfDocument = createDocument;
-export const deleteGolfDocument = deleteDocument;
-export const updateGolfDocument = updateDocument;
-export const getVersionHistory = getDocumentVersions;
+/**
+ * Upload a file to storage (separate from creating the document record)
+ * Returns { success, file_url, error }
+ */
+export async function uploadGolfDocument(
+  file: File,
+  teamId: string
+): Promise<{ success: boolean; file_url?: string; error?: string }> {
+  try {
+    const supabase = await createClient();
+
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error('Not authenticated');
+
+    // Upload file to storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+    const storagePath = `golf-documents/${teamId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(storagePath, file);
+
+    if (uploadError) throw uploadError;
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('documents')
+      .getPublicUrl(storagePath);
+
+    return { success: true, file_url: urlData.publicUrl };
+  } catch (error) {
+    return { success: false, error: handleError(error) };
+  }
+}
+
+/**
+ * Create a document record (after file has been uploaded)
+ * Returns { success, data, error }
+ */
+export async function createGolfDocument(data: {
+  team_id: string;
+  title: string;
+  description?: string;
+  file_url: string;
+  file_type: string;
+  file_size: number;
+  category?: string;
+  player_visible: boolean;
+  uploaded_by: string;
+}): Promise<{ success: boolean; data?: GolfDocument; error?: string }> {
+  try {
+    const supabase = await createClient();
+
+    // Create document record
+    const { data: document, error: insertError } = await supabase
+      .from('golf_documents')
+      .insert({
+        team_id: data.team_id,
+        title: data.title,
+        description: data.description || null,
+        file_url: data.file_url,
+        file_type: data.file_type,
+        file_size: data.file_size,
+        category: data.category || 'other',
+        player_visible: data.player_visible,
+        uploaded_by: data.uploaded_by,
+        current_version: 1,
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    // Extract storage path from file URL for version record
+    const urlParts = data.file_url.split('/');
+    const storagePath = urlParts.slice(-2).join('/');
+
+    // Create initial version record
+    const { error: versionError } = await supabase
+      .from('golf_document_versions')
+      .insert({
+        document_id: document.id,
+        version_number: 1,
+        file_name: data.title,
+        file_size: data.file_size,
+        mime_type: data.file_type,
+        storage_path: storagePath,
+        change_notes: 'Initial upload',
+        uploaded_by: data.uploaded_by,
+      });
+
+    if (versionError) {
+      console.error('Failed to create version record:', versionError);
+      // Don't fail the whole operation if version record fails
+    }
+
+    revalidatePath('/golf/dashboard/documents');
+    return { success: true, data: document as GolfDocument };
+  } catch (error) {
+    return { success: false, error: handleError(error) };
+  }
+}
+
+/**
+ * Delete a document and all its versions
+ */
+export async function deleteGolfDocument(
+  documentId: string,
+  _filePath?: string
+): Promise<{ success: boolean; error?: string }> {
+  const result = await deleteDocument(documentId);
+  return { success: result.success, error: result.error || undefined };
+}
+
+/**
+ * Update a document's metadata
+ */
+export async function updateGolfDocument(data: {
+  id: string;
+  title?: string;
+  description?: string;
+  category?: string;
+  player_visible?: boolean;
+}): Promise<{ success: boolean; data?: GolfDocument; error?: string }> {
+  const result = await updateDocument(data.id, {
+    title: data.title,
+    description: data.description,
+    category: data.category,
+    playerVisible: data.player_visible,
+  });
+  return {
+    success: !result.error,
+    data: result.data || undefined,
+    error: result.error || undefined
+  };
+}
+
+/**
+ * Get version history for a document
+ * Returns { success, versions, error }
+ */
+export async function getVersionHistory(
+  documentId: string
+): Promise<{ success: boolean; versions?: DocumentVersion[]; error?: string }> {
+  const result = await getDocumentVersions(documentId);
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+  return { success: true, versions: result.data || [] };
+}
 
 // Delete a specific version
 export async function deleteVersion(
   documentId: string,
-  versionNumber: number
+  versionId: string
 ): Promise<{ success: boolean; error: string | null }> {
   try {
     const supabase = await createClient();
 
-    // Get the version to delete
+    // Get the version to delete by ID
     const { data: version, error: fetchError } = await supabase
       .from('golf_document_versions')
-      .select('storage_path')
+      .select('storage_path, version_number')
       .eq('document_id', documentId)
-      .eq('version_number', versionNumber)
+      .eq('id', versionId)
       .single();
 
     if (fetchError) throw fetchError;
@@ -543,7 +711,7 @@ export async function deleteVersion(
     if (docError) throw docError;
 
     // Cannot delete current version
-    if (document.current_version === versionNumber) {
+    if (document.current_version === version.version_number) {
       throw new Error('Cannot delete the current version');
     }
 
@@ -557,7 +725,7 @@ export async function deleteVersion(
       .from('golf_document_versions')
       .delete()
       .eq('document_id', documentId)
-      .eq('version_number', versionNumber);
+      .eq('id', versionId);
 
     if (deleteError) throw deleteError;
 
