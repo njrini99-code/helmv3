@@ -99,15 +99,16 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       // Continue - record might exist
     }
 
-    // Step 1: Create organization
+    // Step 1: Create organization (using 'organizations' table, not 'golf_organizations')
     const { data: org, error: orgError } = await supabase
-      .from('golf_organizations')
+      .from('organizations')
       .insert({
         name: validatedData.orgName,
+        type: 'college',
         division: validatedData.division || null,
         conference: validatedData.conference || null,
-        city: validatedData.city || null,
-        state: validatedData.state || null,
+        location_city: validatedData.city || null,
+        location_state: validatedData.state || null,
       })
       .select('id')
       .single();
@@ -119,36 +120,9 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
 
     createdOrgId = org.id;
 
-    // Step 2: Create team
-    const joinCode = generateJoinCode();
-    const { data: team, error: teamError } = await supabase
-      .from('golf_teams')
-      .insert({
-        organization_id: org.id,
-        name: validatedData.teamName || `${validatedData.orgName} Golf`,
-        season: validatedData.season || getCurrentSeason(),
-        join_code: joinCode,
-      })
-      .select('id')
-      .single();
-
-    if (teamError || !team) {
-      console.error('[Onboarding] Team creation failed:', teamError);
-      // Cleanup: Delete the organization we created
-      await supabase.from('golf_organizations').delete().eq('id', org.id);
-      return { success: false, error: 'Failed to create team. Please try again.' };
-    }
-
-    createdTeamId = team.id;
-
-    // Step 3: Create or update coach record
-    const { data: existingCoach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
+    // Step 2: Create coach record first (team needs created_by reference)
     const coachData = {
+      user_id: user.id,
       organization_id: org.id,
       full_name: validatedData.fullName,
       title: validatedData.title || null,
@@ -158,31 +132,42 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       updated_at: new Date().toISOString(),
     };
 
-    let coachError: Error | null = null;
+    const { data: coach, error: coachError } = await supabase
+      .from('golf_coaches')
+      .insert(coachData)
+      .select('id')
+      .single();
 
-    if (existingCoach) {
-      const { error } = await supabase
-        .from('golf_coaches')
-        .update(coachData)
-        .eq('id', existingCoach.id);
-      coachError = error;
-    } else {
-      const { error } = await supabase
-        .from('golf_coaches')
-        .insert({
-          user_id: user.id,
-          ...coachData,
-        });
-      coachError = error;
-    }
-
-    if (coachError) {
+    if (coachError || !coach) {
       console.error('[Onboarding] Coach creation failed:', coachError);
-      // Cleanup: Delete team and organization
-      await supabase.from('golf_teams').delete().eq('id', team.id);
-      await supabase.from('golf_organizations').delete().eq('id', org.id);
+      // Cleanup: Delete the organization we created
+      await supabase.from('organizations').delete().eq('id', org.id);
       return { success: false, error: 'Failed to create coach profile. Please try again.' };
     }
+
+    // Step 3: Create team (now we have coach.id for created_by)
+    const joinCode = generateJoinCode();
+    const { data: team, error: teamError } = await supabase
+      .from('golf_teams')
+      .insert({
+        organization_id: org.id,
+        name: validatedData.teamName || `${validatedData.orgName} Golf`,
+        season: validatedData.season || getCurrentSeason(),
+        join_code: joinCode,
+        created_by: coach.id,
+      })
+      .select('id')
+      .single();
+
+    if (teamError || !team) {
+      console.error('[Onboarding] Team creation failed:', teamError);
+      // Cleanup: Delete coach and organization
+      await supabase.from('golf_coaches').delete().eq('id', coach.id);
+      await supabase.from('organizations').delete().eq('id', org.id);
+      return { success: false, error: 'Failed to create team. Please try again.' };
+    }
+
+    createdTeamId = team.id;
 
     revalidatePath('/golf/dashboard');
 
@@ -196,12 +181,13 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
     };
 
   } catch (error) {
-    // Cleanup any partially created resources
+    // Cleanup any partially created resources (in reverse order of creation)
     if (createdTeamId) {
       await supabase.from('golf_teams').delete().eq('id', createdTeamId);
     }
+    // Note: coach cleanup happens in individual error handlers above
     if (createdOrgId) {
-      await supabase.from('golf_organizations').delete().eq('id', createdOrgId);
+      await supabase.from('organizations').delete().eq('id', createdOrgId);
     }
 
     console.error('[Onboarding] Unexpected error:', error);
