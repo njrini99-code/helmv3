@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   description: 'Manage your golf team roster, view player stats, and track team performance',
 };
 
-// Cache roster page for 5 minutes (roster doesn't change frequently)
-export const revalidate = 300;
+// Cache roster page for 1 minute (balance between freshness and performance)
+export const revalidate = 60;
 
 interface PlayerWithStats {
   id: string;

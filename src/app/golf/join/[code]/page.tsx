@@ -34,6 +34,7 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
   }
 
   // Find team by join code
+  // Note: golf_teams.organization_id references the 'organizations' table, not 'golf_organizations'
   const { data: team } = await supabase
     .from('golf_teams')
     .select(`
@@ -41,10 +42,10 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
       name,
       season,
       join_code,
-      organization:golf_organizations (
+      organization:organizations (
         name,
-        city,
-        state,
+        location_city,
+        location_state,
         logo_url
       )
     `)
@@ -89,8 +90,8 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
         season: team.season,
         organization: organization ? {
           name: organization.name,
-          city: organization.city,
-          state: organization.state,
+          city: organization.location_city,
+          state: organization.location_state,
           logoUrl: organization.logo_url,
         } : undefined,
       }}

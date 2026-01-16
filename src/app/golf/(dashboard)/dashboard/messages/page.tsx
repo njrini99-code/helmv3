@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { IconMail, IconPlus, IconSend, IconArrowLeft, IconMessageSquare, IconAlertCircle, IconPencil, IconTrash, IconCheck, IconX, IconUsers } from '@/components/icons';
 import { useToast } from '@/components/ui/toast';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
-import { createGolfConversation } from '@/app/golf/actions/messages';
+import { createGolfConversation, getPlayerUserId } from '@/app/golf/actions/messages';
 import { GolfNewMessageModal } from '@/components/golf/messages/GolfNewMessageModal';
 import { GolfTeamBroadcastModal } from '@/components/golf/messages/GolfTeamBroadcastModal';
 import { useTeamContext } from '@/hooks/golf/use-team-context';
@@ -15,6 +16,9 @@ import type { GolfConversationWithMeta, MessageWithReadStatus } from '@/hooks/go
 
 export default function GolfMessagesPage() {
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const playerIdFromUrl = searchParams.get('player');
 
   // USE THE TEAM CONTEXT HOOK - This ensures we have valid team info
   const {
@@ -55,13 +59,66 @@ export default function GolfMessagesPage() {
     return groupConversationsByTime(conversations);
   }, [conversations]);
 
-  // Auto-select first conversation
+  // Track if we've handled the player URL param
+  const [handledPlayerParam, setHandledPlayerParam] = useState(false);
+
+  // Handle player query parameter - find or create conversation with specific player
+  useEffect(() => {
+    if (handledPlayerParam || conversationsLoading || !playerIdFromUrl) return;
+
+    const handlePlayerParam = async () => {
+      // First, get the user_id for this player_id (since conversations use user IDs)
+      const playerUserId = await getPlayerUserId(playerIdFromUrl);
+
+      if (!playerUserId) {
+        showToast('Could not find player', 'error');
+        setHandledPlayerParam(true);
+        router.replace('/golf/dashboard/messages', { scroll: false });
+        return;
+      }
+
+      // Look for existing conversation with this player
+      const existingConversation = conversations.find(conv => {
+        // Check if other_participant exists and matches the user_id
+        return !conv.is_group && conv.other_participant?.id === playerUserId;
+      });
+
+      if (existingConversation) {
+        // Found existing conversation, select it
+        setSelectedConversationId(existingConversation.id);
+        setMobileShowChat(true);
+        setHandledPlayerParam(true);
+        // Clear the URL param
+        router.replace('/golf/dashboard/messages', { scroll: false });
+      } else {
+        // No existing conversation, create one using the user_id
+        try {
+          const result = await createGolfConversation([playerUserId]);
+          if (result.conversationId) {
+            await refetch();
+            setSelectedConversationId(result.conversationId);
+            setMobileShowChat(true);
+            showToast('Conversation started', 'success');
+          }
+        } catch {
+          showToast('Failed to start conversation', 'error');
+        }
+        setHandledPlayerParam(true);
+        // Clear the URL param
+        router.replace('/golf/dashboard/messages', { scroll: false });
+      }
+    };
+
+    handlePlayerParam();
+  }, [conversations, conversationsLoading, playerIdFromUrl, handledPlayerParam, router, refetch, showToast]);
+
+  // Auto-select first conversation (only if no player param was provided)
   useEffect(() => {
     const firstConversation = conversations[0];
-    if (!conversationsLoading && firstConversation && !selectedConversationId) {
+    if (!conversationsLoading && firstConversation && !selectedConversationId && !playerIdFromUrl) {
       setSelectedConversationId(firstConversation.id);
     }
-  }, [conversations, conversationsLoading, selectedConversationId]);
+  }, [conversations, conversationsLoading, selectedConversationId, playerIdFromUrl]);
 
   // Get selected conversation details
   const selectedConversation = useMemo(() => {

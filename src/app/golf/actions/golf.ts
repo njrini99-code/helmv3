@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 import { z } from 'zod';
@@ -4005,6 +4006,351 @@ export async function getRoundShotDetails(
     };
   } catch (error) {
     console.error('[getRoundShotDetails Error]', error);
+    return formatSafeErrorResponse(error);
+  }
+}
+
+// ============================================================================
+// SEED TEST SHOT DATA (Development Only)
+// ============================================================================
+
+/**
+ * Seeds shot data for testing. Creates realistic shots for all existing holes.
+ * This is for development/testing purposes only.
+ */
+export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: number }>> {
+  try {
+    // Use admin client to bypass RLS for seeding
+    const supabase = createAdminClient();
+
+    // Get all holes that don't have shots yet
+    const { data: holes, error: holesError } = await supabase
+      .from('golf_holes')
+      .select('id, round_id, hole_number, par, score')
+      .order('round_id')
+      .order('hole_number');
+
+    if (holesError) throw holesError;
+    if (!holes || holes.length === 0) {
+      return { success: false, error: 'No holes found to seed shots for' };
+    }
+
+    // Check which holes already have shots
+    const { data: existingShots } = await supabase
+      .from('golf_shots')
+      .select('hole_id')
+      .not('hole_id', 'is', null);
+
+    const holesWithShots = new Set((existingShots || []).map(s => s.hole_id));
+    const holesNeedingShots = holes.filter(h => !holesWithShots.has(h.id));
+
+    if (holesNeedingShots.length === 0) {
+      return { success: true, data: { shotsCreated: 0 } };
+    }
+
+    // Generate shots for each hole
+    const allShots: Array<{
+      hole_id: string;
+      round_id: string;
+      hole_number: number;
+      shot_number: number;
+      shot_type: string;
+      club_type: string;
+      club_used: string;
+      lie_before: string;
+      result: string;
+      distance_to_hole_before: number;
+      distance_unit_before: string;
+      distance_to_hole_after: number;
+      distance_unit_after: string;
+      shot_distance: number;
+      is_penalty: boolean;
+      putt_made?: boolean;
+      putt_distance_feet?: number;
+      putt_break?: string;
+    }> = [];
+
+    const clubs = {
+      driver: 'Driver',
+      wood3: '3 Wood',
+      hybrid: 'Hybrid',
+      iron4: '4 Iron',
+      iron5: '5 Iron',
+      iron6: '6 Iron',
+      iron7: '7 Iron',
+      iron8: '8 Iron',
+      iron9: '9 Iron',
+      pw: 'PW',
+      gw: 'GW',
+      sw: 'SW',
+      lw: 'LW',
+      putter: 'Putter',
+    };
+
+    const puttBreaks: Array<'left_to_right' | 'right_to_left' | 'straight' | 'multiple'> =
+      ['left_to_right', 'right_to_left', 'straight', 'multiple'];
+
+    for (const hole of holesNeedingShots) {
+      const par = hole.par || 4;
+      const score = hole.score || par;
+      // Use standard yardages based on par (no yardage column in golf_holes)
+      const yardage = par === 3 ? 165 : par === 4 ? 400 : 530;
+
+      let currentDistance = yardage;
+      let shotNumber = 0;
+      let currentLie: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' = 'tee';
+
+      // Generate shots until we're in the hole
+      while (shotNumber < score && currentDistance > 0) {
+        shotNumber++;
+
+        // Determine shot type based on current position
+        let shotType: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty';
+        let clubType: 'driver' | 'non_driver' | 'putter';
+        let clubUsed: string;
+        let result: 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty';
+        let shotDistance: number;
+        let distanceAfter: number;
+        let distanceUnitBefore: 'yards' | 'feet' = currentDistance <= 30 ? 'feet' : 'yards';
+        let distanceUnitAfter: 'yards' | 'feet';
+        let isPenalty = false;
+        let puttMade: boolean | undefined;
+        let puttDistanceFeet: number | undefined;
+        let puttBreak: 'left_to_right' | 'right_to_left' | 'straight' | 'multiple' | undefined;
+
+        if (currentLie === 'green' || (currentDistance <= 30 && currentLie !== 'sand')) {
+          // Putting
+          shotType = 'putting';
+          clubType = 'putter';
+          clubUsed = clubs.putter;
+          distanceUnitBefore = 'feet';
+          const puttDistBefore = Math.min(currentDistance, 30);
+
+          if (shotNumber === score) {
+            // Final putt - must be holed
+            result = 'hole';
+            distanceAfter = 0;
+            puttMade = true;
+          } else {
+            // Missed putt
+            result = 'green';
+            distanceAfter = Math.max(1, Math.floor(puttDistBefore * (0.1 + Math.random() * 0.3)));
+            puttMade = false;
+          }
+
+          shotDistance = puttDistBefore - distanceAfter;
+          distanceUnitAfter = 'feet';
+          puttDistanceFeet = puttDistBefore;
+          puttBreak = puttBreaks[Math.floor(Math.random() * puttBreaks.length)];
+          currentDistance = distanceAfter;
+          currentLie = distanceAfter === 0 ? 'green' : 'green';
+
+        } else if (shotNumber === 1) {
+          // Tee shot
+          shotType = 'tee';
+
+          if (par >= 4) {
+            // Use driver or 3 wood
+            clubType = 'driver';
+            clubUsed = Math.random() > 0.3 ? clubs.driver : clubs.wood3;
+            shotDistance = 220 + Math.floor(Math.random() * 60); // 220-280 yards
+          } else {
+            // Par 3 - use iron
+            clubType = 'non_driver';
+            const dist = yardage;
+            if (dist > 200) clubUsed = clubs.hybrid;
+            else if (dist > 180) clubUsed = clubs.iron4;
+            else if (dist > 170) clubUsed = clubs.iron5;
+            else if (dist > 160) clubUsed = clubs.iron6;
+            else if (dist > 150) clubUsed = clubs.iron7;
+            else if (dist > 140) clubUsed = clubs.iron8;
+            else clubUsed = clubs.iron9;
+            shotDistance = dist - Math.floor(Math.random() * 20);
+          }
+
+          distanceAfter = Math.max(0, currentDistance - shotDistance);
+          distanceUnitAfter = distanceAfter <= 30 ? 'feet' : 'yards';
+
+          // Determine result based on randomness
+          const hitFairway = Math.random() > 0.35;
+          if (distanceAfter <= 30) {
+            result = 'green';
+            currentLie = 'green';
+            distanceUnitAfter = 'feet';
+            distanceAfter = Math.floor(distanceAfter * 3); // Convert to feet for putting
+          } else if (hitFairway) {
+            result = 'fairway';
+            currentLie = 'fairway';
+          } else {
+            const missResult = Math.random();
+            if (missResult < 0.6) {
+              result = 'rough';
+              currentLie = 'rough';
+            } else if (missResult < 0.85) {
+              result = 'sand';
+              currentLie = 'sand';
+            } else {
+              result = 'other';
+              currentLie = 'other';
+            }
+          }
+          currentDistance = distanceAfter;
+
+        } else if (currentDistance > 100) {
+          // Approach shot (far from green)
+          shotType = 'approach';
+          clubType = 'non_driver';
+
+          // Select club based on distance
+          if (currentDistance > 200) clubUsed = clubs.hybrid;
+          else if (currentDistance > 180) clubUsed = clubs.iron4;
+          else if (currentDistance > 170) clubUsed = clubs.iron5;
+          else if (currentDistance > 160) clubUsed = clubs.iron6;
+          else if (currentDistance > 150) clubUsed = clubs.iron7;
+          else if (currentDistance > 140) clubUsed = clubs.iron8;
+          else if (currentDistance > 125) clubUsed = clubs.iron9;
+          else clubUsed = clubs.pw;
+
+          // Calculate shot distance (aim for the green)
+          const targetDist = currentDistance;
+          const variance = Math.random() * 30 - 15; // -15 to +15 yards variance
+          shotDistance = Math.max(50, targetDist - Math.abs(variance));
+          distanceAfter = Math.max(0, currentDistance - shotDistance + Math.floor(Math.random() * 20));
+
+          // Determine result
+          const hitGreen = Math.random() > 0.4;
+          if (hitGreen && distanceAfter <= 30) {
+            result = 'green';
+            currentLie = 'green';
+            distanceUnitAfter = 'feet';
+            distanceAfter = Math.floor(Math.random() * 25) + 5; // 5-30 feet
+          } else {
+            const missResult = Math.random();
+            if (missResult < 0.5) {
+              result = 'rough';
+              currentLie = 'rough';
+              distanceAfter = Math.floor(Math.random() * 20) + 10;
+            } else if (missResult < 0.8) {
+              result = 'fairway';
+              currentLie = 'fairway';
+            } else {
+              result = 'sand';
+              currentLie = 'sand';
+              distanceAfter = Math.floor(Math.random() * 15) + 10;
+            }
+            distanceUnitAfter = 'yards';
+          }
+          currentDistance = distanceAfter;
+
+        } else {
+          // Around the green shot (chip/pitch)
+          shotType = 'around_green';
+          clubType = 'non_driver';
+
+          if (currentLie === 'sand') {
+            clubUsed = clubs.sw;
+          } else if (currentDistance > 50) {
+            clubUsed = clubs.pw;
+          } else if (currentDistance > 30) {
+            clubUsed = clubs.gw;
+          } else {
+            clubUsed = Math.random() > 0.5 ? clubs.sw : clubs.lw;
+          }
+
+          shotDistance = currentDistance;
+
+          // Determine result - either on green or in hole (if close enough and final shot)
+          if (shotNumber === score - 1 && Math.random() > 0.9) {
+            // Chip in!
+            result = 'hole';
+            distanceAfter = 0;
+          } else {
+            result = 'green';
+            distanceAfter = Math.floor(Math.random() * 15) + 3; // 3-18 feet left
+          }
+          distanceUnitAfter = 'feet';
+          currentDistance = distanceAfter;
+          currentLie = distanceAfter === 0 ? 'green' : 'green';
+        }
+
+        const shotData: {
+          hole_id: string;
+          round_id: string;
+          hole_number: number;
+          shot_number: number;
+          shot_type: string;
+          club_type: string;
+          club_used: string;
+          lie_before: string;
+          result: string;
+          distance_to_hole_before: number;
+          distance_unit_before: string;
+          distance_to_hole_after: number;
+          distance_unit_after: string;
+          shot_distance: number;
+          is_penalty: boolean;
+          putt_made?: boolean;
+          putt_distance_feet?: number;
+          putt_break?: string;
+        } = {
+          hole_id: hole.id,
+          round_id: hole.round_id,
+          hole_number: hole.hole_number,
+          shot_number: shotNumber,
+          shot_type: shotType,
+          club_type: clubType,
+          club_used: clubUsed,
+          lie_before: currentLie === 'tee' ? 'tee' : shotNumber === 1 ? 'tee' : currentLie,
+          result: result,
+          distance_to_hole_before: distanceUnitBefore === 'feet' ? currentDistance : (shotNumber === 1 ? yardage : currentDistance + shotDistance),
+          distance_unit_before: distanceUnitBefore,
+          distance_to_hole_after: distanceAfter,
+          distance_unit_after: distanceUnitAfter,
+          shot_distance: shotDistance,
+          is_penalty: isPenalty,
+        };
+
+        // Add putt-specific fields if putting
+        if (shotType === 'putting') {
+          shotData.putt_made = puttMade;
+          shotData.putt_distance_feet = puttDistanceFeet;
+          shotData.putt_break = puttBreak;
+        }
+
+        // Fix lie_before for first shot
+        if (shotNumber === 1) {
+          shotData.lie_before = 'tee';
+        }
+
+        allShots.push(shotData);
+      }
+    }
+
+    // Insert shots in batches of 500
+    const batchSize = 500;
+    let totalInserted = 0;
+
+    for (let i = 0; i < allShots.length; i += batchSize) {
+      const batch = allShots.slice(i, i + batchSize);
+      const { error: insertError } = await supabase
+        .from('golf_shots')
+        .insert(batch);
+
+      if (insertError) {
+        console.error(`Error inserting batch ${i / batchSize}:`, insertError);
+        throw insertError;
+      }
+      totalInserted += batch.length;
+    }
+
+    revalidatePath('/golf/dashboard');
+
+    return {
+      success: true,
+      data: { shotsCreated: totalInserted },
+    };
+  } catch (error) {
+    console.error('[seedTestShotData Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
