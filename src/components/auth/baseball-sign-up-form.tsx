@@ -65,6 +65,15 @@ export function BaseballSignUpForm() {
 
       if (signupError) throw signupError;
 
+      // CRITICAL: After signup, the session cookies are set but the Next.js
+      // router cache doesn't know about them. We must call router.refresh()
+      // FIRST to force a server-side revalidation that reads the new cookies,
+      // THEN navigate to the destination page.
+      router.refresh();
+
+      // Wait for cookies to propagate and cache to invalidate
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Redirect to appropriate onboarding
       if (role === 'player') {
         router.push('/baseball/player');

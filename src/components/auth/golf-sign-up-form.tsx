@@ -51,6 +51,18 @@ export function GolfSignUpForm() {
         return;
       }
 
+      // CRITICAL: After signup, the session cookies are set but the Next.js
+      // router cache doesn't know about them. We must call router.refresh()
+      // FIRST to force a server-side revalidation that reads the new cookies,
+      // THEN navigate to the destination page.
+      //
+      // router.refresh() is async but doesn't return a promise, so we add
+      // a small delay to ensure the refresh completes and cookies propagate.
+      router.refresh();
+
+      // Wait for cookies to propagate and cache to invalidate
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Check for stored returnTo URL (from invite link flow)
       const storedReturnTo = sessionStorage.getItem('golf_signup_returnTo');
 
