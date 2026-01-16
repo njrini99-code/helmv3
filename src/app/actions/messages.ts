@@ -52,7 +52,7 @@ export async function sendMessage({
     // Verify user is a participant in this conversation
     const participantsTable = sport === 'golf' ? 'golf_conversation_participants' : 'baseball_conversation_participants';
     const { data: participant, error: participantError } = await supabase
-      .from(participantsTable)
+      .from(participantsTable as 'golf_conversation_participants' | 'baseball_conversation_participants')
       .select('id')
       .eq('conversation_id', validatedData.conversation_id)
       .eq('user_id', user.id)
@@ -78,7 +78,7 @@ export async function sendMessage({
     // Insert message
     const messagesTable = sport === 'golf' ? 'golf_messages' : 'baseball_messages';
     const { data: insertedMessage, error: messageError } = await supabase
-      .from(messagesTable)
+      .from(messagesTable as 'golf_messages' | 'baseball_messages')
       .insert({
         conversation_id: validatedData.conversation_id,
         sender_id: user.id,
@@ -108,14 +108,14 @@ export async function sendMessage({
     // Update conversation updated_at
     const conversationsTable = sport === 'golf' ? 'golf_conversations' : 'baseball_conversations';
     await supabase
-      .from(conversationsTable)
+      .from(conversationsTable as 'golf_conversations' | 'baseball_conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', validatedData.conversation_id);
 
     // Create notifications for other participants (if enabled)
     if (createNotifications) {
       const { data: otherParticipants } = await supabase
-        .from(participantsTable)
+        .from(participantsTable as 'golf_conversation_participants' | 'baseball_conversation_participants')
         .select('user_id')
         .eq('conversation_id', validatedData.conversation_id)
         .neq('user_id', user.id);
@@ -180,7 +180,7 @@ export async function createConversation({
 
     // Get all conversation IDs where current user participates
     const { data: myConversations } = await supabase
-      .from(participantsTable)
+      .from(participantsTable as 'golf_conversation_participants' | 'baseball_conversation_participants')
       .select('conversation_id')
       .eq('user_id', user.id);
 
@@ -189,7 +189,7 @@ export async function createConversation({
 
       // Find conversations where the other user also participates (single query)
       const { data: sharedConversations } = await supabase
-        .from(participantsTable)
+        .from(participantsTable as 'golf_conversation_participants' | 'baseball_conversation_participants')
         .select('conversation_id')
         .eq('user_id', otherUserId)
         .in('conversation_id', conversationIds)
@@ -205,7 +205,7 @@ export async function createConversation({
   // Create new conversation directly
   const conversationsTable = sport === 'golf' ? 'golf_conversations' : 'baseball_conversations';
   const { data: newConversation, error: convError } = await supabase
-    .from(conversationsTable)
+    .from(conversationsTable as 'golf_conversations' | 'baseball_conversations')
     .insert({
       created_by: user.id,
       created_at: new Date().toISOString(),
@@ -237,7 +237,7 @@ export async function createConversation({
   }));
 
   const { error: participantsError } = await supabase
-    .from(participantsTable)
+    .from(participantsTable as 'golf_conversation_participants' | 'baseball_conversation_participants')
     .insert(participantInserts);
 
   if (participantsError) {
@@ -279,7 +279,7 @@ export async function markMessagesAsRead({
   // Update last_read_at for this participant
   const participantsTable = sport === 'golf' ? 'golf_conversation_participants' : 'baseball_conversation_participants';
   const { error: participantError } = await supabase
-    .from(participantsTable)
+    .from(participantsTable as 'golf_conversation_participants' | 'baseball_conversation_participants')
     .update({ last_read_at: new Date().toISOString() })
     .eq('conversation_id', conversationId)
     .eq('user_id', user.id);
@@ -292,7 +292,7 @@ export async function markMessagesAsRead({
   // Mark all messages in this conversation as read
   const messagesTable = sport === 'golf' ? 'golf_messages' : 'baseball_messages';
   const { error: messagesError } = await supabase
-    .from(messagesTable)
+    .from(messagesTable as 'golf_messages' | 'baseball_messages')
     .update({ read: true })
     .eq('conversation_id', conversationId)
     .neq('sender_id', user.id);
@@ -617,7 +617,7 @@ export async function updateMessage({
 
     // Verify user owns this message
     const { data: existingMessage, error: fetchError } = await supabase
-      .from(messagesTable)
+      .from(messagesTable as 'golf_messages' | 'baseball_messages')
       .select('id, sender_id, conversation_id')
       .eq('id', messageId)
       .single();
@@ -645,7 +645,7 @@ export async function updateMessage({
 
     // Update the message
     const { error: updateError } = await supabase
-      .from(messagesTable)
+      .from(messagesTable as 'golf_messages' | 'baseball_messages')
       .update({
         content: sanitizedContent,
         edited_at: new Date().toISOString(),
@@ -691,7 +691,7 @@ export async function deleteMessage({
 
     // Verify user owns this message
     const { data: existingMessage, error: fetchError } = await supabase
-      .from(messagesTable)
+      .from(messagesTable as 'golf_messages' | 'baseball_messages')
       .select('id, sender_id, conversation_id')
       .eq('id', messageId)
       .single();
@@ -719,7 +719,7 @@ export async function deleteMessage({
 
     // Soft-delete the message
     const { error: deleteError } = await supabase
-      .from(messagesTable)
+      .from(messagesTable as 'golf_messages' | 'baseball_messages')
       .update({
         is_deleted: true,
         content: '', // Clear content on delete for privacy
