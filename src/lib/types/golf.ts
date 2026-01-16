@@ -389,10 +389,215 @@ export const APPROACH_MISS_CONFIG: Record<ApproachMissDirection, {
     icon: '↖', 
     color: 'text-orange-400' 
   },
-  long_right: { 
-    label: 'Long Right', 
+  long_right: {
+    label: 'Long Right',
     shortLabel: 'LR',
-    icon: '↗', 
-    color: 'text-orange-400' 
+    icon: '↗',
+    color: 'text-orange-400'
   },
 };
+
+// ============================================================================
+// DOCUMENT TYPES
+// ============================================================================
+
+export interface DocumentVersion {
+  id: string;
+  document_id: string;
+  version_number: number;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  storage_path: string;
+  created_by: string;
+  created_at: string;
+  notes?: string;
+  change_notes?: string;
+  uploader?: {
+    id: string;
+    full_name: string;
+    avatar_url?: string;
+  };
+}
+
+export interface VersionComparison {
+  version1: DocumentVersion;
+  version2: DocumentVersion;
+  changes?: string[];
+  sizeDiff?: number;
+  daysBetween?: number;
+}
+
+/**
+ * Format file size for display
+ */
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+/**
+ * Preview strategy for documents
+ * - 'custom': PDF, text files - rendered with custom viewers (PDFViewer, TextPreview)
+ * - 'native': Images, video, audio - rendered with native browser elements
+ * - 'iframe': Office documents - rendered via Google Docs Viewer
+ * - 'download': Unsupported types - show download option only
+ */
+export type PreviewStrategy = 'custom' | 'native' | 'iframe' | 'download';
+
+/**
+ * Get preview strategy based on mime type
+ */
+export function getPreviewStrategy(mimeType: string): PreviewStrategy {
+  // PDF and text files use custom viewers
+  if (mimeType === 'application/pdf') return 'custom';
+  if (mimeType.startsWith('text/') || mimeType === 'application/json') return 'custom';
+
+  // Images, video, and audio use native browser elements
+  if (mimeType.startsWith('image/')) return 'native';
+  if (mimeType.startsWith('video/')) return 'native';
+  if (mimeType.startsWith('audio/')) return 'native';
+
+  // Office documents use Google Docs Viewer iframe
+  if (
+    mimeType.includes('word') ||
+    mimeType.includes('spreadsheet') ||
+    mimeType.includes('excel') ||
+    mimeType.includes('powerpoint') ||
+    mimeType.includes('presentation')
+  ) {
+    return 'iframe';
+  }
+
+  // Everything else falls back to download
+  return 'download';
+}
+
+// ============================================================================
+// TASK REMINDER TYPES
+// ============================================================================
+
+export type ReminderType = 'in_app' | 'email' | 'push' | 'all';
+
+export interface ReminderPreset {
+  label: string;
+  value: string;
+  offsetDays?: number;
+  offsetHours?: number;
+}
+
+export const REMINDER_PRESETS: ReminderPreset[] = [
+  { label: '1 hour before', value: '1h', offsetHours: 1 },
+  { label: '2 hours before', value: '2h', offsetHours: 2 },
+  { label: '1 day before', value: '1d', offsetDays: 1 },
+  { label: '2 days before', value: '2d', offsetDays: 2 },
+  { label: '1 week before', value: '1w', offsetDays: 7 },
+  { label: 'Custom', value: 'custom' },
+];
+
+export interface TaskReminder {
+  id: string;
+  task_id: string;
+  scheduled_for: string;
+  reminder_type: ReminderType;
+  sent: boolean;
+  sent_at?: string;
+  created_at?: string;
+}
+
+export interface TaskReminderWithTask extends TaskReminder {
+  task: GolfTask;
+}
+
+// ============================================================================
+// TASK TEMPLATE TYPES
+// ============================================================================
+
+export type TaskCategory =
+  | 'practice'
+  | 'fitness'
+  | 'mental'
+  | 'academic'
+  | 'equipment'
+  | 'administrative'
+  | 'other';
+
+export const TASK_CATEGORIES: Record<TaskCategory, { label: string; color: string }> = {
+  practice: { label: 'Practice', color: 'bg-green-100 text-green-800' },
+  fitness: { label: 'Fitness', color: 'bg-blue-100 text-blue-800' },
+  mental: { label: 'Mental', color: 'bg-purple-100 text-purple-800' },
+  academic: { label: 'Academic', color: 'bg-yellow-100 text-yellow-800' },
+  equipment: { label: 'Equipment', color: 'bg-gray-100 text-gray-800' },
+  administrative: { label: 'Admin', color: 'bg-orange-100 text-orange-800' },
+  other: { label: 'Other', color: 'bg-slate-100 text-slate-800' },
+};
+
+export interface TaskTemplate {
+  id: string;
+  team_id: string;
+  name: string;
+  description?: string;
+  category: TaskCategory;
+  default_priority: 'low' | 'normal' | 'high' | 'urgent';
+  default_due_days?: number;
+  is_active: boolean;
+  created_by: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TaskTemplateInsert {
+  team_id: string;
+  name: string;
+  description?: string;
+  category?: TaskCategory;
+  default_priority?: 'low' | 'normal' | 'high' | 'urgent';
+  default_due_days?: number;
+  is_active?: boolean;
+  created_by: string;
+}
+
+// ============================================================================
+// STROKES GAINED & STATISTICS TYPES
+// ============================================================================
+
+export interface StrokesGainedBreakdown {
+  tee: number;
+  approach: number;
+  around_green: number;
+  putting: number;
+}
+
+export interface StrokesGainedResult {
+  total: number;
+  breakdown: StrokesGainedBreakdown;
+  roundsAnalyzed: number;
+  benchmarkType: 'pga' | 'scratch' | 'team';
+}
+
+export type TrendDirection = 'improving' | 'declining' | 'stable' | 'insufficient_data';
+
+export interface TrendPoint {
+  date: string;
+  value: number;
+  label?: string;
+}
+
+export interface TrendAnalysis {
+  direction: TrendDirection;
+  changePercent: number;
+  dataPoints: TrendPoint[];
+  periodLabel: string;
+}
+
+export interface StatCardProps {
+  label: string;
+  value: string | number;
+  trend?: TrendDirection;
+  trendValue?: string;
+  description?: string;
+  icon?: React.ReactNode;
+}
