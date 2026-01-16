@@ -241,6 +241,7 @@ export default function GolfPlayerOnboarding() {
 
       // IMPORTANT: Ensure the users table record exists
       // The trigger should create it, but let's make sure
+      // Note: users table only has: id, email, role, created_at, updated_at (no sport column)
       if (user) {
         const { error: usersError } = await supabase
           .from('users')
@@ -248,7 +249,6 @@ export default function GolfPlayerOnboarding() {
             id: user.id,
             email: user.email || '',
             role: 'player',
-            sport: 'golf', // CRITICAL: Must specify sport to prevent default 'baseball'
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           }, {
@@ -257,6 +257,7 @@ export default function GolfPlayerOnboarding() {
           });
 
         if (usersError) {
+          console.warn('[Player Onboarding] Users upsert warning:', usersError);
           // Continue anyway - the record might already exist
         }
       }
