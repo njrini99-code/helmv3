@@ -169,6 +169,25 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
 
     createdTeamId = team.id;
 
+    // Step 4: Add coach to team staff (required for RLS policies)
+    const { error: staffError } = await supabase
+      .from('golf_team_coach_staff')
+      .insert({
+        team_id: team.id,
+        coach_id: coach.id,
+        role: 'head_coach',
+        is_primary: true,
+      });
+
+    if (staffError) {
+      console.error('[Onboarding] Team staff assignment failed:', staffError);
+      // Cleanup: Delete team, coach, and organization
+      await supabase.from('golf_teams').delete().eq('id', team.id);
+      await supabase.from('golf_coaches').delete().eq('id', coach.id);
+      await supabase.from('organizations').delete().eq('id', org.id);
+      return { success: false, error: 'Failed to assign coach to team. Please try again.' };
+    }
+
     revalidatePath('/golf/dashboard');
 
     return {
