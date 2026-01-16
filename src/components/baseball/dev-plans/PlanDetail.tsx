@@ -22,8 +22,6 @@ interface PlanDetailProps {
     start_date: string | null;
     end_date: string | null;
     status: string | null;
-    notes: string | null;
-    drills: unknown;
     goals: unknown;
     player: {
       id: string;

@@ -12,7 +12,7 @@ interface ProgramTabsProps {
 
 type TabType = 'overview' | 'roster';
 
-export function ProgramTabs({ overviewContent, rosterContent, coachType }: ProgramTabsProps) {
+export function ProgramTabs({ overviewContent, rosterContent, coachType: _coachType }: ProgramTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [

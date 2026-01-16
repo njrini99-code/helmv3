@@ -59,7 +59,7 @@ export class PerformancePredictor {
     // Get baseline score (average over last 20 rounds)
     const { data: rounds } = await supabase
       .from('golf_rounds')
-      .select('total_to_par')
+      .select('score_to_par')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
@@ -68,7 +68,7 @@ export class PerformancePredictor {
     if (!rounds || rounds.length < 5) return null;
 
     this.baselineScore =
-      rounds.reduce((a, r) => a + (r.total_to_par ?? 0), 0) / rounds.length;
+      rounds.reduce((a, r) => a + (r.score_to_par ?? 0), 0) / rounds.length;
 
     // Get active patterns
     const miner = new PatternMiner(this.playerId);
@@ -78,7 +78,7 @@ export class PerformancePredictor {
     const { predictedScore, factors } = this.applyModel(context);
 
     // Calculate confidence interval
-    const roundsForInterval = rounds.map(r => ({ total_to_par: r.total_to_par ?? 0 }));
+    const roundsForInterval = rounds.map(r => ({ score_to_par: r.score_to_par ?? 0 }));
     const { low, high, confidence } = this.calculateConfidenceInterval(roundsForInterval);
 
     // Identify key factors
@@ -92,7 +92,7 @@ export class PerformancePredictor {
       id: crypto.randomUUID(),
       playerId: this.playerId,
       predictionType: 'round_score',
-      metric: 'total_to_par',
+      metric: 'score_to_par',
       predictedValue: predictedScore,
       predictedRangeLow: low,
       predictedRangeHigh: high,
@@ -251,9 +251,9 @@ export class PerformancePredictor {
    * Calculates confidence interval
    */
   private calculateConfidenceInterval(
-    rounds: Array<{ total_to_par: number }>
+    rounds: Array<{ score_to_par: number }>
   ): { low: number; high: number; confidence: number } {
-    const scores = rounds.map((r) => r.total_to_par);
+    const scores = rounds.map((r) => r.score_to_par);
     const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
 
     // Calculate standard deviation

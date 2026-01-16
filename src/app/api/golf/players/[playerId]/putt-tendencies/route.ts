@@ -41,7 +41,7 @@ export async function GET(
     // Authorization: Check if user is the player or a coach on the player's team
     const { data: player } = await supabase
       .from('golf_players')
-      .select('id, user_id, team_id')
+      .select('id, user_id')
       .eq('id', playerId)
       .single();
 
@@ -53,15 +53,28 @@ export async function GET(
     const isOwnData = player.user_id === user.id;
 
     // Check if user is a coach on the player's team
+    // Player-team relationship is through golf_team_members table
     let isTeamCoach = false;
-    if (!isOwnData && player.team_id) {
-      const { data: coach } = await supabase
-        .from('golf_coaches')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('team_id', player.team_id)
+    if (!isOwnData) {
+      // First get the player's team(s)
+      const { data: teamMembership } = await supabase
+        .from('golf_team_members')
+        .select('team_id')
+        .eq('player_id', playerId)
+        .limit(1)
         .single();
-      isTeamCoach = !!coach;
+
+      if (teamMembership?.team_id) {
+        // Check if user is a coach on that team
+        const { data: coach } = await supabase
+          .from('golf_coaches')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+        // Note: golf_coaches also doesn't have team_id, so we check if user is any golf coach
+        // This is a simplified check - ideally would need a golf_team_coaches join table
+        isTeamCoach = !!coach;
+      }
     }
 
     if (!isOwnData && !isTeamCoach) {

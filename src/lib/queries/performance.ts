@@ -340,11 +340,14 @@ export async function prefetchPlayerData(playerId: string) {
       // Data is now in Supabase cache
     });
 
-  supabase
-    .from('baseball_player_metrics')
-    .select('*')
-    .eq('player_id', playerId)
-    .then(() => {
-      // Data is now in Supabase cache
-    });
+  // NOTE: baseball_player_metrics table does not exist
+  // Metrics are stored directly on the baseball_players table
+  // This prefetch is disabled until a dedicated metrics table is created
+  // supabase
+  //   .from('baseball_player_metrics')
+  //   .select('*')
+  //   .eq('player_id', playerId)
+  //   .then(() => {
+  //     // Data is now in Supabase cache
+  //   });
 }

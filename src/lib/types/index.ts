@@ -10,40 +10,58 @@ export type Enums = Database['public']['Enums'];
 
 // Row types (what you get when querying)
 export type User = Tables['users']['Row'];
-export type Coach = Tables['coaches']['Row'];
+export type Coach = Tables['baseball_coaches']['Row'];
 // NOTE: After migration 031, Coach has new field: organization_id (replaces college_id)
-export type Player = Tables['players']['Row'];
-// NOTE: After migration 031, Player has new fields: high_school_org_id, committed_to_org_id (replaces high_school_id, committed_to)
+export type Player = Tables['baseball_players']['Row'];
+// College is an alias for Organization (for backward compatibility)
+export type College = Tables['organizations']['Row'];
+// NOTE: Player is from baseball_players table (not 'players' which doesn't exist)
 export type Organization = Tables['organizations']['Row'];
-export type Team = Tables['teams']['Row'];
-export type TeamMember = Tables['team_members']['Row'];
-export type TeamInvitation = Tables['team_invitations']['Row'];
-export type TeamCoachStaff = Tables['team_coach_staff']['Row'];
+export type Team = Tables['baseball_teams']['Row'];
+export type TeamMember = Tables['baseball_team_members']['Row'];
+export type TeamInvitation = Tables['baseball_team_invitations']['Row'];
+export type TeamCoachStaff = Tables['baseball_team_coach_staff']['Row'];
 
 // Player related
-export type PlayerSettings = Tables['player_settings']['Row'];
-export type PlayerMetric = Tables['player_metrics']['Row'];
-export type PlayerAchievement = Tables['player_achievements']['Row'];
-export type RecruitingInterest = Tables['recruiting_interests']['Row'];
-export type PlayerEngagementEvent = Tables['player_engagement_events']['Row'];
+export type PlayerSettings = Tables['baseball_player_settings']['Row'];
+// PlayerMetric and PlayerAchievement tables don't exist - define manually if needed
+export interface PlayerMetric {
+  id: string;
+  player_id: string;
+  metric_label: string;
+  metric_value: string | number;
+  created_at?: string;
+}
+export interface PlayerAchievement {
+  id: string;
+  player_id: string;
+  title: string;
+  description?: string;
+  date?: string;
+  created_at?: string;
+}
+export type RecruitingInterest = Tables['baseball_recruiting_interests']['Row'];
+export type PlayerEngagementEvent = Tables['baseball_player_engagement_events']['Row'];
 
-// Coach related
-export type CoachNote = Tables['coach_notes']['Row'];
-export type CoachCalendarEvent = Tables['coach_calendar_events']['Row'];
-export type DevelopmentalPlan = Tables['developmental_plans']['Row'];
+// Coach related - CoachNote doesn't exist as separate table, use coach_insights instead
+export interface CoachNote {
+  id: string;
+  coach_id: string;
+  player_id: string;
+  note: string;
+  created_at?: string;
+  updated_at?: string;
+}
+export type DevelopmentalPlan = Tables['baseball_developmental_plans']['Row'];
 
 // Events & Camps
-export type Event = Tables['events']['Row'];
-export type Camp = Tables['camps']['Row'];
-export type CampRegistration = Tables['camp_registrations']['Row'];
-
-// Legacy tables
-export type College = Tables['colleges']['Row'];
-export type HighSchool = Tables['high_schools']['Row'];
+export type Event = Tables['baseball_events']['Row'];
+export type Camp = Tables['baseball_camps']['Row'];
+export type CampRegistration = Tables['baseball_camp_registrations']['Row'];
 
 // Recruiting
-export type Watchlist = Tables['watchlists']['Row'];
-export type Video = Tables['videos']['Row'];
+export type Watchlist = Tables['baseball_watchlists']['Row'];
+export type Video = Tables['baseball_videos']['Row'];
 
 // Player Comparisons (manually added until types are regenerated)
 export interface ComparisonData {
@@ -89,39 +107,44 @@ export interface PlayerComparisonInsert {
 }
 
 // Messaging (using generated types from database)
-export type Message = Tables['messages']['Row'];
-export type Conversation = Tables['conversations']['Row'];
-export type ConversationParticipant = Tables['conversation_participants']['Row'];
+export type Message = Tables['baseball_messages']['Row'];
+export type Conversation = Tables['baseball_conversations']['Row'];
+export type ConversationParticipant = Tables['baseball_conversation_participants']['Row'];
 export type Notification = Tables['notifications']['Row'];
 
 // Insert types (what you send when creating)
 export type UserInsert = Tables['users']['Insert'];
-export type CoachInsert = Tables['coaches']['Insert'];
-export type PlayerInsert = Tables['players']['Insert'];
+export type CoachInsert = Tables['baseball_coaches']['Insert'];
+export type PlayerInsert = Tables['baseball_players']['Insert'];
 export type OrganizationInsert = Tables['organizations']['Insert'];
-export type TeamInsert = Tables['teams']['Insert'];
-export type TeamMemberInsert = Tables['team_members']['Insert'];
+export type TeamInsert = Tables['baseball_teams']['Insert'];
+export type TeamMemberInsert = Tables['baseball_team_members']['Insert'];
 
 // Update types (what you send when updating)
 export type UserUpdate = Tables['users']['Update'];
-export type CoachUpdate = Tables['coaches']['Update'];
-export type PlayerUpdate = Tables['players']['Update'];
+export type CoachUpdate = Tables['baseball_coaches']['Update'];
+export type PlayerUpdate = Tables['baseball_players']['Update'];
 export type OrganizationUpdate = Tables['organizations']['Update'];
-export type TeamUpdate = Tables['teams']['Update'];
+export type TeamUpdate = Tables['baseball_teams']['Update'];
 
 // ============================================
 // ENUM TYPES
 // ============================================
 
 export type UserRole = Enums['user_role'];
-export type CoachType = Enums['coach_type'];
-export type PlayerType = Enums['player_type'];
-export type PipelineStage = Enums['pipeline_stage'];
+export type CoachType = Enums['baseball_coach_type'];
+export type PlayerType = Enums['baseball_player_type'];
+export type PipelineStage = Enums['baseball_pipeline_stage'];
 export type TeamType = 'high_school' | 'showcase' | 'juco' | 'college';
 
 // ============================================
 // COMPOSITE/JOINED TYPES
 // ============================================
+
+// Coach with organization join (used in auth store)
+export type CoachWithOrganization = Coach & {
+  organization?: { id: string; name: string } | null;
+};
 
 // Full player profile with all related data
 export type PlayerProfile = Player & {

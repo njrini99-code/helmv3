@@ -23,23 +23,26 @@ export async function DELETE() {
 
     const cleanupErrors: string[] = [];
 
-    const { error: messagesError } = await admin
-      .from('messages')
+    // Clean up baseball messages
+    const { error: baseballMessagesError } = await admin
+      .from('baseball_messages')
       .delete()
       .eq('sender_id', user.id);
-    if (messagesError) cleanupErrors.push(`messages: ${messagesError.message}`);
+    if (baseballMessagesError) cleanupErrors.push(`baseball_messages: ${baseballMessagesError.message}`);
 
-    const { error: profileViewsError } = await admin
-      .from('profile_views')
+    // Clean up golf messages
+    const { error: golfMessagesError } = await admin
+      .from('golf_messages')
       .delete()
-      .eq('viewer_id', user.id);
-    if (profileViewsError) cleanupErrors.push(`profile_views: ${profileViewsError.message}`);
+      .eq('sender_id', user.id);
+    if (golfMessagesError) cleanupErrors.push(`golf_messages: ${golfMessagesError.message}`);
 
-    const { error: videoViewsError } = await admin
-      .from('video_views')
+    // Clean up engagement events
+    const { error: engagementError } = await admin
+      .from('baseball_player_engagement_events')
       .delete()
-      .eq('viewer_id', user.id);
-    if (videoViewsError) cleanupErrors.push(`video_views: ${videoViewsError.message}`);
+      .eq('coach_id', user.id);
+    if (engagementError) cleanupErrors.push(`engagement_events: ${engagementError.message}`);
 
     const { error: userDeleteError } = await admin
       .from('users')

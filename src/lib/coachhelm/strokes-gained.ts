@@ -1,3 +1,25 @@
+// ============================================================================
+// STROKES GAINED CALCULATOR (V1 - DEPRECATED)
+// ============================================================================
+//
+// @deprecated This is the V1 strokes gained calculator. Use V2 instead.
+//
+// For V2 usage, the strokes gained analysis is now integrated into the
+// pattern mining and feature extraction systems:
+//   import { extractAllFeatures } from '@/lib/coachhelm/v2';
+//   const features = await extractAllFeatures(playerId);
+//
+// V2 provides shot-level pattern analysis with:
+//   - Distance range grouping
+//   - Miss tendency analysis
+//   - Dispersion pattern detection
+//   - Statistically validated insights
+//
+// This file is kept for backwards compatibility during migration.
+// It will be removed in a future release.
+//
+// ============================================================================
+
 import { StrokesGainedBreakdown } from './types';
 
 interface GolfHole {

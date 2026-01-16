@@ -35,9 +35,9 @@ interface Organization {
 interface Coach {
   id: string;
   full_name: string | null;
-  coach_title: string | null;
+  title: string | null;
   avatar_url: string | null;
-  email_contact: string | null;
+  email: string | null;
   phone: string | null;
 }
 
@@ -76,7 +76,7 @@ export function SchoolPeekPanel() {
         // Fetch coaches for this organization
         const { data: coachData } = await supabase
           .from('baseball_coaches')
-          .select('id, full_name, coach_title, avatar_url, email_contact, phone')
+          .select('id, full_name, title, avatar_url, email, phone')
           .eq('organization_id', selectedId)
           .limit(5);
 
@@ -280,15 +280,15 @@ export function SchoolPeekPanel() {
                             <div className="font-medium text-sm text-slate-900 truncate">
                               {coach.full_name || 'Unknown'}
                             </div>
-                            {coach.coach_title && (
+                            {coach.title && (
                               <div className="text-xs text-slate-500">
-                                {coach.coach_title}
+                                {coach.title}
                               </div>
                             )}
                           </div>
-                          {coach.email_contact && (
+                          {coach.email && (
                             <a
-                              href={`mailto:${coach.email_contact}`}
+                              href={`mailto:${coach.email}`}
                               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                             >
                               <IconMail size={14} />

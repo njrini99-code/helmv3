@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
-import { IconMapPin, IconUser, IconHeart, IconHeartFilled } from '@/components/icons';
+import { IconMapPin, IconHeart, IconHeartFilled } from '@/components/icons';
 import { addToInterests, removeFromInterests } from '@/app/baseball/actions/interests';
 import type { College } from '@/lib/types';
 
@@ -80,7 +80,7 @@ export function CollegeCard({
               </div>
               <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
                 <IconMapPin size={14} />
-                <span className="truncate">{college.city}, {college.state}</span>
+                <span className="truncate">{college.location_city}, {college.location_state}</span>
               </div>
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 {college.division && <Badge variant="success">{college.division}</Badge>}
@@ -88,12 +88,6 @@ export function CollegeCard({
               </div>
             </div>
           </div>
-          {college.head_coach && (
-            <div className="mt-4 pt-4 border-t border-border-light flex items-center gap-2 text-sm text-slate-600">
-              <IconUser size={14} />
-              <span className="truncate">Head Coach: {college.head_coach}</span>
-            </div>
-          )}
         </CardContent>
       </Card>
     </Link>

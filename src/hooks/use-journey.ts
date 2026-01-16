@@ -67,10 +67,24 @@ export function useJourney() {
       return;
     }
 
-    // Fetch recruiting interests
+    // Fetch recruiting interests with organization data
     const { data: interests } = await supabase
       .from('baseball_recruiting_interests')
-      .select('*')
+      .select(`
+        id,
+        player_id,
+        organization_id,
+        status,
+        interest_level,
+        notes,
+        created_at,
+        updated_at,
+        organization:organizations (
+          name,
+          division,
+          conference
+        )
+      `)
       .eq('player_id', player.id)
       .order('created_at', { ascending: false });
 
@@ -81,35 +95,39 @@ export function useJourney() {
         *,
         baseball_coaches (
           full_name,
-          school_name
+          organization:organizations (name)
         )
       `)
       .eq('player_id', player.id)
-      .order('engagement_date', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(50);
 
     // Process schools with engagement data
     const processedSchools: JourneySchool[] = (interests || []).map(interest => {
-      // Find related engagement events
+      // Get school name from organization join
+      const org = interest.organization as { name?: string; division?: string; conference?: string } | null;
+      const schoolName = org?.name || 'Unknown School';
+
+      // Find related engagement events - get school name from organization
       const schoolEngagements = (engagementEvents || []).filter(
-        e => e.coaches?.school_name?.toLowerCase() === interest.school_name?.toLowerCase()
+        e => (e.baseball_coaches?.organization as { name?: string })?.name?.toLowerCase() === schoolName.toLowerCase()
       );
 
       const profileViews = schoolEngagements.filter(e => e.engagement_type === 'profile_view').length;
       const watchlistAdded = schoolEngagements.some(e => e.engagement_type === 'watchlist_add');
-      const lastEngagement = schoolEngagements[0]?.engagement_date || null;
+      const lastEngagement = schoolEngagements[0]?.created_at || null;
 
       return {
         id: interest.id,
-        school_name: interest.school_name,
-        division: interest.division,
-        conference: interest.conference,
+        school_name: schoolName,
+        division: org?.division || null,
+        conference: org?.conference || null,
         status: interest.status || 'interested',
         interest_level: interest.interest_level,
         notes: interest.notes,
-        coach_name: interest.coach_name,
-        last_contact_at: interest.last_contact_at,
-        created_at: interest.created_at,
+        coach_name: null, // Not available in current schema
+        last_contact_at: null, // Not available in current schema
+        created_at: interest.created_at || new Date().toISOString(),
         organization_id: interest.organization_id,
         profile_views: profileViews,
         watchlist_added: watchlistAdded,
@@ -122,12 +140,14 @@ export function useJourney() {
 
     // Add interest additions to timeline
     (interests || []).forEach(interest => {
+      const org = interest.organization as { name?: string } | null;
+      const schoolName = org?.name || 'Unknown School';
       timelineEvents.push({
         id: `interest-${interest.id}`,
         type: 'added_interest',
-        school_name: interest.school_name,
-        timestamp: interest.created_at,
-        description: `Added ${interest.school_name} to your journey`,
+        school_name: schoolName,
+        timestamp: interest.created_at || new Date().toISOString(),
+        description: `Added ${schoolName} to your journey`,
         is_anonymous: false,
       });
     });
@@ -138,36 +158,38 @@ export function useJourney() {
     (engagementEvents || []).forEach(event => {
       let type: JourneyEvent['type'] = 'profile_view';
       let description = '';
+      const schoolName = (event.baseball_coaches?.organization as { name?: string })?.name || 'a program';
+      const coachName = event.baseball_coaches?.full_name || 'A coach';
 
       switch (event.engagement_type) {
         case 'profile_view':
           type = 'profile_view';
           description = !isRecruitingActivated
-            ? `A coach from ${event.coaches?.school_name || 'a program'} viewed your profile`
-            : `${event.coaches?.full_name || 'A coach'} from ${event.coaches?.school_name || 'unknown'} viewed your profile`;
+            ? `A coach from ${schoolName} viewed your profile`
+            : `${coachName} from ${schoolName} viewed your profile`;
           break;
         case 'watchlist_add':
           type = 'watchlist_add';
           description = !isRecruitingActivated
-            ? `A coach from ${event.coaches?.school_name || 'a program'} added you to their watchlist`
-            : `${event.coaches?.full_name || 'A coach'} from ${event.coaches?.school_name || 'unknown'} added you to their watchlist`;
+            ? `A coach from ${schoolName} added you to their watchlist`
+            : `${coachName} from ${schoolName} added you to their watchlist`;
           break;
         case 'video_view':
           type = 'video_view';
           description = !isRecruitingActivated
-            ? `A coach from ${event.coaches?.school_name || 'a program'} watched your video`
-            : `${event.coaches?.full_name || 'A coach'} from ${event.coaches?.school_name || 'unknown'} watched your video`;
+            ? `A coach from ${schoolName} watched your video`
+            : `${coachName} from ${schoolName} watched your video`;
           break;
         default:
-          description = `Activity from ${event.coaches?.school_name || 'unknown'}`;
+          description = `Activity from ${schoolName}`;
       }
 
       timelineEvents.push({
         id: event.id,
         type,
-        school_name: isRecruitingActivated ? (event.coaches?.school_name || 'Unknown') : 'A college program',
-        coach_name: isRecruitingActivated ? event.coaches?.full_name : null,
-        timestamp: event.engagement_date,
+        school_name: isRecruitingActivated ? schoolName : 'A college program',
+        coach_name: isRecruitingActivated ? coachName : null,
+        timestamp: event.created_at || new Date().toISOString(),
         description,
         is_anonymous: !isRecruitingActivated,
       });

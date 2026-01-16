@@ -78,40 +78,6 @@ export async function getCoachTeams(coachId: string) {
 }
 
 /**
- * Get a coach's calendar events
- */
-export async function getCoachCalendarEvents(
-  coachId: string,
-  startDate?: string,
-  endDate?: string
-) {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from('baseball_coach_calendar_events')
-    .select('*')
-    .eq('coach_id', coachId);
-
-  if (startDate) {
-    query = query.gte('start_time', startDate);
-  }
-  if (endDate) {
-    query = query.lte('start_time', endDate);
-  }
-
-  query = query.order('start_time', { ascending: true });
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching coach calendar events:', error);
-    throw error;
-  }
-
-  return data;
-}
-
-/**
  * Get a coach's camps
  */
 export async function getCoachCamps(coachId: string, status?: string) {

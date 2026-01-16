@@ -51,11 +51,11 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
       .eq('recruiting_activated', true)
       .limit(10);
 
-    // Search coaches
+    // Search coaches (with organization join for school name)
     const { data: coaches } = await supabase
       .from('baseball_coaches')
-      .select('user_id, full_name, school_name, avatar_url')
-      .or(`full_name.ilike.%${query}%,school_name.ilike.%${query}%`)
+      .select('user_id, full_name, avatar_url, title, organization:organizations(name)')
+      .ilike('full_name', `%${query}%`)
       .limit(10);
 
     const playerResults: SearchResult[] = (players || [])
@@ -70,13 +70,18 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
 
     const coachResults: SearchResult[] = (coaches || [])
       .filter((c): c is typeof c & { user_id: string; full_name: string } => !!c.user_id && !!c.full_name)
-      .map(c => ({
-        user_id: c.user_id,
-        name: c.full_name,
-        subtitle: c.school_name || '',
-        avatar_url: c.avatar_url,
-        type: 'coach' as const,
-      }));
+      .map(c => {
+        // Handle organization which may be an object or array from the join
+        const org = c.organization as { name: string } | { name: string }[] | null;
+        const orgName = Array.isArray(org) ? org[0]?.name : org?.name;
+        return {
+          user_id: c.user_id,
+          name: c.full_name,
+          subtitle: orgName || c.title || '',
+          avatar_url: c.avatar_url,
+          type: 'coach' as const,
+        };
+      });
 
     const results: SearchResult[] = [...playerResults, ...coachResults];
 

@@ -93,7 +93,7 @@ export async function generateTeamInsights(
   const insightsToCreate: Partial<BaseballCoachInsight>[] = [];
 
   for (const member of teamMembers) {
-    const player = member.players as { id: string; first_name: string | null; last_name: string | null };
+    const player = member.baseball_players as { id: string; first_name: string | null; last_name: string | null };
     const playerName = `${player.first_name || ''} ${player.last_name || ''}`.trim();
     const playerStats = (allStats || []).filter(s => s.player_id === player.id);
     const playerAggregates = (allAggregates || []).find(a => a.player_id === player.id) || null;

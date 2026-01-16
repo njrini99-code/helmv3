@@ -65,10 +65,10 @@ export function getParticipantDetails(
   if (coach) {
     return {
       id: otherUser.id,
-      name: coach.full_name || coach.school_name || 'Coach',
+      name: coach.full_name || 'Coach',
       avatar: coach.avatar_url ?? null,
       role: 'coach',
-      subtitle: coach.school_name || undefined,
+      subtitle: coach.coach_type?.replace('_', ' ') || undefined,
       isOnline: false,
     };
   }
@@ -101,7 +101,7 @@ export function groupMessagesByDate(messages: UIMessage[]): Map<string, UIMessag
   const groups = new Map<string, UIMessage[]>();
 
   messages.forEach(message => {
-    const date = message.sent_at ? new Date(message.sent_at) : new Date();
+    const date = message.created_at ? new Date(message.created_at) : new Date();
     const dateKey = formatDateKey(date);
 
     if (!groups.has(dateKey)) {

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import {
   IconAirplane,
@@ -12,12 +13,22 @@ import {
   IconX,
   IconTrash,
   IconEdit,
+  IconDownload,
+  IconChartBar,
 } from '@/components/icons';
 import {
   createGolfTravelItinerary,
   updateGolfTravelItinerary,
   deleteGolfTravelItinerary,
+  getExpensesForItinerary,
+  getExpenseSummary,
+  getBudgetsForItinerary,
+  exportExpensesToCSV,
+  type TravelExpense,
+  type ExpenseSummary as ExpenseSummaryType,
+  type TravelBudget,
 } from '@/app/golf/actions/travel';
+import { ExpenseForm, ExpenseList, ExpenseSummary } from '@/components/golf/travel';
 
 interface TravelItinerary {
   id: string;
@@ -52,6 +63,8 @@ interface TravelClientProps {
   isCoach: boolean;
 }
 
+type TabType = 'details' | 'expenses';
+
 export function TravelClient({ itineraries: initialItineraries, coachId, teamId, isCoach }: TravelClientProps) {
   const router = useRouter();
   const [itineraries, setItineraries] = useState(initialItineraries);
@@ -59,6 +72,20 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Selected itinerary for expense tracking
+  const [selectedItinerary, setSelectedItinerary] = useState<TravelItinerary | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('details');
+
+  // Expense state
+  const [expenses, setExpenses] = useState<TravelExpense[]>([]);
+  const [expenseSummary, setExpenseSummary] = useState<ExpenseSummaryType | null>(null);
+  const [budgets, setBudgets] = useState<TravelBudget[]>([]);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<TravelExpense | null>(null);
+  const [exporting, setExporting] = useState(false);
+
   const [formData, setFormData] = useState({
     event_name: '',
     destination: '',
@@ -210,10 +237,75 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
 
     if (result.success) {
       setItineraries((prev) => prev.filter((i) => i.id !== id));
+      if (selectedItinerary?.id === id) {
+        setSelectedItinerary(null);
+      }
       router.refresh();
     } else {
       alert(result.error || 'Failed to delete itinerary');
     }
+  };
+
+  // Load expenses for selected itinerary
+  const loadExpenses = useCallback(async () => {
+    if (!selectedItinerary) return;
+
+    setLoadingExpenses(true);
+    try {
+      const [expensesResult, summaryResult, budgetsResult] = await Promise.all([
+        getExpensesForItinerary(selectedItinerary.id),
+        getExpenseSummary(selectedItinerary.id),
+        getBudgetsForItinerary(selectedItinerary.id),
+      ]);
+
+      if (expensesResult.success) {
+        setExpenses(expensesResult.data || []);
+      }
+      if (summaryResult.success) {
+        setExpenseSummary(summaryResult.data || null);
+      }
+      if (budgetsResult.success) {
+        setBudgets(budgetsResult.data || []);
+      }
+    } catch (err) {
+      console.error('Error loading expenses:', err);
+    } finally {
+      setLoadingExpenses(false);
+    }
+  }, [selectedItinerary]);
+
+  useEffect(() => {
+    if (selectedItinerary && activeTab === 'expenses') {
+      loadExpenses();
+    }
+  }, [selectedItinerary, activeTab, loadExpenses]);
+
+  // Handle CSV export
+  const handleExportCSV = async () => {
+    if (!selectedItinerary) return;
+
+    setExporting(true);
+    const result = await exportExpensesToCSV(selectedItinerary.id);
+
+    if (result.success && result.csv) {
+      // Create and download file
+      const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `expenses_${selectedItinerary.event_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      alert(result.error || 'Failed to export expenses');
+    }
+    setExporting(false);
+  };
+
+  // Select itinerary to view
+  const handleSelectItinerary = (itinerary: TravelItinerary) => {
+    setSelectedItinerary(itinerary);
+    setActiveTab('details');
   };
 
   return (
@@ -224,7 +316,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Travel</h1>
-              <p className="text-slate-500 mt-0.5">Tournament travel itineraries</p>
+              <p className="text-slate-500 mt-0.5">Tournament travel itineraries & expenses</p>
             </div>
             {isCoach && (
               <button
@@ -269,120 +361,287 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            {itineraries.map((itinerary) => (
-              <div
-                key={itinerary.id}
-                className="relative glass-standard rounded-2xl overflow-hidden p-6 hover:shadow-lg transition-all group"
-              >
-                <ShineEffect />
-                <div className="relative">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="text-4xl">{getTransportIcon(itinerary.transportation_type)}</div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-slate-900 mb-1">{itinerary.event_name}</h3>
-                        <div className="flex items-center gap-2 text-slate-600 mb-3">
-                          <IconMapPin size={16} />
-                          <span>{itinerary.destination}</span>
-                        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Itinerary List */}
+            <div className="lg:col-span-1 space-y-4">
+              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                Trips
+              </h2>
+              {itineraries.map((itinerary) => (
+                <motion.div
+                  key={itinerary.id}
+                  onClick={() => handleSelectItinerary(itinerary)}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className={`relative rounded-xl p-4 cursor-pointer transition-all ${
+                    selectedItinerary?.id === itinerary.id
+                      ? 'bg-green-50 border-2 border-green-500 shadow-md'
+                      : 'bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">{getTransportIcon(itinerary.transportation_type)}</div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-slate-900 truncate">{itinerary.event_name}</h3>
+                      <div className="flex items-center gap-1 text-sm text-slate-500 mt-0.5">
+                        <IconMapPin size={14} />
+                        <span className="truncate">{itinerary.destination}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
+                        <IconCalendar size={12} />
+                        <span>{formatDate(itinerary.departure_date)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
 
-                        {/* Departure */}
-                        <div className="flex items-center gap-4 text-sm text-slate-600 mb-2">
-                          <div className="flex items-center gap-2">
-                            <IconCalendar size={14} className="text-slate-400" />
-                            <span className="font-medium">Depart:</span>
-                            <span>{formatDate(itinerary.departure_date)}</span>
-                            {itinerary.departure_time && (
-                              <>
-                                <IconClock size={14} className="text-slate-400 ml-2" />
-                                <span>{itinerary.departure_time}</span>
-                              </>
-                            )}
+            {/* Selected Itinerary Details / Expenses */}
+            <div className="lg:col-span-2">
+              {selectedItinerary ? (
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                  {/* Itinerary Header */}
+                  <div className="p-6 border-b border-slate-200">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-start gap-4">
+                        <div className="text-4xl">{getTransportIcon(selectedItinerary.transportation_type)}</div>
+                        <div>
+                          <h2 className="text-xl font-semibold text-slate-900">{selectedItinerary.event_name}</h2>
+                          <div className="flex items-center gap-2 text-slate-500 mt-1">
+                            <IconMapPin size={16} />
+                            <span>{selectedItinerary.destination}</span>
                           </div>
                         </div>
+                      </div>
+                      {isCoach && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEdit(selectedItinerary)}
+                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                          >
+                            <IconEdit size={18} className="text-slate-600" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(selectedItinerary.id)}
+                            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <IconTrash size={18} className="text-red-600" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-                        {/* Return */}
-                        {itinerary.return_date && (
-                          <div className="flex items-center gap-4 text-sm text-slate-600">
+                    {/* Tabs */}
+                    <div className="flex gap-4 border-b border-slate-200 -mb-6 -mx-6 px-6">
+                      <button
+                        onClick={() => setActiveTab('details')}
+                        className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                          activeTab === 'details'
+                            ? 'border-green-600 text-green-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Details
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('expenses')}
+                        className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                          activeTab === 'expenses'
+                            ? 'border-green-600 text-green-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        <IconChartBar size={16} />
+                        Expenses
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tab Content */}
+                  <div className="p-6">
+                    <AnimatePresence mode="wait">
+                      {activeTab === 'details' ? (
+                        <motion.div
+                          key="details"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {/* Departure/Return */}
+                          <div className="grid grid-cols-2 gap-6 mb-6">
+                            <div className="p-4 bg-slate-50 rounded-xl">
+                              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Departure</p>
+                              <div className="flex items-center gap-2 text-slate-900">
+                                <IconCalendar size={16} className="text-slate-400" />
+                                <span className="font-medium">{formatDate(selectedItinerary.departure_date)}</span>
+                                {selectedItinerary.departure_time && (
+                                  <>
+                                    <IconClock size={16} className="text-slate-400 ml-2" />
+                                    <span>{selectedItinerary.departure_time}</span>
+                                  </>
+                                )}
+                              </div>
+                              {selectedItinerary.departure_location && (
+                                <p className="text-sm text-slate-500 mt-2">{selectedItinerary.departure_location}</p>
+                              )}
+                            </div>
+                            {selectedItinerary.return_date && (
+                              <div className="p-4 bg-slate-50 rounded-xl">
+                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Return</p>
+                                <div className="flex items-center gap-2 text-slate-900">
+                                  <IconCalendar size={16} className="text-slate-400" />
+                                  <span className="font-medium">{formatDate(selectedItinerary.return_date)}</span>
+                                  {selectedItinerary.return_time && (
+                                    <>
+                                      <IconClock size={16} className="text-slate-400 ml-2" />
+                                      <span>{selectedItinerary.return_time}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Hotel Info */}
+                          {selectedItinerary.hotel_name && (
+                            <div className="p-4 bg-blue-50 rounded-xl mb-6">
+                              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-2">Lodging</p>
+                              <p className="font-semibold text-slate-900">{selectedItinerary.hotel_name}</p>
+                              {selectedItinerary.hotel_address && (
+                                <p className="text-sm text-slate-600 mt-1">{selectedItinerary.hotel_address}</p>
+                              )}
+                              <div className="flex flex-wrap gap-4 mt-3 text-sm">
+                                {selectedItinerary.hotel_phone && (
+                                  <div>
+                                    <span className="text-slate-500">Phone: </span>
+                                    <span className="text-slate-900">{selectedItinerary.hotel_phone}</span>
+                                  </div>
+                                )}
+                                {selectedItinerary.hotel_confirmation && (
+                                  <div>
+                                    <span className="text-slate-500">Confirmation: </span>
+                                    <span className="text-slate-900">{selectedItinerary.hotel_confirmation}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Additional Details */}
+                          <div className="space-y-4">
+                            {selectedItinerary.uniform_requirements && (
+                              <div>
+                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Uniform</p>
+                                <p className="text-slate-700">{selectedItinerary.uniform_requirements}</p>
+                              </div>
+                            )}
+                            {selectedItinerary.gear_list && (
+                              <div>
+                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Gear List</p>
+                                <p className="text-slate-700">{selectedItinerary.gear_list}</p>
+                              </div>
+                            )}
+                            {selectedItinerary.notes && (
+                              <div>
+                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Notes</p>
+                                <p className="text-slate-700">{selectedItinerary.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="expenses"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {/* Expense Actions */}
+                          <div className="flex items-center justify-between mb-6">
+                            <h3 className="font-semibold text-slate-900">Trip Expenses</h3>
                             <div className="flex items-center gap-2">
-                              <IconCalendar size={14} className="text-slate-400" />
-                              <span className="font-medium">Return:</span>
-                              <span>{formatDate(itinerary.return_date)}</span>
-                              {itinerary.return_time && (
-                                <>
-                                  <IconClock size={14} className="text-slate-400 ml-2" />
-                                  <span>{itinerary.return_time}</span>
-                                </>
+                              {expenses.length > 0 && (
+                                <button
+                                  onClick={handleExportCSV}
+                                  disabled={exporting}
+                                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  <IconDownload size={16} />
+                                  {exporting ? 'Exporting...' : 'Export CSV'}
+                                </button>
+                              )}
+                              {isCoach && (
+                                <button
+                                  onClick={() => {
+                                    setEditingExpense(null);
+                                    setShowExpenseForm(true);
+                                  }}
+                                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                                >
+                                  <IconPlus size={16} />
+                                  Add Expense
+                                </button>
                               )}
                             </div>
                           </div>
-                        )}
 
-                        {/* Hotel */}
-                        {itinerary.hotel_name && (
-                          <div className="mt-3 p-3 bg-slate-50 rounded-lg text-sm">
-                            <p className="font-medium text-slate-900 mb-1">🏨 {itinerary.hotel_name}</p>
-                            {itinerary.hotel_address && (
-                              <p className="text-slate-600 text-xs">{itinerary.hotel_address}</p>
-                            )}
-                            {itinerary.hotel_phone && (
-                              <p className="text-slate-600 text-xs mt-1">📞 {itinerary.hotel_phone}</p>
-                            )}
-                          </div>
-                        )}
+                          {loadingExpenses ? (
+                            <div className="flex items-center justify-center py-12">
+                              <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
+                            </div>
+                          ) : (
+                            <div className="space-y-6">
+                              {/* Summary */}
+                              {expenseSummary && expenseSummary.count > 0 && (
+                                <ExpenseSummary
+                                  summary={expenseSummary}
+                                  budgets={budgets}
+                                  itineraryId={selectedItinerary.id}
+                                  isCoach={isCoach}
+                                  onBudgetUpdated={loadExpenses}
+                                />
+                              )}
 
-                        {/* Additional Details */}
-                        {(itinerary.uniform_requirements || itinerary.gear_list || itinerary.notes) && (
-                          <div className="mt-3 space-y-2 text-sm">
-                            {itinerary.uniform_requirements && (
+                              {/* Expense List */}
                               <div>
-                                <span className="font-medium text-slate-700">Uniform:</span>
-                                <span className="text-slate-600 ml-2">{itinerary.uniform_requirements}</span>
+                                <h4 className="font-medium text-slate-900 mb-3">All Expenses</h4>
+                                <ExpenseList
+                                  expenses={expenses}
+                                  onEdit={(expense) => {
+                                    setEditingExpense(expense);
+                                    setShowExpenseForm(true);
+                                  }}
+                                  onRefresh={loadExpenses}
+                                  isCoach={isCoach}
+                                />
                               </div>
-                            )}
-                            {itinerary.gear_list && (
-                              <div>
-                                <span className="font-medium text-slate-700">Gear:</span>
-                                <span className="text-slate-600 ml-2">{itinerary.gear_list}</span>
-                              </div>
-                            )}
-                            {itinerary.notes && (
-                              <div>
-                                <span className="font-medium text-slate-700">Notes:</span>
-                                <span className="text-slate-600 ml-2">{itinerary.notes}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {isCoach && (
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEdit(itinerary)}
-                          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                        >
-                          <IconEdit size={16} className="text-slate-600" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(itinerary.id)}
-                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <IconTrash size={16} className="text-red-600" />
-                        </button>
-                      </div>
-                    )}
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
-              </div>
-            ))}
+              ) : (
+                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                    <IconAirplane size={28} className="text-slate-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Select a Trip</h3>
+                  <p className="text-slate-500 max-w-sm mx-auto">
+                    Choose a travel itinerary from the list to view details and track expenses.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Create/Edit Modal */}
+      {/* Create/Edit Itinerary Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl my-8">
@@ -610,6 +869,21 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             </div>
           </div>
         </div>
+      )}
+
+      {/* Expense Form Modal */}
+      {selectedItinerary && (
+        <ExpenseForm
+          isOpen={showExpenseForm}
+          onClose={() => {
+            setShowExpenseForm(false);
+            setEditingExpense(null);
+          }}
+          onSaved={loadExpenses}
+          teamId={teamId}
+          itineraryId={selectedItinerary.id}
+          expense={editingExpense}
+        />
       )}
     </div>
   );

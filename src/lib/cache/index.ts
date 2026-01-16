@@ -48,9 +48,8 @@ export async function cached<T>(
       if (cachedData !== null) {
         return cachedData;
       }
-    } catch (error) {
+    } catch {
       // Cache miss or error - continue to fetch
-      console.log('[Cache] Miss or unavailable:', key);
     }
   }
 
@@ -61,9 +60,8 @@ export async function cached<T>(
   if (client) {
     try {
       await client.set(key, data, { ex: ttl });
-    } catch (error) {
-      // Error - silently continue
-      console.log('[Cache] Failed to set:', key);
+    } catch {
+      // Cache set failed - silently continue
     }
   }
 
@@ -79,8 +77,8 @@ export async function invalidate(key: string): Promise<void> {
 
   try {
     await client.del(key);
-  } catch (error) {
-    console.log('[Cache] Failed to invalidate:', key);
+  } catch {
+    // Invalidation failed - silently continue
   }
 }
 
@@ -96,8 +94,8 @@ export async function invalidatePattern(pattern: string): Promise<void> {
     if (keys.length > 0) {
       await client.del(...keys);
     }
-  } catch (error) {
-    console.log('[Cache] Failed to invalidate pattern:', pattern);
+  } catch {
+    // Pattern invalidation failed - silently continue
   }
 }
 

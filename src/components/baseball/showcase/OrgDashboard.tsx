@@ -29,7 +29,7 @@ interface OrgRosterEntry {
   team: {
     id: string;
     name: string;
-    age_group: string | null;
+    team_type: string | null;
   } | null;
 }
 
@@ -102,7 +102,7 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
           team:baseball_teams (
             id,
             name,
-            age_group
+            team_type
           )
         `)
         .in('team_id', teamIds)
@@ -141,7 +141,7 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
       }
 
       const { count: eventsCount } = await supabase
-        .from('events')
+        .from('baseball_events')
         .select('id', { count: 'exact', head: true })
         .in('team_id', teamIds)
         .gte('start_time', new Date().toISOString());
@@ -235,9 +235,9 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
                           {entry.team.name}
                         </Badge>
                       )}
-                      {entry.team?.age_group && (
+                      {entry.team?.team_type && (
                         <Badge variant="default" className="text-xs">
-                          {entry.team.age_group}
+                          {entry.team.team_type}
                         </Badge>
                       )}
                       {entry.player?.recruiting_activated && (

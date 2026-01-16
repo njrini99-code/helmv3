@@ -13,10 +13,11 @@ interface Camp {
   name: string;
   description: string | null;
   start_date: string;
-  end_date: string | null;
+  end_date: string;
   location: string | null;
   capacity: number | null;
-  price: number | null;
+  price_cents: number | null;
+  is_free: boolean | null;
 }
 
 interface CreateCampModalProps {
@@ -40,7 +41,8 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
     start_date: camp?.start_date ? camp.start_date.split('T')[0] : '',
     end_date: camp?.end_date ? camp.end_date.split('T')[0] : '',
     capacity: camp?.capacity?.toString() || '',
-    price: camp?.price?.toString() || '',
+    price: camp?.price_cents ? (camp.price_cents / 100).toString() : '',
+    is_free: camp?.is_free || false,
   });
 
   // Reset form when camp changes (switching between edit/create)
@@ -52,7 +54,8 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
       start_date: camp?.start_date ? camp.start_date.split('T')[0] : '',
       end_date: camp?.end_date ? camp.end_date.split('T')[0] : '',
       capacity: camp?.capacity?.toString() || '',
-      price: camp?.price?.toString() || '',
+      price: camp?.price_cents ? (camp.price_cents / 100).toString() : '',
+      is_free: camp?.is_free || false,
     });
   }, [camp]);
 
@@ -74,9 +77,10 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
       description: formData.description || null,
       location: formData.location || null,
       start_date: formData.start_date,
-      end_date: formData.end_date || null,
+      end_date: formData.end_date || formData.start_date, // end_date is required, default to start_date
       capacity: formData.capacity ? parseInt(formData.capacity) : null,
-      price: formData.price ? parseFloat(formData.price) : null,
+      price_cents: formData.price ? Math.round(parseFloat(formData.price) * 100) : null,
+      is_free: formData.is_free || !formData.price,
     };
 
     let error;
@@ -84,13 +88,13 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
     if (isEditing && camp) {
       // Update existing camp
       const result = await supabase
-        .from('camps')
+        .from('baseball_camps')
         .update(campData)
         .eq('id', camp.id);
       error = result.error;
     } else {
       // Create new camp
-      const result = await supabase.from('camps').insert({
+      const result = await supabase.from('baseball_camps').insert({
         ...campData,
         coach_id: coach.id,
         organization_id: coach.organization_id,

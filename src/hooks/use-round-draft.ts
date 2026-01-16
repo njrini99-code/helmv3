@@ -59,8 +59,8 @@ export function useRoundDraft() {
       };
 
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
-    } catch (error) {
-      console.error('[Draft] Failed to save:', error);
+    } catch {
+      // Silently fail - localStorage may be unavailable
     }
   }, []);
 
@@ -83,8 +83,8 @@ export function useRoundDraft() {
   const clearDraft = useCallback(() => {
     try {
       localStorage.removeItem(DRAFT_KEY);
-    } catch (error) {
-      console.error('[Draft] Failed to clear:', error);
+    } catch {
+      // Silently fail - localStorage may be unavailable
     }
   }, []);
 
@@ -105,8 +105,8 @@ export function useRoundDraft() {
       }
 
       return draft;
-    } catch (error) {
-      console.error('[Draft] Failed to load:', error);
+    } catch {
+      // Silently fail - localStorage may be unavailable or data corrupted
       return null;
     }
   }, [clearDraft]);

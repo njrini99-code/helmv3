@@ -23,8 +23,6 @@ const STAGE_CONFIG: Record<PipelineStage, {
 }> = {
   watchlist: { label: 'Watching', variant: 'default', color: 'bg-warm-500', glow: 'shadow-warm-500/20' },
   high_priority: { label: 'High Priority', variant: 'warning', color: 'bg-amber-500', glow: 'shadow-amber-500/30' },
-  contacted: { label: 'Contacted', variant: 'info', color: 'bg-blue-500', glow: 'shadow-blue-500/30' },
-  campus_visit: { label: 'Campus Visit', variant: 'info', color: 'bg-purple-500', glow: 'shadow-purple-500/30' },
   offer_extended: { label: 'Offer Extended', variant: 'primary', color: 'bg-primary-500', glow: 'shadow-primary-500/30' },
   committed: { label: 'Committed', variant: 'success', color: 'bg-emerald-500', glow: 'shadow-emerald-500/40' },
   uninterested: { label: 'Not Interested', variant: 'secondary', color: 'bg-slate-400', glow: '' },

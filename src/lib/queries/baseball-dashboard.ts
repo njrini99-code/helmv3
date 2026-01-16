@@ -73,8 +73,6 @@ export interface ChartDataPoint {
 export interface DashboardPipelineCounts {
   watchlist: number;
   high_priority: number;
-  contacted: number;
-  campus_visit: number;
   offer_extended: number;
   committed: number;
   uninterested: number;
@@ -191,8 +189,6 @@ export async function getCoachDashboardData(
   const pipelineCounts: DashboardPipelineCounts = {
     watchlist: watchlist.filter(w => w.pipeline_stage === 'watchlist').length,
     high_priority: watchlist.filter(w => w.pipeline_stage === 'high_priority').length,
-    contacted: watchlist.filter(w => w.pipeline_stage === 'contacted').length,
-    campus_visit: watchlist.filter(w => w.pipeline_stage === 'campus_visit').length,
     offer_extended: watchlist.filter(w => w.pipeline_stage === 'offer_extended').length,
     committed: committedCount,
     uninterested: watchlist.filter(w => w.pipeline_stage === 'uninterested').length,

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { IconX, IconCheck, IconDownload, IconBookmark, IconChartRadar } from '@/components/icons';
 import { getFullName, formatHeight, cn } from '@/lib/utils';
-import type { Player, ComparisonData } from '@/lib/types';
+import type { Player } from '@/lib/types';
 import dynamic from 'next/dynamic';
 import { SaveComparisonModal } from './save-comparison-modal';
 import { saveComparison } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
@@ -212,40 +212,10 @@ export function PlayerComparison({
     try {
       const playerIds = players.map(p => p.id);
 
-      // Prepare comparison data to cache (stats, radar data, etc.)
-      const now = new Date().toISOString();
-      const comparisonData: ComparisonData = {
-        players: players.map(p => ({
-          playerId: p.id,
-          name: getFullName(p.first_name, p.last_name),
-          position: p.primary_position || 'Unknown',
-          gradYear: p.grad_year || new Date().getFullYear(),
-          stats: {
-            batting_avg: (p as any).batting_avg || (p as any).stats?.batting_avg || 0,
-            era: (p as any).era || (p as any).stats?.era || 0,
-            home_runs: (p as any).home_runs || (p as any).stats?.home_runs || 0,
-            rbi: (p as any).rbi || (p as any).stats?.rbi || 0,
-            whip: (p as any).whip || (p as any).stats?.whip || 0,
-          },
-        })),
-        metrics: statComparisons.map(stat => ({
-          key: stat.label.toLowerCase().replace(/\s+/g, '_'),
-          label: stat.label,
-          values: players.reduce((acc, p) => {
-            const value = stat.getValue(p);
-            acc[p.id] = typeof value === 'number' ? value : (value || 0);
-            return acc;
-          }, {} as Record<string, number | string>),
-        })),
-        createdAt: now,
-        updatedAt: now,
-      };
-
       const result = await saveComparison({
         name: data.name,
-        description: data.description,
+        notes: data.description,
         playerIds,
-        comparisonData,
       });
 
       if (result.error) {

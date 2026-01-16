@@ -12,6 +12,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 
 // ============================================================================
 // TYPES
@@ -75,16 +76,15 @@ export async function publishEvent(eventId: string): Promise<ActionResult> {
       .eq('status', 'draft' as EventStatus); // Only draft events can be published
 
     if (updateError) {
-      return { success: false, error: updateError.message };
+      console.error('[publishEvent Error]', updateError);
+      return { success: false, error: 'Failed to publish event. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to publish event',
-    };
+    console.error('[publishEvent Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -118,7 +118,7 @@ export async function cancelEvent(
     // Get event details for notification
     const { data: event } = await supabase
       .from('golf_events')
-      .select('id, title, team_id, start_date')
+      .select('id, title, team_id, start_time')
       .eq('id', eventId)
       .single();
 
@@ -132,7 +132,6 @@ export async function cancelEvent(
       .update({
         status: 'cancelled' as EventStatus,
         cancelled_at: new Date().toISOString(),
-        cancelled_by: coach.id,
         cancellation_reason: reason,
         updated_at: new Date().toISOString(),
       })
@@ -140,41 +139,41 @@ export async function cancelEvent(
       .eq('created_by', coach.id); // Verify ownership
 
     if (updateError) {
-      return { success: false, error: updateError.message };
+      console.error('[cancelEvent Error]', updateError);
+      return { success: false, error: 'Failed to cancel event. Please try again.' };
     }
 
     // Notify players if requested
     if (notifyPlayers && event.team_id) {
-      // Get all players on the team
-      const { data: players } = await supabase
-        .from('golf_players')
-        .select('id')
+      // Get all players on the team via golf_team_members
+      const { data: teamMembers } = await supabase
+        .from('golf_team_members')
+        .select('player_id')
         .eq('team_id', event.team_id);
 
-      if (players && players.length > 0) {
-        // Create notifications
-        const notifications = players.map(player => ({
-          user_id: player.id,
-          type: 'event_cancelled',
-          title: `Event Cancelled: ${event.title}`,
-          message: reason || 'This event has been cancelled.',
-          action_url: `/golf/dashboard/calendar`,
-          read: false,
-        }));
+      if (teamMembers && teamMembers.length > 0) {
+        // TODO: golf_calendar_notifications table does not exist yet
+        // When the table is created, uncomment the following code to notify players
+        // const notifications = teamMembers.map(member => ({
+        //   user_id: member.player_id,
+        //   type: 'event_cancelled',
+        //   title: `Event Cancelled: ${event.title}`,
+        //   message: reason || 'This event has been cancelled.',
+        //   action_url: `/golf/dashboard/calendar`,
+        //   read: false,
+        // }));
+        // await supabase.from('golf_calendar_notifications').insert(notifications);
 
-        await supabase
-          .from('golf_calendar_notifications')
-          .insert(notifications);
+        // Cancellation is tracked via the event status change
+        // TODO: Implement notification system for event cancellations
       }
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to cancel event',
-    };
+    console.error('[cancelEvent Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -216,16 +215,15 @@ export async function reinstateEvent(eventId: string): Promise<ActionResult> {
       .eq('status', 'cancelled' as EventStatus); // Only cancelled events can be reinstated
 
     if (updateError) {
-      return { success: false, error: updateError.message };
+      console.error('[reinstateEvent Error]', updateError);
+      return { success: false, error: 'Failed to reinstate event. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to reinstate event',
-    };
+    console.error('[reinstateEvent Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -257,15 +255,14 @@ export async function getEventStatusHistory(
       .order('changed_at', { ascending: false });
 
     if (historyError) {
-      return { success: false, error: historyError.message };
+      console.error('[getEventStatusHistory Error]', historyError);
+      return { success: false, error: 'Failed to fetch status history. Please try again.' };
     }
 
     return { success: true, data: (history || []) as unknown as EventStatusHistory[] };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch status history',
-    };
+    console.error('[getEventStatusHistory Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -294,7 +291,7 @@ export async function createDraftEvent(eventData: {
 
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, team_id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
 
@@ -302,35 +299,48 @@ export async function createDraftEvent(eventData: {
       return { success: false, error: 'Coach not found' };
     }
 
+    // Get team_id from golf_teams via organization_id
+    let teamId = eventData.teamId;
+    if (!teamId && coach.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', coach.organization_id)
+        .maybeSingle();
+      teamId = team?.id;
+    }
+
+    if (!teamId) {
+      return { success: false, error: 'No team found for coach' };
+    }
+
     // Create event in draft state
+    // Note: golf_events uses start_time as the primary date/time field
     const { data: event, error: createError } = await supabase
       .from('golf_events')
       .insert({
         title: eventData.title,
         description: eventData.description,
         event_type: eventData.eventType as GolfEventType,
-        start_date: eventData.startDate,
-        end_date: eventData.endDate,
-        start_time: eventData.startTime,
+        start_time: eventData.startTime || eventData.startDate,
         end_time: eventData.endTime,
         location: eventData.location,
         created_by: coach.id,
-        team_id: eventData.teamId || coach.team_id,
+        team_id: teamId,
         status: 'draft' as EventStatus,
       })
       .select('id')
       .single();
 
     if (createError) {
-      return { success: false, error: createError.message };
+      console.error('[createDraftEvent Error]', createError);
+      return { success: false, error: 'Failed to create draft event. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create draft event',
-    };
+    console.error('[createDraftEvent Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }

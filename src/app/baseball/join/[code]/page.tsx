@@ -34,31 +34,49 @@ export default async function JoinTeamPage({ params }: PageProps) {
   }
 
   // Find team by invite code (baseball uses team_invitations table)
+  type InvitationWithTeam = {
+    id: string;
+    team_id: string;
+    code: string;
+    expires_at: string | null;
+    is_active: boolean | null;
+    baseball_teams: {
+      id: string;
+      name: string;
+      team_type: string;
+      organizations: {
+        name: string;
+        location_city: string | null;
+        location_state: string | null;
+        logo_url: string | null;
+      } | null;
+    };
+  };
+
   const { data: invitation } = await supabase
     .from('baseball_team_invitations')
     .select(`
       id,
       team_id,
-      invite_code,
+      code,
       expires_at,
       is_active,
       baseball_teams!inner (
         id,
         name,
         team_type,
-        season_year,
         organizations (
           name,
-          city,
-          state,
+          location_city,
+          location_state,
           logo_url
         )
       )
     `)
-    .eq('invite_code', code)
-    .single();
+    .eq('code', code)
+    .single() as { data: InvitationWithTeam | null };
 
-  if (!invitation || !invitation.teams) {
+  if (!invitation || !invitation.baseball_teams) {
     return (
       <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 text-center">
@@ -110,8 +128,8 @@ export default async function JoinTeamPage({ params }: PageProps) {
     );
   }
 
-  const team = invitation.teams;
-  const organization = Array.isArray(team.organizations) ? team.organizations[0] : team.organizations;
+  const team = invitation.baseball_teams;
+  const organization = team.organizations;
 
   return (
     <JoinTeamClient
@@ -123,11 +141,11 @@ export default async function JoinTeamPage({ params }: PageProps) {
         id: team.id,
         name: team.name,
         teamType: team.team_type || 'high_school',
-        season: team.season_year ? team.season_year.toString() : null,
+        season: null,
         organization: organization ? {
           name: organization.name,
-          city: organization.city,
-          state: organization.state,
+          city: organization.location_city,
+          state: organization.location_state,
           logoUrl: organization.logo_url,
         } : undefined,
       }}

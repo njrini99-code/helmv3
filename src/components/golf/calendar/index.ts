@@ -67,3 +67,48 @@ export {
   SubscriptionInstructions,
   CompactSubscriptionHelp,
 } from './SubscriptionInstructions';
+export { CalendarSyncButton, CalendarSyncChip } from './CalendarSyncButton';
+
+// ============================================================================
+// PHASE 6: Mobile-Optimized Components
+// ============================================================================
+export {
+  MobileRSVPButtons,
+  CompactMobileRSVPButtons,
+  IconOnlyRSVPButtons,
+  type RSVPResponse,
+} from './MobileRSVPButtons';
+export {
+  MobileEventCard,
+  CompactMobileEventCard,
+  MobileEmptyEventsState,
+} from './MobileEventCard';
+export { MobileEventSheet, type MobileEventFormData } from './MobileEventSheet';
+export {
+  MobileCalendarListView,
+  MobileWeekListView,
+  MobileDayListView,
+} from './MobileCalendarListView';
+
+// ============================================================================
+// PHASE 7: Enhanced Mobile Components (v2)
+// ============================================================================
+export {
+  RSVPButtonsEnhanced,
+  RSVPStatusBadge,
+  type RSVPResponseType,
+} from './RSVPButtonsEnhanced';
+export {
+  CalendarDayViewSwipeable,
+  MobileWeekPicker,
+} from './CalendarDayViewSwipeable';
+export {
+  QuickAddEventFAB,
+  SimpleAddEventFAB,
+  MiniAddEventButton,
+} from './QuickAddEventFAB';
+export {
+  MobileCalendarWrapper,
+  useIsMobileCalendar,
+  ResponsiveCalendarContainer,
+} from './MobileCalendarWrapper';

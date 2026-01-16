@@ -53,7 +53,7 @@ type AttendanceWithUser = {
   player: Pick<GolfPlayer, 'user_id'> | Array<Pick<GolfPlayer, 'user_id'>> | null;
 };
 
-type AttendanceWithEvent = Pick<GolfEventAttendance, 'status' | 'responded_at'> & {
+type AttendanceWithEvent = Pick<GolfEventAttendance, 'status' | 'rsvp_at'> & {
   event: GolfEvent | GolfEvent[] | null;
 };
 
@@ -61,11 +61,11 @@ type EventWithCreator = GolfEvent & {
   creator: Pick<GolfCoach, 'user_id'> | null;
 };
 
-type ReminderAttendance = Pick<GolfEventAttendance, 'player_id' | 'reminder_sent'> & {
+type ReminderAttendance = Pick<GolfEventAttendance, 'player_id'> & {
   player: Pick<GolfPlayer, 'user_id' | 'first_name'> | Array<Pick<GolfPlayer, 'user_id' | 'first_name'>> | null;
 };
 
-type EventDateInput = Pick<GolfEvent, 'start_date' | 'start_time'>;
+type EventDateInput = Pick<GolfEvent, 'start_time'>;
 type MaybeArray<T> = T | T[] | null | undefined;
 
 function firstOrNull<T>(value: MaybeArray<T>): T | null {
@@ -104,7 +104,7 @@ export async function getEventRSVPSummary(
       playerName: fullName || 'Unknown',
       avatarUrl: attendance.player?.avatar_url || null,
       status: (attendance.status ?? 'pending') as RSVPStatus,
-      respondedAt: attendance.responded_at,
+      respondedAt: attendance.rsvp_at,
     };
   });
 
@@ -336,7 +336,7 @@ export async function updateRSVP(
         event_id: eventId,
         player_id: playerId,
         status,
-        responded_at: new Date().toISOString(),
+        rsvp_at: new Date().toISOString(),
       },
       { onConflict: 'event_id,player_id' }
     );
@@ -407,12 +407,12 @@ export async function getPlayerPendingInvitations(
     .from('golf_event_attendance')
     .select(`
       status,
-      responded_at,
+      rsvp_at,
       event:golf_events(*)
     `)
     .eq('player_id', playerId)
     .eq('status', 'pending')
-    .order('event(start_date)', { ascending: true });
+    .order('event(start_time)', { ascending: true });
 
   if (!attendances) return [];
 
@@ -425,14 +425,14 @@ export async function getPlayerPendingInvitations(
       eventId: event.id,
       eventTitle: event.title,
       eventType: event.event_type,
-      startDate: event.start_date,
+      startDate: event.start_time, // Using start_time as date
       startTime: event.start_time,
-      endDate: event.end_date,
+      endDate: event.end_time,
       endTime: event.end_time,
       location: event.location,
       description: event.description,
-      requiresRsvp: event.requires_rsvp || false,
-      rsvpDeadline: event.rsvp_deadline,
+      requiresRsvp: false, // Not in schema
+      rsvpDeadline: null, // Not in schema
       createdBy: event.created_by,
       status: (attendance.status ?? 'pending') as RSVPStatus,
     });
@@ -452,12 +452,12 @@ export async function getPlayerUpcomingEvents(
     .from('golf_event_attendance')
     .select(`
       status,
-      responded_at,
+      rsvp_at,
       event:golf_events(*)
     `)
     .eq('player_id', playerId)
-    .gte('event(start_date)', new Date().toISOString().split('T')[0])
-    .order('event(start_date)', { ascending: true });
+    .gte('event(start_time)', new Date().toISOString())
+    .order('event(start_time)', { ascending: true });
 
   if (!attendances) return [];
 
@@ -470,14 +470,14 @@ export async function getPlayerUpcomingEvents(
       eventId: event.id,
       eventTitle: event.title,
       eventType: event.event_type,
-      startDate: event.start_date,
+      startDate: event.start_time, // Using start_time as date
       startTime: event.start_time,
-      endDate: event.end_date,
+      endDate: event.end_time,
       endTime: event.end_time,
       location: event.location,
       description: event.description,
-      requiresRsvp: event.requires_rsvp || false,
-      rsvpDeadline: event.rsvp_deadline,
+      requiresRsvp: false, // Not in schema
+      rsvpDeadline: null, // Not in schema
       createdBy: event.created_by,
       status: (attendance.status ?? 'pending') as RSVPStatus,
     });
@@ -504,19 +504,17 @@ export async function sendRSVPReminders(
     .eq('id', eventId)
     .single();
 
-  if (!event || !event.requires_rsvp) return 0;
+  if (!event) return 0;
 
   // Get pending attendances
   const { data: pendingAttendances } = await supabase
     .from('golf_event_attendance')
     .select(`
       player_id,
-      reminder_sent,
       player:golf_players(user_id, first_name)
     `)
     .eq('event_id', eventId)
-    .eq('status', 'pending')
-    .eq('reminder_sent', false);
+    .eq('status', 'pending');
 
   if (!pendingAttendances || pendingAttendances.length === 0) return 0;
 
@@ -540,13 +538,6 @@ export async function sendRSVPReminders(
     await supabase
       .from('golf_calendar_notifications')
       .insert(notifications);
-
-    // Mark reminders as sent
-    await supabase
-      .from('golf_event_attendance')
-      .update({ reminder_sent: true })
-      .eq('event_id', eventId)
-      .eq('status', 'pending');
   }
 
   return notifications.length;
@@ -560,19 +551,21 @@ export async function sendRSVPReminders(
  * Format event date for display in notifications
  */
 function formatEventDate(event: EventDateInput): string {
-  const startDate = new Date(event.start_date);
+  if (!event.start_time) return 'TBD';
+
+  const startDate = new Date(event.start_time);
   const dateStr = startDate.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   });
 
-  if (event.start_time) {
-    const timeStr = event.start_time.slice(0, 5); // HH:MM
-    return `${dateStr} at ${timeStr}`;
-  }
+  const timeStr = startDate.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 
-  return dateStr;
+  return `${dateStr} at ${timeStr}`;
 }
 
 /**

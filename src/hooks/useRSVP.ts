@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { respondToEvent, getPendingInvitations, getEventRSVP, getPlayerEventRSVP } from '@/app/golf/actions/golf';
+import { createClient } from '@/lib/supabase/client';
 
 // ============================================================================
 // TYPES
@@ -186,6 +187,33 @@ export function useRSVP({
     }
   }, [eventId, fetchInvitations, fetchRSVPSummary]);
 
+  // Real-time subscription for RSVP updates (coach view)
+  useEffect(() => {
+    if (!enabled || !eventId) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`rsvp-${eventId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'golf_event_attendance',
+          filter: `event_id=eq.${eventId}`,
+        },
+        () => {
+          // Refetch when attendance changes
+          fetchRSVPSummary();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [enabled, eventId, fetchRSVPSummary]);
+
   return {
     invitations,
     rsvpSummary,
@@ -274,6 +302,33 @@ export function usePlayerEventRSVP(
   useEffect(() => {
     fetchStatus();
   }, [fetchStatus]);
+
+  // Real-time subscription for player's RSVP status
+  useEffect(() => {
+    if (!enabled || !eventId) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`player-rsvp-${eventId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'golf_event_attendance',
+          filter: `event_id=eq.${eventId}`,
+        },
+        () => {
+          // Refetch when attendance changes
+          fetchStatus();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [enabled, eventId, fetchStatus]);
 
   return {
     status,

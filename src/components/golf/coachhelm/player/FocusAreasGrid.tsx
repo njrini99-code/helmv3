@@ -1,0 +1,238 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { GlassCard } from '@/components/ui/glass-card';
+import {
+  IconTarget,
+  IconTrendingUp,
+  IconTrendingDown,
+  IconChevronRight,
+  IconActivity,
+} from '@/components/icons';
+
+interface FocusArea {
+  area: string;
+  strokesGained: number;
+  trend: 'improving' | 'stable' | 'declining';
+  recommendation: string;
+}
+
+interface FocusAreasGridProps {
+  focusAreas: FocusArea[];
+  onAreaClick?: (area: FocusArea) => void;
+}
+
+// Format strokes gained/lost for display
+function formatStrokesGained(value: number): string {
+  if (value === 0) return '0.0';
+  return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
+}
+
+// Get trend icon and color
+function getTrendConfig(trend: FocusArea['trend']) {
+  switch (trend) {
+    case 'improving':
+      return {
+        icon: IconTrendingUp,
+        color: 'text-green-500',
+        bgColor: 'bg-green-50',
+        label: 'Improving',
+      };
+    case 'declining':
+      return {
+        icon: IconTrendingDown,
+        color: 'text-red-500',
+        bgColor: 'bg-red-50',
+        label: 'Needs Work',
+      };
+    default:
+      return {
+        icon: IconActivity,
+        color: 'text-slate-400',
+        bgColor: 'bg-slate-50',
+        label: 'Stable',
+      };
+  }
+}
+
+// Get strokes color based on value
+function getStrokesColor(value: number) {
+  if (value > 0.2) return 'text-green-600';
+  if (value < -0.5) return 'text-red-600';
+  if (value < -0.2) return 'text-amber-600';
+  return 'text-slate-600';
+}
+
+function FocusAreaCard({
+  focusArea,
+  index,
+  onClick,
+}: {
+  focusArea: FocusArea;
+  index: number;
+  onClick?: () => void;
+}) {
+  const trendConfig = getTrendConfig(focusArea.trend);
+  const TrendIcon = trendConfig.icon;
+  const strokesColor = getStrokesColor(focusArea.strokesGained);
+  const isPositive = focusArea.strokesGained > 0;
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.08 }}
+      onClick={onClick}
+      className={cn(
+        'relative w-full p-4 rounded-xl border text-left transition-all duration-200',
+        'bg-white/70 backdrop-blur-sm border-white/30',
+        'hover:bg-white/90 hover:shadow-lg hover:-translate-y-0.5',
+        'group cursor-pointer'
+      )}
+    >
+      {/* Priority indicator */}
+      <div className={cn(
+        'absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
+        index === 0 ? 'bg-primary-100 text-primary-700' :
+        index === 1 ? 'bg-primary-50 text-primary-600' :
+        'bg-slate-100 text-slate-500'
+      )}>
+        {index + 1}
+      </div>
+
+      {/* Area name and trend */}
+      <div className="flex items-center gap-2 mb-3 pr-8">
+        <div className={cn(
+          'w-8 h-8 rounded-lg flex items-center justify-center',
+          trendConfig.bgColor
+        )}>
+          <TrendIcon size={16} className={trendConfig.color} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-warm-900 text-sm truncate group-hover:text-primary-600 transition-colors">
+            {focusArea.area}
+          </h4>
+          <span className={cn('text-[10px] font-medium', trendConfig.color)}>
+            {trendConfig.label}
+          </span>
+        </div>
+      </div>
+
+      {/* Strokes gained display */}
+      <div className="flex items-baseline gap-1 mb-3">
+        <span className={cn('text-2xl font-bold tabular-nums', strokesColor)}>
+          {formatStrokesGained(focusArea.strokesGained)}
+        </span>
+        <span className="text-xs text-warm-500">strokes/round</span>
+      </div>
+
+      {/* Visual bar for strokes */}
+      <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{
+            width: `${Math.min(Math.abs(focusArea.strokesGained) * 20, 100)}%`,
+          }}
+          transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+          className={cn(
+            'absolute h-full rounded-full',
+            isPositive ? 'bg-green-400 right-0' : 'bg-red-400 left-0'
+          )}
+          style={{
+            [isPositive ? 'right' : 'left']: '50%',
+            transformOrigin: isPositive ? 'right' : 'left',
+          }}
+        />
+        {/* Center marker */}
+        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-slate-300 -translate-x-1/2" />
+      </div>
+
+      {/* Recommendation snippet */}
+      <p className="text-xs text-warm-500 line-clamp-2 mb-2">
+        {focusArea.recommendation}
+      </p>
+
+      {/* View details hint */}
+      <div className="flex items-center text-xs font-medium text-primary-600 opacity-0 group-hover:opacity-100 transition-opacity">
+        View details
+        <IconChevronRight size={14} className="ml-1" />
+      </div>
+    </motion.button>
+  );
+}
+
+export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps) {
+  // Empty state
+  if (focusAreas.length === 0) {
+    return (
+      <GlassCard>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+            <IconTarget size={20} className="text-primary-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-warm-900">Focus Areas</h3>
+            <p className="text-xs text-warm-500">Areas to prioritize in practice</p>
+          </div>
+        </div>
+
+        <div className="text-center py-8">
+          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+            <IconTarget size={24} className="text-slate-400" />
+          </div>
+          <p className="text-sm text-warm-600 mb-1">No focus areas identified yet</p>
+          <p className="text-xs text-warm-400">
+            Complete more rounds to unlock personalized focus areas
+          </p>
+        </div>
+      </GlassCard>
+    );
+  }
+
+  return (
+    <GlassCard>
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+          <IconTarget size={20} className="text-primary-600" />
+        </div>
+        <div>
+          <h3 className="font-semibold text-warm-900">Focus Areas</h3>
+          <p className="text-xs text-warm-500">
+            Prioritize these areas in your practice
+          </p>
+        </div>
+      </div>
+
+      {/* Grid of focus areas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {focusAreas.map((area, index) => (
+          <FocusAreaCard
+            key={area.area}
+            focusArea={area}
+            index={index}
+            onClick={() => onAreaClick?.(area)}
+          />
+        ))}
+      </div>
+
+      {/* Legend */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="flex items-center justify-center gap-6 mt-5 pt-4 border-t border-white/20"
+      >
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-green-400" />
+          <span className="text-[10px] text-warm-500">Gaining strokes</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-red-400" />
+          <span className="text-[10px] text-warm-500">Losing strokes</span>
+        </div>
+      </motion.div>
+    </GlassCard>
+  );
+}

@@ -13,7 +13,8 @@ import {
     IconBook,
     IconCopy,
     IconCheck,
-    IconSparkles
+    IconSparkles,
+    IconBell
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { ShineEffect } from '@/components/ui/shine-effect';
@@ -30,6 +31,11 @@ const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: 
 const V2InsightsFeed = dynamic(() => import('@/components/golf/coachhelm/v2').then(mod => ({ default: mod.V2InsightsFeed })), {
     loading: () => <div className="h-[300px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
     ssr: true // Insights can be SSR'd
+});
+
+const CoachAlertCenter = dynamic(() => import('@/components/golf/coachhelm/alerts').then(mod => ({ default: mod.CoachAlertCenter })), {
+    loading: () => <div className="h-[200px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
+    ssr: true
 });
 import {
     PremiumGlassCard,
@@ -221,8 +227,8 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                 animate="visible"
             >
                 {/* Invite Code */}
-                {team?.invite_code && stats.rosterSize < 20 && (
-                    <InviteCodeCard inviteCode={team.invite_code} />
+                {team?.join_code && stats.rosterSize < 20 && (
+                    <InviteCodeCard inviteCode={team.join_code} />
                 )}
 
                 {/* Stats Grid */}
@@ -360,6 +366,23 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
 
                     {/* Right Column */}
                     <motion.div className="lg:col-span-2 space-y-6" variants={itemVariants}>
+                        {/* Player Alerts - AI-Generated Alerts for Proactive Coaching */}
+                        {team && coach && (
+                            <div>
+                                <SectionHeader
+                                    title="Player Alerts"
+                                    icon={<IconBell size={14} />}
+                                    action={{ label: 'View All', href: '/golf/dashboard/alerts' }}
+                                />
+                                <CoachAlertCenter
+                                    coachId={coach.id}
+                                    teamId={team.id}
+                                    maxVisible={3}
+                                    compact
+                                />
+                            </div>
+                        )}
+
                         {/* Team Performance Chart */}
                         {stats.teamScoringAverage && (
                             <div>

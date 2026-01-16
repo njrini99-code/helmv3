@@ -1,0 +1,272 @@
+'use client';
+
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { IconEdit, IconTrash, IconEye, IconChevronDown, IconChevronUp } from '@/components/icons';
+import {
+  deleteTravelExpense,
+  type TravelExpense,
+  type ExpenseCategory,
+} from '@/app/golf/actions/travel';
+
+interface ExpenseListProps {
+  expenses: TravelExpense[];
+  onEdit: (expense: TravelExpense) => void;
+  onRefresh: () => void;
+  isCoach: boolean;
+}
+
+const CATEGORY_CONFIG: Record<ExpenseCategory, { icon: string; label: string; color: string }> = {
+  lodging: { icon: '🏨', label: 'Lodging', color: 'bg-blue-100 text-blue-700' },
+  transportation: { icon: '🚗', label: 'Transportation', color: 'bg-purple-100 text-purple-700' },
+  meals: { icon: '🍽️', label: 'Meals', color: 'bg-orange-100 text-orange-700' },
+  entry_fees: { icon: '🎟️', label: 'Entry Fees', color: 'bg-green-100 text-green-700' },
+  equipment: { icon: '⛳', label: 'Equipment', color: 'bg-teal-100 text-teal-700' },
+  other: { icon: '📦', label: 'Other', color: 'bg-slate-100 text-slate-700' },
+};
+
+const PAID_BY_LABELS: Record<string, string> = {
+  team: 'Team',
+  player: 'Player',
+  pending_reimbursement: 'Pending',
+  split: 'Split',
+};
+
+export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseListProps) {
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+
+  async function handleDelete(id: string) {
+    if (!confirm('Are you sure you want to delete this expense?')) return;
+
+    setDeleting(id);
+    const result = await deleteTravelExpense(id);
+
+    if (result.success) {
+      onRefresh();
+    } else {
+      alert(result.error || 'Failed to delete expense');
+    }
+    setDeleting(null);
+  }
+
+  function formatDate(dateStr: string | null) {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  function formatCurrency(amount: number) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  }
+
+  if (expenses.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+          <span className="text-2xl">💸</span>
+        </div>
+        <h3 className="text-lg font-semibold text-slate-900 mb-2">No Expenses Yet</h3>
+        <p className="text-sm text-slate-500 max-w-sm mx-auto">
+          {isCoach
+            ? 'Add your first expense to start tracking costs for this trip.'
+            : 'No expenses have been recorded for this trip yet.'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {expenses.map((expense, index) => {
+        const config = CATEGORY_CONFIG[expense.category] || CATEGORY_CONFIG.other;
+        const isExpanded = expandedId === expense.id;
+
+        return (
+          <motion.div
+            key={expense.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+            className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
+          >
+            {/* Main Row */}
+            <div
+              className="p-4 flex items-center gap-4 cursor-pointer"
+              onClick={() => setExpandedId(isExpanded ? null : expense.id)}
+            >
+              {/* Category Icon */}
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${config.color}`}>
+                <span className="text-lg">{config.icon}</span>
+              </div>
+
+              {/* Description */}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-slate-900 truncate">{expense.description}</p>
+                <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                  <span>{config.label}</span>
+                  {expense.vendor_name && (
+                    <>
+                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+                      <span className="truncate">{expense.vendor_name}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Date */}
+              <div className="text-right hidden sm:block">
+                <p className="text-sm text-slate-600">{formatDate(expense.expense_date)}</p>
+              </div>
+
+              {/* Amount */}
+              <div className="text-right">
+                <p className="font-semibold text-slate-900">{formatCurrency(expense.amount)}</p>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  expense.paid_by === 'team' ? 'bg-green-100 text-green-700' :
+                  expense.paid_by === 'pending_reimbursement' ? 'bg-amber-100 text-amber-700' :
+                  'bg-slate-100 text-slate-600'
+                }`}>
+                  {PAID_BY_LABELS[expense.paid_by] || expense.paid_by}
+                </span>
+              </div>
+
+              {/* Expand Arrow */}
+              <div className="text-slate-400">
+                {isExpanded ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
+              </div>
+            </div>
+
+            {/* Expanded Details */}
+            <AnimatePresence>
+              {isExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-4 pb-4 pt-2 border-t border-slate-100">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-4">
+                      <div>
+                        <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Date</p>
+                        <p className="text-slate-900">{formatDate(expense.expense_date)}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Vendor</p>
+                        <p className="text-slate-900">{expense.vendor_name || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Paid By</p>
+                        <p className="text-slate-900">{PAID_BY_LABELS[expense.paid_by]}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Receipt</p>
+                        {expense.receipt_url ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewingReceipt(expense.receipt_url);
+                            }}
+                            className="text-green-600 hover:text-green-700 flex items-center gap-1"
+                          >
+                            <IconEye size={14} />
+                            View
+                          </button>
+                        ) : (
+                          <p className="text-slate-400">None</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {expense.notes && (
+                      <div className="mb-4">
+                        <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Notes</p>
+                        <p className="text-slate-700 text-sm">{expense.notes}</p>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    {isCoach && (
+                      <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(expense);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                          <IconEdit size={14} />
+                          Edit
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(expense.id);
+                          }}
+                          disabled={deleting === expense.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <IconTrash size={14} />
+                          {deleting === expense.id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        );
+      })}
+
+      {/* Receipt Viewer Modal */}
+      {viewingReceipt && (
+        <div
+          className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setViewingReceipt(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="font-semibold text-slate-900">Receipt</h3>
+              <button
+                onClick={() => setViewingReceipt(null)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <IconTrash size={18} />
+              </button>
+            </div>
+            <div className="p-4 max-h-[60vh] overflow-auto">
+              {viewingReceipt.endsWith('.pdf') ? (
+                <iframe
+                  src={viewingReceipt}
+                  className="w-full h-96 border-0"
+                  title="Receipt PDF"
+                />
+              ) : (
+                <img
+                  src={viewingReceipt}
+                  alt="Receipt"
+                  className="w-full h-auto rounded-lg"
+                />
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  );
+}

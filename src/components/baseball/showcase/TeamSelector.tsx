@@ -16,7 +16,7 @@ export function TeamSelector({ value, onChange }: TeamSelectorProps) {
     { value: 'all', label: 'All Teams' },
     ...teams.map((team) => ({
       value: team.id,
-      label: team.age_group ? `${team.name} • ${team.age_group}` : team.name,
+      label: team.team_type ? `${team.name} • ${team.team_type}` : team.name,
     })),
   ];
 

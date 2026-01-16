@@ -114,7 +114,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
     // Filter out empty goals
     const validGoals = goals.filter(g => g.title.trim());
 
-    const { error } = await supabase.from('developmental_plans').insert({
+    const { error } = await supabase.from('baseball_developmental_plans').insert({
       coach_id: coach.id,
       player_id: selectedPlayerId,
       team_id: teamId,

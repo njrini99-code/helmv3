@@ -1,5 +1,15 @@
 'use client';
 
+/**
+ * InsightCard - Displays a single CoachHelm AI insight
+ *
+ * Features:
+ * - Expandable card with reasoning chain
+ * - Tone-based styling (encouraging, cautionary, etc.)
+ * - Confidence display
+ * - Action buttons (acknowledge/dismiss)
+ */
+
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -12,7 +22,10 @@ import {
 } from '@/components/icons';
 import type { ComposedInsight } from '@/lib/coachhelm/v2/types';
 
-interface V2InsightCardProps {
+// Also export as V2InsightCard for backwards compatibility
+export { InsightCard as V2InsightCard };
+
+interface InsightCardProps {
   insight: ComposedInsight;
   onAction?: (action: 'acknowledge' | 'dismiss') => void;
 }
@@ -50,7 +63,7 @@ const toneStyles = {
   },
 };
 
-export function V2InsightCard({ insight, onAction }: V2InsightCardProps) {
+export function InsightCard({ insight, onAction }: InsightCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const style = toneStyles[insight.tone] || toneStyles.neutral;

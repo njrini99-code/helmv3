@@ -11,7 +11,7 @@ interface MessagePreviewProps {
 export function MessagePreview({ conversation }: MessagePreviewProps) {
   const other = conversation.other_user;
   const name = other?.coach?.full_name || getFullName(other?.player?.first_name, other?.player?.last_name) || 'Unknown';
-  const subtitle = other?.coach?.school_name || (other?.player ? `${other.player.primary_position} • ${other.player.grad_year}` : '');
+  const subtitle = other?.coach?.coach_type?.replace('_', ' ') || (other?.player ? `${other.player.primary_position} • ${other.player.grad_year}` : '');
   const hasUnread = (conversation.unread_count || 0) > 0;
 
   return (

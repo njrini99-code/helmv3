@@ -3,10 +3,21 @@
  *
  * Generates .ics (iCalendar) format for calendar subscriptions
  * Compatible with Google Calendar, Apple Calendar, Outlook, etc.
+ *
+ * Timezone handling:
+ * - All internal dates should be stored in UTC
+ * - iCal files include VTIMEZONE components for proper display
+ * - Events can be output in UTC (with Z suffix) or with TZID
  */
 
 import { format, parseISO } from 'date-fns';
-import type { GolfEvent } from '@/lib/types/golf';
+import {
+  DEFAULT_TIMEZONE,
+  formatICalDateTimeUTC,
+  formatICalDate,
+  getValidTimezone,
+  isValidTimezone,
+} from './timezone';
 
 // ============================================================================
 // TYPES
@@ -43,22 +54,23 @@ export interface ICalCalendar {
   refreshInterval?: number; // Minutes
 }
 
-type CalendarEventRow = Pick<
-  GolfEvent,
-  | 'id'
-  | 'title'
-  | 'description'
-  | 'location'
-  | 'course_name'
-  | 'start_date'
-  | 'end_date'
-  | 'start_time'
-  | 'end_time'
-  | 'all_day'
-  | 'recurrence_rule'
-  | 'created_at'
-  | 'updated_at'
->;
+// CalendarEventRow uses snake_case fields matching database schema
+// Note: golf_events table uses start_time/end_time, not start_date/end_date
+export interface CalendarEventRow {
+  id: string;
+  title: string;
+  description?: string | null;
+  location?: string | null;
+  course_name?: string | null; // May not exist in all tables, use location as fallback
+  start_date: string; // ISO date string (mapped from start_time in golf_events)
+  end_date?: string | null; // ISO date string (mapped from end_time in golf_events)
+  start_time?: string | null; // Time component if separate from date
+  end_time?: string | null; // Time component if separate from date
+  all_day?: boolean | null;
+  recurrence_rule?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
 
 // ============================================================================
 // ICAL GENERATION
@@ -231,12 +243,21 @@ function escapeText(text: string): string {
 
 /**
  * Generate iCal feed for team events
+ *
+ * @param teamName - Name of the team for calendar title
+ * @param events - Array of calendar events
+ * @param timezone - IANA timezone string (e.g., 'America/New_York')
+ *                   Defaults to DEFAULT_TIMEZONE if not provided
  */
-export function generateTeamCalendar(teamName: string, events: ICalEvent[]): string {
+export function generateTeamCalendar(
+  teamName: string,
+  events: ICalEvent[],
+  timezone?: string
+): string {
   return generateICalendar({
     name: `${teamName} - Team Calendar`,
     description: `Team calendar for ${teamName}`,
-    timezone: 'America/Los_Angeles', // Default timezone
+    timezone: getValidTimezone(timezone),
     events,
     productId: 'TEAM',
     refreshInterval: 60, // Refresh every hour
@@ -245,12 +266,20 @@ export function generateTeamCalendar(teamName: string, events: ICalEvent[]): str
 
 /**
  * Generate iCal feed for player's personal calendar
+ *
+ * @param playerName - Name of the player for calendar title
+ * @param events - Array of calendar events
+ * @param timezone - IANA timezone string (defaults to DEFAULT_TIMEZONE)
  */
-export function generatePlayerCalendar(playerName: string, events: ICalEvent[]): string {
+export function generatePlayerCalendar(
+  playerName: string,
+  events: ICalEvent[],
+  timezone?: string
+): string {
   return generateICalendar({
     name: `${playerName} - Golf Schedule`,
     description: `Personal golf schedule for ${playerName}`,
-    timezone: 'America/Los_Angeles',
+    timezone: getValidTimezone(timezone),
     events,
     productId: 'PLAYER',
     refreshInterval: 60,
@@ -259,12 +288,20 @@ export function generatePlayerCalendar(playerName: string, events: ICalEvent[]):
 
 /**
  * Generate iCal feed for coach's calendar
+ *
+ * @param coachName - Name of the coach for calendar title
+ * @param events - Array of calendar events
+ * @param timezone - IANA timezone string (defaults to DEFAULT_TIMEZONE)
  */
-export function generateCoachCalendar(coachName: string, events: ICalEvent[]): string {
+export function generateCoachCalendar(
+  coachName: string,
+  events: ICalEvent[],
+  timezone?: string
+): string {
   return generateICalendar({
     name: `${coachName} - Coaching Calendar`,
     description: `Coaching calendar for ${coachName}`,
-    timezone: 'America/Los_Angeles',
+    timezone: getValidTimezone(timezone),
     events,
     productId: 'COACH',
     refreshInterval: 30, // Coaches refresh more frequently

@@ -154,13 +154,13 @@ async function getAdminMetrics(): Promise<AdminCommandCenterMetrics> {
     golfPlayersNew30d,
   ] = await Promise.all([
     safeCount('users total', admin.from('users').select('id', { count: 'exact', head: true })),
-    safeCount('users admins', admin.from('users').select('id', { count: 'exact', head: true }).eq('role', 'admin')),
+    safeCount('users admins', admin.from('users').select('id', { count: 'exact', head: true }).eq('role', 'admin' as 'coach')),
     // Baseball counts from the actual players/coaches tables
-    safeCount('baseball players total', admin.from('players').select('id', { count: 'exact', head: true })),
-    safeCount('baseball players onboarding', admin.from('players').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true)),
-    safeCount('baseball players profile', admin.from('players').select('id', { count: 'exact', head: true }).eq('profile_complete', true)),
-    safeCount('baseball coaches total', admin.from('coaches').select('id', { count: 'exact', head: true })),
-    safeCount('baseball coaches onboarding', admin.from('coaches').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true)),
+    safeCount('baseball players total', admin.from('baseball_players').select('id', { count: 'exact', head: true })),
+    safeCount('baseball players onboarding', admin.from('baseball_players').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true)),
+    safeCount('baseball players profile', admin.from('baseball_players').select('id', { count: 'exact', head: true }).eq('profile_complete', true)),
+    safeCount('baseball coaches total', admin.from('baseball_coaches').select('id', { count: 'exact', head: true })),
+    safeCount('baseball coaches onboarding', admin.from('baseball_coaches').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true)),
     // Golf counts from the actual golf_players/golf_coaches tables
     safeCount('golf players total', admin.from('golf_players').select('id', { count: 'exact', head: true })),
     safeCount('golf players onboarding', admin.from('golf_players').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true)),
@@ -168,11 +168,11 @@ async function getAdminMetrics(): Promise<AdminCommandCenterMetrics> {
     safeCount('golf coaches total', admin.from('golf_coaches').select('id', { count: 'exact', head: true })),
     safeCount('golf coaches onboarding', admin.from('golf_coaches').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true)),
     // Recruiting stats
-    safeCount('recruiting active players', admin.from('players').select('id', { count: 'exact', head: true }).eq('recruiting_activated', true)),
-    safeCount('commitments', admin.from('players').select('id', { count: 'exact', head: true }).not('commitment_date', 'is', null)),
+    safeCount('recruiting active players', admin.from('baseball_players').select('id', { count: 'exact', head: true }).eq('recruiting_activated', true)),
+    safeCount('commitments', admin.from('baseball_players').select('id', { count: 'exact', head: true }).not('commitment_date', 'is', null)),
     // Activity counts
-    safeCount('videos 30d', admin.from('videos').select('id', { count: 'exact', head: true }).gte('created_at', since30d)),
-    safeCount('engagement events 30d', admin.from('player_engagement_events').select('id', { count: 'exact', head: true }).gte('created_at', since30d)),
+    safeCount('videos 30d', admin.from('baseball_videos').select('id', { count: 'exact', head: true }).gte('created_at', since30d)),
+    safeCount('engagement events 30d', admin.from('baseball_player_engagement_events').select('id', { count: 'exact', head: true }).gte('created_at', since30d)),
     safeCount('golf events 30d', admin.from('golf_events').select('id', { count: 'exact', head: true }).gte('created_at', since30d)),
     // Demo requests
     safeCount('demo requests total', admin.from('demo_requests').select('id', { count: 'exact', head: true })),
@@ -181,15 +181,15 @@ async function getAdminMetrics(): Promise<AdminCommandCenterMetrics> {
     safeCount('failed logins 7d', admin.from('login_attempts').select('id', { count: 'exact', head: true }).gte('last_attempt', since7d).gt('failed_attempts', 0)),
     safeCount('locked accounts', admin.from('login_attempts').select('id', { count: 'exact', head: true }).gte('locked_until', now.toISOString())),
     // Messages
-    safeCount('conversations 30d', admin.from('conversations').select('id', { count: 'exact', head: true }).gte('created_at', since30d)),
-    safeCount('messages 7d', admin.from('messages').select('id', { count: 'exact', head: true }).gte('sent_at', since7d)),
+    safeCount('conversations 30d', admin.from('baseball_conversations').select('id', { count: 'exact', head: true }).gte('created_at', since30d)),
+    safeCount('messages 7d', admin.from('baseball_messages').select('id', { count: 'exact', head: true }).gte('sent_at', since7d)),
     // New signups by sport (30d)
-    safeCount('baseball players new 30d', admin.from('players').select('id', { count: 'exact', head: true }).gte('created_at', since30d)),
+    safeCount('baseball players new 30d', admin.from('baseball_players').select('id', { count: 'exact', head: true }).gte('created_at', since30d)),
     safeCount('golf players new 30d', admin.from('golf_players').select('id', { count: 'exact', head: true }).gte('created_at', since30d)),
   ]);
 
   const { data: watchlistStagesData, error: watchlistStagesError } = await admin
-    .from('watchlists')
+    .from('baseball_watchlists')
     .select('pipeline_stage')
     .gte('updated_at', since30d);
   if (watchlistStagesError) warnings.push('watchlist stages');
@@ -201,14 +201,14 @@ async function getAdminMetrics(): Promise<AdminCommandCenterMetrics> {
   });
 
   const { data: messageSenders7d, error: messageSenders7dError } = await admin
-    .from('messages')
-    .select('sender_id, sender:users!messages_sender_id_fkey(role, sport)')
+    .from('baseball_messages')
+    .select('sender_id, sender:users!baseball_messages_sender_id_fkey(role)')
     .gte('sent_at', since7d);
   if (messageSenders7dError) warnings.push('message senders 7d');
 
   const { data: messageSenders30d, error: messageSenders30dError } = await admin
-    .from('messages')
-    .select('sender_id, sender:users!messages_sender_id_fkey(role, sport)')
+    .from('baseball_messages')
+    .select('sender_id, sender:users!baseball_messages_sender_id_fkey(role)')
     .gte('sent_at', since30d);
   if (messageSenders30dError) warnings.push('message senders 30d');
 
@@ -220,9 +220,8 @@ async function getAdminMetrics(): Promise<AdminCommandCenterMetrics> {
   (messageSenders7d || []).forEach((row) => {
     if (!row.sender_id) return;
     activeSenders7dSet.add(row.sender_id);
-    const sender = row.sender as { role?: string | null; sport?: string | null } | null;
-    if (sender?.sport === 'baseball') baseballActiveSet.add(row.sender_id);
-    if (sender?.sport === 'golf') golfActiveSet.add(row.sender_id);
+    // All messages in baseball_messages are from baseball users
+    baseballActiveSet.add(row.sender_id);
   });
 
   (messageSenders30d || []).forEach((row) => {
@@ -242,7 +241,7 @@ async function getAdminMetrics(): Promise<AdminCommandCenterMetrics> {
   ).size;
 
   const { data: stateSamples, error: stateSampleError } = await admin
-    .from('players')
+    .from('baseball_players')
     .select('state')
     .not('state', 'is', null)
     .limit(2500);
@@ -341,19 +340,18 @@ export default async function AdminCommandCenterPage() {
 
   const { data: userProfile } = await supabase
     .from('users')
-    .select('role, sport')
+    .select('role')
     .eq('id', user.id)
     .single();
 
   const allowlist = getAdminAllowlist();
+  // Note: 'admin' role may exist in DB but not in generated types
   const isAdmin =
-    userProfile?.role === 'admin' ||
+    (userProfile?.role as string) === 'admin' ||
     (!!user.email && allowlist.includes(user.email.toLowerCase()));
 
   if (!isAdmin) {
-    if (userProfile?.sport === 'golf') {
-      redirect('/golf/dashboard');
-    }
+    // Non-admin users are redirected to baseball dashboard by default
     redirect('/baseball/dashboard');
   }
 

@@ -1,19 +1,35 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { IconSend, IconArrowLeft } from '@/components/icons';
+import { AttachmentButton } from './AttachmentButton';
+import { AttachmentPreview } from './AttachmentPreview';
+import { MessageAttachments, type MessageAttachmentData } from './MessageAttachment';
+import {
+  type PendingAttachment,
+  validateFile,
+  getFileType,
+  createPreviewUrl,
+  revokePreviewUrl,
+} from '@/lib/storage/attachments';
 import type { Message } from '@/lib/types';
 import type { GolfConversationParticipant } from '@/hooks/golf/use-golf-messages';
 
+// Extended message type with attachments
+export interface MessageWithAttachments extends Message {
+  attachments?: MessageAttachmentData[];
+}
+
 interface GolfChatWindowProps {
-  messages: Message[];
+  messages: MessageWithAttachments[];
   participant?: GolfConversationParticipant;
   currentUserId: string;
+  conversationId: string;
   loading?: boolean;
-  onSend: (content: string) => Promise<boolean>;
+  onSend: (content: string, attachments?: PendingAttachment[]) => Promise<boolean>;
   onBack?: () => void;
   className?: string;
 }
@@ -22,6 +38,7 @@ export function GolfChatWindow({
   messages,
   participant,
   currentUserId,
+  conversationId,
   loading,
   onSend,
   onBack,
@@ -29,6 +46,7 @@ export function GolfChatWindow({
 }: GolfChatWindowProps) {
   const [inputValue, setInputValue] = useState('');
   const [sending, setSending] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom on new messages
@@ -36,15 +54,92 @@ export function GolfChatWindow({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Clean up preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      pendingAttachments.forEach((a) => revokePreviewUrl(a.previewUrl));
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleFilesSelected = useCallback((files: File[]) => {
+    const newAttachments: PendingAttachment[] = [];
+
+    for (const file of files) {
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        // Show error - could use toast here
+        console.warn(`File validation failed for ${file.name}: ${validation.error}`);
+        continue;
+      }
+
+      const attachment: PendingAttachment = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file,
+        previewUrl: createPreviewUrl(file),
+        metadata: {
+          fileName: file.name,
+          fileType: getFileType(file.type),
+          mimeType: file.type,
+          fileSize: file.size,
+        },
+        uploadProgress: 0,
+        status: 'pending',
+      };
+      newAttachments.push(attachment);
+    }
+
+    if (newAttachments.length > 0) {
+      setPendingAttachments((prev) => [...prev, ...newAttachments]);
+    }
+  }, []);
+
+  const handleRemoveAttachment = useCallback((id: string) => {
+    setPendingAttachments((prev) => {
+      const attachment = prev.find((a) => a.id === id);
+      if (attachment) {
+        revokePreviewUrl(attachment.previewUrl);
+      }
+      return prev.filter((a) => a.id !== id);
+    });
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim() || sending) return;
+    const hasContent = inputValue.trim().length > 0;
+    const hasAttachments = pendingAttachments.length > 0;
+
+    if ((!hasContent && !hasAttachments) || sending) return;
 
     setSending(true);
-    const success = await onSend(inputValue.trim());
+
+    // Set all attachments to uploading status
+    if (hasAttachments) {
+      setPendingAttachments((prev) =>
+        prev.map((a) => ({ ...a, status: 'uploading' as const, uploadProgress: 10 }))
+      );
+    }
+
+    const success = await onSend(
+      inputValue.trim(),
+      hasAttachments ? pendingAttachments : undefined
+    );
+
     if (success) {
       setInputValue('');
+      // Clean up preview URLs
+      pendingAttachments.forEach((a) => revokePreviewUrl(a.previewUrl));
+      setPendingAttachments([]);
+    } else {
+      // Mark attachments as error
+      setPendingAttachments((prev) =>
+        prev.map((a) => ({
+          ...a,
+          status: 'error' as const,
+          error: 'Failed to send',
+        }))
+      );
     }
+
     setSending(false);
   };
 
@@ -59,9 +154,14 @@ export function GolfChatWindow({
       return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     }
 
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) +
-           ' ' + date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return (
+      date.toLocaleDateString([], { month: 'short', day: 'numeric' }) +
+      ' ' +
+      date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    );
   };
+
+  const canSend = (inputValue.trim().length > 0 || pendingAttachments.length > 0) && !sending;
 
   return (
     <div className={cn('flex flex-col bg-white', className)}>
@@ -95,20 +195,22 @@ export function GolfChatWindow({
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <p className="text-slate-500">No messages yet</p>
-            <p className="text-sm text-slate-400 mt-1">Send a message to start the conversation</p>
+            <p className="text-sm text-slate-400 mt-1">
+              Send a message to start the conversation
+            </p>
           </div>
         ) : (
           messages.map((message, index) => {
             const isOwn = message.sender_id === currentUserId;
-            const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id);
-            
+            const showAvatar =
+              !isOwn && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id);
+            const hasAttachments = message.attachments && message.attachments.length > 0;
+            const hasContent = message.content && message.content.trim().length > 0;
+
             return (
               <div
                 key={message.id}
-                className={cn(
-                  'flex gap-2',
-                  isOwn ? 'justify-end' : 'justify-start'
-                )}
+                className={cn('flex gap-2', isOwn ? 'justify-end' : 'justify-start')}
               >
                 {!isOwn && (
                   <div className="w-8 flex-shrink-0">
@@ -117,20 +219,37 @@ export function GolfChatWindow({
                     )}
                   </div>
                 )}
-                <div
-                  className={cn(
-                    'max-w-[70%] rounded-2xl px-4 py-2',
-                    isOwn
-                      ? 'bg-green-600 text-white rounded-br-md'
-                      : 'bg-slate-100 text-slate-900 rounded-bl-md'
+                <div className={cn('max-w-[70%] space-y-1')}>
+                  {/* Attachments */}
+                  {hasAttachments && (
+                    <MessageAttachments
+                      attachments={message.attachments!}
+                      isOwnMessage={isOwn}
+                    />
                   )}
-                >
-                  <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                  <p className={cn(
-                    'text-xs mt-1',
-                    isOwn ? 'text-green-200' : 'text-slate-400'
-                  )}>
-                    {formatTime(message.sent_at)}
+
+                  {/* Text content */}
+                  {hasContent && (
+                    <div
+                      className={cn(
+                        'rounded-2xl px-4 py-2',
+                        isOwn
+                          ? 'bg-green-600 text-white rounded-br-md'
+                          : 'bg-slate-100 text-slate-900 rounded-bl-md'
+                      )}
+                    >
+                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                    </div>
+                  )}
+
+                  {/* Timestamp */}
+                  <p
+                    className={cn(
+                      'text-xs px-1',
+                      isOwn ? 'text-right text-slate-400' : 'text-slate-400'
+                    )}
+                  >
+                    {formatTime(message.created_at)}
                   </p>
                 </div>
               </div>
@@ -140,9 +259,19 @@ export function GolfChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Attachment Preview */}
+      <AttachmentPreview
+        attachments={pendingAttachments}
+        onRemove={handleRemoveAttachment}
+      />
+
       {/* Input */}
       <form onSubmit={handleSubmit} className="p-4 border-t border-slate-200 bg-white">
         <div className="flex items-center gap-2">
+          <AttachmentButton
+            onFilesSelected={handleFilesSelected}
+            disabled={sending}
+          />
           <input
             type="text"
             value={inputValue}
@@ -154,7 +283,7 @@ export function GolfChatWindow({
           <Button
             type="submit"
             size="sm"
-            disabled={!inputValue.trim() || sending}
+            disabled={!canSend}
             className="rounded-full w-10 h-10 p-0"
           >
             {sending ? (

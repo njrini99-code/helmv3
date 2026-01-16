@@ -23,14 +23,19 @@ import {
 interface Event {
   id: string;
   team_id: string;
-  name: string;
+  title: string;
   event_type: string;
   start_time: string;
   end_time: string | null;
-  location_venue: string | null;
-  location_city: string | null;
-  location_state: string | null;
+  location: string | null;
   description: string | null;
+  all_day: boolean | null;
+  recurring: boolean | null;
+  recurrence_rule: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string | null;
+  updated_at: string | null;
+  created_by: string | null;
   team?: {
     id: string;
     name: string;
@@ -75,13 +80,11 @@ export default function EventsPage() {
   // Create event form state
   const [newEvent, setNewEvent] = useState({
     team_id: '',
-    name: '',
+    title: '',
     event_type: 'game',
     start_time: '',
     end_time: '',
-    location_venue: '',
-    location_city: '',
-    location_state: '',
+    location: '',
     description: '',
   });
   const [creating, setCreating] = useState(false);
@@ -109,7 +112,7 @@ export default function EventsPage() {
         .from('baseball_events')
         .select(`
           *,
-          team:teams (id, name, primary_color)
+          team:baseball_teams (id, name, primary_color)
         `)
         .in('team_id', teamIds)
         .gte('start_time', new Date().toISOString())
@@ -133,7 +136,7 @@ export default function EventsPage() {
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!coach?.id || !newEvent.name.trim() || !newEvent.team_id || !newEvent.start_time) return;
+    if (!coach?.id || !newEvent.title.trim() || !newEvent.team_id || !newEvent.start_time) return;
 
     setCreating(true);
     const supabase = createClient();
@@ -142,18 +145,16 @@ export default function EventsPage() {
       .from('baseball_events')
       .insert({
         team_id: newEvent.team_id,
-        name: newEvent.name.trim(),
+        title: newEvent.title.trim(),
         event_type: newEvent.event_type,
         start_time: new Date(newEvent.start_time).toISOString(),
         end_time: newEvent.end_time ? new Date(newEvent.end_time).toISOString() : null,
-        location_venue: newEvent.location_venue || null,
-        location_city: newEvent.location_city || null,
-        location_state: newEvent.location_state || null,
+        location: newEvent.location || null,
         description: newEvent.description || null,
       })
       .select(`
         *,
-        team:teams (id, name, primary_color)
+        team:baseball_teams (id, name, primary_color)
       `)
       .single();
 
@@ -168,13 +169,11 @@ export default function EventsPage() {
     setShowCreateModal(false);
     setNewEvent({
       team_id: '',
-      name: '',
+      title: '',
       event_type: 'game',
       start_time: '',
       end_time: '',
-      location_venue: '',
-      location_city: '',
-      location_state: '',
+      location: '',
       description: '',
     });
     setCreating(false);
@@ -306,18 +305,17 @@ export default function EventsPage() {
                             {event.team?.name?.charAt(0) || 'E'}
                           </div>
                           <div>
-                            <h4 className="font-medium text-slate-900">{event.name}</h4>
+                            <h4 className="font-medium text-slate-900">{event.title}</h4>
                             <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
                               <span className="flex items-center gap-1">
                                 <IconClock size={14} />
                                 {format(new Date(event.start_time), 'h:mm a')}
                                 {event.end_time && ` - ${format(new Date(event.end_time), 'h:mm a')}`}
                               </span>
-                              {event.location_venue && (
+                              {event.location && (
                                 <span className="flex items-center gap-1">
                                   <IconMapPin size={14} />
-                                  {event.location_venue}
-                                  {event.location_city && `, ${event.location_city}`}
+                                  {event.location}
                                 </span>
                               )}
                             </div>
@@ -369,8 +367,8 @@ export default function EventsPage() {
               <Input
                 label="Event Name"
                 placeholder="e.g., Game vs. Texas Elite"
-                value={newEvent.name}
-                onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
+                value={newEvent.title}
+                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
                 required
               />
               <Select
@@ -405,26 +403,11 @@ export default function EventsPage() {
                 </div>
               </div>
               <Input
-                label="Venue"
-                placeholder="e.g., Main Field"
-                value={newEvent.location_venue}
-                onChange={(e) => setNewEvent({ ...newEvent, location_venue: e.target.value })}
+                label="Location"
+                placeholder="e.g., Main Field, Houston, TX"
+                value={newEvent.location}
+                onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
               />
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="City"
-                  placeholder="e.g., Houston"
-                  value={newEvent.location_city}
-                  onChange={(e) => setNewEvent({ ...newEvent, location_city: e.target.value })}
-                />
-                <Input
-                  label="State"
-                  placeholder="e.g., TX"
-                  maxLength={2}
-                  value={newEvent.location_state}
-                  onChange={(e) => setNewEvent({ ...newEvent, location_state: e.target.value.toUpperCase() })}
-                />
-              </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
                   Description (Optional)

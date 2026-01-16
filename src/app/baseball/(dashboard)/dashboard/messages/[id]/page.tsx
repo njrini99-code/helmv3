@@ -24,7 +24,7 @@ export default function ConversationPage() {
   const conversation = conversations.find(c => c.id === conversationId);
   const other = conversation?.other_user;
   const otherName = other?.coach?.full_name || getFullName(other?.player?.first_name, other?.player?.last_name) || 'Unknown';
-  const otherSubtitle = other?.coach?.school_name || (other?.player ? `${other.player.primary_position} • ${other.player.grad_year}` : '');
+  const otherSubtitle = other?.coach?.coach_type?.replace('_', ' ') || (other?.player ? `${other.player.primary_position} • ${other.player.grad_year}` : '');
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -57,7 +57,7 @@ export default function ConversationPage() {
                     <p className="text-sm">{msg.content}</p>
                   </div>
                   <p className={cn('text-xs text-slate-400 mt-1', isOwn ? 'text-right' : 'text-left')}>
-                    {msg.sent_at ? formatDateTime(msg.sent_at) : ''}
+                    {msg.created_at ? formatDateTime(msg.created_at) : ''}
                   </p>
                 </div>
               </div>

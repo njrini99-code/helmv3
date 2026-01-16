@@ -19,7 +19,7 @@ export interface DiscoverFilters {
   maxExit?: number;
   hasVideo?: boolean;
   search?: string;
-  teamType?: 'high_school' | 'showcase' | 'travel_ball' | 'juco';
+  teamType?: 'high_school' | 'showcase' | 'juco';
   page?: number;
   perPage?: number;
   // Coach context for discoverability filtering
@@ -43,7 +43,6 @@ export interface DiscoverTeam extends Organization {
 
 // Player with joined data for discover
 export interface DiscoverPlayer extends Player {
-  high_school_org?: { name: string } | null;
   videos?: Array<{ thumbnail_url: string | null }> | null;
 }
 
@@ -121,7 +120,6 @@ export async function getDiscoverPlayers(
       id,
       first_name,
       last_name,
-      full_name,
       avatar_url,
       city,
       state,
@@ -138,12 +136,12 @@ export async function getDiscoverPlayers(
       has_video,
       recruiting_activated,
       updated_at,
-      high_school_org:organizations!players_high_school_org_id_fkey(name)
+      player_type
     `,
       { count: 'exact' }
     )
     .eq('recruiting_activated', true)
-    .eq('is_on_college_team', false); // Use indexed column instead of complex join
+    .neq('player_type', 'college'); // Exclude college players from discover
 
   // Apply filters at DB level
   if (filters.gradYear) {
@@ -225,7 +223,7 @@ export async function getDiscoverTeams(
   let query = supabase
     .from('organizations')
     .select('*', { count: 'exact' })
-    .in('type', ['high_school', 'showcase', 'travel_ball', 'juco']);
+    .in('type', ['high_school', 'showcase', 'juco']);
 
   // Apply filters
   if (filters.teamType) {
@@ -264,7 +262,6 @@ export async function getDiscoverTeams(
 
   // Get all org IDs
   const allOrgIds = orgs.map((o) => o.id);
-  const highSchoolOrgIds = orgs.filter((o) => o.type === 'high_school').map((o) => o.id);
 
   // Count players per org (using Set to track unique player IDs per org)
   const playerIdsByOrg: Record<string, Set<string>> = {};
@@ -308,21 +305,8 @@ export async function getDiscoverTeams(
     playersByOrg[orgId].push(player);
   };
 
-  // 1. Get players directly linked via high_school_org_id (for high school teams)
-  if (highSchoolOrgIds.length > 0) {
-    const { data: hsPlayers } = await supabase
-      .from('baseball_players')
-      .select('id, first_name, last_name, primary_position, grad_year, avatar_url, pitch_velo, recruiting_activated, high_school_org_id')
-      .in('high_school_org_id', highSchoolOrgIds);
-
-    if (hsPlayers) {
-      hsPlayers.forEach((p) => {
-        if (p.high_school_org_id) {
-          addPlayerToOrg(p.high_school_org_id, p);
-        }
-      });
-    }
-  }
+  // Note: baseball_players doesn't have direct high_school_org_id link
+  // Players are linked via team_members -> teams -> organizations
 
   // 2. Get players linked via team_members → teams → organizations (for ALL org types)
   if (allOrgIds.length > 0) {
@@ -346,7 +330,7 @@ export async function getDiscoverTeams(
         .from('baseball_team_members')
         .select(`
           team_id,
-          player:players!team_members_player_id_fkey(
+          baseball_players!inner(
             id, first_name, last_name, primary_position, grad_year, avatar_url, pitch_velo, recruiting_activated
           )
         `)
@@ -355,7 +339,7 @@ export async function getDiscoverTeams(
       if (teamMembers) {
         teamMembers.forEach((tm) => {
           const orgId = teamToOrgMap[tm.team_id];
-          const player = tm.player as {
+          const player = tm.baseball_players as {
             id: string;
             first_name: string | null;
             last_name: string | null;
@@ -457,12 +441,12 @@ export async function getStateCounts(
     // Get coach's roster to exclude
     const coachRosterIds = await getCoachRosterPlayerIds(supabase, coachId);
 
-    // Single optimized query using is_on_college_team column
+    // Query players with recruiting activated, excluding college players
     const { data } = await supabase
       .from('baseball_players')
       .select('id, state')
       .eq('recruiting_activated', true)
-      .eq('is_on_college_team', false)
+      .neq('player_type', 'college')
       .not('state', 'is', null);
 
     const counts: Record<string, number> = {};
@@ -475,7 +459,7 @@ export async function getStateCounts(
     const { data } = await supabase
       .from('organizations')
       .select('location_state')
-      .in('type', ['high_school', 'showcase', 'travel_ball', 'juco'])
+      .in('type', ['high_school', 'showcase', 'juco'])
       .not('location_state', 'is', null);
 
     const counts: Record<string, number> = {};

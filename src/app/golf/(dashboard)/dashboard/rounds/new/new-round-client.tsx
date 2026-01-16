@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive, { type HoleStats, type ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
@@ -17,12 +17,20 @@ import {
   type SavedCourse,
   type SavedCourseHoleConfig
 } from '@/app/golf/actions/golf';
+import { checkForDraft, clearRoundDraft } from '@/app/golf/actions/round-drafts';
+import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
+import { useOfflineSyncStore, useOfflineSyncStatus, useOfflineSyncActions } from '@/stores/offline-sync-store';
+import { getSyncEngine } from '@/lib/offline/sync-engine';
+import { saveOfflineShot, saveOfflineHole, saveOfflineRound, type OfflineShot } from '@/lib/offline/shot-storage';
+import { OfflineSyncStatus, OfflineWarningBanner } from '@/components/golf';
 import { IconBookmark, IconCheck, IconChevronDown, IconMapPin, IconPlus } from '@/components/icons';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
+import { ResumeDraftModal } from '@/components/golf/ResumeDraftModal';
+import { DraftIndicator } from '@/components/golf/DraftIndicator';
 import type { HoleConfig } from '@/lib/types/golf-course';
-import { useRoundDraft } from '@/hooks/use-round-draft';
+import { useAutoSaveRound, type RoundDraftData } from '@/hooks/golf/use-auto-save-round';
 
 interface Hole {
   number: number;
@@ -62,7 +70,92 @@ interface RoundSummary {
 
 export default function NewRoundClient() {
   const router = useRouter();
-  const { saveDraftDebounced, clearDraft } = useRoundDraft();
+
+  // Auto-save hook with database persistence
+  const {
+    scheduleSave,
+    saveNow,
+    loadDraft,
+    clearDraft,
+    saveStatus,
+    isOnline,
+    roundId: draftRoundId,
+    getTimeSinceLastSave,
+  } = useAutoSaveRound(null);
+
+  // New connection status hook
+  const connectionStatus = useConnectionStatus();
+
+  // Zustand store for offline sync state
+  const syncStatus = useOfflineSyncStatus();
+  const syncActions = useOfflineSyncActions();
+
+  // Track offline warning banner visibility
+  const [showOfflineWarning, setShowOfflineWarning] = useState(false);
+
+  // Initialize sync engine on mount
+  useEffect(() => {
+    const initializeSyncEngine = async () => {
+      try {
+        const syncEngine = getSyncEngine();
+
+        syncEngine.setCallbacks({
+          onSyncStart: () => {
+            useOfflineSyncStore.getState().startSync();
+          },
+          onSyncComplete: (result) => {
+            useOfflineSyncStore.getState().completeSync(result.syncedCount > 0);
+            if (result.syncedCount > 0) {
+              console.log(`[NewRound] Synced ${result.syncedCount} items`);
+            }
+          },
+          onSyncError: (error) => {
+            useOfflineSyncStore.getState().failSync(error.message);
+          },
+        });
+
+        await syncEngine.initialize();
+        useOfflineSyncStore.getState().setReady(true);
+        await syncActions.refreshPendingCounts();
+      } catch (error) {
+        console.error('[NewRound] Failed to initialize sync engine:', error);
+      }
+    };
+
+    initializeSyncEngine();
+
+    return () => {
+      const syncEngine = getSyncEngine();
+      syncEngine.stopAutoSync();
+    };
+  }, [syncActions]);
+
+  // Update connection status in store and show/hide warning
+  useEffect(() => {
+    const store = useOfflineSyncStore.getState();
+    store.setConnectionStatus(connectionStatus.isOnline, connectionStatus.quality);
+
+    // Show warning when going offline
+    if (!connectionStatus.isOnline) {
+      setShowOfflineWarning(true);
+    }
+  }, [connectionStatus.isOnline, connectionStatus.quality]);
+
+  // Auto-sync when coming back online
+  useEffect(() => {
+    if (connectionStatus.isOnline && syncStatus.pendingCount.total > 0) {
+      const timeout = setTimeout(async () => {
+        try {
+          const syncEngine = getSyncEngine();
+          await syncEngine.syncAll();
+        } catch (error) {
+          console.error('[NewRound] Auto-sync failed:', error);
+        }
+      }, 2000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [connectionStatus.isOnline, syncStatus.pendingCount.total]);
 
   const [step, setStep] = useState<'setup' | 'holes' | 'tracking' | 'submitting'>('setup');
   const [setupData, setSetupData] = useState<RoundSetupForm>({
@@ -84,6 +177,18 @@ export default function NewRoundClient() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
   const [inProgressShotsByHole, setInProgressShotsByHole] = useState<Record<number, ShotRecord[]>>({});
+
+  // Resume draft modal state
+  const [showResumeDraftModal, setShowResumeDraftModal] = useState(false);
+  const [existingDraftInfo, setExistingDraftInfo] = useState<{
+    roundId: string;
+    courseName: string | null;
+    holesCompleted: number;
+    totalHoles: number;
+    lastAutoSave: string | null;
+    roundDate: string;
+  } | null>(null);
+  const [isCheckingForDraft, setIsCheckingForDraft] = useState(true);
 
   // Qualifier state
   const [qualifiers, setQualifiers] = useState<PlayerQualifierInfo[]>([]);
@@ -200,9 +305,67 @@ export default function NewRoundClient() {
     }
   };
 
-  // Draft recovery removed - users should resume from "My Rounds" tab
+  // Check for existing draft on mount
+  useEffect(() => {
+    async function checkDraft() {
+      try {
+        const result = await checkForDraft();
+        if (result.success && result.data.hasDraft && result.data.draftInfo) {
+          setExistingDraftInfo(result.data.draftInfo);
+          setShowResumeDraftModal(true);
+        }
+      } catch {
+        // Silently fail - not critical
+      } finally {
+        setIsCheckingForDraft(false);
+      }
+    }
+    checkDraft();
+  }, []);
 
-  // Auto-save draft whenever state changes
+  // Handle resume draft
+  const handleResumeDraft = useCallback(async () => {
+    if (!existingDraftInfo) return;
+
+    try {
+      const result = await loadDraft();
+      if (result.data && result.source) {
+        const draftData = result.data;
+        // Restore state from draft
+        setStep(draftData.step === 'submitting' ? 'tracking' : draftData.step);
+        setSetupData(draftData.setupData);
+        setHoles(draftData.holes);
+        setCompletedHoleStats(draftData.completedHoleStats);
+        setCurrentHoleIndex(draftData.currentHoleIndex);
+        if (draftData.selectedQualifierId) {
+          setSelectedQualifierId(draftData.selectedQualifierId);
+        }
+        if (draftData.selectedRoundNumber) {
+          setSelectedRoundNumber(draftData.selectedRoundNumber);
+        }
+      }
+    } catch {
+      // Failed to load draft - user will start fresh
+    } finally {
+      setShowResumeDraftModal(false);
+    }
+  }, [existingDraftInfo, loadDraft]);
+
+  // Handle start fresh (delete draft)
+  const handleStartFresh = useCallback(async () => {
+    if (existingDraftInfo) {
+      try {
+        await clearRoundDraft(existingDraftInfo.roundId);
+      } catch {
+        // Silently fail
+      }
+    }
+    await clearDraft();
+    setExistingDraftInfo(null);
+    setShowResumeDraftModal(false);
+  }, [existingDraftInfo, clearDraft]);
+
+  // Auto-save draft whenever state changes (30-second intervals via hook)
   useEffect(() => {
     // Don't save if we haven't started (still on setup with no data)
     if (step === 'setup' && !setupData.courseName) {
@@ -214,15 +377,23 @@ export default function NewRoundClient() {
       return;
     }
 
-    // Save draft
-    saveDraftDebounced({
+    // Don't save while checking for existing draft
+    if (isCheckingForDraft) {
+      return;
+    }
+
+    // Schedule save with debounce
+    const draftData: RoundDraftData = {
       step,
       setupData,
       holes,
       completedHoleStats,
       currentHoleIndex,
-    });
-  }, [step, setupData, holes, completedHoleStats, currentHoleIndex, saveDraftDebounced]);
+      selectedQualifierId,
+      selectedRoundNumber,
+    };
+    scheduleSave(draftData);
+  }, [step, setupData, holes, completedHoleStats, currentHoleIndex, selectedQualifierId, selectedRoundNumber, scheduleSave, isCheckingForDraft]);
 
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
@@ -341,6 +512,86 @@ export default function NewRoundClient() {
     });
   };
 
+  /**
+   * Auto-save handler for shot tracking - persists to IndexedDB when offline
+   * This is called by ShotTrackingComprehensive after each shot entry
+   */
+  const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
+    const currentHole = holes[holeIndex];
+
+    // Save shots to IndexedDB for offline redundancy
+    if (draftRoundId && currentHole) {
+      for (const shot of shots) {
+        try {
+          const offlineShot: OfflineShot = {
+            round_id: draftRoundId,
+            hole_number: currentHole.number,
+            shot_number: shot.shotNumber,
+            club: shot.club,
+            shot_type: shot.type || 'approach',
+            distance: shot.distance || null,
+            distance_to_pin: shot.distanceToPin || null,
+            lie: shot.lie || 'fairway',
+            result: shot.result || 'fairway',
+            outcome: shot.outcome || 'good',
+            is_penalty: shot.isPenalty || false,
+            is_ob: shot.isOB || false,
+            is_in_hole: shot.isInHole || false,
+            notes: shot.notes || null,
+          };
+
+          await saveOfflineShot(offlineShot);
+        } catch (error) {
+          console.error('[NewRound] Failed to save shot to IndexedDB:', error);
+        }
+      }
+
+      // Save round draft data
+      try {
+        await saveOfflineRound({
+          player_id: '', // Will be determined by server
+          round_date: setupData.roundDate,
+          round_type: setupData.roundType,
+          status: 'in_progress',
+          total_score: null,
+          total_putts: null,
+          fairways_hit: null,
+          greens_in_regulation: null,
+          course_name: setupData.courseName,
+          course_city: setupData.courseCity,
+          course_state: setupData.courseState,
+        }, draftRoundId);
+      } catch (error) {
+        console.error('[NewRound] Failed to save round draft:', error);
+      }
+
+      // Refresh pending counts
+      await syncActions.refreshPendingCounts();
+    }
+
+    // Also trigger the regular auto-save to database (if online)
+    const draftDataForDb: RoundDraftData = {
+      step,
+      setupData,
+      holes,
+      completedHoleStats,
+      currentHoleIndex: holeIndex,
+      selectedQualifierId,
+      selectedRoundNumber,
+    };
+    scheduleSave(draftDataForDb);
+  }, [
+    draftRoundId,
+    step,
+    setupData,
+    holes,
+    completedHoleStats,
+    selectedQualifierId,
+    selectedRoundNumber,
+    scheduleSave,
+    syncActions,
+  ]);
+
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
     setStep('submitting');
     setError('');
@@ -422,52 +673,48 @@ export default function NewRoundClient() {
   };
 
   const handleSaveForLater = async () => {
-    try {
-      const inProgressShots = Object.entries(inProgressShotsByHole)
-        .filter(([, shots]) => shots.length > 0)
-        .map(([holeIndex, shots]) => ({
-          holeNumber: holes[Number(holeIndex)]?.number ?? Number(holeIndex) + 1,
-          shots,
-        }));
+    const inProgressShots = Object.entries(inProgressShotsByHole)
+      .filter(([, shots]) => shots.length > 0)
+      .map(([holeIndex, shots]) => ({
+        holeNumber: holes[Number(holeIndex)]?.number ?? Number(holeIndex) + 1,
+        shots,
+      }));
 
-      const partialRoundData = {
-        courseName: setupData.courseName,
-        courseCity: setupData.courseCity || undefined,
-        courseState: setupData.courseState || undefined,
-        courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
-        courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
-        teesPlayed: setupData.teesPlayed || undefined,
-        roundType: setupData.roundType,
-        roundDate: setupData.roundDate,
-        currentHole: currentHoleIndex + 1, // Next hole player will resume on
-        holesToPlay: holes.length as 9 | 18,
-        holes: completedHoleStats,
-        inProgressShots,
-        holeConfigs: holes.map(hole => ({
-          holeNumber: hole.number,
-          par: hole.par,
-          yardage: hole.yardage,
-        })),
-      };
+    const partialRoundData = {
+      courseName: setupData.courseName,
+      courseCity: setupData.courseCity || undefined,
+      courseState: setupData.courseState || undefined,
+      courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
+      courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
+      teesPlayed: setupData.teesPlayed || undefined,
+      roundType: setupData.roundType,
+      roundDate: setupData.roundDate,
+      currentHole: currentHoleIndex + 1, // Next hole player will resume on
+      holesToPlay: holes.length as 9 | 18,
+      holes: completedHoleStats,
+      inProgressShots,
+      holeConfigs: holes.map(hole => ({
+        holeNumber: hole.number,
+        par: hole.par,
+        yardage: hole.yardage,
+      })),
+    };
 
-      const result = await savePartialRound(partialRoundData, savedRoundId || undefined);
+    const result = await savePartialRound(partialRoundData, savedRoundId || undefined);
 
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-
-      setSavedRoundId(result.data.roundId);
-
-      // Clear local draft since it's saved to database
-      clearDraft();
-      setShowExitModal(false);
-
-      // Redirect to rounds page and refresh to show the new unfinished round
-      router.push('/golf/dashboard/rounds');
-      router.refresh();
-    } catch (err) {
-      throw err; // Let modal handle error display
+    if (!result.success) {
+      throw new Error(result.error);
     }
+
+    setSavedRoundId(result.data.roundId);
+
+    // Clear local draft since it's saved to database
+    clearDraft();
+    setShowExitModal(false);
+
+    // Redirect to rounds page and refresh to show the new unfinished round
+    router.push('/golf/dashboard/rounds');
+    router.refresh();
   };
 
   const handleDeleteRound = async () => {
@@ -505,6 +752,16 @@ export default function NewRoundClient() {
             </p>
 
             <form onSubmit={handleSetupSubmit} className="space-y-6">
+              {/* Offline Warning Banner - inline variant for setup step */}
+              {!connectionStatus.isOnline && (
+                <OfflineWarningBanner
+                  variant="inline"
+                  showForSlowConnection={true}
+                  dismissable={true}
+                  context="Starting a round"
+                />
+              )}
+
               {/* Course Selection Mode Toggle */}
               {!loadingSavedCourses && savedCourses.length > 0 && (
                 <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5 shadow-sm">
@@ -990,7 +1247,52 @@ export default function NewRoundClient() {
         onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}
         initialShots={activeHoleShots}
         initialShotNumber={activeShotNumber}
+        onAutoSave={handleAutoSave}
+        autoSaveInterval={15000}
       />
+
+      {/* Offline Warning Banner - shows when offline or has slow connection */}
+      {step === 'tracking' && showOfflineWarning && (
+        <OfflineWarningBanner
+          variant="floating"
+          showForSlowConnection={true}
+          dismissable={true}
+          onDismiss={() => setShowOfflineWarning(false)}
+          context="tracking your round"
+        />
+      )}
+
+      {/* Floating Sync Status - shows sync progress and pending items */}
+      {step === 'tracking' && (
+        <OfflineSyncStatus
+          position="floating"
+          showWhenOnline={false}
+          autoHideDelay={5000}
+          onSyncNow={async () => {
+            if (connectionStatus.isOnline) {
+              const syncEngine = getSyncEngine();
+              await syncEngine.syncAll();
+            }
+          }}
+          onRetryFailed={async () => {
+            const syncEngine = getSyncEngine();
+            await syncEngine.retryFailed();
+          }}
+          onDismissError={() => useOfflineSyncStore.getState().clearError()}
+        />
+      )}
+
+      {/* Draft Auto-Save Indicator - floating in top right (only when online) */}
+      {step === 'tracking' && connectionStatus.isOnline && (
+        <div className="fixed top-4 right-4 z-40">
+          <DraftIndicator
+            saveStatus={saveStatus}
+            isOnline={isOnline}
+            getTimeSinceLastSave={getTimeSinceLastSave}
+            className="shadow-lg backdrop-blur-sm"
+          />
+        </div>
+      )}
 
       {/* Save Round Modal */}
       <SaveRoundModal
@@ -1010,6 +1312,16 @@ export default function NewRoundClient() {
         />
       )}
 
+      {/* Resume Draft Modal */}
+      {showResumeDraftModal && existingDraftInfo && (
+        <ResumeDraftModal
+          isOpen={showResumeDraftModal}
+          onClose={() => setShowResumeDraftModal(false)}
+          onResume={handleResumeDraft}
+          onStartFresh={handleStartFresh}
+          draftInfo={existingDraftInfo}
+        />
+      )}
     </>
   );
 }

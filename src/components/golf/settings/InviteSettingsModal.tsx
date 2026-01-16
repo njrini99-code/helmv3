@@ -34,29 +34,31 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get coach's team
+      // Get coach's organization_id
       const { data: coach } = await supabase
         .from('golf_coaches')
-        .select('team_id')
+        .select('organization_id')
         .eq('user_id', user.id)
         .single();
 
-      if (!coach?.team_id) return;
+      if (!coach?.organization_id) return;
 
-      setTeamId(coach.team_id);
-
-      // Get team invite code
+      // Get team via organization_id
       const { data: team } = await supabase
         .from('golf_teams')
-        .select('invite_code')
-        .eq('id', coach.team_id)
+        .select('id, join_code')
+        .eq('organization_id', coach.organization_id)
         .single();
 
-      if (team?.invite_code) {
-        setInviteCode(team.invite_code);
+      if (!team?.id) return;
+
+      setTeamId(team.id);
+
+      if (team?.join_code) {
+        setInviteCode(team.join_code);
       } else {
         // Generate new code if none exists
-        await generateNewCode(coach.team_id);
+        await generateNewCode(team.id);
       }
     } catch {
       showToast('Failed to load invite code', 'error');
@@ -79,7 +81,7 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
       const { error } = await supabase
         .from('golf_teams')
         .update({
-          invite_code: newCode,
+          join_code: newCode,
           updated_at: new Date().toISOString()
         })
         .eq('id', targetTeamId);

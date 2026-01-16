@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
 import { IconArrowRight, IconCheck, IconUser, IconUpload } from '@/components/icons';
+import { completeCoachOnboarding } from '@/app/golf/actions/onboarding';
 
 type Step = 'welcome' | 'organization' | 'team' | 'profile' | 'complete';
 
@@ -36,7 +36,6 @@ const staggerItem = {
 
 export default function GolfCoachOnboarding() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [step, setStep] = useState<Step>('welcome');
   const [loading, setLoading] = useState(false);
@@ -67,119 +66,31 @@ export default function GolfCoachOnboarding() {
     setError('');
 
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/golf/login');
-        return;
-      }
+      // Use server action with validation and cleanup on failure
+      const result = await completeCoachOnboarding({
+        orgName,
+        division: division || undefined,
+        conference: conference || undefined,
+        city: city || undefined,
+        state: state || undefined,
+        teamName: teamName || undefined,
+        season: season || undefined,
+        fullName,
+        title: title || undefined,
+        email: email || undefined,
+        phone: phone || undefined,
+      });
 
-      // IMPORTANT: Ensure the users table record exists
-      // The trigger should create it, but let's make sure
-      const { error: usersError } = await supabase
-        .from('users')
-        .upsert({
-          id: user.id,
-          email: user.email || '',
-          role: 'coach',
-          sport: 'golf', // CRITICAL: Must specify sport to prevent default 'baseball'
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'id',
-          ignoreDuplicates: true,
-        });
-
-      if (usersError) {
-        // Continue anyway - the record might already exist
-      }
-
-      // Step 1: Create organization
-      const { data: org, error: orgError } = await supabase
-        .from('golf_organizations')
-        .insert({
-          name: orgName,
-          division: division || null,
-          conference: conference || null,
-          city: city || null,
-          state: state || null,
-        })
-        .select()
-        .single();
-
-      if (orgError) {
-        setError(`Failed to create organization: ${orgError.message}`);
+      if (!result.success) {
+        setError(result.error || 'An error occurred. Please try again.');
         setLoading(false);
         return;
-      }
-
-      // Step 2: Create team
-      const { data: team, error: teamError } = await supabase
-        .from('golf_teams')
-        .insert({
-          organization_id: org.id,
-          name: teamName || `${orgName} Golf`,
-          season: season,
-        })
-        .select()
-        .single();
-
-      if (teamError) {
-        setError(`Failed to create team: ${teamError.message}`);
-        setLoading(false);
-        return;
-      }
-
-      // Step 3: Check if coach record exists, then insert or update
-      const { data: existingCoach } = await supabase
-        .from('golf_coaches')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      const coachData = {
-        team_id: team.id,
-        organization_id: org.id,
-        full_name: fullName,
-        title: title || null,
-        email: email || null,
-        phone: phone || null,
-        onboarding_completed: true,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (existingCoach) {
-        // Update existing coach record
-        const { error: updateError } = await supabase
-          .from('golf_coaches')
-          .update(coachData)
-          .eq('id', existingCoach.id);
-
-        if (updateError) {
-          setError(`Failed to update coach: ${updateError.message}`);
-          setLoading(false);
-          return;
-        }
-      } else {
-        // Insert new coach record
-        const { error: insertError } = await supabase
-          .from('golf_coaches')
-          .insert({
-            user_id: user.id,
-            ...coachData,
-          });
-
-        if (insertError) {
-          setError(`Failed to create coach: ${insertError.message}`);
-          setLoading(false);
-          return;
-        }
       }
 
       router.push('/golf/dashboard');
       router.refresh();
     } catch {
-      setError('An error occurred. Please try again.');
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };

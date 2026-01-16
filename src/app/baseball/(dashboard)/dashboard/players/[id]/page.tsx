@@ -118,14 +118,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     .eq('status', 'active')
     .order('priority', { ascending: true }) as { data: BaseballCoachInsight[] | null };
 
-  // Get coach notes
-  const { data: notes } = await supabase
-    .from('baseball_coach_notes')
-    .select('*')
-    .eq('player_id', playerId)
-    .eq('coach_id', coach.id)
-    .order('created_at', { ascending: false })
-    .limit(20);
+  // Get coach notes - Note: baseball_coach_notes table doesn't exist yet
+  // Using empty array until table is created
+  const notes: Array<{ id: string; note_content: string; created_at: string | null; tags: string[] | null }> = [];
 
   // Get player videos
   const { data: videos } = await supabase
@@ -139,7 +134,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   const transformedNotes = (notes || []).map(note => ({
     id: note.id,
     content: note.note_content,
-    created_at: note.created_at,
+    created_at: note.created_at || new Date().toISOString(),
     note_type: note.tags?.[0] || undefined,
   }));
 

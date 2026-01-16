@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const { data: team } = await supabase
     .from('baseball_teams')
-    .select('name, team_type, city, state')
+    .select('name, team_type')
     .eq('id', id)
     .single();
 
@@ -98,12 +98,9 @@ export default async function TeamProfilePage({ params }: PageProps) {
     id: string;
     name: string;
     team_type: string;
-    city: string | null;
-    state: string | null;
-    facilities_image_url: string | null;
     description: string | null;
-    website_url: string | null;
-    invite_code: string | null;
+    logo_url: string | null;
+    join_code: string | null;
     organization: {
       id: string;
       name: string;
@@ -141,12 +138,9 @@ export default async function TeamProfilePage({ params }: PageProps) {
       id,
       name,
       team_type,
-      city,
-      state,
-      facilities_image_url,
       description,
-      website_url,
-      invite_code,
+      logo_url,
+      join_code,
       organization:organizations (
         id,
         name,
@@ -305,10 +299,10 @@ export default async function TeamProfilePage({ params }: PageProps) {
   const showFacilities = team.team_type === 'college' || team.team_type === 'juco';
   const facilities = showFacilities ? (org?.organization_facilities || []).sort((a, b) => a.display_order - b.display_order) : [];
 
-  // Location - prefer team location, fall back to org
+  // Location - use org location (teams don't have city/state directly)
   const location = {
-    city: team.city || org?.location_city,
-    state: team.state || org?.location_state,
+    city: org?.location_city,
+    state: org?.location_state,
   };
 
   return (
@@ -556,14 +550,14 @@ export default async function TeamProfilePage({ params }: PageProps) {
               </Card>
             )}
 
-            {/* Team Facilities Image */}
-            {showFacilities && team.facilities_image_url && (
+            {/* Team Facilities Image - from organization if available */}
+            {showFacilities && facilities.length > 0 && facilities[0]?.image_url && (
               <Card className="overflow-hidden">
                 <div className="p-6 border-b border-slate-200 bg-white">
                   <h2 className="text-lg font-semibold tracking-tight text-slate-900">Team Facility</h2>
                 </div>
                 <img
-                  src={team.facilities_image_url}
+                  src={facilities[0]?.image_url ?? ''}
                   alt={`${team.name} Facilities`}
                   className="w-full h-64 object-cover"
                 />
@@ -621,13 +615,13 @@ export default async function TeamProfilePage({ params }: PageProps) {
             </Card>
 
             {/* Contact */}
-            {(team.website_url || org?.website_url) && (
+            {org?.website_url && (
               <Card className="p-6">
                 <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4">
                   Contact
                 </h3>
                 <a
-                  href={team.website_url || org?.website_url || '#'}
+                  href={org.website_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm leading-relaxed text-green-600 hover:text-green-700 hover:underline break-all"

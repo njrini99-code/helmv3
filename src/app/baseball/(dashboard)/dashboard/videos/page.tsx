@@ -14,13 +14,33 @@ import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { formatRelativeTime, getFullName } from '@/lib/utils';
-import type { Video } from '@/lib/types';
 import { PageLoading } from '@/components/ui/loading';
 import { SkeletonVideos } from '@/components/ui/skeleton-loader';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 
-interface VideoWithPlayer extends Video {
+// Video type based on baseball_videos table schema
+interface BaseballVideo {
+  id: string;
+  player_id: string;
+  team_id: string | null;
+  title: string;
+  description: string | null;
+  url: string | null;
+  thumbnail_url: string | null;
+  video_type: string | null;
+  duration: number | null;
+  view_count: number | null;
+  is_primary: boolean | null;
+  is_clip: boolean | null;
+  parent_video_id: string | null;
+  clip_start_time: number | null;
+  clip_end_time: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+interface VideoWithPlayer extends BaseballVideo {
   player?: {
     id: string;
     first_name: string | null;

@@ -36,25 +36,28 @@ export async function getCachedRoster(teamId: string) {
     golfCache.roster.key(teamId),
     async () => {
       const supabase = await createClient();
+      // Get players via team members junction table
       const { data, error } = await supabase
-        .from('golf_players')
+        .from('golf_team_members')
         .select(`
-          id,
-          first_name,
-          last_name,
-          email,
-          phone,
-          avatar_url,
-          handicap,
-          status,
-          year,
-          jersey_number,
-          created_at
+          golf_players (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            avatar_url,
+            handicap,
+            status,
+            grad_year,
+            jersey_number,
+            created_at
+          )
         `)
-        .eq('team_id', teamId)
-        .order('last_name');
+        .eq('team_id', teamId);
       if (error) throw error;
-      return data;
+      // Flatten the result
+      return (data || []).map(m => m.golf_players).filter(Boolean);
     },
     { ttl: golfCache.roster.ttl }
   );
@@ -75,13 +78,11 @@ export async function getCachedPlayerStats(playerId: string) {
           round_date,
           total_score,
           total_putts,
-          fairways_hit,
-          greens_in_regulation,
           round_type,
-          course_name
+          course:golf_courses(name)
         `)
         .eq('player_id', playerId)
-        .eq('round_status', 'completed')
+        .eq('status', 'completed')
         .order('round_date', { ascending: false })
         .limit(20);
       if (error) throw error;
@@ -127,17 +128,17 @@ export async function getCachedTeamEvents(teamId: string, startDate: string, end
           title,
           event_type,
           status,
-          start_date,
-          end_date,
+          start_time,
+          end_time,
           location,
           description,
           rsvp_confirmed_count,
           rsvp_total_count
         `)
         .eq('team_id', teamId)
-        .gte('start_date', startDate)
-        .lte('start_date', endDate)
-        .order('start_date');
+        .gte('start_time', startDate)
+        .lte('start_time', endDate)
+        .order('start_time');
       if (error) throw error;
       return data;
     },

@@ -97,7 +97,7 @@ export function GolfConversationList({
                     </p>
                     {conversation.last_message && (
                       <span className="text-xs text-slate-400 flex-shrink-0 ml-2">
-                        {formatTime(conversation.last_message.sent_at)}
+                        {formatTime(conversation.last_message.created_at)}
                       </span>
                     )}
                   </div>

@@ -29,26 +29,55 @@ async function getResendClient() {
 
 /**
  * Get user's notification preferences
+ * NOTE: notification_preferences column does not exist on users table yet.
+ * Returns default preferences until the column is added via migration.
  */
 export async function getUserNotificationPreferences(
-  userId: string
+  _userId: string
 ): Promise<NotificationPreferences> {
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from('users')
-    .select('notification_preferences')
-    .eq('id', userId)
-    .single();
-
-  if (data?.notification_preferences && typeof data.notification_preferences === 'object') {
-    return {
-      ...DEFAULT_NOTIFICATION_PREFERENCES,
-      ...(data.notification_preferences as Partial<NotificationPreferences>),
-    };
-  }
+  // TODO: Add notification_preferences JSONB column to users table
+  // and uncomment this query:
+  // const supabase = await createClient();
+  // const { data } = await supabase
+  //   .from('users')
+  //   .select('notification_preferences')
+  //   .eq('id', userId)
+  //   .single();
+  //
+  // if (data?.notification_preferences && typeof data.notification_preferences === 'object') {
+  //   return {
+  //     ...DEFAULT_NOTIFICATION_PREFERENCES,
+  //     ...(data.notification_preferences as Partial<NotificationPreferences>),
+  //   };
+  // }
 
   return DEFAULT_NOTIFICATION_PREFERENCES;
+}
+
+// Database notification types (from notifications table enum)
+type DbNotificationType =
+  | 'message'
+  | 'profile_view'
+  | 'watchlist_add'
+  | 'video_view'
+  | 'team_invite'
+  | 'team_join_request'
+  | 'team_join_approved'
+  | 'event_reminder'
+  | 'dev_plan_assigned';
+
+/**
+ * Map internal NotificationType to database notification type
+ * Returns null for types that don't have a database equivalent
+ */
+function mapToDbNotificationType(type: NotificationType): DbNotificationType | null {
+  const mapping: Partial<Record<NotificationType, DbNotificationType>> = {
+    'new_message': 'message',
+    'profile_view': 'profile_view',
+    'watchlist_add': 'watchlist_add',
+    'event_rsvp_reminder': 'event_reminder',
+  };
+  return mapping[type] ?? null;
 }
 
 /**
@@ -249,15 +278,18 @@ export async function sendEmailNotification(
       text: template.text,
     });
 
-    // Log notification in database
-    const supabase = await createClient();
-    await supabase.from('notifications').insert({
-      user_id: recipientId,
-      type,
-      title: template.subject,
-      content: data,
-      read: false,
-    });
+    // Log notification in database (only if type has a database equivalent)
+    const dbType = mapToDbNotificationType(type);
+    if (dbType) {
+      const supabase = await createClient();
+      await supabase.from('notifications').insert({
+        user_id: recipientId,
+        type: dbType,
+        title: template.subject,
+        data: data as unknown as Record<string, never>,
+        read: false,
+      });
+    }
 
     return { success: true };
   } catch (error) {

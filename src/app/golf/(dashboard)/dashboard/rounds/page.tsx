@@ -34,13 +34,13 @@ export default async function RoundsPage() {
   // Check if user is a coach or player
   const { data: coach } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
   const { data: player } = await supabase
     .from('golf_players')
-    .select('id, team_id, first_name, last_name')
+    .select('id, first_name, last_name')
     .eq('user_id', user.id)
     .single();
 
@@ -54,54 +54,76 @@ export default async function RoundsPage() {
   let rounds: RoundWithPlayer[] = [];
   let inProgressRounds: RoundWithPlayer[] = [];
 
-  if (userRole === 'coach' && coach?.team_id) {
-    // Fetch both completed and in-progress rounds in parallel (performance optimization)
-    const [
-      { data: completedData },
-      { data: inProgressData }
-    ] = await Promise.all([
-      supabase
-        .from('golf_rounds')
-        .select(`
-          id,
-          course_name,
-          course_city,
-          course_state,
-          round_date,
-          round_type,
-          total_score,
-          total_to_par,
-          total_putts,
-          is_verified,
-          player:golf_players!inner(first_name, last_name, team_id)
-        `)
-        .eq('player.team_id', coach.team_id)
-        .eq('status', 'completed')
-        .order('round_date', { ascending: false })
-        .limit(50),
-      supabase
-        .from('golf_rounds')
-        .select(`
-          id,
-          course_name,
-          course_city,
-          course_state,
-          round_date,
-          round_type,
-          total_score,
-          total_to_par,
-          current_hole,
-          holes_to_play,
-          updated_at,
-          player:golf_players!inner(first_name, last_name, team_id)
-        `)
-        .eq('player.team_id', coach.team_id)
-        .eq('status', 'in_progress')
-        .order('updated_at', { ascending: false })
-    ]);
+  // Get team_id from organization if coach
+  let teamId: string | null = null;
+  if (coach?.organization_id) {
+    const { data: orgTeam } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+    teamId = orgTeam?.id || null;
+  }
 
-    rounds = completedData as unknown as RoundWithPlayer[] || [];
-    inProgressRounds = inProgressData as unknown as RoundWithPlayer[] || [];
+  if (userRole === 'coach' && teamId) {
+    // First get player IDs for this team from team_members
+    const { data: teamMembers } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .eq('team_id', teamId);
+
+    const teamPlayerIds = teamMembers?.map(tm => tm.player_id) || [];
+
+    if (teamPlayerIds.length > 0) {
+      // Fetch both completed and in-progress rounds in parallel (performance optimization)
+      const [
+        { data: completedData },
+        { data: inProgressData }
+      ] = await Promise.all([
+        supabase
+          .from('golf_rounds')
+          .select(`
+            id,
+            course_name,
+            course_city,
+            course_state,
+            round_date,
+            round_type,
+            total_score,
+            score_to_par,
+            total_putts,
+            status,
+            player:golf_players(first_name, last_name)
+          `)
+          .in('player_id', teamPlayerIds)
+          .eq('status', 'completed')
+          .order('round_date', { ascending: false })
+          .limit(50),
+        supabase
+          .from('golf_rounds')
+          .select(`
+            id,
+            course_name,
+            course_city,
+            course_state,
+            round_date,
+            round_type,
+            total_score,
+            score_to_par,
+            current_hole,
+            holes_played,
+            updated_at,
+            created_at,
+            player:golf_players(first_name, last_name)
+          `)
+          .in('player_id', teamPlayerIds)
+          .eq('status', 'in_progress')
+          .order('updated_at', { ascending: false })
+      ]);
+
+      rounds = completedData as unknown as RoundWithPlayer[] || [];
+      inProgressRounds = inProgressData as unknown as RoundWithPlayer[] || [];
+    }
   } else if (userRole === 'player' && player) {
     // Fetch both completed and in-progress rounds in parallel (performance optimization)
     const [
@@ -118,9 +140,9 @@ export default async function RoundsPage() {
           round_date,
           round_type,
           total_score,
-          total_to_par,
+          score_to_par,
           total_putts,
-          is_verified,
+          status,
           player:golf_players(first_name, last_name)
         `)
         .eq('player_id', player.id)
@@ -136,10 +158,11 @@ export default async function RoundsPage() {
           round_date,
           round_type,
           total_score,
-          total_to_par,
+          score_to_par,
           current_hole,
-          holes_to_play,
+          holes_played,
           updated_at,
+          created_at,
           player:golf_players(first_name, last_name)
         `)
         .eq('player_id', player.id)
@@ -234,11 +257,11 @@ export default async function RoundsPage() {
                 </h2>
                 <div className="space-y-2">
                   {monthRounds.map((round, index) => {
-                    const playerName = round.player 
+                    const playerName = round.player
                       ? `${round.player.first_name} ${round.player.last_name}`
                       : 'Unknown Player';
-                    
-                    const scoreToPar = round.total_to_par || 0;
+
+                    const scoreToPar = round.score_to_par || 0;
 
                     return (
                       <Link key={round.id} href={`/golf/dashboard/rounds/${round.id}`}>
@@ -277,10 +300,10 @@ export default async function RoundsPage() {
                                 <h3 className="font-semibold text-slate-900 truncate group-hover:text-green-600 transition-colors">
                                   {round.course_name}
                                 </h3>
-                                {round.is_verified && (
+                                {round.status === 'completed' && (
                                   <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-green-100 text-green-700">
                                     <IconCheck size={10} />
-                                    Verified
+                                    Completed
                                   </span>
                                 )}
                               </div>

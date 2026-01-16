@@ -32,7 +32,7 @@ export async function extractContextualFeatures(
 
   const { data: rounds, error: roundsError } = await supabase
     .from('golf_rounds')
-    .select('id, total_score, total_to_par, round_date, round_type')
+    .select('id, total_score, score_to_par, round_date, round_type')
     .eq('player_id', playerId)
     .eq('status', 'completed')
     .gte('round_date', ninetyDaysAgo.toISOString())
@@ -76,7 +76,7 @@ export async function extractContextualFeatures(
  */
 function determineConfidenceLevel(
   rounds: Array<{
-    total_to_par: number | null;
+    score_to_par: number | null;
     round_type?: string | null;
   }>,
   temporalFeatures?: TemporalFeatures | null,
@@ -113,7 +113,7 @@ function determineConfidenceLevel(
   }
 
   // Factor 3: Recent scores relative to average
-  const recentScores = rounds.slice(0, 3).map((r) => r.total_to_par ?? 0);
+  const recentScores = rounds.slice(0, 3).map((r) => r.score_to_par ?? 0);
   const avgRecent =
     recentScores.length > 0
       ? recentScores.reduce((a, b) => a + b, 0) / recentScores.length
@@ -177,7 +177,7 @@ function determineFormCycle(
  */
 function calculatePressureMetrics(
   rounds: Array<{
-    total_to_par: number | null;
+    score_to_par: number | null;
     round_type?: string | null;
   }>
 ): { pressureExposure: number; clutchFactor: number } {
@@ -207,10 +207,10 @@ function calculatePressureMetrics(
 
   if (pressureRounds.length > 0 && nonPressureRounds.length > 0) {
     const pressureAvg =
-      pressureRounds.reduce((a, r) => a + (r.total_to_par ?? 0), 0) /
+      pressureRounds.reduce((a, r) => a + (r.score_to_par ?? 0), 0) /
       pressureRounds.length;
     const nonPressureAvg =
-      nonPressureRounds.reduce((a, r) => a + (r.total_to_par ?? 0), 0) /
+      nonPressureRounds.reduce((a, r) => a + (r.score_to_par ?? 0), 0) /
       nonPressureRounds.length;
 
     // Lower is better, so if pressure avg is lower, clutch factor > 1

@@ -59,20 +59,20 @@ export async function recordFailedLogin(
     if (existing.locked_until && new Date(existing.locked_until) > now) {
       return {
         locked: true,
-        attempts: existing.failed_attempts,
+        attempts: existing.failed_attempts ?? 0,
         lockedUntil: new Date(existing.locked_until),
         remainingAttempts: 0,
       };
     }
 
     // Reset if last attempt was over 30 minutes ago
-    const lastAttempt = new Date(existing.last_attempt);
+    const lastAttempt = existing.last_attempt ? new Date(existing.last_attempt) : new Date(0);
     const timeSinceLastAttempt = now.getTime() - lastAttempt.getTime();
 
     if (timeSinceLastAttempt > LOCKOUT_DURATION_MS) {
       attempts = 1; // Reset counter
     } else {
-      attempts = existing.failed_attempts + 1;
+      attempts = (existing.failed_attempts ?? 0) + 1;
     }
 
     // Lock account if max attempts exceeded
@@ -166,7 +166,7 @@ export async function checkAccountLockout(
   if (lockedUntil && lockedUntil > now) {
     return {
       locked: true,
-      attempts: data.failed_attempts,
+      attempts: data.failed_attempts ?? 0,
       lockedUntil,
       remainingAttempts: 0,
     };
@@ -182,10 +182,11 @@ export async function checkAccountLockout(
     };
   }
 
+  const currentAttempts = data.failed_attempts ?? 0;
   return {
     locked: false,
-    attempts: data.failed_attempts,
-    remainingAttempts: Math.max(0, MAX_FAILED_ATTEMPTS - data.failed_attempts),
+    attempts: currentAttempts,
+    remainingAttempts: Math.max(0, MAX_FAILED_ATTEMPTS - currentAttempts),
   };
 }
 

@@ -35,13 +35,13 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + expiresIn);
 
-      // Insert into team_invitations table
+      // Insert into baseball_team_invitations table
       const { error } = await supabase
-        .from('team_invitations')
+        .from('baseball_team_invitations')
         .insert({
           team_id: teamId,
-          invite_code: code,
-          created_by: coachId,
+          code: code,
+          created_by_coach_id: coachId,
           expires_at: expiresAt.toISOString(),
           max_uses: null, // Unlimited uses
           is_active: true,

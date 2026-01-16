@@ -11,7 +11,9 @@ import {
   NotFoundError
 } from '@/lib/auth/ownership';
 import { roundTypeToDb } from '@/lib/golf/round-type-utils';
+import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
+import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 
 // ============================================================================
 // RESULT TYPE
@@ -46,27 +48,29 @@ interface ApproachMissDetail {
   distance_from_green_yards: number | null;
 }
 
-type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | 'class';
+// Golf event types: 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | 'class'
 
-/** Golf event insert data */
+/**
+ * Golf event insert data
+ * Note: Maps to the actual golf_events table which uses:
+ * - start_time (required string) as the primary date/time field
+ * - team_id (required string)
+ * - event_type (required string)
+ * - title (required string)
+ */
 interface GolfEventInsertData {
-  team_id: string | null;
+  team_id: string;
   title: string;
-  event_type: GolfEventType;
-  start_date: string;
-  end_date: string | null;
-  start_time: string | null;
-  end_time: string | null;
-  all_day: boolean;
-  location: string | null;
-  course_name: string | null;
-  description: string | null;
-  is_mandatory: boolean;
-  requires_rsvp: boolean;
-  rsvp_deadline: string | null;
-  max_attendees: number | null;
-  created_by?: string;
-  player_id?: string;
+  event_type: string;
+  start_time: string;
+  end_time?: string | null;
+  all_day?: boolean | null;
+  location?: string | null;
+  description?: string | null;
+  created_by?: string | null;
+  status?: string | null;
+  // Fields that might not exist in schema but we want to track
+  [key: string]: unknown;
 }
 
 /** Blocked time update data */
@@ -166,14 +170,13 @@ export interface RSVPStats {
 export interface BlockedTimePeriod {
   id: string;
   coach_id: string;
-  title: string;
   start_date: string;
   end_date: string;
   start_time: string | null;
   end_time: string | null;
-  all_day: boolean | null;
+  is_recurring: boolean | null;
+  reason: string | null;
   recurrence_rule: string | null;
-  description: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -181,11 +184,11 @@ export interface BlockedTimePeriod {
 /** In-progress round summary */
 export interface InProgressRound {
   id: string;
-  course_name: string;
+  course_name: string | null;
   round_date: string;
   round_type: string | null;
   current_hole: number | null;
-  holes_to_play: number | null;
+  holes_played: number | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -310,12 +313,12 @@ const golfQualifierSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
   courseName: z.string().max(200).optional(),
-  location: z.string().max(500).optional(),
-  numRounds: z.number().int().min(1).max(10),
-  holesPerRound: z.number().int().min(9).max(18),
+  courseId: z.string().uuid().optional(),
+  spotsAvailable: z.number().int().min(1).optional(),
+  entryDeadline: z.string().optional(),
+  rules: z.string().max(5000).optional(),
   startDate: z.string(),
   endDate: z.string().optional(),
-  showLiveLeaderboard: z.boolean().optional(),
   playerIds: z.array(z.string().uuid()),
 });
 
@@ -325,6 +328,48 @@ const announcementSchema = z.object({
   urgency: z.enum(['low', 'normal', 'high', 'urgent']),
   requiresAcknowledgement: z.boolean(),
 });
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+/**
+ * Helper to get team_id for a coach (since golf_coaches doesn't have team_id column)
+ * Looks up via organization_id -> golf_teams
+ */
+async function getCoachTeamId(
+  supabase: SupabaseClient,
+  organizationId: string | null
+): Promise<string | null> {
+  if (!organizationId) return null;
+
+  const { data: team } = await supabase
+    .from('golf_teams')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+
+  return team?.id ?? null;
+}
+
+/**
+ * Helper to get team_id for a player (since golf_players doesn't have team_id column)
+ * Looks up via golf_team_members
+ */
+async function getPlayerTeamId(
+  supabase: SupabaseClient,
+  playerId: string
+): Promise<string | null> {
+  const { data: membership } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .maybeSingle();
+
+  return membership?.team_id ?? null;
+}
 
 // ============================================================================
 // INPUT TYPES
@@ -393,12 +438,12 @@ interface GolfQualifierInput {
   name: string;
   description?: string;
   courseName?: string;
-  location?: string;
-  numRounds: number;
-  holesPerRound: number;
+  courseId?: string;
+  spotsAvailable?: number;
+  entryDeadline?: string;
+  rules?: string;
   startDate: string;
   endDate?: string;
-  showLiveLeaderboard?: boolean;
   playerIds: string[];
 }
 
@@ -774,14 +819,16 @@ export async function submitGolfRoundComprehensive(
         }
       }
 
-      // Insert putt details
+      // Insert putt details (table may not be in types)
       if (puttDetails.length > 0) {
-        await supabase.from('putt_details').insert(puttDetails);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('putt_details').insert(puttDetails);
       }
 
-      // Insert approach miss details
+      // Insert approach miss details (table may not be in types)
       if (approachMissDetails.length > 0) {
-        await supabase.from('approach_miss_details').insert(approachMissDetails);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('approach_miss_details').insert(approachMissDetails);
       }
     }
   }
@@ -790,13 +837,15 @@ export async function submitGolfRoundComprehensive(
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath('/golf/dashboard/stats');
 
+    // Invalidate stats cache for instant dashboard updates
+    // This triggers the database cache to be refreshed
+    await invalidateOnRoundComplete(player.id, round.id);
+
     return { success: true, data: { roundId: round.id } };
 
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    console.error('[Golf Action Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -897,16 +946,17 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath('/golf/dashboard/stats');
 
+    // Invalidate stats cache for instant dashboard updates
+    await invalidateOnRoundComplete(player.id, round.id);
+
     return { success: true, data: { roundId: round.id } };
 
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid round data. Please check your inputs.' };
     }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    console.error('[Golf Action Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -950,6 +1000,9 @@ export async function deleteGolfRound(roundId: string): Promise<ActionResult> {
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath('/golf/dashboard/stats');
 
+    // Invalidate stats cache when round is deleted
+    await invalidateOnRoundComplete(round.player_id, roundId);
+
     return { success: true, data: undefined };
 
   } catch (error) {
@@ -958,6 +1011,73 @@ export async function deleteGolfRound(roundId: string): Promise<ActionResult> {
       success: false,
       error: 'An unexpected error occurred'
     };
+  }
+}
+
+/**
+ * Verify a golf round (coach only)
+ * Sets is_verified=true, verified_by=coach.id, verified_at=NOW()
+ */
+export async function verifyRound(roundId: string): Promise<ActionResult<void>> {
+  try {
+    const { supabase, coach } = await requireGolfCoach();
+
+    if (!coach.team_id) {
+      return { success: false, error: 'Coach is not associated with a team' };
+    }
+
+    // Get the round and verify it belongs to a player on the coach's team
+    const { data: round, error: roundError } = await supabase
+      .from('golf_rounds')
+      .select('id, player_id')
+      .eq('id', roundId)
+      .single();
+
+    if (roundError || !round) {
+      return { success: false, error: 'Round not found' };
+    }
+
+    // Verify the player is on the coach's team
+    const { data: membership, error: membershipError } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .eq('player_id', round.player_id)
+      .eq('team_id', coach.team_id)
+      .maybeSingle();
+
+    if (membershipError || !membership) {
+      return { success: false, error: 'You can only verify rounds for players on your team' };
+    }
+
+    // Update the round with verification info
+    // Note: is_verified, verified_by, verified_at columns exist in DB (see migration 021)
+    // but may not be in generated types yet. Using type assertion as workaround.
+    const { error: updateError } = await supabase
+      .from('golf_rounds')
+      .update({
+        is_verified: true,
+        verified_by: coach.id,
+        verified_at: new Date().toISOString(),
+      } as Record<string, unknown>)
+      .eq('id', roundId);
+
+    if (updateError) {
+      console.error('[verifyRound Error]', updateError);
+      return { success: false, error: 'Failed to verify round. Please try again.' };
+    }
+
+    revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/rounds');
+    revalidatePath(`/golf/dashboard/rounds/${roundId}`);
+
+    return { success: true, data: undefined };
+
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return { success: false, error: error.message };
+    }
+    console.error('Unexpected error in verifyRound:', error);
+    return { success: false, error: 'An unexpected error occurred' };
   }
 }
 
@@ -978,29 +1098,30 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
     }
 
     // Try to get coach profile first
+    // Note: golf_coaches doesn't have team_id - we look it up via organization_id
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, team_id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
 
     // If not a coach, try to get player profile
     let teamId: string | null = null;
     let createdBy: string | null = null;
-    let playerId: string | null = null;
 
     if (coach) {
-      // Coach - team_id is required for coaches
-      if (!coach.team_id) {
+      // Coach - get team_id via organization
+      teamId = await getCoachTeamId(supabase, coach.organization_id);
+      if (!teamId) {
         return { success: false, error: 'Coach not assigned to a team' };
       }
-      teamId = coach.team_id;
       createdBy = coach.id;
     } else {
       // Check if user is a player
+      // Note: golf_players doesn't have team_id - we look it up via golf_team_members
       const { data: player } = await supabase
         .from('golf_players')
-        .select('id, team_id')
+        .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -1009,43 +1130,40 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       }
 
       // For players, team_id is optional (can be null for personal events)
-      teamId = player.team_id || null;
+      teamId = await getPlayerTeamId(supabase, player.id);
       createdBy = null;
-      // Store player id to set player_id on the event
-      playerId = player.id;
     }
 
-    // Build insert data - only include created_by if it's not null
+    // Team ID is required for golf_events - handle personal events separately
+    if (!teamId) {
+      return { success: false, error: 'Team assignment required to create events' };
+    }
+
+    // Build insert data matching the actual golf_events table schema
+    // Note: golf_events uses start_time as the primary datetime field (not start_date)
     const insertData: GolfEventInsertData = {
       team_id: teamId,
       title: validatedData.title,
-      event_type: validatedData.eventType as GolfEventType,
-      start_date: validatedData.startDate,
-      end_date: validatedData.endDate || null,
-      start_time: validatedData.startTime || null,
-      end_time: validatedData.endTime || null,
+      event_type: validatedData.eventType,
+      // Use startDate as start_time if no specific time provided
+      start_time: validatedData.startTime
+        ? `${validatedData.startDate}T${validatedData.startTime}`
+        : validatedData.startDate,
+      end_time: validatedData.endTime
+        ? `${validatedData.endDate || validatedData.startDate}T${validatedData.endTime}`
+        : validatedData.endDate || null,
       all_day: validatedData.allDay ?? true,
       location: validatedData.location || null,
-      course_name: validatedData.courseName || null,
       description: validatedData.description || null,
-      is_mandatory: validatedData.isMandatory ?? false,
-      // RSVP fields
-      requires_rsvp: validatedData.requiresRsvp ?? false,
-      rsvp_deadline: validatedData.rsvpDeadline || null,
-      max_attendees: validatedData.maxAttendees || null,
     };
 
     // Only add created_by if it's not null (coaches only)
     if (createdBy) {
       insertData.created_by = createdBy;
     }
-    
-    // Set player_id if this event is created by a player
-    if (playerId) {
-      insertData.player_id = playerId;
-    }
 
-    const { data: event, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: event, error } = await (supabase as any)
       .from('golf_events')
       .insert(insertData)
       .select()
@@ -1075,10 +1193,8 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid event data. Please check your inputs.' };
     }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    console.error('[Golf Action Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -1114,9 +1230,10 @@ export async function updateGolfEvent(
     }
 
     // Try to get coach profile first
+    // Note: golf_coaches doesn't have team_id - we look it up via organization_id
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, team_id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -1124,14 +1241,15 @@ export async function updateGolfEvent(
     let teamId: string | null = null;
 
     if (coach) {
-      if (!coach.team_id) {
+      teamId = await getCoachTeamId(supabase, coach.organization_id);
+      if (!teamId) {
         return { success: false, error: 'Coach not assigned to a team' };
       }
-      teamId = coach.team_id;
     } else {
+      // Note: golf_players doesn't have team_id - we look it up via golf_team_members
       const { data: player } = await supabase
         .from('golf_players')
-        .select('id, team_id')
+        .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -1140,7 +1258,7 @@ export async function updateGolfEvent(
       }
 
       // For players, team_id is optional
-      teamId = player.team_id || null;
+      teamId = await getPlayerTeamId(supabase, player.id);
     }
 
     // Verify event belongs to user's team (or is a personal event if teamId is null)
@@ -1250,9 +1368,10 @@ export async function deleteGolfEvent(
     }
 
     // Try to get coach profile first
+    // Note: golf_coaches doesn't have team_id - we look it up via organization_id
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, team_id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -1260,14 +1379,15 @@ export async function deleteGolfEvent(
     let teamId: string | null = null;
 
     if (coach) {
-      if (!coach.team_id) {
+      teamId = await getCoachTeamId(supabase, coach.organization_id);
+      if (!teamId) {
         return { success: false, error: 'Coach not assigned to a team' };
       }
-      teamId = coach.team_id;
     } else {
+      // Note: golf_players doesn't have team_id - we look it up via golf_team_members
       const { data: player } = await supabase
         .from('golf_players')
-        .select('id, team_id')
+        .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -1276,7 +1396,7 @@ export async function deleteGolfEvent(
       }
 
       // For players, team_id is optional
-      teamId = player.team_id || null;
+      teamId = await getPlayerTeamId(supabase, player.id);
     }
 
     // Verify event belongs to user's team (or is a personal event if teamId is null)
@@ -1338,32 +1458,43 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
       return { success: false, error: 'You must be signed in to create qualifiers' };
     }
 
-    // Get coach and team
+    // Get coach with organization_id
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, team_id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
 
-    if (!coach?.team_id) {
-      return { success: false, error: 'Coach profile or team not found' };
+    if (!coach?.organization_id) {
+      return { success: false, error: 'Coach profile not found' };
+    }
+
+    // Look up team via organization
+    const { data: orgTeam } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+
+    if (!orgTeam?.id) {
+      return { success: false, error: 'Team not found for your organization' };
     }
 
     // Create qualifier
     const { data: qualifier, error: qualifierError } = await supabase
       .from('golf_qualifiers')
       .insert({
-        team_id: coach.team_id,
+        team_id: orgTeam.id,
         name: validatedData.name,
         description: validatedData.description || null,
         course_name: validatedData.courseName || null,
-        location: validatedData.location || null,
-        num_rounds: validatedData.numRounds,
-        holes_per_round: validatedData.holesPerRound,
+        course_id: validatedData.courseId || null,
+        spots_available: validatedData.spotsAvailable || null,
+        entry_deadline: validatedData.entryDeadline || null,
+        rules: validatedData.rules || null,
         start_date: validatedData.startDate,
         end_date: validatedData.endDate || null,
         status: 'upcoming',
-        show_live_leaderboard: validatedData.showLiveLeaderboard ?? true,
         created_by: coach.id,
       })
       .select()
@@ -1378,8 +1509,7 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
       const entries = validatedData.playerIds.map(playerId => ({
         qualifier_id: qualifier.id,
         player_id: playerId,
-        is_tied: false,
-        rounds_completed: 0,
+        status: 'registered',
       }));
 
       const { error: entriesError } = await supabase
@@ -1400,10 +1530,8 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid qualifier data. Please check your inputs.' };
     }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    console.error('[Golf Action Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -1433,10 +1561,8 @@ export async function updateQualifierStatus(
     return { success: true, data: undefined };
 
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    console.error('[Golf Action Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -1462,20 +1588,26 @@ export async function createAnnouncement(data: {
     }
 
     // Get coach and team
+    // Note: golf_coaches doesn't have team_id - we look it up via organization_id
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, team_id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
 
-    if (!coach?.team_id) {
-      return { success: false, error: 'Coach profile or team not found' };
+    if (!coach) {
+      return { success: false, error: 'Coach profile not found' };
+    }
+
+    const teamId = await getCoachTeamId(supabase, coach.organization_id);
+    if (!teamId) {
+      return { success: false, error: 'Coach not assigned to a team' };
     }
 
     const { data: announcement, error } = await supabase
       .from('golf_announcements')
       .insert({
-        team_id: coach.team_id,
+        team_id: teamId,
         title: validatedData.title,
         body: validatedData.body,
         urgency: validatedData.urgency,
@@ -1500,10 +1632,8 @@ export async function createAnnouncement(data: {
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid announcement data. Please check your inputs.' };
     }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    console.error('[Golf Action Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -1524,36 +1654,42 @@ export async function invitePlayerToTeam(
     }
 
     // Get coach
+    // Note: golf_coaches doesn't have team_id - we look it up via organization_id
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, team_id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
 
-    if (!coach?.team_id) {
-      return { success: false, error: 'Coach profile or team not found' };
+    if (!coach) {
+      return { success: false, error: 'Coach profile not found' };
     }
 
-    // Get team
+    const teamId = await getCoachTeamId(supabase, coach.organization_id);
+    if (!teamId) {
+      return { success: false, error: 'Coach not assigned to a team' };
+    }
+
+    // Get team - uses join_code column, not invite_code
     const { data: team } = await supabase
       .from('golf_teams')
-      .select('name, invite_code')
-      .eq('id', coach.team_id)
+      .select('name, join_code')
+      .eq('id', teamId)
       .single();
 
-    // Generate invite code if not exists
+    // Generate join code if not exists or is placeholder
     // Uses 8-char readable format (no confusing chars like 0/O, 1/I/L)
-    let inviteCode = team?.invite_code;
-    if (!inviteCode) {
+    let joinCode = team?.join_code;
+    if (!joinCode || joinCode.length < 6) {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      inviteCode = '';
+      joinCode = '';
       for (let i = 0; i < 8; i++) {
-        inviteCode += chars.charAt(Math.floor(Math.random() * chars.length));
+        joinCode += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       const { error: updateError } = await supabase
         .from('golf_teams')
-        .update({ invite_code: inviteCode })
-        .eq('id', coach.team_id);
+        .update({ join_code: joinCode })
+        .eq('id', teamId);
 
       if (updateError) {
         return { success: false, error: 'Failed to generate invite code. Please try again.' };
@@ -1563,16 +1699,14 @@ export async function invitePlayerToTeam(
     return {
       success: true,
       data: {
-        inviteCode,
-        inviteLink: `/golf/join/${inviteCode}`,
+        inviteCode: joinCode,
+        inviteLink: `/golf/join/${joinCode}`,
       },
     };
 
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    console.error('[Golf Action Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -1587,16 +1721,26 @@ export async function updatePlayerStatus(
       return { success: false, error: 'Coach not assigned to a team' };
     }
 
-    // Verify ownership
+    // Verify ownership - checks golf_team_members for player-team relationship
     await verifyGolfTeamOwnership(supabase, playerId, coach.team_id, 'golf_players');
 
+    // Map our status values to the database enum values
+    // team_member_status enum: 'pending' | 'active' | 'inactive' | 'removed'
+    const statusMap: Record<string, 'active' | 'inactive'> = {
+      'active': 'active',
+      'injured': 'inactive', // injured maps to inactive
+      'redshirt': 'inactive', // redshirt maps to inactive
+      'inactive': 'inactive',
+    };
+
+    // Update status on golf_team_members (not golf_players - which doesn't have status)
     const { error } = await supabase
-      .from('golf_players')
+      .from('golf_team_members')
       .update({
-        status,
+        status: statusMap[status],
         updated_at: new Date().toISOString()
       })
-      .eq('id', playerId)
+      .eq('player_id', playerId)
       .eq('team_id', coach.team_id);
 
     if (error) {
@@ -1801,6 +1945,7 @@ export async function getCurrentUserBusyPeriods(
 
 /**
  * Get all calendar notifications for the current user
+ * Note: golf_calendar_notifications table may not be in types
  */
 export async function getNotifications(limit: number = 50): Promise<ActionResult<CalendarNotification[]>> {
   try {
@@ -1811,7 +1956,8 @@ export async function getNotifications(limit: number = 50): Promise<ActionResult
       return { success: false, error: 'Not authenticated' };
     }
 
-    const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from('golf_calendar_notifications')
       .select('*')
       .eq('user_id', user.id)
@@ -1822,7 +1968,7 @@ export async function getNotifications(limit: number = 50): Promise<ActionResult
       return { success: false, error: 'Failed to fetch notifications' };
     }
 
-    return { success: true, data: data || [] };
+    return { success: true, data: (data || []) as CalendarNotification[] };
 
   } catch (error) {
     console.error('Failed to fetch notifications:', error);
@@ -1832,6 +1978,7 @@ export async function getNotifications(limit: number = 50): Promise<ActionResult
 
 /**
  * Mark a notification as read
+ * Note: golf_calendar_notifications table may not be in types
  */
 export async function markNotificationRead(
   notificationId: string
@@ -1839,7 +1986,8 @@ export async function markNotificationRead(
   try {
     const supabase = await createClient();
 
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
       .from('golf_calendar_notifications')
       .update({ read: true, updated_at: new Date().toISOString() })
       .eq('id', notificationId);
@@ -1855,6 +2003,7 @@ export async function markNotificationRead(
 
 /**
  * Mark all notifications as read for the current user
+ * Note: golf_calendar_notifications table may not be in types
  */
 export async function markAllNotificationsRead(): Promise<ActionResult> {
   try {
@@ -1865,7 +2014,8 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
       return { success: false, error: 'Not authenticated' };
     }
 
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
       .from('golf_calendar_notifications')
       .update({ read: true, updated_at: new Date().toISOString() })
       .eq('user_id', user.id)
@@ -1938,9 +2088,10 @@ export async function getPlayerEventRSVP(
       return { success: false, error: 'Player profile not found' };
     }
 
+    // Note: golf_event_attendance uses rsvp_at, not responded_at
     const { data: attendance } = await supabase
       .from('golf_event_attendance')
-      .select('status, responded_at')
+      .select('status, rsvp_at')
       .eq('event_id', eventId)
       .eq('player_id', player.id)
       .maybeSingle();
@@ -1953,7 +2104,7 @@ export async function getPlayerEventRSVP(
       success: true,
       data: {
         status: (attendance.status ?? 'pending') as RSVPStatus,
-        respondedAt: attendance.responded_at ?? null,
+        respondedAt: attendance.rsvp_at ?? null,
       },
     };
   } catch (error) {
@@ -2052,10 +2203,8 @@ export async function addCoachBlockedTime(
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid blocked time data' };
     }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    console.error('[Golf Action Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -2098,10 +2247,8 @@ export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<v
     return { success: true, data: undefined };
 
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    console.error('[Golf Action Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -2158,10 +2305,8 @@ export async function updateCoachBlockedTime(
     return { success: true, data: undefined };
 
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    console.error('[Golf Action Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -2207,10 +2352,8 @@ export async function getCoachBlockedTime(
     return { success: true, data: blockedTimes || [] };
 
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    };
+    console.error('[Golf Action Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -2525,7 +2668,7 @@ export async function savePartialRound(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to save round'
+      error: 'Failed to save round. Please try again.'
     };
   }
 }
@@ -2560,7 +2703,7 @@ export async function getInProgressRounds(): Promise<ActionResult<InProgressRoun
         round_date,
         round_type,
         current_hole,
-        holes_to_play,
+        holes_played,
         created_at,
         updated_at
       `)
@@ -2577,7 +2720,7 @@ export async function getInProgressRounds(): Promise<ActionResult<InProgressRoun
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch rounds'
+      error: 'Failed to fetch rounds. Please try again.'
     };
   }
 }
@@ -2642,7 +2785,7 @@ export async function loadInProgressRound(roundId: string): Promise<ActionResult
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to load round'
+      error: 'Failed to load round. Please try again.'
     };
   }
 }
@@ -2688,7 +2831,7 @@ export async function deleteInProgressRound(roundId: string): Promise<ActionResu
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete round'
+      error: 'Failed to delete round. Please try again.'
     };
   }
 }
@@ -2838,7 +2981,7 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch qualifiers'
+      error: 'Failed to fetch qualifiers. Please try again.'
     };
   }
 }
@@ -2880,10 +3023,10 @@ export async function getNextQualifierRoundNumber(
       return { success: false, error: 'You are not entered in this qualifier' };
     }
 
-    // Get qualifier details
+    // Verify qualifier exists
     const { data: qualifier } = await supabase
       .from('golf_qualifiers')
-      .select('num_rounds')
+      .select('id')
       .eq('id', qualifierId)
       .single();
 
@@ -2898,23 +3041,25 @@ export async function getNextQualifierRoundNumber(
       .eq('qualifier_id', qualifierId)
       .eq('player_id', player.id)
       .eq('status', 'completed');
-    
+
     const completedRounds = (completedRoundsResult.data as unknown) as Array<{
       qualifier_round_number: number | null;
     }> | null;
 
     const completedRoundNumbers = new Set(
       (completedRounds || [])
-        .filter((r: any) => r.qualifier_round_number !== null)
-        .map((r: any) => r.qualifier_round_number as number)
+        .filter((r) => r.qualifier_round_number !== null)
+        .map((r) => r.qualifier_round_number as number)
     );
 
-    // Calculate available rounds (1 to num_rounds, excluding completed)
-    const allRounds = Array.from({ length: qualifier.num_rounds }, (_, i) => i + 1);
-    const availableRounds = allRounds.filter(r => !completedRoundNumbers.has(r));
+    // Calculate the next round number (max completed + 1, or 1 if none completed)
+    const maxCompletedRound = completedRoundNumbers.size > 0
+      ? Math.max(...completedRoundNumbers)
+      : 0;
+    const nextRoundNumber = maxCompletedRound + 1;
 
-    // Next round is the first available
-    const nextRoundNumber = availableRounds.length > 0 ? availableRounds[0]! : 0;
+    // Available rounds start from the next round number
+    const availableRounds = [nextRoundNumber];
 
     return {
       success: true,
@@ -2924,7 +3069,7 @@ export async function getNextQualifierRoundNumber(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to get round number'
+      error: 'Failed to get round number. Please try again.'
     };
   }
 }
@@ -2955,13 +3100,12 @@ export interface QualifierLeaderboardData {
     name: string;
     description: string | null;
     courseName: string | null;
-    location: string | null;
-    numRounds: number;
-    holesPerRound: number;
     startDate: string;
     endDate: string | null;
     status: string;
-    showLiveLeaderboard: boolean;
+    spotsAvailable: number | null;
+    entryDeadline: string | null;
+    rules: string | null;
   };
   leaderboard: QualifierLeaderboardEntry[];
   isPlayerEntered: boolean;
@@ -3020,13 +3164,12 @@ export async function getQualifierLeaderboard(
             name: qualifier.name,
             description: qualifier.description,
             courseName: qualifier.course_name,
-            location: qualifier.location,
-            numRounds: qualifier.num_rounds,
-            holesPerRound: qualifier.holes_per_round,
             startDate: qualifier.start_date,
             endDate: qualifier.end_date,
             status: qualifier.status || 'upcoming',
-            showLiveLeaderboard: qualifier.show_live_leaderboard ?? true,
+            spotsAvailable: qualifier.spots_available,
+            entryDeadline: qualifier.entry_deadline,
+            rules: qualifier.rules,
           },
           leaderboard: [],
           isPlayerEntered: false,
@@ -3129,13 +3272,12 @@ export async function getQualifierLeaderboard(
           name: qualifier.name,
           description: qualifier.description,
           courseName: qualifier.course_name,
-          location: qualifier.location,
-          numRounds: qualifier.num_rounds,
-          holesPerRound: qualifier.holes_per_round,
           startDate: qualifier.start_date,
           endDate: qualifier.end_date,
           status: qualifier.status || 'upcoming',
-          showLiveLeaderboard: qualifier.show_live_leaderboard ?? true,
+          spotsAvailable: qualifier.spots_available,
+          entryDeadline: qualifier.entry_deadline,
+          rules: qualifier.rules,
         },
         leaderboard,
         isPlayerEntered,
@@ -3146,7 +3288,7 @@ export async function getQualifierLeaderboard(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch leaderboard'
+      error: 'Failed to fetch leaderboard. Please try again.'
     };
   }
 }
@@ -3177,16 +3319,13 @@ async function updateQualifierEntryStats(
     if (!rounds) return;
 
     const totalScore = rounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
-    const totalToPar = rounds.reduce((sum, r) => sum + (r.total_to_par || 0), 0);
-    const roundsCompleted = rounds.length;
 
-    // Update the qualifier entry
+    // Update the qualifier entry with the total score
+    // Note: golf_qualifier_entries has only 'score' column, not 'total_score' or 'rounds_completed'
     await supabase
       .from('golf_qualifier_entries')
       .update({
-        total_score: totalScore,
-        total_to_par: totalToPar,
-        rounds_completed: roundsCompleted,
+        score: totalScore,
       })
       .eq('qualifier_id', qualifierId)
       .eq('player_id', playerId);
@@ -3260,13 +3399,10 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
   }
 
   // Fetch saved courses
-  // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
-  const coursesResult = await (supabase.from('golf_player_courses') as any)
+  const { data: courses, error } = await supabase.from('golf_player_courses')
     .select('*')
     .eq('player_id', player.id)
     .order('last_used_at', { ascending: false });
-  
-  const { data: courses, error } = coursesResult as { data: any; error: any };
 
   if (error) {
     return { success: false, error: 'Failed to load saved courses' };
@@ -3313,50 +3449,50 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
     return { success: false, error: 'Player profile not found' };
   }
 
-  // Check if course with same name and tees already exists
-  // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
-  const existingResult = await (supabase.from('golf_player_courses') as any)
+  // Check if course with same name already exists
+  // Note: The code expects extended columns (course_city, course_state, etc.) that may not exist in all deployments
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existing } = await (supabase.from('golf_player_courses') as any)
     .select('id')
     .eq('player_id', player.id)
     .ilike('course_name', input.courseName)
-    .eq('tees_played', input.teesPlayed || '')
-    .single();
-  
-  const existing = ((existingResult as unknown) as { data: any }).data;
+    .maybeSingle();
 
+  // Course data with extended fields - stored as JSON in notes if extended columns don't exist
   const courseData = {
     player_id: player.id,
     course_name: input.courseName,
-    course_city: input.courseCity || null,
-    course_state: input.courseState || null,
-    course_rating: input.courseRating || null,
-    course_slope: input.courseSlope || null,
-    tees_played: input.teesPlayed || null,
-    holes_per_round: input.holesPerRound,
-    hole_configs: input.holeConfigs,
-    last_used_at: new Date().toISOString(),
+    notes: JSON.stringify({
+      city: input.courseCity,
+      state: input.courseState,
+      rating: input.courseRating,
+      slope: input.courseSlope,
+      tees: input.teesPlayed,
+      holesPerRound: input.holesPerRound,
+      holeConfigs: input.holeConfigs,
+    }),
+    last_played_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-  } as any;
+  };
 
-  let result;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let result: { data: any; error: any };
   if (existing) {
     // Update existing course
-    // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     result = await (supabase.from('golf_player_courses') as any)
       .update(courseData)
-      .eq('id', (existing as any).id)
+      .eq('id', existing.id)
       .select()
       .single();
   } else {
     // Insert new course
-    // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     result = await (supabase.from('golf_player_courses') as any)
       .insert(courseData)
       .select()
       .single();
   }
-  
-  result = (result as unknown) as { data: any; error: any };
 
   if (result.error) {
     return { success: false, error: 'Failed to save course configuration' };
@@ -3393,9 +3529,9 @@ export async function touchSavedCourse(courseId: string): Promise<ActionResult<v
   }
 
   // Update last_used_at (RLS will ensure ownership)
-  // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
-  const { error } = await (supabase.from('golf_player_courses') as any)
-    .update({ last_used_at: new Date().toISOString() })
+  // Note: golf_player_courses table uses last_played_at instead of last_used_at
+  const { error } = await supabase.from('golf_player_courses')
+    .update({ last_played_at: new Date().toISOString() })
     .eq('id', courseId);
 
   if (error) {
@@ -3418,8 +3554,7 @@ export async function deletePlayerCourse(courseId: string): Promise<ActionResult
   }
 
   // Delete the course (RLS will ensure ownership)
-  // @ts-expect-error - golf_player_courses table not in generated types, causes infinite type instantiation
-  const { error } = await (supabase.from('golf_player_courses') as any)
+  const { error } = await supabase.from('golf_player_courses')
     .delete()
     .eq('id', courseId);
 
@@ -3428,4 +3563,448 @@ export async function deletePlayerCourse(courseId: string): Promise<ActionResult
   }
 
   return { success: true, data: undefined };
+}
+
+// ============================================================================
+// SHOT MANAGEMENT ACTIONS
+// ============================================================================
+
+/**
+ * Delete a specific shot from a round
+ * The database trigger will automatically resequence remaining shots
+ */
+export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    // Get player record
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    // Verify ownership: Get the shot and its associated round
+    const { data: shot, error: shotError } = await supabase
+      .from('golf_shots')
+      .select('id, round_id, hole_number')
+      .eq('id', shotId)
+      .single();
+
+    if (shotError || !shot) {
+      return { success: false, error: 'Shot not found' };
+    }
+
+    // Verify the round belongs to this player
+    const { data: round, error: roundError } = await supabase
+      .from('golf_rounds')
+      .select('id, player_id')
+      .eq('id', shot.round_id)
+      .eq('player_id', player.id)
+      .single();
+
+    if (roundError || !round) {
+      return { success: false, error: 'You do not have permission to delete this shot' };
+    }
+
+    // Delete the shot - the database trigger will resequence remaining shots
+    const { error: deleteError } = await supabase
+      .from('golf_shots')
+      .delete()
+      .eq('id', shotId);
+
+    if (deleteError) {
+      return { success: false, error: 'Failed to delete shot' };
+    }
+
+    // Revalidate relevant paths
+    revalidatePath('/golf/dashboard/rounds');
+    revalidatePath(`/golf/dashboard/rounds/${shot.round_id}`);
+
+    return { success: true, data: undefined };
+
+  } catch (error) {
+    console.error('[deleteShot Error]', error);
+    return formatSafeErrorResponse(error);
+  }
+}
+
+/**
+ * Shot data that can be updated
+ */
+export interface ShotUpdateData {
+  shot_type?: string;
+  club_type?: string;
+  lie_before?: string;
+  distance_to_hole_before?: number;
+  distance_unit_before?: string;
+  result?: string;
+  distance_to_hole_after?: number;
+  distance_unit_after?: string;
+  shot_distance?: number;
+  miss_direction?: string | null;
+  putt_break?: string | null;
+  putt_slope?: string | null;
+  is_penalty?: boolean;
+  penalty_type?: string | null;
+}
+
+/**
+ * Update a specific shot in a round
+ */
+export async function updateShot(
+  shotId: string,
+  data: ShotUpdateData
+): Promise<ActionResult<void>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    // Get player record
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    // Verify ownership: Get the shot and its associated round
+    const { data: shot, error: shotError } = await supabase
+      .from('golf_shots')
+      .select('id, round_id')
+      .eq('id', shotId)
+      .single();
+
+    if (shotError || !shot) {
+      return { success: false, error: 'Shot not found' };
+    }
+
+    // Verify the round belongs to this player
+    const { data: round, error: roundError } = await supabase
+      .from('golf_rounds')
+      .select('id, player_id')
+      .eq('id', shot.round_id)
+      .eq('player_id', player.id)
+      .single();
+
+    if (roundError || !round) {
+      return { success: false, error: 'You do not have permission to update this shot' };
+    }
+
+    // Build update object with only provided fields
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (data.shot_type !== undefined) updateData.shot_type = data.shot_type;
+    if (data.club_type !== undefined) updateData.club_type = data.club_type;
+    if (data.lie_before !== undefined) updateData.lie_before = data.lie_before;
+    if (data.distance_to_hole_before !== undefined) updateData.distance_to_hole_before = data.distance_to_hole_before;
+    if (data.distance_unit_before !== undefined) updateData.distance_unit_before = data.distance_unit_before;
+    if (data.result !== undefined) updateData.result = data.result;
+    if (data.distance_to_hole_after !== undefined) updateData.distance_to_hole_after = data.distance_to_hole_after;
+    if (data.distance_unit_after !== undefined) updateData.distance_unit_after = data.distance_unit_after;
+    if (data.shot_distance !== undefined) updateData.shot_distance = data.shot_distance;
+    if (data.miss_direction !== undefined) updateData.miss_direction = data.miss_direction;
+    if (data.putt_break !== undefined) updateData.putt_break = data.putt_break;
+    if (data.putt_slope !== undefined) updateData.putt_slope = data.putt_slope;
+    if (data.is_penalty !== undefined) updateData.is_penalty = data.is_penalty;
+    if (data.penalty_type !== undefined) updateData.penalty_type = data.penalty_type;
+
+    // Update the shot
+    const { error: updateError } = await supabase
+      .from('golf_shots')
+      .update(updateData)
+      .eq('id', shotId);
+
+    if (updateError) {
+      return { success: false, error: 'Failed to update shot' };
+    }
+
+    // Revalidate relevant paths
+    revalidatePath('/golf/dashboard/rounds');
+    revalidatePath(`/golf/dashboard/rounds/${shot.round_id}`);
+
+    return { success: true, data: undefined };
+
+  } catch (error) {
+    console.error('[updateShot Error]', error);
+    return formatSafeErrorResponse(error);
+  }
+}
+
+// ============================================================================
+// SHOT-BY-SHOT REVIEW TYPES & ACTION
+// ============================================================================
+
+/** Shot detail for the shot-by-shot review */
+export interface ShotDetail {
+  id: string;
+  shot_number: number;
+  shot_type: string;
+  club_type: string;
+  lie_before: string | null;
+  result: string;
+  distance_to_hole_before: number | null;
+  distance_to_hole_after: number | null;
+  distance_unit_before: string | null;
+  distance_unit_after: string | null;
+  shot_distance: number | null;
+  miss_direction: string | null;
+  putt_break: string | null;
+  putt_slope: string | null;
+  is_penalty: boolean | null;
+  penalty_type: string | null;
+}
+
+/** Hole summary with shots for review */
+export interface HoleReviewData {
+  id: string;
+  hole_number: number;
+  par: number;
+  yardage: number | null;
+  score: number | null;
+  score_to_par: number | null;
+  putts: number | null;
+  fairway_hit: boolean | null;
+  green_in_regulation: boolean | null;
+  penalty_strokes: number | null;
+  driving_distance: number | null;
+  approach_distance: number | null;
+  approach_proximity: number | null;
+  first_putt_distance: number | null;
+  scramble_attempt: boolean | null;
+  scramble_made: boolean | null;
+  sand_save_attempt: boolean | null;
+  sand_save_made: boolean | null;
+  shots: ShotDetail[];
+}
+
+/** Full round shot review data */
+export interface RoundShotReviewData {
+  roundId: string;
+  courseName: string | null;
+  roundDate: string;
+  totalScore: number | null;
+  scoreToPar: number | null;
+  holes: HoleReviewData[];
+  hasShotData: boolean;
+}
+
+/**
+ * Get detailed shot-by-shot data for a round
+ * Used for the shot-by-shot review feature
+ */
+export async function getRoundShotDetails(
+  roundId: string
+): Promise<ActionResult<RoundShotReviewData>> {
+  try {
+    const supabase = await createClient();
+
+    // Verify user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Fetch round with holes
+    const { data: round, error: roundError } = await supabase
+      .from('golf_rounds')
+      .select(`
+        id,
+        course_name,
+        round_date,
+        total_score,
+        score_to_par,
+        player_id
+      `)
+      .eq('id', roundId)
+      .single();
+
+    if (roundError || !round) {
+      return { success: false, error: 'Round not found' };
+    }
+
+    // Check authorization - user must be player or coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const isOwnRound = player?.id === round.player_id;
+
+    // Check if coach has access
+    let isCoach = false;
+    if (coach?.organization_id) {
+      const { data: orgTeam } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', coach.organization_id)
+        .maybeSingle();
+
+      if (orgTeam?.id) {
+        const { data: teamMembership } = await supabase
+          .from('golf_team_members')
+          .select('id')
+          .eq('team_id', orgTeam.id)
+          .eq('player_id', round.player_id)
+          .maybeSingle();
+        isCoach = !!teamMembership;
+      }
+    }
+
+    if (!isOwnRound && !isCoach) {
+      return { success: false, error: 'Not authorized to view this round' };
+    }
+
+    // Fetch holes for the round
+    const { data: holes, error: holesError } = await supabase
+      .from('golf_holes')
+      .select(`
+        id,
+        hole_number,
+        par,
+        yardage,
+        score,
+        score_to_par,
+        putts,
+        fairway_hit,
+        green_in_regulation,
+        penalty_strokes,
+        driving_distance,
+        approach_distance,
+        approach_proximity,
+        first_putt_distance,
+        scramble_attempt,
+        scramble_made,
+        sand_save_attempt,
+        sand_save_made
+      `)
+      .eq('round_id', roundId)
+      .order('hole_number', { ascending: true });
+
+    if (holesError) {
+      return { success: false, error: 'Failed to fetch holes' };
+    }
+
+    // Fetch all shots for the round
+    const { data: shots, error: shotsError } = await supabase
+      .from('golf_shots')
+      .select(`
+        id,
+        hole_number,
+        shot_number,
+        shot_type,
+        club_type,
+        lie_before,
+        result,
+        distance_to_hole_before,
+        distance_to_hole_after,
+        distance_unit_before,
+        distance_unit_after,
+        shot_distance,
+        miss_direction,
+        putt_break,
+        putt_slope,
+        is_penalty,
+        penalty_type
+      `)
+      .eq('round_id', roundId)
+      .order('hole_number', { ascending: true })
+      .order('shot_number', { ascending: true });
+
+    if (shotsError) {
+      return { success: false, error: 'Failed to fetch shots' };
+    }
+
+    // Group shots by hole_number
+    const shotsByHole: Record<number, ShotDetail[]> = {};
+    for (const shot of (shots || [])) {
+      if (!shotsByHole[shot.hole_number]) {
+        shotsByHole[shot.hole_number] = [];
+      }
+      shotsByHole[shot.hole_number].push({
+        id: shot.id,
+        shot_number: shot.shot_number,
+        shot_type: shot.shot_type,
+        club_type: shot.club_type,
+        lie_before: shot.lie_before,
+        result: shot.result,
+        distance_to_hole_before: shot.distance_to_hole_before,
+        distance_to_hole_after: shot.distance_to_hole_after,
+        distance_unit_before: shot.distance_unit_before,
+        distance_unit_after: shot.distance_unit_after,
+        shot_distance: shot.shot_distance,
+        miss_direction: shot.miss_direction,
+        putt_break: shot.putt_break,
+        putt_slope: shot.putt_slope,
+        is_penalty: shot.is_penalty,
+        penalty_type: shot.penalty_type,
+      });
+    }
+
+    // Combine holes with their shots
+    const holesWithShots: HoleReviewData[] = (holes || []).map((hole) => ({
+      id: hole.id,
+      hole_number: hole.hole_number,
+      par: hole.par,
+      yardage: hole.yardage,
+      score: hole.score,
+      score_to_par: hole.score_to_par,
+      putts: hole.putts,
+      fairway_hit: hole.fairway_hit,
+      green_in_regulation: hole.green_in_regulation,
+      penalty_strokes: hole.penalty_strokes,
+      driving_distance: hole.driving_distance,
+      approach_distance: hole.approach_distance,
+      approach_proximity: hole.approach_proximity,
+      first_putt_distance: hole.first_putt_distance,
+      scramble_attempt: hole.scramble_attempt,
+      scramble_made: hole.scramble_made,
+      sand_save_attempt: hole.sand_save_attempt,
+      sand_save_made: hole.sand_save_made,
+      shots: shotsByHole[hole.hole_number] || [],
+    }));
+
+    const hasShotData = (shots || []).length > 0;
+
+    return {
+      success: true,
+      data: {
+        roundId: round.id,
+        courseName: round.course_name,
+        roundDate: round.round_date,
+        totalScore: round.total_score,
+        scoreToPar: round.score_to_par,
+        holes: holesWithShots,
+        hasShotData,
+      },
+    };
+  } catch (error) {
+    console.error('[getRoundShotDetails Error]', error);
+    return formatSafeErrorResponse(error);
+  }
 }

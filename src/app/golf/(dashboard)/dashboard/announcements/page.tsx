@@ -35,22 +35,40 @@ export default async function GolfAnnouncementsPage() {
   let announcements: GolfAnnouncement[] = [];
 
   if (isCoach) {
+    // Get coach record
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, team_id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
 
-    teamId = coach?.team_id || null;
+    // Get team via organization (golf_teams links to organization_id)
+    if (coach?.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', coach.organization_id)
+        .maybeSingle();
+      teamId = team?.id || null;
+    }
   } else {
+    // Get player record
     const { data: player } = await supabase
       .from('golf_players')
-      .select('id, team_id')
+      .select('id')
       .eq('user_id', user.id)
       .single();
 
-    teamId = player?.team_id || null;
-    playerId = player?.id || null;
+    if (player) {
+      playerId = player.id;
+      // Get team via golf_team_members junction table
+      const { data: membership } = await supabase
+        .from('golf_team_members')
+        .select('team_id')
+        .eq('player_id', player.id)
+        .maybeSingle();
+      teamId = membership?.team_id || null;
+    }
   }
 
   if (teamId) {

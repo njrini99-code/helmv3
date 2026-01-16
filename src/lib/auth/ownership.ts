@@ -75,13 +75,14 @@ export async function requirePlayer() {
 
 /**
  * Get the current golf coach profile or throw
+ * Note: golf_coaches doesn't have team_id - we look it up via organization_id -> golf_teams
  */
 export async function requireGolfCoach() {
   const { supabase, user } = await requireAuth();
 
   const { data: coach, error } = await supabase
     .from('golf_coaches')
-    .select('id, user_id, team_id')
+    .select('id, user_id, organization_id')
     .eq('user_id', user.id)
     .single();
 
@@ -89,7 +90,18 @@ export async function requireGolfCoach() {
     throw new AuthorizationError('Golf coach profile not found');
   }
 
-  return { supabase, user, coach };
+  // Look up team_id from golf_teams via organization_id
+  let teamId: string | null = null;
+  if (coach.organization_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+    teamId = team?.id ?? null;
+  }
+
+  return { supabase, user, coach: { ...coach, team_id: teamId } };
 }
 
 /**
@@ -151,6 +163,7 @@ export async function verifyOrganizationAdmin(
 
 /**
  * Verify golf team ownership
+ * Note: golf_players doesn't have team_id - we look it up via golf_team_members
  */
 export async function verifyGolfTeamOwnership(
   supabase: SupabaseClient,
@@ -158,6 +171,22 @@ export async function verifyGolfTeamOwnership(
   coachTeamId: string,
   resourceTable: 'golf_events' | 'golf_players' | 'golf_rounds'
 ): Promise<void> {
+  // golf_players doesn't have team_id, need to check via golf_team_members
+  if (resourceTable === 'golf_players') {
+    const { data: membership, error } = await supabase
+      .from('golf_team_members')
+      .select('player_id, team_id')
+      .eq('player_id', resourceId)
+      .eq('team_id', coachTeamId)
+      .maybeSingle();
+
+    if (error || !membership) {
+      throw new AuthorizationError('Not your player');
+    }
+    return;
+  }
+
+  // For other tables that have team_id
   const { data: resource, error } = await supabase
     .from(resourceTable)
     .select('id, team_id')

@@ -13,11 +13,32 @@ interface RosterActionResult {
 }
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Get team_id for a coach via organization lookup
+ * Note: golf_coaches doesn't have team_id directly - we get it from golf_teams via organization_id
+ */
+async function getCoachTeamId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  organizationId: string | null
+): Promise<string | null> {
+  if (!organizationId) return null;
+  const { data: team } = await supabase
+    .from('golf_teams')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+  return team?.id ?? null;
+}
+
+// ============================================================================
 // ROSTER OPERATIONS
 // ============================================================================
 
 /**
- * Removes a player from the team by setting their team_id to null.
+ * Removes a player from the team by deleting their golf_team_members record.
  * Does NOT delete the player account, just removes them from the team.
  *
  * Authorization:
@@ -35,10 +56,10 @@ export async function removePlayerFromTeam(playerId: string): Promise<RosterActi
     return { success: false, error: 'Not authenticated' };
   }
 
-  // 2. Verify user is a coach with a team
+  // 2. Verify user is a coach and get team_id via organization
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
@@ -46,36 +67,32 @@ export async function removePlayerFromTeam(playerId: string): Promise<RosterActi
     return { success: false, error: 'Only coaches can remove players' };
   }
 
-  if (!coach.team_id) {
+  const teamId = await getCoachTeamId(supabase, coach.organization_id);
+  if (!teamId) {
     return { success: false, error: 'You must have a team to remove players' };
   }
 
-  // 3. Verify player exists and is on coach's team
-  const { data: player, error: playerError } = await supabase
-    .from('golf_players')
-    .select('id, team_id, first_name, last_name')
-    .eq('id', playerId)
-    .single();
+  // 3. Verify player is on coach's team via golf_team_members
+  const { data: membership, error: memberError } = await supabase
+    .from('golf_team_members')
+    .select('id')
+    .eq('player_id', playerId)
+    .eq('team_id', teamId)
+    .maybeSingle();
 
-  if (playerError || !player) {
-    return { success: false, error: 'Player not found' };
-  }
-
-  if (player.team_id !== coach.team_id) {
+  if (memberError || !membership) {
     return { success: false, error: 'Player is not on your team' };
   }
 
-  // 4. Remove player from team (set team_id to null, don't delete account)
-  const { error: updateError } = await supabase
-    .from('golf_players')
-    .update({
-      team_id: null,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', playerId);
+  // 4. Remove player from team (delete team membership)
+  const { error: deleteError } = await supabase
+    .from('golf_team_members')
+    .delete()
+    .eq('player_id', playerId)
+    .eq('team_id', teamId);
 
-  if (updateError) {
-    console.error('Failed to remove player from team:', updateError);
+  if (deleteError) {
+    console.error('Failed to remove player from team:', deleteError);
     return { success: false, error: 'Failed to remove player. Please try again.' };
   }
 
@@ -114,10 +131,10 @@ export async function getTeamPlayers(): Promise<{
     return { success: false, error: 'Not authenticated' };
   }
 
-  // 2. Verify user is a coach with a team
+  // 2. Verify user is a coach and get team_id via organization
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
@@ -125,15 +142,32 @@ export async function getTeamPlayers(): Promise<{
     return { success: false, error: 'Coach profile not found' };
   }
 
-  if (!coach.team_id) {
+  const teamId = await getCoachTeamId(supabase, coach.organization_id);
+  if (!teamId) {
     return { success: true, data: [] };
   }
 
-  // 3. Get all players on the team
+  // 3. Get all players on the team via golf_team_members
+  const { data: teamMembers, error: membersError } = await supabase
+    .from('golf_team_members')
+    .select('player_id, status')
+    .eq('team_id', teamId);
+
+  if (membersError) {
+    console.error('Failed to fetch team members:', membersError);
+    return { success: false, error: 'Failed to load roster' };
+  }
+
+  if (!teamMembers || teamMembers.length === 0) {
+    return { success: true, data: [] };
+  }
+
+  // 4. Get player details
+  const playerIds = teamMembers.map(m => m.player_id);
   const { data: players, error: playersError } = await supabase
     .from('golf_players')
-    .select('id, first_name, last_name, email, status, handicap, avatar_url')
-    .eq('team_id', coach.team_id)
+    .select('id, first_name, last_name, email, handicap, avatar_url')
+    .in('id', playerIds)
     .order('last_name', { ascending: true });
 
   if (playersError) {
@@ -141,7 +175,14 @@ export async function getTeamPlayers(): Promise<{
     return { success: false, error: 'Failed to load roster' };
   }
 
-  return { success: true, data: players || [] };
+  // 5. Merge player data with membership status
+  const memberStatusMap = new Map(teamMembers.map(m => [m.player_id, m.status]));
+  const result = (players || []).map(player => ({
+    ...player,
+    status: memberStatusMap.get(player.id) ?? null,
+  }));
+
+  return { success: true, data: result };
 }
 
 // NOTE: updatePlayerStatus is in golf.ts

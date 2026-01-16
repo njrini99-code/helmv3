@@ -462,6 +462,300 @@ const RoundComparisonTable = memo(function RoundComparisonTable({ rounds }: { ro
   );
 });
 
+// Putting Make % by Distance Chart
+const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats }) {
+  const data = [
+    { distance: '0-3ft', pct: stats.puttMakePct0_3 ?? 0, fill: '#16a34a' },
+    { distance: '3-5ft', pct: stats.puttMakePct3_5 ?? 0, fill: '#22c55e' },
+    { distance: '5-10ft', pct: stats.puttMakePct5_10 ?? 0, fill: '#fbbf24' },
+    { distance: '10-15ft', pct: stats.puttMakePct10_15 ?? 0, fill: '#f97316' },
+    { distance: '15-20ft', pct: stats.puttMakePct15_20 ?? 0, fill: '#ef4444' },
+    { distance: '20-25ft', pct: stats.puttMakePct20_25 ?? 0, fill: '#dc2626' },
+  ].filter(d => d.pct > 0);
+
+  if (data.length === 0) return null;
+
+  return (
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
+      />
+      <h3 className="text-base font-semibold text-slate-900 mb-4">Putt Make % by Distance</h3>
+
+      <Suspense fallback={<ChartSkeleton />}>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis
+                dataKey="distance"
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                axisLine={{ stroke: '#e2e8f0' }}
+                tickLine={false}
+              />
+              <YAxis
+                domain={[0, 100]}
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                axisLine={{ stroke: '#e2e8f0' }}
+                tickLine={false}
+                tickFormatter={(value) => `${value}%`}
+              />
+              <Tooltip
+                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Make Rate']}
+                contentStyle={{
+                  backgroundColor: 'rgba(255,255,255,0.95)',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                }}
+              />
+              <Bar dataKey="pct" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Suspense>
+
+      <div className="text-xs text-slate-500 text-center mt-3">
+        Distance buckets show make percentage from first putt
+      </div>
+    </div>
+  );
+});
+
+// GIR by Par Type Chart
+const GirByParChart = memo(function GirByParChart({ stats }: { stats: GolfStats }) {
+  const data = [
+    { par: 'Par 3', pct: stats.girPctPar3 ?? 0, fill: '#16a34a' },
+    { par: 'Par 4', pct: stats.girPctPar4 ?? 0, fill: '#3b82f6' },
+    { par: 'Par 5', pct: stats.girPctPar5 ?? 0, fill: '#8b5cf6' },
+  ].filter(d => d.pct > 0);
+
+  if (data.length === 0) return null;
+
+  return (
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
+      />
+      <h3 className="text-base font-semibold text-slate-900 mb-4">GIR % by Hole Type</h3>
+
+      <Suspense fallback={<ChartSkeleton />}>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis
+                dataKey="par"
+                tick={{ fontSize: 12, fill: '#374151', fontWeight: 500 }}
+                axisLine={{ stroke: '#e2e8f0' }}
+                tickLine={false}
+              />
+              <YAxis
+                domain={[0, 100]}
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                axisLine={{ stroke: '#e2e8f0' }}
+                tickLine={false}
+                tickFormatter={(value) => `${value}%`}
+              />
+              <Tooltip
+                formatter={(value: number) => [`${value.toFixed(1)}%`, 'GIR Rate']}
+                contentStyle={{
+                  backgroundColor: 'rgba(255,255,255,0.95)',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                }}
+              />
+              <Bar dataKey="pct" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Suspense>
+
+      <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-slate-100">
+        <div className="text-center">
+          <div className="text-lg font-bold text-slate-900">{stats.girPercentage?.toFixed(1) ?? '--'}%</div>
+          <div className="text-xs text-slate-500">Overall GIR</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-bold text-slate-900">{stats.girPerRound?.toFixed(1) ?? '--'}</div>
+          <div className="text-xs text-slate-500">GIR/Round</div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// Strokes Gained Breakdown Chart
+const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: GolfStats }) {
+  const data = [
+    {
+      category: 'Tee',
+      value: stats.sgTeePerRound ?? 0,
+      fill: stats.sgTeePerRound && stats.sgTeePerRound >= 0 ? '#16a34a' : '#ef4444'
+    },
+    {
+      category: 'Approach',
+      value: stats.sgApproachPerRound ?? 0,
+      fill: stats.sgApproachPerRound && stats.sgApproachPerRound >= 0 ? '#16a34a' : '#ef4444'
+    },
+    {
+      category: 'Around Green',
+      value: stats.sgAroundGreenPerRound ?? 0,
+      fill: stats.sgAroundGreenPerRound && stats.sgAroundGreenPerRound >= 0 ? '#16a34a' : '#ef4444'
+    },
+    {
+      category: 'Putting',
+      value: stats.sgPuttingPerRound ?? 0,
+      fill: stats.sgPuttingPerRound && stats.sgPuttingPerRound >= 0 ? '#16a34a' : '#ef4444'
+    },
+  ];
+
+  // Check if we have any non-zero data
+  const hasData = data.some(d => d.value !== 0);
+  if (!hasData) return null;
+
+  return (
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
+      />
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-base font-semibold text-slate-900">Strokes Gained (per Round)</h3>
+          <p className="text-sm text-slate-500 mt-0.5">vs PGA Tour baseline</p>
+        </div>
+        <div className={`px-3 py-1.5 rounded-lg text-sm font-bold ${
+          (stats.sgTotalPerRound ?? 0) >= 0
+            ? 'bg-green-100 text-green-700'
+            : 'bg-red-100 text-red-700'
+        }`}>
+          {(stats.sgTotalPerRound ?? 0) >= 0 ? '+' : ''}{stats.sgTotalPerRound?.toFixed(2) ?? '0.00'}
+        </div>
+      </div>
+
+      <Suspense fallback={<ChartSkeleton />}>
+        <div className="h-52">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                axisLine={{ stroke: '#e2e8f0' }}
+                tickLine={false}
+                domain={['dataMin - 0.5', 'dataMax + 0.5']}
+              />
+              <YAxis
+                type="category"
+                dataKey="category"
+                tick={{ fontSize: 12, fill: '#374151', fontWeight: 500 }}
+                axisLine={false}
+                tickLine={false}
+                width={80}
+              />
+              <Tooltip
+                formatter={(value: number) => [
+                  `${value >= 0 ? '+' : ''}${value.toFixed(2)}`,
+                  'SG/Round'
+                ]}
+                contentStyle={{
+                  backgroundColor: 'rgba(255,255,255,0.95)',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                }}
+              />
+              <Bar dataKey="value" radius={[0, 6, 6, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Suspense>
+
+      <div className="text-xs text-slate-500 text-center mt-3">
+        Positive = gaining strokes vs tour avg | Negative = losing strokes
+      </div>
+    </div>
+  );
+});
+
+// Key Stats Trend Chart (GIR%, Fairway%, Putts shown if we had round-by-round data)
+const KeyStatsSummary = memo(function KeyStatsSummary({ stats }: { stats: GolfStats }) {
+  const statCards = [
+    {
+      label: 'Fairway %',
+      value: stats.fairwayPercentage,
+      target: 60,
+      color: 'green',
+      format: (v: number) => `${v.toFixed(0)}%`
+    },
+    {
+      label: 'GIR %',
+      value: stats.girPercentage,
+      target: 50,
+      color: 'blue',
+      format: (v: number) => `${v.toFixed(0)}%`
+    },
+    {
+      label: 'Putts/Round',
+      value: stats.puttsPerRound,
+      target: 32,
+      color: 'purple',
+      invertTarget: true, // lower is better
+      format: (v: number) => v.toFixed(1)
+    },
+    {
+      label: 'Scrambling',
+      value: stats.scramblingPercentage,
+      target: 50,
+      color: 'amber',
+      format: (v: number) => `${v.toFixed(0)}%`
+    },
+  ];
+
+  const getColorClasses = (color: string, isAboveTarget: boolean) => {
+    if (!isAboveTarget) return 'bg-slate-100 text-slate-600';
+    switch (color) {
+      case 'green': return 'bg-green-100 text-green-700';
+      case 'blue': return 'bg-blue-100 text-blue-700';
+      case 'purple': return 'bg-purple-100 text-purple-700';
+      case 'amber': return 'bg-amber-100 text-amber-700';
+      default: return 'bg-slate-100 text-slate-600';
+    }
+  };
+
+  return (
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
+      />
+      <h3 className="text-base font-semibold text-slate-900 mb-4">Key Performance Indicators</h3>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {statCards.map((stat, i) => {
+          const isAboveTarget = stat.value !== null && (
+            stat.invertTarget
+              ? stat.value <= stat.target
+              : stat.value >= stat.target
+          );
+
+          return (
+            <div key={i} className="text-center">
+              <div className={`inline-flex px-3 py-1 rounded-full text-xs font-medium mb-2 ${getColorClasses(stat.color, isAboveTarget)}`}>
+                {isAboveTarget ? 'On Target' : 'Improving'}
+              </div>
+              <div className="text-2xl font-bold text-slate-900">
+                {stat.value !== null ? stat.format(stat.value) : '--'}
+              </div>
+              <div className="text-sm text-slate-500">{stat.label}</div>
+              <div className="text-xs text-slate-400 mt-1">
+                Target: {stat.invertTarget ? '<' : '>'}{stat.target}{stat.label.includes('%') ? '%' : ''}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
+
 const InsightCard = memo(function InsightCard({ stats }: { stats: GolfStats }) {
   if (stats.roundsPlayed < 3) return null;
 
@@ -561,11 +855,26 @@ export default memo(function ProgressStats({ stats, rounds }: ProgressStatsProps
       {/* Scoring Trend Chart */}
       <ScoringTrendChart rounds={rounds} />
 
-      {/* Recent Rounds */}
-      {rounds.length > 0 && <RecentRounds rounds={rounds} />}
+      {/* Key Performance Indicators */}
+      <KeyStatsSummary stats={stats} />
+
+      {/* Charts Grid - Responsive 2-column layout on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* GIR by Par Type */}
+        <GirByParChart stats={stats} />
+
+        {/* Putt Make % by Distance */}
+        <PuttMakeChart stats={stats} />
+      </div>
+
+      {/* Strokes Gained Chart */}
+      <StrokesGainedChart stats={stats} />
 
       {/* Score Distribution */}
       <ScoreDistributionChart stats={stats} />
+
+      {/* Recent Rounds */}
+      {rounds.length > 0 && <RecentRounds rounds={rounds} />}
 
       {/* Round Comparison Table */}
       <RoundComparisonTable rounds={rounds} />
@@ -580,7 +889,7 @@ export default memo(function ProgressStats({ stats, rounds }: ProgressStatsProps
             style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
           />
           <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">📈</span>
+            <span className="text-2xl">&#128200;</span>
           </div>
           <h3 className="text-lg font-semibold text-slate-900 mb-2">More Data Needed</h3>
           <p className="text-slate-500 max-w-sm mx-auto">

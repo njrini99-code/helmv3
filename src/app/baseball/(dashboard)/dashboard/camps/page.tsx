@@ -19,11 +19,17 @@ interface Camp {
   name: string;
   description: string | null;
   start_date: string;
-  end_date: string | null;
+  end_date: string;
   location: string | null;
   capacity: number | null;
   status: string | null;
-  price: number | null;
+  price_cents: number | null;
+  is_free: boolean | null;
+  registration_deadline: string | null;
+  coach_id: string;
+  organization_id: string | null;
+  created_at: string | null;
+  updated_at: string | null;
   organization: {
     id: string;
     name: string;
@@ -100,9 +106,14 @@ function CampCard({
             >
               {camp.status === 'active' ? 'Open' : camp.status || 'Pending'}
             </Badge>
-            {camp.price && (
+            {camp.price_cents && !camp.is_free && (
               <p className="text-lg font-semibold tracking-tight text-slate-900">
-                ${camp.price}
+                ${(camp.price_cents / 100).toFixed(0)}
+              </p>
+            )}
+            {camp.is_free && (
+              <p className="text-lg font-semibold tracking-tight text-green-600">
+                Free
               </p>
             )}
           </div>
@@ -194,12 +205,12 @@ export default function CampsPage() {
           .select(`
             *,
             organization:organizations(id, name, logo_url),
-            registrations:camp_registrations(count)
+            registrations:baseball_camp_registrations(count)
           `)
           .eq('coach_id', coach.id)
           .order('start_date', { ascending: true });
 
-        setCamps(data || []);
+        setCamps((data as Camp[]) || []);
       } else if (isPlayer && player) {
         // Fetch all active camps for players
         const { data } = await supabase
@@ -207,24 +218,24 @@ export default function CampsPage() {
           .select(`
             *,
             organization:organizations(id, name, logo_url),
-            registrations:camp_registrations(count)
+            registrations:baseball_camp_registrations(count)
           `)
           .eq('status', 'active')
           .gte('end_date', new Date().toISOString())
           .order('start_date', { ascending: true });
 
-        // Fetch player's registrations
+        // Fetch player's registrations (filter out cancelled via status)
         const { data: playerRegs } = await supabase
           .from('baseball_camp_registrations')
           .select('camp_id')
           .eq('player_id', player.id)
-          .is('cancelled_at', null);
+          .neq('status', 'cancelled');
 
         if (playerRegs) {
           setRegisteredCamps(new Set(playerRegs.map(r => r.camp_id)));
         }
 
-        setCamps(data || []);
+        setCamps((data as Camp[]) || []);
       }
 
       setLoading(false);
@@ -261,7 +272,7 @@ export default function CampsPage() {
 
     const { error } = await supabase
       .from('baseball_camp_registrations')
-      .update({ cancelled_at: new Date().toISOString() })
+      .update({ status: 'cancelled' })
       .eq('camp_id', campId)
       .eq('player_id', player.id);
 
@@ -393,12 +404,12 @@ export default function CampsPage() {
               .select(`
                 *,
                 organization:organizations(id, name, logo_url),
-                registrations:camp_registrations(count)
+                registrations:baseball_camp_registrations(count)
               `)
               .eq('coach_id', coach.id)
               .order('start_date', { ascending: true })
               .then(({ data }) => {
-                setCamps(data || []);
+                setCamps((data as Camp[]) || []);
               });
           }
         }}

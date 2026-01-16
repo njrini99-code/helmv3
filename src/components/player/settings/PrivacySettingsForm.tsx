@@ -218,7 +218,7 @@ export function PrivacySettingsForm({
     try {
       // Check if settings exist
       const { data: existing } = await supabase
-        .from('player_settings')
+        .from('baseball_player_settings')
         .select('id')
         .eq('player_id', playerId)
         .maybeSingle();
@@ -226,7 +226,7 @@ export function PrivacySettingsForm({
       if (existing) {
         // Update existing
         const { error } = await supabase
-          .from('player_settings')
+          .from('baseball_player_settings')
           .update(settings)
           .eq('player_id', playerId);
 
@@ -234,7 +234,7 @@ export function PrivacySettingsForm({
       } else {
         // Insert new
         const { error } = await supabase
-          .from('player_settings')
+          .from('baseball_player_settings')
           .insert({ ...settings, player_id: playerId });
 
         if (error) throw error;

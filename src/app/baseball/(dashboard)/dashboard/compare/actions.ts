@@ -2,13 +2,11 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import type { PlayerComparisonInsert, ComparisonData, PlayerComparison } from '@/lib/types';
 
 interface SaveComparisonParams {
   name: string;
-  description?: string;
+  notes?: string;
   playerIds: string[];
-  comparisonData?: ComparisonData;
 }
 
 export async function saveComparison(params: SaveComparisonParams) {
@@ -45,24 +43,15 @@ export async function saveComparison(params: SaveComparisonParams) {
     return { error: 'Comparison name is required' };
   }
 
-  // Create comparison insert object
-  const comparisonInsert: PlayerComparisonInsert = {
-    coach_id: coach.id,
-    name: params.name.trim(),
-    description: params.description?.trim() || null,
-    player_ids: params.playerIds,
-    comparison_data: params.comparisonData,
-  };
-
   // Insert into database
+  // Database columns: coach_id, name, notes, player_ids
   const { data: comparison, error: insertError } = await supabase
     .from('baseball_player_comparisons')
     .insert({
-      coach_id: comparisonInsert.coach_id,
-      name: comparisonInsert.name,
-      description: comparisonInsert.description,
-      player_ids: comparisonInsert.player_ids,
-      comparison_data: comparisonInsert.comparison_data as unknown as null,
+      coach_id: coach.id,
+      name: params.name.trim(),
+      notes: params.notes?.trim() || null,
+      player_ids: params.playerIds,
     })
     .select()
     .single();
@@ -118,13 +107,23 @@ export async function deleteComparison(comparisonId: string) {
   return { success: true };
 }
 
+interface SavedComparison {
+  id: string;
+  coach_id: string;
+  name: string | null;
+  notes: string | null;
+  player_ids: string[];
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 export async function getSavedComparisons() {
   const supabase = await createClient();
 
   // Get current user
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
-    return { error: 'Unauthorized', comparisons: [] };
+    return { error: 'Unauthorized', comparisons: [] as SavedComparison[] };
   }
 
   // Get coach record
@@ -135,7 +134,7 @@ export async function getSavedComparisons() {
     .single();
 
   if (coachError || !coach) {
-    return { error: 'Coach not found', comparisons: [] };
+    return { error: 'Coach not found', comparisons: [] as SavedComparison[] };
   }
 
   // Fetch comparisons
@@ -147,14 +146,8 @@ export async function getSavedComparisons() {
 
   if (fetchError) {
     console.error('Error fetching comparisons:', fetchError);
-    return { error: 'Failed to fetch comparisons', comparisons: [] };
+    return { error: 'Failed to fetch comparisons', comparisons: [] as SavedComparison[] };
   }
 
-  // Transform to match PlayerComparison type
-  const typedComparisons = (comparisons || []).map(comp => ({
-    ...comp,
-    comparison_data: comp.comparison_data as unknown as ComparisonData
-  }));
-
-  return { comparisons: typedComparisons as PlayerComparison[] };
+  return { comparisons: (comparisons || []) as SavedComparison[] };
 }

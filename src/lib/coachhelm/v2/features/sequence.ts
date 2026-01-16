@@ -13,8 +13,14 @@ import type { SequenceFeatures } from '../types';
 
 interface HoleData {
   hole_number: number;
-  score_to_par: number | null;
+  score: number | null;
+  par: number;
   round_id: string;
+}
+
+function getScoreToPar(hole: HoleData): number {
+  if (hole.score === null) return 0;
+  return hole.score - hole.par;
 }
 
 /**
@@ -50,7 +56,7 @@ export async function extractSequenceFeatures(
   // Get hole data for these rounds
   const { data: holes, error: holesError } = await supabase
     .from('golf_holes')
-    .select('hole_number, score_to_par, round_id')
+    .select('hole_number, score, par, round_id')
     .in('round_id', roundIds)
     .order('round_id')
     .order('hole_number');
@@ -133,8 +139,8 @@ function analyzeFollowUpPatterns(roundHoles: Map<string, HoleData[]>): {
     for (let i = 0; i < sortedHoles.length - 1; i++) {
       const current = sortedHoles[i];
       const next = sortedHoles[i + 1];
-      const currentScore = current?.score_to_par ?? 0;
-      const nextScore = next?.score_to_par ?? 0;
+      const currentScore = current ? getScoreToPar(current) : 0;
+      const nextScore = next ? getScoreToPar(next) : 0;
 
       // After birdie or better
       if (currentScore <= -1) {
@@ -189,7 +195,7 @@ function analyzeStreaks(roundHoles: Map<string, HoleData[]>): {
     let currentBogeyStreak = 0;
 
     for (const hole of sortedHoles) {
-      const scoreToP = hole.score_to_par ?? 0;
+      const scoreToP = getScoreToPar(hole);
       // Birdie streak
       if (scoreToP <= -1) {
         currentBirdieStreak++;
@@ -250,13 +256,13 @@ function analyzeNines(roundHoles: Map<string, HoleData[]>): {
 
     if (frontHoles.length === 9) {
       frontScores.push(
-        frontHoles.reduce((a, h) => a + (h.score_to_par ?? 0), 0)
+        frontHoles.reduce((a, h) => a + getScoreToPar(h), 0)
       );
     }
 
     if (backHoles.length === 9) {
       backScores.push(
-        backHoles.reduce((a, h) => a + (h.score_to_par ?? 0), 0)
+        backHoles.reduce((a, h) => a + getScoreToPar(h), 0)
       );
     }
   }
@@ -288,7 +294,7 @@ function analyzeCollapsePatterns(roundHoles: Map<string, HoleData[]>): {
     for (const hole of holes) {
       if (hole.hole_number >= 1 && hole.hole_number <= 18) {
         const idx = hole.hole_number - 1;
-        holeAvgScores[idx] = (holeAvgScores[idx] ?? 0) + (hole.score_to_par ?? 0);
+        holeAvgScores[idx] = (holeAvgScores[idx] ?? 0) + getScoreToPar(hole);
         holeCounts[idx] = (holeCounts[idx] ?? 0) + 1;
       }
     }
@@ -297,7 +303,7 @@ function analyzeCollapsePatterns(roundHoles: Map<string, HoleData[]>): {
     const finishingHoles = holes.filter((h) => h.hole_number >= 16);
     if (finishingHoles.length === 3) {
       finishingScores.push(
-        finishingHoles.reduce((a, h) => a + (h.score_to_par ?? 0), 0)
+        finishingHoles.reduce((a, h) => a + getScoreToPar(h), 0)
       );
     }
   }

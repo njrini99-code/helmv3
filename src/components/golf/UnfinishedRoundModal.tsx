@@ -11,13 +11,14 @@ interface UnfinishedRoundModalProps {
   onClose: () => void;
   round: {
     id: string;
-    course_name: string;
+    course_name: string | null;
     course_city?: string | null;
     course_state?: string | null;
     round_date: string;
     current_hole?: number | null;
-    holes_to_play?: number | null;
+    holes_played?: number | null;
     updated_at?: string | null;
+    created_at?: string | null;
   };
   onDeleted?: () => void;
 }
@@ -95,7 +96,7 @@ export function UnfinishedRoundModal({
             {/* Round Info */}
             <div className="space-y-2">
               <h3 className="font-semibold text-slate-900 text-lg">
-                {round.course_name}
+                {round.course_name || 'Unknown Course'}
               </h3>
               <div className="flex items-center gap-4 text-sm text-slate-500">
                 <span>{new Date(round.round_date).toLocaleDateString()}</span>
@@ -108,7 +109,7 @@ export function UnfinishedRoundModal({
               </div>
               <div className="flex items-center gap-2 text-sm text-slate-600">
                 <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
-                  Hole {round.current_hole || 1} of {round.holes_to_play || 18}
+                  Hole {round.current_hole || 1} of {round.holes_played || 18}
                 </span>
                 <span className="text-slate-400">•</span>
                 <span className="text-slate-500">Last updated {timeAgo}</span>

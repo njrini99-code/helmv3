@@ -11,10 +11,18 @@ const YEAR_LABELS: Record<string, string> = {
   'red_shirt_senior': 'RS SR',
 };
 
-export function YearBadge({ year }: { year: string | null }) {
-  if (!year) return null;
+export function YearBadge({ year }: { year: string | number | null }) {
+  if (year === null || year === undefined) return null;
 
-  const label = YEAR_LABELS[year] || year.slice(0, 2).toUpperCase();
+  let label: string;
+
+  if (typeof year === 'number') {
+    // Graduation year - display as abbreviated year
+    label = `'${String(year).slice(-2)}`;
+  } else {
+    // Class standing string
+    label = YEAR_LABELS[year] || year.slice(0, 2).toUpperCase();
+  }
 
   return (
     <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider

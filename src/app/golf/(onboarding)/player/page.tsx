@@ -10,7 +10,9 @@ import { NativeSelect } from '@/components/ui/select';
 import { PageLoading } from '@/components/ui/loading';
 import { IconArrowRight, IconCheck, IconUser, IconUpload, IconUsers } from '@/components/icons';
 import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
-import type { GolfPlayerYear } from '@/lib/types/golf';
+
+// Player year is not stored in DB - just used for UI display
+type GolfPlayerYear = 'freshman' | 'sophomore' | 'junior' | 'senior' | 'fifth_year' | 'graduate';
 
 type Step = 'welcome' | 'basic' | 'golf' | 'academic' | 'photo' | 'team' | 'complete';
 
@@ -112,22 +114,28 @@ export default function GolfPlayerOnboarding() {
         setFirstName(player.first_name || '');
         setLastName(player.last_name || '');
         setPhone(player.phone || '');
-        setHometown(player.hometown || '');
+        setHometown(player.city || '');
         setState(player.state || '');
-        setYear(player.year || 'freshman');
-        setGraduationYear(player.graduation_year || graduationYears[3] || new Date().getFullYear() + 3);
+        setYear('freshman'); // Year is not stored in DB, use default
+        setGraduationYear(player.grad_year || graduationYears[3] || new Date().getFullYear() + 3);
         setHandicap(player.handicap?.toString() || '');
-        setMajor(player.major || '');
+        setMajor(''); // Major is not stored in golf_players
         setGpa(player.gpa?.toString() || '');
 
-        // Fetch team name if player has a team
-        if (player.team_id) {
+        // Fetch team name if player is on a team via golf_team_members
+        const { data: teamMember } = await supabase
+          .from('golf_team_members')
+          .select('team_id')
+          .eq('player_id', player.id)
+          .maybeSingle();
+
+        if (teamMember?.team_id) {
           setHasExistingTeam(true);
           setTeamJoined(true);
           const { data: team } = await supabase
             .from('golf_teams')
             .select('name')
-            .eq('id', player.team_id)
+            .eq('id', teamMember.team_id)
             .single();
           if (team) {
             setTeamName(team.name);
@@ -161,18 +169,18 @@ export default function GolfPlayerOnboarding() {
         return;
       }
 
-      // Fetch the team name after joining
-      const { data: player } = await supabase
-        .from('golf_players')
+      // Fetch the team name after joining via golf_team_members
+      const { data: teamMember } = await supabase
+        .from('golf_team_members')
         .select('team_id')
-        .eq('id', playerId)
-        .single();
+        .eq('player_id', playerId)
+        .maybeSingle();
 
-      if (player?.team_id) {
+      if (teamMember?.team_id) {
         const { data: team } = await supabase
           .from('golf_teams')
           .select('name')
-          .eq('id', player.team_id)
+          .eq('id', teamMember.team_id)
           .single();
 
         if (team) {
@@ -188,6 +196,39 @@ export default function GolfPlayerOnboarding() {
     }
   };
 
+  // Calculate profile completion percentage based on filled fields
+  const calculateProfileCompletion = (): number => {
+    // Define fields and their weights
+    const fields = [
+      { value: firstName, weight: 15, required: true },
+      { value: lastName, weight: 15, required: true },
+      { value: email, weight: 10, required: false },
+      { value: phone, weight: 5, required: false },
+      { value: hometown, weight: 5, required: false },
+      { value: state, weight: 5, required: false },
+      { value: graduationYear, weight: 10, required: true },
+      { value: handicap, weight: 15, required: false },
+      { value: gpa, weight: 10, required: false },
+      { value: teamJoined || hasExistingTeam, weight: 10, required: false },
+    ];
+
+    let totalWeight = 0;
+    let earnedWeight = 0;
+
+    for (const field of fields) {
+      totalWeight += field.weight;
+      // Check if field has a value
+      const hasValue = typeof field.value === 'boolean'
+        ? field.value
+        : field.value !== null && field.value !== undefined && field.value !== '';
+      if (hasValue) {
+        earnedWeight += field.weight;
+      }
+    }
+
+    return Math.round((earnedWeight / totalWeight) * 100);
+  };
+
   const handleComplete = async () => {
     if (!userId) return;
 
@@ -197,7 +238,7 @@ export default function GolfPlayerOnboarding() {
     try {
       // Get current user for email
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       // IMPORTANT: Ensure the users table record exists
       // The trigger should create it, but let's make sure
       if (user) {
@@ -220,19 +261,23 @@ export default function GolfPlayerOnboarding() {
         }
       }
 
+      // Calculate profile completion percentage
+      const profileCompletionPercent = calculateProfileCompletion();
+
+      // Note: golf_players uses 'city' instead of 'hometown', 'grad_year' instead of 'graduation_year'
+      // 'year' (freshman/sophomore/etc) and 'major' are not stored in the golf_players table
       const updateData = {
         first_name: firstName,
         last_name: lastName,
         email: email || null,
         phone: phone || null,
-        hometown: hometown || null,
+        city: hometown || null,
         state: state || null,
-        year: year,
-        graduation_year: graduationYear,
+        grad_year: graduationYear,
         handicap: handicap ? parseFloat(handicap) : null,
-        major: major || null,
         gpa: gpa ? parseFloat(gpa) : null,
         onboarding_completed: true,
+        profile_completion_percent: profileCompletionPercent,
       };
 
       if (playerId) {
@@ -259,6 +304,7 @@ export default function GolfPlayerOnboarding() {
               ...updateData,
               status: 'active',
               onboarding_completed: true,
+              profile_completion_percent: profileCompletionPercent,
               updated_at: new Date().toISOString(),
             })
             .eq('id', existingPlayer.id);
@@ -275,6 +321,7 @@ export default function GolfPlayerOnboarding() {
               ...updateData,
               status: 'active',
               onboarding_completed: true,
+              profile_completion_percent: profileCompletionPercent,
             });
 
           if (insertError) {

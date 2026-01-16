@@ -16,13 +16,13 @@ interface LeaderboardEntry {
 
 interface QualifierViewTabsProps {
   leaderboard: LeaderboardEntry[];
-  numRounds: number;
+  numRounds?: number;
   showLiveLeaderboard?: boolean;
 }
 
 type ViewMode = 'bracket' | 'table';
 
-export function QualifierViewTabs({ leaderboard, numRounds, showLiveLeaderboard }: QualifierViewTabsProps) {
+export function QualifierViewTabs({ leaderboard, numRounds = 1, showLiveLeaderboard = false }: QualifierViewTabsProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('bracket');
 
   return (

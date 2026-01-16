@@ -120,10 +120,10 @@ export async function isCoachHelmEnabledForCoach(
 
   const supabase = await createClient();
 
-  // Get coach record to find user_id and team_id
+  // Get coach record with team via organization
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('user_id, team_id')
+    .select('user_id, organization_id')
     .eq('id', coachId)
     .single();
 
@@ -151,19 +151,27 @@ export async function isCoachHelmEnabledForCoach(
     };
   }
 
-  // Check team-level settings if coach has a team
-  if (coach.team_id) {
-    const teamSettings = await getTeamCoachHelmSettings(coach.team_id);
-    const teamEnabled = teamSettings?.enabled ?? true;
+  // Check team-level settings if coach has an organization (find team via org)
+  if (coach.organization_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
 
-    if (!teamEnabled) {
-      return {
-        userEnabled: true,
-        teamEnabled: false,
-        effectivelyEnabled: false,
-        disabledReason: teamSettings?.disabledReason ?? 'Disabled by team',
-        disabledBy: 'team',
-      };
+    if (team) {
+      const teamSettings = await getTeamCoachHelmSettings(team.id);
+      const teamEnabled = teamSettings?.enabled ?? true;
+
+      if (!teamEnabled) {
+        return {
+          userEnabled: true,
+          teamEnabled: false,
+          effectivelyEnabled: false,
+          disabledReason: teamSettings?.disabledReason ?? 'Disabled by team',
+          disabledBy: 'team',
+        };
+      }
     }
   }
 
@@ -198,10 +206,10 @@ export async function isCoachHelmEnabledForPlayer(
 
   const supabase = await createClient();
 
-  // Get player record to find user_id and team_id
+  // Get player record with team via golf_team_members
   const { data: player, error: playerError } = await supabase
     .from('golf_players')
-    .select('user_id, team_id')
+    .select('user_id, team:golf_team_members(team_id)')
     .eq('id', playerId)
     .single();
 
@@ -215,16 +223,7 @@ export async function isCoachHelmEnabledForPlayer(
     };
   }
 
-  // Check user-level settings (user_id can be null for legacy data)
-  if (!player.user_id) {
-    return {
-      userEnabled: true,
-      teamEnabled: true,
-      effectivelyEnabled: true,
-      disabledReason: null,
-      disabledBy: null,
-    };
-  }
+  // Check user-level settings (user_id is required in schema)
   const userSettings = await getCoachHelmSettings(player.user_id);
   const userEnabled = userSettings?.enabled ?? true;
 
@@ -239,8 +238,10 @@ export async function isCoachHelmEnabledForPlayer(
   }
 
   // Check team-level settings if player has a team
-  if (player.team_id) {
-    const teamSettings = await getTeamCoachHelmSettings(player.team_id);
+  const teamMembership = Array.isArray(player.team) ? player.team[0] : player.team;
+  const playerTeamId = teamMembership?.team_id;
+  if (playerTeamId) {
+    const teamSettings = await getTeamCoachHelmSettings(playerTeamId);
     const teamEnabled = teamSettings?.enabled ?? true;
 
     if (!teamEnabled) {

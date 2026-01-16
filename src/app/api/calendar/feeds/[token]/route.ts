@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { GolfEvent } from '@/lib/types/golf';
 import { NextRequest, NextResponse } from 'next/server';
+import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 
 /**
  * Calendar Feed API Route
@@ -29,13 +30,13 @@ interface CalendarFeed {
   last_synced_at: string | null;
 }
 
+// CalendarFeedEvent type - using fields that actually exist in golf_events
+// Note: golf_events has start_time/end_time, not start_date/end_date
 type CalendarFeedEvent = Pick<
   GolfEvent,
   | 'id'
   | 'start_time'
-  | 'start_date'
   | 'end_time'
-  | 'end_date'
   | 'title'
   | 'description'
   | 'location'
@@ -64,8 +65,8 @@ function generateVEvent(event: CalendarFeedEvent): string {
   lines.push('BEGIN:VEVENT');
   lines.push(`UID:${event.id}@helm-golf`);
   lines.push(`DTSTAMP:${formatICalDate(new Date().toISOString())}`);
-  lines.push(`DTSTART:${formatICalDate(event.start_time || event.start_date)}`);
-  lines.push(`DTEND:${formatICalDate(event.end_time || event.end_date || event.start_time || event.start_date)}`);
+  lines.push(`DTSTART:${formatICalDate(event.start_time)}`);
+  lines.push(`DTEND:${formatICalDate(event.end_time || event.start_time)}`);
   lines.push(`SUMMARY:${escapeICalText(event.title)}`);
 
   if (event.description) {
@@ -94,7 +95,7 @@ function generateVEvent(event: CalendarFeedEvent): string {
 }
 
 // Generate complete iCal document
-function generateICal(events: CalendarFeedEvent[], feedName: string): string {
+function generateICal(events: CalendarFeedEvent[], feedName: string, timezone: string): string {
   const lines: string[] = [];
 
   // iCal header
@@ -104,7 +105,7 @@ function generateICal(events: CalendarFeedEvent[], feedName: string): string {
   lines.push('CALSCALE:GREGORIAN');
   lines.push('METHOD:PUBLISH');
   lines.push(`X-WR-CALNAME:${escapeICalText(feedName)}`);
-  lines.push('X-WR-TIMEZONE:UTC');
+  lines.push(`X-WR-TIMEZONE:${timezone}`);
   lines.push('X-WR-CALDESC:Helm Sports Golf Calendar Feed');
 
   // Add all events
@@ -155,10 +156,11 @@ export async function GET(
       .eq('id', feed.id);
 
     // Build events query based on feed type
+    // Note: golf_events uses start_time, not start_date
     let eventsQuery = supabase
       .from('golf_events')
       .select('*')
-      .order('start_date', { ascending: true });
+      .order('start_time', { ascending: true });
 
     switch (feed.feed_type) {
       case 'team':
@@ -198,9 +200,21 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
     }
 
-    // Generate iCal content
+    // Get team timezone from team settings
+    let feedTimezone = DEFAULT_TIMEZONE;
+    if (feed.team_id) {
+      const { data: teamSettings } = await supabase
+        .from('golf_team_settings')
+        .select('timezone')
+        .eq('team_id', feed.team_id)
+        .maybeSingle();
+
+      feedTimezone = getValidTimezone(teamSettings?.timezone);
+    }
+
+    // Generate iCal content with proper timezone
     const feedName = feed.name || 'Helm Golf Calendar';
-    const icalContent = generateICal((events || []) as unknown as CalendarFeedEvent[], feedName);
+    const icalContent = generateICal((events || []) as unknown as CalendarFeedEvent[], feedName, feedTimezone);
 
     // Return iCal file with appropriate headers
     return new NextResponse(icalContent, {

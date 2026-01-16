@@ -193,7 +193,7 @@ export default function CoachOnboarding() {
       const orgType = coachType === 'college' ? 'college'
         : coachType === 'juco' ? 'juco'
         : coachType === 'high_school' ? 'high_school'
-        : 'showcase_org';
+        : 'showcase';
 
       // Step 3: Create organization
       const { data: org, error: orgError } = await supabase

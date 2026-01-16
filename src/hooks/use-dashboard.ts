@@ -129,26 +129,36 @@ export function useUpcomingEvents(limit = 5) {
       if (coach?.id) {
         // Get coach's team first
         const { data: teamStaff } = await supabase
-          .from('team_coach_staff')
+          .from('baseball_team_coach_staff')
           .select('team_id')
           .eq('coach_id', coach.id)
           .single();
 
         if (teamStaff?.team_id) {
           const { data: eventsData } = await supabase
-            .from('events')
-            .select('id, name, event_type, start_time, end_time, location_venue, location_city, location_state')
+            .from('baseball_events')
+            .select('id, title, event_type, start_time, end_time, location')
             .eq('team_id', teamStaff.team_id)
             .gte('start_time', now)
             .order('start_time', { ascending: true })
             .limit(limit);
 
-          setEvents((eventsData || []) as UpcomingEvent[]);
+          // Map to expected format
+          setEvents((eventsData || []).map(e => ({
+            id: e.id,
+            name: e.title,
+            event_type: e.event_type,
+            start_time: e.start_time,
+            end_time: e.end_time,
+            location_venue: e.location,
+            location_city: null,
+            location_state: null,
+          })) as UpcomingEvent[]);
         }
 
         // Fetch upcoming camps for coaches
         const { data: campsData } = await supabase
-          .from('camps')
+          .from('baseball_camps')
           .select(`
             id,
             name,
@@ -157,7 +167,7 @@ export function useUpcomingEvents(limit = 5) {
             location,
             organization:organizations (name, logo_url)
           `)
-          .eq('coach_id', coach.id)
+          .eq('created_by', coach.id)
           .gte('start_date', todayDate)
           .order('start_date', { ascending: true })
           .limit(limit);
@@ -176,21 +186,31 @@ export function useUpcomingEvents(limit = 5) {
 
         if (teamMember?.team_id) {
           const { data: eventsData } = await supabase
-            .from('events')
-            .select('id, name, event_type, start_time, end_time, location_venue, location_city, location_state')
+            .from('baseball_events')
+            .select('id, title, event_type, start_time, end_time, location')
             .eq('team_id', teamMember.team_id)
             .gte('start_time', now)
             .order('start_time', { ascending: true })
             .limit(limit);
 
-          setEvents((eventsData || []) as UpcomingEvent[]);
+          // Map to expected format
+          setEvents((eventsData || []).map(e => ({
+            id: e.id,
+            name: e.title,
+            event_type: e.event_type,
+            start_time: e.start_time,
+            end_time: e.end_time,
+            location_venue: e.location,
+            location_city: null,
+            location_state: null,
+          })) as UpcomingEvent[]);
         }
 
         // Fetch camps player is registered for
         const { data: registrations } = await supabase
-          .from('camp_registrations')
+          .from('baseball_camp_registrations')
           .select(`
-            camps (
+            baseball_camps (
               id,
               name,
               start_date,
@@ -202,9 +222,9 @@ export function useUpcomingEvents(limit = 5) {
           .eq('player_id', player.id);
 
         const playerCamps = (registrations || [])
-          .filter(r => r.camps)
+          .filter(r => r.baseball_camps)
           .map(r => {
-            const camp = r.camps as { id: string; name: string; start_date: string; end_date: string | null; location: string | null; organization?: { name: string; logo_url?: string } | { name: string; logo_url?: string }[] | null };
+            const camp = r.baseball_camps as { id: string; name: string; start_date: string; end_date: string | null; location: string | null; organization?: { name: string; logo_url?: string } | { name: string; logo_url?: string }[] | null };
             return {
               ...camp,
               organization: Array.isArray(camp.organization) ? camp.organization[0] : camp.organization,

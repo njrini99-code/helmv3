@@ -43,7 +43,6 @@ export function DreamSchoolsManager({ playerId, initialSchools = [] }: DreamScho
     setSaving(true);
     const supabase = createClient();
 
-    // @ts-expect-error - table not in generated types yet
     const { error } = await supabase.from('player_dream_schools')
       .delete()
       .eq('id', schoolId);
@@ -83,7 +82,7 @@ export function DreamSchoolsManager({ playerId, initialSchools = [] }: DreamScho
     const supabase = createClient();
 
     for (const school of updatedSchools) {
-      const table = supabase.from('player_dream_schools' as 'players');
+      const table = supabase.from('player_dream_schools' as 'baseball_players');
       // @ts-expect-error - table not in generated types yet
       await table.update({ rank: school.rank }).eq('id', school.id);
     }

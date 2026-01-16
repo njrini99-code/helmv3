@@ -48,9 +48,9 @@ interface ScoringTrend {
 
 interface RoundWithPlayer {
     id: string;
-    course_name: string;
+    course_name: string | null;
     total_score: number | null;
-    total_to_par: number | null;
+    score_to_par: number | null;
     round_date: string;
     player?: { first_name: string | null; last_name: string | null } | null;
 }
@@ -91,7 +91,7 @@ export default function GolfDashboardPage() {
                 // OPTIMIZATION: Only select needed columns
                 const { data: coach } = await supabase
                     .from('golf_coaches')
-                    .select('id, user_id, team_id, full_name, avatar_url, created_at')
+                    .select('id, user_id, organization_id, full_name, avatar_url, created_at')
                     .eq('user_id', user.id)
                     .maybeSingle();
 
@@ -99,7 +99,16 @@ export default function GolfDashboardPage() {
                     if (!mounted) return;
                     setUserRole('coach');
 
-                    const teamId = coach.team_id;
+                    // Get team via organization_id (golf_coaches doesn't have team_id directly)
+                    let teamId: string | null = null;
+                    if (coach.organization_id) {
+                        const { data: orgTeam } = await supabase
+                            .from('golf_teams')
+                            .select('id')
+                            .eq('organization_id', coach.organization_id)
+                            .maybeSingle();
+                        teamId = orgTeam?.id || null;
+                    }
                     let team: GolfTeam | null = null;
                     const stats = {
                         rosterSize: 0,
@@ -121,21 +130,23 @@ export default function GolfDashboardPage() {
                             qualifiersCountResult,
                             playersResult
                         ] = await Promise.all([
-                            supabase.from('golf_teams').select('id, name, season, invite_code, created_at').eq('id', teamId).single(),
-                            supabase.from('golf_players').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+                            supabase.from('golf_teams').select('id, name, season, join_code, created_at').eq('id', teamId).single(),
+                            supabase.from('golf_team_members').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
                             supabase
                                 .from('golf_events')
-                                .select('id, title, event_type, start_date, end_date, location, created_at, updated_at', { count: 'exact' })
+                                .select('id, title, event_type, start_time, end_time, location, created_at, updated_at', { count: 'exact' })
                                 .eq('team_id', teamId)
-                                .gte('start_date', new Date().toISOString().split('T')[0])
-                                .order('start_date', { ascending: true })
+                                .gte('start_time', new Date().toISOString())
+                                .order('start_time', { ascending: true })
                                 .limit(20),
                             supabase
                                 .from('golf_qualifiers')
                                 .select('id', { count: 'exact', head: true })
                                 .eq('team_id', teamId)
                                 .in('status', ['upcoming', 'in_progress']),
-                            supabase.from('golf_players').select('id, first_name, last_name').eq('team_id', teamId)
+                            supabase.from('golf_team_members')
+                                .select('player:golf_players(id, first_name, last_name)')
+                                .eq('team_id', teamId)
                         ]);
 
                         team = teamResult.data as GolfTeam | null;
@@ -146,9 +157,9 @@ export default function GolfDashboardPage() {
                         calendarEvents = (eventsResult.data || []).map(event => ({
                             id: event.id,
                             title: event.title,
-                            event_type: event.event_type,
-                            start_time: event.start_date,
-                            end_time: event.end_date || event.start_date,
+                            event_type: event.event_type as DashboardEventType,
+                            start_time: event.start_time,
+                            end_time: event.end_time || event.start_time,
                             location: event.location,
                             created_by_id: coach.user_id,
                             is_recurring: false,
@@ -156,7 +167,9 @@ export default function GolfDashboardPage() {
                             updated_at: event.updated_at || new Date().toISOString(),
                         }));
 
-                        const players = playersResult.data;
+                        // Extract players from team_members join result
+                        const teamMembersData = playersResult.data as Array<{ player: { id: string; first_name: string | null; last_name: string | null } | null }> | null;
+                        const players = teamMembersData?.map(tm => tm.player).filter((p): p is NonNullable<typeof p> => p !== null) || [];
 
                         if (players && players.length > 0) {
                             const playerIds = players.map(p => p.id);
@@ -165,7 +178,7 @@ export default function GolfDashboardPage() {
                             const [recentRoundsResult, allRoundsResult] = await Promise.all([
                                 supabase
                                     .from('golf_rounds')
-                                    .select('id, course_name, total_score, total_to_par, round_date, player:golf_players(first_name, last_name)')
+                                    .select('id, course_name, total_score, score_to_par, round_date, player:golf_players(first_name, last_name)')
                                     .in('player_id', playerIds)
                                     .eq('status', 'completed')
                                     .not('total_score', 'is', null)
@@ -186,9 +199,9 @@ export default function GolfDashboardPage() {
                                 recentRounds = (recentRoundsResult.data as RoundWithPlayer[]).map((r) => ({
                                     id: r.id,
                                     player_name: `${r.player?.first_name || ''} ${r.player?.last_name || ''}`.trim() || 'Unknown',
-                                    course_name: r.course_name,
+                                    course_name: r.course_name || 'Unknown Course',
                                     total_score: r.total_score || 0,
-                                    total_to_par: r.total_to_par || 0,
+                                    total_to_par: r.score_to_par || 0,
                                     round_date: r.round_date,
                                 }));
                             }
@@ -255,7 +268,7 @@ export default function GolfDashboardPage() {
                 // OPTIMIZATION: Only select needed columns
                 const { data: player } = await supabase
                     .from('golf_players')
-                    .select('id, user_id, team_id, first_name, last_name, avatar_url, handicap, created_at')
+                    .select('id, user_id, first_name, last_name, avatar_url, handicap, created_at')
                     .eq('user_id', user.id)
                     .maybeSingle();
 
@@ -265,10 +278,19 @@ export default function GolfDashboardPage() {
 
                     let team: GolfTeam | null = null;
 
+                    // First get the player's team membership
+                    const { data: teamMembership } = await supabase
+                        .from('golf_team_members')
+                        .select('team_id')
+                        .eq('player_id', player.id)
+                        .maybeSingle();
+
+                    const playerTeamId = teamMembership?.team_id;
+
                     // OPTIMIZATION: Fetch team and rounds in parallel
                     const [teamResult, roundsResult] = await Promise.all([
-                        player.team_id
-                            ? supabase.from('golf_teams').select('id, name, season, invite_code, created_at').eq('id', player.team_id).single()
+                        playerTeamId
+                            ? supabase.from('golf_teams').select('id, name, season, invite_code, created_at').eq('id', playerTeamId).single()
                             : Promise.resolve({ data: null }),
                         supabase
                             .from('golf_rounds')

@@ -16,8 +16,7 @@ interface EngagementEvent {
   id: string;
   player_id: string;
   engagement_type: string;
-  engagement_date: string;
-  is_anonymous: boolean;
+  created_at: string | null;
   coach_id: string | null;
   coaches: {
     id: string;
@@ -48,11 +47,10 @@ interface PlayerInterest {
   recent_activity: Array<{
     id: string;
     engagement_type: string;
-    engagement_date: string;
+    created_at: string | null;
     coach_name: string | null;
     coach_school: string | null;
     coach_division: string | null;
-    is_anonymous: boolean;
   }>;
 }
 
@@ -117,8 +115,7 @@ export default function CollegeInterestPage() {
         id,
         player_id,
         engagement_type,
-        engagement_date,
-        is_anonymous,
+        created_at,
         coach_id,
         coaches:baseball_coaches!coach_id (
           id,
@@ -138,7 +135,7 @@ export default function CollegeInterestPage() {
       `)
       .in('player_id', playerIds)
       .in('engagement_type', ['profile_view', 'video_view', 'watchlist_add'])
-      .order('engagement_date', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(500);
 
     if (!events) {
@@ -179,17 +176,18 @@ export default function CollegeInterestPage() {
       }
 
       // Add to recent activity (limit to 10 per player)
+      // Note: anonymity is determined by whether coach info is available
+      const isAnonymous = !event.coach_id;
       if (interest.recent_activity.length < 10) {
         interest.recent_activity.push({
           id: event.id,
           engagement_type: event.engagement_type,
-          engagement_date: event.engagement_date,
-          coach_name: event.is_anonymous
+          created_at: event.created_at,
+          coach_name: isAnonymous
             ? null
             : getFullName(event.coaches?.first_name, event.coaches?.last_name),
-          coach_school: event.is_anonymous ? null : (event.coaches?.school_name ?? null),
-          coach_division: event.is_anonymous ? null : (event.coaches?.division ?? null),
-          is_anonymous: event.is_anonymous,
+          coach_school: isAnonymous ? null : (event.coaches?.school_name ?? null),
+          coach_division: isAnonymous ? null : (event.coaches?.division ?? null),
         });
       }
     });
@@ -216,14 +214,14 @@ export default function CollegeInterestPage() {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       result = result.filter(i =>
-        i.recent_activity.some(a => new Date(a.engagement_date) > sevenDaysAgo)
+        i.recent_activity.some(a => a.created_at && new Date(a.created_at) > sevenDaysAgo)
       );
     }
 
     // Sort by activity
     result.sort((a, b) => {
-      const aLatest = a.recent_activity[0]?.engagement_date || '';
-      const bLatest = b.recent_activity[0]?.engagement_date || '';
+      const aLatest = a.recent_activity[0]?.created_at || '';
+      const bLatest = b.recent_activity[0]?.created_at || '';
       return bLatest.localeCompare(aLatest);
     });
 
@@ -444,7 +442,7 @@ export default function CollegeInterestPage() {
                               {getEngagementIcon(activity.engagement_type)}
                             </div>
                             <div className="flex-1 min-w-0">
-                              {activity.is_anonymous ? (
+                              {!activity.coach_name ? (
                                 <p className="text-slate-600">
                                   <span className="font-medium">A college coach</span> {getEngagementLabel(activity.engagement_type).toLowerCase()}
                                   {activity.coach_division && (
@@ -462,7 +460,7 @@ export default function CollegeInterestPage() {
                               )}
                             </div>
                             <div className="flex-shrink-0 text-xs text-slate-400">
-                              {formatRelativeTime(activity.engagement_date)}
+                              {activity.created_at ? formatRelativeTime(activity.created_at) : ''}
                             </div>
                           </div>
                         ))}

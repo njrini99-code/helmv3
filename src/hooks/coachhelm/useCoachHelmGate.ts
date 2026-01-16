@@ -210,15 +210,26 @@ export function useCoachHelmGateForCoach(
     setError(null);
 
     try {
-      // Get coach record
+      // Get coach record with team via organization
       const { data: coach, error: coachError } = await supabase
         .from('golf_coaches')
-        .select('user_id, team_id')
+        .select('user_id, organization_id')
         .eq('id', coachId)
         .single();
 
       if (coachError) {
         throw coachError;
+      }
+
+      // Get team_id via organization_id
+      let teamId: string | null = null;
+      if (coach.organization_id) {
+        const { data: team } = await supabase
+          .from('golf_teams')
+          .select('id')
+          .eq('organization_id', coach.organization_id)
+          .maybeSingle();
+        teamId = team?.id ?? null;
       }
 
       // Check user-level settings
@@ -243,11 +254,11 @@ export function useCoachHelmGateForCoach(
       }
 
       // Check team-level settings
-      if (coach.team_id) {
+      if (teamId) {
         const { data: teamSettings } = await (supabase
           .from('golf_team_coachhelm_settings' as 'users')
           .select('enabled, disabled_reason')
-          .eq('team_id', coach.team_id)
+          .eq('team_id', teamId)
           .maybeSingle() as unknown as Promise<{ data: SettingsQueryResult | null; error: Error | null }>);
 
         const teamEnabled = teamSettings?.enabled ?? true;

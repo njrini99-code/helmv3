@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const supabase = await createClient();
     const { error } = await supabase
-      .from('colleges')
+      .from('users')
       .select('id')
       .limit(1);
 

@@ -26,6 +26,7 @@ import {
   IconChevronRight,
   IconTrophy,
   IconTarget,
+  IconSparkles,
 } from '@/components/icons';
 
 interface NavItem {
@@ -57,6 +58,7 @@ const coachSecondaryNav: NavItem[] = [
 // Player navigation
 const playerNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
+  { name: 'CoachHelm AI', href: '/golf/dashboard/coachhelm', icon: IconSparkles },
   { name: 'My Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
   { name: 'My Development', href: '/golf/dashboard/my-development', icon: IconTarget },
   { name: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },

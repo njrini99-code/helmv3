@@ -21,7 +21,7 @@ export function useColleges(options: UseCollegesOptions = {}) {
 
   const fetchColleges = useCallback(async () => {
     setLoading(true);
-    let query = supabase.from('colleges').select('*').order('name');
+    let query = supabase.from('organizations').select('*').eq('type', 'college').order('name');
 
     if (options.division) {
       query = query.eq('division', options.division);
@@ -95,8 +95,10 @@ export function useStates() {
 
   useEffect(() => {
     async function fetchStates() {
+      // Use RPC or distinct query since 'state' column may not be on organizations
+      // Query from baseball_players which has state column
       const { data } = await supabase
-        .from('colleges')
+        .from('baseball_players')
         .select('state')
         .not('state', 'is', null);
 
@@ -121,8 +123,9 @@ export function useConferences() {
   useEffect(() => {
     async function fetchConferences() {
       const { data } = await supabase
-        .from('colleges')
+        .from('organizations')
         .select('conference')
+        .eq('type', 'college')
         .not('conference', 'is', null);
 
       if (data) {

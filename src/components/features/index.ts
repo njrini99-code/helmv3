@@ -6,7 +6,6 @@ export { MessagePreview } from './message-preview';
 export { NotificationCenter } from './notification-center';
 export { PipelineCard } from './pipeline-card';
 export { PipelineColumn } from './pipeline-column';
-export { PlayerCard } from './player-card';
 export { PlayerComparison } from './player-comparison';
 export { ProfileEditor } from './profile-editor';
 export { SaveComparisonModal } from './save-comparison-modal';

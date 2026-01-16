@@ -5,20 +5,30 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconUsers, IconTrash, IconCalendar, IconNote, IconLayoutGrid } from '@/components/icons';
-import type { PlayerComparison } from '@/lib/types';
 import { deleteComparison } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
+// Use the actual type returned from getSavedComparisons
+interface SavedComparison {
+  id: string;
+  coach_id: string;
+  name: string | null;
+  notes: string | null;
+  player_ids: string[];
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 interface SavedComparisonsListProps {
-  comparisons: PlayerComparison[];
+  comparisons: SavedComparison[];
 }
 
 export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleViewComparison = (comparison: PlayerComparison) => {
+  const handleViewComparison = (comparison: SavedComparison) => {
     // Navigate to comparison page with player IDs
     const playerIds = comparison.player_ids.join(',');
     router.push(`/baseball/dashboard/compare?players=${playerIds}`);
@@ -85,7 +95,7 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
             {/* Header */}
             <div className="flex items-start justify-between mb-3">
               <h3 className="text-base font-semibold text-slate-900 group-hover:text-green-600 transition-colors line-clamp-2">
-                {comparison.name}
+                {comparison.name || 'Untitled Comparison'}
               </h3>
               <button
                 onClick={(e) => handleDelete(comparison.id, e)}
@@ -98,11 +108,11 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
               </button>
             </div>
 
-            {/* Description */}
-            {comparison.description && (
+            {/* Notes */}
+            {comparison.notes && (
               <div className="flex items-start gap-2 mb-3">
                 <IconNote size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm leading-relaxed text-slate-600 line-clamp-2">{comparison.description}</p>
+                <p className="text-sm leading-relaxed text-slate-600 line-clamp-2">{comparison.notes}</p>
               </div>
             )}
 
@@ -113,12 +123,14 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
                 <span>{comparison.player_ids.length} players</span>
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <IconCalendar size={14} />
-                <span>
-                  {format(new Date(comparison.created_at), 'MMM d, yyyy')}
-                </span>
-              </div>
+              {comparison.created_at && (
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <IconCalendar size={14} />
+                  <span>
+                    {format(new Date(comparison.created_at), 'MMM d, yyyy')}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Footer - View button appears on hover */}

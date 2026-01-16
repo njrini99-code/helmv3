@@ -51,18 +51,18 @@ export function useTeamContext(): TeamContext {
         return;
       }
 
-      // 2. PARALLELIZED: Check coach AND player simultaneously with team joins
-      // Previously: 2-4 sequential queries depending on role
-      // Now: 2 parallel queries with JOINs (eliminates extra team fetch)
+      // 2. PARALLELIZED: Check coach AND player simultaneously
+      // Coach gets team via organization_id -> golf_teams
+      // Player gets team via golf_team_members
       const [coachResult, playerResult] = await Promise.all([
         supabase
           .from('golf_coaches')
-          .select('id, team_id, full_name, team:golf_teams(name)')
+          .select('id, organization_id, full_name')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase
           .from('golf_players')
-          .select('id, team_id, first_name, last_name, team:golf_teams(name)')
+          .select('id, first_name, last_name')
           .eq('user_id', user.id)
           .maybeSingle(),
       ]);
@@ -71,30 +71,56 @@ export function useTeamContext(): TeamContext {
       const player = playerResult.data;
 
       if (coach) {
-        // User is a coach - team name comes from JOIN
-        const teamData = coach.team as { name: string } | null;
+        // User is a coach - get team via organization_id
+        let teamId: string | null = null;
+        let teamName: string | null = null;
+
+        if (coach.organization_id) {
+          const { data: team } = await supabase
+            .from('golf_teams')
+            .select('id, name')
+            .eq('organization_id', coach.organization_id)
+            .maybeSingle();
+          teamId = team?.id ?? null;
+          teamName = team?.name ?? null;
+        }
+
         setContext({
           userId: user.id,
           userRole: 'coach',
           coachId: coach.id,
           playerId: null,
-          teamId: coach.team_id,
-          teamName: teamData?.name || null,
+          teamId,
+          teamName,
         });
         setLoading(false);
         return;
       }
 
       if (player) {
-        // User is a player - team name comes from JOIN
-        const teamData = player.team as { name: string } | null;
+        // User is a player - get team via golf_team_members
+        let teamId: string | null = null;
+        let teamName: string | null = null;
+
+        const { data: membership } = await supabase
+          .from('golf_team_members')
+          .select('team_id, team:golf_teams(name)')
+          .eq('player_id', player.id)
+          .maybeSingle();
+
+        if (membership) {
+          teamId = membership.team_id;
+          const teamData = membership.team as { name: string } | null;
+          teamName = teamData?.name ?? null;
+        }
+
         setContext({
           userId: user.id,
           userRole: 'player',
           coachId: null,
           playerId: player.id,
-          teamId: player.team_id,
-          teamName: teamData?.name || null,
+          teamId,
+          teamName,
         });
         setLoading(false);
         return;

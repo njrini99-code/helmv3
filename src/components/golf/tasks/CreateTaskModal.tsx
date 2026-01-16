@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { ReminderPicker } from './ReminderPicker';
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [reminderAt, setReminderAt] = useState<string | null>(null);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [assignToAll, setAssignToAll] = useState(true);
   const { showToast } = useToast();
@@ -63,6 +65,8 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           title: title.trim(),
           description: description.trim() || null,
           due_date: dueDate || null,
+          reminder_at: reminderAt || null,
+          reminder_sent: false,
           status: 'active'
         })
         .select()
@@ -95,6 +99,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
       setTitle('');
       setDescription('');
       setDueDate('');
+      setReminderAt(null);
       setSelectedPlayers([]);
       setAssignToAll(true);
       onTaskCreated();
@@ -141,12 +146,21 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           />
         </div>
 
-        <Input
-          label="Due Date (Optional)"
-          type="date"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-        />
+        <div className="flex items-end gap-4">
+          <div className="flex-1">
+            <Input
+              label="Due Date (Optional)"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          </div>
+          <ReminderPicker
+            taskDueDate={dueDate}
+            currentReminder={reminderAt}
+            onSelect={setReminderAt}
+          />
+        </div>
 
         <div>
           <label className="text-sm font-medium text-slate-700 block mb-2">

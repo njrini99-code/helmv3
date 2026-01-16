@@ -107,7 +107,6 @@ function DiscoverContent() {
         teamType: searchParams.get('teamType') as
           | 'high_school'
           | 'showcase'
-          | 'travel_ball'
           | 'juco'
           | undefined,
       };

@@ -56,9 +56,9 @@ export function useCalendarEvents({ teamId, startDate, endDate }: UseCalendarEve
           .from('golf_events')
           .select('*')
           .eq('team_id', teamId!)
-          .gte('start_date', startDate.toISOString())
-          .lte('start_date', endDate.toISOString())
-          .order('start_date', { ascending: true });
+          .gte('start_time', startDate.toISOString())
+          .lte('start_time', endDate.toISOString())
+          .order('start_time', { ascending: true });
 
         if (fetchError) {
           throw fetchError;
@@ -67,8 +67,8 @@ export function useCalendarEvents({ teamId, startDate, endDate }: UseCalendarEve
         // Map database events to CalendarEvent format
         const mappedEvents = (data || []).map(event => ({
           ...event,
-          start_time: event.start_date, // Temporary mapping for compatibility
-          end_time: event.end_date || event.start_date,
+          start_date: event.start_time, // Map start_time to start_date for interface compatibility
+          end_date: event.end_time || event.start_time,
           created_by_id: event.created_by || '',
           is_recurring: false,
         } as CalendarEvent));

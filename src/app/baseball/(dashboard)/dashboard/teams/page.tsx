@@ -7,7 +7,6 @@ import { Header } from '@/components/layout/header';
 import { PageLoading } from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouteProtection } from '@/hooks/use-route-protection';
@@ -26,22 +25,27 @@ interface Team {
   team_type: string;
   logo_url: string | null;
   primary_color: string | null;
-  age_group: string | null;
-  city: string | null;
-  state: string | null;
-  season_year: number | null;
+  secondary_color: string | null;
+  description: string | null;
+  join_code: string;
+  organization_id: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  created_by: string | null;
   member_count?: number;
-  created_at: string;
 }
 
 interface TeamInvite {
   id: string;
   team_id: string;
-  invite_code: string;
+  code: string;
   expires_at: string | null;
   max_uses: number | null;
-  current_uses: number;
-  is_active: boolean;
+  used_count: number | null;
+  is_active: boolean | null;
+  created_by_coach_id: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export default function TeamsPage() {
@@ -61,11 +65,9 @@ export default function TeamsPage() {
   // Create team form state
   const [newTeam, setNewTeam] = useState({
     name: '',
-    age_group: '',
-    city: '',
-    state: '',
-    season_year: new Date().getFullYear(),
+    description: '',
     primary_color: '#16A34A',
+    secondary_color: '#FFFFFF',
   });
   const [creating, setCreating] = useState(false);
 
@@ -140,18 +142,20 @@ export default function TeamsPage() {
     setCreating(true);
     const supabase = createClient();
 
+    // Generate a random join code for the team
+    const joinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
     const { data, error } = await supabase
       .from('baseball_teams')
       .insert({
         name: newTeam.name.trim(),
         team_type: 'showcase',
-        age_group: newTeam.age_group || null,
-        city: newTeam.city || null,
-        state: newTeam.state || null,
-        season_year: newTeam.season_year,
+        description: newTeam.description || null,
         primary_color: newTeam.primary_color,
-        head_coach_id: coach.id,
+        secondary_color: newTeam.secondary_color || null,
+        join_code: joinCode,
         organization_id: coach.organization_id || null,
+        created_by: coach.id,
       })
       .select()
       .single();
@@ -173,11 +177,9 @@ export default function TeamsPage() {
     setShowCreateModal(false);
     setNewTeam({
       name: '',
-      age_group: '',
-      city: '',
-      state: '',
-      season_year: new Date().getFullYear(),
+      description: '',
       primary_color: '#16A34A',
+      secondary_color: '#FFFFFF',
     });
     setCreating(false);
   };
@@ -194,8 +196,8 @@ export default function TeamsPage() {
       .from('baseball_team_invitations')
       .insert({
         team_id: teamId,
-        invite_code: code,
-        created_by: coach.id,
+        code: code,
+        created_by_coach_id: coach.id,
         is_active: true,
       })
       .select()
@@ -299,10 +301,10 @@ export default function TeamsPage() {
                   <div className="pt-10 px-4 pb-4">
                     <h3 className="text-lg font-semibold tracking-tight text-slate-900">{team.name}</h3>
                     <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
-                      {team.age_group && <Badge variant="secondary">{team.age_group}</Badge>}
-                      {team.city && team.state && (
-                        <span>
-                          {team.city}, {team.state}
+                      <Badge variant="secondary">{team.team_type}</Badge>
+                      {team.description && (
+                        <span className="truncate max-w-[200px]">
+                          {team.description}
                         </span>
                       )}
                     </div>
@@ -313,10 +315,10 @@ export default function TeamsPage() {
                         <IconUsers size={16} className="text-slate-400" />
                         <span>{team.member_count || 0} players</span>
                       </div>
-                      {team.season_year && (
+                      {team.join_code && (
                         <div className="flex items-center gap-1.5 text-sm text-slate-600">
                           <IconCalendar size={16} className="text-slate-400" />
-                          <span>{team.season_year}</span>
+                          <span>Code: {team.join_code}</span>
                         </div>
                       )}
                     </div>
@@ -327,14 +329,14 @@ export default function TeamsPage() {
                       {invite ? (
                         <div className="flex items-center gap-2">
                           <code className="flex-1 text-sm font-mono text-slate-700 truncate">
-                            {invite.invite_code}
+                            {invite.code}
                           </code>
                           <button
-                            onClick={() => handleCopyInvite(invite.invite_code)}
+                            onClick={() => handleCopyInvite(invite.code)}
                             className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors"
                             title="Copy invite link"
                           >
-                            {copiedCode === invite.invite_code ? (
+                            {copiedCode === invite.code ? (
                               <IconCheck size={16} className="text-green-600" />
                             ) : (
                               <IconCopy size={16} className="text-slate-500" />
@@ -401,45 +403,22 @@ export default function TeamsPage() {
                 onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
                 required
               />
-              <Select
-                label="Age Group"
-                placeholder="Select age group"
-                value={newTeam.age_group}
-                onChange={(value) => setNewTeam({ ...newTeam, age_group: value })}
-                options={[
-                  { value: '18U', label: '18U' },
-                  { value: '17U', label: '17U' },
-                  { value: '16U', label: '16U' },
-                  { value: '15U', label: '15U' },
-                  { value: '14U', label: '14U' },
-                  { value: '13U', label: '13U' },
-                ]}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="City"
-                  placeholder="e.g., Houston"
-                  value={newTeam.city}
-                  onChange={(e) => setNewTeam({ ...newTeam, city: e.target.value })}
-                />
-                <Input
-                  label="State"
-                  placeholder="e.g., TX"
-                  maxLength={2}
-                  value={newTeam.state}
-                  onChange={(e) => setNewTeam({ ...newTeam, state: e.target.value.toUpperCase() })}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  placeholder="Brief description of your team..."
+                  value={newTeam.description}
+                  onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  rows={3}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Season Year"
-                  type="number"
-                  value={newTeam.season_year}
-                  onChange={(e) => setNewTeam({ ...newTeam, season_year: parseInt(e.target.value) })}
-                />
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Team Color
+                    Primary Color
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -451,6 +430,24 @@ export default function TeamsPage() {
                     <Input
                       value={newTeam.primary_color}
                       onChange={(e) => setNewTeam({ ...newTeam, primary_color: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Secondary Color
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={newTeam.secondary_color}
+                      onChange={(e) => setNewTeam({ ...newTeam, secondary_color: e.target.value })}
+                      className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer"
+                    />
+                    <Input
+                      value={newTeam.secondary_color}
+                      onChange={(e) => setNewTeam({ ...newTeam, secondary_color: e.target.value })}
                       className="flex-1"
                     />
                   </div>

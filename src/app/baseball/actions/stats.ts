@@ -81,9 +81,9 @@ export async function uploadStatsCSV(
     .eq('team_id', teamId);
 
   const players = (teamMembers || []).map(tm => ({
-    id: (tm.players as { id: string }).id,
-    first_name: (tm.players as { first_name: string | null }).first_name,
-    last_name: (tm.players as { last_name: string | null }).last_name,
+    id: (tm.baseball_players as { id: string }).id,
+    first_name: (tm.baseball_players as { first_name: string | null }).first_name,
+    last_name: (tm.baseball_players as { last_name: string | null }).last_name,
   }));
 
   // Parse CSV
@@ -287,8 +287,9 @@ export async function recalculatePlayerAggregates(
 
   if (!stats || stats.length === 0) {
     // Remove aggregates if no stats
-    await supabase
-      .from('baseball_player_aggregates' as 'players')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from('baseball_player_aggregates')
       .delete()
       .eq('player_id', playerId)
       .eq('team_id', teamId);
@@ -394,8 +395,9 @@ export async function getPlayerStats(
 ): Promise<{ data: BaseballPlayerStats[] | null; error?: string }> {
   const supabase = await createClient();
 
-  let query = supabase
-    .from('baseball_player_stats' as 'players')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase as any)
+    .from('baseball_player_stats')
     .select('*')
     .eq('player_id', playerId)
     .order('session_date', { ascending: false });
@@ -430,8 +432,9 @@ export async function getRecentUploads(
 ): Promise<{ data: BaseballStatUpload[] | null; error?: string }> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from('baseball_stat_uploads' as 'players')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('baseball_stat_uploads')
     .select('*')
     .eq('team_id', teamId)
     .order('created_at', { ascending: false })

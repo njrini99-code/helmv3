@@ -479,7 +479,6 @@ export default function DashboardPage() {
                 <Badge variant="secondary">
                   {player?.profile_completion_percent}% Complete
                 </Badge>
-                {player?.committed_to && <Badge variant="success">Committed</Badge>}
               </div>
             </div>
           </div>

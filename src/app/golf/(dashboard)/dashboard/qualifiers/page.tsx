@@ -36,19 +36,35 @@ export default async function GolfQualifiersPage() {
   if (isCoach) {
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, team_id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
 
-    teamId = coach?.team_id || null;
+    // Get team_id from organization
+    if (coach?.organization_id) {
+      const { data: orgTeam } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', coach.organization_id)
+        .maybeSingle();
+      teamId = orgTeam?.id || null;
+    }
   } else {
     const { data: player } = await supabase
       .from('golf_players')
-      .select('id, team_id')
+      .select('id')
       .eq('user_id', user.id)
       .single();
 
-    teamId = player?.team_id || null;
+    // Get team_id from team_members
+    if (player?.id) {
+      const { data: teamMember } = await supabase
+        .from('golf_team_members')
+        .select('team_id')
+        .eq('player_id', player.id)
+        .maybeSingle();
+      teamId = teamMember?.team_id || null;
+    }
   }
 
   if (teamId) {
@@ -165,35 +181,23 @@ export default async function GolfQualifiersPage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <IconGolf size={14} className="text-slate-400" />
-                        <span>{qualifier.num_rounds} round{qualifier.num_rounds !== 1 ? 's' : ''} • {qualifier.holes_per_round} holes</span>
-                      </div>
+                      {qualifier.spots_available && (
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <IconGolf size={14} className="text-slate-400" />
+                          <span>{qualifier.spots_available} spots available</span>
+                        </div>
+                      )}
 
                       {qualifier.course_name && (
                         <div className="flex items-center gap-2 text-slate-600 col-span-2">
                           <IconMapPin size={14} className="text-slate-400" />
                           <span className="truncate">{qualifier.course_name}</span>
-                          {qualifier.location && (
-                            <span className="text-slate-400">• {qualifier.location}</span>
-                          )}
                         </div>
                       )}
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                      {qualifier.show_live_leaderboard ? (
-                        <span className="inline-flex items-center gap-2 text-sm font-medium text-green-600">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                          </span>
-                          Live Leaderboard
-                        </span>
-                      ) : (
-                        <span />
-                      )}
+                    <div className="flex items-center justify-end mt-4 pt-4 border-t border-slate-100">
                       <span className="flex items-center gap-1 text-sm text-slate-400 group-hover:text-green-600 transition-colors">
                         View Details
                         <IconChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />

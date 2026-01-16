@@ -2,11 +2,23 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { TeamSettingsClient } from './team-settings-client';
 import { TeamInfoPlayer } from './team-info-player';
-import type { GolfCoach, GolfTeam } from '@/lib/types/golf';
 
-type CoachWithTeam = Pick<GolfCoach, 'id' | 'team_id' | 'full_name'> & {
-  golf_teams: GolfTeam | null;
-};
+// Type for the team data that the client component expects
+interface TeamForClient {
+  id: string;
+  name: string;
+  season: string | null;
+  join_code: string | null;
+  created_at: string;
+}
+
+interface CoachWithTeam {
+  id: string;
+  organization_id: string | null;
+  full_name: string | null;
+  team_id: string | null; // Computed from golf_teams
+  golf_teams: TeamForClient | null;
+}
 
 export default async function TeamSettingsPage() {
   const supabase = await createClient();
@@ -17,21 +29,41 @@ export default async function TeamSettingsPage() {
   // Check if user is a coach
   const { data: coach } = await supabase
     .from('golf_coaches')
-    .select(`
-      id,
-      team_id,
-      full_name,
-      golf_teams (
-        id,
-        name,
-        season,
-        invite_code,
-        created_at
-      )
-    `)
+    .select('id, organization_id, full_name')
     .eq('user_id', user.id)
     .maybeSingle();
-  const coachData = coach as CoachWithTeam | null;
+
+  // If coach, get team via organization_id
+  let coachData: CoachWithTeam | null = null;
+  if (coach?.organization_id) {
+    const { data: orgTeam } = await supabase
+      .from('golf_teams')
+      .select('id, name, season, join_code, created_at')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+
+    coachData = {
+      id: coach.id,
+      organization_id: coach.organization_id,
+      full_name: coach.full_name,
+      team_id: orgTeam?.id || null,
+      golf_teams: orgTeam ? {
+        id: orgTeam.id,
+        name: orgTeam.name,
+        season: orgTeam.season,
+        join_code: orgTeam.join_code,
+        created_at: orgTeam.created_at || '',
+      } : null,
+    };
+  } else if (coach) {
+    coachData = {
+      id: coach.id,
+      organization_id: coach.organization_id,
+      full_name: coach.full_name,
+      team_id: null,
+      golf_teams: null,
+    };
+  }
 
   // If coach, show settings view
   if (coachData) {
@@ -46,47 +78,69 @@ export default async function TeamSettingsPage() {
     );
   }
 
-  // Check if user is a player
+  // Check if user is a player - get team via golf_team_members
   const { data: player } = await supabase
     .from('golf_players')
-    .select('id, team_id')
+    .select('id')
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (!player || !player.team_id) {
+  if (!player) {
+    redirect('/golf/dashboard'); // No player profile - redirect to dashboard
+  }
+
+  // Get team_id via golf_team_members
+  const { data: teamMember } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', player.id)
+    .maybeSingle();
+
+  if (!teamMember?.team_id) {
     redirect('/golf/dashboard'); // No team - redirect to dashboard
   }
 
   // Get team info for player view
   const { data: team } = await supabase
     .from('golf_teams')
-    .select('id, name, season, created_at')
-    .eq('id', player.team_id)
+    .select('id, name, season, created_at, organization_id')
+    .eq('id', teamMember.team_id)
     .single();
 
   if (!team) {
     redirect('/golf/dashboard');
   }
 
-  // Get team coach
-  const { data: teamCoach } = await supabase
-    .from('golf_coaches')
-    .select('full_name, avatar_url')
-    .eq('team_id', player.team_id)
-    .maybeSingle();
+  // Get team coach via organization_id
+  const { data: teamCoach } = team.organization_id
+    ? await supabase
+        .from('golf_coaches')
+        .select('full_name, avatar_url')
+        .eq('organization_id', team.organization_id)
+        .maybeSingle()
+    : { data: null };
 
-  // Get roster (teammates)
-  const { data: roster } = await supabase
-    .from('golf_players')
-    .select('id, first_name, last_name, avatar_url, handicap')
-    .eq('team_id', player.team_id)
-    .order('last_name');
+  // Get roster (teammates) via golf_team_members
+  const { data: teamMembers } = await supabase
+    .from('golf_team_members')
+    .select('player_id')
+    .eq('team_id', teamMember.team_id);
+
+  const rosterPlayerIds = (teamMembers || []).map(tm => tm.player_id);
+
+  const { data: roster } = rosterPlayerIds.length > 0
+    ? await supabase
+        .from('golf_players')
+        .select('id, first_name, last_name, avatar_url, handicap')
+        .in('id', rosterPlayerIds)
+        .order('last_name')
+    : { data: [] };
 
   // Get recent announcements - column is 'body' not 'content'
   const { data: announcementsRaw } = await supabase
     .from('golf_announcements')
     .select('id, title, body, created_at')
-    .eq('team_id', player.team_id)
+    .eq('team_id', teamMember.team_id)
     .order('created_at', { ascending: false })
     .limit(5);
 

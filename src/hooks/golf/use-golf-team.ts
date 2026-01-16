@@ -36,25 +36,41 @@ export function useGolfTeam(teamId?: string): UseGolfTeamResult {
           return;
         }
 
-        // Check if coach
+        // Check if coach - get team via organization_id
         const { data: coach } = await supabase
           .from('golf_coaches')
-          .select('team_id')
+          .select('organization_id')
           .eq('user_id', user.id)
           .single();
 
-        if (coach?.team_id) {
-          targetTeamId = coach.team_id;
-        } else {
-          // Check if player
+        if (coach?.organization_id) {
+          const { data: team } = await supabase
+            .from('golf_teams')
+            .select('id')
+            .eq('organization_id', coach.organization_id)
+            .maybeSingle();
+          if (team?.id) {
+            targetTeamId = team.id;
+          }
+        }
+
+        // If not a coach or no team found, check if player via golf_team_members
+        if (!targetTeamId) {
           const { data: player } = await supabase
             .from('golf_players')
-            .select('team_id')
+            .select('id')
             .eq('user_id', user.id)
             .single();
 
-          if (player?.team_id) {
-            targetTeamId = player.team_id;
+          if (player?.id) {
+            const { data: membership } = await supabase
+              .from('golf_team_members')
+              .select('team_id')
+              .eq('player_id', player.id)
+              .maybeSingle();
+            if (membership?.team_id) {
+              targetTeamId = membership.team_id;
+            }
           }
         }
       }
@@ -74,24 +90,41 @@ export function useGolfTeam(teamId?: string): UseGolfTeamResult {
       if (teamError) throw teamError;
       setTeam(teamData as GolfTeam);
 
-      // Fetch players
-      const { data: playersData, error: playersError } = await supabase
-        .from('golf_players')
-        .select('*')
-        .eq('team_id', targetTeamId)
-        .order('last_name', { ascending: true });
-
-      if (playersError) throw playersError;
-      setPlayers(playersData as GolfPlayer[]);
-
-      // Fetch coaches
-      const { data: coachesData, error: coachesError } = await supabase
-        .from('golf_coaches')
-        .select('*')
+      // Fetch players via golf_team_members
+      const { data: memberships, error: membershipsError } = await supabase
+        .from('golf_team_members')
+        .select('player_id')
         .eq('team_id', targetTeamId);
 
-      if (coachesError) throw coachesError;
-      setCoaches(coachesData as GolfCoach[]);
+      if (membershipsError) throw membershipsError;
+
+      const playerIds = memberships?.map(m => m.player_id) ?? [];
+      if (playerIds.length > 0) {
+        const { data: playersData, error: playersError } = await supabase
+          .from('golf_players')
+          .select('*')
+          .in('id', playerIds)
+          .order('last_name', { ascending: true });
+
+        if (playersError) throw playersError;
+        setPlayers(playersData as GolfPlayer[]);
+      } else {
+        setPlayers([]);
+      }
+
+      // Fetch coaches via organization_id from the team
+      const organizationId = teamData?.organization_id;
+      if (organizationId) {
+        const { data: coachesData, error: coachesError } = await supabase
+          .from('golf_coaches')
+          .select('*')
+          .eq('organization_id', organizationId);
+
+        if (coachesError) throw coachesError;
+        setCoaches(coachesData as GolfCoach[]);
+      } else {
+        setCoaches([]);
+      }
     } catch (err) {
       console.error('Error fetching golf team:', err);
       setError(err instanceof Error ? err.message : 'Failed to load team');

@@ -124,12 +124,12 @@ export default function GolfDashboardLayout({
       const [coachResult, playerResult] = await Promise.all([
         supabase
           .from('golf_coaches')
-          .select('id, full_name, avatar_url, team_id, onboarding_completed')
+          .select('id, full_name, avatar_url, organization_id, onboarding_completed')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase
           .from('golf_players')
-          .select('id, first_name, last_name, avatar_url, team_id, onboarding_completed')
+          .select('id, first_name, last_name, avatar_url, onboarding_completed')
           .eq('user_id', user.id)
           .maybeSingle(),
       ]);
@@ -144,14 +144,14 @@ export default function GolfDashboardLayout({
           return;
         }
 
-        // Get team name if team_id exists
+        // Get team name via organization_id
         let teamName: string | undefined;
-        if (coach.team_id) {
+        if (coach.organization_id) {
           const { data: team } = await supabase
             .from('golf_teams')
             .select('name')
-            .eq('id', coach.team_id)
-            .single();
+            .eq('organization_id', coach.organization_id)
+            .maybeSingle();
           teamName = team?.name;
         }
 
@@ -172,13 +172,19 @@ export default function GolfDashboardLayout({
           return;
         }
 
-        // Get team name if team_id exists
+        // Get team name via golf_team_members
         let teamName: string | undefined;
-        if (player.team_id) {
+        const { data: teamMember } = await supabase
+          .from('golf_team_members')
+          .select('team_id')
+          .eq('player_id', player.id)
+          .maybeSingle();
+
+        if (teamMember?.team_id) {
           const { data: team } = await supabase
             .from('golf_teams')
             .select('name')
-            .eq('id', player.team_id)
+            .eq('id', teamMember.team_id)
             .single();
           teamName = team?.name;
         }

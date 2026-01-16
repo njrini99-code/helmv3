@@ -28,7 +28,7 @@ export async function extractTemporalFeatures(
 
   const { data: rounds, error } = await supabase
     .from('golf_rounds')
-    .select('id, total_score, total_to_par, round_date, created_at')
+    .select('id, total_score, score_to_par, round_date, created_at')
     .eq('player_id', playerId)
     .eq('status', 'completed')
     .gte('round_date', ninetyDaysAgo.toISOString())
@@ -129,13 +129,13 @@ function determinePlayingFrequency(
  * Positive = declining (scores going up)
  */
 function calculateTrend(
-  rounds: Array<{ total_to_par: number | null; round_date: string }>
+  rounds: Array<{ score_to_par: number | null; round_date: string }>
 ): number {
   if (rounds.length < 2) return 0;
 
   // Simple linear regression
   const n = rounds.length;
-  const scores = rounds.map((r) => r.total_to_par ?? 0);
+  const scores = rounds.map((r) => r.score_to_par ?? 0);
 
   // Indices represent time (newer rounds have higher index)
   let sumX = 0;
@@ -161,11 +161,11 @@ function calculateTrend(
  * Calculates volatility (standard deviation) of scores
  */
 function calculateVolatility(
-  rounds: Array<{ total_to_par: number | null }>
+  rounds: Array<{ score_to_par: number | null }>
 ): number {
   if (rounds.length < 2) return 0;
 
-  const scores = rounds.map((r) => r.total_to_par ?? 0);
+  const scores = rounds.map((r) => r.score_to_par ?? 0);
   const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
   const squaredDiffs = scores.map((s) => Math.pow(s - mean, 2));
   const variance = squaredDiffs.reduce((a, b) => a + b, 0) / scores.length;
@@ -178,7 +178,7 @@ function calculateVolatility(
  * Compares last 5 rounds to previous 10 rounds
  */
 function calculateRecentFormScore(
-  rounds: Array<{ total_to_par: number | null }>
+  rounds: Array<{ score_to_par: number | null }>
 ): number {
   if (rounds.length < 6) return 0;
 
@@ -188,9 +188,9 @@ function calculateRecentFormScore(
   if (previous.length === 0) return 0;
 
   const recentAvg =
-    recent5.reduce((a, r) => a + (r.total_to_par ?? 0), 0) / recent5.length;
+    recent5.reduce((a, r) => a + (r.score_to_par ?? 0), 0) / recent5.length;
   const previousAvg =
-    previous.reduce((a, r) => a + (r.total_to_par ?? 0), 0) / previous.length;
+    previous.reduce((a, r) => a + (r.score_to_par ?? 0), 0) / previous.length;
 
   // Negative difference means improving (lower scores)
   const diff = previousAvg - recentAvg;
@@ -203,7 +203,7 @@ function calculateRecentFormScore(
  * Calculates form momentum (acceleration of improvement/decline)
  */
 function calculateFormMomentum(
-  rounds: Array<{ total_to_par: number | null }>
+  rounds: Array<{ score_to_par: number | null }>
 ): number {
   if (rounds.length < 9) return 0;
 
@@ -212,9 +212,9 @@ function calculateFormMomentum(
   const segment2 = rounds.slice(3, 6);
   const segment3 = rounds.slice(6, 9);
 
-  const avg1 = segment1.reduce((a, r) => a + (r.total_to_par ?? 0), 0) / 3;
-  const avg2 = segment2.reduce((a, r) => a + (r.total_to_par ?? 0), 0) / 3;
-  const avg3 = segment3.reduce((a, r) => a + (r.total_to_par ?? 0), 0) / 3;
+  const avg1 = segment1.reduce((a, r) => a + (r.score_to_par ?? 0), 0) / 3;
+  const avg2 = segment2.reduce((a, r) => a + (r.score_to_par ?? 0), 0) / 3;
+  const avg3 = segment3.reduce((a, r) => a + (r.score_to_par ?? 0), 0) / 3;
 
   // Change in trend
   const trend1 = avg2 - avg1; // Recent change

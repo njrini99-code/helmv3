@@ -9,7 +9,6 @@ import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { Avatar } from '@/components/ui/avatar';
-import type { GolfPlayer } from '@/lib/types/golf';
 import { IconUsers, IconChartBar, IconMessage, IconChevronRight, IconAlertCircle } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Metadata } from 'next';
@@ -22,7 +21,16 @@ export const metadata: Metadata = {
 // Cache roster page for 5 minutes (roster doesn't change frequently)
 export const revalidate = 300;
 
-interface PlayerWithStats extends GolfPlayer {
+interface PlayerWithStats {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  state: string | null;
+  grad_year: number | null;
+  handicap: number | null;
+  status: string | null;
   rounds_count?: number;
   avg_score?: number;
 }
@@ -43,7 +51,7 @@ export default async function GolfRosterPage() {
   // Get coach
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
@@ -80,7 +88,18 @@ export default async function GolfRosterPage() {
     );
   }
 
-  if (!coach.team_id) {
+  // Get team_id from organization
+  let teamId: string | null = null;
+  if (coach.organization_id) {
+    const { data: orgTeam } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+    teamId = orgTeam?.id || null;
+  }
+
+  if (!teamId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -102,8 +121,8 @@ export default async function GolfRosterPage() {
   // Get team details
   const { data: team, error: teamError } = await supabase
     .from('golf_teams')
-    .select('name, invite_code')
-    .eq('id', coach.team_id)
+    .select('name, join_code')
+    .eq('id', teamId)
     .single();
 
   if (teamError) {
@@ -114,19 +133,39 @@ export default async function GolfRosterPage() {
           <p className="text-slate-500 mb-4">
             Unable to load team information. The team may have been deleted.
           </p>
-          <p className="text-xs text-slate-400">Team ID: {coach.team_id}</p>
+          <p className="text-xs text-slate-400">Team ID: {teamId}</p>
           <p className="text-xs text-slate-400">Error: {teamError.message}</p>
         </div>
       </div>
     );
   }
 
-  // Get players - this query should be scoped by RLS now
-  const { data: players, error: playersError } = await supabase
-    .from('golf_players')
-    .select('*')
-    .eq('team_id', coach.team_id)
-    .order('last_name', { ascending: true });
+  // Get players via team_members join - players are connected to teams through golf_team_members
+  const { data: teamMembersData, error: playersError } = await supabase
+    .from('golf_team_members')
+    .select(`
+      status,
+      player:golf_players!inner (
+        id,
+        first_name,
+        last_name,
+        avatar_url,
+        city,
+        state,
+        grad_year,
+        handicap
+      )
+    `)
+    .eq('team_id', teamId);
+
+  // Transform the data to flatten player info with status
+  const players = (teamMembersData || [])
+    .filter(tm => tm.player && !('error' in tm.player))
+    .map(tm => ({
+      ...tm.player,
+      status: tm.status,
+    }))
+    .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
 
   if (playersError) {
     return (
@@ -179,7 +218,7 @@ export default async function GolfRosterPage() {
     : [];
 
   const teamName = team?.name || 'Team';
-  const inviteCode = team?.invite_code || null;
+  const inviteCode = team?.join_code || null;
 
   return (
     <div className="min-h-screen">
@@ -266,13 +305,13 @@ export default async function GolfRosterPage() {
                       <p className="font-semibold text-slate-900">
                         {player.first_name} {player.last_name}
                       </p>
-                      <YearBadge year={player.year} />
+                      <YearBadge year={player.grad_year} />
                       <PlayerStatusBadge playerId={player.id} currentStatus={player.status} />
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      {player.hometown && player.state && (
+                      {player.city && player.state && (
                         <span className="text-sm text-slate-500">
-                          {player.hometown}, {player.state}
+                          {player.city}, {player.state}
                         </span>
                       )}
                     </div>

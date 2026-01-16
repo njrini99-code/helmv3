@@ -6,6 +6,7 @@ import { ShineEffect } from '@/components/ui/shine-effect';
 import { IconCheck, IconClock, IconUsers, IconChevronDown, IconChevronUp } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { fadeUp } from '@/lib/motion';
+import { ReminderIcon } from './ReminderBadge';
 
 interface Task {
   id: string;
@@ -14,6 +15,8 @@ interface Task {
   due_date: string | null;
   status: string;
   created_at: string;
+  reminder_at?: string | null;
+  category?: string | null;
   assignments: Array<{
     id: string;
     status: string;
@@ -106,6 +109,14 @@ export function TaskCard({ task }: TaskCardProps) {
               )}>
                 <IconClock size={14} />
                 {formatDate(task.due_date)}
+              </span>
+            )}
+            {task.reminder_at && (
+              <ReminderIcon reminderAt={task.reminder_at} />
+            )}
+            {task.category && (
+              <span className="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">
+                {task.category}
               </span>
             )}
           </div>

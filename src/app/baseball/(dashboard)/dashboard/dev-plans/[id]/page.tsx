@@ -14,8 +14,6 @@ interface PlanWithPlayer {
   start_date: string | null;
   end_date: string | null;
   status: string | null;
-  notes: string | null;
-  drills: unknown;
   goals: unknown;
   player: {
     id: string;
@@ -48,10 +46,8 @@ export default function DevPlanDetailPage() {
           start_date,
           end_date,
           status,
-          notes,
-          drills,
           goals,
-          player:players (
+          player:baseball_players (
             id,
             first_name,
             last_name,

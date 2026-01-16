@@ -1,22 +1,27 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { IconCheck, IconX, IconChevronDown, IconChevronUp, IconSparkles } from '@/components/icons';
+import { IconCheck, IconX, IconChevronDown, IconChevronUp, IconSparkles, IconTarget } from '@/components/icons';
 import { GlassCard } from '@/components/ui/glass-card';
 import type { InsightWithPlayer } from '@/lib/coachhelm/insight-types';
 import { getInsightConfig, getPriorityColor, formatInsightAge } from '@/lib/coachhelm/insight-types';
 import { acknowledgeInsight, dismissInsight, resolveInsight } from '@/app/golf/actions/insights';
+import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 import { Avatar } from '@/components/ui/avatar';
 
 interface InsightCardProps {
   insight: InsightWithPlayer;
+  coachId?: string;
   onUpdate?: () => void;
 }
 
-export function InsightCard({ insight, onUpdate }: InsightCardProps) {
+export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [creatingFocusArea, setCreatingFocusArea] = useState(false);
 
   const config = getInsightConfig(insight.insight_type);
   const priorityColor = getPriorityColor(insight.priority);
@@ -47,6 +52,37 @@ export function InsightCard({ insight, onUpdate }: InsightCardProps) {
       onUpdate();
     }
   };
+
+  const handleCreateFocusArea = async () => {
+    // Only allow if we have a player and coach
+    if (!insight.player_id || !coachId) {
+      return;
+    }
+
+    setCreatingFocusArea(true);
+    const result = await createFocusAreaFromInsight({
+      insight_id: insight.id,
+      player_id: insight.player_id,
+      coach_id: coachId,
+      title: insight.title,
+      description: insight.description,
+      insight_type: insight.insight_type,
+    });
+    setCreatingFocusArea(false);
+
+    if (result.success) {
+      // Navigate to development page to see the new focus area
+      router.push('/golf/dashboard/development');
+      if (onUpdate) {
+        onUpdate();
+      }
+    }
+  };
+
+  // Determine if we can show the Create Focus Area button
+  // Only show for player-specific insights (not team-level)
+  const canCreateFocusArea = insight.player_id && coachId &&
+    !['team_trend', 'roster_recommendation'].includes(insight.insight_type);
 
   return (
     <GlassCard
@@ -142,10 +178,28 @@ export function InsightCard({ insight, onUpdate }: InsightCardProps) {
             </div>
           )}
 
+          {/* V2 Engine Badge & Confidence */}
+          {insight.metadata?.v2_engine && (
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-2 py-0.5 bg-purple-100 text-purple-600 rounded-full font-medium">
+                AI Powered
+              </span>
+              {typeof insight.metadata.confidence === 'number' && (
+                <span className="text-slate-500">
+                  {Math.round((insight.metadata.confidence as number) * 100)}% confidence
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Metadata (if available) */}
           {insight.metadata && Object.keys(insight.metadata).length > 0 && (
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(insight.metadata).map(([key, value]) => {
+                // Skip internal V2 fields from display
+                if (['v2_engine', 'confidence', 'tone', 'reasoning_steps', 'pattern_id'].includes(key)) {
+                  return null;
+                }
                 if (typeof value === 'number' || typeof value === 'string') {
                   return (
                     <div key={key} className="bg-slate-50 rounded p-2">
@@ -163,26 +217,48 @@ export function InsightCard({ insight, onUpdate }: InsightCardProps) {
             </div>
           )}
 
-          {/* Actions */}
+          {/* Create Focus Area - Primary Action for Player-Specific Insights */}
+          {canCreateFocusArea && (
+            <div className="pt-2 border-t border-slate-100">
+              <button
+                onClick={handleCreateFocusArea}
+                disabled={loading || creatingFocusArea}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+              >
+                <IconTarget size={16} />
+                {creatingFocusArea ? 'Creating...' : 'Create Focus Area'}
+              </button>
+              <p className="text-xs text-slate-500 text-center mt-1.5">
+                Turn this insight into an actionable development plan
+              </p>
+            </div>
+          )}
+
+          {/* Secondary Actions */}
           <div className="flex items-center gap-2 pt-2">
             <button
               onClick={handleResolve}
-              disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+              disabled={loading || creatingFocusArea}
+              className={cn(
+                'flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors',
+                canCreateFocusArea
+                  ? 'flex-1 bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'flex-1 bg-green-600 text-white hover:bg-green-700'
+              )}
             >
               <IconCheck size={16} />
               Resolve
             </button>
             <button
               onClick={handleAcknowledge}
-              disabled={loading}
+              disabled={loading || creatingFocusArea}
               className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors"
             >
               Acknowledge
             </button>
             <button
               onClick={handleDismiss}
-              disabled={loading}
+              disabled={loading || creatingFocusArea}
               className="px-3 py-2 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors"
               title="Dismiss"
             >

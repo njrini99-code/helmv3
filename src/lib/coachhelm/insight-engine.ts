@@ -1,8 +1,26 @@
 // ============================================================================
-// COACHHELM INSIGHT GENERATION ENGINE
+// COACHHELM INSIGHT GENERATION ENGINE (V1 - DEPRECATED)
 // ============================================================================
-// This module contains the core logic for analyzing player performance
-// and generating coaching insights based on the coach's philosophy.
+//
+// @deprecated This is the V1 insight engine. Use V2 instead.
+//
+// For V2 usage, import from '@/lib/coachhelm/v2':
+//   import { coachHelmIntelligence } from '@/lib/coachhelm/v2';
+//   const analysis = await coachHelmIntelligence.analyzePlayer(playerId);
+//
+// V2 provides:
+//   - Pattern mining with statistical validation
+//   - Causal relationship discovery
+//   - Performance predictions with confidence calibration
+//   - Trajectory forecasting
+//   - Shot-level pattern analysis
+//   - Composed insights with reasoning chains
+//   - Learning from user interactions
+//
+// This file is kept for backwards compatibility during migration.
+// It will be removed in a future release.
+//
+// ============================================================================
 
 import type { CoachPhilosophy } from './types';
 import type {
@@ -25,7 +43,7 @@ export interface PlayerRoundData {
   player_id: string;
   round_date: string;
   total_score: number;
-  total_to_par: number;
+  score_to_par: number;
   round_type: 'practice' | 'tournament' | 'qualifying';
   course_par: number;
   // Advanced stats (optional)

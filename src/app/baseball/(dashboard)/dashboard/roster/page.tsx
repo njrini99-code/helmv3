@@ -130,7 +130,7 @@ export default function RosterPage() {
     <>
       <Header
         title="Roster"
-        subtitle={`Manage your team - ${coach?.school_name || 'Your Team'}`}
+        subtitle={`Manage your team - ${(coach?.organization as { name?: string })?.name || 'Your Team'}`}
       >
         <Button onClick={() => setShowInviteModal(true)}>
           <IconLink size={16} className="mr-2" />

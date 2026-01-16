@@ -95,10 +95,11 @@ export async function checkInPlayer(
       .eq('user_id', user.id)
       .single();
 
-    // Verify check-in is allowed
+    // Verify event exists - golf_events uses start_time (datetime), not separate date fields
+    // Note: check-in settings may be stored in metadata or a separate table
     const { data: event } = await supabase
       .from('golf_events')
-      .select('enable_check_in, require_coach_check_in, start_date, start_time, check_in_opens_minutes_before, check_in_closes_minutes_after')
+      .select('id, start_time, metadata')
       .eq('id', eventId)
       .single();
 
@@ -106,22 +107,30 @@ export async function checkInPlayer(
       return { success: false, error: 'Event not found' };
     }
 
-    if (!event.enable_check_in) {
+    // Check-in settings could be in metadata (if stored there)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const metadata = (event.metadata || {}) as any;
+    const enableCheckIn = metadata.enable_check_in !== false; // Default to enabled
+
+    if (!enableCheckIn) {
       return { success: false, error: 'Check-in is not enabled for this event' };
     }
 
     // Check if check-in window is open
     const now = new Date();
-    const eventStart = new Date(`${event.start_date}T${event.start_time || '00:00'}`);
-    const checkInOpens = new Date(eventStart.getTime() - (event.check_in_opens_minutes_before || 30) * 60000);
-    const checkInCloses = new Date(eventStart.getTime() + (event.check_in_closes_minutes_after || 15) * 60000);
+    const eventStart = new Date(event.start_time);
+    const checkInOpensMins = metadata.check_in_opens_minutes_before || 30;
+    const checkInClosesMins = metadata.check_in_closes_minutes_after || 15;
+    const checkInOpens = new Date(eventStart.getTime() - checkInOpensMins * 60000);
+    const checkInCloses = new Date(eventStart.getTime() + checkInClosesMins * 60000);
 
     if (now < checkInOpens || now > checkInCloses) {
       return { success: false, error: 'Check-in window is not currently open' };
     }
 
     // If self check-in and require_coach_check_in, deny
-    if (method === 'self' && event.require_coach_check_in && !coach) {
+    const requireCoachCheckIn = metadata.require_coach_check_in || false;
+    if (method === 'self' && requireCoachCheckIn && !coach) {
       return { success: false, error: 'Coach approval required for check-in' };
     }
 
@@ -135,6 +144,7 @@ export async function checkInPlayer(
 
     if (attendance) {
       // Update existing record
+      // Note: no_show field may not exist in golf_event_attendance - using status instead
       const { error: updateError } = await supabase
         .from('golf_event_attendance')
         .update({
@@ -142,7 +152,7 @@ export async function checkInPlayer(
           checked_in_at: now.toISOString(),
           checked_in_by: coach?.id || null,
           check_in_method: method,
-          no_show: false, // Clear no-show if marked
+          status: 'present', // Clear no-show by setting status
         })
         .eq('id', attendance.id);
 
@@ -173,7 +183,7 @@ export async function checkInPlayer(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to check in player',
+      error: 'Failed to check in player. Please try again.',
     };
   }
 }
@@ -244,7 +254,7 @@ export async function bulkCheckIn(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to bulk check-in',
+      error: 'Failed to bulk check-in. Please try again.',
     };
   }
 }
@@ -275,13 +285,13 @@ export async function markNoShow(
       return { success: false, error: 'Coach not found' };
     }
 
-    // Update attendance record
+    // Update attendance record - use status field instead of no_show
+    // Note: no_show, no_show_marked_at, no_show_marked_by may not exist in schema
     const { error: updateError } = await supabase
       .from('golf_event_attendance')
       .update({
-        no_show: true,
-        no_show_marked_at: new Date().toISOString(),
-        no_show_marked_by: coach.id,
+        status: 'no_show',
+        updated_at: new Date().toISOString(),
       })
       .eq('event_id', eventId)
       .eq('player_id', playerId);
@@ -295,7 +305,7 @@ export async function markNoShow(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to mark no-show',
+      error: 'Failed to mark no-show. Please try again.',
     };
   }
 }
@@ -346,7 +356,7 @@ export async function getAttendanceReport(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to get attendance report',
+      error: 'Failed to get attendance report. Please try again.',
     };
   }
 }
@@ -366,7 +376,8 @@ export async function getPlayerAttendanceStats(
       return { success: false, error: 'Not authenticated' };
     }
 
-    let query = supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query = (supabase as any)
       .from('golf_player_attendance_stats')
       .select('*');
 
@@ -377,14 +388,15 @@ export async function getPlayerAttendanceStats(
     const { data, error } = await query;
 
     if (error) {
-      return { success: false, error: error.message };
+      console.error('[Attendance Error]', error);
+      return { success: false, error: 'Operation failed. Please try again.' };
     }
 
     return { success: true, data: data as unknown as PlayerAttendanceStats[] };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to get attendance stats',
+      error: 'Failed to get attendance stats. Please try again.',
     };
   }
 }
@@ -399,13 +411,19 @@ export async function verifyQRCodeCheckIn(
   try {
     const supabase = await createClient();
 
+    // Note: qr_code_token and enable_check_in may be in metadata
     const { data: event } = await supabase
       .from('golf_events')
-      .select('id, title, enable_check_in')
-      .eq('qr_code_token', qrToken)
+      .select('id, title, metadata')
       .single();
 
-    if (!event || !event.enable_check_in) {
+    // Check if event exists and has matching QR token in metadata
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const metadata = (event?.metadata || {}) as any;
+    const enableCheckIn = metadata.enable_check_in !== false;
+    const eventQrToken = metadata.qr_code_token;
+
+    if (!event || eventQrToken !== qrToken || !enableCheckIn) {
       return { success: false, error: 'Invalid QR code or check-in disabled' };
     }
 
@@ -419,7 +437,7 @@ export async function verifyQRCodeCheckIn(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Invalid QR code',
+      error: 'Invalid QR code. Please try again.',
     };
   }
 }

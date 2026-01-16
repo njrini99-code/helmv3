@@ -5,15 +5,19 @@ import { Avatar } from '@/components/ui/avatar';
 import { cn, getFullName } from '@/lib/utils';
 import type { Player, PipelineStage } from '@/lib/types';
 
-// Premium pipeline stage colors with glassmorphism
-const STAGE_COLORS: Record<PipelineStage, {
+// Stage color configuration type
+interface StageColorConfig {
   bg: string;
   border: string;
   text: string;
   dot: string;
   glow: string;
   gradient: string;
-}> = {
+}
+
+// Premium pipeline stage colors with glassmorphism
+// Note: Only 5 valid PipelineStage values: watchlist, high_priority, offer_extended, committed, uninterested
+const STAGE_COLORS: Record<PipelineStage, StageColorConfig> = {
   watchlist: {
     bg: 'bg-warm-50/90',
     border: 'border-warm-200/60',
@@ -29,22 +33,6 @@ const STAGE_COLORS: Record<PipelineStage, {
     dot: 'bg-amber-500',
     glow: 'shadow-[0_0_20px_rgba(245,158,11,0.35)]',
     gradient: 'from-amber-100/50 to-amber-50/30',
-  },
-  contacted: {
-    bg: 'bg-blue-50/90',
-    border: 'border-blue-300/60',
-    text: 'text-blue-800',
-    dot: 'bg-blue-500',
-    glow: 'shadow-[0_0_20px_rgba(59,130,246,0.35)]',
-    gradient: 'from-blue-100/50 to-blue-50/30',
-  },
-  campus_visit: {
-    bg: 'bg-purple-50/90',
-    border: 'border-purple-300/60',
-    text: 'text-purple-800',
-    dot: 'bg-purple-500',
-    glow: 'shadow-[0_0_20px_rgba(168,85,247,0.35)]',
-    gradient: 'from-purple-100/50 to-purple-50/30',
   },
   offer_extended: {
     bg: 'bg-primary-50/90',
@@ -75,8 +63,6 @@ const STAGE_COLORS: Record<PipelineStage, {
 const STAGE_LABELS: Record<PipelineStage, string> = {
   watchlist: 'Watching',
   high_priority: 'Priority',
-  contacted: 'Contacted',
-  campus_visit: 'Campus Visit',
   offer_extended: 'Offer',
   committed: 'Committed',
   uninterested: 'Passed',
@@ -91,6 +77,16 @@ interface PositionPlayerPillProps {
   compact?: boolean;
 }
 
+// Default colors for fallback (declared after STAGE_COLORS to ensure it's available)
+const DEFAULT_COLORS: StageColorConfig = {
+  bg: 'bg-warm-50/90',
+  border: 'border-warm-200/60',
+  text: 'text-warm-700',
+  dot: 'bg-warm-400',
+  glow: 'shadow-[0_0_20px_rgba(168,162,158,0.3)]',
+  gradient: 'from-warm-100/50 to-warm-50/30',
+};
+
 export function PositionPlayerPill({
   player,
   stage,
@@ -99,7 +95,7 @@ export function PositionPlayerPill({
   index = 0,
   compact = false,
 }: PositionPlayerPillProps) {
-  const colors = STAGE_COLORS[stage] || STAGE_COLORS.watchlist;
+  const colors: StageColorConfig = STAGE_COLORS[stage] ?? DEFAULT_COLORS;
   const fullName = getFullName(player.first_name, player.last_name);
 
   return (
@@ -220,15 +216,15 @@ export function PositionPlayerStack({
   const stagePriority: Record<PipelineStage, number> = {
     committed: 0,
     offer_extended: 1,
-    campus_visit: 2,
-    contacted: 3,
-    high_priority: 4,
-    watchlist: 5,
-    uninterested: 6,
+    high_priority: 2,
+    watchlist: 3,
+    uninterested: 4,
   };
 
   const sortedPlayers = [...players].sort((a, b) => {
-    const priorityDiff = stagePriority[a.stage] - stagePriority[b.stage];
+    const priorityA = stagePriority[a.stage] ?? 99;
+    const priorityB = stagePriority[b.stage] ?? 99;
+    const priorityDiff = priorityA - priorityB;
     if (priorityDiff !== 0) return priorityDiff;
     const nameA = a.player.last_name || a.player.first_name || '';
     const nameB = b.player.last_name || b.player.first_name || '';
@@ -374,7 +370,7 @@ export function PositionCountBadge({
   isActive,
   dominantStage = 'watchlist',
 }: PositionCountBadgeProps) {
-  const colors = STAGE_COLORS[dominantStage];
+  const colors: StageColorConfig = STAGE_COLORS[dominantStage] ?? DEFAULT_COLORS;
 
   return (
     <motion.button

@@ -20,7 +20,7 @@ interface TeamInfo {
 
 interface TeamMembershipWithTeam {
   team_id: string;
-  teams: TeamInfo;
+  baseball_teams: TeamInfo;
 }
 
 export interface TeamValidationResult {
@@ -58,7 +58,7 @@ export async function validatePlayerCanJoinTeam(
       .from('baseball_team_members')
       .select(`
         team_id,
-        teams!inner (
+        baseball_teams!inner (
           id,
           name,
           team_type
@@ -86,9 +86,9 @@ export async function validatePlayerCanJoinTeam(
   }
 
   const currentTeams: TeamInfo[] = (currentMemberships as TeamMembershipWithTeam[] || []).map((m) => ({
-    id: m.teams.id,
-    name: m.teams.name,
-    team_type: m.teams.team_type,
+    id: m.baseball_teams.id,
+    name: m.baseball_teams.name,
+    team_type: m.baseball_teams.team_type,
   }));
 
   // Check if already on this team
@@ -263,16 +263,17 @@ export async function joinTeam(playerId: string, teamId: string) {
   // JUCO teams auto-enable recruiting for players
   // This is because JUCO players are automatically discoverable for transfer recruiting
   if (team?.team_type === 'juco') {
-    // Check if player has settings that disable discoverability
+    // Check if player has settings that disable profile visibility
     const { data: settings } = await supabase
       .from('baseball_player_settings')
-      .select('is_discoverable')
+      .select('profile_visibility')
       .eq('player_id', playerId)
       .single();
 
     // Only auto-enable if they haven't explicitly turned it off
     // (settings not found means no explicit preference, so we enable)
-    const shouldAutoEnable = !settings || settings.is_discoverable !== false;
+    // profile_visibility: 'public' | 'coaches_only' | 'private'
+    const shouldAutoEnable = !settings || settings.profile_visibility !== 'private';
 
     if (shouldAutoEnable) {
       await supabase
@@ -283,12 +284,12 @@ export async function joinTeam(playerId: string, teamId: string) {
         })
         .eq('id', playerId);
 
-      // Also ensure player_settings has is_discoverable = true
+      // Also ensure player_settings has profile_visibility = 'public'
       await supabase
         .from('baseball_player_settings')
         .upsert({
           player_id: playerId,
-          is_discoverable: true,
+          profile_visibility: 'public',
         }, { onConflict: 'player_id' });
     }
   }
@@ -335,7 +336,7 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
         expires_at,
         is_active,
         max_uses,
-        teams!inner (
+        baseball_teams!inner (
           id,
           name,
           team_type

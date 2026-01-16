@@ -291,7 +291,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                         {player.first_name} {player.last_name}
                       </p>
                       <p className="text-xs text-slate-500 capitalize">
-                        {player.year?.replace('_', ' ') || 'Player'}
+                        {player.grad_year ? `Class of ${player.grad_year}` : 'Player'}
                       </p>
                     </div>
                   </div>

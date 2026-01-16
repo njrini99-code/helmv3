@@ -130,7 +130,7 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Total Putts</p>
               <p className="text-2xl font-bold text-slate-900">{summary.totalPutts}</p>
               <p className="text-xs text-slate-400 mt-1">
-                {(summary.totalPutts / 18).toFixed(1)} per hole
+                {(summary.totalPutts / summary.greensTotal).toFixed(1)} per hole
               </p>
             </div>
             <div className="relative glass-standard rounded-xl overflow-hidden p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">

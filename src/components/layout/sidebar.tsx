@@ -183,7 +183,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
   const secondaryNav = user?.role === 'coach' ? coachSecondaryNav : playerSecondaryNav;
   const displayName = coach?.full_name || (player ? `${player.first_name} ${player.last_name}` : 'User');
   const isShowcaseCoach = coach?.coach_type === 'showcase';
-  const subtitle = coach ? (coach.school_name || 'Coach') : (player ? `${player.primary_position} • ${player.grad_year}` : '');
+  const subtitle = coach ? ((coach.organization as { name?: string })?.name || 'Coach') : (player ? `${player.primary_position} • ${player.grad_year}` : '');
 
   const handleModeChange = (mode: Mode) => {
     setCoachMode(mode as 'recruiting' | 'team');

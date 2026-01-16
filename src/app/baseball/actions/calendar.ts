@@ -72,12 +72,12 @@ export async function createBaseballEvent(input: CreateEventInput) {
     .from('baseball_events')
     .insert({
       team_id: team.id,
-      coach_id: coach.id,
-      name: input.title,
+      created_by: coach.id,
+      title: input.title,
       event_type: input.eventType,
       start_time: startDateTime,
       end_time: endDateTime,
-      location_venue: input.location,
+      location: input.location,
       description: input.description,
     })
     .select()
@@ -101,9 +101,9 @@ export async function updateBaseballEvent(eventId: string, input: UpdateEventInp
 
   const updateData: Record<string, unknown> = {};
 
-  if (input.title !== undefined) updateData.name = input.title;
+  if (input.title !== undefined) updateData.title = input.title;
   if (input.eventType !== undefined) updateData.event_type = input.eventType;
-  if (input.location !== undefined) updateData.location_venue = input.location;
+  if (input.location !== undefined) updateData.location = input.location;
   if (input.description !== undefined) updateData.description = input.description;
 
   // Handle date/time updates

@@ -43,12 +43,12 @@ export interface WorkingHours {
 
 type TeamEventRow = Pick<
   GolfEvent,
-  'id' | 'title' | 'start_date' | 'end_date' | 'start_time' | 'end_time' | 'created_by'
+  'id' | 'title' | 'start_time' | 'end_time' | 'created_by'
 >;
 
 type AttendanceEventRow = Pick<
   GolfEvent,
-  'id' | 'title' | 'start_date' | 'end_date' | 'start_time' | 'end_time'
+  'id' | 'title' | 'start_time' | 'end_time'
 >;
 
 interface AttendanceWithEvent {
@@ -106,10 +106,10 @@ export async function getUserBusyPeriods(
   const teamEventsPromise = teamId
     ? supabase
         .from('golf_events')
-        .select('id, title, start_date, end_date, start_time, end_time, created_by')
+        .select('id, title, start_time, end_time, created_by')
         .eq('team_id', teamId)
-        .gte('start_date', dateMin)
-        .lte('start_date', dateMax)
+        .gte('start_time', dateMin)
+        .lte('start_time', dateMax)
     : Promise.resolve({ data: [] as TeamEventRow[] });
 
   const attendancesPromise = player
@@ -117,7 +117,7 @@ export async function getUserBusyPeriods(
         .from('golf_event_attendance')
         .select(`
           event_id,
-          event:golf_events(id, title, start_date, end_date, start_time, end_time)
+          event:golf_events(id, title, start_time, end_time)
         `)
         .eq('player_id', player.id)
         .eq('status', 'accepted')
@@ -126,7 +126,7 @@ export async function getUserBusyPeriods(
   const classesPromise = player
     ? supabase
         .from('golf_player_classes')
-        .select('id, course_name, days, start_time, end_time, semester_start, semester_end')
+        .select('id, class_name, days, start_time, end_time')
         .eq('player_id', player.id)
     : Promise.resolve({ data: [] as GolfPlayerClass[] });
 
@@ -149,11 +149,8 @@ export async function getUserBusyPeriods(
   // Process team events
   if (teamEventsResult.data) {
     for (const event of teamEventsResult.data as TeamEventRow[]) {
-      const startDateTime = parseEventDateTime(event.start_date, event.start_time);
-      const endDateTime = parseEventDateTime(
-        event.end_date || event.start_date,
-        event.end_time || event.start_time
-      );
+      const startDateTime = new Date(event.start_time);
+      const endDateTime = new Date(event.end_time || event.start_time);
 
       busyPeriods.push({
         start: startDateTime,
@@ -174,11 +171,8 @@ export async function getUserBusyPeriods(
       const event = attendance.event;
       if (!event || existingEventIds.has(event.id)) continue;
 
-      const startDateTime = parseEventDateTime(event.start_date, event.start_time);
-      const endDateTime = parseEventDateTime(
-        event.end_date || event.start_date,
-        event.end_time || event.start_time
-      );
+      const startDateTime = new Date(event.start_time);
+      const endDateTime = new Date(event.end_time || event.start_time);
 
       busyPeriods.push({
         start: startDateTime,
@@ -290,7 +284,7 @@ function expandRecurringClass(
   while (current <= timeMax) {
     const dayName = current.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
-    if (daysOfWeek.includes(dayName)) {
+    if (daysOfWeek.includes(dayName) && cls.start_time && cls.end_time) {
       const start = setTimeOnDate(current, cls.start_time);
       const end = setTimeOnDate(current, cls.end_time);
 
@@ -298,7 +292,7 @@ function expandRecurringClass(
         start,
         end,
         type: 'class',
-        title: cls.course_name,
+        title: cls.class_name,
         ownerId: undefined,
       });
     }

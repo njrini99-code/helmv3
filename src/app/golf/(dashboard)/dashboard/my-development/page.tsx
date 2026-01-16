@@ -59,7 +59,6 @@ export default async function MyDevelopmentPage() {
       area_type,
       title,
       description,
-      priority,
       status,
       target_metric,
       current_value,
@@ -69,7 +68,7 @@ export default async function MyDevelopmentPage() {
       created_at
     `)
     .eq('player_id', player.id)
-    .order('priority', { ascending: true });
+    .order('created_at', { ascending: false });
 
   const activeAreas = (focusAreas || []).filter(fa => fa.status === 'active' || fa.status === 'in_progress');
   const completedAreas = (focusAreas || []).filter(fa => fa.status === 'completed');

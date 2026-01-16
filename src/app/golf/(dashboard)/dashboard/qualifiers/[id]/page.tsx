@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { IconChevronLeft } from '@/components/icons';
 import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
 import type { Metadata } from 'next';
-import { QualifierViewTabs } from './QualifierViewTabs';
+import { QualifierLeaderboardRealtime } from '@/components/golf/qualifiers/QualifierLeaderboardRealtime';
 
 interface QualifierEntryWithPlayer extends GolfQualifierEntry {
   player: {
@@ -86,7 +86,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   // Get all rounds for this qualifier
   const { data: rounds } = await supabase
     .from('golf_rounds')
-    .select('player_id, total_score, total_to_par')
+    .select('player_id, total_score, score_to_par')
     .eq('qualifier_id', id);
 
   // Calculate leaderboard
@@ -95,7 +95,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
         const playerRounds = (rounds || []).filter(r => r.player_id === entry.player_id);
 
         const totalScore = playerRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
-        const totalToPar = playerRounds.reduce((sum, r) => sum + (r.total_to_par || 0), 0);
+        const totalToPar = playerRounds.reduce((sum, r) => sum + (r.score_to_par || 0), 0);
         const roundsCompleted = playerRounds.length;
         const averageScore = roundsCompleted > 0 ? totalScore / roundsCompleted : 0;
 
@@ -106,7 +106,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
           totalScore,
           totalToPar,
           averageScore,
-          isTied: entry.is_tied || false,
+          isTied: false,
         };
       }).sort((a, b) => {
         // Sort by total score (lower is better)
@@ -191,41 +191,41 @@ export default async function QualifierDetailPage({ params }: PageProps) {
               </p>
             </div>
 
-            <div>
-              <p className="text-sm text-slate-500 mb-1">Rounds</p>
-              <p className="font-medium text-slate-900">{qualifierData.num_rounds}</p>
-            </div>
-
-            <div>
-              <p className="text-sm text-slate-500 mb-1">Holes/Round</p>
-              <p className="font-medium text-slate-900">{qualifierData.holes_per_round}</p>
-            </div>
+            {qualifierData.spots_available && (
+              <div>
+                <p className="text-sm text-slate-500 mb-1">Spots Available</p>
+                <p className="font-medium text-slate-900">{qualifierData.spots_available}</p>
+              </div>
+            )}
 
             <div>
               <p className="text-sm text-slate-500 mb-1">Players</p>
               <p className="font-medium text-slate-900">{qualifierData.entries.length}</p>
             </div>
+
+            {qualifierData.entry_deadline && (
+              <div>
+                <p className="text-sm text-slate-500 mb-1">Entry Deadline</p>
+                <p className="font-medium text-slate-900">{formatDate(qualifierData.entry_deadline)}</p>
+              </div>
+            )}
           </div>
 
           {qualifierData.course_name && (
             <div className="mt-4 pt-4 border-t border-slate-200">
               <p className="text-sm text-slate-500">Course</p>
               <p className="font-medium text-slate-900">{qualifierData.course_name}</p>
-              {qualifierData.location && (
-                <p className="text-sm text-slate-600">{qualifierData.location}</p>
-              )}
             </div>
           )}
         </div>
 
-        {/* Leaderboard with Bracket/Table Toggle */}
+        {/* Real-time Leaderboard with Bracket/Table Toggle */}
         <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
           <ShineEffect />
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Leaderboard</h2>
-          <QualifierViewTabs
-            leaderboard={leaderboard}
-            numRounds={qualifierData.num_rounds}
-            showLiveLeaderboard={qualifierData.show_live_leaderboard ?? false}
+          <QualifierLeaderboardRealtime
+            qualifierId={id}
+            numRounds={1}
           />
         </div>
       </div>

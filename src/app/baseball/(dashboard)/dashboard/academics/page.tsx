@@ -75,7 +75,7 @@ export default function AcademicsPage() {
     setError(null);
 
     try {
-      // Get team members with player details and academic info
+      // Get team members with player details
       const { data: membersData, error: fetchError } = await supabase
         .from('baseball_team_members')
         .select(`
@@ -88,11 +88,7 @@ export default function AcademicsPage() {
             avatar_url,
             primary_position,
             grad_year,
-            gpa,
-            credits_completed,
-            credits_required,
-            academic_standing,
-            eligibility_status
+            gpa
           )
         `)
         .eq('team_id', selectedTeamId);
@@ -105,8 +101,9 @@ export default function AcademicsPage() {
         return;
       }
 
-      // Transform data with real academic information
-      // Note: credits_completed, credits_required, academic_standing, eligibility_status may not exist in DB
+      // Transform data with player information
+      // Note: academic fields (credits_completed, academic_standing, eligibility_status)
+      // are not in DB schema yet, so we use defaults
       type PlayerData = {
         first_name?: string | null;
         last_name?: string | null;
@@ -114,13 +111,9 @@ export default function AcademicsPage() {
         primary_position?: string | null;
         grad_year?: number | null;
         gpa?: number | null;
-        credits_completed?: number | null;
-        credits_required?: number | null;
-        academic_standing?: 'good' | 'warning' | 'probation' | null;
-        eligibility_status?: 'eligible' | 'ineligible' | 'pending' | null;
       };
       const transformedStudents: StudentAthlete[] = (membersData || []).map((member) => {
-        const player = member.players as PlayerData | null;
+        const player = member.baseball_players as PlayerData | null;
         return {
           id: member.id,
           player_id: member.player_id,
@@ -130,10 +123,10 @@ export default function AcademicsPage() {
           primary_position: player?.primary_position || null,
           grad_year: player?.grad_year || null,
           gpa: player?.gpa || null,
-          credits_completed: player?.credits_completed ?? 0,
-          credits_required: player?.credits_required ?? 60,
-          academic_standing: player?.academic_standing ?? 'good',
-          eligibility_status: player?.eligibility_status ?? 'eligible',
+          credits_completed: 0,
+          credits_required: 60,
+          academic_standing: 'good' as const,
+          eligibility_status: 'eligible' as const,
         };
       });
 
@@ -164,14 +157,12 @@ export default function AcademicsPage() {
     if (!student) return;
 
     try {
-      // Update player record with academic information
+      // Update player record with GPA (only field available in DB)
+      // Note: credits_completed, academic_standing, eligibility_status are not in DB schema yet
       const { error: updateError } = await supabase
         .from('baseball_players')
         .update({
           gpa: editValues.gpa !== undefined ? editValues.gpa : student.gpa,
-          credits_completed: editValues.credits_completed !== undefined ? editValues.credits_completed : student.credits_completed,
-          academic_standing: editValues.academic_standing !== undefined ? editValues.academic_standing : student.academic_standing,
-          eligibility_status: editValues.eligibility_status !== undefined ? editValues.eligibility_status : student.eligibility_status,
         })
         .eq('id', student.player_id);
 

@@ -29,21 +29,30 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
 
     const formData = new FormData(e.currentTarget);
 
+    // Build location string from venue, city, and state
+    const venue = formData.get('location_venue') as string || '';
+    const city = formData.get('location_city') as string || '';
+    const state = formData.get('location_state') as string || '';
+    const locationParts = [venue, city, state].filter(Boolean);
+    const location = locationParts.length > 0 ? locationParts.join(', ') : null;
+
+    // Store extra fields in metadata
+    const metadata = {
+      opponent: formData.get('opponent') as string || null,
+      home_away: formData.get('home_away') as string || null,
+      notes: formData.get('notes') as string || null,
+    };
+
     const eventData = {
       team_id: teamId,
       created_by: coachId,
-      name: formData.get('name') as string,
+      title: formData.get('name') as string,
       description: formData.get('description') as string || null,
       event_type: formData.get('event_type') as string,
       start_time: new Date(formData.get('start_time') as string).toISOString(),
       end_time: formData.get('end_time') ? new Date(formData.get('end_time') as string).toISOString() : null,
-      location_venue: formData.get('location_venue') as string || null,
-      location_city: formData.get('location_city') as string || null,
-      location_state: formData.get('location_state') as string || null,
-      opponent: formData.get('opponent') as string || null,
-      home_away: formData.get('home_away') as string || null,
-      notes: formData.get('notes') as string || null,
-      is_public: true,
+      location,
+      metadata,
     };
 
     try {
@@ -51,14 +60,14 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
 
       if (isEditing) {
         const { error: updateError } = await supabase
-          .from('events')
+          .from('baseball_events')
           .update(eventData)
           .eq('id', event.id);
 
         if (updateError) throw updateError;
       } else {
         const { error: insertError } = await supabase
-          .from('events')
+          .from('baseball_events')
           .insert(eventData);
 
         if (insertError) throw insertError;
@@ -116,7 +125,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
                 type="text"
                 name="name"
                 required
-                defaultValue={event?.name || ''}
+                defaultValue={event?.title || ''}
                 placeholder="e.g., Practice, Home Game vs Tigers"
               />
             </div>
@@ -177,7 +186,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
               <Input
                 type="text"
                 name="location_venue"
-                defaultValue={event?.location_venue || ''}
+                defaultValue={event?.location || ''}
                 placeholder="e.g., Main Stadium, Field 3"
               />
             </div>
@@ -190,7 +199,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
                 <Input
                   type="text"
                   name="location_city"
-                  defaultValue={event?.location_city || ''}
+                  defaultValue={(event?.metadata as Record<string, unknown>)?.location_city as string || ''}
                   placeholder="City"
                 />
               </div>
@@ -202,7 +211,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
                   type="text"
                   name="location_state"
                   maxLength={2}
-                  defaultValue={event?.location_state || ''}
+                  defaultValue={(event?.metadata as Record<string, unknown>)?.location_state as string || ''}
                   placeholder="TX"
                 />
               </div>
@@ -216,7 +225,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
               <Input
                 type="text"
                 name="opponent"
-                defaultValue={event?.opponent || ''}
+                defaultValue={(event?.metadata as Record<string, unknown>)?.opponent as string || ''}
                 placeholder="Opponent team name"
               />
             </div>
@@ -227,7 +236,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
               </label>
               <select
                 name="home_away"
-                defaultValue={event?.home_away || ''}
+                defaultValue={(event?.metadata as Record<string, unknown>)?.home_away as string || ''}
                 className="w-full px-4 py-2.5 rounded-lg border border-slate-200
                            focus:border-green-500 focus:ring-2 focus:ring-green-100
                            text-slate-900 bg-white transition-colors"
@@ -263,7 +272,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
               <textarea
                 name="notes"
                 rows={2}
-                defaultValue={event?.notes || ''}
+                defaultValue={(event?.metadata as Record<string, unknown>)?.notes as string || ''}
                 placeholder="Private notes for coaches only..."
                 className="w-full px-4 py-2.5 rounded-lg border border-slate-200
                            focus:border-green-500 focus:ring-2 focus:ring-green-100

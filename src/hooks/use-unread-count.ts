@@ -38,7 +38,7 @@ export function useUnreadCount() {
           .select('*', { count: 'exact', head: true })
           .eq('conversation_id', participant.conversation_id)
           .neq('sender_id', user.id)
-          .gt('sent_at', participant.last_read_at || '1970-01-01');
+          .gt('created_at', participant.last_read_at || '1970-01-01');
 
         totalUnread += count || 0;
       }
@@ -57,7 +57,7 @@ export function useUnreadCount() {
     // Set up real-time subscription for new messages
     if (user) {
       const channel = supabase
-        .channel('unread-messages')
+        .channel('unread-baseball-messages')
         .on(
           'postgres_changes',
           {

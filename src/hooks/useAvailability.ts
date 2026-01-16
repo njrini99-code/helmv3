@@ -156,8 +156,7 @@ export function useCoachBlockedTime({
           id: bt.id,
           start: bt.start_time ? `${bt.start_date}T${bt.start_time}` : bt.start_date,
           end: bt.end_time ? `${bt.end_date}T${bt.end_time}` : bt.end_date,
-          title: bt.title,
-          reason: bt.description ?? undefined,
+          reason: bt.reason ?? undefined,
         }));
         setBlockedTimes(mappedBlockedTimes);
       } else {

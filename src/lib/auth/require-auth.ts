@@ -1,1 +1,2 @@
-test
+// Placeholder - require-auth functionality
+export {};

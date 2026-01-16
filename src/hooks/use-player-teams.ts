@@ -36,9 +36,8 @@ export function usePlayerTeams() {
             team_type,
             logo_url,
             primary_color,
-            age_group,
-            city,
-            state
+            secondary_color,
+            description
           )
         `)
         .eq('player_id', player.id)
@@ -52,7 +51,7 @@ export function usePlayerTeams() {
 
       // Extract teams from member data
       const playerTeams: Team[] = (memberData || [])
-        .map((item: { teams: Team | null }) => item.teams)
+        .map((item: { baseball_teams: Team | null }) => item.baseball_teams)
         .filter((team): team is Team => team !== null);
 
       setTeams(playerTeams);

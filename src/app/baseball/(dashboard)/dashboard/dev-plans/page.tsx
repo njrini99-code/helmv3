@@ -24,7 +24,7 @@ interface DevPlan {
   start_date: string | null;
   end_date: string | null;
   goals: Record<string, unknown> | null;
-  created_at: string;
+  created_at: string | null;
   player: {
     id: string;
     first_name: string | null;
@@ -32,7 +32,7 @@ interface DevPlan {
     avatar_url: string | null;
     primary_position: string | null;
     grad_year: number | null;
-  };
+  } | null;
 }
 
 export default function DevPlansPage() {
@@ -67,7 +67,7 @@ export default function DevPlansPage() {
         end_date,
         goals,
         created_at,
-        player:players (
+        player:baseball_players (
           id,
           first_name,
           last_name,

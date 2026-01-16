@@ -14,18 +14,17 @@ interface FocusArea {
   id: string;
   player_id: string;
   coach_id: string | null;
-  area_type: string | null;
-  title: string | null;
+  area_type: string;
+  title: string;
   description: string | null;
-  priority: number | null;
   status: string | null;
   target_metric: string | null;
   current_value: number | null;
   target_value: number | null;
   started_at: string | null;
   completed_at: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 interface Player {
@@ -33,7 +32,7 @@ interface Player {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  year: 'freshman' | 'sophomore' | 'junior' | 'senior' | 'fifth_year' | 'graduate' | null;
+  grad_year: number | null;
   handicap: number | null;
 }
 
@@ -52,19 +51,34 @@ export default async function DevelopmentPlansPage() {
   // Verify user is a coach
   const { data: coach } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
-  if (!coach || !coach.team_id) {
+  if (!coach) {
+    redirect('/golf/dashboard');
+  }
+
+  // Get team_id from organization
+  let teamId: string | null = null;
+  if (coach.organization_id) {
+    const { data: orgTeam } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+    teamId = orgTeam?.id || null;
+  }
+
+  if (!teamId) {
     redirect('/golf/dashboard');
   }
 
   // Fetch team players
   const { data: players } = await supabase
     .from('golf_players')
-    .select('id, first_name, last_name, avatar_url, year, handicap')
-    .eq('team_id', coach.team_id)
+    .select('id, first_name, last_name, avatar_url, grad_year, handicap')
+    .eq('team_id', teamId)
     .order('last_name');
 
   // Fetch all focus areas for team players
@@ -80,7 +94,6 @@ export default async function DevelopmentPlansPage() {
           area_type,
           title,
           description,
-          priority,
           status,
           target_metric,
           current_value,
@@ -91,7 +104,7 @@ export default async function DevelopmentPlansPage() {
           updated_at
         `)
         .in('player_id', playerIds)
-        .order('priority', { ascending: true })
+        .order('created_at', { ascending: false })
     : { data: [] };
 
   // Combine focus areas with player info

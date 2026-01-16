@@ -352,7 +352,7 @@ export class CrossLearner {
     // Get recent rounds
     const { data: rounds } = await supabase
       .from('golf_rounds')
-      .select('total_to_par')
+      .select('score_to_par')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
@@ -362,11 +362,11 @@ export class CrossLearner {
 
     // Calculate scoring average
     const scoringAvg =
-      rounds.reduce((a, r) => a + (r.total_to_par ?? 0), 0) / rounds.length;
+      rounds.reduce((a, r) => a + (r.score_to_par ?? 0), 0) / rounds.length;
 
     // Calculate volatility
     const mean = scoringAvg;
-    const squaredDiffs = rounds.map((r) => Math.pow((r.total_to_par ?? 0) - mean, 2));
+    const squaredDiffs = rounds.map((r) => Math.pow((r.score_to_par ?? 0) - mean, 2));
     const volatility = Math.sqrt(
       squaredDiffs.reduce((a, b) => a + b, 0) / rounds.length
     );
@@ -478,14 +478,14 @@ export class CrossLearner {
     for (const pattern of patterns) {
       const { data: rounds } = await supabase
         .from('golf_rounds')
-        .select('total_to_par')
+        .select('score_to_par')
         .eq('player_id', pattern.playerId)
         .eq('status', 'completed')
         .limit(10);
 
       if (!rounds || rounds.length === 0) continue;
 
-      const avg = rounds.reduce((a, r) => a + (r.total_to_par ?? 0), 0) / rounds.length;
+      const avg = rounds.reduce((a, r) => a + (r.score_to_par ?? 0), 0) / rounds.length;
 
       // Categorize tier
       let tier = 'mid';

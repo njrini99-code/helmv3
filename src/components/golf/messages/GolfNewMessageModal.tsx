@@ -56,10 +56,23 @@ export function GolfNewMessageModal({
 
       if (currentUserRole === 'coach') {
         // Coach searching for players on THEIR team only
+        // First get player IDs from golf_team_members
+        const { data: teamMembers } = await supabase
+          .from('golf_team_members')
+          .select('player_id')
+          .eq('team_id', teamId);
+
+        const playerIds = teamMembers?.map(m => m.player_id) ?? [];
+
+        if (playerIds.length === 0) {
+          setResults([]);
+          return;
+        }
+
         let playerQuery = supabase
           .from('golf_players')
-          .select('id, user_id, first_name, last_name, year, avatar_url')
-          .eq('team_id', teamId);  // ENFORCED team filter
+          .select('id, user_id, first_name, last_name, grad_year, avatar_url')
+          .in('id', playerIds);  // ENFORCED team filter via join table
 
         if (query.trim()) {
           playerQuery = playerQuery.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
@@ -78,7 +91,7 @@ export function GolfNewMessageModal({
             id: p.id,
             userId: p.user_id!,
             name: [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown Player',
-            subtitle: p.year ? `${p.year.charAt(0).toUpperCase()}${p.year.slice(1)}` : 'Player',
+            subtitle: p.grad_year ? `Class of ${p.grad_year}` : 'Player',
             avatar: p.avatar_url,
             type: 'player' as const,
           }));
@@ -86,10 +99,22 @@ export function GolfNewMessageModal({
         setResults(playerResults);
       } else {
         // Player searching for coaches on THEIR team only
+        // First get the team's organization_id
+        const { data: team } = await supabase
+          .from('golf_teams')
+          .select('organization_id')
+          .eq('id', teamId)
+          .single();
+
+        if (!team?.organization_id) {
+          setResults([]);
+          return;
+        }
+
         let coachQuery = supabase
           .from('golf_coaches')
           .select('id, user_id, full_name, title, avatar_url')
-          .eq('team_id', teamId);  // ENFORCED team filter
+          .eq('organization_id', team.organization_id);  // ENFORCED team filter via organization
 
         if (query.trim()) {
           coachQuery = coachQuery.ilike('full_name', `%${query}%`);

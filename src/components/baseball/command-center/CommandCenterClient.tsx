@@ -85,12 +85,13 @@ export function CommandCenterClient({
           return (b.aggregates?.career_avg ?? 0) - (a.aggregates?.career_avg ?? 0);
         case 'recent':
           return (b.aggregates?.last_5_avg ?? 0) - (a.aggregates?.last_5_avg ?? 0);
-        case 'trend':
+        case 'trend': {
           const trendOrder = { improving: 3, stable: 2, declining: 1 };
           return (
             (trendOrder[b.aggregates?.recent_trend ?? 'stable'] ?? 2) -
             (trendOrder[a.aggregates?.recent_trend ?? 'stable'] ?? 2)
           );
+        }
         default:
           return 0;
       }

@@ -59,9 +59,9 @@ export default async function StatsUploadPage() {
     .eq('team_id', team.id);
 
   const players = (teamMembers || []).map(tm => ({
-    id: (tm.players as { id: string }).id,
-    firstName: (tm.players as { first_name: string | null }).first_name || '',
-    lastName: (tm.players as { last_name: string | null }).last_name || '',
+    id: (tm.baseball_players as { id: string }).id,
+    firstName: (tm.baseball_players as { first_name: string | null }).first_name || '',
+    lastName: (tm.baseball_players as { last_name: string | null }).last_name || '',
   }));
 
   return (

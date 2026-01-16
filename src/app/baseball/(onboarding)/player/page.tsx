@@ -106,10 +106,9 @@ export default function PlayerOnboarding() {
       }
 
       // Fetch the team name after joining
-      // Note: Using type assertion due to Supabase types not including baseball_* tables
       type TeamMemberWithTeam = { team_id: string; baseball_teams: { name: string } };
       const { data: teamMember } = await supabase
-        .from('baseball_team_members' as 'teams')
+        .from('baseball_team_members')
         .select(`
           team_id,
           baseball_teams!inner (
@@ -119,7 +118,7 @@ export default function PlayerOnboarding() {
         .eq('player_id', player.id)
         .order('joined_at', { ascending: false })
         .limit(1)
-        .single() as { data: TeamMemberWithTeam | null };
+        .single() as unknown as { data: TeamMemberWithTeam | null };
 
       if (teamMember?.baseball_teams) {
         setTeamName(teamMember.baseball_teams.name);

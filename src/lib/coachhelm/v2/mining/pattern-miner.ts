@@ -27,13 +27,13 @@ const THRESHOLDS = {
 
 interface RoundData {
   id: string;
-  total_to_par: number;
+  score_to_par: number;
   round_date: string;
   round_type?: string | null;
   days_since_last?: number;
   putts?: number;
-  fairways_hit?: number;
-  greens_in_regulation?: number;
+  total_fairways_hit?: number;
+  total_gir?: number;
 }
 
 /**
@@ -59,7 +59,7 @@ export class PatternMiner {
     // Load rounds with computed fields
     const { data: rounds, error } = await supabase
       .from('golf_rounds')
-      .select('id, total_to_par, round_date, round_type, total_putts, fairways_hit, greens_in_regulation')
+      .select('id, score_to_par, round_date, round_type, total_putts, total_fairways_hit, total_gir')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
@@ -72,12 +72,12 @@ export class PatternMiner {
     // Compute days_since_last for each round
     this.rounds = this.computeDaysSinceLast(rounds.map(r => ({
       id: r.id,
-      total_to_par: r.total_to_par ?? 0,
+      score_to_par: r.score_to_par ?? 0,
       round_date: r.round_date,
       round_type: r.round_type,
       putts: r.total_putts ?? undefined,
-      fairways_hit: r.fairways_hit ?? undefined,
-      greens_in_regulation: r.greens_in_regulation ?? undefined,
+      total_fairways_hit: r.total_fairways_hit ?? undefined,
+      total_gir: r.total_gir ?? undefined,
     })));
 
     // Mine different pattern types
@@ -187,7 +187,7 @@ export class PatternMiner {
       if (matchingRounds.length < THRESHOLDS.minSampleSize) continue;
 
       const matchingAvg =
-        matchingRounds.reduce((a, r) => a + r.total_to_par, 0) /
+        matchingRounds.reduce((a, r) => a + r.score_to_par, 0) /
         matchingRounds.length;
       const strokeImpact = matchingAvg - baselineAvg;
 
@@ -200,10 +200,10 @@ export class PatternMiner {
       // Define "bad round" as +3 or worse
       const badThreshold = 3;
       const matchingBadRounds = matchingRounds.filter(
-        (r) => r.total_to_par >= badThreshold
+        (r) => r.score_to_par >= badThreshold
       ).length;
       const totalBadRounds = this.rounds.filter(
-        (r) => r.total_to_par >= badThreshold
+        (r) => r.score_to_par >= badThreshold
       ).length;
 
       const confidence =
@@ -223,7 +223,7 @@ export class PatternMiner {
             'conditional',
             [condition],
             {
-              metric: 'total_to_par',
+              metric: 'score_to_par',
               direction: strokeImpact > 0 ? 'increase' : 'decrease',
               magnitude: Math.abs(strokeImpact),
               comparison: 'vs_baseline',
@@ -276,7 +276,7 @@ export class PatternMiner {
       {
         conditions: [
           {
-            field: 'greens_in_regulation',
+            field: 'total_gir',
             operator: 'gte',
             value: 12,
             label: 'GIR ≥12',
@@ -289,7 +289,7 @@ export class PatternMiner {
           },
         ],
         test: (r) =>
-          (r.greens_in_regulation ?? 0) >= 12 && (r.putts ?? 0) >= 34,
+          (r.total_gir ?? 0) >= 12 && (r.putts ?? 0) >= 34,
       },
     ];
 
@@ -300,7 +300,7 @@ export class PatternMiner {
         continue;
 
       const matchingAvg =
-        matchingRounds.reduce((a, r) => a + r.total_to_par, 0) /
+        matchingRounds.reduce((a, r) => a + r.score_to_par, 0) /
         matchingRounds.length;
       const strokeImpact = matchingAvg - baselineAvg;
 
@@ -309,10 +309,10 @@ export class PatternMiner {
       const support = matchingRounds.length / this.rounds.length;
       const badThreshold = 3;
       const matchingBadRounds = matchingRounds.filter(
-        (r) => r.total_to_par >= badThreshold
+        (r) => r.score_to_par >= badThreshold
       ).length;
       const totalBadRounds = this.rounds.filter(
-        (r) => r.total_to_par >= badThreshold
+        (r) => r.score_to_par >= badThreshold
       ).length;
 
       const confidence =
@@ -329,7 +329,7 @@ export class PatternMiner {
             'compound',
             conditions,
             {
-              metric: 'total_to_par',
+              metric: 'score_to_par',
               direction: strokeImpact > 0 ? 'increase' : 'decrease',
               magnitude: Math.abs(strokeImpact),
               comparison: 'vs_baseline',
@@ -359,7 +359,7 @@ export class PatternMiner {
     const outlierThreshold = 2 * stdDev;
 
     for (const round of this.rounds) {
-      const deviation = Math.abs(round.total_to_par - baselineAvg);
+      const deviation = Math.abs(round.score_to_par - baselineAvg);
 
       if (deviation > outlierThreshold) {
         // This is an outlier - look for what made it unusual
@@ -386,7 +386,7 @@ export class PatternMiner {
         if (anomalyConditions.length > 0) {
           // Find similar anomalous rounds
           const similarRounds = this.rounds.filter((r) => {
-            const rDeviation = Math.abs(r.total_to_par - baselineAvg);
+            const rDeviation = Math.abs(r.score_to_par - baselineAvg);
             return rDeviation > outlierThreshold;
           });
 
@@ -396,15 +396,15 @@ export class PatternMiner {
                 'anomaly',
                 anomalyConditions,
                 {
-                  metric: 'total_to_par',
-                  direction: round.total_to_par > baselineAvg ? 'increase' : 'decrease',
+                  metric: 'score_to_par',
+                  direction: round.score_to_par > baselineAvg ? 'increase' : 'decrease',
                   magnitude: deviation,
                   comparison: 'vs_baseline',
                 },
                 similarRounds.length / this.rounds.length,
                 1, // Anomalies are by definition 100% correlated with themselves
                 1,
-                round.total_to_par - baselineAvg,
+                round.score_to_par - baselineAvg,
                 similarRounds.length
               )
             );
@@ -422,7 +422,7 @@ export class PatternMiner {
   private calculateBaseline(): number {
     if (this.rounds.length === 0) return 0;
     return (
-      this.rounds.reduce((a, r) => a + r.total_to_par, 0) / this.rounds.length
+      this.rounds.reduce((a, r) => a + r.score_to_par, 0) / this.rounds.length
     );
   }
 
@@ -433,7 +433,7 @@ export class PatternMiner {
     if (this.rounds.length < 2) return 0;
     const mean = this.calculateBaseline();
     const squaredDiffs = this.rounds.map((r) =>
-      Math.pow(r.total_to_par - mean, 2)
+      Math.pow(r.score_to_par - mean, 2)
     );
     const variance =
       squaredDiffs.reduce((a, b) => a + b, 0) / this.rounds.length;

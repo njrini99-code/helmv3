@@ -122,7 +122,9 @@ export async function loginAction(
 
   let redirectTo = '/golf/dashboard';
 
-  if (userData?.role === 'admin' || adminAllowlist.includes(normalizedEmail)) {
+  // Note: user_role enum only has 'coach' | 'player', not 'admin'
+  // Admin access is determined by email allowlist only
+  if (adminAllowlist.includes(normalizedEmail)) {
     return {
       success: true,
       redirectTo: '/admin/command-center',
@@ -243,9 +245,11 @@ export async function signupAction(
       };
     }
 
+    // Log unknown errors and return generic message
+    console.error('[Golf Auth Error]', error);
     return {
       success: false,
-      error: error.message,
+      error: 'Failed to create account. Please try again.',
     };
   }
 

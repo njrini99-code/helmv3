@@ -3,7 +3,36 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { CommandCenterClient } from '@/components/baseball/command-center/CommandCenterClient';
-import type { BaseballRosterPlayer, BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
+import type { BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
+
+// Local type for baseball player data from the query
+interface BaseballPlayerData {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  primary_position: string | null;
+  secondary_position: string | null;
+  grad_year: number | null;
+  bats: string | null;
+  throws: string | null;
+  height_feet: number | null;
+  height_inches: number | null;
+  weight_lbs: number | null;
+  gpa: number | null;
+  city: string | null;
+  state: string | null;
+}
+
+// Extended type for roster players with aggregates and insights
+interface BaseballRosterPlayerLocal extends BaseballPlayerData {
+  aggregates?: BaseballPlayerAggregates;
+  insights?: BaseballCoachInsight[];
+  jersey_number?: number | null;
+  team_position?: string | null;
+  team_status?: string | null;
+  joined_at?: string | null;
+}
 
 export default async function CommandCenterPage() {
   const supabase = await createClient();
@@ -117,15 +146,17 @@ export default async function CommandCenterPage() {
 
   // Get aggregates for all players on the team
   // Note: Table created via migration - types will be regenerated
-  const { data: aggregates } = await supabase
-    .from('baseball_player_aggregates' as 'players')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: aggregates } = await (supabase as any)
+    .from('baseball_player_aggregates')
     .select('*')
     .eq('team_id', team.id) as { data: BaseballPlayerAggregates[] | null };
 
   // Get active insights for the team
   // Note: Table created via migration - types will be regenerated
-  const { data: insights } = await supabase
-    .from('baseball_coach_insights' as 'players')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: insights } = await (supabase as any)
+    .from('baseball_coach_insights')
     .select('*')
     .eq('team_id', team.id)
     .eq('coach_id', coach.id)
@@ -135,8 +166,8 @@ export default async function CommandCenterPage() {
     .limit(10) as { data: BaseballCoachInsight[] | null };
 
   // Map players with their aggregates and insights
-  const players: BaseballRosterPlayer[] = (teamMembers || []).map((member) => {
-    const player = member.players as unknown as BaseballRosterPlayer;
+  const players: BaseballRosterPlayerLocal[] = (teamMembers || []).map((member) => {
+    const player = member.baseball_players as unknown as BaseballPlayerData;
     const playerAggregates = (aggregates || []).find(
       (a: BaseballPlayerAggregates) => a.player_id === player.id
     );
@@ -169,7 +200,8 @@ export default async function CommandCenterPage() {
         teamType: team.team_type,
         inviteCode: team.invite_code,
       }}
-      players={players}
+      // Cast to expected type - the local type has the same shape
+      players={players as unknown as import('@/lib/types').BaseballRosterPlayer[]}
       insights={teamInsights as BaseballCoachInsight[]}
       coachName={coach.full_name || 'Coach'}
     />

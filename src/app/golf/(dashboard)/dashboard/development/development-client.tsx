@@ -19,7 +19,7 @@ interface Player {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  year: 'freshman' | 'sophomore' | 'junior' | 'senior' | 'fifth_year' | 'graduate' | null;
+  grad_year: number | null;
   handicap: number | null;
 }
 
@@ -27,18 +27,17 @@ interface FocusArea {
   id: string;
   player_id: string;
   coach_id: string | null;
-  area_type: string | null;
-  title: string | null;
+  area_type: string;
+  title: string;
   description: string | null;
-  priority: number | null;
   status: string | null;
   target_metric: string | null;
   current_value: number | null;
   target_value: number | null;
   started_at: string | null;
   completed_at: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
   player: Player | null;
 }
 
@@ -84,7 +83,6 @@ export function DevelopmentPlansClient({
     area_type: 'driving',
     title: '',
     description: '',
-    priority: 1,
     target_metric: '',
     current_value: '',
     target_value: '',
@@ -107,7 +105,6 @@ export function DevelopmentPlansClient({
       area_type: 'driving',
       title: '',
       description: '',
-      priority: 1,
       target_metric: '',
       current_value: '',
       target_value: '',
@@ -125,7 +122,6 @@ export function DevelopmentPlansClient({
         area_type: formData.area_type,
         title: formData.title,
         description: formData.description || null,
-        priority: formData.priority,
         target_metric: formData.target_metric || null,
         current_value: formData.current_value ? parseFloat(formData.current_value) : null,
         target_value: formData.target_value ? parseFloat(formData.target_value) : null,
@@ -148,7 +144,6 @@ export function DevelopmentPlansClient({
       area_type: focusArea.area_type || 'driving',
       title: focusArea.title || '',
       description: focusArea.description || '',
-      priority: focusArea.priority || 1,
       target_metric: focusArea.target_metric || '',
       current_value: focusArea.current_value?.toString() || '',
       target_value: focusArea.target_value?.toString() || '',
@@ -165,7 +160,6 @@ export function DevelopmentPlansClient({
         area_type: formData.area_type,
         title: formData.title,
         description: formData.description || null,
-        priority: formData.priority,
         target_metric: formData.target_metric || null,
         current_value: formData.current_value ? parseFloat(formData.current_value) : null,
         target_value: formData.target_value ? parseFloat(formData.target_value) : null,

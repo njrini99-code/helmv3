@@ -11,6 +11,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 
 // ============================================================================
 // TYPES
@@ -77,7 +78,8 @@ export async function checkEventConflicts(
   try {
     const supabase = await createClient();
 
-    const { data: conflicts, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: conflicts, error } = await (supabase as any)
       .rpc('detect_event_conflicts', {
         p_event_id: eventId || '',
         p_team_id: teamId,
@@ -89,7 +91,8 @@ export async function checkEventConflicts(
       });
 
     if (error) {
-      return { success: false, error: error.message };
+      console.error('[checkEventConflicts Error]', error);
+      return { success: false, error: 'Failed to check event conflicts. Please try again.' };
     }
 
     // Map database response to our interface
@@ -106,10 +109,8 @@ export async function checkEventConflicts(
       data: mappedConflicts,
     };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to check conflicts',
-    };
+    console.error('[checkEventConflicts Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -172,38 +173,42 @@ export async function createEventWithConflictCheck(eventData: {
     }
 
     // Create event
+    // Build start_time and end_time as ISO datetime strings
+    const startDateTime = eventData.startTime
+      ? `${eventData.startDate}T${eventData.startTime}:00`
+      : `${eventData.startDate}T00:00:00`;
+    const endDateTime = eventData.endTime
+      ? `${eventData.endDate || eventData.startDate}T${eventData.endTime}:00`
+      : eventData.endDate
+        ? `${eventData.endDate}T23:59:59`
+        : null;
+
     const { data: event, error: createError } = await supabase
       .from('golf_events')
       .insert({
         title: eventData.title,
         description: eventData.description,
         event_type: eventData.eventType as GolfEventType,
-        start_date: eventData.startDate,
-        end_date: eventData.endDate,
-        start_time: eventData.startTime,
-        end_time: eventData.endTime,
+        start_time: startDateTime,
+        end_time: endDateTime,
         location: eventData.location,
         created_by: coach.id,
         team_id: eventData.teamId,
         status: 'confirmed' as GolfEventStatus,
-        ignore_conflicts: eventData.ignoreConflicts || false,
-        conflict_override_reason: eventData.conflictOverrideReason,
-        conflict_override_by: eventData.ignoreConflicts ? coach.id : null,
-      })
+      } as any)
       .select('id')
       .single();
 
     if (createError) {
-      return { success: false, error: createError.message };
+      console.error('[createEventWithConflictCheck Error]', createError);
+      return { success: false, error: 'Failed to create event. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create event',
-    };
+    console.error('[createEventWithConflictCheck Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -253,16 +258,15 @@ export async function createAvailabilityBlock(
       .single();
 
     if (insertError) {
-      return { success: false, error: insertError.message };
+      console.error('[createAvailabilityBlock Error]', insertError);
+      return { success: false, error: 'Failed to create availability block. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { blockId: block.id } };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create availability block',
-    };
+    console.error('[createAvailabilityBlock Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -284,16 +288,15 @@ export async function deleteAvailabilityBlock(
       .eq('id', blockId);
 
     if (deleteError) {
-      return { success: false, error: deleteError.message };
+      console.error('[deleteAvailabilityBlock Error]', deleteError);
+      return { success: false, error: 'Failed to delete availability block. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete availability block',
-    };
+    console.error('[deleteAvailabilityBlock Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -310,15 +313,14 @@ export async function getPlayerAvailabilityBlocks(
       .order('start_date', { ascending: true });
 
     if (error) {
-      return { success: false, error: error.message };
+      console.error('[getPlayerAvailabilityBlocks Error]', error);
+      return { success: false, error: 'Failed to get availability blocks. Please try again.' };
     }
 
     return { success: true, data: (blocks || []) as unknown as AvailabilityBlock[] };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get availability blocks',
-    };
+    console.error('[getPlayerAvailabilityBlocks Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -336,7 +338,8 @@ export async function checkPlayerAvailability(
   try {
     const supabase = await createClient();
 
-    const { data: blocks, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: blocks, error } = await (supabase as any)
       .rpc('check_player_availability', {
         p_player_id: playerId,
         p_start_date: startDate,
@@ -346,14 +349,13 @@ export async function checkPlayerAvailability(
       });
 
     if (error) {
-      return { success: false, error: error.message };
+      console.error('[checkPlayerAvailability Error]', error);
+      return { success: false, error: 'Failed to check player availability. Please try again.' };
     }
 
     return { success: true, data: (blocks || []) as unknown as AvailabilityConflict[] };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to check player availability',
-    };
+    console.error('[checkPlayerAvailability Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }

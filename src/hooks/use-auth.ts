@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
-import type { Player, Coach } from '@/lib/types';
+import type { Player, CoachWithOrganization } from '@/lib/types';
 
 export function useAuth() {
   const router = useRouter();
@@ -31,7 +31,7 @@ export function useAuth() {
         setUser(userData);
 
         if (userData.role === 'coach') {
-          const { data: coachData } = await supabase.from('baseball_coaches').select('*').eq('user_id', authUser.id).single();
+          const { data: coachData } = await supabase.from('baseball_coaches').select('*, organization:organizations(id, name)').eq('user_id', authUser.id).single();
           if (isMounted.current) setCoach(coachData);
         } else if (userData.role === 'player') {
           const { data: playerData } = await supabase.from('baseball_players').select('*').eq('user_id', authUser.id).single();
@@ -93,7 +93,7 @@ export function useAuth() {
     return { data, error };
   };
 
-  const updateCoach = async (updates: Partial<Coach>) => {
+  const updateCoach = async (updates: Partial<CoachWithOrganization>) => {
     if (!coach) return;
     const { data, error } = await supabase.from('baseball_coaches').update(updates).eq('id', coach.id).select().single();
     if (!error && data) setCoach(data);

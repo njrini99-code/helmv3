@@ -53,7 +53,7 @@ export async function syncClassToCalendar(
   // Verify user is a golf player
   const { data: player, error: playerError } = await supabase
     .from('golf_players')
-    .select('id, team_id')
+    .select('id')
     .eq('user_id', user.id)
     .single();
 
@@ -61,8 +61,21 @@ export async function syncClassToCalendar(
     return { success: false, error: 'Not authorized to sync this calendar' };
   }
 
+  // Verify the provided teamId matches the player's team membership
   if (!teamId) {
     return { success: false, error: 'Player must be on a team to sync calendar' };
+  }
+
+  // Verify player is a member of the specified team
+  const { data: membership } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', player.id)
+    .eq('team_id', teamId)
+    .maybeSingle();
+
+  if (!membership) {
+    return { success: false, error: 'Player is not a member of this team' };
   }
 
   // Parse semester to determine start and end dates

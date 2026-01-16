@@ -12,6 +12,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 
 // ============================================================================
 // TYPES
@@ -109,16 +110,15 @@ export async function createAvailabilityPoll(input: {
       .single();
 
     if (createError) {
-      return { success: false, error: createError.message };
+      console.error('[createAvailabilityPoll Error]', createError);
+      return { success: false, error: 'Failed to create poll. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { pollId: poll.id } };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create poll',
-    };
+    console.error('[createAvailabilityPoll Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -174,16 +174,15 @@ export async function submitPollResponses(
       .insert(responseData);
 
     if (insertError) {
-      return { success: false, error: insertError.message };
+      console.error('[submitPollResponses Error]', insertError);
+      return { success: false, error: 'Failed to submit responses. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to submit responses',
-    };
+    console.error('[submitPollResponses Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -197,21 +196,21 @@ export async function getPollResults(
   try {
     const supabase = await createClient();
 
-    const { data: results, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: results, error } = await (supabase as any)
       .rpc('calculate_poll_results', {
         p_poll_id: pollId,
       });
 
     if (error) {
-      return { success: false, error: error.message };
+      console.error('[getPollResults Error]', error);
+      return { success: false, error: 'Failed to get poll results. Please try again.' };
     }
 
     return { success: true, data: results || [] };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get results',
-    };
+    console.error('[getPollResults Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -226,22 +225,22 @@ export async function getSuggestedBestTimes(
   try {
     const supabase = await createClient();
 
-    const { data: suggestions, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: suggestions, error } = await (supabase as any)
       .rpc('get_suggested_best_times', {
         p_poll_id: pollId,
         p_min_availability_percentage: minAvailabilityPercentage,
       });
 
     if (error) {
-      return { success: false, error: error.message };
+      console.error('[getSuggestedBestTimes Error]', error);
+      return { success: false, error: 'Failed to get suggested times. Please try again.' };
     }
 
     return { success: true, data: (suggestions || []) as unknown as SuggestedTime[] };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get best times',
-    };
+    console.error('[getSuggestedBestTimes Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -291,19 +290,22 @@ export async function scheduleEventFromPoll(
 
     // Calculate end time
     const endDate = new Date(`${selectedDate}T${selectedTime}`);
-    endDate.setMinutes(endDate.getMinutes() + poll.duration_minutes);
+    const durationMinutes = poll.duration_minutes || 60; // Default to 60 minutes if null
+    endDate.setMinutes(endDate.getMinutes() + durationMinutes);
     const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
 
-    // Create event
+    // Create event - golf_events uses start_time as datetime, not separate date/time fields
+    const startDateTime = `${selectedDate}T${selectedTime}:00`;
+    const endDateTime = `${selectedDate}T${endTime}:00`;
+
     const { data: event, error: createError } = await supabase
       .from('golf_events')
       .insert({
         title: eventData.title || poll.title,
         description: eventData.description || poll.description,
         event_type: eventData.eventType as GolfEventType,
-        start_date: selectedDate,
-        start_time: selectedTime,
-        end_time: endTime,
+        start_time: startDateTime,
+        end_time: endDateTime,
         location: eventData.location,
         created_by: coach.id,
         team_id: poll.team_id,
@@ -313,7 +315,8 @@ export async function scheduleEventFromPoll(
       .single();
 
     if (createError) {
-      return { success: false, error: createError.message };
+      console.error('[scheduleEventFromPoll Error]', createError);
+      return { success: false, error: 'Failed to schedule event. Please try again.' };
     }
 
     // Update poll status
@@ -330,10 +333,8 @@ export async function scheduleEventFromPoll(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to schedule event',
-    };
+    console.error('[scheduleEventFromPoll Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }
 
@@ -356,15 +357,14 @@ export async function closePoll(pollId: string): Promise<ActionResult> {
       .eq('id', pollId);
 
     if (updateError) {
-      return { success: false, error: updateError.message };
+      console.error('[closePoll Error]', updateError);
+      return { success: false, error: 'Failed to close poll. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to close poll',
-    };
+    console.error('[closePoll Error]', error);
+    return formatSafeErrorResponse(error);
   }
 }

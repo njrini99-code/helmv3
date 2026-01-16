@@ -128,21 +128,34 @@ export async function GET(request: NextRequest) {
       // Get user's sport from metadata or users table
       const userSport = data.user.user_metadata?.sport;
 
-      // Check users table to get sport if not in metadata
-      const { data: userRecord } = await supabase
-        .from('users')
-        .select('id, role, sport')
-        .eq('id', data.user.id)
-        .single();
+      // Determine sport: check for golf profiles, otherwise default to baseball
+      let sport = userSport || 'baseball';
 
-      // Determine sport: prefer metadata, then users table, default to baseball
-      const sport = userSport || userRecord?.sport || 'baseball';
+      // If no sport in metadata, check if user has golf profiles
+      if (!userSport) {
+        const { data: golfCoachCheck } = await supabase
+          .from('golf_coaches')
+          .select('id')
+          .eq('user_id', data.user.id)
+          .limit(1)
+          .single();
+
+        const { data: golfPlayerCheck } = await supabase
+          .from('golf_players')
+          .select('id')
+          .eq('user_id', data.user.id)
+          .limit(1)
+          .single();
+
+        if (golfCoachCheck || golfPlayerCheck) {
+          sport = 'golf';
+        }
+      }
 
       console.info('[OAuth] User sport detected:', {
         userId: data.user.id,
         sport,
-        fromMetadata: !!userSport,
-        fromUsersTable: !!userRecord?.sport
+        fromMetadata: !!userSport
       });
 
       // Check for GOLF profiles first if sport is golf

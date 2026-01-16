@@ -10,8 +10,9 @@ export async function getCachedColleges() {
     async () => {
       const supabase = await createClient();
       const { data, error } = await supabase
-        .from('colleges')
+        .from('organizations')
         .select('id, name, division, conference, state, city')
+        .eq('type', 'college')
         .order('name');
       if (error) throw error;
       return data;
@@ -29,8 +30,9 @@ export async function getCachedHighSchools(state: string) {
     async () => {
       const supabase = await createClient();
       const { data, error } = await supabase
-        .from('high_schools')
+        .from('organizations')
         .select('id, name, city, state')
+        .eq('type', 'high_school')
         .eq('state', state)
         .order('name');
       if (error) throw error;

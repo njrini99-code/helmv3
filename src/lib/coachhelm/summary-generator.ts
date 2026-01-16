@@ -1,3 +1,25 @@
+// ============================================================================
+// SUMMARY GENERATOR (V1 - DEPRECATED)
+// ============================================================================
+//
+// @deprecated This is the V1 summary generator. Use V2 instead.
+//
+// For V2 usage, import from '@/lib/coachhelm/v2':
+//   import { InsightComposer } from '@/lib/coachhelm/v2';
+//   const composer = new InsightComposer();
+//   const insight = composer.compose(input, context);
+//
+// V2 provides:
+//   - Reasoning chains explaining conclusions
+//   - Tone-appropriate language
+//   - Confidence-calibrated statements
+//   - Personalized based on learned preferences
+//
+// This file is kept for backwards compatibility during migration.
+// It will be removed in a future release.
+//
+// ============================================================================
+
 import {
   RoundStats,
   StrokesGainedBreakdown,

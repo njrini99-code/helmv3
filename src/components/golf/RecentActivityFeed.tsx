@@ -43,21 +43,31 @@ export function RecentActivityFeed({
 
     try {
       if (teamId) {
+        // First get player IDs for this team via the join table
+        const { data: teamMembers } = await supabase
+          .from('golf_team_members')
+          .select('player_id')
+          .eq('team_id', teamId);
+
+        const playerIds = teamMembers?.map(m => m.player_id) ?? [];
+
         // Fetch all data in parallel (performance optimization)
         const [
           { data: rounds },
           { data: announcements },
           { data: events }
         ] = await Promise.all([
-          supabase
-            .from('golf_rounds')
-            .select(`
-              id, round_date, course_name, total_score, total_to_par,
-              player:golf_players(id, first_name, last_name, team_id)
-            `)
-            .eq('player.team_id', teamId)
-            .order('created_at', { ascending: false })
-            .limit(5),
+          playerIds.length > 0
+            ? supabase
+                .from('golf_rounds')
+                .select(`
+                  id, round_date, course_name, total_score, score_to_par,
+                  player:golf_players(id, first_name, last_name)
+                `)
+                .in('player_id', playerIds)
+                .order('created_at', { ascending: false })
+                .limit(5)
+            : Promise.resolve({ data: null }),
           supabase
             .from('golf_announcements')
             .select('id, title, created_at')
@@ -66,10 +76,10 @@ export function RecentActivityFeed({
             .limit(3),
           supabase
             .from('golf_events')
-            .select('id, title, start_date, event_type')
+            .select('id, title, start_time, event_type')
             .eq('team_id', teamId)
-            .gte('start_date', new Date().toISOString().split('T')[0])
-            .order('start_date', { ascending: true })
+            .gte('start_time', new Date().toISOString().split('T')[0])
+            .order('start_time', { ascending: true })
             .limit(3)
         ]);
 
@@ -77,7 +87,7 @@ export function RecentActivityFeed({
           for (const round of rounds) {
             if (round.player) {
               const playerInfo = round.player as { first_name: string | null; last_name: string | null };
-              const toPar = round.total_to_par ?? 0;
+              const toPar = round.score_to_par ?? 0;
               items.push({
                 id: `round-${round.id}`,
                 type: 'round',
@@ -108,8 +118,8 @@ export function RecentActivityFeed({
               id: `event-${event.id}`,
               type: 'event',
               title: event.title,
-              subtitle: `${event.event_type} on ${new Date(event.start_date).toLocaleDateString()}`,
-              timestamp: event.start_date,
+              subtitle: `${event.event_type} on ${new Date(event.start_time).toLocaleDateString()}`,
+              timestamp: event.start_time,
             });
           }
         }
@@ -117,18 +127,18 @@ export function RecentActivityFeed({
         // Fetch player's recent rounds
         const { data: rounds } = await supabase
           .from('golf_rounds')
-          .select('id, round_date, course_name, total_score, total_to_par')
+          .select('id, round_date, course_name, total_score, score_to_par')
           .eq('player_id', playerId)
           .order('round_date', { ascending: false })
           .limit(5);
 
         if (rounds) {
           for (const round of rounds) {
-            const toPar = round.total_to_par ?? 0;
+            const toPar = round.score_to_par ?? 0;
             items.push({
               id: `round-${round.id}`,
               type: 'round',
-              title: round.course_name,
+              title: round.course_name || 'Unknown Course',
               subtitle: `Shot ${round.total_score} (${toPar > 0 ? '+' : ''}${toPar})`,
               timestamp: round.round_date,
               metadata: { score: round.total_score, toPar },

@@ -116,11 +116,11 @@ export async function createTeamInvitation(
     .from('baseball_team_invitations')
     .insert({
       team_id: teamId,
-      invite_code: inviteCode,
-      created_by: createdBy,
+      code: inviteCode,
+      created_by_coach_id: createdBy,
       expires_at: expiresAt,
       max_uses: maxUses,
-      status: 'active',
+      is_active: true,
     })
     .select()
     .single();
@@ -166,7 +166,7 @@ export async function getTeamInvitation(inviteCode: string) {
   }
 
   // Check if max uses reached
-  if (data.max_uses && data.current_uses && data.current_uses >= data.max_uses) {
+  if (data.max_uses && data.used_count && data.used_count >= data.max_uses) {
     throw new Error('Invitation limit reached');
   }
 
@@ -283,7 +283,7 @@ export async function joinTeam(playerId: string, inviteCode: string) {
   await supabase
     .from('baseball_team_invitations')
     .update({
-      current_uses: (invitation.current_uses || 0) + 1,
+      used_count: (invitation.used_count || 0) + 1,
     })
     .eq('id', invitation.id);
 
@@ -344,21 +344,23 @@ export async function getTeamDevelopmentalPlans(teamId: string) {
  */
 export async function createTeam(
   organizationId: string,
-  headCoachId: string,
+  createdBy: string,
   data: {
     name: string;
-    team_type: string;
-    season_year?: number;
-    age_group?: string;
+    team_type: 'college' | 'juco' | 'high_school' | 'showcase';
   }
 ) {
   const supabase = await createClient();
+
+  // Generate a random join code
+  const joinCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
   const { data: team, error } = await supabase
     .from('baseball_teams')
     .insert({
       organization_id: organizationId,
-      head_coach_id: headCoachId,
+      created_by: createdBy,
+      join_code: joinCode,
       ...data,
     })
     .select()

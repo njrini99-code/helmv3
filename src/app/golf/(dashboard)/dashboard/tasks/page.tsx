@@ -1,16 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { IconPlus } from '@/components/icons';
+import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown } from '@/components/icons';
 import { CreateTaskModal } from '@/components/golf/tasks/CreateTaskModal';
 import { TasksList } from '@/components/golf/tasks/TasksList';
 import { TaskListSkeleton } from '@/components/golf/tasks/TaskSkeleton';
+import { TaskTemplateList } from '@/components/golf/tasks/TaskTemplateList';
+import { CreateFromTemplateModal } from '@/components/golf/tasks/CreateFromTemplateModal';
 import { cn } from '@/lib/utils';
 import { fadeUp } from '@/lib/motion';
+import { useTaskRealtime } from '@/hooks/golf/use-task-realtime';
+import type { TaskTemplate } from '@/app/golf/actions/tasks';
+
 type FilterType = 'all' | 'active' | 'completed';
 
 interface Task {
@@ -20,6 +25,8 @@ interface Task {
   due_date: string | null;
   status: string;
   created_at: string;
+  reminder_at: string | null;
+  category: string | null;
   assignments: Array<{
     id: string;
     status: string;
@@ -39,20 +46,49 @@ interface Player {
 
 export default function GolfTasksPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [teamId, setTeamId] = useState<string | null>(null);
+  const [playerId, setPlayerId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<'coach' | 'player' | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
+
+  // Real-time tasks subscription
+  const { tasks: realtimeTasks, stats, loading: tasksLoading, refetch } = useTaskRealtime(teamId, {
+    playerId: userRole === 'player' ? playerId : undefined,
+    assignedToPlayerOnly: userRole === 'player',
+  });
+
+  // Transform real-time tasks to expected format
+  const tasks: Task[] = realtimeTasks.map(task => ({
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    due_date: task.due_date,
+    status: task.status === 'completed' ? 'completed' : 'active',
+    created_at: task.created_at || '',
+    reminder_at: task.reminder_at,
+    category: task.category,
+    assignments: task.assigned_to_name ? [{
+      id: task.id,
+      status: task.status || 'pending',
+      completed_at: task.completed_at,
+      player: {
+        first_name: task.assigned_to_name.split(' ')[0] || '',
+        last_name: task.assigned_to_name.split(' ').slice(1).join(' ') || '',
+      }
+    }] : [],
+  }));
 
   useEffect(() => {
-    loadData();
+    loadInitialData();
   }, []);
 
-  async function loadData() {
-    setLoading(true);
+  async function loadInitialData() {
+    setInitialLoading(true);
     const supabase = createClient();
 
     try {
@@ -65,196 +101,79 @@ export default function GolfTasksPage() {
       // Check if coach
       const { data: coach } = await supabase
         .from('golf_coaches')
-        .select('team_id')
+        .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
-      if (coach?.team_id) {
-        setUserRole('coach');
-        setTeamId(coach.team_id);
-        await loadCoachData(coach.team_id);
+      if (coach?.organization_id) {
+        // Get team_id from golf_teams via organization_id
+        const { data: orgTeam } = await supabase
+          .from('golf_teams')
+          .select('id')
+          .eq('organization_id', coach.organization_id)
+          .maybeSingle();
+
+        if (orgTeam?.id) {
+          setUserRole('coach');
+          setTeamId(orgTeam.id);
+          await loadPlayers(orgTeam.id);
+        }
       } else {
-        // Check if player
+        // Check if player - get team via golf_team_members
         const { data: player } = await supabase
           .from('golf_players')
-          .select('team_id')
+          .select('id')
           .eq('user_id', user.id)
           .single();
 
-        if (player?.team_id) {
-          setUserRole('player');
-          setTeamId(player.team_id);
-          await loadPlayerData(user.id);
+        if (player?.id) {
+          setPlayerId(player.id);
+          const { data: teamMember } = await supabase
+            .from('golf_team_members')
+            .select('team_id')
+            .eq('player_id', player.id)
+            .maybeSingle();
+
+          if (teamMember?.team_id) {
+            setUserRole('player');
+            setTeamId(teamMember.team_id);
+          }
         }
       }
     } catch {
       // Error loading data - will show empty state
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   }
 
-  async function loadCoachData(teamId: string) {
+  async function loadPlayers(teamId: string) {
     const supabase = createClient();
 
-    // Load team players
-    const { data: playersData } = await supabase
-      .from('golf_players')
-      .select('id, first_name, last_name')
-      .eq('team_id', teamId)
-      .order('last_name');
+    // Load team players via golf_team_members
+    const { data: teamMembers } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .eq('team_id', teamId);
 
-    if (playersData) {
-      setPlayers(playersData);
-    }
+    const playerIds = (teamMembers || []).map(tm => tm.player_id);
 
-    // Load tasks and assignments separately (due to missing FK in generated types)
-    const { data: tasksData } = await supabase
-      .from('golf_tasks')
-      .select('id, title, description, due_date, created_at')
-      .eq('team_id', teamId)
-      .order('created_at', { ascending: false });
+    if (playerIds.length > 0) {
+      const { data: playersData } = await supabase
+        .from('golf_players')
+        .select('id, first_name, last_name')
+        .in('id', playerIds)
+        .order('last_name');
 
-    if (tasksData && tasksData.length > 0) {
-      const taskIds = tasksData.map(t => t.id);
-
-      // Fetch assignments with player info separately
-      // Note: golf_task_assignments may not be in generated types yet
-      interface TaskAssignment {
-        id: string;
-        task_id: string;
-        player_id: string | null;
-        status: string | null;
-        completed_at: string | null;
+      if (playersData) {
+        setPlayers(playersData);
       }
-      const { data: assignmentsData } = await (supabase
-        .from('golf_task_assignments' as 'golf_teams')
-        .select('id, task_id, status, completed_at, player_id')
-        .in('task_id', taskIds) as unknown as Promise<{ data: TaskAssignment[] | null; error: Error | null }>);
-
-      // Get unique player IDs and fetch player info
-      const playerIds = [...new Set((assignmentsData || []).map(a => a.player_id).filter(Boolean))] as string[];
-      let playersMap: Record<string, { first_name: string | null; last_name: string | null }> = {};
-
-      if (playerIds.length > 0) {
-        const { data: playersData } = await supabase
-          .from('golf_players')
-          .select('id, first_name, last_name')
-          .in('id', playerIds);
-
-        playersMap = (playersData || []).reduce((acc, p) => {
-          acc[p.id] = { first_name: p.first_name, last_name: p.last_name };
-          return acc;
-        }, {} as Record<string, { first_name: string | null; last_name: string | null }>);
-      }
-
-      // Group assignments by task_id
-      const assignmentsByTask = (assignmentsData || []).reduce((acc, a) => {
-        const taskKey = a.task_id;
-        if (!acc[taskKey]) acc[taskKey] = [];
-        acc[taskKey]!.push({
-          id: a.id,
-          status: a.status || 'pending',
-          completed_at: a.completed_at,
-          player: a.player_id ? playersMap[a.player_id] || { first_name: null, last_name: null } : { first_name: null, last_name: null }
-        });
-        return acc;
-      }, {} as Record<string, Array<{ id: string; status: string; completed_at: string | null; player: { first_name: string | null; last_name: string | null } }>>);
-
-      // Build final tasks
-      const typedTasks = tasksData.map((task) => {
-        const assignments = assignmentsByTask[task.id] || [];
-        const completedCount = assignments.filter((assignment) => assignment.status === 'completed').length;
-        const status = completedCount === assignments.length && assignments.length > 0 ? 'completed' : 'pending';
-
-        return {
-          id: task.id,
-          title: task.title,
-          description: task.description,
-          due_date: task.due_date,
-          status,
-          created_at: task.created_at || '',
-          assignments: assignments.map((assignment) => ({
-            id: assignment.id,
-            status: assignment.status,
-            completed_at: assignment.completed_at,
-            player: {
-              first_name: assignment.player?.first_name || '',
-              last_name: assignment.player?.last_name || ''
-            }
-          }))
-        };
-      });
-      setTasks(typedTasks);
-    }
-  }
-
-  async function loadPlayerData(userId: string) {
-    const supabase = createClient();
-
-    // Get player's info
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', userId)
-      .single();
-
-    if (!player) return;
-
-    // Fetch assignments for this player separately (due to missing FK in generated types)
-    interface PlayerTaskAssignment {
-      id: string;
-      task_id: string;
-      status: string | null;
-      completed_at: string | null;
-    }
-    const { data: assignmentsData } = await (supabase
-      .from('golf_task_assignments' as 'golf_teams')
-      .select('id, task_id, status, completed_at')
-      .eq('player_id', player.id)
-      .order('created_at', { ascending: false }) as unknown as Promise<{ data: PlayerTaskAssignment[] | null; error: Error | null }>);
-
-    if (assignmentsData && assignmentsData.length > 0) {
-      // Fetch associated tasks
-      const taskIds = [...new Set(assignmentsData.map(a => a.task_id))];
-      const { data: tasksData } = await supabase
-        .from('golf_tasks')
-        .select('id, title, description, due_date, created_at')
-        .in('id', taskIds);
-
-      // Create tasks map
-      const tasksMap = (tasksData || []).reduce((acc, t) => {
-        acc[t.id] = t;
-        return acc;
-      }, {} as Record<string, { id: string; title: string; description: string | null; due_date: string | null; created_at: string | null }>);
-
-      const playerTasks = assignmentsData
-        .filter(assignment => tasksMap[assignment.task_id])
-        .map((assignment) => {
-          const task = tasksMap[assignment.task_id]!;
-          return {
-            id: task.id,
-            title: task.title,
-            description: task.description,
-            due_date: task.due_date,
-            status: assignment.status || 'pending',
-            created_at: task.created_at || '',
-            assignments: [{
-              id: assignment.id,
-              status: assignment.status || 'pending',
-              completed_at: assignment.completed_at,
-              player: { first_name: '', last_name: '' } // Player viewing their own tasks
-            }]
-          };
-        });
-      setTasks(playerTasks);
-    } else {
-      setTasks([]);
     }
   }
 
   const activeCount = tasks.filter(t => t.status === 'active').length;
   const completedCount = tasks.filter(t => t.status === 'completed').length;
+  const loading = initialLoading || tasksLoading;
 
   if (loading) {
     return (
@@ -294,7 +213,17 @@ export default function GolfTasksPage() {
           className="flex items-center justify-between mb-8"
         >
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
+              {/* Real-time indicator */}
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+                </span>
+                Live
+              </span>
+            </div>
             <p className="text-slate-500 mt-1">
               {userRole === 'coach' ? 'Assign and track player tasks' : 'View and complete your assigned tasks'}
             </p>
@@ -361,8 +290,90 @@ export default function GolfTasksPage() {
           </motion.button>
         </motion.div>
 
-        {/* Tasks List */}
-        <TasksList tasks={tasks} filter={filter} />
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Tasks List - Main Column */}
+          <div className="lg:col-span-2">
+            <TasksList tasks={tasks} filter={filter} />
+          </div>
+
+          {/* Templates Sidebar - Coach Only */}
+          {userRole === 'coach' && teamId && (
+            <div className="lg:col-span-1">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="sticky top-6"
+              >
+                {/* Templates Section */}
+                <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg overflow-hidden">
+                  <button
+                    onClick={() => setShowTemplates(!showTemplates)}
+                    className="w-full flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <IconClipboardList size={18} className="text-slate-600" />
+                      <span className="font-semibold text-slate-900">Templates</span>
+                    </div>
+                    {showTemplates ? (
+                      <IconChevronDown size={18} className="text-slate-400" />
+                    ) : (
+                      <IconChevronRight size={18} className="text-slate-400" />
+                    )}
+                  </button>
+
+                  <AnimatePresence>
+                    {showTemplates && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="border-t border-slate-200"
+                      >
+                        <div className="p-4">
+                          <TaskTemplateList
+                            teamId={teamId}
+                            onSelectTemplate={(template) => setSelectedTemplate(template)}
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Quick Stats */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-4 bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg p-4"
+                >
+                  <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                    Quick Stats
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center p-3 bg-slate-50 rounded-lg">
+                      <p className="text-2xl font-semibold text-slate-900">{activeCount}</p>
+                      <p className="text-xs text-slate-500">Active</p>
+                    </div>
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <p className="text-2xl font-semibold text-green-600">{completedCount}</p>
+                      <p className="text-xs text-slate-500">Completed</p>
+                    </div>
+                  </div>
+                  {stats.overdue_tasks > 0 && (
+                    <div className="mt-3 p-3 bg-red-50 rounded-lg text-center">
+                      <p className="text-lg font-semibold text-red-600">{stats.overdue_tasks}</p>
+                      <p className="text-xs text-red-500">Overdue</p>
+                    </div>
+                  )}
+                </motion.div>
+              </motion.div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Create Task Modal */}
@@ -370,7 +381,22 @@ export default function GolfTasksPage() {
         <CreateTaskModal
           isOpen={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
-          onTaskCreated={loadData}
+          onTaskCreated={refetch}
+          teamId={teamId}
+          players={players}
+        />
+      )}
+
+      {/* Create From Template Modal */}
+      {userRole === 'coach' && teamId && selectedTemplate && (
+        <CreateFromTemplateModal
+          isOpen={!!selectedTemplate}
+          onClose={() => setSelectedTemplate(null)}
+          onTaskCreated={() => {
+            refetch();
+            setSelectedTemplate(null);
+          }}
+          template={selectedTemplate}
           teamId={teamId}
           players={players}
         />

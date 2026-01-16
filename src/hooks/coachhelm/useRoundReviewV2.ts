@@ -1,12 +1,22 @@
 'use client';
 
+/**
+ * useRoundReview - Hook for generating and managing CoachHelm round reviews
+ *
+ * Features:
+ * - Load existing reviews from database
+ * - Generate AI-powered reviews via CoachHelm
+ * - Share reviews with coach
+ * - Check CoachHelm enabled status
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { RoundReview } from '@/lib/coachhelm/types';
 import type { IntelligentRoundReview } from '@/lib/coachhelm/v2/types';
-import { generateRoundReviewV2, getCoachHelmStatus } from '@/app/golf/actions/insights-v2';
+import { generateRoundReview, getCoachHelmStatus } from '@/app/golf/actions/insights';
 
-// Map database to TypeScript for V1 reviews
+// Map database row to TypeScript RoundReview type
 function dbToReview(row: Record<string, unknown>): RoundReview {
   return {
     id: row.id as string,
@@ -40,29 +50,36 @@ function dbToReview(row: Record<string, unknown>): RoundReview {
   };
 }
 
-export interface UseRoundReviewV2Result {
-  // V1 review data (always available)
+export interface UseRoundReviewResult {
+  // Standard review data (always available)
   review: RoundReview | null;
-  
-  // V2 enhanced data (when V2 is enabled)
+
+  // Enhanced AI review data (when CoachHelm is enabled)
+  intelligentReview: IntelligentRoundReview | null;
+  isCoachHelmEnabled: boolean;
+
+  // Legacy property names for backwards compatibility
   v2Review: IntelligentRoundReview | null;
   isV2Enabled: boolean;
-  
+
   // State
   loading: boolean;
   generating: boolean;
   error: string | null;
-  
+
   // Actions
   generate: () => Promise<void>;
   shareWithCoach: () => Promise<boolean>;
   needsGeneration: boolean;
 }
 
-export function useRoundReviewV2(roundId: string | null): UseRoundReviewV2Result {
+// Backwards compatible type alias
+export type UseRoundReviewV2Result = UseRoundReviewResult;
+
+export function useRoundReview(roundId: string | null): UseRoundReviewResult {
   const [review, setReview] = useState<RoundReview | null>(null);
-  const [v2Review, setV2Review] = useState<IntelligentRoundReview | null>(null);
-  const [isV2Enabled, setIsV2Enabled] = useState(false);
+  const [intelligentReview, setIntelligentReview] = useState<IntelligentRoundReview | null>(null);
+  const [isCoachHelmEnabled, setIsCoachHelmEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +87,7 @@ export function useRoundReviewV2(roundId: string | null): UseRoundReviewV2Result
 
   const supabase = createClient();
 
-  // Fetch existing review and check V2 status
+  // Fetch existing review and check CoachHelm status
   useEffect(() => {
     if (!roundId) {
       setLoading(false);
@@ -79,7 +96,7 @@ export function useRoundReviewV2(roundId: string | null): UseRoundReviewV2Result
 
     const currentRoundId = roundId;
 
-    async function fetchReviewAndCheckV2() {
+    async function fetchReviewAndCheckStatus() {
       setLoading(true);
       setError(null);
 
@@ -99,11 +116,11 @@ export function useRoundReviewV2(roundId: string | null): UseRoundReviewV2Result
 
         setPlayerId(round.player_id);
 
-        // Check if V2 is enabled for this player
+        // Check if CoachHelm is enabled for this player
         const status = await getCoachHelmStatus('player', round.player_id);
-        setIsV2Enabled(status.enabled);
+        setIsCoachHelmEnabled(status.enabled);
 
-        // Fetch existing V1 review
+        // Fetch existing review
         const { data, error: fetchError } = await (supabase as unknown as {
           from: (table: string) => {
             select: (columns: string) => {
@@ -133,10 +150,10 @@ export function useRoundReviewV2(roundId: string | null): UseRoundReviewV2Result
       }
     }
 
-    fetchReviewAndCheckV2();
+    fetchReviewAndCheckStatus();
   }, [roundId, supabase]);
 
-  // Generate review (uses V2 when enabled, falls back to V1)
+  // Generate review using CoachHelm AI
   const generate = useCallback(async () => {
     if (!roundId || !playerId) return;
 
@@ -144,14 +161,14 @@ export function useRoundReviewV2(roundId: string | null): UseRoundReviewV2Result
     setError(null);
 
     try {
-      if (isV2Enabled) {
-        // Try V2 first
-        const result = await generateRoundReviewV2(roundId, playerId);
-        
+      if (isCoachHelmEnabled) {
+        // Try CoachHelm first
+        const result = await generateRoundReview(roundId, playerId);
+
         if (result.success && result.review) {
-          setV2Review(result.review);
-          
-          // Also create a basic V1-compatible review for display
+          setIntelligentReview(result.review);
+
+          // Also create a basic compatible review for display
           const basicReview: RoundReview = {
             id: '',
             roundId,
@@ -239,12 +256,12 @@ export function useRoundReviewV2(roundId: string | null): UseRoundReviewV2Result
           setReview(basicReview);
           return;
         }
-        
-        // Fall back to V1 if V2 fails
-        console.warn('V2 review failed, falling back to V1:', result.error);
+
+        // Fall back to standard generation if CoachHelm fails
+        console.warn('CoachHelm review failed, falling back to standard:', result.error);
       }
 
-      // V1 fallback
+      // Standard review generation via API
       const response = await fetch('/api/golf/rounds/generate-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -262,7 +279,7 @@ export function useRoundReviewV2(roundId: string | null): UseRoundReviewV2Result
     } finally {
       setGenerating(false);
     }
-  }, [roundId, playerId, isV2Enabled]);
+  }, [roundId, playerId, isCoachHelmEnabled]);
 
   // Share with coach
   const shareWithCoach = useCallback(async () => {
@@ -297,13 +314,19 @@ export function useRoundReviewV2(roundId: string | null): UseRoundReviewV2Result
 
   return {
     review,
-    v2Review,
-    isV2Enabled,
+    intelligentReview,
+    isCoachHelmEnabled,
+    // Legacy property names for backwards compatibility
+    v2Review: intelligentReview,
+    isV2Enabled: isCoachHelmEnabled,
     loading,
     generating,
     error,
     generate,
     shareWithCoach,
-    needsGeneration: !loading && !review && !v2Review,
+    needsGeneration: !loading && !review && !intelligentReview,
   };
 }
+
+// Backwards compatible alias
+export const useRoundReviewV2 = useRoundReview;

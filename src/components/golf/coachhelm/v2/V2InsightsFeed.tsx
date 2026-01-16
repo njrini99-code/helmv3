@@ -1,17 +1,26 @@
 'use client';
 
+/**
+ * InsightsFeed - Unified feed showing CoachHelm AI insights, patterns, and predictions
+ *
+ * Features:
+ * - Tabbed view: Insights, Patterns, Predictions
+ * - Generate insights on demand
+ * - Record user interactions for learning
+ */
+
 import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconSparkles, IconRefresh } from '@/components/icons';
 import { GlassCard } from '@/components/ui/glass-card';
-import { V2InsightCard } from './V2InsightCard';
+import { InsightCard } from './V2InsightCard';
 import { PatternCard } from './PatternCard';
 import { PredictionCard } from './PredictionCard';
-import { generateTeamInsightsV2, recordInteraction } from '@/app/golf/actions/insights-v2';
+import { generateTeamInsight, recordInteraction } from '@/app/golf/actions/insights';
 import type { ComposedInsight, MinedPattern, PerformancePrediction } from '@/lib/coachhelm/v2/types';
 
-interface V2InsightsFeedProps {
+interface InsightsFeedProps {
   teamId: string;
   coachId: string;
   initialInsights?: ComposedInsight[];
@@ -19,16 +28,19 @@ interface V2InsightsFeedProps {
   initialPredictions?: Array<PerformancePrediction & { playerName?: string }>;
 }
 
+// Also export as V2InsightsFeed for backwards compatibility
+export { InsightsFeed as V2InsightsFeed };
+
 type TabType = 'insights' | 'patterns' | 'predictions';
 type TeamPrediction = PerformancePrediction & { playerName?: string };
 
-export function V2InsightsFeed({
+export function InsightsFeed({
   teamId: _teamId, // Reserved for future use
   coachId,
   initialInsights = [],
   initialPatterns = [],
   initialPredictions = [],
-}: V2InsightsFeedProps) {
+}: InsightsFeedProps) {
   void _teamId;
 
   const [isPending, startTransition] = useTransition();
@@ -42,8 +54,8 @@ export function V2InsightsFeed({
   const handleGenerate = () => {
     startTransition(async () => {
       setError(null);
-      
-      const result = await generateTeamInsightsV2();
+
+      const result = await generateTeamInsight();
       
       if (result.success) {
         setInsights(result.insights || []);
@@ -78,14 +90,14 @@ export function V2InsightsFeed({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg">
+          <div className="p-1.5 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg">
             <IconSparkles size={16} className="text-white" />
           </div>
           <span className="text-sm font-medium text-slate-700">
-            CoachHelm V2
+            CoachHelm AI
           </span>
-          <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-600 rounded-full font-medium">
-            AI Intelligence
+          <span className="text-xs px-2 py-0.5 bg-primary-100 text-primary-600 rounded-full font-medium">
+            Powered by AI
           </span>
         </div>
 
@@ -168,7 +180,7 @@ export function V2InsightsFeed({
             >
               {insights.length > 0 ? (
                 insights.map((insight, i) => (
-                  <V2InsightCard
+                  <InsightCard
                     key={i}
                     insight={insight}
                     onAction={(action) => handleInsightAction(insight, action)}

@@ -43,7 +43,7 @@ export function useNotifications() {
         message: n.body || '',
         timestamp: n.created_at || new Date().toISOString(),
         read: n.read || false,
-        actionUrl: n.action_url || undefined,
+        actionUrl: (n as { link?: string }).link || undefined,
       }));
       setNotifications(mapped);
     }

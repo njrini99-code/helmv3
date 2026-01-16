@@ -4,13 +4,14 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { IconMail, IconPlus, IconSend, IconArrowLeft, IconMessageSquare, IconAlertCircle } from '@/components/icons';
+import { IconMail, IconPlus, IconSend, IconArrowLeft, IconMessageSquare, IconAlertCircle, IconPencil, IconTrash, IconCheck, IconX, IconUsers } from '@/components/icons';
 import { useToast } from '@/components/ui/toast';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
 import { createGolfConversation } from '@/app/golf/actions/messages';
 import { GolfNewMessageModal } from '@/components/golf/messages/GolfNewMessageModal';
+import { GolfTeamBroadcastModal } from '@/components/golf/messages/GolfTeamBroadcastModal';
 import { useTeamContext } from '@/hooks/golf/use-team-context';
-import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
+import type { GolfConversationWithMeta, MessageWithReadStatus } from '@/hooks/golf/use-golf-messages';
 
 export default function GolfMessagesPage() {
   const { showToast } = useToast();
@@ -28,10 +29,26 @@ export default function GolfMessagesPage() {
 
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const [showTeamBroadcastModal, setShowTeamBroadcastModal] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
 
-  // Get messages for selected conversation
-  const { messages, loading: messagesLoading, sendMessage } = useGolfMessages(selectedConversationId || '');
+  // Get messages for selected conversation with read receipts and typing indicator
+  const {
+    messages,
+    loading: messagesLoading,
+    sendMessage,
+    editMessage,
+    removeMessage,
+    isOtherTyping,
+    sendTypingStatus,
+    currentUserId,
+  } = useGolfMessages(selectedConversationId || '');
+
+  // State for editing messages
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [isEditSaving, setIsEditSaving] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Memoize grouped conversations for performance
   const groupedConversations = useMemo(() => {
@@ -77,6 +94,13 @@ export default function GolfMessagesPage() {
     }
   };
 
+  // Handle team broadcast creation
+  const handleTeamBroadcastCreated = async (conversationId: string) => {
+    await refetch();
+    handleSelectConversation(conversationId);
+    showToast('Team group created', 'success');
+  };
+
   // Handle sending a message
   const handleSendMessage = async (content: string) => {
     if (!selectedConversationId) return false;
@@ -90,6 +114,62 @@ export default function GolfMessagesPage() {
       showToast(errorMessage, 'error');
       return false;
     }
+  };
+
+  // Handle starting edit mode
+  const handleStartEdit = (messageId: string, currentContent: string) => {
+    setEditingMessageId(messageId);
+    setEditContent(currentContent);
+    setDeleteConfirmId(null);
+  };
+
+  // Handle canceling edit
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditContent('');
+  };
+
+  // Handle saving edit
+  const handleSaveEdit = async () => {
+    if (!editingMessageId || !editContent.trim()) return;
+
+    setIsEditSaving(true);
+    try {
+      await editMessage(editingMessageId, editContent.trim());
+      showToast('Message updated', 'success');
+      setEditingMessageId(null);
+      setEditContent('');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update message';
+      showToast(errorMessage, 'error');
+    } finally {
+      setIsEditSaving(false);
+    }
+  };
+
+  // Handle delete confirmation
+  const handleDeleteClick = (messageId: string) => {
+    setDeleteConfirmId(messageId);
+    setEditingMessageId(null);
+  };
+
+  // Handle confirming delete
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmId) return;
+
+    try {
+      await removeMessage(deleteConfirmId);
+      showToast('Message deleted', 'success');
+      setDeleteConfirmId(null);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete message';
+      showToast(errorMessage, 'error');
+    }
+  };
+
+  // Handle canceling delete
+  const handleCancelDelete = () => {
+    setDeleteConfirmId(null);
   };
 
   // Loading state
@@ -137,14 +217,28 @@ export default function GolfMessagesPage() {
         <div className="p-4 border-b border-slate-100">
           <div className="flex items-center justify-between mb-1">
             <h1 className="text-xl font-semibold text-slate-900">Messages</h1>
-            <Button
-              size="sm"
-              onClick={() => setShowNewMessageModal(true)}
-              className="gap-1"
-            >
-              <IconPlus size={16} />
-              New
-            </Button>
+            <div className="flex items-center gap-2">
+              {userRole === 'coach' && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setShowTeamBroadcastModal(true)}
+                  className="gap-1"
+                  title="Message team"
+                >
+                  <IconUsers size={16} />
+                  <span className="hidden sm:inline">Team</span>
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={() => setShowNewMessageModal(true)}
+                className="gap-1"
+              >
+                <IconPlus size={16} />
+                New
+              </Button>
+            </div>
           </div>
           <p className="text-sm text-slate-500">{teamName || 'Team'} communication</p>
         </div>
@@ -216,17 +310,27 @@ export default function GolfMessagesPage() {
               >
                 <IconArrowLeft size={20} />
               </button>
-              <Avatar
-                name={selectedConversation.other_participant?.name || 'User'}
-                src={selectedConversation.other_participant?.avatar}
-                size="md"
-              />
+              {selectedConversation.is_group ? (
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <IconUsers size={20} className="text-emerald-600" />
+                </div>
+              ) : (
+                <Avatar
+                  name={selectedConversation.other_participant?.name || 'User'}
+                  src={selectedConversation.other_participant?.avatar}
+                  size="md"
+                />
+              )}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-slate-900 truncate">
-                  {selectedConversation.other_participant?.name || 'Unknown User'}
+                  {selectedConversation.is_group
+                    ? selectedConversation.title || 'Team Group'
+                    : selectedConversation.other_participant?.name || 'Unknown User'}
                 </p>
                 <p className="text-sm text-slate-500 truncate">
-                  {selectedConversation.other_participant?.subtitle || ''}
+                  {selectedConversation.is_group
+                    ? 'Group Conversation'
+                    : selectedConversation.other_participant?.subtitle || ''}
                 </p>
               </div>
             </div>
@@ -248,7 +352,7 @@ export default function GolfMessagesPage() {
               ) : (
                 <div className="space-y-4">
                   {messages.map((msg, idx) => {
-                    const isOwn = msg.sender_id === userId;
+                    const isOwn = msg.sender_id === userId || msg.sender_id === currentUserId;
                     const prevMsg = messages[idx - 1];
                     const nextMsg = messages[idx + 1];
 
@@ -258,6 +362,9 @@ export default function GolfMessagesPage() {
 
                     // Only show time on last message of group
                     const showTime = isLastInGroup;
+
+                    // Check if this is the last message from current user (for read receipt)
+                    const isLastOwnMessage = isOwn && (!nextMsg || nextMsg.sender_id !== msg.sender_id);
 
                     return (
                       <div
@@ -281,53 +388,155 @@ export default function GolfMessagesPage() {
                           </div>
                         )}
 
-                        {/* Message bubble */}
-                        <div className={cn(
-                          'max-w-[70%] px-4 py-2.5',
-                          isOwn
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-white border border-slate-200 text-slate-900 shadow-sm',
-                          // Dynamic border radius based on position in group
-                          isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'),
-                          isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-lg' : 'rounded-2xl rounded-bl-lg'),
-                          !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-2xl rounded-tr-lg rounded-br-md' : 'rounded-2xl rounded-tl-lg rounded-bl-md'),
-                          !isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-r-2xl rounded-l-lg' : 'rounded-l-2xl rounded-r-lg'),
-                        )}>
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                            {msg.content}
-                          </p>
+                        {/* Message bubble with edit/delete controls */}
+                        <div className="group relative flex items-center gap-1">
+                          {/* Edit/Delete buttons for own messages (appear on hover) */}
+                          {isOwn && editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
+                            <div className={cn(
+                              'absolute flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity',
+                              'right-full mr-1'
+                            )}>
+                              <button
+                                onClick={() => handleStartEdit(msg.id, msg.content)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                                title="Edit message"
+                              >
+                                <IconPencil size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(msg.id)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                title="Delete message"
+                              >
+                                <IconTrash size={14} />
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Delete confirmation */}
+                          {deleteConfirmId === msg.id && (
+                            <div className="flex items-center gap-1 mr-2 bg-red-50 rounded-lg px-2 py-1">
+                              <span className="text-xs text-red-600 mr-1">Delete?</span>
+                              <button
+                                onClick={handleConfirmDelete}
+                                className="p-1 rounded text-red-600 hover:bg-red-100 transition-colors"
+                                title="Confirm delete"
+                              >
+                                <IconCheck size={14} />
+                              </button>
+                              <button
+                                onClick={handleCancelDelete}
+                                className="p-1 rounded text-slate-500 hover:bg-slate-200 transition-colors"
+                                title="Cancel"
+                              >
+                                <IconX size={14} />
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Message bubble - edit mode */}
+                          {editingMessageId === msg.id ? (
+                            <div className={cn(
+                              'max-w-[70%] px-3 py-2',
+                              'bg-emerald-50 border-2 border-emerald-300 shadow-sm',
+                              'rounded-2xl'
+                            )}>
+                              <textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="w-full bg-transparent text-sm text-slate-900 resize-none focus:outline-none min-w-[200px]"
+                                rows={Math.min(5, editContent.split('\n').length || 1)}
+                                autoFocus
+                              />
+                              <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-emerald-200">
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 rounded transition-colors"
+                                  disabled={isEditSaving}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleSaveEdit}
+                                  disabled={isEditSaving || !editContent.trim()}
+                                  className={cn(
+                                    'px-2 py-1 text-xs rounded transition-colors',
+                                    isEditSaving || !editContent.trim()
+                                      ? 'text-slate-400 cursor-not-allowed'
+                                      : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100'
+                                  )}
+                                >
+                                  {isEditSaving ? 'Saving...' : 'Save'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            /* Message bubble - normal mode */
+                            <div className={cn(
+                              'max-w-[70%] px-4 py-2.5',
+                              isOwn
+                                ? 'bg-emerald-500 text-white'
+                                : 'bg-white border border-slate-200 text-slate-900 shadow-sm',
+                              // Dynamic border radius based on position in group
+                              isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'),
+                              isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-lg' : 'rounded-2xl rounded-bl-lg'),
+                              !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-2xl rounded-tr-lg rounded-br-md' : 'rounded-2xl rounded-tl-lg rounded-bl-md'),
+                              !isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-r-2xl rounded-l-lg' : 'rounded-l-2xl rounded-r-lg'),
+                            )}>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                                {msg.content}
+                              </p>
+                              {/* Edited indicator */}
+                              {(msg as MessageWithReadStatus).edited_at && (
+                                <span className={cn(
+                                  'text-[10px] mt-1 block',
+                                  isOwn ? 'text-emerald-200' : 'text-slate-400'
+                                )}>
+                                  (edited)
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Time + read receipt (only on last message of group) */}
-                        {showTime && (
+                        {showTime && editingMessageId !== msg.id && (
                           <div className={cn(
                             'flex items-center gap-1 pb-1',
                             isOwn ? 'flex-row-reverse' : ''
                           )}>
                             <span className="text-[10px] text-slate-400">
-                              {formatTime(msg.sent_at)}
+                              {formatTime(msg.created_at)}
                             </span>
+                            {/* Read receipt indicator for own messages */}
                             {isOwn && (
-                              <svg
-                                className="w-3.5 h-3.5 text-emerald-500"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
+                              <ReadReceiptIcon isRead={(msg as MessageWithReadStatus).isRead} />
                             )}
                           </div>
                         )}
                       </div>
                     );
                   })}
+
+                  {/* Typing indicator */}
+                  {isOtherTyping && (
+                    <div className="flex items-end gap-2 justify-start">
+                      <div className="w-8 shrink-0">
+                        <Avatar
+                          name={selectedConversation?.other_participant?.name || 'User'}
+                          src={selectedConversation?.other_participant?.avatar}
+                          size="sm"
+                        />
+                      </div>
+                      <TypingIndicator />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
             {/* Message Input */}
-            <MessageInput onSend={handleSendMessage} />
+            <MessageInput onSend={handleSendMessage} onTyping={sendTypingStatus} />
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
@@ -355,15 +564,79 @@ export default function GolfMessagesPage() {
         currentUserRole={userRole || 'player'}
         teamId={teamId}  // THIS IS NOW GUARANTEED TO BE SET OR MODAL WON'T OPEN
       />
+
+      {/* Team Broadcast Modal (coaches only) */}
+      {userRole === 'coach' && teamId && (
+        <GolfTeamBroadcastModal
+          isOpen={showTeamBroadcastModal}
+          onClose={() => setShowTeamBroadcastModal(false)}
+          onSuccess={handleTeamBroadcastCreated}
+          teamId={teamId}
+        />
+      )}
+    </div>
+  );
+}
+
+// Read Receipt Icon Component
+function ReadReceiptIcon({ isRead }: { isRead?: boolean }) {
+  if (isRead) {
+    // Double checkmark (read)
+    return (
+      <svg
+        className="w-4 h-4 text-emerald-500"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-label="Read"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M2 13l4 4L16 7M8 13l4 4L22 7"
+        />
+      </svg>
+    );
+  }
+  // Single checkmark (sent but not read)
+  return (
+    <svg
+      className="w-3.5 h-3.5 text-slate-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      aria-label="Sent"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+// Typing Indicator Component
+function TypingIndicator() {
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+      <div className="flex items-center gap-1">
+        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+      </div>
     </div>
   );
 }
 
 // Message Input Component
-function MessageInput({ onSend }: { onSend: (content: string) => Promise<boolean> }) {
+interface MessageInputProps {
+  onSend: (content: string) => Promise<boolean>;
+  onTyping?: (isTyping: boolean) => void;
+}
+
+function MessageInput({ onSend, onTyping }: MessageInputProps) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -373,9 +646,49 @@ function MessageInput({ onSend }: { onSend: (content: string) => Promise<boolean
     }
   }, [message]);
 
+  // Handle typing status
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setMessage(newValue);
+
+    // Broadcast typing status
+    if (onTyping) {
+      if (newValue.trim()) {
+        onTyping(true);
+        // Clear previous timeout
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+        // Set timeout to stop typing indicator after 2 seconds of no input
+        typingTimeoutRef.current = setTimeout(() => {
+          onTyping(false);
+        }, 2000);
+      } else {
+        onTyping(false);
+      }
+    }
+  };
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || sending) return;
+
+    // Clear typing indicator before sending
+    if (onTyping) {
+      onTyping(false);
+    }
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
 
     setSending(true);
     const success = await onSend(message.trim());
@@ -403,7 +716,7 @@ function MessageInput({ onSend }: { onSend: (content: string) => Promise<boolean
         <textarea
           ref={textareaRef}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           rows={1}
@@ -474,8 +787,8 @@ function groupConversationsByTime(conversations: GolfConversationWithMeta[]) {
   };
 
   conversations.forEach(conv => {
-    const lastMsgDate = conv.last_message?.sent_at
-      ? new Date(conv.last_message.sent_at)
+    const lastMsgDate = conv.last_message?.created_at
+      ? new Date(conv.last_message.created_at)
       : new Date(0);
 
     if (lastMsgDate >= today) {
@@ -534,6 +847,12 @@ function ConversationRow({
   onSelect: () => void;
 }) {
   const hasUnread = conv.unread_count > 0;
+  const isGroup = conv.is_group;
+
+  // Determine display name and avatar for groups vs 1:1
+  const displayName = isGroup
+    ? conv.title || 'Team Group'
+    : conv.other_participant?.name || 'Unknown User';
 
   return (
     <button
@@ -548,11 +867,17 @@ function ConversationRow({
     >
       {/* Avatar with unread indicator */}
       <div className="relative">
-        <Avatar
-          name={conv.other_participant?.name || 'User'}
-          src={conv.other_participant?.avatar}
-          size="md"
-        />
+        {isGroup ? (
+          <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+            <IconUsers size={20} className="text-emerald-600" />
+          </div>
+        ) : (
+          <Avatar
+            name={conv.other_participant?.name || 'User'}
+            src={conv.other_participant?.avatar}
+            size="md"
+          />
+        )}
         {hasUnread && (
           <span className="absolute -top-1 -right-1 w-5 h-5
                           bg-emerald-500 rounded-full
@@ -567,18 +892,25 @@ function ConversationRow({
       <div className="flex-1 min-w-0">
         {/* Name + time row */}
         <div className="flex items-center justify-between gap-2 mb-0.5">
-          <span className={cn(
-            'truncate',
-            hasUnread ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'
-          )}>
-            {conv.other_participant?.name || 'Unknown User'}
-          </span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className={cn(
+              'truncate',
+              hasUnread ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'
+            )}>
+              {displayName}
+            </span>
+            {isGroup && (
+              <span className="px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide bg-emerald-100 text-emerald-700 rounded flex-shrink-0">
+                Group
+              </span>
+            )}
+          </div>
           {conv.last_message && (
             <span className={cn(
               'text-[11px] flex-shrink-0',
               hasUnread ? 'text-emerald-600 font-medium' : 'text-slate-400'
             )}>
-              {formatTime(conv.last_message.sent_at)}
+              {formatTime(conv.last_message.created_at)}
             </span>
           )}
         </div>

@@ -76,7 +76,7 @@ export function PositionPlanner({
     filteredWatchlist.forEach(item => {
       if (!item.player) return;
 
-      let position = item.player.primary_position;
+      const position = item.player.primary_position;
       if (!position) return;
 
       // Normalize position

@@ -152,7 +152,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                 <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
                                 {team?.name || 'Golf Team'}
                                 <span className="text-slate-300">•</span>
-                                <span className="capitalize">{player.year?.replace('_', ' ') || 'Player'}</span>
+                                <span className="capitalize">{player.grad_year ? `Class of ${player.grad_year}` : 'Player'}</span>
                             </p>
                         </div>
                     </div>

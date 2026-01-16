@@ -44,7 +44,7 @@ export function useMessagesSubscription({
         .from('baseball_messages')
         .select('*')
         .eq('conversation_id', conversationId)
-        .order('sent_at', { ascending: true })
+        .order('created_at', { ascending: true })
         .limit(limit);
 
       if (fetchError) throw fetchError;
@@ -64,14 +64,14 @@ export function useMessagesSubscription({
 
     try {
       const oldestMessage = messages.find((m) => m.id === beforeMessageId);
-      if (!oldestMessage || !oldestMessage.sent_at) return;
+      if (!oldestMessage || !oldestMessage.created_at) return;
 
       const { data, error: fetchError } = await supabase
         .from('baseball_messages')
         .select('*')
         .eq('conversation_id', conversationId)
-        .lt('sent_at', oldestMessage.sent_at)
-        .order('sent_at', { ascending: false })
+        .lt('created_at', oldestMessage.created_at)
+        .order('created_at', { ascending: false })
         .limit(limit);
 
       if (fetchError) throw fetchError;
@@ -92,7 +92,7 @@ export function useMessagesSubscription({
   // Subscribe to real-time message changes
   useEffect(() => {
     const channel = supabase
-      .channel(`messages:${conversationId}`)
+      .channel(`baseball_messages:${conversationId}`)
       .on(
         'postgres_changes',
         {

@@ -68,13 +68,13 @@ export default async function BaseballCalendarPage() {
     events = (eventsData || []).map(event => ({
       id: event.id,
       team_id: event.team_id || '',
-      title: event.name,
+      title: event.title,
       event_type: event.event_type || 'other',
       start_date: event.start_time,
       end_date: event.end_time || event.start_time,
       start_time: event.start_time,
       end_time: event.end_time || event.start_time,
-      location: event.location_venue || undefined,
+      location: event.location || undefined,
       description: event.description || undefined,
     }));
 
@@ -121,9 +121,9 @@ export default async function BaseballCalendarPage() {
       }),
       // Players
       ...(playersData || [])
-        .filter(p => p.players)
+        .filter(p => p.baseball_players)
         .map(p => {
-          const player = p.players as { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null };
+          const player = p.baseball_players as { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null };
           return {
             id: player.id,
             first_name: player.first_name || 'Player',

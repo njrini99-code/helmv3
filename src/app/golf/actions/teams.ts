@@ -17,7 +17,7 @@ export interface TeamData {
   id: string;
   name: string;
   season: string | null;
-  invite_code: string | null;
+  join_code: string;
   created_at: string | null;
 }
 
@@ -27,9 +27,48 @@ export interface TeamValidationResult {
   currentTeam?: { id: string; name: string };
 }
 
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Get team_id for a coach via organization lookup
+ * Note: golf_coaches doesn't have team_id directly - we get it from golf_teams via organization_id
+ */
+async function getCoachTeamId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  organizationId: string | null
+): Promise<string | null> {
+  if (!organizationId) return null;
+  const { data: team } = await supabase
+    .from('golf_teams')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+  return team?.id ?? null;
+}
+
+/**
+ * Generate a readable join code
+ * Uses uppercase letters and numbers, excluding ambiguous characters (O, 0, I, 1, L)
+ */
+function generateJoinCode(): string {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+// ============================================================================
+// TEAM VALIDATION
+// ============================================================================
+
 /**
  * Validates whether a golf player can join a team
  * Golf players can only be on ONE team at a time
+ * Note: golf_players doesn't have team_id - we check golf_team_members
  */
 export async function validateGolfPlayerCanJoinTeam(
   playerId: string,
@@ -40,7 +79,7 @@ export async function validateGolfPlayerCanJoinTeam(
   // Get player
   const { data: player, error: playerError } = await supabase
     .from('golf_players')
-    .select('id, team_id')
+    .select('id')
     .eq('id', playerId)
     .single();
 
@@ -65,20 +104,27 @@ export async function validateGolfPlayerCanJoinTeam(
     };
   }
 
-  // Check if already on this team
-  if (player.team_id === teamId) {
-    return {
-      canJoin: false,
-      reason: 'You are already a member of this team',
-    };
-  }
+  // Check if already on any team via golf_team_members
+  const { data: existingMembership } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .maybeSingle();
 
-  // Check if already on a different team
-  if (player.team_id) {
+  if (existingMembership) {
+    // Check if already on this team
+    if (existingMembership.team_id === teamId) {
+      return {
+        canJoin: false,
+        reason: 'You are already a member of this team',
+      };
+    }
+
+    // Already on a different team
     const { data: currentTeam } = await supabase
       .from('golf_teams')
       .select('id, name')
-      .eq('id', player.team_id)
+      .eq('id', existingMembership.team_id)
       .single();
 
     return {
@@ -95,7 +141,7 @@ export async function validateGolfPlayerCanJoinTeam(
 }
 
 /**
- * Add a golf player to a team
+ * Add a golf player to a team via golf_team_members
  */
 export async function joinGolfTeam(playerId: string, teamId: string) {
   const supabase = await createClient();
@@ -110,11 +156,14 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
     };
   }
 
-  // Update player's team_id
+  // Create team membership record
   const { error } = await supabase
-    .from('golf_players')
-    .update({ team_id: teamId })
-    .eq('id', playerId);
+    .from('golf_team_members')
+    .insert({
+      player_id: playerId,
+      team_id: teamId,
+      status: 'active',
+    });
 
   if (error) {
     return {
@@ -134,22 +183,23 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
 }
 
 /**
- * Process a golf team invitation code
+ * Process a golf team join code
+ * Note: golf_teams uses join_code, not invite_code
  */
-export async function processGolfTeamInvitation(inviteCode: string, playerId: string) {
+export async function processGolfTeamInvitation(joinCode: string, playerId: string) {
   const supabase = await createClient();
 
-  // Find the team by invite code
+  // Find the team by join code
   const { data: team, error: teamError } = await supabase
     .from('golf_teams')
-    .select('id, name, invite_code')
-    .eq('invite_code', inviteCode)
+    .select('id, name, join_code')
+    .eq('join_code', joinCode)
     .single();
 
   if (teamError || !team) {
     return {
       success: false,
-      error: 'Invalid invitation code',
+      error: 'Invalid join code',
     };
   }
 
@@ -158,29 +208,11 @@ export async function processGolfTeamInvitation(inviteCode: string, playerId: st
 }
 
 // ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Generate a readable invite code
- * Uses uppercase letters and numbers, excluding ambiguous characters (O, 0, I, 1, L)
- */
-function generateInviteCode(): string {
-  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
-}
-
-// ============================================================================
 // TEAM CRUD OPERATIONS
 // ============================================================================
 
 /**
- * Create a new team and link it to the current coach
- * Uses a single transaction to prevent orphaned teams
+ * Create a new team and link it to the current coach's organization
  */
 export async function createTeam(
   name: string,
@@ -197,7 +229,7 @@ export async function createTeam(
   // Get coach record
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
@@ -205,43 +237,30 @@ export async function createTeam(
     return { success: false, error: 'Coach profile not found' };
   }
 
-  // Check if coach already has a team
-  if (coach.team_id) {
+  // Check if coach already has a team via organization
+  const existingTeamId = await getCoachTeamId(supabase, coach.organization_id);
+  if (existingTeamId) {
     return { success: false, error: 'You already have a team. Please update it instead.' };
   }
 
-  const inviteCode = generateInviteCode();
+  const joinCode = generateJoinCode();
 
-  // Create team
+  // Create team linked to coach's organization
   const { data: newTeam, error: teamError } = await supabase
     .from('golf_teams')
     .insert({
       name: name.trim(),
       season: season,
-      invite_code: inviteCode,
+      join_code: joinCode,
+      organization_id: coach.organization_id,
+      created_by: coach.id,
     })
-    .select('id, name, season, invite_code, created_at')
+    .select('id, name, season, join_code, created_at')
     .single();
 
   if (teamError) {
     console.error('Failed to create team:', teamError);
     return { success: false, error: 'Failed to create team. Please try again.' };
-  }
-
-  // Link coach to team
-  const { error: linkError } = await supabase
-    .from('golf_coaches')
-    .update({
-      team_id: newTeam.id,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', coach.id);
-
-  if (linkError) {
-    // Rollback: delete the team we just created
-    await supabase.from('golf_teams').delete().eq('id', newTeam.id);
-    console.error('Failed to link coach to team:', linkError);
-    return { success: false, error: 'Failed to link team to your account. Please try again.' };
   }
 
   // Revalidate relevant paths
@@ -257,7 +276,7 @@ export async function createTeam(
 
 /**
  * Update team details
- * Only the team owner (coach linked to team) can update
+ * Only the team owner (coach linked to team via organization) can update
  */
 export async function updateTeam(
   teamId: string,
@@ -274,7 +293,7 @@ export async function updateTeam(
   // Get coach and verify ownership
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
@@ -282,7 +301,8 @@ export async function updateTeam(
     return { success: false, error: 'Coach profile not found' };
   }
 
-  if (coach.team_id !== teamId) {
+  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id);
+  if (coachTeamId !== teamId) {
     return { success: false, error: 'You can only update your own team' };
   }
 
@@ -309,7 +329,7 @@ export async function updateTeam(
     .from('golf_teams')
     .update(updateData)
     .eq('id', teamId)
-    .select('id, name, season, invite_code, created_at')
+    .select('id, name, season, join_code, created_at')
     .single();
 
   if (updateError) {
@@ -329,12 +349,12 @@ export async function updateTeam(
 }
 
 /**
- * Regenerate team invite code
+ * Regenerate team join code
  * Invalidates the old code immediately
  */
-export async function regenerateInviteCode(
+export async function regenerateJoinCode(
   teamId: string
-): Promise<TeamActionResult<{ inviteCode: string }>> {
+): Promise<TeamActionResult<{ joinCode: string }>> {
   const supabase = await createClient();
 
   // Verify user is authenticated
@@ -346,7 +366,7 @@ export async function regenerateInviteCode(
   // Get coach and verify ownership
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
@@ -354,24 +374,25 @@ export async function regenerateInviteCode(
     return { success: false, error: 'Coach profile not found' };
   }
 
-  if (coach.team_id !== teamId) {
-    return { success: false, error: 'You can only regenerate invite codes for your own team' };
+  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id);
+  if (coachTeamId !== teamId) {
+    return { success: false, error: 'You can only regenerate join codes for your own team' };
   }
 
-  const newInviteCode = generateInviteCode();
+  const newJoinCode = generateJoinCode();
 
-  // Update invite code
+  // Update join code
   const { error: updateError } = await supabase
     .from('golf_teams')
     .update({
-      invite_code: newInviteCode,
+      join_code: newJoinCode,
       updated_at: new Date().toISOString()
     })
     .eq('id', teamId);
 
   if (updateError) {
-    console.error('Failed to regenerate invite code:', updateError);
-    return { success: false, error: 'Failed to regenerate invite code. Please try again.' };
+    console.error('Failed to regenerate join code:', updateError);
+    return { success: false, error: 'Failed to regenerate join code. Please try again.' };
   }
 
   // Revalidate relevant paths
@@ -379,48 +400,6 @@ export async function regenerateInviteCode(
 
   return {
     success: true,
-    data: { inviteCode: newInviteCode }
+    data: { joinCode: newJoinCode }
   };
-}
-
-/**
- * Get team by ID with authorization check
- */
-export async function getTeamForCoach(): Promise<TeamActionResult<TeamData | null>> {
-  const supabase = await createClient();
-
-  // Verify user is authenticated
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) {
-    return { success: false, error: 'Not authenticated' };
-  }
-
-  // Get coach record
-  const { data: coach, error: coachError } = await supabase
-    .from('golf_coaches')
-    .select('id, team_id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (coachError || !coach) {
-    return { success: false, error: 'Coach profile not found' };
-  }
-
-  if (!coach.team_id) {
-    return { success: true, data: null };
-  }
-
-  // Get team
-  const { data: team, error: teamError } = await supabase
-    .from('golf_teams')
-    .select('id, name, season, invite_code, created_at')
-    .eq('id', coach.team_id)
-    .single();
-
-  if (teamError) {
-    console.error('Failed to fetch team:', teamError);
-    return { success: false, error: 'Failed to load team' };
-  }
-
-  return { success: true, data: team };
 }

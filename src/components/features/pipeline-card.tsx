@@ -30,8 +30,9 @@ export function PipelineCard({ item, isDragging = false }: PipelineCardProps) {
   const { updateStage, removeFromWatchlist } = useWatchlist();
   const name = getFullName(item.player?.first_name, item.player?.last_name);
 
-  const nextStage = stages[stages.indexOf(item.pipeline_stage) + 1];
-  const prevStage = stages[stages.indexOf(item.pipeline_stage) - 1];
+  const currentStage = item.pipeline_stage ?? 'watchlist';
+  const nextStage = stages[stages.indexOf(currentStage) + 1];
+  const prevStage = stages[stages.indexOf(currentStage) - 1];
 
   const style = {
     transform: CSS.Transform.toString(transform),

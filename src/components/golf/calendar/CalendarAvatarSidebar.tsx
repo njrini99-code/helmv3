@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronLeft, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Settings2 } from 'lucide-react';
 import { Tooltip } from '@/components/ui/tooltip';
+import { CalendarSyncButton } from './CalendarSyncButton';
 
 export interface TeamMember {
   id: string;
@@ -296,9 +297,12 @@ export function CalendarAvatarSidebar({
         }}
       />
 
-      {/* Sync Settings Button */}
+      {/* Calendar Sync Button - Always visible */}
+      <CalendarSyncButton variant="icon" />
+
+      {/* Feed Settings Button - Opens advanced feed manager */}
       {onSyncSettings && (
-        <Tooltip content="Sync settings" side="right">
+        <Tooltip content="Manage feeds" side="right">
           <button
             onClick={onSyncSettings}
             style={{
@@ -316,7 +320,7 @@ export function CalendarAvatarSidebar({
               flexShrink: 0,
             }}
           >
-            <RefreshCw className="w-5 h-5" />
+            <Settings2 className="w-5 h-5" />
           </button>
         </Tooltip>
       )}

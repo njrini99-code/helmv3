@@ -98,7 +98,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                   )}
                   <div className="flex-1 text-left">
                     <p className="text-sm font-medium text-slate-900 truncate">{team.name}</p>
-                    <p className="text-xs text-slate-500">{team.age_group || team.team_type}</p>
+                    <p className="text-xs text-slate-500">{team.team_type}</p>
                   </div>
                   {team.id === selectedTeamId && (
                     <IconCheck size={16} className="text-green-600" />
@@ -144,7 +144,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
             {selectedTeam?.name || 'Select Team'}
           </p>
           <p className="text-xs text-slate-500 truncate">
-            {selectedTeam?.age_group || selectedTeam?.team_type || 'No team selected'}
+            {selectedTeam?.team_type || 'No team selected'}
           </p>
         </div>
         <IconChevronDown
@@ -190,7 +190,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                 <div className="flex-1 text-left min-w-0">
                   <p className="text-sm font-medium text-slate-900 truncate">{team.name}</p>
                   <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <span>{team.age_group || team.team_type}</span>
+                    <span>{team.team_type}</span>
                     {team.member_count !== undefined && (
                       <>
                         <span>•</span>

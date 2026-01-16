@@ -54,7 +54,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
   const name = coach?.full_name || getFullName(player?.first_name, player?.last_name);
   const email = user?.email || '';
   const avatarUrl = coach?.avatar_url || player?.avatar_url;
-  const role = coach ? (coach.school_name || 'Coach') : (player ? `${player.primary_position} • ${player.grad_year}` : 'User');
+  const role = coach ? ((coach.organization as { name?: string })?.name || 'Coach') : (player ? `${player.primary_position} • ${player.grad_year}` : 'User');
   const isJucoCoach = coach?.coach_type === 'juco';
 
   // Handle menu toggle based on screen size

@@ -18,11 +18,11 @@ import type {
 
 interface RoundData {
   id: string;
-  total_to_par: number;
+  score_to_par: number;
   round_date: string;
   total_putts?: number | null;
-  fairways_hit?: number | null;
-  greens_in_regulation?: number | null;
+  total_fairways_hit?: number | null;
+  total_gir?: number | null;
   days_since_last?: number;
 }
 
@@ -48,7 +48,7 @@ export class CausalEngine {
     // Load rounds
     const { data: rounds, error } = await supabase
       .from('golf_rounds')
-      .select('id, total_to_par, round_date, total_putts, fairways_hit, greens_in_regulation')
+      .select('id, score_to_par, round_date, total_putts, total_fairways_hit, total_gir')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: true })
@@ -61,11 +61,11 @@ export class CausalEngine {
     this.rounds = this.computeDaysSinceLast(
       rounds.map((r) => ({
         id: r.id,
-        total_to_par: r.total_to_par ?? 0,
+        score_to_par: r.score_to_par ?? 0,
         round_date: r.round_date,
         total_putts: r.total_putts,
-        fairways_hit: r.fairways_hit,
-        greens_in_regulation: r.greens_in_regulation,
+        total_fairways_hit: r.total_fairways_hit,
+        total_gir: r.total_gir,
       }))
     );
 
@@ -117,39 +117,39 @@ export class CausalEngine {
         cause: 'practice_frequency',
         causeMetric: 'rounds_per_week',
         effect: 'scoring',
-        effectMetric: 'total_to_par',
+        effectMetric: 'score_to_par',
         getCauseValue: (r: RoundData) =>
           r.days_since_last !== undefined && r.days_since_last > 0
             ? 7 / r.days_since_last
             : 7,
-        getEffectValue: (r: RoundData) => r.total_to_par,
+        getEffectValue: (r: RoundData) => r.score_to_par,
         mechanism: 'More practice maintains muscle memory and rhythm',
       },
       {
         cause: 'putting',
         causeMetric: 'total_putts',
         effect: 'scoring',
-        effectMetric: 'total_to_par',
+        effectMetric: 'score_to_par',
         getCauseValue: (r: RoundData) => r.total_putts ?? null,
-        getEffectValue: (r: RoundData) => r.total_to_par,
+        getEffectValue: (r: RoundData) => r.score_to_par,
         mechanism: 'Lower putts directly reduce total strokes',
       },
       {
         cause: 'greens_in_regulation',
-        causeMetric: 'greens_in_regulation',
+        causeMetric: 'total_gir',
         effect: 'scoring',
-        effectMetric: 'total_to_par',
-        getCauseValue: (r: RoundData) => r.greens_in_regulation ?? null,
-        getEffectValue: (r: RoundData) => r.total_to_par,
+        effectMetric: 'score_to_par',
+        getCauseValue: (r: RoundData) => r.total_gir ?? null,
+        getEffectValue: (r: RoundData) => r.score_to_par,
         mechanism: 'Hitting more greens creates more birdie opportunities',
       },
       {
         cause: 'driving_accuracy',
-        causeMetric: 'fairways_hit',
+        causeMetric: 'total_fairways_hit',
         effect: 'scoring',
-        effectMetric: 'total_to_par',
-        getCauseValue: (r: RoundData) => r.fairways_hit ?? null,
-        getEffectValue: (r: RoundData) => r.total_to_par,
+        effectMetric: 'score_to_par',
+        getCauseValue: (r: RoundData) => r.total_fairways_hit ?? null,
+        getEffectValue: (r: RoundData) => r.score_to_par,
         mechanism: 'Hitting more fairways leads to better approach opportunities',
       },
     ];

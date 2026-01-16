@@ -22,9 +22,9 @@ export function useMessages(conversationId: string) {
     // Use explicit columns instead of SELECT * for better performance
     const { data } = await supabase
       .from('baseball_messages')
-      .select('id, conversation_id, sender_id, content, read, sent_at, updated_at')
+      .select('id, conversation_id, sender_id, content, read, created_at')
       .eq('conversation_id', conversationId)
-      .order('sent_at', { ascending: true });
+      .order('created_at', { ascending: true });
 
     setMessages((data || []) as Message[]);
     setLoading(false);
@@ -102,7 +102,7 @@ export function useConversations() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rawData, error } = await (supabase.rpc as any)(
-      'get_conversations_with_details',
+      'get_baseball_conversations_with_details',
       { p_user_id: user.id }
     );
     const conversationsData = rawData as ConversationRow[] | null;
@@ -139,8 +139,9 @@ export function useConversations() {
         baseball_coaches (
           id,
           full_name,
-          school_name,
-          avatar_url
+          avatar_url,
+          coach_type,
+          organization:organizations(name)
         ),
         baseball_players (
           id,
@@ -161,8 +162,9 @@ export function useConversations() {
       baseball_coaches: {
         id: string;
         full_name: string | null;
-        school_name: string | null;
         avatar_url: string | null;
+        coach_type: string | null;
+        organization?: { name: string | null } | null;
       } | null;
       baseball_players: {
         id: string;
@@ -201,6 +203,11 @@ export function useConversations() {
         created_at: conv.created_at,
         updated_at: conv.updated_at,
         creator_id: conv.creator_id,
+        // Required by Conversation base type - defaults for DM conversations
+        created_by: conv.creator_id || '',
+        is_team_chat: false,
+        team_id: null,
+        title: null,
         last_message: conv.last_message_content ? {
           content: conv.last_message_content,
           sent_at: conv.last_message_at,
@@ -210,13 +217,13 @@ export function useConversations() {
         other_user: otherUser ? {
           id: otherUser.id,
           email: otherUser.email,
-          coaches: otherUser.baseball_coaches,
-          players: otherUser.baseball_players,
+          coach: otherUser.baseball_coaches,
+          player: otherUser.baseball_players,
         } : null,
       };
     });
 
-    setConversations(transformedConversations as ConversationWithMeta[]);
+    setConversations(transformedConversations as unknown as ConversationWithMeta[]);
     setLoading(false);
   }, [user]);
 
@@ -226,7 +233,7 @@ export function useConversations() {
     // Set up real-time subscription for new messages
     if (user) {
       const channel = supabase
-        .channel('conversations')
+        .channel('baseball_conversations')
         .on(
           'postgres_changes',
           {

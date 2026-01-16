@@ -3,15 +3,30 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { IconX, IconPlus, IconCheck } from '@/components/icons';
+import { IconX, IconPlus, IconCheck, IconWarning } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { generateClassColor, detectSemester } from '@/lib/utils/schedule-parser';
+
+interface ExistingClass {
+  id?: string;
+  days: string[] | null;
+  start_time: string | null;
+  end_time: string | null;
+  class_name: string;
+}
+
+interface ClassConflict {
+  existingClass: ExistingClass;
+  conflictingDays: string[];
+  isExactDuplicate: boolean;
+}
 
 interface AddClassModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (classData: ClassFormData) => Promise<void>;
   editingClass?: ClassFormData | null;
+  existingClasses?: ExistingClass[];
 }
 
 export interface ClassFormData {
@@ -45,9 +60,91 @@ const QUICK_DAY_PATTERNS = [
   { label: 'MW', days: ['M', 'W'] },
 ];
 
-export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClassModalProps) {
+/**
+ * Convert time string (HH:MM) to minutes for comparison
+ */
+function timeToMinutes(time: string | null): number | null {
+  if (!time) return null;
+  const [hours, minutes] = time.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return null;
+  return hours * 60 + minutes;
+}
+
+/**
+ * Check if two time ranges overlap
+ */
+function timesOverlap(
+  start1: string | null,
+  end1: string | null,
+  start2: string | null,
+  end2: string | null
+): boolean {
+  const s1 = timeToMinutes(start1);
+  const e1 = timeToMinutes(end1);
+  const s2 = timeToMinutes(start2);
+  const e2 = timeToMinutes(end2);
+
+  // If any time is missing, we can't determine overlap
+  if (s1 === null || e1 === null || s2 === null || e2 === null) {
+    return false;
+  }
+
+  // Check for overlap: ranges overlap if one starts before the other ends
+  return s1 < e2 && s2 < e1;
+}
+
+/**
+ * Detect conflicts between new class and existing classes
+ */
+function detectConflicts(
+  newClass: ClassFormData,
+  existingClasses: ExistingClass[],
+  editingClassId?: string
+): ClassConflict[] {
+  const conflicts: ClassConflict[] = [];
+  const newDays = newClass.days || [];
+
+  if (newDays.length === 0 || !newClass.start_time || !newClass.end_time) {
+    return conflicts;
+  }
+
+  for (const existing of existingClasses) {
+    // Skip the class being edited
+    if (editingClassId && existing.id === editingClassId) {
+      continue;
+    }
+
+    const existingDays = existing.days || [];
+    if (existingDays.length === 0) continue;
+
+    // Find overlapping days
+    const overlappingDays = newDays.filter(day => existingDays.includes(day));
+    if (overlappingDays.length === 0) continue;
+
+    // Check if times overlap
+    if (timesOverlap(newClass.start_time, newClass.end_time, existing.start_time, existing.end_time)) {
+      // Check if it's an exact duplicate (same days and exact same times)
+      const isExactDuplicate =
+        JSON.stringify([...newDays].sort()) === JSON.stringify([...existingDays].sort()) &&
+        newClass.start_time === existing.start_time &&
+        newClass.end_time === existing.end_time;
+
+      conflicts.push({
+        existingClass: existing,
+        conflictingDays: overlappingDays,
+        isExactDuplicate,
+      });
+    }
+  }
+
+  return conflicts;
+}
+
+export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingClasses = [] }: AddClassModalProps) {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<ClassFormData>(() => 
+  const [conflicts, setConflicts] = useState<ClassConflict[]>([]);
+  const [showConflictWarning, setShowConflictWarning] = useState(false);
+  const [formData, setFormData] = useState<ClassFormData>(() =>
     editingClass || {
       course_code: '',
       course_name: '',
@@ -64,6 +161,12 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
       notes: '',
     }
   );
+
+  // Reset conflicts when modal closes or form changes significantly
+  const resetConflictState = () => {
+    setConflicts([]);
+    setShowConflictWarning(false);
+  };
 
   if (!isOpen) return null;
 
@@ -83,24 +186,47 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
     setFormData(prev => ({ ...prev, days: pattern }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (e?: React.FormEvent, forceSubmit = false) => {
+    e?.preventDefault();
+
     if (!formData.course_code || !formData.course_name) {
       return;
     }
-    
+
+    // Check for conflicts (unless we're forcing the submit after user confirmation)
+    if (!forceSubmit) {
+      const detectedConflicts = detectConflicts(formData, existingClasses, editingClass?.id);
+
+      if (detectedConflicts.length > 0) {
+        // Check for exact duplicates - these should be blocked entirely
+        const hasExactDuplicate = detectedConflicts.some(c => c.isExactDuplicate);
+
+        if (hasExactDuplicate) {
+          // Block exact duplicates
+          setConflicts(detectedConflicts);
+          setShowConflictWarning(true);
+          return;
+        }
+
+        // For overlapping (but not exact duplicate) conflicts, show warning and allow confirmation
+        setConflicts(detectedConflicts);
+        setShowConflictWarning(true);
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       // Combine building and room into location if needed
-      const location = formData.building && formData.room 
+      const location = formData.building && formData.room
         ? `${formData.building} ${formData.room}`
         : formData.location || formData.building || formData.room || '';
-        
+
       await onSave({
         ...formData,
         location,
       });
+      resetConflictState();
       onClose();
     } catch {
       // Save failed - UI will show original state
@@ -108,6 +234,18 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
       setLoading(false);
     }
   };
+
+  const handleConfirmWithConflicts = () => {
+    // User confirmed they want to proceed despite conflicts
+    handleSubmit(undefined, true);
+  };
+
+  const handleCancelConflict = () => {
+    resetConflictState();
+  };
+
+  // Check if any conflict is an exact duplicate (should be blocked)
+  const hasExactDuplicate = conflicts.some(c => c.isExactDuplicate);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -335,12 +473,81 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
           </div>
         </form>
 
+        {/* Conflict Warning */}
+        {showConflictWarning && conflicts.length > 0 && (
+          <div className="mx-6 mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                <IconWarning size={18} className="text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-amber-800 mb-1">
+                  {hasExactDuplicate ? 'Duplicate Time Slot' : 'Schedule Conflict Detected'}
+                </h4>
+                <p className="text-sm text-amber-700 mb-3">
+                  {hasExactDuplicate
+                    ? 'A class with the exact same days and times already exists. Please adjust the schedule.'
+                    : 'This class overlaps with existing class times:'}
+                </p>
+                <ul className="space-y-2 mb-3">
+                  {conflicts.map((conflict, index) => (
+                    <li
+                      key={index}
+                      className="text-sm text-amber-800 bg-amber-100/50 rounded-lg px-3 py-2"
+                    >
+                      <span className="font-medium">{conflict.existingClass.class_name}</span>
+                      <span className="text-amber-600 ml-2">
+                        ({conflict.conflictingDays.join(', ')} at {conflict.existingClass.start_time} - {conflict.existingClass.end_time})
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {!hasExactDuplicate && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleCancelConflict}
+                    >
+                      Edit Schedule
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleConfirmWithConflicts}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
+                      Add Anyway
+                    </Button>
+                  </div>
+                )}
+                {hasExactDuplicate && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleCancelConflict}
+                  >
+                    Edit Schedule
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} isLoading={loading} className="gap-2">
+          <Button
+            onClick={handleSubmit}
+            isLoading={loading}
+            className="gap-2"
+            disabled={showConflictWarning && hasExactDuplicate}
+          >
             {editingClass ? (
               <>
                 <IconCheck size={18} />

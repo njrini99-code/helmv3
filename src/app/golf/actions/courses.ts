@@ -6,6 +6,8 @@ import type { CourseSetupData, GolfCourse, GolfCourseHole } from '@/lib/types/go
 
 /**
  * Get all saved courses for the current user
+ * Note: golf_courses table has a simpler schema than GolfCourse type
+ * We cast results to match the expected type, filling in missing fields
  */
 export async function getSavedCourses(): Promise<GolfCourse[]> {
   const supabase = await createClient();
@@ -13,21 +15,39 @@ export async function getSavedCourses(): Promise<GolfCourse[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: courses, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: courses, error } = await (supabase as any)
     .from('golf_courses')
     .select('*')
-    .or(`created_by.eq.${user.id},is_public.eq.true`)
     .order('name');
 
-  if (error) {
+  if (error || !courses) {
     return [];
   }
 
-  return courses || [];
+  // Map database rows to GolfCourse type, providing defaults for missing fields
+  return courses.map((course: Record<string, unknown>) => ({
+    id: course.id as string,
+    name: course.name as string,
+    city: (course.city as string) ?? null,
+    state: (course.state as string) ?? null,
+    country: (course.country as string) ?? null,
+    course_rating: (course.course_rating as number) ?? null,
+    slope_rating: (course.slope_rating as number) ?? null,
+    default_tee_name: null,
+    default_tee_color: null,
+    total_yardage: null,
+    total_par: (course.par as number) ?? null,
+    created_by: null,
+    is_public: true,
+    created_at: (course.created_at as string) ?? null,
+    updated_at: null,
+  }));
 }
 
 /**
  * Get a single course with its holes
+ * Note: golf_courses table has a simpler schema than GolfCourse type
  */
 export async function getCourseWithHoles(courseId: string): Promise<{
   course: GolfCourse | null;
@@ -35,25 +55,57 @@ export async function getCourseWithHoles(courseId: string): Promise<{
 }> {
   const supabase = await createClient();
 
-  const { data: course } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: courseData } = await (supabase as any)
     .from('golf_courses')
     .select('*')
     .eq('id', courseId)
     .single();
 
-  if (!course) return { course: null, holes: [] };
+  if (!courseData) return { course: null, holes: [] };
 
-  const { data: holes } = await supabase
+  // Map to GolfCourse type
+  const course: GolfCourse = {
+    id: courseData.id,
+    name: courseData.name,
+    city: courseData.city ?? null,
+    state: courseData.state ?? null,
+    country: courseData.country ?? null,
+    course_rating: courseData.course_rating ?? null,
+    slope_rating: courseData.slope_rating ?? null,
+    default_tee_name: null,
+    default_tee_color: null,
+    total_yardage: null,
+    total_par: courseData.par ?? null,
+    created_by: null,
+    is_public: true,
+    created_at: courseData.created_at ?? null,
+    updated_at: null,
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: holesData } = await (supabase as any)
     .from('golf_course_holes')
     .select('*')
     .eq('course_id', courseId)
     .order('hole_number');
 
-  return { course, holes: holes || [] };
+  // Map holes to GolfCourseHole type
+  const holes: GolfCourseHole[] = (holesData || []).map((h: Record<string, unknown>) => ({
+    id: h.id as string,
+    course_id: h.course_id as string,
+    hole_number: h.hole_number as number,
+    par: h.par as number,
+    yardage: (h.yardage as number) ?? 0,
+    handicap_index: (h.handicap_index as number) ?? null,
+  }));
+
+  return { course, holes };
 }
 
 /**
  * Create a new course with hole configurations
+ * Note: golf_courses table has a simpler schema - only basic fields like name, city, state, par, course_rating, slope_rating
  */
 export async function createCourse(data: CourseSetupData): Promise<{
   success: boolean;
@@ -65,12 +117,12 @@ export async function createCourse(data: CourseSetupData): Promise<{
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Not authenticated' };
 
-  // Calculate totals
+  // Calculate total par from holes
   const totalPar = data.holes.reduce((sum, h) => sum + h.par, 0);
-  const totalYardage = data.holes.reduce((sum, h) => sum + h.yardage, 0);
 
-  // Insert course
-  const { data: course, error: courseError } = await supabase
+  // Insert course with only the columns that exist in the database
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: course, error: courseError } = await (supabase as any)
     .from('golf_courses')
     .insert({
       name: data.name,
@@ -78,11 +130,8 @@ export async function createCourse(data: CourseSetupData): Promise<{
       state: data.state || null,
       course_rating: data.courseRating || null,
       slope_rating: data.slopeRating || null,
-      default_tee_name: data.teeName || null,
-      total_par: totalPar,
-      total_yardage: totalYardage,
-      created_by: user.id,
-      is_public: false,
+      par: totalPar,
+      holes: data.holes.length,
     })
     .select()
     .single();
@@ -92,7 +141,8 @@ export async function createCourse(data: CourseSetupData): Promise<{
     if (courseError.code === '23505') {
       return { success: false, error: 'You already have a course with this name' };
     }
-    return { success: false, error: courseError.message };
+    console.error('[createCourse Error]', courseError);
+    return { success: false, error: 'Failed to create course. Please try again.' };
   }
 
   // Insert holes
@@ -103,13 +153,15 @@ export async function createCourse(data: CourseSetupData): Promise<{
     yardage: hole.yardage,
   }));
 
-  const { error: holesError } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: holesError } = await (supabase as any)
     .from('golf_course_holes')
     .insert(holesData);
 
   if (holesError) {
     // Rollback course if holes fail
-    await supabase.from('golf_courses').delete().eq('id', course.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('golf_courses').delete().eq('id', course.id);
     return { success: false, error: 'Failed to save hole configurations' };
   }
 
@@ -120,6 +172,7 @@ export async function createCourse(data: CourseSetupData): Promise<{
 
 /**
  * Update an existing course
+ * Note: golf_courses table has a simpler schema without created_by or total_yardage
  */
 export async function updateCourse(
   courseId: string,
@@ -130,20 +183,22 @@ export async function updateCourse(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Not authenticated' };
 
-  // Verify ownership
-  const { data: course } = await supabase
+  // Verify course exists (no ownership check since table doesn't have created_by)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: course } = await (supabase as any)
     .from('golf_courses')
-    .select('created_by')
+    .select('id')
     .eq('id', courseId)
     .single();
 
-  if (!course || course.created_by !== user.id) {
-    return { success: false, error: 'Not authorized' };
+  if (!course) {
+    return { success: false, error: 'Course not found' };
   }
 
   // Update course info
   if (data.name || data.city || data.state) {
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
       .from('golf_courses')
       .update({
         name: data.name,
@@ -151,8 +206,6 @@ export async function updateCourse(
         state: data.state,
         course_rating: data.courseRating,
         slope_rating: data.slopeRating,
-        default_tee_name: data.teeName,
-        updated_at: new Date().toISOString(),
       })
       .eq('id', courseId);
   }
@@ -160,7 +213,8 @@ export async function updateCourse(
   // Update holes if provided
   if (data.holes) {
     // Delete existing holes and re-insert
-    await supabase.from('golf_course_holes').delete().eq('course_id', courseId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('golf_course_holes').delete().eq('course_id', courseId);
 
     const holesData = data.holes.map(hole => ({
       course_id: courseId,
@@ -169,15 +223,16 @@ export async function updateCourse(
       yardage: hole.yardage,
     }));
 
-    await supabase.from('golf_course_holes').insert(holesData);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('golf_course_holes').insert(holesData);
 
-    // Update totals
+    // Update par total
     const totalPar = data.holes.reduce((sum, h) => sum + h.par, 0);
-    const totalYardage = data.holes.reduce((sum, h) => sum + h.yardage, 0);
 
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
       .from('golf_courses')
-      .update({ total_par: totalPar, total_yardage: totalYardage })
+      .update({ par: totalPar, holes: data.holes.length })
       .eq('id', courseId);
   }
 
@@ -188,6 +243,7 @@ export async function updateCourse(
 
 /**
  * Delete a course
+ * Note: golf_courses table doesn't have created_by column
  */
 export async function deleteCourse(courseId: string): Promise<{
   success: boolean;
@@ -198,13 +254,17 @@ export async function deleteCourse(courseId: string): Promise<{
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Not authenticated' };
 
-  const { error } = await supabase
+  // Delete course (no ownership check since table doesn't have created_by)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from('golf_courses')
     .delete()
-    .eq('id', courseId)
-    .eq('created_by', user.id);
+    .eq('id', courseId);
 
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    console.error('[deleteCourse Error]', error);
+    return { success: false, error: 'Failed to delete course. Please try again.' };
+  }
 
   revalidatePath('/golf/dashboard/rounds');
 

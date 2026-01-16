@@ -5,7 +5,7 @@
  * All types are derived from the Supabase database schema.
  */
 
-import { Tables, Enums } from './database';
+import { Tables } from './database';
 
 // ============================================================================
 // CORE ENTITIES
@@ -22,7 +22,7 @@ export type GolfOrganization = Tables<'golf_organizations'>;
 
 export type GolfRound = Tables<'golf_rounds'>;
 export type GolfHole = Tables<'golf_holes'>;
-export type GolfHoleShot = Tables<'golf_hole_shots'>;
+export type GolfShot = Tables<'golf_shots'>; // Using golf_shots instead of golf_hole_shots
 
 // ============================================================================
 // TEAM MANAGEMENT
@@ -31,9 +31,23 @@ export type GolfHoleShot = Tables<'golf_hole_shots'>;
 export type GolfEvent = Tables<'golf_events'>;
 export type GolfEventAttendance = Tables<'golf_event_attendance'>;
 export type GolfTask = Tables<'golf_tasks'>;
-export type GolfTaskCompletion = Tables<'golf_task_completions'>;
+// GolfTaskCompletion - table doesn't exist, define manually
+export interface GolfTaskCompletion {
+  id: string;
+  task_id: string;
+  player_id: string;
+  completed_at: string;
+  created_at?: string;
+}
 export type GolfAnnouncement = Tables<'golf_announcements'>;
-export type GolfAnnouncementAcknowledgement = Tables<'golf_announcement_acknowledgements'>;
+// GolfAnnouncementAcknowledgement - table doesn't exist, define manually
+export interface GolfAnnouncementAcknowledgement {
+  id: string;
+  announcement_id: string;
+  player_id: string;
+  acknowledged_at: string;
+  created_at?: string;
+}
 export type GolfDocument = Tables<'golf_documents'>;
 export type GolfTravelItinerary = Tables<'golf_travel_itineraries'>;
 
@@ -54,17 +68,25 @@ export type GolfPlayerClass = Tables<'golf_player_classes'>;
 // COACH NOTES
 // ============================================================================
 
-export type GolfCoachNote = Tables<'golf_coach_notes'>;
+// GolfCoachNote - table doesn't exist, define manually
+export interface GolfCoachNote {
+  id: string;
+  coach_id: string;
+  player_id: string;
+  note: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 // ============================================================================
-// ENUMS
+// ENUMS (manually defined - not in database schema)
 // ============================================================================
 
-export type GolfPlayerYear = Enums<'golf_player_year'>;
-export type GolfPlayerStatus = Enums<'golf_player_status'>;
-export type GolfEventType = Enums<'golf_event_type'>;
-export type GolfQualifierStatus = Enums<'golf_qualifier_status'>;
-export type GolfTaskStatus = Enums<'golf_task_status'>;
+export type GolfPlayerYear = 'freshman' | 'sophomore' | 'junior' | 'senior' | 'graduate';
+export type GolfPlayerStatus = 'active' | 'inactive' | 'redshirt' | 'medical' | 'transfer';
+export type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
+export type GolfQualifierStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+export type GolfTaskStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
 
 // ============================================================================
 // EXTENDED TYPES (with relations)
@@ -79,7 +101,7 @@ export type GolfRoundWithHoles = GolfRound & {
 };
 
 export type GolfHoleWithShots = GolfHole & {
-  shots: GolfHoleShot[];
+  shots: GolfShot[];
 };
 
 export type GolfEventWithAttendance = GolfEvent & {

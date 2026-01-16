@@ -12,23 +12,21 @@ import { ClassDetailModal } from '@/components/golf/classes/ClassDetailModal';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
 
+// PlayerClass interface matches the actual golf_player_classes table schema
 interface PlayerClass {
   id: string;
   player_id: string;
-  course_code: string | null;
-  course_name: string;
+  class_name: string; // DB column is 'class_name' not 'course_name'
   instructor: string | null;
-  days: string[];
+  days: string[] | null;
   start_time: string | null;
   end_time: string | null;
-  location: string | null;
   building: string | null;
   room: string | null;
   credits: number | null;
-  semester: string | null;
   color: string | null;
   notes: string | null;
-  day_of_week: number | null;
+  team_id: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -62,16 +60,24 @@ export default function GolfClassesPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get player ID and team ID
+      // Get player ID (team_id is not on golf_players)
       const { data: player } = await supabase
         .from('golf_players')
-        .select('id, team_id')
+        .select('id')
         .eq('user_id', user.id)
         .single();
 
       if (!player) return;
       setPlayerId(player.id);
-      setTeamId(player.team_id);
+
+      // Get team_id via golf_team_members junction table
+      const { data: membership } = await supabase
+        .from('golf_team_members')
+        .select('team_id')
+        .eq('player_id', player.id)
+        .maybeSingle();
+
+      setTeamId(membership?.team_id || null);
 
       // Fetch classes
       const { data, error } = await supabase
@@ -81,12 +87,11 @@ export default function GolfClassesPage() {
         .order('start_time', { ascending: true });
 
       if (error) throw error;
-      
+
       // Parse days from text to array if needed
       const processedClasses: PlayerClass[] = (data || []).map(cls => ({
         ...cls,
         days: Array.isArray(cls.days) ? cls.days : [],
-        day_of_week: cls.day_of_week || null,
       }));
 
       setClasses(processedClasses);
@@ -100,22 +105,24 @@ export default function GolfClassesPage() {
   const handleAddClass = async (formData: ClassFormData) => {
     if (!playerId || !teamId) return;
 
+    // Build class_name from course_code + course_name
+    const className = formData.course_code
+      ? `${formData.course_code} - ${formData.course_name}`
+      : formData.course_name;
+
     const { data: newClass, error } = await supabase
       .from('golf_player_classes')
       .insert({
         player_id: playerId,
-        course_code: formData.course_code,
-        course_name: formData.course_name,
+        team_id: teamId,
+        class_name: className,
         instructor: formData.instructor || null,
         days: formData.days,
-        day_of_week: 0, // Deprecated, using days array instead
         start_time: formData.start_time || '00:00',
         end_time: formData.end_time || '00:00',
-        location: formData.location || null,
         building: formData.building || null,
         room: formData.room || null,
         credits: formData.credits,
-        semester: formData.semester,
         color: formData.color,
         notes: formData.notes || null,
       })
@@ -137,21 +144,22 @@ export default function GolfClassesPage() {
   const handleUpdateClass = async (formData: ClassFormData) => {
     if (!formData.id || !playerId || !teamId) return;
 
+    // Build class_name from course_code + course_name
+    const className = formData.course_code
+      ? `${formData.course_code} - ${formData.course_name}`
+      : formData.course_name;
+
     const { error } = await supabase
       .from('golf_player_classes')
       .update({
-        course_code: formData.course_code,
-        course_name: formData.course_name,
+        class_name: className,
         instructor: formData.instructor || null,
         days: formData.days,
-        day_of_week: 0, // Deprecated, using days array instead
         start_time: formData.start_time || '00:00',
         end_time: formData.end_time || '00:00',
-        location: formData.location || null,
         building: formData.building || null,
         room: formData.room || null,
         credits: formData.credits,
-        semester: formData.semester,
         color: formData.color,
         notes: formData.notes || null,
       })
@@ -204,23 +212,26 @@ export default function GolfClassesPage() {
     }
 
     try {
-      const classesToInsert = confirmed.map(cls => ({
-        player_id: playerId,
-        course_code: cls.course_code || 'UNKNOWN',
-        course_name: cls.course_name || cls.course_code || 'Untitled Class',
-        instructor: cls.instructor || null,
-        days: cls.days || [],
-        day_of_week: 0, // Deprecated, using days array instead
-        start_time: cls.start_time || '00:00',
-        end_time: cls.end_time || '00:00',
-        location: cls.location || null,
-        building: cls.building || null,
-        room: cls.room || null,
-        credits: cls.credits || null,
-        semester: cls.semester || 'Fall 2025',
-        color: cls.color || generateClassColor(),
-        notes: null,
-      }));
+      const classesToInsert = confirmed.map(cls => {
+        // Build class_name from course_code + course_name
+        const className = cls.course_code
+          ? `${cls.course_code} - ${cls.course_name || 'Untitled Class'}`
+          : cls.course_name || 'Untitled Class';
+        return {
+          player_id: playerId,
+          team_id: teamId,
+          class_name: className,
+          instructor: cls.instructor || null,
+          days: cls.days || [],
+          start_time: cls.start_time || '00:00',
+          end_time: cls.end_time || '00:00',
+          building: cls.building || null,
+          room: cls.room || null,
+          credits: cls.credits || null,
+          color: cls.color || generateClassColor(),
+          notes: null,
+        };
+      });
       
       const { data, error } = await supabase
         .from('golf_player_classes')
@@ -280,19 +291,28 @@ export default function GolfClassesPage() {
   const handleEditFromDetail = () => {
     if (!selectedClass) return;
 
+    // Parse class_name back into course_code and course_name if it contains " - "
+    let courseCode = '';
+    let courseName = selectedClass.class_name;
+    if (selectedClass.class_name.includes(' - ')) {
+      const parts = selectedClass.class_name.split(' - ');
+      courseCode = parts[0] || '';
+      courseName = parts.slice(1).join(' - ') || selectedClass.class_name;
+    }
+
     setEditingClass({
       id: selectedClass.id,
-      course_code: selectedClass.course_code || '',
-      course_name: selectedClass.course_name,
+      course_code: courseCode,
+      course_name: courseName,
       instructor: selectedClass.instructor || '',
       days: selectedClass.days || [],
       start_time: selectedClass.start_time || '',
       end_time: selectedClass.end_time || '',
-      location: selectedClass.location || '',
+      location: '', // Not stored in DB
       building: selectedClass.building || '',
       room: selectedClass.room || '',
       credits: selectedClass.credits,
-      semester: selectedClass.semester || '',
+      semester: '', // Not stored in DB
       color: selectedClass.color || '#16A34A',
       notes: selectedClass.notes || '',
     });
@@ -355,6 +375,26 @@ export default function GolfClassesPage() {
     W: 'Wednesday',
     Th: 'Thursday',
     F: 'Friday',
+  };
+
+  // Helper to parse class_name into code and name parts for display
+  const parseClassName = (className: string): { code: string; name: string } => {
+    if (className.includes(' - ')) {
+      const parts = className.split(' - ');
+      return {
+        code: parts[0] || '',
+        name: parts.slice(1).join(' - ') || className,
+      };
+    }
+    return { code: '', name: className };
+  };
+
+  // Helper to get location display (combine building and room)
+  const getLocationDisplay = (cls: PlayerClass): string | null => {
+    if (cls.building && cls.room) return `${cls.building} ${cls.room}`;
+    if (cls.building) return cls.building;
+    if (cls.room) return cls.room;
+    return null;
   };
 
   // Calculate total credits
@@ -497,30 +537,36 @@ export default function GolfClassesPage() {
                       </div>
                       <div className="space-y-2 min-h-[200px]">
                         {classesByDay[day] && classesByDay[day].length > 0 ? (
-                          classesByDay[day]!.map(cls => (
-                            <button
-                              key={`${cls.id}-${day}`}
-                              onClick={() => handleClassClick(cls)}
-                              className="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all bg-white"
-                              style={{ borderLeftColor: cls.color || '#16A34A', borderLeftWidth: '3px' }}
-                            >
-                              <p className="font-mono text-xs font-semibold text-green-600 mb-0.5">
-                                {cls.course_code}
-                              </p>
-                              <p className="text-sm font-medium text-slate-900 truncate">
-                                {cls.course_name}
-                              </p>
-                              {cls.start_time && (
-                                <p className="text-xs text-slate-500 mt-1">
-                                  {formatTimeDisplay(cls.start_time)}
-                                  {cls.end_time && ` - ${formatTimeDisplay(cls.end_time)}`}
+                          classesByDay[day]!.map(cls => {
+                            const { code, name } = parseClassName(cls.class_name);
+                            const location = getLocationDisplay(cls);
+                            return (
+                              <button
+                                key={`${cls.id}-${day}`}
+                                onClick={() => handleClassClick(cls)}
+                                className="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all bg-white"
+                                style={{ borderLeftColor: cls.color || '#16A34A', borderLeftWidth: '3px' }}
+                              >
+                                {code && (
+                                  <p className="font-mono text-xs font-semibold text-green-600 mb-0.5">
+                                    {code}
+                                  </p>
+                                )}
+                                <p className="text-sm font-medium text-slate-900 truncate">
+                                  {name}
                                 </p>
-                              )}
-                              {cls.location && (
-                                <p className="text-xs text-slate-400 mt-0.5">{cls.location}</p>
-                              )}
-                            </button>
-                          ))
+                                {cls.start_time && (
+                                  <p className="text-xs text-slate-500 mt-1">
+                                    {formatTimeDisplay(cls.start_time)}
+                                    {cls.end_time && ` - ${formatTimeDisplay(cls.end_time)}`}
+                                  </p>
+                                )}
+                                {location && (
+                                  <p className="text-xs text-slate-400 mt-0.5">{location}</p>
+                                )}
+                              </button>
+                            );
+                          })
                         ) : (
                           <div className="h-full flex items-center justify-center text-xs text-slate-300 py-8">
                             No classes
@@ -547,54 +593,60 @@ export default function GolfClassesPage() {
               <h2 className="text-lg font-semibold text-slate-900 mb-4">All Classes</h2>
 
               <div className="space-y-3">
-                {classes && classes.length > 0 ? classes.map(cls => (
-                  <button
-                    key={cls.id}
-                    onClick={() => handleClassClick(cls)}
-                    className="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all bg-white flex items-center gap-4"
-                  >
-                    <div 
-                      className="w-2 h-12 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: cls.color || '#16A34A' }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-sm font-semibold text-green-600">
-                          {cls.course_code}
-                        </span>
-                        <span className="text-slate-900 font-medium truncate">
-                          {cls.course_name}
-                        </span>
-                        {cls.credits && (
-                          <span className="px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-500 flex-shrink-0">
-                            {cls.credits} cr
+                {classes && classes.length > 0 ? classes.map(cls => {
+                  const { code, name } = parseClassName(cls.class_name);
+                  const location = getLocationDisplay(cls);
+                  return (
+                    <button
+                      key={cls.id}
+                      onClick={() => handleClassClick(cls)}
+                      className="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all bg-white flex items-center gap-4"
+                    >
+                      <div
+                        className="w-2 h-12 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: cls.color || '#16A34A' }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          {code && (
+                            <span className="font-mono text-sm font-semibold text-green-600">
+                              {code}
+                            </span>
+                          )}
+                          <span className="text-slate-900 font-medium truncate">
+                            {name}
                           </span>
-                        )}
+                          {cls.credits && (
+                            <span className="px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-500 flex-shrink-0">
+                              {cls.credits} cr
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-slate-500">
+                          {(cls.days || []).length > 0 && (
+                            <span className="font-medium">
+                              {formatDaysDisplay(cls.days || [])}
+                            </span>
+                          )}
+                          {cls.start_time && cls.end_time && (
+                            <span>
+                              {formatTimeDisplay(cls.start_time)} - {formatTimeDisplay(cls.end_time)}
+                            </span>
+                          )}
+                          {location && (
+                            <span className="flex items-center gap-1">
+                              <IconMapPin size={14} />
+                              {location}
+                            </span>
+                          )}
+                          {cls.instructor && (
+                            <span className="text-slate-400">{cls.instructor}</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-slate-500">
-                        {(cls.days || []).length > 0 && (
-                          <span className="font-medium">
-                            {formatDaysDisplay(cls.days)}
-                          </span>
-                        )}
-                        {cls.start_time && cls.end_time && (
-                          <span>
-                            {formatTimeDisplay(cls.start_time)} - {formatTimeDisplay(cls.end_time)}
-                          </span>
-                        )}
-                        {cls.location && (
-                          <span className="flex items-center gap-1">
-                            <IconMapPin size={14} />
-                            {cls.location}
-                          </span>
-                        )}
-                        {cls.instructor && (
-                          <span className="text-slate-400">{cls.instructor}</span>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                )) : (
+                    </button>
+                  );
+                }) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
                       <IconBook size={24} className="text-slate-400" />
@@ -614,6 +666,13 @@ export default function GolfClassesPage() {
         onClose={() => { setShowAddModal(false); setEditingClass(null); }}
         onSave={editingClass?.id ? handleUpdateClass : handleAddClass}
         editingClass={editingClass}
+        existingClasses={classes.map(cls => ({
+          id: cls.id,
+          days: cls.days,
+          start_time: cls.start_time,
+          end_time: cls.end_time,
+          class_name: cls.class_name,
+        }))}
       />
 
       <UploadScheduleModal
@@ -634,21 +693,26 @@ export default function GolfClassesPage() {
         onClose={() => { setShowDetailModal(false); setSelectedClass(null); }}
         onEdit={handleEditFromDetail}
         onDelete={handleDeleteClass}
-        classData={selectedClass ? {
-          ...selectedClass,
-          course_code: selectedClass.course_code || '',
-          instructor: selectedClass.instructor || '',
-          days: selectedClass.days || [],
-          start_time: selectedClass.start_time || '',
-          end_time: selectedClass.end_time || '',
-          location: selectedClass.location || '',
-          building: selectedClass.building || '',
-          room: selectedClass.room || '',
-          credits: selectedClass.credits,
-          semester: selectedClass.semester || '',
-          color: selectedClass.color || '#16A34A',
-          notes: selectedClass.notes || '',
-        } : null}
+        classData={selectedClass ? (() => {
+          const { code, name } = parseClassName(selectedClass.class_name);
+          const location = getLocationDisplay(selectedClass);
+          return {
+            ...selectedClass,
+            course_code: code,
+            course_name: name,
+            instructor: selectedClass.instructor || '',
+            days: selectedClass.days || [],
+            start_time: selectedClass.start_time || '',
+            end_time: selectedClass.end_time || '',
+            location: location || '',
+            building: selectedClass.building || '',
+            room: selectedClass.room || '',
+            credits: selectedClass.credits,
+            semester: '', // Not stored in DB
+            color: selectedClass.color || '#16A34A',
+            notes: selectedClass.notes || '',
+          };
+        })() : null}
       />
     </div>
   );

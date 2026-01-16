@@ -55,7 +55,7 @@ export class TrajectoryForecaster {
     // Load historical data
     const { data: rounds } = await supabase
       .from('golf_rounds')
-      .select('id, total_to_par, round_date')
+      .select('id, score_to_par, round_date')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: true })
@@ -67,7 +67,7 @@ export class TrajectoryForecaster {
 
     // Build history with running average - map to expected format
     const formattedRounds = rounds.map(r => ({
-      total_to_par: r.total_to_par ?? 0,
+      score_to_par: r.score_to_par ?? 0,
       round_date: r.round_date
     }));
     this.buildHistory(formattedRounds);
@@ -121,14 +121,14 @@ export class TrajectoryForecaster {
    * Builds historical data with running average
    */
   private buildHistory(
-    rounds: Array<{ total_to_par: number; round_date: string }>
+    rounds: Array<{ score_to_par: number; round_date: string }>
   ): void {
     let cumulative = 0;
     this.history = rounds.map((r, i) => {
-      cumulative += r.total_to_par;
+      cumulative += r.score_to_par;
       return {
         date: r.round_date,
-        scoreToPar: r.total_to_par,
+        scoreToPar: r.score_to_par,
         cumulative: cumulative / (i + 1),
       };
     });
@@ -136,7 +136,7 @@ export class TrajectoryForecaster {
     // Current average (last 10 rounds)
     const recent = rounds.slice(-10);
     this.currentAvg =
-      recent.reduce((a, r) => a + r.total_to_par, 0) / recent.length;
+      recent.reduce((a, r) => a + r.score_to_par, 0) / recent.length;
   }
 
   /**

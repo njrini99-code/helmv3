@@ -2384,6 +2384,164 @@ export type Database = {
           },
         ]
       }
+      golf_calendar_notifications: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          message: string | null
+          notification_type: string
+          read_at: string | null
+          sent_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          message?: string | null
+          notification_type: string
+          read_at?: string | null
+          sent_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          message?: string | null
+          notification_type?: string
+          read_at?: string | null
+          sent_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_calendar_notifications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "golf_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_calendar_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_calendar_sync_log: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          events_created: number | null
+          events_deleted: number | null
+          events_synced: number | null
+          events_updated: number | null
+          id: string
+          started_at: string | null
+          status: string
+          sync_state_id: string | null
+          sync_type: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          events_created?: number | null
+          events_deleted?: number | null
+          events_synced?: number | null
+          events_updated?: number | null
+          id?: string
+          started_at?: string | null
+          status: string
+          sync_state_id?: string | null
+          sync_type: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          events_created?: number | null
+          events_deleted?: number | null
+          events_synced?: number | null
+          events_updated?: number | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          sync_state_id?: string | null
+          sync_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_calendar_sync_log_sync_state_id_fkey"
+            columns: ["sync_state_id"]
+            isOneToOne: false
+            referencedRelation: "golf_calendar_sync_state"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_calendar_sync_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_calendar_sync_state: {
+        Row: {
+          created_at: string | null
+          external_calendar_id: string | null
+          id: string
+          last_sync_at: string | null
+          provider: string
+          sync_direction: string | null
+          sync_enabled: boolean | null
+          sync_token: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          external_calendar_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          provider: string
+          sync_direction?: string | null
+          sync_enabled?: boolean | null
+          sync_token?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          external_calendar_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          provider?: string
+          sync_direction?: string | null
+          sync_enabled?: boolean | null
+          sync_token?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_calendar_sync_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_coach_blocked_time: {
         Row: {
           coach_id: string
@@ -3435,6 +3593,66 @@ export type Database = {
         }
         Relationships: []
       }
+      golf_player_attendance_stats: {
+        Row: {
+          attendance_rate: number | null
+          attended_events: number | null
+          created_at: string | null
+          excused_absences: number | null
+          id: string
+          period_end: string
+          period_start: string
+          player_id: string
+          team_id: string
+          total_events: number | null
+          unexcused_absences: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          attendance_rate?: number | null
+          attended_events?: number | null
+          created_at?: string | null
+          excused_absences?: number | null
+          id?: string
+          period_end: string
+          period_start: string
+          player_id: string
+          team_id: string
+          total_events?: number | null
+          unexcused_absences?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          attendance_rate?: number | null
+          attended_events?: number | null
+          created_at?: string | null
+          excused_absences?: number | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          player_id?: string
+          team_id?: string
+          total_events?: number | null
+          unexcused_absences?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_attendance_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_player_attendance_stats_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_player_availability_blocks: {
         Row: {
           created_at: string | null
@@ -3550,6 +3768,66 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_player_courses: {
+        Row: {
+          average_score: number | null
+          best_score: number | null
+          course_id: string | null
+          course_name: string | null
+          created_at: string | null
+          id: string
+          last_played_at: string | null
+          notes: string | null
+          player_id: string
+          relationship: string | null
+          rounds_played: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          average_score?: number | null
+          best_score?: number | null
+          course_id?: string | null
+          course_name?: string | null
+          created_at?: string | null
+          id?: string
+          last_played_at?: string | null
+          notes?: string | null
+          player_id: string
+          relationship?: string | null
+          rounds_played?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          average_score?: number | null
+          best_score?: number | null
+          course_id?: string | null
+          course_name?: string | null
+          created_at?: string | null
+          id?: string
+          last_played_at?: string | null
+          notes?: string | null
+          player_id?: string
+          relationship?: string | null
+          rounds_played?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "golf_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_player_courses_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
             referencedColumns: ["id"]
           },
         ]
@@ -5317,9 +5595,87 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      player_putt_tendencies: {
+        Row: {
+          avg_distance_on_makes_ft: number | null
+          avg_distance_on_misses_ft: number | null
+          created_at: string | null
+          first_name: string | null
+          id: string | null
+          last_calculated: string | null
+          last_name: string | null
+          left_to_right_attempts: number | null
+          left_to_right_made: number | null
+          left_to_right_pct: number | null
+          make_percentage_overall: number | null
+          miss_left_percentage: number | null
+          miss_long_percentage: number | null
+          miss_right_percentage: number | null
+          miss_short_percentage: number | null
+          player_id: string | null
+          right_to_left_attempts: number | null
+          right_to_left_made: number | null
+          right_to_left_pct: number | null
+          rounds_in_sample: number | null
+          short_putt_attempts: number | null
+          short_putt_made: number | null
+          short_putt_pct: number | null
+          straight_attempts: number | null
+          straight_made: number | null
+          straight_pct: number | null
+          total_putts_analyzed: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_players_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_putting_tendencies_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      get_baseball_conversations_with_details: {
+        Args: { p_user_id: string }
+        Returns: {
+          created_at: string
+          creator_id: string
+          id: string
+          last_message_at: string
+          last_message_content: string
+          last_message_sender_id: string
+          participant_ids: string[]
+          participant_names: string[]
+          unread_count: number
+          updated_at: string
+        }[]
+      }
+      get_golf_conversations_with_details: {
+        Args: { p_user_id: string }
+        Returns: {
+          created_at: string
+          creator_id: string
+          id: string
+          last_message_at: string
+          last_message_content: string
+          last_message_sender_id: string
+          participant_ids: string[]
+          participant_names: string[]
+          unread_count: number
+          updated_at: string
+        }[]
+      }
       is_baseball_team_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_coach: { Args: { team_uuid: string }; Returns: boolean }
@@ -5500,3 +5856,4 @@ export const Constants = {
     },
   },
 } as const
+

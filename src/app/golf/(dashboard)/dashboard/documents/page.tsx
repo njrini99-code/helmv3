@@ -20,18 +20,35 @@ export default async function GolfDocumentsPage() {
   // Determine user role
   const { data: coach } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
   const { data: player } = await supabase
     .from('golf_players')
-    .select('id, team_id')
+    .select('id')
     .eq('user_id', user.id)
     .single();
 
   const isCoach = !!coach;
-  const teamId = coach?.team_id || player?.team_id;
+
+  // Get team_id: for coaches, look up via organization; for players, look up via team_members
+  let teamId: string | null = null;
+  if (coach?.organization_id) {
+    const { data: orgTeam } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+    teamId = orgTeam?.id || null;
+  } else if (player?.id) {
+    const { data: teamMember } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', player.id)
+      .maybeSingle();
+    teamId = teamMember?.team_id || null;
+  }
 
   if (!teamId) {
     return (
@@ -45,7 +62,25 @@ export default async function GolfDocumentsPage() {
   }
 
   // Fetch documents
-  let query = supabase
+  // Note: The column is named 'player_visible' in the database (see migration 027_golf_documents.sql)
+  // but the generated types may still have 'is_public'. Cast to match actual schema.
+  type DocumentRow = {
+    id: string;
+    title: string;
+    description: string | null;
+    file_url: string;
+    file_type: string | null;
+    file_size: number | null;
+    category: string | null;
+    player_visible: boolean | null;
+    created_at: string | null;
+    uploaded_by: string | null;
+    current_version_id: string | null;
+    version_count: number | null;
+    uploader: { full_name: string | null } | null;
+  };
+
+  const baseQuery = supabase
     .from('golf_documents')
     .select(`
       id,
@@ -58,6 +93,8 @@ export default async function GolfDocumentsPage() {
       player_visible,
       created_at,
       uploaded_by,
+      current_version_id,
+      version_count,
       uploader:golf_coaches!golf_documents_uploaded_by_fkey (
         full_name
       )
@@ -66,11 +103,12 @@ export default async function GolfDocumentsPage() {
     .order('created_at', { ascending: false });
 
   // Players can only see player-visible documents
-  if (!isCoach) {
-    query = query.eq('player_visible', true);
-  }
+  const { data: rawDocuments } = !isCoach
+    ? await baseQuery.eq('player_visible', true)
+    : await baseQuery;
 
-  const { data: documents } = await query;
+  // Cast to correct type (database has player_visible, not is_public)
+  const documents = rawDocuments as unknown as DocumentRow[] | null;
 
   return (
     <DocumentsClient

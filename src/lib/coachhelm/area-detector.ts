@@ -1,3 +1,22 @@
+// ============================================================================
+// AREA DETECTOR (V1 - DEPRECATED)
+// ============================================================================
+//
+// @deprecated This is the V1 area-to-review detector. Use V2 instead.
+//
+// For V2 usage, import from '@/lib/coachhelm/v2':
+//   import { coachHelmIntelligence } from '@/lib/coachhelm/v2';
+//   const analysis = await coachHelmIntelligence.analyzePlayer(playerId);
+//   // Focus areas now come from pattern mining and causal analysis
+//
+// V2 provides statistically-validated patterns with actionable insights,
+// rather than simple rule-based area detection.
+//
+// This file is kept for backwards compatibility during migration.
+// It will be removed in a future release.
+//
+// ============================================================================
+
 import { AreaToReview, RoundStats } from './types';
 
 interface GolfHole {

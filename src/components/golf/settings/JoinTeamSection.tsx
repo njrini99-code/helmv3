@@ -36,17 +36,28 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
     setSuccess(null);
 
     try {
-      // Look up team by invite code
+      // Look up team by join code
       const { data: team, error: teamError } = await supabase
         .from('golf_teams')
-        .select('id, name, invite_code, organization:golf_organizations(name)')
-        .eq('invite_code', inviteCode.trim().toUpperCase())
+        .select('id, name, join_code, organization_id')
+        .eq('join_code', inviteCode.trim().toUpperCase())
         .single();
 
       if (teamError || !team) {
         setError('Invalid invite code. Please check and try again.');
         setLoading(false);
         return;
+      }
+
+      // Get organization name separately
+      let orgName: string | null = null;
+      if (team.organization_id) {
+        const { data: org } = await supabase
+          .from('golf_organizations')
+          .select('name')
+          .eq('id', team.organization_id)
+          .single();
+        orgName = org?.name ?? null;
       }
 
       // Check if already on this team
@@ -63,21 +74,19 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
         return;
       }
 
-      // Join the team
-      const { error: updateError } = await supabase
-        .from('golf_players')
-        .update({ team_id: team.id })
-        .eq('id', playerId);
+      // Join the team via golf_team_members
+      const { error: insertError } = await supabase
+        .from('golf_team_members')
+        .insert({
+          team_id: team.id,
+          player_id: playerId
+        });
 
-      if (updateError) {
+      if (insertError) {
         setError('Failed to join team. Please try again.');
         setLoading(false);
         return;
       }
-
-      const orgName = Array.isArray(team.organization)
-        ? team.organization[0]?.name
-        : team.organization?.name;
 
       setSuccess(`Successfully joined ${team.name}${orgName ? ` (${orgName})` : ''}!`);
       setInviteCode('');
@@ -98,12 +107,13 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
     setError(null);
 
     try {
-      const { error: updateError } = await supabase
-        .from('golf_players')
-        .update({ team_id: null })
-        .eq('id', playerId);
+      // Leave team by removing from golf_team_members
+      const { error: deleteError } = await supabase
+        .from('golf_team_members')
+        .delete()
+        .eq('player_id', playerId);
 
-      if (updateError) {
+      if (deleteError) {
         setError('Failed to leave team. Please try again.');
         setLoading(false);
         return;

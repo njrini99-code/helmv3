@@ -1,3 +1,25 @@
+// ============================================================================
+// ROUND REVIEW GENERATOR (V1 - DEPRECATED)
+// ============================================================================
+//
+// @deprecated This is the V1 round review generator. Use V2 instead.
+//
+// For V2 usage, import from '@/lib/coachhelm/v2':
+//   import { coachHelmIntelligence } from '@/lib/coachhelm/v2';
+//   const review = await coachHelmIntelligence.generateRoundReview(roundId, playerId);
+//
+// V2 provides:
+//   - Pattern-aware summaries using mined patterns
+//   - Causal insights explaining WHY patterns exist
+//   - Predictions integrated into the review
+//   - Composed insights with reasoning chains
+//   - Better focus area recommendations
+//
+// This file is kept for backwards compatibility during migration.
+// It will be removed in a future release.
+//
+// ============================================================================
+
 import { createClient } from '@/lib/supabase/server';
 import {
   RoundReview,
@@ -62,10 +84,10 @@ export async function generateRoundReview(input: GenerateReviewInput): Promise<R
   }
   const roundData = round as unknown as GolfRound;
 
-  // 2. Fetch player data and averages
+  // 2. Fetch player data and averages (player -> team_members -> team)
   const { data: player } = await supabase
     .from('golf_players')
-    .select('*, team:golf_teams(*)')
+    .select('*, team_memberships:golf_team_members(team_id, team:golf_teams(*))')
     .eq('id', playerId)
     .single();
 
@@ -91,11 +113,12 @@ export async function generateRoundReview(input: GenerateReviewInput): Promise<R
 
   // 7. Calculate team averages (if on team)
   let teamAverages: RoundStats | null = null;
-  if (player?.team_id) {
+  const playerTeamId = player?.team_memberships?.[0]?.team_id;
+  if (playerTeamId) {
     const { data: teamRounds } = await supabase
       .from('golf_rounds')
       .select('*, holes:golf_holes(*)')
-      .eq('team_id', player.team_id)
+      .eq('team_id', playerTeamId)
       .neq('player_id', playerId)
       .order('played_at', { ascending: false })
       .limit(100);

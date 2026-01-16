@@ -167,7 +167,8 @@ export async function loginAction(
 
   let redirectTo = '/baseball/dashboard';
 
-  if (userData?.role === 'admin' || adminAllowlist.includes(normalizedEmail)) {
+  // Check admin allowlist (note: user_role enum only has 'coach' | 'player', no 'admin')
+  if (adminAllowlist.includes(normalizedEmail)) {
     return {
       success: true,
       redirectTo: '/admin/command-center',

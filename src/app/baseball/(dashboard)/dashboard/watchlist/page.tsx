@@ -521,7 +521,7 @@ export default function WatchlistPage() {
                       <td className="px-6 py-4">
                         <Select
                           options={statusOptions}
-                          value={item.pipeline_stage}
+                          value={item.pipeline_stage ?? undefined}
                           onChange={(value) => handleStatusChange(item.id, value as PipelineStage)}
                           className="w-44 text-sm"
                         />

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { useMobileDetection } from '@/hooks/use-mobile-detection';
 import {
   DndContext,
   DragEndEvent,
@@ -22,7 +23,13 @@ import { DayView } from '@/components/golf/calendar/DayView';
 import { EventCard } from '@/components/golf/calendar/EventCard';
 import { EventDetailModal, type GolfEventFormData } from '@/components/golf/calendar/EventDetailModal';
 import { NotificationCenter } from '@/components/golf/calendar/NotificationCenter';
-import { createGolfEvent, updateGolfEvent, deleteGolfEvent } from '@/app/golf/actions/golf';
+import { MobileCalendarListView } from '@/components/golf/calendar/MobileCalendarListView';
+import { MobileEventSheet, type MobileEventFormData } from '@/components/golf/calendar/MobileEventSheet';
+import { CalendarDayViewSwipeable, MobileWeekPicker } from '@/components/golf/calendar/CalendarDayViewSwipeable';
+import { QuickAddEventFAB } from '@/components/golf/calendar/QuickAddEventFAB';
+import type { RSVPResponse } from '@/components/golf/calendar/MobileRSVPButtons';
+import { createGolfEvent, updateGolfEvent, deleteGolfEvent, respondToEvent } from '@/app/golf/actions/golf';
+import { usePlayerEventRSVP, useEventRSVP } from '@/hooks/useRSVP';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 export interface TeamMember {
@@ -65,7 +72,13 @@ export function PremiumCalendarClient({
   actionHandlers = defaultActionHandlers,
 }: PremiumCalendarClientProps) {
   const router = useRouter();
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isMobileQuery = useMediaQuery('(max-width: 768px)');
+  const { isMobile: isMobileDevice, isTablet, preferMobileUI } = useMobileDetection();
+
+  // Use either media query or device detection for mobile UI
+  const isMobile = isMobileQuery || (isMobileDevice && preferMobileUI);
+  const showMobileUI = isMobile || (isTablet && preferMobileUI);
+
   const [view, setView] = useState<CalendarView>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
@@ -77,6 +90,23 @@ export function PremiumCalendarClient({
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [isSavingEvent, setIsSavingEvent] = useState(false);
 
+  // Mobile Sheet State
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+
+  // RSVP State - Track user's RSVP status for all events
+  const [userRsvpStatuses, setUserRsvpStatuses] = useState<Map<string, RSVPResponse>>(new Map());
+
+  // Get RSVP status for selected event (for mobile sheet)
+  const { status: selectedEventRsvpStatus, respond: respondToSelectedEvent } = usePlayerEventRSVP(
+    selectedEvent?.id,
+    !isCoach && !!selectedEvent
+  );
+
+  // Get RSVP summary for coaches viewing an event
+  const { rsvpSummary: selectedEventRsvpSummary } = useEventRSVP(
+    isCoach && selectedEvent?.id ? selectedEvent.id : ''
+  );
+
   // Drag-and-drop state
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
@@ -86,15 +116,41 @@ export function PremiumCalendarClient({
   // Player busy periods (only when player is selected)
   const [playerBusyPeriods, setPlayerBusyPeriods] = useState<Array<Record<string, unknown> & { start: string; end: string }>>([]);
 
-  // Auto-switch to day view on mobile
+  // Auto-switch to list view on mobile (more touch-friendly than day view)
   useEffect(() => {
-    if (isMobile && view !== 'day') {
+    if (showMobileUI && view !== 'day') {
+      // Mobile defaults to day/list view
       setView('day');
-    } else if (!isMobile && view === 'day' && !selectedPlayerId) {
+    } else if (!showMobileUI && view === 'day' && !selectedPlayerId) {
       // Only switch back to week if not viewing a player's schedule
       setView('week');
     }
-  }, [isMobile]); // Only run when mobile state changes
+  }, [showMobileUI]); // Only run when mobile state changes
+
+  // Handle RSVP for a specific event (used by mobile list view)
+  const handleRsvp = useCallback(async (eventId: string, response: RSVPResponse): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const result = await respondToEvent(eventId, response as 'accepted' | 'tentative' | 'declined' | 'pending');
+      if (result.success) {
+        // Update local state optimistically
+        setUserRsvpStatuses((prev) => {
+          const next = new Map(prev);
+          next.set(eventId, response);
+          return next;
+        });
+        return { success: true };
+      }
+      return { success: false, error: result.error || 'Failed to update RSVP' };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }, []);
+
+  // Handle RSVP from mobile sheet for selected event
+  const handleMobileSheetRsvp = useCallback(async (response: RSVPResponse): Promise<{ success: boolean; error?: string }> => {
+    if (!selectedEvent) return { success: false, error: 'No event selected' };
+    return handleRsvp(selectedEvent.id, response);
+  }, [selectedEvent, handleRsvp]);
 
   // Fetch player availability when player is selected
   useEffect(() => {
@@ -229,18 +285,26 @@ export function PremiumCalendarClient({
     setCurrentDate(newDate);
   };
 
-  // Event click opens detail/edit modal
+  // Event click opens detail/edit modal (or mobile sheet on mobile)
   const handleEventClick = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setIsCreatingEvent(false);
-    setIsEventModalOpen(true);
+    if (showMobileUI) {
+      setIsMobileSheetOpen(true);
+    } else {
+      setIsEventModalOpen(true);
+    }
   };
 
-  // Add event button opens create modal
+  // Add event button opens create modal (or mobile sheet on mobile)
   const handleAddEvent = () => {
     setSelectedEvent(null);
     setIsCreatingEvent(true);
-    setIsEventModalOpen(true);
+    if (showMobileUI) {
+      setIsMobileSheetOpen(true);
+    } else {
+      setIsEventModalOpen(true);
+    }
   };
 
   const handleDateClick = (date: Date) => {
@@ -308,9 +372,6 @@ export function PremiumCalendarClient({
       setIsEventModalOpen(false);
       setSelectedEvent(null);
       router.refresh();
-    } catch (error) {
-      // Event save failed - re-throw for error handling
-      throw error;
     } finally {
       setIsSavingEvent(false);
     }
@@ -328,9 +389,6 @@ export function PremiumCalendarClient({
       setIsEventModalOpen(false);
       setSelectedEvent(null);
       router.refresh();
-    } catch (error) {
-      // Event delete failed - re-throw for error handling
-      throw error;
     } finally {
       setIsSavingEvent(false);
     }
@@ -552,12 +610,30 @@ export function PremiumCalendarClient({
                 )}
 
                 {view === 'day' && (
-                  <DayView
-                    date={currentDate}
-                    events={filteredEvents}
-                    onEventClick={handleEventClick}
-                    isDraggable={true}
-                  />
+                  showMobileUI ? (
+                    // Mobile: Use enhanced swipeable day view with RSVP buttons
+                    <CalendarDayViewSwipeable
+                      events={filteredEvents}
+                      currentDate={currentDate}
+                      onDateChange={setCurrentDate}
+                      isCoach={isCoach}
+                      userRsvpStatuses={userRsvpStatuses}
+                      onRsvp={!isCoach ? handleRsvp : undefined}
+                      onEventClick={handleEventClick}
+                      onAddEvent={isCoach ? handleAddEvent : undefined}
+                      onRefresh={async () => {
+                        router.refresh();
+                      }}
+                    />
+                  ) : (
+                    // Desktop: Use traditional day view
+                    <DayView
+                      date={currentDate}
+                      events={filteredEvents}
+                      onEventClick={handleEventClick}
+                      isDraggable={true}
+                    />
+                  )
                 )}
               </>
             )}
@@ -582,7 +658,7 @@ export function PremiumCalendarClient({
         </DragOverlay>
       </DndContext>
 
-      {/* Event Detail/Create Modal */}
+      {/* Event Detail/Create Modal (Desktop) */}
       <EventDetailModal
         isOpen={isEventModalOpen}
         onClose={() => {
@@ -597,6 +673,87 @@ export function PremiumCalendarClient({
         isSaving={isSavingEvent}
         teamPlayers={teamMembers}
       />
+
+      {/* Mobile Event Sheet */}
+      <MobileEventSheet
+        isOpen={isMobileSheetOpen}
+        onClose={() => {
+          setIsMobileSheetOpen(false);
+          setSelectedEvent(null);
+        }}
+        event={selectedEvent}
+        isCreating={isCreatingEvent}
+        isCoach={isCoach}
+        onSave={async (data: MobileEventFormData) => {
+          setIsSavingEvent(true);
+          try {
+            if (isCreatingEvent) {
+              const result = await actionHandlers.createEvent({
+                title: data.title,
+                eventType: data.eventType,
+                startDate: data.startDate,
+                endDate: data.endDate || undefined,
+                startTime: data.startTime || undefined,
+                endTime: data.endTime || undefined,
+                allDay: data.allDay,
+                location: data.location || undefined,
+                description: data.description || undefined,
+              });
+              if (!result.success) {
+                throw new Error(result.error || 'Failed to create event');
+              }
+            } else if (selectedEvent) {
+              const result = await actionHandlers.updateEvent(selectedEvent.id, {
+                title: data.title,
+                eventType: data.eventType,
+                startDate: data.startDate,
+                endDate: data.endDate || undefined,
+                startTime: data.startTime || undefined,
+                endTime: data.endTime || undefined,
+                allDay: data.allDay,
+                location: data.location || undefined,
+                description: data.description || undefined,
+              });
+              if (!result.success) {
+                throw new Error(result.error || 'Failed to update event');
+              }
+            }
+            setIsMobileSheetOpen(false);
+            setSelectedEvent(null);
+            router.refresh();
+          } finally {
+            setIsSavingEvent(false);
+          }
+        }}
+        onDelete={selectedEvent && isCoach ? async () => {
+          setIsSavingEvent(true);
+          try {
+            const result = await actionHandlers.deleteEvent(selectedEvent.id);
+            if (!result.success) {
+              throw new Error(result.error || 'Failed to delete event');
+            }
+            setIsMobileSheetOpen(false);
+            setSelectedEvent(null);
+            router.refresh();
+          } finally {
+            setIsSavingEvent(false);
+          }
+        } : undefined}
+        userRsvpStatus={selectedEventRsvpStatus as RSVPResponse | null}
+        onRsvp={!isCoach ? handleMobileSheetRsvp : undefined}
+        rsvpSummary={isCoach ? selectedEventRsvpSummary : null}
+      />
+
+      {/* Mobile FAB for quick event creation (coaches only) */}
+      {showMobileUI && isCoach && (
+        <QuickAddEventFAB
+          onAddEvent={(eventType) => {
+            handleAddEvent();
+            // If eventType is provided, we could pre-fill the form
+            // This would require passing the eventType to the modal/sheet
+          }}
+        />
+      )}
     </>
   );
 }

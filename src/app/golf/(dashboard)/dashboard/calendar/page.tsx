@@ -27,19 +27,38 @@ export default async function GolfCalendarPage() {
       .single(),
     supabase
       .from('golf_coaches')
-      .select('id, team_id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle(),
     supabase
       .from('golf_players')
-      .select('id, team_id')
+      .select('id')
       .eq('user_id', user.id)
       .maybeSingle(),
   ]);
 
   const userRole = userRoleResult.data?.role;
   const isCoach = userRole === 'coach';
-  const teamId = coachResult.data?.team_id || playerResult.data?.team_id || null;
+
+  // Get team_id based on role
+  let teamId: string | null = null;
+  if (coachResult.data?.organization_id) {
+    // Coach: get team via organization
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coachResult.data.organization_id)
+      .maybeSingle();
+    teamId = team?.id || null;
+  } else if (playerResult.data?.id) {
+    // Player: get team via golf_team_members junction table
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', playerResult.data.id)
+      .maybeSingle();
+    teamId = membership?.team_id || null;
+  }
 
   let events: CalendarEvent[] = [];
   let teamMembers: { id: string; first_name: string; last_name: string; avatar_url?: string }[] = [];
@@ -47,76 +66,68 @@ export default async function GolfCalendarPage() {
   // OPTIMIZATION: Fetch events, players, and coaches in parallel with optimized selects
   const [
     { data: eventsData },
-    { data: playersData },
+    { data: teamMembersData },
     { data: coachesData }
   ] = teamId
     ? await Promise.all([
         supabase
           .from('golf_events')
-          .select('id, team_id, title, event_type, start_date, end_date, start_time, end_time, location, description, requires_rsvp, rsvp_deadline, max_attendees')
+          .select('id, team_id, title, event_type, start_time, end_time, location, description')
           .eq('team_id', teamId)
-          .order('start_date', { ascending: true }),
+          .order('start_time', { ascending: true }),
+        // Get players via golf_team_members junction table
         supabase
-          .from('golf_players')
-          .select('id, first_name, last_name, avatar_url')
-          .eq('team_id', teamId)
-          .order('first_name', { ascending: true }),
+          .from('golf_team_members')
+          .select('player:golf_players(id, first_name, last_name, avatar_url)')
+          .eq('team_id', teamId),
+        // Coaches are linked via organization, not team_id directly
         supabase
-          .from('golf_coaches')
-          .select('id, full_name, avatar_url')
-          .eq('team_id', teamId)
-          .order('full_name', { ascending: true })
+          .from('golf_teams')
+          .select('organization_id')
+          .eq('id', teamId)
+          .single()
       ])
     : [{ data: null }, { data: null }, { data: null }];
 
+  // Now fetch coaches if we have the organization_id
+  let coachList: { id: string; full_name: string | null; avatar_url: string | null }[] = [];
+  if (coachesData?.organization_id) {
+    const { data: coaches } = await supabase
+      .from('golf_coaches')
+      .select('id, full_name, avatar_url')
+      .eq('organization_id', coachesData.organization_id)
+      .order('full_name', { ascending: true });
+    coachList = coaches || [];
+  }
+
+  // Extract players from team members join result
+  const playersData = teamMembersData?.map((tm: { player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }) => tm.player).filter((p): p is NonNullable<typeof p> => p !== null) || [];
+
   // Map golf_events to CalendarEvent format
-  // Combine date and time fields into datetime strings for proper calendar positioning
+  // The start_time and end_time columns are ISO datetime strings (timestamptz)
   events = (eventsData || []).map(event => {
-
-    // CRITICAL FIX: Extract just the date portion from start_date
-    // Supabase returns timestamptz as full ISO string like "2026-01-21T00:00:00+00:00"
-    // We need just "2026-01-21" to combine with the time
-    const startDateOnly = typeof event.start_date === 'string' 
-      ? event.start_date.split('T')[0] 
-      : event.start_date;
-    const endDateOnly = event.end_date && typeof event.end_date === 'string'
-      ? event.end_date.split('T')[0]
-      : event.end_date;
-
-    // Combine date and time for start
-    const startDateTime = event.start_time
-      ? `${startDateOnly}T${event.start_time}`
-      : event.start_date;
-
-    // Combine date and time for end
-    // For recurring events (classes), end_date represents semester end, not the event end time
-    // So we use start_date with end_time to get the correct event duration
-    const endDateTime = event.end_time
-      ? `${startDateOnly}T${event.end_time}`
-      : endDateOnly || event.start_date;
-
     return {
       id: event.id,
       team_id: event.team_id || '', // Convert null to empty string
       title: event.title,
       event_type: event.event_type,
-      start_date: startDateTime,
-      end_date: endDateTime,
-      start_time: event.start_time,
-      end_time: event.end_time,
+      start_date: event.start_time, // start_time is the datetime column
+      end_date: event.end_time || event.start_time, // end_time is the datetime column
+      start_time: null, // No separate time field needed, it's in start_time
+      end_time: null, // No separate time field needed, it's in end_time
       location: event.location,
       description: event.description,
-      requires_rsvp: event.requires_rsvp ?? false,
-      rsvp_deadline: event.rsvp_deadline ?? null,
-      max_attendees: event.max_attendees ?? null,
+      requires_rsvp: false, // Not stored in DB, default to false
+      rsvp_deadline: null, // Not stored in DB
+      max_attendees: null, // Not stored in DB
     };
   });
 
   // Combine players and coaches for team members display (data already fetched in parallel above)
-  if (teamId && (playersData || coachesData)) {
+  if (teamId && (playersData.length > 0 || coachList.length > 0)) {
     teamMembers = [
       // Parse coach full_name into first/last name parts
-      ...(coachesData || []).map(c => {
+      ...coachList.map(c => {
         const nameParts = (c.full_name || 'Coach').split(' ');
         return {
           id: c.id,
@@ -126,7 +137,7 @@ export default async function GolfCalendarPage() {
         };
       }),
       // Players already have first_name/last_name
-      ...(playersData || []).map(p => ({
+      ...playersData.map(p => ({
         id: p.id,
         first_name: p.first_name || 'Player',
         last_name: p.last_name || '',

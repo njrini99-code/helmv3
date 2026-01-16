@@ -72,7 +72,7 @@ export function SubscriptionInstructions({
       await navigator.clipboard.writeText(feedUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch {
       // Copy failed - button will remain in default state
     }
   }
@@ -378,7 +378,7 @@ export function CompactSubscriptionHelp({ feedUrl }: { feedUrl: string }) {
       await navigator.clipboard.writeText(feedUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch {
       // Copy failed - button will remain in default state
     }
   }

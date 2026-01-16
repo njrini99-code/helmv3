@@ -5,6 +5,7 @@ import { PuttMissTagSelector } from './putt-miss-tag-selector';
 import { ApproachMissSelector } from './approach-miss-selector';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 import type { PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
+import { updateShot, deleteShot, type ShotUpdateData } from '@/app/golf/actions/golf';
 
 // ============================================================================
 // TYPES
@@ -18,6 +19,7 @@ interface Hole {
 }
 
 export interface ShotRecord {
+  id?: string; // Database ID (present for saved shots, undefined for new shots)
   shotNumber: number;
   shotType: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty';
   clubType: 'driver' | 'non_driver' | 'putter';
@@ -80,6 +82,9 @@ interface ShotTrackingProps {
   onNavigateToHole?: (holeIndex: number) => void;
   initialShots?: ShotRecord[];
   initialShotNumber?: number;
+  // Auto-save props
+  onAutoSave?: (shots: ShotRecord[], currentHoleIndex: number) => Promise<void>;
+  autoSaveInterval?: number; // in milliseconds, default 30000 (30s)
 }
 
 // ============================================================================
@@ -179,9 +184,16 @@ export default function ShotTrackingComprehensive({
   onNavigateToHole,
   initialShots = [],
   initialShotNumber = 1,
+  onAutoSave,
+  autoSaveInterval = 30000, // 30 seconds default
 }: ShotTrackingProps) {
   const { hide, show } = useMobileNav();
   const currentHole = holes[currentHoleIndex];
+
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const lastSavedShotsRef = useRef<string>('');
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Hide mobile nav when shot tracking is active
   useEffect(() => {
@@ -267,6 +279,27 @@ export default function ShotTrackingComprehensive({
   const [showPenaltyModal, setShowPenaltyModal] = useState(false);
   const [penaltyType, setPenaltyType] = useState<string | null>(null);
 
+  // Edit shot modal
+  const [editingShot, setEditingShot] = useState<ShotRecord | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editFormData, setEditFormData] = useState<{
+    clubType: 'driver' | 'non_driver' | 'putter';
+    lieBefore: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other';
+    result: ShotRecord['result'];
+    distanceToHoleBefore: string;
+    distanceUnitBefore: 'yards' | 'feet';
+    distanceToHoleAfter: string;
+    distanceUnitAfter: 'yards' | 'feet';
+    missDirection: string | null;
+    puttBreak: ShotRecord['puttBreak'] | null;
+    puttSlope: ShotRecord['puttSlope'] | null;
+    isPenalty: boolean;
+    penaltyType: string | null;
+  } | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
   // ============================================================================
   // RESET ON HOLE CHANGE
   // ============================================================================
@@ -308,6 +341,119 @@ export default function ShotTrackingComprehensive({
     setApproachMissLieType(undefined);
     setSelectedShotNumber(null);
   }, [currentHoleIndex, currentHole.yardage, initialShots, initialShotNumber]);
+
+  // ============================================================================
+  // AUTO-SAVE EFFECT
+  // ============================================================================
+
+  // Debounced auto-save: triggers after shots change, with configurable interval
+  useEffect(() => {
+    // Don't auto-save if no callback provided or no shots recorded
+    if (!onAutoSave || shotHistory.length === 0) {
+      return;
+    }
+
+    // Create a fingerprint of current shots to detect changes
+    const currentShotsFingerprint = JSON.stringify(
+      shotHistory.map(s => ({
+        n: s.shotNumber,
+        t: s.shotType,
+        r: s.result,
+        d: s.distanceToHoleAfter,
+      }))
+    );
+
+    // Don't save if nothing changed
+    if (currentShotsFingerprint === lastSavedShotsRef.current) {
+      return;
+    }
+
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Set up debounced save
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        setAutoSaveStatus('saving');
+        await onAutoSave(shotHistory, currentHoleIndex);
+        lastSavedShotsRef.current = currentShotsFingerprint;
+        setAutoSaveStatus('saved');
+
+        // Reset to idle after 2 seconds
+        setTimeout(() => {
+          setAutoSaveStatus('idle');
+        }, 2000);
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        setAutoSaveStatus('error');
+
+        // Reset to idle after 3 seconds on error
+        setTimeout(() => {
+          setAutoSaveStatus('idle');
+        }, 3000);
+      }
+    }, autoSaveInterval);
+
+    // Cleanup timeout on unmount or dependency change
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [shotHistory, currentHoleIndex, onAutoSave, autoSaveInterval]);
+
+  // Also trigger immediate save on shot entry (debounced by 3 seconds for responsiveness)
+  useEffect(() => {
+    if (!onAutoSave || shotHistory.length === 0) {
+      return;
+    }
+
+    // Clear any existing long-interval timeout since we're doing immediate save
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Quick debounce for immediate feedback after shot entry
+    const quickSaveTimeout = setTimeout(async () => {
+      const currentShotsFingerprint = JSON.stringify(
+        shotHistory.map(s => ({
+          n: s.shotNumber,
+          t: s.shotType,
+          r: s.result,
+          d: s.distanceToHoleAfter,
+        }))
+      );
+
+      // Don't save if nothing changed
+      if (currentShotsFingerprint === lastSavedShotsRef.current) {
+        return;
+      }
+
+      try {
+        setAutoSaveStatus('saving');
+        await onAutoSave(shotHistory, currentHoleIndex);
+        lastSavedShotsRef.current = currentShotsFingerprint;
+        setAutoSaveStatus('saved');
+
+        setTimeout(() => {
+          setAutoSaveStatus('idle');
+        }, 2000);
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        setAutoSaveStatus('error');
+
+        setTimeout(() => {
+          setAutoSaveStatus('idle');
+        }, 3000);
+      }
+    }, 3000); // 3 second debounce after each shot
+
+    return () => {
+      clearTimeout(quickSaveTimeout);
+    };
+  }, [shotHistory.length]); // Only trigger on shot count change
 
   // ============================================================================
   // DERIVED VALUES
@@ -424,6 +570,174 @@ export default function ShotTrackingComprehensive({
     onSaveShot?.(penaltyShot);
   };
 
+  // Open edit modal for a specific shot
+  const handleEditShot = (shot: ShotRecord) => {
+    setEditingShot(shot);
+    setEditFormData({
+      clubType: shot.clubType,
+      lieBefore: shot.lieBefore,
+      result: shot.result,
+      distanceToHoleBefore: String(shot.distanceToHoleBefore),
+      distanceUnitBefore: shot.distanceUnitBefore,
+      distanceToHoleAfter: String(shot.distanceToHoleAfter),
+      distanceUnitAfter: shot.distanceUnitAfter,
+      missDirection: shot.missDirection || null,
+      puttBreak: shot.puttBreak || null,
+      puttSlope: shot.puttSlope || null,
+      isPenalty: shot.isPenalty,
+      penaltyType: shot.penaltyType || null,
+    });
+    setEditError(null);
+    setShowEditModal(true);
+  };
+
+  // Close edit modal
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingShot(null);
+    setEditFormData(null);
+    setEditError(null);
+    setShowDeleteConfirm(false);
+  };
+
+  // Save edited shot
+  const handleSaveEditedShot = async () => {
+    if (!editingShot || !editFormData) return;
+
+    setEditSaving(true);
+    setEditError(null);
+
+    try {
+      // Calculate new shot distance
+      const beforeInYards = editFormData.distanceUnitBefore === 'feet'
+        ? parseFloat(editFormData.distanceToHoleBefore) / 3
+        : parseFloat(editFormData.distanceToHoleBefore);
+      const afterInYards = editFormData.distanceUnitAfter === 'feet'
+        ? parseFloat(editFormData.distanceToHoleAfter) / 3
+        : parseFloat(editFormData.distanceToHoleAfter);
+      const newShotDistance = Math.round(calculateShotDistanceWithDirection(
+        beforeInYards,
+        afterInYards,
+        editFormData.missDirection
+      ));
+
+      // Create the updated shot record (for local state)
+      const updatedShot: ShotRecord = {
+        ...editingShot,
+        clubType: editFormData.clubType,
+        lieBefore: editFormData.lieBefore,
+        result: editFormData.result,
+        distanceToHoleBefore: parseFloat(editFormData.distanceToHoleBefore),
+        distanceUnitBefore: editFormData.distanceUnitBefore,
+        distanceToHoleAfter: parseFloat(editFormData.distanceToHoleAfter),
+        distanceUnitAfter: editFormData.distanceUnitAfter,
+        shotDistance: newShotDistance,
+        missDirection: editFormData.missDirection || undefined,
+        puttBreak: editFormData.puttBreak || undefined,
+        puttSlope: editFormData.puttSlope || undefined,
+        isPenalty: editFormData.isPenalty,
+        penaltyType: editFormData.isPenalty ? (editFormData.penaltyType as ShotRecord['penaltyType']) : undefined,
+      };
+
+      // If shot has an ID, update in database
+      if (editingShot.id) {
+        const updateData: ShotUpdateData = {
+          club_type: editFormData.clubType,
+          lie_before: editFormData.lieBefore,
+          result: editFormData.result,
+          distance_to_hole_before: parseFloat(editFormData.distanceToHoleBefore),
+          distance_unit_before: editFormData.distanceUnitBefore,
+          distance_to_hole_after: parseFloat(editFormData.distanceToHoleAfter),
+          distance_unit_after: editFormData.distanceUnitAfter,
+          shot_distance: newShotDistance,
+          miss_direction: editFormData.missDirection,
+          putt_break: editFormData.puttBreak,
+          putt_slope: editFormData.puttSlope,
+          is_penalty: editFormData.isPenalty,
+          penalty_type: editFormData.isPenalty ? editFormData.penaltyType : null,
+        };
+
+        const result = await updateShot(editingShot.id, updateData);
+        if (!result.success) {
+          setEditError(result.error || 'Failed to update shot');
+          setEditSaving(false);
+          return;
+        }
+      }
+
+      // Update local state
+      setShotHistory(prev =>
+        prev.map(s => s.shotNumber === editingShot.shotNumber ? updatedShot : s)
+      );
+
+      // Trigger auto-save if available
+      if (onAutoSave) {
+        const updatedHistory = shotHistory.map(s =>
+          s.shotNumber === editingShot.shotNumber ? updatedShot : s
+        );
+        await onAutoSave(updatedHistory, currentHoleIndex);
+      }
+
+      handleCloseEditModal();
+    } catch (error) {
+      console.error('Error updating shot:', error);
+      setEditError('An unexpected error occurred');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // Delete a shot
+  const handleDeleteShot = async () => {
+    if (!editingShot) return;
+
+    setEditSaving(true);
+    setEditError(null);
+
+    try {
+      // If shot has an ID, delete from database
+      if (editingShot.id) {
+        const result = await deleteShot(editingShot.id);
+        if (!result.success) {
+          setEditError(result.error || 'Failed to delete shot');
+          setEditSaving(false);
+          return;
+        }
+      }
+
+      // Remove from local state and resequence shot numbers
+      const deletedShotNumber = editingShot.shotNumber;
+      setShotHistory(prev => {
+        const filtered = prev.filter(s => s.shotNumber !== deletedShotNumber);
+        // Resequence shot numbers
+        return filtered.map((s, idx) => ({
+          ...s,
+          shotNumber: idx + 1,
+        }));
+      });
+
+      // Update current shot number if needed
+      if (currentShot > shotHistory.length) {
+        setCurrentShot(Math.max(1, shotHistory.length));
+      }
+
+      // Trigger auto-save if available
+      if (onAutoSave) {
+        const updatedHistory = shotHistory
+          .filter(s => s.shotNumber !== deletedShotNumber)
+          .map((s, idx) => ({ ...s, shotNumber: idx + 1 }));
+        await onAutoSave(updatedHistory, currentHoleIndex);
+      }
+
+      handleCloseEditModal();
+    } catch (error) {
+      console.error('Error deleting shot:', error);
+      setEditError('An unexpected error occurred');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const handleNextShot = () => {
     if (!resultOfShot) return;
 
@@ -442,10 +756,12 @@ export default function ShotTrackingComprehensive({
     // Calculate shot distance using geometry based on miss direction
     const beforeInYards = distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole;
     const afterInYards = unitAfter === 'feet' ? distanceAfter / 3 : distanceAfter;
+    // Use approachMissDirection for approach/around-green shots, fallback to missDirection
+    const effectiveMissDirection = isApproachOrAroundGreen ? (approachMissDirection || missDirection) : missDirection;
     const shotDistance = Math.round(calculateShotDistanceWithDirection(
       beforeInYards,
       afterInYards,
-      missDirection
+      effectiveMissDirection
     ));
     
     // Create shot record
@@ -720,6 +1036,40 @@ export default function ShotTrackingComprehensive({
             <span className="text-xs text-slate-400">
               Hole {currentHole.number} of {holes.length} • {shotHistory.length + 1} shot{shotHistory.length !== 0 ? 's' : ''}
             </span>
+            {/* Auto-save indicator */}
+            {onAutoSave && autoSaveStatus !== 'idle' && (
+              <span className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-md transition-all ${
+                autoSaveStatus === 'saving' ? 'text-amber-300 bg-amber-900/30' :
+                autoSaveStatus === 'saved' ? 'text-emerald-300 bg-emerald-900/30' :
+                'text-red-300 bg-red-900/30'
+              }`}>
+                {autoSaveStatus === 'saving' && (
+                  <>
+                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Saving...
+                  </>
+                )}
+                {autoSaveStatus === 'saved' && (
+                  <>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Saved
+                  </>
+                )}
+                {autoSaveStatus === 'error' && (
+                  <>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Save failed
+                  </>
+                )}
+              </span>
+            )}
           </div>
           <button
             onClick={onExit}
@@ -754,9 +1104,32 @@ export default function ShotTrackingComprehensive({
               </button>
             )}
           </div>
-          <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">
-            Hole {currentHole.number} of 18
-          </span>
+          <div className="flex items-center gap-2">
+            {/* Mobile auto-save indicator */}
+            {onAutoSave && autoSaveStatus !== 'idle' && (
+              <span className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded transition-all ${
+                autoSaveStatus === 'saving' ? 'text-amber-300 bg-amber-900/30' :
+                autoSaveStatus === 'saved' ? 'text-emerald-300 bg-emerald-900/30' :
+                'text-red-300 bg-red-900/30'
+              }`}>
+                {autoSaveStatus === 'saving' && (
+                  <svg className="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                )}
+                {autoSaveStatus === 'saved' && (
+                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                {autoSaveStatus === 'error' && '!'}
+              </span>
+            )}
+            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">
+              Hole {currentHole.number} of 18
+            </span>
+          </div>
           <button
             onClick={() => {
               const element = document.getElementById(`hole-${Math.min(18, currentHole.number + 1)}`);
@@ -1019,6 +1392,20 @@ export default function ShotTrackingComprehensive({
                   ))}
                 </div>
               </div>
+              <div className="mb-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Slope</p>
+                <div className="inline-flex bg-white rounded-lg p-1 w-full border border-emerald-200">
+                  {[{v: 'uphill', l: 'Uphill'}, {v: 'level', l: 'Level'}, {v: 'downhill', l: 'Downhill'}, {v: 'severe', l: 'Severe'}].map(s => (
+                    <button key={s.v} onClick={() => setPuttSlope(s.v as ShotRecord['puttSlope'])}
+                      className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                        puttSlope === s.v
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                          : 'text-slate-600 hover:text-slate-900'}`}>
+                      {s.l}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
@@ -1185,7 +1572,7 @@ export default function ShotTrackingComprehensive({
                     ~{Math.round(calculateShotDistanceWithDirection(
                       distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole,
                       distanceAfterUnit === 'feet' ? parseInt(distanceAfterShot) / 3 : parseInt(distanceAfterShot),
-                      missDirection
+                      isApproachOrAroundGreen ? (approachMissDirection || missDirection) : missDirection
                     ))} yards
                   </span>
                 </div>
@@ -1288,23 +1675,38 @@ export default function ShotTrackingComprehensive({
                             </div>
                           </div>
 
-                          {/* Distance/Result */}
-                          <div className="text-right">
-                            {shot.result === 'hole' ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-base">🏆</span>
-                                <span className="font-bold text-xs text-emerald-600 uppercase tracking-wide">Holed</span>
-                              </div>
-                            ) : !shot.isPenalty && shot.shotDistance > 0 ? (
-                              <div className="flex flex-col items-end">
-                                <span className="font-bold text-sm text-slate-900">{shot.shotDistance}<span className="text-xs text-slate-500 ml-0.5 font-semibold">yds</span></span>
-                                <span className="text-xs text-slate-500 font-medium">{shot.distanceToHoleAfter}{shot.distanceUnitAfter === 'yards' ? 'y' : 'ft'} left</span>
-                              </div>
-                            ) : shot.isPenalty ? (
-                              <div className="px-2 py-0.5 bg-red-100 rounded ring-1 ring-red-200">
-                                <span className="text-xs font-bold text-red-700 uppercase tracking-wide">{shot.penaltyType}</span>
-                              </div>
-                            ) : null}
+                          {/* Distance/Result + Edit Button */}
+                          <div className="flex items-center gap-2">
+                            <div className="text-right">
+                              {shot.result === 'hole' ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-base">🏆</span>
+                                  <span className="font-bold text-xs text-emerald-600 uppercase tracking-wide">Holed</span>
+                                </div>
+                              ) : !shot.isPenalty && shot.shotDistance > 0 ? (
+                                <div className="flex flex-col items-end">
+                                  <span className="font-bold text-sm text-slate-900">{shot.shotDistance}<span className="text-xs text-slate-500 ml-0.5 font-semibold">yds</span></span>
+                                  <span className="text-xs text-slate-500 font-medium">{shot.distanceToHoleAfter}{shot.distanceUnitAfter === 'yards' ? 'y' : 'ft'} left</span>
+                                </div>
+                              ) : shot.isPenalty ? (
+                                <div className="px-2 py-0.5 bg-red-100 rounded ring-1 ring-red-200">
+                                  <span className="text-xs font-bold text-red-700 uppercase tracking-wide">{shot.penaltyType}</span>
+                                </div>
+                              ) : null}
+                            </div>
+                            {/* Edit Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditShot(shot);
+                              }}
+                              className="p-1.5 rounded-md text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
+                              aria-label={`Edit shot ${shot.shotNumber}`}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
                           </div>
                         </div>
                       );
@@ -1401,6 +1803,372 @@ export default function ShotTrackingComprehensive({
                 Add +1 Stroke
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Shot Modal */}
+      {showEditModal && editingShot && editFormData && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-xl shadow-slate-950/10 ring-1 ring-slate-200">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-slate-900">
+                  Edit Shot {editingShot.shotNumber}
+                </h2>
+                <button
+                  onClick={handleCloseEditModal}
+                  className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              {editError && (
+                <div className="mt-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-700">{editError}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-4 space-y-5">
+              {/* Delete Confirmation */}
+              {showDeleteConfirm ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm font-medium text-red-900">Are you sure you want to delete this shot?</p>
+                    <p className="text-xs text-red-700 mt-1">This action cannot be undone. Shot numbers will be resequenced.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={editSaving}
+                      className="flex-1 py-3 rounded-lg font-semibold text-sm text-slate-600 bg-slate-100 ring-1 ring-slate-200 hover:bg-slate-200 hover:ring-slate-300 transition-all disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleDeleteShot}
+                      disabled={editSaving}
+                      className="flex-1 py-3 rounded-lg font-semibold text-sm bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-950/10 ring-1 ring-red-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {editSaving ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Deleting...
+                        </>
+                      ) : (
+                        'Delete Shot'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Shot Type Info */}
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg ring-1 ring-slate-200">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Type:</span>
+                    <span className="text-sm font-semibold text-slate-700 capitalize">
+                      {editingShot.isPenalty ? 'Penalty' : editingShot.shotType.replace('_', ' ')}
+                    </span>
+                  </div>
+
+                  {/* Penalty Shot Edit */}
+                  {editFormData.isPenalty ? (
+                    <div>
+                      <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Penalty Type</p>
+                      <div className="space-y-2">
+                        {[{v: 'ob', l: 'Out of Bounds'}, {v: 'water', l: 'Water Hazard'}, {v: 'unplayable', l: 'Unplayable Lie'}, {v: 'lost', l: 'Lost Ball'}].map(p => (
+                          <button
+                            key={p.v}
+                            onClick={() => setEditFormData(prev => prev ? {...prev, penaltyType: p.v} : null)}
+                            className={`w-full py-3 px-4 rounded-lg font-semibold text-sm text-left transition-all ${
+                              editFormData.penaltyType === p.v
+                                ? 'bg-red-600 text-white shadow-sm shadow-red-950/10 ring-1 ring-red-700'
+                                : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-red-300 hover:bg-red-50'
+                            }`}
+                          >
+                            {p.l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Club Type (for non-penalty shots) */}
+                      {editingShot.shotType === 'tee' && (
+                        <div>
+                          <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Club</p>
+                          <div className="inline-flex bg-slate-100 rounded-lg p-1 w-full">
+                            <button
+                              onClick={() => setEditFormData(prev => prev ? {...prev, clubType: 'driver'} : null)}
+                              className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                                editFormData.clubType === 'driver'
+                                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              Driver
+                            </button>
+                            <button
+                              onClick={() => setEditFormData(prev => prev ? {...prev, clubType: 'non_driver'} : null)}
+                              className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                                editFormData.clubType === 'non_driver'
+                                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              Non-Driver
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Lie Before */}
+                      <div>
+                        <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Lie Before</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(['tee', 'fairway', 'rough', 'sand', 'green', 'other'] as const).map(lie => (
+                            <button
+                              key={lie}
+                              onClick={() => setEditFormData(prev => prev ? {...prev, lieBefore: lie} : null)}
+                              className={`py-2.5 rounded-lg font-semibold text-sm capitalize transition-all ${
+                                editFormData.lieBefore === lie
+                                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                                  : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300'
+                              }`}
+                            >
+                              {lie}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Distance Before */}
+                      <div>
+                        <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Distance Before</p>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            value={editFormData.distanceToHoleBefore}
+                            onChange={(e) => setEditFormData(prev => prev ? {...prev, distanceToHoleBefore: e.target.value} : null)}
+                            className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-slate-900 text-center bg-white border-2 border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 focus:outline-none transition-all"
+                          />
+                          <div className="inline-flex bg-slate-100 rounded-lg p-1">
+                            <button
+                              onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitBefore: 'yards'} : null)}
+                              className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
+                                editFormData.distanceUnitBefore === 'yards'
+                                  ? 'bg-emerald-600 text-white shadow-sm'
+                                  : 'text-slate-600'
+                              }`}
+                            >
+                              Yds
+                            </button>
+                            <button
+                              onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitBefore: 'feet'} : null)}
+                              className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
+                                editFormData.distanceUnitBefore === 'feet'
+                                  ? 'bg-emerald-600 text-white shadow-sm'
+                                  : 'text-slate-600'
+                              }`}
+                            >
+                              Ft
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Result */}
+                      <div>
+                        <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Result</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(['fairway', 'rough', 'sand', 'green', 'hole', 'other'] as const).map(r => (
+                            <button
+                              key={r}
+                              onClick={() => setEditFormData(prev => prev ? {...prev, result: r} : null)}
+                              className={`py-2.5 rounded-lg font-semibold text-sm capitalize transition-all ${
+                                editFormData.result === r
+                                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                                  : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300'
+                              }`}
+                            >
+                              {r}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Distance After (if not holed) */}
+                      {editFormData.result !== 'hole' && (
+                        <div>
+                          <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Distance After</p>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              value={editFormData.distanceToHoleAfter}
+                              onChange={(e) => setEditFormData(prev => prev ? {...prev, distanceToHoleAfter: e.target.value} : null)}
+                              className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-slate-900 text-center bg-white border-2 border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 focus:outline-none transition-all"
+                            />
+                            <div className="inline-flex bg-slate-100 rounded-lg p-1">
+                              <button
+                                onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitAfter: 'yards'} : null)}
+                                className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
+                                  editFormData.distanceUnitAfter === 'yards'
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'text-slate-600'
+                                }`}
+                              >
+                                Yds
+                              </button>
+                              <button
+                                onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitAfter: 'feet'} : null)}
+                                className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
+                                  editFormData.distanceUnitAfter === 'feet'
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'text-slate-600'
+                                }`}
+                              >
+                                Ft
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Miss Direction (for tee shots and approach misses) */}
+                      {(editingShot.shotType === 'tee' || editingShot.shotType === 'approach' || editingShot.shotType === 'around_green') &&
+                       editFormData.result !== 'hole' && editFormData.result !== 'green' && (
+                        <div>
+                          <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Miss Direction</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {['left', 'right', 'short', 'long'].map(dir => (
+                              <button
+                                key={dir}
+                                onClick={() => setEditFormData(prev => prev ? {...prev, missDirection: prev.missDirection === dir ? null : dir} : null)}
+                                className={`py-2.5 rounded-lg font-semibold text-sm capitalize transition-all ${
+                                  editFormData.missDirection === dir
+                                    ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                                    : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300'
+                                }`}
+                              >
+                                {dir}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Putt Details (for putting shots) */}
+                      {editingShot.shotType === 'putting' && (
+                        <>
+                          <div>
+                            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Putt Break</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {[{v: 'left_to_right', l: 'L to R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R to L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
+                                <button
+                                  key={b.v}
+                                  onClick={() => setEditFormData(prev => prev ? {...prev, puttBreak: b.v as ShotRecord['puttBreak']} : null)}
+                                  className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                                    editFormData.puttBreak === b.v
+                                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                                      : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300'
+                                  }`}
+                                >
+                                  {b.l}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Putt Slope</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {[{v: 'uphill', l: 'Uphill'}, {v: 'level', l: 'Level'}, {v: 'downhill', l: 'Downhill'}, {v: 'severe', l: 'Severe'}].map(s => (
+                                <button
+                                  key={s.v}
+                                  onClick={() => setEditFormData(prev => prev ? {...prev, puttSlope: s.v as ShotRecord['puttSlope']} : null)}
+                                  className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                                    editFormData.puttSlope === s.v
+                                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                                      : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300'
+                                  }`}
+                                >
+                                  {s.l}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Calculated Shot Distance */}
+                      {editFormData.distanceToHoleBefore && editFormData.distanceToHoleAfter && (
+                        <div className="flex items-center justify-between bg-emerald-50 rounded-lg px-4 py-3 ring-1 ring-emerald-200">
+                          <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Calculated Distance</span>
+                          <span className="text-lg font-bold text-emerald-700">
+                            ~{Math.round(calculateShotDistanceWithDirection(
+                              editFormData.distanceUnitBefore === 'feet' ? parseFloat(editFormData.distanceToHoleBefore) / 3 : parseFloat(editFormData.distanceToHoleBefore),
+                              editFormData.distanceUnitAfter === 'feet' ? parseFloat(editFormData.distanceToHoleAfter) / 3 : parseFloat(editFormData.distanceToHoleAfter),
+                              editFormData.missDirection
+                            ))} yds
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            {!showDeleteConfirm && (
+              <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4 rounded-b-2xl">
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={editSaving}
+                    className="px-4 py-3 rounded-lg font-semibold text-sm text-red-600 bg-red-50 ring-1 ring-red-200 hover:bg-red-100 hover:ring-red-300 transition-all disabled:opacity-50"
+                    aria-label="Delete shot"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={handleCloseEditModal}
+                    disabled={editSaving}
+                    className="flex-1 py-3 rounded-lg font-semibold text-sm text-slate-600 bg-slate-100 ring-1 ring-slate-200 hover:bg-slate-200 hover:ring-slate-300 transition-all disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveEditedShot}
+                    disabled={editSaving}
+                    className="flex-1 py-3 rounded-lg font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {editSaving ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

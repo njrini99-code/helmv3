@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/toast';
 import {
   createTeam,
   updateTeam,
-  regenerateInviteCode,
+  regenerateJoinCode,
 } from '@/app/golf/actions/teams';
 
 interface TeamSettingsClientProps {
@@ -22,7 +22,7 @@ interface TeamSettingsClientProps {
     id: string;
     name: string;
     season: string | null;
-    invite_code: string | null;
+    join_code: string | null;
     created_at: string;
   } | null;
 }
@@ -74,9 +74,9 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
   };
 
   const handleCopyInviteCode = async () => {
-    if (!team?.invite_code) return;
+    if (!team?.join_code) return;
 
-    const inviteUrl = `${window.location.origin}/golf/join/${team.invite_code}`;
+    const inviteUrl = `${window.location.origin}/golf/join/${team.join_code}`;
     await navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -86,7 +86,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
     if (!team) return;
 
     startTransition(async () => {
-      const result = await regenerateInviteCode(team.id);
+      const result = await regenerateJoinCode(team.id);
 
       if (result.success) {
         showToast('Invite code regenerated', 'success');
@@ -203,7 +203,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
 
         <div className="flex items-center gap-3">
           <div className="flex-1 px-4 py-3 bg-slate-50 rounded-lg font-mono text-sm text-slate-700 truncate">
-            {`${typeof window !== 'undefined' ? window.location.origin : ''}/golf/join/${team.invite_code}`}
+            {`${typeof window !== 'undefined' ? window.location.origin : ''}/golf/join/${team.join_code}`}
           </div>
           <Button
             variant={copied ? 'secondary' : 'primary'}

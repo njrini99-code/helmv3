@@ -25,7 +25,7 @@ export function useTeams() {
 
       // Get teams where this coach is the head coach or on staff
       const { data: staffData, error: staffError } = await supabase
-        .from('team_coach_staff')
+        .from('baseball_team_coach_staff')
         .select(`
           team_id,
           role,
@@ -36,9 +36,8 @@ export function useTeams() {
             team_type,
             logo_url,
             primary_color,
-            age_group,
-            city,
-            state
+            secondary_color,
+            description
           )
         `)
         .eq('coach_id', coach.id);
@@ -50,7 +49,7 @@ export function useTeams() {
       // Also check if coach is head_coach of any teams
       const { data: headCoachData, error: headError } = await supabase
         .from('baseball_teams')
-        .select('id, name, team_type, logo_url, primary_color, age_group, city, state')
+        .select('id, name, team_type, logo_url, primary_color, secondary_color, description')
         .eq('head_coach_id', coach.id);
 
       if (headError) {

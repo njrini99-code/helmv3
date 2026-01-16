@@ -1,6 +1,5 @@
 'use server';
 
-import { randomUUID } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getAppUrl } from '@/lib/utils/env';
 
@@ -22,79 +21,18 @@ interface CalendarFeedRecord {
   last_synced_at?: string | null;
 }
 
-interface TeamRecord {
-  id: string;
-  name: string | null;
-  calendar_feed_token: string | null;
-  calendar_feed_enabled: boolean | null;
-  created_at: string | null;
-}
-
-interface CoachRecord {
-  id: string;
-  full_name: string | null;
-  team_id: string | null;
-  calendar_feed_token: string | null;
-  calendar_feed_enabled: boolean | null;
-  created_at: string | null;
-}
-
-interface PlayerRecord {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  team_id: string | null;
-  calendar_feed_token: string | null;
-  calendar_feed_enabled: boolean | null;
-  created_at: string | null;
-}
-
 interface UserContext {
   role: UserRole;
-  team: TeamRecord | null;
-  coach: CoachRecord | null;
-  player: PlayerRecord | null;
+  userId: string;
+  teamId: string | null;
+  coachId: string | null;
+  playerId: string | null;
+  displayName: string;
 }
 
-function formatPersonalName(role: UserRole, coach: CoachRecord | null, player: PlayerRecord | null) {
-  if (role === 'coach' && coach?.full_name) {
-    return `${coach.full_name} Calendar`;
-  }
-  if (role === 'player') {
-    const name = [player?.first_name, player?.last_name].filter(Boolean).join(' ');
-    return name ? `${name} Calendar` : 'Personal Calendar';
-  }
-  return 'Personal Calendar';
-}
-
-function formatTeamName(team: TeamRecord | null) {
-  return team?.name ? `${team.name} Team Calendar` : 'Team Calendar';
-}
-
-function buildFeedUrl(type: FeedType, token: string, role: UserRole) {
+function buildFeedUrl(token: string): string {
   const baseUrl = getAppUrl();
-  const path = type === 'team'
-    ? `/api/calendar/team/${token}`
-    : `/api/calendar/${role === 'coach' ? 'coach' : 'player'}/${token}`;
-  return new URL(path, baseUrl).toString();
-}
-
-function buildFeedRecord(params: {
-  type: FeedType;
-  token: string;
-  role: UserRole;
-  id: string;
-  name: string;
-  createdAt: string | null;
-}): CalendarFeedRecord {
-  return {
-    id: params.id,
-    name: params.name,
-    type: params.type,
-    url: buildFeedUrl(params.type, params.token, params.role),
-    created_at: params.createdAt || new Date().toISOString(),
-    last_synced_at: null,
-  };
+  return new URL(`/api/calendar/feed/${token}`, baseUrl).toString();
 }
 
 async function getUserContext(): Promise<ActionResult<UserContext>> {
@@ -105,59 +43,70 @@ async function getUserContext(): Promise<ActionResult<UserContext>> {
     return { success: false, error: 'Not authenticated' };
   }
 
+  // Check if user is a coach
+  // Note: golf_coaches doesn't have team_id - need to look up via organization
   const { data: coach } = await supabase
     .from('golf_coaches')
-    .select('id, full_name, team_id, calendar_feed_token, calendar_feed_enabled, created_at')
+    .select('id, full_name, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (coach) {
-    const team = coach.team_id
-      ? await supabase
-          .from('golf_teams')
-          .select('id, name, calendar_feed_token, calendar_feed_enabled, created_at')
-          .eq('id', coach.team_id)
-          .single()
-      : null;
+    // Get team_id from golf_teams via organization_id
+    let teamId: string | null = null;
+    if (coach.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', coach.organization_id)
+        .maybeSingle();
+      teamId = team?.id ?? null;
+    }
 
     return {
       success: true,
       data: {
         role: 'coach',
-        team: team?.data ?? null,
-        coach,
-        player: null,
+        userId: user.id,
+        teamId,
+        coachId: coach.id,
+        playerId: null,
+        displayName: coach.full_name || 'Coach',
       },
     };
   }
 
+  // Check if user is a player
+  // Note: golf_players doesn't have team_id - need to look up via golf_team_members
   const { data: player } = await supabase
     .from('golf_players')
-    .select('id, first_name, last_name, team_id, calendar_feed_token, calendar_feed_enabled, created_at')
+    .select('id, first_name, last_name')
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (!player) {
-    return { success: false, error: 'Profile not found' };
+  if (player) {
+    // Get team_id from golf_team_members
+    const { data: teamMember } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', player.id)
+      .maybeSingle();
+
+    const name = [player.first_name, player.last_name].filter(Boolean).join(' ');
+    return {
+      success: true,
+      data: {
+        role: 'player',
+        userId: user.id,
+        teamId: teamMember?.team_id ?? null,
+        coachId: null,
+        playerId: player.id,
+        displayName: name || 'Player',
+      },
+    };
   }
 
-  const team = player.team_id
-    ? await supabase
-        .from('golf_teams')
-        .select('id, name, calendar_feed_token, calendar_feed_enabled, created_at')
-        .eq('id', player.team_id)
-        .single()
-    : null;
-
-  return {
-    success: true,
-    data: {
-      role: 'player',
-      team: team?.data ?? null,
-      coach: null,
-      player,
-    },
-  };
+  return { success: false, error: 'Profile not found' };
 }
 
 export async function getCalendarFeeds(): Promise<ActionResult<CalendarFeedRecord[]>> {
@@ -166,145 +115,87 @@ export async function getCalendarFeeds(): Promise<ActionResult<CalendarFeedRecor
     return { success: false, error: contextResult.error || 'Failed to load calendar feeds' };
   }
 
-  const { role, team, coach, player } = contextResult.data;
-  const feeds: CalendarFeedRecord[] = [];
+  const { userId } = contextResult.data;
+  const supabase = await createClient();
 
-  if (team?.calendar_feed_enabled !== false && team?.calendar_feed_token) {
-    feeds.push(buildFeedRecord({
-      type: 'team',
-      token: team.calendar_feed_token,
-      role,
-      id: `team:${team.id}`,
-      name: formatTeamName(team),
-      createdAt: team.created_at,
-    }));
+  // Query golf_calendar_feeds table for user's feeds
+  const { data: feeds, error } = await supabase
+    .from('golf_calendar_feeds')
+    .select('id, name, feed_type, feed_token, team_id, player_id, is_active, last_synced_at, created_at')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return { success: false, error: 'Failed to fetch calendar feeds' };
   }
 
-  const personalToken = role === 'coach' ? coach?.calendar_feed_token : player?.calendar_feed_token;
-  const personalEnabled = role === 'coach' ? coach?.calendar_feed_enabled : player?.calendar_feed_enabled;
-
-  if (personalEnabled !== false && personalToken) {
-    feeds.push(buildFeedRecord({
-      type: 'personal',
-      token: personalToken,
-      role,
-      id: role === 'coach' && coach ? `coach:${coach.id}` : `player:${player?.id || 'unknown'}`,
-      name: formatPersonalName(role, coach, player),
-      createdAt: role === 'coach' ? coach?.created_at ?? null : player?.created_at ?? null,
+  const result: CalendarFeedRecord[] = (feeds || [])
+    .filter(feed => feed.feed_token) // Filter out feeds without tokens
+    .map(feed => ({
+      id: feed.id,
+      name: feed.name || (feed.team_id ? 'Team Calendar' : 'Personal Calendar'),
+      type: feed.team_id ? 'team' : 'personal',
+      url: buildFeedUrl(feed.feed_token!), // Safe due to filter above
+      created_at: feed.created_at ?? new Date().toISOString(),
+      last_synced_at: feed.last_synced_at,
     }));
-  }
 
-  return { success: true, data: feeds };
+  return { success: true, data: result };
 }
 
 export async function createCalendarFeed(
   type: FeedType,
-  _name?: string
+  name?: string
 ): Promise<ActionResult<CalendarFeedRecord>> {
-  void _name;
   const contextResult = await getUserContext();
   if (!contextResult.success || !contextResult.data) {
     return { success: false, error: contextResult.error || 'Failed to create feed' };
   }
 
-  const { role, team, coach, player } = contextResult.data;
+  const { role, userId, teamId, playerId, displayName } = contextResult.data;
   const supabase = await createClient();
 
   if (type === 'team') {
     if (role !== 'coach') {
-      return { success: false, error: 'Only coaches can manage team feeds' };
+      return { success: false, error: 'Only coaches can create team feeds' };
     }
-    if (!team) {
-      return { success: false, error: 'Team not found for this account' };
+    if (!teamId) {
+      return { success: false, error: 'Coach not assigned to a team' };
     }
-
-    const token = team.calendar_feed_token || randomUUID();
-    const { data: updatedTeam, error } = await supabase
-      .from('golf_teams')
-      .update({
-        calendar_feed_enabled: true,
-        calendar_feed_token: token,
-      })
-      .eq('id', team.id)
-      .select('id, name, calendar_feed_token, calendar_feed_enabled, created_at')
-      .single();
-
-    if (error || !updatedTeam?.calendar_feed_token) {
-      return { success: false, error: 'Failed to enable team feed' };
-    }
-
-    return {
-      success: true,
-      data: buildFeedRecord({
-        type: 'team',
-        token: updatedTeam.calendar_feed_token,
-        role,
-        id: `team:${updatedTeam.id}`,
-        name: formatTeamName(updatedTeam),
-        createdAt: updatedTeam.created_at,
-      }),
-    };
   }
 
-  if (role === 'coach' && coach) {
-    const token = coach.calendar_feed_token || randomUUID();
-    const { data: updatedCoach, error } = await supabase
-      .from('golf_coaches')
-      .update({
-        calendar_feed_enabled: true,
-        calendar_feed_token: token,
-      })
-      .eq('id', coach.id)
-      .select('id, full_name, team_id, calendar_feed_token, calendar_feed_enabled, created_at')
-      .single();
+  // Create new feed in golf_calendar_feeds table
+  const feedName = name || (type === 'team' ? 'Team Calendar' : `${displayName} Calendar`);
 
-    if (error || !updatedCoach?.calendar_feed_token) {
-      return { success: false, error: 'Failed to enable personal feed' };
-    }
+  const { data: newFeed, error } = await supabase
+    .from('golf_calendar_feeds')
+    .insert({
+      user_id: userId,
+      name: feedName,
+      feed_type: 'all_events',
+      team_id: type === 'team' ? teamId : null,
+      player_id: type === 'personal' ? playerId : null,
+      is_active: true,
+    })
+    .select('id, name, feed_type, feed_token, team_id, created_at, last_synced_at')
+    .single();
 
-    return {
-      success: true,
-      data: buildFeedRecord({
-        type: 'personal',
-        token: updatedCoach.calendar_feed_token,
-        role,
-        id: `coach:${updatedCoach.id}`,
-        name: formatPersonalName(role, updatedCoach as CoachRecord, null),
-        createdAt: updatedCoach.created_at,
-      }),
-    };
+  if (error || !newFeed || !newFeed.feed_token) {
+    return { success: false, error: 'Failed to create calendar feed' };
   }
 
-  if (role === 'player' && player) {
-    const token = player.calendar_feed_token || randomUUID();
-    const { data: updatedPlayer, error } = await supabase
-      .from('golf_players')
-      .update({
-        calendar_feed_enabled: true,
-        calendar_feed_token: token,
-      })
-      .eq('id', player.id)
-      .select('id, first_name, last_name, team_id, calendar_feed_token, calendar_feed_enabled, created_at')
-      .single();
-
-    if (error || !updatedPlayer?.calendar_feed_token) {
-      return { success: false, error: 'Failed to enable personal feed' };
-    }
-
-    return {
-      success: true,
-      data: buildFeedRecord({
-        type: 'personal',
-        token: updatedPlayer.calendar_feed_token,
-        role,
-        id: `player:${updatedPlayer.id}`,
-        name: formatPersonalName(role, null, updatedPlayer as PlayerRecord),
-        createdAt: updatedPlayer.created_at,
-      }),
-    };
-  }
-
-  return { success: false, error: 'Personal feed not available' };
+  return {
+    success: true,
+    data: {
+      id: newFeed.id,
+      name: newFeed.name || feedName,
+      type,
+      url: buildFeedUrl(newFeed.feed_token),
+      created_at: newFeed.created_at ?? new Date().toISOString(),
+      last_synced_at: newFeed.last_synced_at,
+    },
+  };
 }
 
 export async function regenerateCalendarFeed(type: FeedType): Promise<ActionResult<CalendarFeedRecord>> {
@@ -313,167 +204,192 @@ export async function regenerateCalendarFeed(type: FeedType): Promise<ActionResu
     return { success: false, error: contextResult.error || 'Failed to regenerate feed' };
   }
 
-  const { role, team, coach, player } = contextResult.data;
+  const { role, userId } = contextResult.data;
   const supabase = await createClient();
-  const newToken = randomUUID();
+
+  if (type === 'team' && role !== 'coach') {
+    return { success: false, error: 'Only coaches can manage team feeds' };
+  }
+
+  // Find existing feed
+  let query = supabase
+    .from('golf_calendar_feeds')
+    .select('id, name')
+    .eq('user_id', userId)
+    .eq('is_active', true);
 
   if (type === 'team') {
-    if (role !== 'coach') {
-      return { success: false, error: 'Only coaches can manage team feeds' };
-    }
-    if (!team) {
-      return { success: false, error: 'Team not found for this account' };
-    }
-
-    const { data: updatedTeam, error } = await supabase
-      .from('golf_teams')
-      .update({
-        calendar_feed_token: newToken,
-        calendar_feed_enabled: true,
-      })
-      .eq('id', team.id)
-      .select('id, name, calendar_feed_token, calendar_feed_enabled, created_at')
-      .single();
-
-    if (error || !updatedTeam?.calendar_feed_token) {
-      return { success: false, error: 'Failed to regenerate team feed' };
-    }
-
-    return {
-      success: true,
-      data: buildFeedRecord({
-        type: 'team',
-        token: updatedTeam.calendar_feed_token,
-        role,
-        id: `team:${updatedTeam.id}`,
-        name: formatTeamName(updatedTeam),
-        createdAt: updatedTeam.created_at,
-      }),
-    };
+    query = query.not('team_id', 'is', null);
+  } else {
+    query = query.is('team_id', null);
   }
 
-  if (role === 'coach' && coach) {
-    const { data: updatedCoach, error } = await supabase
-      .from('golf_coaches')
-      .update({
-        calendar_feed_token: newToken,
-        calendar_feed_enabled: true,
-      })
-      .eq('id', coach.id)
-      .select('id, full_name, team_id, calendar_feed_token, calendar_feed_enabled, created_at')
-      .single();
+  const { data: existingFeed, error: findError } = await query.maybeSingle();
 
-    if (error || !updatedCoach?.calendar_feed_token) {
-      return { success: false, error: 'Failed to regenerate personal feed' };
-    }
-
-    return {
-      success: true,
-      data: buildFeedRecord({
-        type: 'personal',
-        token: updatedCoach.calendar_feed_token,
-        role,
-        id: `coach:${updatedCoach.id}`,
-        name: formatPersonalName(role, updatedCoach as CoachRecord, null),
-        createdAt: updatedCoach.created_at,
-      }),
-    };
+  if (findError || !existingFeed) {
+    return { success: false, error: 'Feed not found' };
   }
 
-  if (role === 'player' && player) {
-    const { data: updatedPlayer, error } = await supabase
-      .from('golf_players')
-      .update({
-        calendar_feed_token: newToken,
-        calendar_feed_enabled: true,
-      })
-      .eq('id', player.id)
-      .select('id, first_name, last_name, team_id, calendar_feed_token, calendar_feed_enabled, created_at')
-      .single();
+  // Delete existing feed and create a new one with a new token
+  const { error: deleteError } = await supabase
+    .from('golf_calendar_feeds')
+    .delete()
+    .eq('id', existingFeed.id);
 
-    if (error || !updatedPlayer?.calendar_feed_token) {
-      return { success: false, error: 'Failed to regenerate personal feed' };
-    }
-
-    return {
-      success: true,
-      data: buildFeedRecord({
-        type: 'personal',
-        token: updatedPlayer.calendar_feed_token,
-        role,
-        id: `player:${updatedPlayer.id}`,
-        name: formatPersonalName(role, null, updatedPlayer as PlayerRecord),
-        createdAt: updatedPlayer.created_at,
-      }),
-    };
+  if (deleteError) {
+    return { success: false, error: 'Failed to regenerate feed' };
   }
 
-  return { success: false, error: 'Personal feed not available' };
+  // Create new feed with new token
+  return createCalendarFeed(type, existingFeed.name ?? undefined);
 }
 
 export async function deleteCalendarFeed(type: FeedType): Promise<ActionResult<void>> {
   const contextResult = await getUserContext();
   if (!contextResult.success || !contextResult.data) {
-    return { success: false, error: contextResult.error || 'Failed to disable feed' };
+    return { success: false, error: contextResult.error || 'Failed to delete feed' };
   }
 
-  const { role, team, coach, player } = contextResult.data;
+  const { role, userId } = contextResult.data;
   const supabase = await createClient();
 
+  if (type === 'team' && role !== 'coach') {
+    return { success: false, error: 'Only coaches can manage team feeds' };
+  }
+
+  // Find and deactivate the feed
+  let query = supabase
+    .from('golf_calendar_feeds')
+    .update({ is_active: false })
+    .eq('user_id', userId)
+    .eq('is_active', true);
+
   if (type === 'team') {
-    if (role !== 'coach') {
-      return { success: false, error: 'Only coaches can manage team feeds' };
-    }
-    if (!team) {
-      return { success: false, error: 'Team not found for this account' };
-    }
-
-    const { error } = await supabase
-      .from('golf_teams')
-      .update({
-        calendar_feed_enabled: false,
-        calendar_feed_token: null,
-      })
-      .eq('id', team.id);
-
-    if (error) {
-      return { success: false, error: 'Failed to disable team feed' };
-    }
-
-    return { success: true, data: undefined };
+    query = query.not('team_id', 'is', null);
+  } else {
+    query = query.is('team_id', null);
   }
 
-  if (role === 'coach' && coach) {
-    const { error } = await supabase
-      .from('golf_coaches')
-      .update({
-        calendar_feed_enabled: false,
-        calendar_feed_token: null,
-      })
-      .eq('id', coach.id);
+  const { error } = await query;
 
-    if (error) {
-      return { success: false, error: 'Failed to disable personal feed' };
-    }
-
-    return { success: true, data: undefined };
+  if (error) {
+    return { success: false, error: 'Failed to disable calendar feed' };
   }
 
-  if (role === 'player' && player) {
-    const { error } = await supabase
-      .from('golf_players')
-      .update({
-        calendar_feed_enabled: false,
-        calendar_feed_token: null,
-      })
-      .eq('id', player.id);
+  return { success: true, data: undefined };
+}
 
-    if (error) {
-      return { success: false, error: 'Failed to disable personal feed' };
-    }
-
-    return { success: true, data: undefined };
+/**
+ * Get or create a calendar feed token for the current user.
+ * This is the simplified version for the CalendarSyncButton component.
+ * Returns an existing active feed or creates a new one.
+ */
+export async function getOrCreateCalendarFeedToken(): Promise<ActionResult<{ url: string; token: string }>> {
+  const contextResult = await getUserContext();
+  if (!contextResult.success || !contextResult.data) {
+    return { success: false, error: contextResult.error || 'Not authenticated' };
   }
 
-  return { success: false, error: 'Personal feed not available' };
+  const { userId, teamId, displayName } = contextResult.data;
+  const supabase = await createClient();
+
+  // First, check if user already has an active feed
+  const { data: existingFeed, error: fetchError } = await supabase
+    .from('golf_calendar_feeds')
+    .select('id, feed_token')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (fetchError) {
+    return { success: false, error: 'Failed to check for existing feed' };
+  }
+
+  // If feed exists and has a token, return it
+  if (existingFeed?.feed_token) {
+    return {
+      success: true,
+      data: {
+        url: buildFeedUrl(existingFeed.feed_token),
+        token: existingFeed.feed_token,
+      },
+    };
+  }
+
+  // Create a new feed for the user
+  const feedName = `${displayName} Calendar`;
+  const { data: newFeed, error: createError } = await supabase
+    .from('golf_calendar_feeds')
+    .insert({
+      user_id: userId,
+      name: feedName,
+      feed_type: 'all_events',
+      team_id: teamId, // Include team if available
+      is_active: true,
+    })
+    .select('id, feed_token')
+    .single();
+
+  if (createError || !newFeed?.feed_token) {
+    return { success: false, error: 'Failed to create calendar feed' };
+  }
+
+  return {
+    success: true,
+    data: {
+      url: buildFeedUrl(newFeed.feed_token),
+      token: newFeed.feed_token,
+    },
+  };
+}
+
+/**
+ * Regenerate the calendar feed token for the current user.
+ * Invalidates the old URL and creates a new one.
+ */
+export async function regenerateCalendarFeedToken(): Promise<ActionResult<{ url: string; token: string }>> {
+  const contextResult = await getUserContext();
+  if (!contextResult.success || !contextResult.data) {
+    return { success: false, error: contextResult.error || 'Not authenticated' };
+  }
+
+  const { userId, teamId, displayName } = contextResult.data;
+  const supabase = await createClient();
+
+  // Deactivate all existing feeds for this user
+  const { error: deactivateError } = await supabase
+    .from('golf_calendar_feeds')
+    .update({ is_active: false })
+    .eq('user_id', userId)
+    .eq('is_active', true);
+
+  if (deactivateError) {
+    return { success: false, error: 'Failed to invalidate old feed' };
+  }
+
+  // Create a new feed with a new token
+  const feedName = `${displayName} Calendar`;
+  const { data: newFeed, error: createError } = await supabase
+    .from('golf_calendar_feeds')
+    .insert({
+      user_id: userId,
+      name: feedName,
+      feed_type: 'all_events',
+      team_id: teamId,
+      is_active: true,
+    })
+    .select('id, feed_token')
+    .single();
+
+  if (createError || !newFeed?.feed_token) {
+    return { success: false, error: 'Failed to create new calendar feed' };
+  }
+
+  return {
+    success: true,
+    data: {
+      url: buildFeedUrl(newFeed.feed_token),
+      token: newFeed.feed_token,
+    },
+  };
 }

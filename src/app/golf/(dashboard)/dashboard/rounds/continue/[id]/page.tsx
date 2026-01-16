@@ -6,8 +6,8 @@ import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingCompre
 import type { Tables } from '@/lib/types/database';
 
 type GolfShot = Tables<'golf_shots'>;
-// Extended hole type with optional penalty_strokes column
-type GolfHoleRow = Tables<'golf_holes'> & { penalty_strokes?: number | null };
+// The golf_holes table schema - penalty_strokes is now part of the schema
+type GolfHoleRow = Tables<'golf_holes'>;
 
 export default async function ContinueRoundPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -69,6 +69,8 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   }
 
   // Transform database holes to HoleStats format (completed holes only)
+  // Note: golf_holes only stores basic data (par, score, putts, fairway_hit, gir, penalty_strokes, sand_save, up_and_down)
+  // Detailed shot data comes from golf_shots table
   const completedHoleStats: HoleStats[] = ((holes || []) as GolfHoleRow[])
     .filter((hole) => hole.score !== null)
     .map((hole) => {
@@ -79,30 +81,30 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       return {
         holeNumber: hole.hole_number,
         par: hole.par,
-        yardage: hole.yardage || 0,
+        yardage: 0, // Not stored in golf_holes - would need course data
         score: hole.score!,
         putts: hole.putts || 0,
         fairwayHit: hole.fairway_hit,
-        greenInRegulation: hole.green_in_regulation || false,
-        drivingDistance: hole.driving_distance,
-        usedDriver: hole.used_driver,
-        driveMissDirection: hole.drive_miss_direction,
-        approachDistance: hole.approach_distance,
-        approachLie: hole.approach_lie,
-        approachProximity: hole.approach_proximity,
-        approachMissDirection: hole.approach_miss_direction,
-        scrambleAttempt: hole.scramble_attempt || false,
-        scrambleMade: hole.scramble_made || false,
-        sandSaveAttempt: hole.sand_save_attempt || false,
-        sandSaveMade: hole.sand_save_made || false,
+        greenInRegulation: hole.gir || false,
+        drivingDistance: null, // Computed from shots if needed
+        usedDriver: null,
+        driveMissDirection: null,
+        approachDistance: null,
+        approachLie: null,
+        approachProximity: null,
+        approachMissDirection: null,
+        scrambleAttempt: hole.up_and_down !== null,
+        scrambleMade: hole.up_and_down || false,
+        sandSaveAttempt: hole.sand_save !== null,
+        sandSaveMade: hole.sand_save || false,
         penaltyStrokes: hole.penalty_strokes ?? 0,
-        firstPuttDistance: hole.first_putt_distance,
-        firstPuttLeave: hole.first_putt_leave,
-        firstPuttBreak: hole.first_putt_break,
-        firstPuttSlope: hole.first_putt_slope,
-        firstPuttMissDirection: hole.first_putt_miss_direction,
-        holedOutDistance: hole.holed_out_distance,
-        holedOutType: hole.holed_out_type,
+        firstPuttDistance: null,
+        firstPuttLeave: null,
+        firstPuttBreak: null,
+        firstPuttSlope: null,
+        firstPuttMissDirection: null,
+        holedOutDistance: null,
+        holedOutType: null,
         shots: shots.map((shot) => ({
           shotNumber: shot.shot_number,
           shotType: shot.shot_type as ShotRecord['shotType'],
@@ -123,31 +125,34 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       };
     });
 
-  const holeConfigMap = new Map<number, { par: number; yardage: number | null; score: number | null }>();
+  const holeConfigMap = new Map<number, { par: number; score: number | null }>();
   for (const hole of (holes || []) as GolfHoleRow[]) {
     holeConfigMap.set(hole.hole_number, {
       par: hole.par,
-      yardage: hole.yardage,
       score: hole.score,
     });
   }
 
   // Create hole configuration for remaining holes
-  // Use holes_to_play from round, default to 18 if not set
-  const holesToPlay = round.holes_to_play || 18;
-  const allHoles = Array.from({ length: holesToPlay }, (_, i) => {
+  // Determine total holes from existing hole data or round metadata
+  // If we have holes 10+ in the data, it's an 18-hole round, otherwise check front/back nine scores
+  const maxHoleNumber = (holes || []).reduce((max: number, h: GolfHoleRow) => Math.max(max, h.hole_number), 0);
+  const hasBackNineHoles = maxHoleNumber > 9;
+  const isLikely18HoleRound = hasBackNineHoles || (round.back_nine !== null);
+  const totalHoles = isLikely18HoleRound ? 18 : 9;
+  const allHoles = Array.from({ length: totalHoles }, (_, i) => {
     const existingHole = holeConfigMap.get(i + 1);
     return {
       number: i + 1,
       par: existingHole?.par || 4, // Default par if not found
-      yardage: existingHole?.yardage || 400,
+      yardage: 400, // Default yardage - course data not stored in golf_holes
       score: existingHole?.score ?? null,
     };
   });
 
   // Setup data from round
   const setupData = {
-    courseName: round.course_name,
+    courseName: round.course_name || 'Unknown Course',
     courseCity: round.course_city || '',
     courseState: round.course_state || '',
     courseRating: round.course_rating?.toString() || '',

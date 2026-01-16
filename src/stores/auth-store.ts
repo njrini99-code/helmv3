@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, Coach, Player } from '@/lib/types';
+import type { User, CoachWithOrganization, Player } from '@/lib/types';
 
 export type CoachMode = 'recruiting' | 'team';
 
@@ -16,12 +16,12 @@ function syncModeToCookie(mode: CoachMode) {
 
 interface AuthState {
   user: User | null;
-  coach: Coach | null;
+  coach: CoachWithOrganization | null;
   player: Player | null;
   loading: boolean;
   coachMode: CoachMode;
   setUser: (user: User | null) => void;
-  setCoach: (coach: Coach | null) => void;
+  setCoach: (coach: CoachWithOrganization | null) => void;
   setPlayer: (player: Player | null) => void;
   setLoading: (loading: boolean) => void;
   setCoachMode: (mode: CoachMode) => void;

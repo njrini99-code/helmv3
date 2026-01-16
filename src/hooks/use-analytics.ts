@@ -93,16 +93,19 @@ export function useAnalytics() {
           *,
           baseball_coaches (
             id,
-            school_name,
-            program_division,
-            logo_url,
-            school_state,
-            conference
+            full_name,
+            organization:organizations (
+              name,
+              division,
+              logo_url,
+              state,
+              conference
+            )
           )
         `)
         .eq('player_id', player.id)
-        .gte('engagement_date', thirtyDaysAgo.toISOString())
-        .order('engagement_date', { ascending: false });
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: false });
 
       if (!events) {
         setData({
@@ -126,7 +129,8 @@ export function useAnalytics() {
       // Calculate views over time (last 30 days)
       const viewsByDate: Record<string, number> = {};
       events.filter(e => e.engagement_type === 'profile_view').forEach(event => {
-        const dateStr = new Date(event.engagement_date).toISOString().split('T')[0];
+        if (!event.created_at) return;
+        const dateStr = new Date(event.created_at).toISOString().split('T')[0];
         if (dateStr) {
           viewsByDate[dateStr] = (viewsByDate[dateStr] || 0) + 1;
         }
@@ -149,25 +153,26 @@ export function useAnalytics() {
       // If recruiting not activated, show anonymous data
       const schoolViews: Record<string, { name: string; count: number; division?: string; logo?: string; state?: string; conference?: string }> = {};
       events
-        .filter(e => e.engagement_type === 'profile_view' && e.coaches)
+        .filter(e => e.engagement_type === 'profile_view' && e.baseball_coaches)
         .forEach(event => {
-          const coach = event.coaches as { school_name?: string; school_state?: string; program_division?: string; conference?: string; logo_url?: string };
-          if (coach) {
+          const coach = event.baseball_coaches as { organization?: { name?: string; state?: string; division?: string; conference?: string; logo_url?: string } };
+          const org = coach?.organization;
+          if (org) {
             let key: string;
             let displayName: string;
 
             if (isRecruitingActivated) {
               // Show identified school name
-              key = coach.school_name || 'Unknown School';
+              key = org.name || 'Unknown School';
               displayName = key;
             } else {
               // Show anonymous data: "A coach from [State]" or "[Division] program"
-              if (coach.school_state) {
-                key = `state_${coach.school_state}`;
-                displayName = `A coach from ${coach.school_state}`;
-              } else if (coach.program_division) {
-                key = `division_${coach.program_division}`;
-                displayName = `${coach.program_division} program`;
+              if (org.state) {
+                key = `state_${org.state}`;
+                displayName = `A coach from ${org.state}`;
+              } else if (org.division) {
+                key = `division_${org.division}`;
+                displayName = `${org.division} program`;
               } else {
                 key = 'unknown';
                 displayName = 'A college coach';
@@ -178,10 +183,10 @@ export function useAnalytics() {
               schoolViews[key] = {
                 name: displayName,
                 count: 0,
-                division: isRecruitingActivated ? coach.program_division : undefined,
-                logo: isRecruitingActivated ? coach.logo_url : undefined,
-                state: coach.school_state,
-                conference: coach.conference,
+                division: isRecruitingActivated ? org.division : undefined,
+                logo: isRecruitingActivated ? org.logo_url : undefined,
+                state: org.state,
+                conference: org.conference,
               };
             }
             schoolViews[key]!.count++;

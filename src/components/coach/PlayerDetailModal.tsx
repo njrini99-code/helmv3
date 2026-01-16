@@ -206,33 +206,6 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
             )}
           </div>
 
-          {/* Additional Info */}
-          <div className="grid grid-cols-2 gap-4">
-            {player.club_team && (
-              <div>
-                <h4 className="text-sm font-semibold text-slate-700 mb-2">Travel Team</h4>
-                <p className="text-sm leading-relaxed text-slate-600">{player.club_team}</p>
-              </div>
-            )}
-            {player.primary_goal && (
-              <div>
-                <h4 className="text-sm font-semibold text-slate-700 mb-2">Primary Goal</h4>
-                <p className="text-sm leading-relaxed text-slate-600">{player.primary_goal}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Top Schools */}
-          {player.top_schools && player.top_schools.length > 0 && (
-            <div>
-              <h4 className="text-sm font-semibold text-slate-700 mb-2">Top Schools</h4>
-              <div className="flex flex-wrap gap-2">
-                {player.top_schools.map((school, i) => (
-                  <Badge key={i} variant="secondary">{school}</Badge>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Social */}
           {(player.twitter || player.instagram) && (

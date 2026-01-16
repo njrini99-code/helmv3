@@ -23,26 +23,44 @@ export function CreateQualifierButton() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Get coach with organization_id
       const { data: coach } = await supabase
         .from('golf_coaches')
-        .select('team_id')
+        .select('organization_id')
         .eq('user_id', user.id)
         .single();
 
-      if (!coach?.team_id) return;
+      if (!coach?.organization_id) return;
 
-      const { data: playersData } = await supabase
-        .from('golf_players')
-        .select('id, first_name, last_name')
-        .eq('team_id', coach.team_id)
-        .eq('status', 'active')
-        .order('last_name');
+      // Look up team via organization
+      const { data: orgTeam } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', coach.organization_id)
+        .maybeSingle();
 
-      // Filter out players with missing names
-      const validPlayers = (playersData || []).filter(
-        (p): p is { id: string; first_name: string; last_name: string } =>
-          !!p.first_name && !!p.last_name
-      );
+      if (!orgTeam?.id) return;
+
+      // Get players via team_members join table
+      const { data: teamMembersData } = await supabase
+        .from('golf_team_members')
+        .select(`
+          status,
+          player:golf_players!inner (
+            id,
+            first_name,
+            last_name
+          )
+        `)
+        .eq('team_id', orgTeam.id)
+        .eq('status', 'active');
+
+      // Extract players from team members and filter out invalid ones
+      const validPlayers = (teamMembersData || [])
+        .map(tm => tm.player)
+        .filter((p): p is { id: string; first_name: string; last_name: string } =>
+          p !== null && !!p.first_name && !!p.last_name
+        );
       setPlayers(validPlayers);
     }
 
@@ -73,18 +91,17 @@ export function CreateQualifierButton() {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
+    const spotsValue = formData.get('spotsAvailable') as string;
 
     try {
       await createGolfQualifier({
         name: formData.get('name') as string,
         description: (formData.get('description') as string) || undefined,
         courseName: (formData.get('courseName') as string) || undefined,
-        location: (formData.get('location') as string) || undefined,
-        numRounds: parseInt(formData.get('numRounds') as string),
-        holesPerRound: parseInt(formData.get('holesPerRound') as string),
+        spotsAvailable: spotsValue ? parseInt(spotsValue) : undefined,
+        entryDeadline: (formData.get('entryDeadline') as string) || undefined,
         startDate: formData.get('startDate') as string,
         endDate: (formData.get('endDate') as string) || undefined,
-        showLiveLeaderboard: formData.get('showLiveLeaderboard') === 'on',
         playerIds: selectedPlayers,
       });
 
@@ -138,44 +155,26 @@ export function CreateQualifierButton() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Course Name (Optional)"
-                  name="courseName"
-                  placeholder="Pine Valley Golf Club"
-                />
-
-                <Input
-                  label="Location (Optional)"
-                  name="location"
-                  placeholder="City, State"
-                />
-              </div>
+              <Input
+                label="Course Name (Optional)"
+                name="courseName"
+                placeholder="Pine Valley Golf Club"
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Number of Rounds"
-                  name="numRounds"
+                  label="Spots Available (Optional)"
+                  name="spotsAvailable"
                   type="number"
                   min="1"
-                  max="10"
-                  defaultValue="3"
-                  required
+                  placeholder="Number of spots"
                 />
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Holes per Round
-                  </label>
-                  <select
-                    name="holesPerRound"
-                    required
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 bg-white transition-colors"
-                  >
-                    <option value="9">9 Holes</option>
-                    <option value="18">18 Holes</option>
-                  </select>
-                </div>
+                <Input
+                  label="Entry Deadline (Optional)"
+                  name="entryDeadline"
+                  type="date"
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -191,19 +190,6 @@ export function CreateQualifierButton() {
                   name="endDate"
                   type="date"
                 />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="showLiveLeaderboard"
-                  id="showLiveLeaderboard"
-                  defaultChecked
-                  className="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-green-500"
-                />
-                <label htmlFor="showLiveLeaderboard" className="text-sm font-medium text-slate-700">
-                  Show live leaderboard
-                </label>
               </div>
 
               {/* Player Selection */}

@@ -79,19 +79,19 @@ export default function GolfSettingsPage() {
     // Check if coach
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('full_name, team_id, avatar_url')
+      .select('full_name, organization_id, avatar_url')
       .eq('user_id', user.id)
       .single();
 
     if (coach) {
-      // Get team name if team_id exists
+      // Get team name if organization_id exists
       let teamName: string | undefined;
-      if (coach.team_id) {
+      if (coach.organization_id) {
         const { data: team } = await supabase
           .from('golf_teams')
           .select('name')
-          .eq('id', coach.team_id)
-          .single();
+          .eq('organization_id', coach.organization_id)
+          .maybeSingle();
         teamName = team?.name;
       }
 
@@ -110,33 +110,32 @@ export default function GolfSettingsPage() {
     // Check if player
     const { data: player } = await supabase
       .from('golf_players')
-      .select('id, first_name, last_name, team_id, avatar_url')
+      .select('id, first_name, last_name, avatar_url')
       .eq('user_id', user.id)
       .single();
 
     if (player) {
-      // Get team with organization if team_id exists
+      // Get team via team_members table (golf_players doesn't have team_id)
       let teamName: string | undefined;
       let currentTeam: UserProfile['currentTeam'] = null;
 
-      if (player.team_id) {
-        const { data: team } = await supabase
-          .from('golf_teams')
-          .select('id, name, organization:golf_organizations(name)')
-          .eq('id', player.team_id)
-          .single();
+      const { data: teamMembership } = await supabase
+        .from('golf_team_members')
+        .select('team:golf_teams(id, name, organization:golf_organizations(name))')
+        .eq('player_id', player.id)
+        .maybeSingle();
 
-        if (team) {
-          teamName = team.name;
-          const org = Array.isArray(team.organization)
-            ? team.organization[0]
-            : team.organization;
-          currentTeam = {
-            id: team.id,
-            name: team.name,
-            organization: org ? { name: org.name } : null,
-          };
-        }
+      if (teamMembership?.team) {
+        const team = teamMembership.team;
+        teamName = team.name;
+        const org = Array.isArray(team.organization)
+          ? team.organization[0]
+          : team.organization;
+        currentTeam = {
+          id: team.id,
+          name: team.name,
+          organization: org ? { name: org.name } : null,
+        };
       }
 
       setProfile({

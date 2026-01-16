@@ -182,7 +182,7 @@ export class OutcomeValidator {
 
     const { data: rounds } = await supabase
       .from('golf_rounds')
-      .select('total_to_par, total_score, total_putts')
+      .select('score_to_par, total_score, total_putts')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .gte('round_date', startDate.toISOString())
@@ -202,16 +202,15 @@ export class OutcomeValidator {
     // Map metric to actual value
     switch (metric) {
       case 'score_to_par':
-      case 'total_to_par':
-        return round.total_to_par ?? null;
+        return round.score_to_par ?? null;
       case 'total_score':
         return round.total_score ?? null;
       case 'total_putts':
         return round.total_putts ?? null;
       case 'scoring_average':
-        return round.total_to_par ?? null; // Single round approximation
+        return round.score_to_par ?? null; // Single round approximation
       default:
-        return round.total_to_par ?? null;
+        return round.score_to_par ?? null;
     }
   }
 

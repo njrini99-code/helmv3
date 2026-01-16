@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive, { type HoleStats, type ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound } from '@/app/golf/actions/golf';
 import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
+import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
+import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
 
 interface Hole {
   number: number;
@@ -64,6 +66,17 @@ export default function ContinueRoundClient({
 }: ContinueRoundClientProps) {
   const router = useRouter();
 
+  // IndexedDB-based offline sync for shot-level persistence
+  const [offlineSyncState, offlineSyncActions] = useOfflineSync({
+    autoSyncInterval: 30000,
+    syncOnReconnect: true,
+    onSyncComplete: (success, count) => {
+      if (success && count > 0) {
+        console.log(`Synced ${count} items from offline storage`);
+      }
+    },
+  });
+
   const [currentHoleIndex, setCurrentHoleIndex] = useState(startHoleIndex);
   const [holes, setHoles] = useState<Hole[]>(initialHoles);
   const [completedHoleStats, setCompletedHoleStats] = useState<HoleStats[]>(initialCompletedStats);
@@ -120,6 +133,51 @@ export default function ContinueRoundClient({
       return { ...prev, [currentHoleIndex]: [...existing, shot] };
     });
   };
+
+  /**
+   * Auto-save handler for shot tracking - persists to IndexedDB when offline
+   */
+  const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
+    // Save to IndexedDB for offline redundancy
+    if (offlineSyncState.isIndexedDBReady) {
+      try {
+        const draftData = {
+          step: 'tracking' as const,
+          setupData,
+          holes,
+          completedHoleStats,
+          currentHoleIndex: holeIndex,
+          inProgressShots: { [holeIndex]: shots },
+        };
+        await offlineSyncActions.saveRoundOffline(
+          roundId,
+          '', // Player ID will be determined by the server
+          draftData
+        );
+      } catch (error) {
+        console.error('Failed to save to IndexedDB:', error);
+      }
+    }
+
+    // Queue individual shots for offline sync if we're offline
+    if (!offlineSyncState.isOnline && offlineSyncState.isIndexedDBReady) {
+      for (const shot of shots) {
+        try {
+          await offlineSyncActions.queueShot(shot, roundId, holes[holeIndex]?.number || holeIndex + 1);
+        } catch (error) {
+          console.error('Failed to queue shot for offline sync:', error);
+        }
+      }
+    }
+  }, [
+    offlineSyncState.isIndexedDBReady,
+    offlineSyncState.isOnline,
+    offlineSyncActions,
+    roundId,
+    setupData,
+    holes,
+    completedHoleStats,
+  ]);
 
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
     setSubmitting(true);
@@ -313,6 +371,22 @@ export default function ContinueRoundClient({
         </div>
       )}
 
+      {/* Offline Indicator Banner */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <OfflineIndicator
+          isOnline={offlineSyncState.isOnline}
+          isSyncing={offlineSyncState.isSyncing}
+          pendingCount={offlineSyncState.pendingCount}
+          lastSuccessfulSync={offlineSyncState.lastSuccessfulSync}
+          syncError={offlineSyncState.syncError}
+          onSyncNow={offlineSyncActions.syncNow}
+          onRetrySync={offlineSyncActions.retryFailedSync}
+          onDismissError={offlineSyncActions.clearSyncError}
+          variant="full"
+          position="header"
+        />
+      </div>
+
       {/* Shot Tracking */}
       <ShotTrackingComprehensive
         holes={holes}
@@ -323,6 +397,8 @@ export default function ContinueRoundClient({
         onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}
         initialShots={activeHoleShots}
         initialShotNumber={activeShotNumber}
+        onAutoSave={handleAutoSave}
+        autoSaveInterval={15000}
       />
 
       {/* Save Round Modal */}

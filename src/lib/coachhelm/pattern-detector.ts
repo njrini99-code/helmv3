@@ -1,3 +1,25 @@
+// ============================================================================
+// PATTERN DETECTOR (V1 - DEPRECATED)
+// ============================================================================
+//
+// @deprecated This is the V1 pattern detector. Use V2 instead.
+//
+// For V2 usage, import from '@/lib/coachhelm/v2':
+//   import { PatternMiner } from '@/lib/coachhelm/v2';
+//   const miner = new PatternMiner(playerId);
+//   const patterns = await miner.minePatterns();
+//
+// V2 provides:
+//   - Statistical pattern mining with confidence intervals
+//   - Support, confidence, lift metrics
+//   - Actionability scoring
+//   - Pattern trend tracking
+//
+// This file is kept for backwards compatibility during migration.
+// It will be removed in a future release.
+//
+// ============================================================================
+
 import { Pattern } from './types';
 
 interface GolfHole {

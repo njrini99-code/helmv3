@@ -9,9 +9,8 @@ export interface Team {
   team_type: string;
   logo_url: string | null;
   primary_color: string | null;
-  age_group: string | null;
-  city: string | null;
-  state: string | null;
+  secondary_color?: string | null;
+  description?: string | null;
   member_count?: number;
 }
 

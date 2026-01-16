@@ -16,7 +16,7 @@ export interface TeamPlayerStats {
   first_name: string;
   last_name: string;
   avatar_url: string | null;
-  year: string | null;
+  grad_year: number | null;
   handicap: number | null;
   rounds_played: number;
   scoring_average: number | null;
@@ -38,7 +38,7 @@ export default async function TeamStatsPage() {
   // Check if user is a coach - this page is COACH ONLY
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
@@ -47,7 +47,20 @@ export default async function TeamStatsPage() {
     redirect('/golf/dashboard/stats');
   }
 
-  if (!coach.team_id) {
+  // Get team_id from golf_teams via organization_id
+  let teamId: string | null = null;
+  let team: { name: string } | null = null;
+  if (coach.organization_id) {
+    const { data: orgTeam } = await supabase
+      .from('golf_teams')
+      .select('id, name')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+    teamId = orgTeam?.id || null;
+    team = orgTeam ? { name: orgTeam.name } : null;
+  }
+
+  if (!teamId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -60,19 +73,22 @@ export default async function TeamStatsPage() {
     );
   }
 
-  // Get team name
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('name')
-    .eq('id', coach.team_id)
-    .single();
+  // Get all team members first, then get their player data
+  const { data: teamMembers } = await supabase
+    .from('golf_team_members')
+    .select('player_id')
+    .eq('team_id', teamId);
 
-  // Get all players on the team
-  const { data: players } = await supabase
-    .from('golf_players')
-    .select('id, first_name, last_name, avatar_url, year, handicap')
-    .eq('team_id', coach.team_id)
-    .order('last_name');
+  const playerIds = (teamMembers || []).map(tm => tm.player_id);
+
+  // Get player data - use grad_year instead of year
+  const { data: players } = playerIds.length > 0
+    ? await supabase
+        .from('golf_players')
+        .select('id, first_name, last_name, avatar_url, grad_year, handicap')
+        .in('id', playerIds)
+        .order('last_name')
+    : { data: [] };
 
   if (!players || players.length === 0) {
     return (
@@ -91,12 +107,12 @@ export default async function TeamStatsPage() {
   }
 
   // Fetch ALL rounds for ALL players in a single query (performance optimization)
-  const playerIds = players.map(p => p.id);
+  const allPlayerIds = players.map(p => p.id);
 
   const { data: allRounds } = await supabase
     .from('golf_rounds')
     .select('id, player_id, total_score, round_date')
-    .in('player_id', playerIds)
+    .in('player_id', allPlayerIds)
     .eq('status', 'completed')
     .not('total_score', 'is', null)
     .order('round_date', { ascending: false });
@@ -107,13 +123,13 @@ export default async function TeamStatsPage() {
   const { data: allHoles } = roundIds.length > 0
     ? await supabase
         .from('golf_holes')
-        .select('round_id, par, fairway_hit, green_in_regulation, putts')
+        .select('round_id, par, fairway_hit, gir, putts')
         .in('round_id', roundIds)
     : { data: [] };
 
   // Define types for the grouped data
   type RoundData = { id: string; player_id: string; total_score: number | null; round_date: string };
-  type HoleData = { round_id: string; par: number; fairway_hit: boolean | null; green_in_regulation: boolean | null; putts: number | null };
+  type HoleData = { round_id: string; par: number; fairway_hit: boolean | null; gir: boolean | null; putts: number | null };
 
   // Group data by player in memory
   const roundsByPlayer: Record<string, RoundData[]> = {};
@@ -166,7 +182,6 @@ export default async function TeamStatsPage() {
     let totalGirHits = 0;
     let totalGirOpps = 0;
     let totalPutts = 0;
-    let totalHolesWithPutts = 0;
 
     playerRounds.forEach(round => {
       const holes = holesByRound[round.id] || [];
@@ -177,14 +192,13 @@ export default async function TeamStatsPage() {
           if (hole.fairway_hit) totalFairwayHits++;
         }
         // GIR
-        if (hole.green_in_regulation !== null) {
+        if (hole.gir !== null) {
           totalGirOpps++;
-          if (hole.green_in_regulation) totalGirHits++;
+          if (hole.gir) totalGirHits++;
         }
         // Putts
         if (hole.putts !== null && hole.putts > 0) {
           totalPutts += hole.putts;
-          totalHolesWithPutts++;
         }
         // Birdies (score = par - 1 or better)
         // We'd need score per hole, but we can estimate from total
@@ -210,7 +224,7 @@ export default async function TeamStatsPage() {
       first_name: player.first_name || '',
       last_name: player.last_name || '',
       avatar_url: player.avatar_url,
-      year: player.year,
+      grad_year: player.grad_year,
       handicap: player.handicap,
       rounds_played: roundsPlayed,
       scoring_average: scoringAverage,

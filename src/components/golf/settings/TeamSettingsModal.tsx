@@ -49,20 +49,20 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get coach's team
+      // Get coach's organization_id
       const { data: coach } = await supabase
         .from('golf_coaches')
-        .select('team_id')
+        .select('organization_id')
         .eq('user_id', user.id)
         .single();
 
-      if (!coach?.team_id) return;
+      if (!coach?.organization_id) return;
 
-      // Get team details with organization
+      // Get team details via organization_id
       const { data: team } = await supabase
         .from('golf_teams')
         .select('id, name, season, organization_id')
-        .eq('id', coach.team_id)
+        .eq('organization_id', coach.organization_id)
         .single();
 
       if (team) {

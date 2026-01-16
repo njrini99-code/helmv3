@@ -10,9 +10,10 @@ import type { InsightWithPlayer } from '@/lib/coachhelm/insight-types';
 interface InsightsFeedProps {
   limit?: number;
   showGenerateButton?: boolean;
+  coachId?: string;
 }
 
-export function InsightsFeed({ limit = 5, showGenerateButton = true }: InsightsFeedProps) {
+export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: InsightsFeedProps) {
   const [insights, setInsights] = useState<InsightWithPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -124,7 +125,12 @@ export function InsightsFeed({ limit = 5, showGenerateButton = true }: InsightsF
       {/* Insights List */}
       <div className="space-y-3">
         {insights.map((insight) => (
-          <InsightCard key={insight.id} insight={insight} onUpdate={loadInsights} />
+          <InsightCard
+            key={insight.id}
+            insight={insight}
+            coachId={coachId}
+            onUpdate={loadInsights}
+          />
         ))}
       </div>
     </div>
