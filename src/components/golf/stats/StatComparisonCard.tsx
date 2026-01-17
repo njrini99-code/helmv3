@@ -170,8 +170,8 @@ const StatComparisonCard = memo(function StatComparisonCard({
         {/* Comparison bars */}
         {barData.length > 1 && (
           <Suspense fallback={<ChartSkeleton />}>
-            <div className="h-20 -mx-2">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-20 -mx-2" style={{ minWidth: 0 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={100}>
                 <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 40, left: 40, bottom: 0 }}>
                   <XAxis type="number" hide />
                   <YAxis

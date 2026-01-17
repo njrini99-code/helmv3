@@ -55,18 +55,27 @@ export function InsightsFeed({
     startTransition(async () => {
       setError(null);
 
-      const result = await generateTeamInsight();
-      
-      if (result.success) {
-        setInsights(result.insights || []);
-        setPatterns(result.patterns || []);
-        setPredictions(result.predictions || []);
-        setLastGenerated(new Date());
-        
-        // Record interaction for learning
-        await recordInteraction(coachId, 'coach', 'action', 'generate_insights');
-      } else {
-        setError(result.error || 'Failed to generate insights');
+      try {
+        const result = await generateTeamInsight();
+
+        if (result.success) {
+          setInsights(result.insights || []);
+          setPatterns(result.patterns || []);
+          setPredictions(result.predictions || []);
+          setLastGenerated(new Date());
+
+          // Record interaction for learning
+          try {
+            await recordInteraction(coachId, 'coach', 'action', 'generate_insights');
+          } catch {
+            // Non-critical, don't fail the whole operation
+          }
+        } else {
+          setError(result.error || 'Failed to generate insights');
+        }
+      } catch (err) {
+        console.error('Error generating insights:', err);
+        setError('Unable to analyze team. Please check your connection and try again.');
       }
     });
   };
