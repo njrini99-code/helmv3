@@ -1,0 +1,496 @@
+'use client';
+
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { GlassCard } from '@/components/ui/glass-card';
+import {
+  IconChevronDown,
+  IconTrendingUp,
+  IconTrendingDown,
+  IconCheck,
+  IconX,
+  IconEye,
+  IconStar,
+  IconSparkles,
+  IconAlertCircle,
+  IconTarget,
+  IconActivity,
+} from '@/components/icons';
+import { Avatar } from '@/components/ui/avatar';
+import type { ExtendedPattern, PatternSeverity } from '@/app/golf/actions/pattern-management';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface PatternCardProps {
+  pattern: ExtendedPattern;
+  showPlayer?: boolean;
+  onValidate?: (pattern: ExtendedPattern) => void;
+  onDismiss?: (pattern: ExtendedPattern) => void;
+  onViewEvidence?: (pattern: ExtendedPattern) => void;
+  onMarkAddressed?: (pattern: ExtendedPattern) => void;
+  onResolve?: (pattern: ExtendedPattern) => void;
+}
+
+// ============================================================================
+// SEVERITY CONFIG
+// ============================================================================
+
+const severityConfig: Record<PatternSeverity, {
+  bg: string;
+  border: string;
+  text: string;
+  badge: string;
+  label: string;
+}> = {
+  low: {
+    bg: 'bg-slate-50',
+    border: 'border-slate-200',
+    text: 'text-slate-600',
+    badge: 'bg-slate-100 text-slate-700',
+    label: 'Low',
+  },
+  medium: {
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+    text: 'text-amber-700',
+    badge: 'bg-amber-100 text-amber-800',
+    label: 'Medium',
+  },
+  high: {
+    bg: 'bg-orange-50',
+    border: 'border-orange-200',
+    text: 'text-orange-700',
+    badge: 'bg-orange-100 text-orange-800',
+    label: 'High',
+  },
+  critical: {
+    bg: 'bg-red-50',
+    border: 'border-red-200',
+    text: 'text-red-700',
+    badge: 'bg-red-100 text-red-800',
+    label: 'Critical',
+  },
+};
+
+// ============================================================================
+// PATTERN CARD COMPONENT
+// ============================================================================
+
+export function PatternCard({
+  pattern,
+  showPlayer = false,
+  onValidate,
+  onDismiss,
+  onViewEvidence,
+  onMarkAddressed,
+  onResolve,
+}: PatternCardProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const severity = severityConfig[pattern.severity];
+  const isNegative = pattern.strokeImpact > 0;
+  const impactColor = isNegative ? 'text-red-600' : 'text-green-600';
+  const impactBgColor = isNegative ? 'bg-red-500' : 'bg-green-500';
+
+  // Pattern type icon
+  const getPatternIcon = () => {
+    switch (pattern.patternType) {
+      case 'conditional':
+        return <IconStar size={16} className="text-amber-500" />;
+      case 'compound':
+        return <IconSparkles size={16} className="text-purple-500" />;
+      case 'anomaly':
+        return <IconAlertCircle size={16} className="text-orange-500" />;
+      case 'sequence':
+        return <IconActivity size={16} className="text-blue-500" />;
+      case 'temporal':
+        return <IconTarget size={16} className="text-cyan-500" />;
+      default:
+        return <IconStar size={16} className="text-slate-500" />;
+    }
+  };
+
+  // Trend icon
+  const getTrendIcon = () => {
+    if (pattern.trend === 'strengthening') {
+      return (
+        <span className="flex items-center gap-1 text-xs text-red-500">
+          <IconTrendingUp size={12} />
+          Strengthening
+        </span>
+      );
+    }
+    if (pattern.trend === 'weakening') {
+      return (
+        <span className="flex items-center gap-1 text-xs text-green-600">
+          <IconTrendingDown size={12} />
+          Weakening
+        </span>
+      );
+    }
+    if (pattern.trend === 'new') {
+      return (
+        <span className="text-xs text-blue-500 font-medium">New</span>
+      );
+    }
+    return null;
+  };
+
+  // Lifecycle badge
+  const getLifecycleBadge = () => {
+    const badges: Record<string, { bg: string; text: string; label: string }> = {
+      detected: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Detected' },
+      confirmed: { bg: 'bg-green-100', text: 'text-green-700', label: 'Confirmed' },
+      addressed: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'In Progress' },
+      resolved: { bg: 'bg-slate-100', text: 'text-slate-600', label: 'Resolved' },
+      dismissed: { bg: 'bg-slate-100', text: 'text-slate-400', label: 'Dismissed' },
+    };
+
+    const config = badges[pattern.lifecycleState] ?? badges.detected;
+    const bgClass = config?.bg ?? 'bg-blue-100';
+    const textClass = config?.text ?? 'text-blue-700';
+    const label = config?.label ?? 'Detected';
+
+    return (
+      <span className={cn(
+        'px-2 py-0.5 rounded-full text-xs font-medium',
+        bgClass,
+        textClass
+      )}>
+        {label}
+      </span>
+    );
+  };
+
+  const confidencePercent = Math.round(pattern.confidence * 100);
+  const strokeImpactAbs = Math.abs(pattern.strokeImpact);
+
+  // Max bar width for stroke impact visualization
+  const maxImpact = 3;
+  const impactWidth = Math.min((strokeImpactAbs / maxImpact) * 100, 100);
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+    >
+      <GlassCard
+        className={cn(
+          'overflow-hidden transition-all',
+          pattern.lifecycleState === 'dismissed' && 'opacity-60'
+        )}
+        padding="none"
+        hover={false}
+      >
+        {/* Severity indicator bar */}
+        <div className={cn('h-1', severity.bg.replace('bg-', 'bg-').replace('-50', '-500'))} />
+
+        {/* Main content */}
+        <div className="p-4">
+          {/* Header row */}
+          <div className="flex items-start gap-3">
+            {/* Player avatar (if showing) */}
+            {showPlayer && (
+              <Avatar
+                src={pattern.playerAvatarUrl}
+                name={pattern.playerName || 'Player'}
+                size="sm"
+              />
+            )}
+
+            {/* Pattern icon */}
+            <div className={cn(
+              'p-2 rounded-lg flex-shrink-0',
+              severity.bg
+            )}>
+              {getPatternIcon()}
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              {/* Meta row */}
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                  {pattern.patternType}
+                </span>
+                {getLifecycleBadge()}
+                <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', severity.badge)}>
+                  {severity.label}
+                </span>
+                {getTrendIcon()}
+              </div>
+
+              {/* Player name (if showing) */}
+              {showPlayer && pattern.playerName && (
+                <p className="text-sm font-medium text-slate-800 mb-0.5">
+                  {pattern.playerName}
+                </p>
+              )}
+
+              {/* Description */}
+              <p className="text-sm text-slate-700 line-clamp-2">
+                {pattern.description || 'Performance pattern detected'}
+              </p>
+
+              {/* Stroke impact bar */}
+              <div className="mt-3 flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500">Stroke Impact</span>
+                    <span className={cn('text-sm font-semibold', impactColor)}>
+                      {isNegative ? '+' : '-'}{strokeImpactAbs.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden relative">
+                    {/* Center line */}
+                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-300" />
+                    {/* Impact bar */}
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${impactWidth / 2}%` }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
+                      className={cn(
+                        'h-full rounded-full absolute top-0',
+                        impactBgColor,
+                        isNegative ? 'right-1/2' : 'left-1/2'
+                      )}
+                      style={{
+                        [isNegative ? 'right' : 'left']: '50%',
+                        transformOrigin: isNegative ? 'right' : 'left',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Confidence meter */}
+                <div className="flex-shrink-0 w-16 text-center">
+                  <div className="relative w-12 h-12 mx-auto">
+                    <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+                      <circle
+                        cx="18"
+                        cy="18"
+                        r="14"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        className="text-slate-100"
+                      />
+                      <motion.circle
+                        cx="18"
+                        cy="18"
+                        r="14"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeDasharray={`${confidencePercent * 0.88} 88`}
+                        strokeLinecap="round"
+                        className="text-primary-500"
+                        initial={{ strokeDasharray: '0 88' }}
+                        animate={{ strokeDasharray: `${confidencePercent * 0.88} 88` }}
+                        transition={{ duration: 0.5, delay: 0.3 }}
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-slate-700">
+                      {confidencePercent}%
+                    </span>
+                  </div>
+                  <span className="text-xs text-slate-500 mt-0.5 block">Confidence</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Expand button */}
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              <motion.div
+                animate={{ rotate: expanded ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <IconChevronDown size={20} />
+              </motion.div>
+            </button>
+          </div>
+
+          {/* Expanded section */}
+          <AnimatePresence>
+            {expanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="pt-4 mt-4 border-t border-slate-100">
+                  {/* Conditions - IF */}
+                  <div className="mb-4">
+                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      IF
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {pattern.conditions.map((condition, i) => (
+                        <span
+                          key={i}
+                          className={cn(
+                            'px-3 py-1.5 rounded-lg text-sm font-medium',
+                            severity.bg,
+                            severity.text
+                          )}
+                        >
+                          {condition.label || `${condition.field} ${condition.operator} ${condition.value}`}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Outcome - THEN */}
+                  <div className="mb-4">
+                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      THEN
+                    </h4>
+                    <span className={cn(
+                      'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium',
+                      isNegative ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                    )}>
+                      {isNegative ? (
+                        <IconTrendingDown size={14} />
+                      ) : (
+                        <IconTrendingUp size={14} />
+                      )}
+                      {pattern.outcome.metric} {pattern.outcome.direction}s by {pattern.outcome.magnitude?.toFixed(1) || strokeImpactAbs.toFixed(1)} strokes
+                    </span>
+                  </div>
+
+                  {/* Stats grid */}
+                  <div className="grid grid-cols-4 gap-3 mb-4">
+                    <div className="text-center p-2 bg-slate-50 rounded-lg">
+                      <div className="text-lg font-semibold text-slate-800">
+                        {Math.round(pattern.support * 100)}%
+                      </div>
+                      <div className="text-xs text-slate-500">Frequency</div>
+                    </div>
+                    <div className="text-center p-2 bg-slate-50 rounded-lg">
+                      <div className="text-lg font-semibold text-slate-800">
+                        {pattern.lift.toFixed(1)}x
+                      </div>
+                      <div className="text-xs text-slate-500">Lift</div>
+                    </div>
+                    <div className="text-center p-2 bg-slate-50 rounded-lg">
+                      <div className="text-lg font-semibold text-slate-800">
+                        {pattern.sampleSize}
+                      </div>
+                      <div className="text-xs text-slate-500">Samples</div>
+                    </div>
+                    <div className="text-center p-2 bg-slate-50 rounded-lg">
+                      <div className="text-lg font-semibold text-slate-800">
+                        {pattern.occurrenceCount}
+                      </div>
+                      <div className="text-xs text-slate-500">Occurrences</div>
+                    </div>
+                  </div>
+
+                  {/* Recommendation */}
+                  {pattern.recommendation && (
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-100 mb-4">
+                      <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">
+                        Recommendation
+                      </h4>
+                      <p className="text-sm text-green-800">
+                        {pattern.recommendation}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Coach notes */}
+                  {pattern.coachNotes && (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 mb-4">
+                      <h4 className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">
+                        Coach Notes
+                      </h4>
+                      <p className="text-sm text-blue-800">
+                        {pattern.coachNotes}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-2">
+                    {/* Show different actions based on lifecycle state */}
+                    {pattern.lifecycleState === 'detected' && (
+                      <>
+                        {onValidate && (
+                          <button
+                            onClick={() => onValidate(pattern)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-green-600 hover:bg-green-50 transition-colors"
+                          >
+                            <IconCheck size={14} />
+                            Validate
+                          </button>
+                        )}
+                        {onDismiss && (
+                          <button
+                            onClick={() => onDismiss(pattern)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-100 transition-colors"
+                          >
+                            <IconX size={14} />
+                            Dismiss
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    {pattern.lifecycleState === 'confirmed' && onMarkAddressed && (
+                      <button
+                        onClick={() => onMarkAddressed(pattern)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-amber-600 hover:bg-amber-50 transition-colors"
+                      >
+                        <IconTarget size={14} />
+                        Mark as Working On
+                      </button>
+                    )}
+
+                    {pattern.lifecycleState === 'addressed' && onResolve && (
+                      <button
+                        onClick={() => onResolve(pattern)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-green-600 hover:bg-green-50 transition-colors"
+                      >
+                        <IconCheck size={14} />
+                        Mark Resolved
+                      </button>
+                    )}
+
+                    {onViewEvidence && (
+                      <button
+                        onClick={() => onViewEvidence(pattern)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-100 transition-colors ml-auto"
+                      >
+                        <IconEye size={14} />
+                        View Evidence
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Timestamps */}
+                  <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-4 text-xs text-slate-400">
+                    <span>First detected: {new Date(pattern.firstDetected).toLocaleDateString()}</span>
+                    <span>Last occurrence: {new Date(pattern.lastOccurrence).toLocaleDateString()}</span>
+                    {pattern.validatedAt && (
+                      <span>Validated: {new Date(pattern.validatedAt).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </GlassCard>
+    </motion.div>
+  );
+}

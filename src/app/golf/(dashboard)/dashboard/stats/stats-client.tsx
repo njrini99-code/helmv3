@@ -4,7 +4,20 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
-import { getDetailedStats, type StatsSummary, type RoundSummary } from '@/app/golf/actions/stats-data';
+import {
+  getDetailedStats,
+  getFilterOptions,
+  getCourseBreakdown,
+  getWorstHoleAnalysis,
+  getTrendAnalysis,
+  type StatsSummary,
+  type RoundSummary,
+  type StatsFilter,
+  type FilterOptions,
+  type CourseBreakdownResponse,
+  type WorstHoleResponse,
+  type TrendAnalysisResponse,
+} from '@/app/golf/actions/stats-data';
 import GolfStatsDisplay from '@/components/golf/stats/GolfStatsDisplay';
 import { DetailedStatsSkeleton } from '@/components/golf/GolfSkeletons';
 import { IconChevronLeft, IconUser, IconRefresh } from '@/components/icons';
@@ -64,6 +77,7 @@ export default function StatsClient({
   const [userRole, setUserRole] = useState<'coach' | 'player' | null>(initialUserRole ?? null);
   const [players, setPlayers] = useState<(Player & { stats?: PlayerStats })[]>(initialPlayers);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(initialPlayerId ?? null);
+  const [selectedPlayer, setSelectedPlayer] = useState<(Player & { stats?: PlayerStats }) | null>(null);
   const [playerName, setPlayerName] = useState(initialPlayerName);
 
   // Stats state - separating summary from detailed
@@ -78,6 +92,15 @@ export default function StatsClient({
   const [loadingDetailed, setLoadingDetailed] = useState(false);
   // Active tab is tracked for potential category-specific lazy loading
   const [activeTab, _setActiveTab] = useState<StatsCategory>('scoring');
+
+  // Filter state
+  const [activeFilter, setActiveFilter] = useState<StatsFilter | null>(null);
+  const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
+
+  // Additional analytics data
+  const [courseBreakdown, setCourseBreakdown] = useState<CourseBreakdownResponse | null>(null);
+  const [worstHoleData, setWorstHoleData] = useState<WorstHoleResponse | null>(null);
+  const [trendData, setTrendData] = useState<TrendAnalysisResponse | null>(null);
 
   // Cache for detailed stats to prevent re-fetching
   const detailedStatsCache = useRef<Map<string, GolfStats>>(new Map());
@@ -298,9 +321,16 @@ export default function StatsClient({
   /**
    * Load detailed shot-level stats (lazy loaded when needed)
    */
-  const loadDetailedStats = useCallback(async (playerId: string, roundId: string | 'overall' = 'overall') => {
+  const loadDetailedStats = useCallback(async (
+    playerId: string,
+    roundId: string | 'overall' = 'overall',
+    filter?: StatsFilter | null
+  ) => {
+    // Build cache key including filter
+    const filterKey = filter ? JSON.stringify(filter) : 'none';
+    const cacheKey = `${playerId}-${roundId}-${filterKey}`;
+
     // Check cache first
-    const cacheKey = `${playerId}-${roundId}`;
     if (detailedStatsCache.current.has(cacheKey)) {
       setDetailedStats(detailedStatsCache.current.get(cacheKey)!);
       return;
@@ -316,7 +346,7 @@ export default function StatsClient({
     lastFetchedRoundId.current = roundId;
 
     try {
-      const stats = await getDetailedStats(playerId, roundId);
+      const stats = await getDetailedStats(playerId, roundId, filter || undefined);
       detailedStatsCache.current.set(cacheKey, stats);
       setDetailedStats(stats);
     } catch (error) {
@@ -326,6 +356,35 @@ export default function StatsClient({
     }
   }, [loadingDetailed]);
 
+  /**
+   * Load filter options and additional analytics for a player
+   */
+  const loadPlayerAnalytics = useCallback(async (playerId: string) => {
+    try {
+      const [options, courses, holes, trends] = await Promise.all([
+        getFilterOptions(playerId),
+        getCourseBreakdown(playerId),
+        getWorstHoleAnalysis(playerId),
+        getTrendAnalysis(playerId),
+      ]);
+      setFilterOptions(options);
+      setCourseBreakdown(courses);
+      setWorstHoleData(holes);
+      setTrendData(trends);
+    } catch (error) {
+      console.error('Failed to load player analytics:', error);
+    }
+  }, []);
+
+  /**
+   * Handle filter change
+   */
+  const handleFilterChange = useCallback((filter: StatsFilter | null) => {
+    setActiveFilter(filter);
+    // Clear detailed stats to force reload with new filter
+    setDetailedStats(null);
+  }, []);
+
   // Load detailed stats when needed (player selected or tab changed to detailed view)
   useEffect(() => {
     const playerId = selectedPlayerId || (userRole === 'player' ? initialPlayerId : null);
@@ -334,24 +393,34 @@ export default function StatsClient({
     // Load detailed stats when viewing detailed tabs
     const detailedTabs: StatsCategory[] = ['scoring', 'driving', 'approach', 'putting', 'scrambling', 'strokes-gained', 'progress'];
     if (detailedTabs.includes(activeTab) && !detailedStats) {
-      loadDetailedStats(playerId, selectedRoundId);
+      loadDetailedStats(playerId, selectedRoundId, activeFilter);
     }
-  }, [activeTab, selectedPlayerId, selectedRoundId, initialPlayerId, userRole, detailedStats, loadDetailedStats]);
+  }, [activeTab, selectedPlayerId, selectedRoundId, initialPlayerId, userRole, detailedStats, loadDetailedStats, activeFilter]);
 
-  // Reload detailed stats when round selection changes
+  // Reload detailed stats when round selection or filter changes
   useEffect(() => {
     const playerId = selectedPlayerId || (userRole === 'player' ? initialPlayerId : null);
     if (!playerId) return;
 
-    // Clear current detailed stats and reload
-    const cacheKey = `${playerId}-${selectedRoundId}`;
+    // Build cache key including filter
+    const filterKey = activeFilter ? JSON.stringify(activeFilter) : 'none';
+    const cacheKey = `${playerId}-${selectedRoundId}-${filterKey}`;
+
     if (detailedStatsCache.current.has(cacheKey)) {
       setDetailedStats(detailedStatsCache.current.get(cacheKey)!);
     } else if (detailedStats) {
-      // Only reload if we already had detailed stats loaded
-      loadDetailedStats(playerId, selectedRoundId);
+      // Reload with new filter/round
+      loadDetailedStats(playerId, selectedRoundId, activeFilter);
     }
-  }, [selectedRoundId]);
+  }, [selectedRoundId, activeFilter]);
+
+  // Load filter options and analytics when player is selected
+  useEffect(() => {
+    const playerId = selectedPlayerId || (userRole === 'player' ? initialPlayerId : null);
+    if (!playerId) return;
+
+    loadPlayerAnalytics(playerId);
+  }, [selectedPlayerId, initialPlayerId, userRole, loadPlayerAnalytics]);
 
   // ============================================================================
   // EVENT HANDLERS
@@ -362,8 +431,14 @@ export default function StatsClient({
     if (!player) return;
 
     setSelectedPlayerId(playerId);
+    setSelectedPlayer(player);
     setPlayerName(`${player.first_name} ${player.last_name}`);
     setDetailedStats(null); // Clear previous detailed stats
+    setActiveFilter(null); // Reset filter for new player
+    setCourseBreakdown(null);
+    setWorstHoleData(null);
+    setFilterOptions(null);
+    setTrendData(null);
 
     await loadPlayerSummary(playerId);
     // Don't load detailed stats immediately - wait for tab activation
@@ -371,9 +446,15 @@ export default function StatsClient({
 
   function handleBackClick() {
     setSelectedPlayerId(null);
+    setSelectedPlayer(null);
     setDetailedStats(null);
     setSummary(null);
     setRounds([]);
+    setActiveFilter(null);
+    setCourseBreakdown(null);
+    setWorstHoleData(null);
+    setFilterOptions(null);
+    setTrendData(null);
   }
 
   function handleRefresh() {
@@ -389,7 +470,8 @@ export default function StatsClient({
 
     setDetailedStats(null);
     loadPlayerSummary(playerId);
-    loadDetailedStats(playerId, selectedRoundId);
+    loadDetailedStats(playerId, selectedRoundId, activeFilter);
+    loadPlayerAnalytics(playerId);
   }
 
   // ============================================================================
@@ -528,6 +610,16 @@ export default function StatsClient({
         <GolfStatsDisplay
           stats={detailedStats}
           playerName={playerName}
+          // Player profile (for coach view)
+          playerProfile={userRole === 'coach' && selectedPlayer ? {
+            avatarUrl: selectedPlayer.avatar_url,
+            gradYear: selectedPlayer.grad_year,
+            handicap: selectedPlayer.handicap,
+            roundsPlayed: selectedPlayer.stats?.rounds_played,
+            scoringAverage: selectedPlayer.stats?.scoring_average,
+            bestRound: selectedPlayer.stats?.best_round,
+          } : undefined}
+          isCoachView={userRole === 'coach'}
           rounds={rounds.filter((r): r is RoundSummary & { total_score: number; score_to_par: number } =>
             r.total_score !== null && r.score_to_par !== null
           ).map(r => ({
@@ -539,6 +631,14 @@ export default function StatsClient({
           }))}
           selectedRoundId={selectedRoundId}
           onRoundChange={setSelectedRoundId}
+          // Filter props
+          activeFilter={activeFilter}
+          onFilterChange={handleFilterChange}
+          filterOptions={filterOptions}
+          // Analytics props
+          courseBreakdown={courseBreakdown}
+          worstHoleData={worstHoleData}
+          trendData={trendData}
         />
       ) : null}
     </div>

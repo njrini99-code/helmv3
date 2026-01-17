@@ -1,0 +1,456 @@
+'use client';
+
+/**
+ * RoundStatsComparison - Compare round stats to player average and team average
+ *
+ * Features:
+ * - Visual bars showing above/below average
+ * - Stats: GIR, FIR, Putts, Penalties, Up-and-Down %
+ * - Animated bars with Framer Motion
+ * - Mobile-friendly responsive design
+ */
+
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { GlassCard } from '@/components/ui/glass-card';
+import {
+  IconTrendingUp,
+  IconTrendingDown,
+  IconTarget,
+  IconChart,
+} from '@/components/icons';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface StatComparisonItem {
+  key: string;
+  label: string;
+  roundValue: number;
+  playerAvg: number | null;
+  teamAvg: number | null;
+  unit?: string;
+  higherIsBetter: boolean;
+  formatValue?: (val: number) => string;
+}
+
+interface RoundStatsComparisonProps {
+  roundStats: {
+    girPct: number | null;
+    firPct: number | null;
+    putts: number | null;
+    penalties: number | null;
+    scramblePct: number | null;
+  };
+  playerAvg?: {
+    avgGirPct?: number;
+    avgFairwayPct?: number;
+    avgPutts?: number;
+    avgPenalties?: number;
+    avgScramblePct?: number;
+  } | null;
+  teamAvg?: {
+    avgGirPct?: number;
+    avgFairwayPct?: number;
+    avgPutts?: number;
+    avgPenalties?: number;
+    avgScramblePct?: number;
+  } | null;
+  className?: string;
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+function getComparisonStatus(
+  value: number,
+  comparison: number | null,
+  higherIsBetter: boolean
+): 'above' | 'below' | 'average' | 'unknown' {
+  if (comparison === null) return 'unknown';
+
+  const diff = value - comparison;
+  const threshold = Math.abs(comparison) * 0.05; // 5% threshold for "average"
+
+  if (Math.abs(diff) <= threshold) return 'average';
+
+  if (higherIsBetter) {
+    return diff > 0 ? 'above' : 'below';
+  } else {
+    return diff < 0 ? 'above' : 'below';
+  }
+}
+
+function calculateBarWidth(
+  value: number,
+  comparison: number | null,
+  higherIsBetter: boolean,
+  maxDeviation: number = 30
+): number {
+  if (comparison === null) return 50;
+
+  let diff: number;
+  if (higherIsBetter) {
+    // For percentages where higher is better
+    diff = value - comparison;
+  } else {
+    // For values where lower is better (like putts, penalties)
+    diff = comparison - value;
+  }
+
+  // Normalize to 0-100 range, where 50 is average
+  const normalized = 50 + (diff / maxDeviation) * 50;
+  return Math.max(10, Math.min(90, normalized));
+}
+
+// ============================================================================
+// STAT BAR COMPONENT
+// ============================================================================
+
+interface StatBarProps {
+  label: string;
+  roundValue: number;
+  playerAvg: number | null;
+  teamAvg: number | null;
+  higherIsBetter: boolean;
+  unit?: string;
+  formatValue?: (val: number) => string;
+  index: number;
+}
+
+function StatBar({
+  label,
+  roundValue,
+  playerAvg,
+  teamAvg,
+  higherIsBetter,
+  unit = '',
+  formatValue,
+  index,
+}: StatBarProps) {
+  const playerStatus = getComparisonStatus(roundValue, playerAvg, higherIsBetter);
+  // teamStatus available for future team comparison features
+  const _teamStatus = getComparisonStatus(roundValue, teamAvg, higherIsBetter);
+  void _teamStatus; // Suppress unused variable warning
+  const barWidth = calculateBarWidth(roundValue, playerAvg, higherIsBetter);
+
+  const statusConfig = {
+    above: {
+      color: 'bg-green-500',
+      bgColor: 'bg-green-50',
+      textColor: 'text-green-600',
+      icon: <IconTrendingUp size={12} />,
+    },
+    below: {
+      color: 'bg-amber-500',
+      bgColor: 'bg-amber-50',
+      textColor: 'text-amber-600',
+      icon: <IconTrendingDown size={12} />,
+    },
+    average: {
+      color: 'bg-blue-500',
+      bgColor: 'bg-blue-50',
+      textColor: 'text-blue-600',
+      icon: <IconTarget size={12} />,
+    },
+    unknown: {
+      color: 'bg-slate-400',
+      bgColor: 'bg-slate-50',
+      textColor: 'text-slate-500',
+      icon: null,
+    },
+  };
+
+  const config = statusConfig[playerStatus];
+  const displayValue = formatValue ? formatValue(roundValue) : `${roundValue}${unit}`;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1, duration: 0.3 }}
+      className="space-y-2"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-warm-700">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className={cn('text-sm font-bold', config.textColor)}>
+            {displayValue}
+          </span>
+          {config.icon && (
+            <span className={config.textColor}>{config.icon}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Bar container */}
+      <div className="relative h-3 rounded-full bg-slate-100 overflow-hidden">
+        {/* Center line (average marker) */}
+        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-slate-300 z-10" />
+
+        {/* Player avg marker */}
+        {playerAvg !== null && (
+          <div
+            className="absolute top-0 bottom-0 w-1 bg-warm-400 z-20"
+            style={{ left: '50%', transform: 'translateX(-50%)' }}
+            title={`Your avg: ${formatValue ? formatValue(playerAvg) : playerAvg}${unit}`}
+          />
+        )}
+
+        {/* Round value bar */}
+        <motion.div
+          initial={{ width: '50%' }}
+          animate={{ width: `${barWidth}%` }}
+          transition={{ delay: index * 0.1 + 0.2, duration: 0.5, ease: 'easeOut' }}
+          className={cn(
+            'absolute top-0 bottom-0 left-0 rounded-full',
+            config.color
+          )}
+        />
+      </div>
+
+      {/* Comparison labels */}
+      <div className="flex items-center justify-between text-xs text-warm-500">
+        <span>Below avg</span>
+        <div className="flex items-center gap-3">
+          {playerAvg !== null && (
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-warm-400" />
+              You: {formatValue ? formatValue(playerAvg) : playerAvg}
+              {unit}
+            </span>
+          )}
+          {teamAvg !== null && (
+            <span className="flex items-center gap-1 text-warm-400">
+              Team: {formatValue ? formatValue(teamAvg) : teamAvg}
+              {unit}
+            </span>
+          )}
+        </div>
+        <span>Above avg</span>
+      </div>
+    </motion.div>
+  );
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
+export function RoundStatsComparison({
+  roundStats,
+  playerAvg,
+  teamAvg,
+  className,
+}: RoundStatsComparisonProps) {
+  const stats: StatComparisonItem[] = [];
+
+  // GIR
+  if (roundStats.girPct !== null) {
+    stats.push({
+      key: 'gir',
+      label: 'Greens in Regulation',
+      roundValue: roundStats.girPct,
+      playerAvg: playerAvg?.avgGirPct ?? null,
+      teamAvg: teamAvg?.avgGirPct ?? null,
+      unit: '%',
+      higherIsBetter: true,
+    });
+  }
+
+  // FIR
+  if (roundStats.firPct !== null) {
+    stats.push({
+      key: 'fir',
+      label: 'Fairways Hit',
+      roundValue: roundStats.firPct,
+      playerAvg: playerAvg?.avgFairwayPct ?? null,
+      teamAvg: teamAvg?.avgFairwayPct ?? null,
+      unit: '%',
+      higherIsBetter: true,
+    });
+  }
+
+  // Putts
+  if (roundStats.putts !== null) {
+    stats.push({
+      key: 'putts',
+      label: 'Total Putts',
+      roundValue: roundStats.putts,
+      playerAvg: playerAvg?.avgPutts ?? null,
+      teamAvg: teamAvg?.avgPutts ?? null,
+      higherIsBetter: false,
+    });
+  }
+
+  // Scrambling
+  if (roundStats.scramblePct !== null) {
+    stats.push({
+      key: 'scramble',
+      label: 'Up-and-Down %',
+      roundValue: roundStats.scramblePct,
+      playerAvg: playerAvg?.avgScramblePct ?? null,
+      teamAvg: teamAvg?.avgScramblePct ?? null,
+      unit: '%',
+      higherIsBetter: true,
+    });
+  }
+
+  // Penalties
+  if (roundStats.penalties !== null) {
+    stats.push({
+      key: 'penalties',
+      label: 'Penalties',
+      roundValue: roundStats.penalties,
+      playerAvg: playerAvg?.avgPenalties ?? null,
+      teamAvg: teamAvg?.avgPenalties ?? null,
+      higherIsBetter: false,
+    });
+  }
+
+  if (stats.length === 0) {
+    return (
+      <GlassCard className={className}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+            <IconChart size={20} className="text-primary-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-warm-900">Stats Comparison</h3>
+            <p className="text-xs text-warm-500">vs your average</p>
+          </div>
+        </div>
+        <p className="text-sm text-warm-500 text-center py-4">
+          No stats available for comparison
+        </p>
+      </GlassCard>
+    );
+  }
+
+  return (
+    <GlassCard className={className}>
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+          <IconChart size={20} className="text-primary-600" />
+        </div>
+        <div>
+          <h3 className="font-semibold text-warm-900">Stats Comparison</h3>
+          <p className="text-xs text-warm-500">
+            How this round compares to your averages
+          </p>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="space-y-6">
+        {stats.map((stat, index) => (
+          <StatBar
+            key={stat.key}
+            label={stat.label}
+            roundValue={stat.roundValue}
+            playerAvg={stat.playerAvg}
+            teamAvg={stat.teamAvg}
+            higherIsBetter={stat.higherIsBetter}
+            unit={stat.unit}
+            formatValue={stat.formatValue}
+            index={index}
+          />
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-6 pt-4 border-t border-white/20">
+        <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-warm-500">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-green-500" />
+            Above average
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-blue-500" />
+            On pace
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-amber-500" />
+            Below average
+          </span>
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
+// ============================================================================
+// COMPACT VERSION
+// ============================================================================
+
+interface CompactStatsComparisonProps {
+  stats: Array<{
+    label: string;
+    value: number | string;
+    status: 'above' | 'below' | 'average';
+  }>;
+  className?: string;
+}
+
+export function CompactStatsComparison({
+  stats,
+  className,
+}: CompactStatsComparisonProps) {
+  const statusColors = {
+    above: 'bg-green-100 text-green-700 border-green-200',
+    below: 'bg-amber-100 text-amber-700 border-amber-200',
+    average: 'bg-blue-100 text-blue-700 border-blue-200',
+  };
+
+  return (
+    <div className={cn('flex flex-wrap gap-2', className)}>
+      {stats.map((stat, index) => (
+        <motion.div
+          key={stat.label}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: index * 0.05 }}
+          className={cn(
+            'px-3 py-1.5 rounded-lg text-xs font-medium border',
+            statusColors[stat.status]
+          )}
+        >
+          <span className="opacity-70">{stat.label}:</span> {stat.value}
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
+// SKELETON
+// ============================================================================
+
+export function RoundStatsComparisonSkeleton() {
+  return (
+    <GlassCard>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-slate-200 animate-pulse" />
+        <div className="space-y-2">
+          <div className="h-4 w-32 bg-slate-200 rounded animate-pulse" />
+          <div className="h-3 w-24 bg-slate-200 rounded animate-pulse" />
+        </div>
+      </div>
+      <div className="space-y-6">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="space-y-2">
+            <div className="flex justify-between">
+              <div className="h-4 w-28 bg-slate-200 rounded animate-pulse" />
+              <div className="h-4 w-12 bg-slate-200 rounded animate-pulse" />
+            </div>
+            <div className="h-3 w-full bg-slate-200 rounded-full animate-pulse" />
+          </div>
+        ))}
+      </div>
+    </GlassCard>
+  );
+}

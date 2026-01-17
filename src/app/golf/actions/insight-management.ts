@@ -1,0 +1,719 @@
+'use server';
+
+// ============================================================================
+// INSIGHT MANAGEMENT SERVER ACTIONS
+// ============================================================================
+//
+// Comprehensive insight management including search, filtering, bulk operations,
+// and export functionality for CoachHelm.
+//
+// ============================================================================
+
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import type {
+  InsightType,
+  InsightPriority,
+  InsightStatus,
+  InsightWithPlayer,
+} from '@/lib/coachhelm/insight-types';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface InsightFilters {
+  playerId?: string;
+  insightType?: InsightType;
+  priority?: InsightPriority;
+  status?: InsightStatus;
+  dateRange?: 'last_7_days' | 'last_30_days' | 'last_90_days' | 'custom';
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface SearchInsightsParams {
+  coachId: string;
+  query?: string;
+  filters?: InsightFilters;
+  page?: number;
+  pageSize?: number;
+  sortBy?: 'priority' | 'created_at' | 'player_name';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface SearchInsightsResult {
+  success: boolean;
+  insights: InsightWithPlayer[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  error?: string;
+}
+
+export interface BulkActionResult {
+  success: boolean;
+  affectedCount: number;
+  error?: string;
+}
+
+export interface ExportInsightsResult {
+  success: boolean;
+  data?: string;
+  filename?: string;
+  mimeType?: string;
+  error?: string;
+}
+
+// ============================================================================
+// SEARCH INSIGHTS
+// ============================================================================
+
+export async function searchInsights({
+  coachId,
+  query,
+  filters,
+  page = 1,
+  pageSize = 20,
+  sortBy = 'created_at',
+  sortOrder = 'desc',
+}: SearchInsightsParams): Promise<SearchInsightsResult> {
+  const supabase = await createClient();
+
+  try {
+    // Build the query
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let queryBuilder = (supabase as any)
+      .from('golf_coach_insights')
+      .select(
+        `
+        *,
+        player:golf_players(id, first_name, last_name, avatar_url)
+      `,
+        { count: 'exact' }
+      )
+      .eq('coach_id', coachId);
+
+    // Text search on title and description
+    if (query && query.trim()) {
+      const searchTerm = `%${query.trim()}%`;
+      queryBuilder = queryBuilder.or(
+        `title.ilike.${searchTerm},description.ilike.${searchTerm}`
+      );
+    }
+
+    // Apply filters
+    if (filters) {
+      if (filters.playerId) {
+        queryBuilder = queryBuilder.eq('player_id', filters.playerId);
+      }
+
+      if (filters.insightType) {
+        queryBuilder = queryBuilder.eq('insight_type', filters.insightType);
+      }
+
+      if (filters.priority) {
+        queryBuilder = queryBuilder.eq('priority', filters.priority);
+      }
+
+      if (filters.status) {
+        queryBuilder = queryBuilder.eq('status', filters.status);
+      }
+
+      // Date range filtering
+      if (filters.dateRange) {
+        const now = new Date();
+        let startDate: Date | null = null;
+
+        switch (filters.dateRange) {
+          case 'last_7_days':
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case 'last_30_days':
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          case 'last_90_days':
+            startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+            break;
+          case 'custom':
+            if (filters.startDate) {
+              startDate = new Date(filters.startDate);
+            }
+            break;
+        }
+
+        if (startDate) {
+          queryBuilder = queryBuilder.gte('created_at', startDate.toISOString());
+        }
+
+        if (filters.dateRange === 'custom' && filters.endDate) {
+          const endDate = new Date(filters.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          queryBuilder = queryBuilder.lte('created_at', endDate.toISOString());
+        }
+      }
+    }
+
+    // Sorting
+    if (sortBy === 'priority') {
+      // Custom priority ordering: urgent > high > medium > low
+      const priorityOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+      queryBuilder = queryBuilder
+        .order('priority', { ascending: priorityOrder === 'asc' })
+        .order('created_at', { ascending: false });
+    } else if (sortBy === 'player_name') {
+      // For player_name sorting, we need to sort by the joined player data
+      queryBuilder = queryBuilder
+        .order('created_at', { ascending: sortOrder === 'asc' });
+    } else {
+      queryBuilder = queryBuilder.order('created_at', { ascending: sortOrder === 'asc' });
+    }
+
+    // Pagination
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    queryBuilder = queryBuilder.range(from, to);
+
+    const { data: insights, error, count } = await queryBuilder;
+
+    if (error) {
+      console.error('[Insight Search Error]', error);
+      return {
+        success: false,
+        insights: [],
+        totalCount: 0,
+        page,
+        pageSize,
+        totalPages: 0,
+        error: 'Failed to search insights',
+      };
+    }
+
+    // Sort by player name client-side if needed
+    let sortedInsights = insights || [];
+    if (sortBy === 'player_name') {
+      sortedInsights = [...sortedInsights].sort((a, b) => {
+        const nameA = a.player
+          ? `${a.player.first_name} ${a.player.last_name}`.toLowerCase()
+          : '';
+        const nameB = b.player
+          ? `${b.player.first_name} ${b.player.last_name}`.toLowerCase()
+          : '';
+        return sortOrder === 'asc'
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
+      });
+    }
+
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    return {
+      success: true,
+      insights: sortedInsights,
+      totalCount,
+      page,
+      pageSize,
+      totalPages,
+    };
+  } catch (error) {
+    console.error('Unexpected error in searchInsights:', error);
+    return {
+      success: false,
+      insights: [],
+      totalCount: 0,
+      page,
+      pageSize,
+      totalPages: 0,
+      error: 'An unexpected error occurred',
+    };
+  }
+}
+
+// ============================================================================
+// BULK DISMISS INSIGHTS
+// ============================================================================
+
+export async function bulkDismissInsights(
+  insightIds: string[]
+): Promise<BulkActionResult> {
+  const supabase = await createClient();
+
+  try {
+    if (!insightIds.length) {
+      return { success: false, affectedCount: 0, error: 'No insights selected' };
+    }
+
+    // Verify user owns these insights
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, affectedCount: 0, error: 'Not authenticated' };
+    }
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, affectedCount: 0, error: 'Coach not found' };
+    }
+
+    // Bulk update
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('golf_coach_insights')
+      .update({ status: 'dismissed' })
+      .eq('coach_id', coach.id)
+      .in('id', insightIds)
+      .select('id');
+
+    if (error) {
+      console.error('[Bulk Dismiss Error]', error);
+      return { success: false, affectedCount: 0, error: 'Failed to dismiss insights' };
+    }
+
+    revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/insights');
+
+    return { success: true, affectedCount: data?.length || 0 };
+  } catch (error) {
+    console.error('Unexpected error in bulkDismissInsights:', error);
+    return { success: false, affectedCount: 0, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
+// BULK ACKNOWLEDGE INSIGHTS
+// ============================================================================
+
+export async function bulkAcknowledgeInsights(
+  insightIds: string[]
+): Promise<BulkActionResult> {
+  const supabase = await createClient();
+
+  try {
+    if (!insightIds.length) {
+      return { success: false, affectedCount: 0, error: 'No insights selected' };
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, affectedCount: 0, error: 'Not authenticated' };
+    }
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, affectedCount: 0, error: 'Coach not found' };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('golf_coach_insights')
+      .update({
+        status: 'acknowledged',
+        acknowledged_at: new Date().toISOString(),
+      })
+      .eq('coach_id', coach.id)
+      .in('id', insightIds)
+      .select('id');
+
+    if (error) {
+      console.error('[Bulk Acknowledge Error]', error);
+      return { success: false, affectedCount: 0, error: 'Failed to acknowledge insights' };
+    }
+
+    revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/insights');
+
+    return { success: true, affectedCount: data?.length || 0 };
+  } catch (error) {
+    console.error('Unexpected error in bulkAcknowledgeInsights:', error);
+    return { success: false, affectedCount: 0, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
+// BULK RESOLVE INSIGHTS
+// ============================================================================
+
+export async function bulkResolveInsights(
+  insightIds: string[]
+): Promise<BulkActionResult> {
+  const supabase = await createClient();
+
+  try {
+    if (!insightIds.length) {
+      return { success: false, affectedCount: 0, error: 'No insights selected' };
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, affectedCount: 0, error: 'Not authenticated' };
+    }
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, affectedCount: 0, error: 'Coach not found' };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('golf_coach_insights')
+      .update({
+        status: 'resolved',
+        resolved_at: new Date().toISOString(),
+      })
+      .eq('coach_id', coach.id)
+      .in('id', insightIds)
+      .select('id');
+
+    if (error) {
+      console.error('[Bulk Resolve Error]', error);
+      return { success: false, affectedCount: 0, error: 'Failed to resolve insights' };
+    }
+
+    revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/insights');
+
+    return { success: true, affectedCount: data?.length || 0 };
+  } catch (error) {
+    console.error('Unexpected error in bulkResolveInsights:', error);
+    return { success: false, affectedCount: 0, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
+// EXPORT INSIGHTS
+// ============================================================================
+
+export async function exportInsights(
+  insightIds: string[],
+  format: 'csv' | 'json'
+): Promise<ExportInsightsResult> {
+  const supabase = await createClient();
+
+  try {
+    if (!insightIds.length) {
+      return { success: false, error: 'No insights selected' };
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    // Fetch insights with player data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: insights, error } = await (supabase as any)
+      .from('golf_coach_insights')
+      .select(
+        `
+        id,
+        insight_type,
+        priority,
+        title,
+        description,
+        recommendation,
+        status,
+        created_at,
+        acknowledged_at,
+        resolved_at,
+        player:golf_players(first_name, last_name)
+      `
+      )
+      .eq('coach_id', coach.id)
+      .in('id', insightIds);
+
+    if (error) {
+      console.error('[Export Error]', error);
+      return { success: false, error: 'Failed to fetch insights for export' };
+    }
+
+    if (!insights || insights.length === 0) {
+      return { success: false, error: 'No insights found' };
+    }
+
+    const timestamp = new Date().toISOString().split('T')[0];
+
+    if (format === 'json') {
+      // Format as JSON
+      const exportData = insights.map((insight: {
+        id: string;
+        insight_type: string;
+        priority: string;
+        title: string;
+        description: string;
+        recommendation: string | null;
+        status: string;
+        created_at: string;
+        acknowledged_at: string | null;
+        resolved_at: string | null;
+        player: { first_name: string; last_name: string } | null;
+      }) => ({
+        id: insight.id,
+        type: insight.insight_type,
+        priority: insight.priority,
+        player: insight.player
+          ? `${insight.player.first_name} ${insight.player.last_name}`
+          : 'Team',
+        title: insight.title,
+        description: insight.description,
+        recommendation: insight.recommendation || '',
+        status: insight.status,
+        createdAt: insight.created_at,
+        acknowledgedAt: insight.acknowledged_at,
+        resolvedAt: insight.resolved_at,
+      }));
+
+      return {
+        success: true,
+        data: JSON.stringify(exportData, null, 2),
+        filename: `coachhelm-insights-${timestamp}.json`,
+        mimeType: 'application/json',
+      };
+    }
+
+    // Format as CSV
+    const headers = [
+      'ID',
+      'Type',
+      'Priority',
+      'Player',
+      'Title',
+      'Description',
+      'Recommendation',
+      'Status',
+      'Created At',
+      'Acknowledged At',
+      'Resolved At',
+    ];
+
+    const rows = insights.map((insight: {
+      id: string;
+      insight_type: string;
+      priority: string;
+      title: string;
+      description: string;
+      recommendation: string | null;
+      status: string;
+      created_at: string;
+      acknowledged_at: string | null;
+      resolved_at: string | null;
+      player: { first_name: string; last_name: string } | null;
+    }) => [
+      insight.id,
+      insight.insight_type,
+      insight.priority,
+      insight.player
+        ? `${insight.player.first_name} ${insight.player.last_name}`
+        : 'Team',
+      // Escape CSV special characters
+      `"${(insight.title || '').replace(/"/g, '""')}"`,
+      `"${(insight.description || '').replace(/"/g, '""')}"`,
+      `"${(insight.recommendation || '').replace(/"/g, '""')}"`,
+      insight.status,
+      insight.created_at,
+      insight.acknowledged_at || '',
+      insight.resolved_at || '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row: string[]) => row.join(',')),
+    ].join('\n');
+
+    return {
+      success: true,
+      data: csvContent,
+      filename: `coachhelm-insights-${timestamp}.csv`,
+      mimeType: 'text/csv',
+    };
+  } catch (error) {
+    console.error('Unexpected error in exportInsights:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
+// GET FILTER OPTIONS (for dynamic dropdowns)
+// ============================================================================
+
+export interface FilterOptions {
+  players: Array<{ id: string; name: string }>;
+  insightTypes: InsightType[];
+  priorities: InsightPriority[];
+  statuses: InsightStatus[];
+}
+
+export async function getInsightFilterOptions(
+  coachId: string
+): Promise<{ success: boolean; options?: FilterOptions; error?: string }> {
+  const supabase = await createClient();
+
+  try {
+    // Get team ID from coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('organization_id')
+      .eq('id', coachId)
+      .single();
+
+    if (!coach?.organization_id) {
+      return { success: false, error: 'Coach organization not found' };
+    }
+
+    // Get team
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+
+    if (!team) {
+      return { success: false, error: 'Team not found' };
+    }
+
+    // Get players on the team
+    const { data: teamMembers } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .eq('team_id', team.id);
+
+    const playerIds = (teamMembers || []).map((m) => m.player_id);
+
+    const { data: players } = await supabase
+      .from('golf_players')
+      .select('id, first_name, last_name')
+      .in('id', playerIds)
+      .order('last_name');
+
+    const options: FilterOptions = {
+      players: (players || []).map((p) => ({
+        id: p.id,
+        name: `${p.first_name} ${p.last_name}`,
+      })),
+      insightTypes: [
+        'scoring_decline',
+        'stat_regression',
+        'tournament_pressure',
+        'plateau',
+        'bubble_player',
+        'surge_player',
+        'streak',
+        'recurring_weakness',
+        'closing_holes',
+        'par_3_issues',
+        'team_trend',
+        'roster_recommendation',
+      ],
+      priorities: ['urgent', 'high', 'medium', 'low'],
+      statuses: ['active', 'acknowledged', 'resolved', 'dismissed'],
+    };
+
+    return { success: true, options };
+  } catch (error) {
+    console.error('Error getting filter options:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
+// GET INSIGHTS STATS (for dashboard summary)
+// ============================================================================
+
+export interface InsightsStats {
+  total: number;
+  active: number;
+  acknowledged: number;
+  resolved: number;
+  dismissed: number;
+  byPriority: Record<InsightPriority, number>;
+  byType: Record<string, number>;
+}
+
+export async function getInsightsStats(
+  coachId: string
+): Promise<{ success: boolean; stats?: InsightsStats; error?: string }> {
+  const supabase = await createClient();
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: insights, error } = await (supabase as any)
+      .from('golf_coach_insights')
+      .select('status, priority, insight_type')
+      .eq('coach_id', coachId);
+
+    if (error) {
+      console.error('[Stats Error]', error);
+      return { success: false, error: 'Failed to get insights stats' };
+    }
+
+    const stats: InsightsStats = {
+      total: insights?.length || 0,
+      active: 0,
+      acknowledged: 0,
+      resolved: 0,
+      dismissed: 0,
+      byPriority: { urgent: 0, high: 0, medium: 0, low: 0 },
+      byType: {},
+    };
+
+    for (const insight of insights || []) {
+      // Status counts
+      if (insight.status === 'active') stats.active++;
+      else if (insight.status === 'acknowledged') stats.acknowledged++;
+      else if (insight.status === 'resolved') stats.resolved++;
+      else if (insight.status === 'dismissed') stats.dismissed++;
+
+      // Priority counts
+      if (insight.priority in stats.byPriority) {
+        stats.byPriority[insight.priority as InsightPriority]++;
+      }
+
+      // Type counts
+      if (insight.insight_type) {
+        stats.byType[insight.insight_type] = (stats.byType[insight.insight_type] || 0) + 1;
+      }
+    }
+
+    return { success: true, stats };
+  } catch (error) {
+    console.error('Error getting insights stats:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}

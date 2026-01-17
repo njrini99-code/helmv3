@@ -471,6 +471,9 @@ const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats 
     { distance: '10-15ft', pct: stats.puttMakePct10_15 ?? 0, fill: '#f97316' },
     { distance: '15-20ft', pct: stats.puttMakePct15_20 ?? 0, fill: '#ef4444' },
     { distance: '20-25ft', pct: stats.puttMakePct20_25 ?? 0, fill: '#dc2626' },
+    { distance: '25-30ft', pct: stats.puttMakePct25_30 ?? 0, fill: '#b91c1c' },
+    { distance: '30-35ft', pct: stats.puttMakePct30_35 ?? 0, fill: '#991b1b' },
+    { distance: '35+ft', pct: stats.puttMakePct35Plus ?? 0, fill: '#7f1d1d' },
   ].filter(d => d.pct > 0);
 
   if (data.length === 0) return null;

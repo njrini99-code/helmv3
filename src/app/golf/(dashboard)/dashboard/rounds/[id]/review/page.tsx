@@ -1,11 +1,28 @@
 'use client';
 
+/**
+ * Round Review Page
+ *
+ * Displays AI-generated analysis of completed rounds using the
+ * RoundReviewDisplay component with CoachHelm integration.
+ */
+
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRoundReviewV2 } from '@/hooks/coachhelm/useRoundReviewV2';
 import { useToast } from '@/components/ui/toast';
+import { RoundReviewDisplay } from '@/components/golf/coachhelm/RoundReviewDisplay';
+import { RoundStatsComparison } from '@/components/golf/coachhelm/RoundStatsComparison';
+import {
+  getRoundReview,
+  generateAndStoreRoundReview,
+  getStatAverages,
+  shareRoundReviewWithCoach,
+  type RoundReviewWithRound,
+} from '@/app/golf/actions/round-review-system';
 import {
   CompletionCard,
   GoalImpactCard,
@@ -14,96 +31,221 @@ import {
   AreasToReviewSection,
   StrokesGainedSection,
   ReviewSummary,
-  // V2 Components
   V2PatternsSection,
   V2PredictionCard,
   V2CausalInsights,
   V2ReviewSummary,
 } from '@/components/golf/coachhelm/round-review';
-import Link from 'next/link';
-import { IconSparkles } from '@/components/icons';
+import { IconSparkles, IconRefresh } from '@/components/icons';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface RoundData {
+  id: string;
+  player_id: string;
+  course_name: string | null;
+  round_date: string;
+  total_score: number | null;
+  score_to_par: number | null;
+  total_putts: number | null;
+  total_fairways_hit: number | null;
+  total_fairways: number | null;
+  total_gir: number | null;
+  total_gir_possible: number | null;
+  holes?: Array<{
+    hole_number: number;
+    score: number | null;
+    par: number | null;
+  }>;
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 export default function RoundReviewPage() {
   const params = useParams();
   const { addToast } = useToast();
   const roundId = params.id as string;
 
-  const [round, setRound] = useState<Record<string, unknown> | null>(null);
+  // State
+  const [round, setRound] = useState<RoundData | null>(null);
+  const [storedReview, setStoredReview] = useState<RoundReviewWithRound | null>(null);
+  const [playerAvg, setPlayerAvg] = useState<{
+    avgScore: number;
+    avgPutts: number;
+    avgGirPct: number;
+    avgFairwayPct: number;
+  } | null>(null);
+  const [teamAvg, setTeamAvg] = useState<{
+    avgScore: number;
+    avgPutts: number;
+    avgGirPct: number;
+    avgFairwayPct: number;
+  } | null>(null);
   const [loadingRound, setLoadingRound] = useState(true);
+  const [loadingStoredReview, setLoadingStoredReview] = useState(true);
+  const [generatingReview, setGeneratingReview] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Use existing CoachHelm hook for V2 features
   const {
-    review,
+    review: v1Review,
     v2Review,
     isV2Enabled,
-    loading,
-    generating,
-    error,
-    generate,
-    shareWithCoach,
-    needsGeneration
+    loading: v1Loading,
+    generating: v1Generating,
   } = useRoundReviewV2(roundId);
 
   const supabase = createClient();
 
-  // Fetch round data (for scorecard)
+  // Fetch round data
   useEffect(() => {
     async function fetchRound() {
-      const { data } = await supabase
-        .from('golf_rounds')
-        .select('*, holes:golf_holes(*)')
-        .eq('id', roundId)
-        .single();
+      setLoadingRound(true);
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('golf_rounds')
+          .select('*, holes:golf_holes(*)')
+          .eq('id', roundId)
+          .single();
 
-      if (data) {
-        // Sort holes by hole_number
-        const roundData = data as Record<string, unknown>;
-        const holes = roundData.holes as Array<{ 
-          hole_number: number; 
-          score: number | null; 
-          par: number | null;
-        }>;
-        roundData.holes = holes?.sort((a, b) => a.hole_number - b.hole_number);
-        setRound(roundData);
+        if (fetchError) {
+          setError('Round not found');
+          return;
+        }
+
+        if (data) {
+          const roundData = data as RoundData;
+          if (roundData.holes) {
+            roundData.holes = roundData.holes.sort((a, b) => a.hole_number - b.hole_number);
+          }
+          setRound(roundData);
+        }
+      } catch (err) {
+        setError('Failed to load round');
+      } finally {
+        setLoadingRound(false);
       }
-      setLoadingRound(false);
     }
 
     fetchRound();
   }, [roundId, supabase]);
 
-  // Auto-generate if needed
+  // Fetch stored review and averages
   useEffect(() => {
-    if (needsGeneration && !generating) {
-      generate();
-    }
-  }, [needsGeneration, generating, generate]);
+    async function fetchReviewAndAverages() {
+      if (!round) return;
 
-  // Handle share
-  async function handleShare() {
-    const success = await shareWithCoach();
-    if (success) {
+      setLoadingStoredReview(true);
+      try {
+        // Fetch stored review
+        const reviewResult = await getRoundReview(roundId);
+        if (reviewResult.success && reviewResult.review) {
+          setStoredReview(reviewResult.review);
+        }
+
+        // Fetch averages for comparison
+        const avgResult = await getStatAverages(round.player_id);
+        if (avgResult.success) {
+          setPlayerAvg(avgResult.playerAvg ?? null);
+          setTeamAvg(avgResult.teamAvg ?? null);
+        }
+      } catch (err) {
+        console.error('Failed to fetch review data:', err);
+      } finally {
+        setLoadingStoredReview(false);
+      }
+    }
+
+    fetchReviewAndAverages();
+  }, [round, roundId]);
+
+  // Generate review if needed
+  const generateReview = useCallback(async () => {
+    if (!round) return;
+
+    setGeneratingReview(true);
+    setError(null);
+
+    try {
+      const result = await generateAndStoreRoundReview(roundId, round.player_id);
+
+      if (result.success && result.review) {
+        setStoredReview(result.review);
+        addToast({
+          type: 'success',
+          title: 'Review Generated',
+          description: 'AI analysis complete for your round.',
+        });
+      } else {
+        setError(result.error ?? 'Failed to generate review');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setGeneratingReview(false);
+    }
+  }, [round, roundId, addToast]);
+
+  // Auto-generate if no review exists
+  useEffect(() => {
+    if (!loadingRound && !loadingStoredReview && round && !storedReview && !generatingReview) {
+      generateReview();
+    }
+  }, [loadingRound, loadingStoredReview, round, storedReview, generatingReview, generateReview]);
+
+  // Handle share with coach
+  const handleShare = async () => {
+    if (!storedReview) return;
+
+    try {
+      const result = await shareRoundReviewWithCoach(storedReview.id);
+
+      if (result.success) {
+        setStoredReview(prev => prev ? { ...prev, shared_with_coach: true, shared_at: new Date().toISOString() } : null);
+        addToast({
+          type: 'success',
+          title: 'Shared with Coach',
+          description: 'Your coach can now view this round review.',
+        });
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Share Failed',
+          description: result.error ?? 'Could not share review.',
+        });
+      }
+    } catch {
       addToast({
-        type: 'success',
-        title: 'Shared with coach',
-        description: 'Your coach can now view this round review.'
+        type: 'error',
+        title: 'Share Failed',
+        description: 'An unexpected error occurred.',
       });
     }
-  }
+  };
 
   // Loading state
-  if (loading || loadingRound || generating) {
+  const isLoading = loadingRound || loadingStoredReview || generatingReview || v1Loading || v1Generating;
+
+  if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative mb-4">
             <div className="w-12 h-12 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-            <div className="absolute inset-0 w-12 h-12 border-2 border-transparent border-t-primary-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }} />
+            <div
+              className="absolute inset-0 w-12 h-12 border-2 border-transparent border-t-primary-400 rounded-full animate-spin"
+              style={{ animationDirection: 'reverse', animationDuration: '1s' }}
+            />
           </div>
           <p className="text-sm text-slate-500 font-medium">
-            {generating ? (
+            {generatingReview || v1Generating ? (
               <span className="flex items-center gap-2">
                 <IconSparkles size={16} className="text-purple-500" />
-                {isV2Enabled ? 'Running V2 AI analysis...' : 'Analyzing your round...'}
+                {isV2Enabled ? 'Running CoachHelm analysis...' : 'Analyzing your round...'}
               </span>
             ) : (
               'Loading review...'
@@ -119,11 +261,12 @@ export default function RoundReviewPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="text-center py-20">
-          <p className="text-red-500 mb-4">Failed to load review: {error}</p>
+          <p className="text-red-500 mb-4">{error}</p>
           <button
-            onClick={() => generate()}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            onClick={() => generateReview()}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 mx-auto"
           >
+            <IconRefresh size={16} />
             Try Again
           </button>
         </div>
@@ -131,18 +274,35 @@ export default function RoundReviewPage() {
     );
   }
 
-  if (!review && !v2Review) {
-    return null;
+  // No data state
+  if (!round) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="text-center py-20">
+          <p className="text-slate-500">Round not found</p>
+          <Link
+            href="/golf/dashboard/rounds"
+            className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block"
+          >
+            Back to Rounds
+          </Link>
+        </div>
+      </div>
+    );
   }
 
-  const holes = round?.holes as Array<{ 
-    hole_number: number; 
-    score: number | null; 
-    par: number | null;
-  }> | undefined;
+  // Calculate stats for comparison
+  const girPct = round.total_gir !== null && round.total_gir_possible
+    ? Math.round((round.total_gir / round.total_gir_possible) * 100)
+    : null;
+  const firPct = round.total_fairways_hit !== null && round.total_fairways
+    ? Math.round((round.total_fairways_hit / round.total_fairways) * 100)
+    : null;
+  // Note: scramble percentage not available at round level - would need hole-level data
+  const scramblePct = null;
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="max-w-2xl mx-auto px-4 py-6 pb-24"
@@ -164,78 +324,84 @@ export default function RoundReviewPage() {
           {isV2Enabled && v2Review && (
             <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
               <IconSparkles size={12} />
-              V2 AI
+              CoachHelm AI
             </span>
           )}
 
-          {review && !review.sharedWithCoach && (
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
-              Share with Coach
-            </button>
-          )}
-
-          {review?.sharedWithCoach && (
-            <span className="flex items-center gap-1.5 text-sm text-green-600">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Shared with Coach
-            </span>
-          )}
+          {/* Regenerate button */}
+          <button
+            onClick={() => generateReview()}
+            disabled={generatingReview}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <IconRefresh size={14} className={generatingReview ? 'animate-spin' : ''} />
+            Refresh
+          </button>
         </div>
       </div>
 
       {/* Content */}
       <div className="space-y-4">
-        {/* Completion Card - always show if review exists */}
-        {review && <CompletionCard review={review} />}
+        {/* Primary Review Display - New Component */}
+        {storedReview && storedReview.review_content && (
+          <RoundReviewDisplay
+            review={storedReview.review_content}
+            courseName={round.course_name ?? undefined}
+            roundDate={round.round_date}
+            score={round.total_score ?? undefined}
+            scoreToPar={round.score_to_par ?? undefined}
+            onShare={handleShare}
+            isShared={storedReview.shared_with_coach}
+          />
+        )}
 
-        {/* V2 Enhanced Sections */}
+        {/* Stats Comparison */}
+        <RoundStatsComparison
+          roundStats={{
+            girPct,
+            firPct,
+            putts: round.total_putts,
+            penalties: null, // Not tracked at round level
+            scramblePct,
+          }}
+          playerAvg={playerAvg}
+          teamAvg={teamAvg}
+        />
+
+        {/* V2 Enhanced Sections (from CoachHelm) */}
         {isV2Enabled && v2Review && (
           <>
-            {/* V2 Pattern Analysis */}
             {v2Review.patternsApplied && v2Review.patternsApplied.length > 0 && (
               <V2PatternsSection patterns={v2Review.patternsApplied} />
             )}
 
-            {/* V2 Prediction */}
             {v2Review.prediction && (
               <V2PredictionCard prediction={v2Review.prediction} />
             )}
 
-            {/* V2 Causal Insights */}
             {v2Review.causalInsights && v2Review.causalInsights.length > 0 && (
               <V2CausalInsights insights={v2Review.causalInsights} />
             )}
           </>
         )}
 
-        {/* Standard V1 Sections */}
-        {review && (
+        {/* Legacy V1 Review Components (fallback) */}
+        {v1Review && !storedReview?.review_content && (
           <>
-            <GoalImpactCard impacts={review.goalImpacts} />
-
-            {holes && <ReviewScorecard holes={holes} />}
-
-            <HighlightsSection highlights={review.highlights} />
-
-            <AreasToReviewSection areas={review.areasToReview} />
-
-            {review.strokesGained && <StrokesGainedSection strokesGained={review.strokesGained} />}
+            <CompletionCard review={v1Review} />
+            <GoalImpactCard impacts={v1Review.goalImpacts} />
+            {round.holes && <ReviewScorecard holes={round.holes} />}
+            <HighlightsSection highlights={v1Review.highlights} />
+            <AreasToReviewSection areas={v1Review.areasToReview} />
+            {v1Review.strokesGained && <StrokesGainedSection strokesGained={v1Review.strokesGained} />}
           </>
         )}
 
-        {/* Summary - V2 or V1 */}
+        {/* Summary */}
         {isV2Enabled && v2Review ? (
           <V2ReviewSummary review={v2Review} />
         ) : (
-          review && <ReviewSummary review={review} />
+          v1Review && !storedReview?.review_content && <ReviewSummary review={v1Review} />
         )}
       </div>
 

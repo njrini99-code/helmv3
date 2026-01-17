@@ -1057,34 +1057,213 @@ export async function getReviewGenerationStatus(reviewId: string): Promise<{
 }
 
 // ============================================================================
-// STUB FUNCTIONS - TODO: Implement these
+// ANNOTATION FUNCTIONS
 // ============================================================================
 
+/**
+ * Add or update annotation on a review insight
+ */
 export async function annotateInsight(
-  _insightId: string,
-  _annotation: string
+  insightId: string,
+  annotation: string
 ): Promise<{ success: boolean; error?: string }> {
-  return { success: false, error: 'Not implemented yet' };
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Verify user is a coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Not authorized - coach access required' };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const insightsTable = supabase.from('golf_review_insights' as any);
+    const { error } = await insightsTable
+      .update({
+        coach_notes: annotation,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', insightId);
+
+    if (error) {
+      console.error('Error annotating insight:', error);
+      return { success: false, error: 'Failed to save annotation' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error in annotateInsight:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
 }
 
+/**
+ * Add or update coach notes on a review
+ */
 export async function annotateReview(
-  _reviewId: string,
-  _annotation: string
+  reviewId: string,
+  annotation: string
 ): Promise<{ success: boolean; error?: string }> {
-  return { success: false, error: 'Not implemented yet' };
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Verify user is a coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Not authorized - coach access required' };
+    }
+
+    const { error } = await supabase
+      .from('golf_round_reviews')
+      .update({
+        coach_notes: annotation,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', reviewId);
+
+    if (error) {
+      console.error('Error annotating review:', error);
+      return { success: false, error: 'Failed to save annotation' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error in annotateReview:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
 }
 
+/**
+ * Publish a review to make it visible to the player
+ */
 export async function publishReview(
-  _reviewId: string
+  reviewId: string
 ): Promise<{ success: boolean; error?: string }> {
-  return { success: false, error: 'Not implemented yet' };
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Verify user is a coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Not authorized - coach access required' };
+    }
+
+    const { error } = await supabase
+      .from('golf_round_reviews')
+      .update({
+        status: 'published',
+        published_at: new Date().toISOString(),
+        published_by: coach.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', reviewId);
+
+    if (error) {
+      console.error('Error publishing review:', error);
+      return { success: false, error: 'Failed to publish review' };
+    }
+
+    revalidatePath('/golf/dashboard');
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error in publishReview:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
 }
 
+/**
+ * Create a focus area from a review insight
+ */
 export async function createFocusAreaFromReview(
-  _reviewId: string,
-  _focusAreaData: { name: string; description?: string }
+  reviewId: string,
+  focusAreaData: { name: string; description?: string }
 ): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
-  return { success: false, error: 'Not implemented yet' };
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Verify user is a coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Not authorized - coach access required' };
+    }
+
+    // Get the review to find the player
+    const { data: review, error: reviewError } = await supabase
+      .from('golf_round_reviews')
+      .select('player_id')
+      .eq('id', reviewId)
+      .single();
+
+    if (reviewError || !review) {
+      return { success: false, error: 'Review not found' };
+    }
+
+    // Create the focus area
+    // Note: area_type and title are required fields per schema
+    const { data: focusArea, error } = await supabase
+      .from('golf_player_focus_areas')
+      .insert({
+        player_id: review.player_id,
+        coach_id: coach.id,
+        area_type: 'improvement', // Default type for review-derived focus areas
+        title: focusAreaData.name,
+        description: focusAreaData.description,
+        status: 'active',
+      })
+      .select('id')
+      .single();
+
+    if (error || !focusArea) {
+      console.error('Error creating focus area:', error);
+      return { success: false, error: 'Failed to create focus area' };
+    }
+
+    revalidatePath('/golf/dashboard');
+    return { success: true, focusAreaId: focusArea.id };
+  } catch (error) {
+    console.error('Unexpected error in createFocusAreaFromReview:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
 }
 
 export async function markReviewViewedByPlayer(
@@ -1093,11 +1272,69 @@ export async function markReviewViewedByPlayer(
   return markReviewAsViewed(reviewId);
 }
 
+/**
+ * Player acknowledges they have read and understood a review
+ */
 export async function acknowledgeReview(
-  _reviewId: string,
-  _acknowledgement?: string
+  reviewId: string,
+  acknowledgement?: string
 ): Promise<{ success: boolean; error?: string }> {
-  return { success: false, error: 'Not implemented yet' };
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Verify user is a player with access to this review
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Not authorized - player access required' };
+    }
+
+    // Verify the review belongs to this player
+    const { data: review } = await supabase
+      .from('golf_round_reviews')
+      .select('player_id')
+      .eq('id', reviewId)
+      .single();
+
+    if (!review || review.player_id !== player.id) {
+      return { success: false, error: 'Review not found or not accessible' };
+    }
+
+    // Build update object - only include acknowledgement if provided
+    const updateData: Record<string, string> = {
+      player_acknowledged_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // Store acknowledgement text in a notes field if provided
+    if (acknowledgement) {
+      updateData.coach_feedback_text = acknowledgement;
+    }
+
+    const { error } = await supabase
+      .from('golf_round_reviews')
+      .update(updateData)
+      .eq('id', reviewId);
+
+    if (error) {
+      console.error('Error acknowledging review:', error);
+      return { success: false, error: 'Failed to acknowledge review' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error in acknowledgeReview:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
 }
 
 export async function markReviewViewedByCoach(

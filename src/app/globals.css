@@ -2174,3 +2174,82 @@ body {
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+
+@media print {
+  /* Hide non-essential elements */
+  nav,
+  aside,
+  .print\\:hidden,
+  [data-sidebar],
+  .toast-container,
+  button:not([data-print-visible]) {
+    display: none !important;
+  }
+
+  /* Reset backgrounds for print */
+  body,
+  html,
+  .min-h-screen {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Ensure proper page breaks */
+  .glass-standard,
+  .glass-card,
+  [class*="rounded-"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Remove shadows and effects for cleaner print */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Ensure text is readable */
+  h1, h2, h3, h4, h5, h6 {
+    color: #0f172a !important;
+    page-break-after: avoid;
+  }
+
+  p, li, td, th {
+    color: #1e293b !important;
+  }
+
+  /* Make links visible */
+  a[href]:after {
+    content: none;
+  }
+
+  /* Adjust layout for print */
+  .max-w-4xl,
+  .max-w-7xl {
+    max-width: 100% !important;
+  }
+
+  /* Preserve colors on stat cards */
+  .text-green-600,
+  .text-green-500,
+  .bg-green-50 {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 1cm;
+    size: auto;
+  }
+
+  /* First page no top margin */
+  @page :first {
+    margin-top: 0.5cm;
+  }
+}

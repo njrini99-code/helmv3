@@ -13,6 +13,27 @@ import {
 // TYPES
 // ============================================================================
 
+/**
+ * Stats filter options for filtering rounds
+ */
+export interface StatsFilter {
+  // Preset filters
+  preset?: 'last5' | 'last10' | 'last20' | 'tournaments' | 'practice' | 'thisMonth' | 'thisYear' | 'custom';
+
+  // Date range (for custom filter)
+  startDate?: string;
+  endDate?: string;
+
+  // Course filter
+  courseName?: string;
+
+  // Round type filter
+  roundType?: 'practice' | 'qualifying' | 'tournament';
+
+  // Season/year filter (for historical comparison)
+  season?: number; // e.g., 2024, 2025
+}
+
 export interface StatsSummary {
   roundsPlayed: number;
   holesPlayed: number;
@@ -40,6 +61,83 @@ export interface SummaryStatsResponse {
 }
 
 // ============================================================================
+// FILTER HELPERS
+// ============================================================================
+
+/**
+ * Build filter conditions for a Supabase query
+ * Returns an object with filter functions to apply
+ */
+function getFilterConditions(filter?: StatsFilter): {
+  startDate: string | null;
+  endDate: string | null;
+  roundType: string | null;
+  courseName: string | null;
+} {
+  if (!filter) {
+    return { startDate: null, endDate: null, roundType: null, courseName: null };
+  }
+
+  // Date-based presets
+  const now = new Date();
+  let startDateVal: string | null = null;
+  let endDateVal: string | null = filter.endDate || null;
+
+  if (filter.preset === 'thisMonth') {
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    startDateVal = monthStart.toISOString().split('T')[0] ?? null;
+  } else if (filter.preset === 'thisYear') {
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    startDateVal = yearStart.toISOString().split('T')[0] ?? null;
+  } else if (filter.startDate) {
+    startDateVal = filter.startDate;
+  }
+
+  // Season filter
+  if (filter.season) {
+    const seasonStart = new Date(filter.season, 0, 1);
+    const seasonEnd = new Date(filter.season, 11, 31);
+    startDateVal = seasonStart.toISOString().split('T')[0] ?? null;
+    endDateVal = seasonEnd.toISOString().split('T')[0] ?? null;
+  }
+
+  // Round type filter
+  let roundType: string | null = null;
+  if (filter.preset === 'tournaments') {
+    roundType = 'tournament';
+  } else if (filter.preset === 'practice') {
+    roundType = 'practice';
+  } else if (filter.roundType) {
+    roundType = filter.roundType;
+  }
+
+  return {
+    startDate: startDateVal,
+    endDate: endDateVal,
+    roundType,
+    courseName: filter.courseName || null,
+  };
+}
+
+/**
+ * Apply preset limit after fetching
+ */
+function applyPresetLimit<T>(rounds: T[], filter?: StatsFilter): T[] {
+  if (!filter?.preset) return rounds;
+
+  switch (filter.preset) {
+    case 'last5':
+      return rounds.slice(0, 5);
+    case 'last10':
+      return rounds.slice(0, 10);
+    case 'last20':
+      return rounds.slice(0, 20);
+    default:
+      return rounds;
+  }
+}
+
+// ============================================================================
 // FAST INITIAL LOAD - Summary stats only (no shot data)
 // ============================================================================
 
@@ -48,11 +146,15 @@ export interface SummaryStatsResponse {
  * This uses pre-aggregated data from rounds table - no shot queries
  * Typically 10-50ms vs 500-2000ms for full shot analysis
  */
-export async function getStatsSummary(playerId: string): Promise<SummaryStatsResponse> {
+export async function getStatsSummary(
+  playerId: string,
+  filter?: StatsFilter
+): Promise<SummaryStatsResponse> {
   const supabase = await createClient();
+  const conditions = getFilterConditions(filter);
 
-  // Fetch completed rounds with basic metadata
-  const { data: roundsData, error } = await supabase
+  // Build query with filters
+  let query = supabase
     .from('golf_rounds')
     .select(`
       id,
@@ -69,10 +171,30 @@ export async function getStatsSummary(playerId: string): Promise<SummaryStatsRes
     `)
     .eq('player_id', playerId)
     .eq('status', 'completed')
-    .not('total_score', 'is', null)
-    .order('round_date', { ascending: false });
+    .not('total_score', 'is', null);
 
-  if (error || !roundsData || roundsData.length === 0) {
+  // Apply filter conditions
+  if (conditions.startDate) {
+    query = query.gte('round_date', conditions.startDate);
+  }
+  if (conditions.endDate) {
+    query = query.lte('round_date', conditions.endDate);
+  }
+  if (conditions.roundType) {
+    query = query.eq('round_type', conditions.roundType);
+  }
+  if (conditions.courseName) {
+    query = query.eq('course_name', conditions.courseName);
+  }
+
+  query = query.order('round_date', { ascending: false });
+
+  const { data: roundsData, error } = await query;
+
+  // Apply preset limits
+  const filteredRounds = applyPresetLimit(roundsData || [], filter);
+
+  if (error || filteredRounds.length === 0) {
     return {
       summary: {
         roundsPlayed: 0,
@@ -89,8 +211,8 @@ export async function getStatsSummary(playerId: string): Promise<SummaryStatsRes
     };
   }
 
-  // Calculate summary stats from rounds (no shots needed)
-  const scores = roundsData.map(r => r.total_score).filter((s): s is number => s !== null);
+  // Calculate summary stats from filtered rounds
+  const scores = filteredRounds.map(r => r.total_score).filter((s): s is number => s !== null);
   const roundsPlayed = scores.length;
 
   // Calculate aggregates
@@ -100,7 +222,7 @@ export async function getStatsSummary(playerId: string): Promise<SummaryStatsRes
   let totalGirOpp = 0;
   let totalPutts = 0;
 
-  for (const round of roundsData) {
+  for (const round of filteredRounds) {
     if (round.total_fairways_hit !== null && round.total_fairways !== null) {
       totalFairwaysHit += round.total_fairways_hit;
       totalFairwayOpp += round.total_fairways;
@@ -134,7 +256,7 @@ export async function getStatsSummary(playerId: string): Promise<SummaryStatsRes
     scramblingPercentage: null, // Scrambling data not available in summary view
   };
 
-  const rounds: RoundSummary[] = roundsData.map(r => ({
+  const rounds: RoundSummary[] = filteredRounds.map(r => ({
     id: r.id,
     round_date: r.round_date,
     course_name: r.course_name,
@@ -156,12 +278,14 @@ export async function getStatsSummary(playerId: string): Promise<SummaryStatsRes
  */
 export async function getDetailedStats(
   playerId: string,
-  roundId?: string | 'overall'
+  roundId?: string | 'overall',
+  filter?: StatsFilter
 ): Promise<GolfStats> {
   const supabase = await createClient();
+  const conditions = getFilterConditions(filter);
 
-  // Fetch all completed rounds
-  const { data: roundsData } = await supabase
+  // Build query with filters
+  let query = supabase
     .from('golf_rounds')
     .select(`
       id,
@@ -172,10 +296,30 @@ export async function getDetailedStats(
       score_to_par
     `)
     .eq('player_id', playerId)
-    .eq('status', 'completed')
-    .order('round_date', { ascending: false });
+    .eq('status', 'completed');
 
-  if (!roundsData || roundsData.length === 0) {
+  // Apply filter conditions
+  if (conditions.startDate) {
+    query = query.gte('round_date', conditions.startDate);
+  }
+  if (conditions.endDate) {
+    query = query.lte('round_date', conditions.endDate);
+  }
+  if (conditions.roundType) {
+    query = query.eq('round_type', conditions.roundType);
+  }
+  if (conditions.courseName) {
+    query = query.eq('course_name', conditions.courseName);
+  }
+
+  query = query.order('round_date', { ascending: false });
+
+  const { data: fetchedRounds } = await query;
+
+  // Apply preset limits
+  const roundsData = applyPresetLimit(fetchedRounds || [], filter);
+
+  if (roundsData.length === 0) {
     return calculateStatsFromShots([], [], []);
   }
 
@@ -671,5 +815,321 @@ export async function getTeamComparison(
     teamStats,
     teamAverages,
     playerRankings,
+  };
+}
+
+// ============================================================================
+// FILTER OPTIONS DATA
+// ============================================================================
+
+export interface FilterOptions {
+  courses: string[];
+  seasons: number[];
+  roundTypes: string[];
+}
+
+/**
+ * Get available filter options for a player
+ */
+export async function getFilterOptions(playerId: string): Promise<FilterOptions> {
+  const supabase = await createClient();
+
+  const { data: roundsData } = await supabase
+    .from('golf_rounds')
+    .select('course_name, round_date, round_type')
+    .eq('player_id', playerId)
+    .eq('status', 'completed');
+
+  if (!roundsData || roundsData.length === 0) {
+    return { courses: [], seasons: [], roundTypes: [] };
+  }
+
+  // Extract unique courses
+  const courses = [...new Set(
+    roundsData
+      .map(r => r.course_name)
+      .filter((c): c is string => c !== null)
+  )].sort();
+
+  // Extract unique seasons (years)
+  const seasons = [...new Set(
+    roundsData
+      .map(r => new Date(r.round_date).getFullYear())
+  )].sort((a, b) => b - a);
+
+  // Extract unique round types
+  const roundTypes = [...new Set(
+    roundsData
+      .map(r => r.round_type)
+      .filter((t): t is string => t !== null)
+  )].sort();
+
+  return { courses, seasons, roundTypes };
+}
+
+// ============================================================================
+// COURSE-SPECIFIC BREAKDOWN
+// ============================================================================
+
+export interface CourseStats {
+  courseName: string;
+  roundCount: number;
+  scoringAverage: number | null;
+  bestRound: number | null;
+  girPct: number | null;
+  fairwayPct: number | null;
+  puttsPerRound: number | null;
+  lastPlayed: string;
+}
+
+export interface CourseBreakdownResponse {
+  courses: CourseStats[];
+  bestCourse: string | null;
+  worstCourse: string | null;
+}
+
+/**
+ * Get stats broken down by course
+ */
+export async function getCourseBreakdown(playerId: string): Promise<CourseBreakdownResponse> {
+  const supabase = await createClient();
+
+  const { data: roundsData } = await supabase
+    .from('golf_rounds')
+    .select(`
+      course_name,
+      round_date,
+      total_score,
+      total_fairways_hit,
+      total_fairways,
+      total_gir,
+      total_gir_possible,
+      total_putts
+    `)
+    .eq('player_id', playerId)
+    .eq('status', 'completed')
+    .not('total_score', 'is', null)
+    .not('course_name', 'is', null)
+    .order('round_date', { ascending: false });
+
+  if (!roundsData || roundsData.length === 0) {
+    return { courses: [], bestCourse: null, worstCourse: null };
+  }
+
+  // Group by course
+  const courseMap = new Map<string, typeof roundsData>();
+  for (const round of roundsData) {
+    if (!round.course_name) continue;
+    const existing = courseMap.get(round.course_name) || [];
+    existing.push(round);
+    courseMap.set(round.course_name, existing);
+  }
+
+  // Calculate stats per course
+  const courses: CourseStats[] = [];
+  for (const [courseName, rounds] of courseMap) {
+    const scores = rounds.map(r => r.total_score).filter((s): s is number => s !== null);
+    let totalGir = 0, totalGirOpp = 0;
+    let totalFairways = 0, totalFairwayOpp = 0;
+    let totalPutts = 0;
+
+    for (const round of rounds) {
+      if (round.total_gir !== null && round.total_gir_possible !== null) {
+        totalGir += round.total_gir;
+        totalGirOpp += round.total_gir_possible;
+      }
+      if (round.total_fairways_hit !== null && round.total_fairways !== null) {
+        totalFairways += round.total_fairways_hit;
+        totalFairwayOpp += round.total_fairways;
+      }
+      if (round.total_putts !== null) {
+        totalPutts += round.total_putts;
+      }
+    }
+
+    courses.push({
+      courseName,
+      roundCount: rounds.length,
+      scoringAverage: scores.length > 0
+        ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
+        : null,
+      bestRound: scores.length > 0 ? Math.min(...scores) : null,
+      girPct: totalGirOpp > 0 ? Math.round((totalGir / totalGirOpp) * 100) : null,
+      fairwayPct: totalFairwayOpp > 0 ? Math.round((totalFairways / totalFairwayOpp) * 100) : null,
+      puttsPerRound: rounds.length > 0
+        ? Math.round((totalPutts / rounds.length) * 10) / 10
+        : null,
+      lastPlayed: rounds[0]?.round_date || '',
+    });
+  }
+
+  // Sort by scoring average
+  courses.sort((a, b) => {
+    if (a.scoringAverage === null) return 1;
+    if (b.scoringAverage === null) return -1;
+    return a.scoringAverage - b.scoringAverage;
+  });
+
+  const coursesWithScores = courses.filter(c => c.scoringAverage !== null);
+  const bestCourse = coursesWithScores[0]?.courseName || null;
+  const worstCourse = coursesWithScores[coursesWithScores.length - 1]?.courseName || null;
+
+  return { courses, bestCourse, worstCourse };
+}
+
+// ============================================================================
+// WORST HOLE ANALYSIS
+// ============================================================================
+
+export interface HoleAnalysis {
+  holeNumber: number;
+  par: number;
+  averageScore: number;
+  averageToPar: number;
+  timesPlayed: number;
+  birdieOrBetter: number;
+  pars: number;
+  bogeys: number;
+  doublePlus: number;
+  trend: 'improving' | 'declining' | 'stable';
+}
+
+export interface WorstHoleResponse {
+  holes: HoleAnalysis[];
+  worstHoles: HoleAnalysis[];
+  bestHoles: HoleAnalysis[];
+  par3Average: number | null;
+  par4Average: number | null;
+  par5Average: number | null;
+  closingHolesAverage: number | null; // Holes 16-18
+}
+
+/**
+ * Get worst hole analysis
+ */
+export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleResponse> {
+  const supabase = await createClient();
+
+  // Get all holes with their scores
+  const { data: holesData } = await supabase
+    .from('golf_holes')
+    .select(`
+      id,
+      round_id,
+      hole_number,
+      par,
+      score,
+      golf_rounds!inner (
+        player_id,
+        status,
+        round_date
+      )
+    `)
+    .eq('golf_rounds.player_id', playerId)
+    .eq('golf_rounds.status', 'completed')
+    .not('score', 'is', null)
+    .order('round_id')
+    .order('hole_number');
+
+  if (!holesData || holesData.length === 0) {
+    return {
+      holes: [],
+      worstHoles: [],
+      bestHoles: [],
+      par3Average: null,
+      par4Average: null,
+      par5Average: null,
+      closingHolesAverage: null,
+    };
+  }
+
+  // Group by hole number and aggregate
+  const holeMap = new Map<number, { par: number; scores: number[]; dates: string[] }>();
+
+  for (const hole of holesData) {
+    const existing = holeMap.get(hole.hole_number) || {
+      par: hole.par,
+      scores: [],
+      dates: [],
+    };
+
+    if (hole.score !== null) {
+      existing.scores.push(hole.score);
+      const roundData = hole.golf_rounds as { round_date?: string } | undefined;
+      if (roundData?.round_date) {
+        existing.dates.push(roundData.round_date);
+      }
+    }
+
+    holeMap.set(hole.hole_number, existing);
+  }
+
+  // Calculate analysis per hole
+  const holes: HoleAnalysis[] = [];
+
+  for (let holeNum = 1; holeNum <= 18; holeNum++) {
+    const data = holeMap.get(holeNum);
+    if (!data || data.scores.length === 0) continue;
+
+    const avgScore = data.scores.reduce((a, b) => a + b, 0) / data.scores.length;
+    const avgToPar = avgScore - data.par;
+
+    // Calculate score distribution
+    let birdieOrBetter = 0, pars = 0, bogeys = 0, doublePlus = 0;
+    for (const score of data.scores) {
+      const toPar = score - data.par;
+      if (toPar <= -1) birdieOrBetter++;
+      else if (toPar === 0) pars++;
+      else if (toPar === 1) bogeys++;
+      else doublePlus++;
+    }
+
+    // Simple trend calculation (last 5 vs first 5)
+    let trend: 'improving' | 'declining' | 'stable' = 'stable';
+    if (data.scores.length >= 10) {
+      const first5 = data.scores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
+      const last5 = data.scores.slice(-5).reduce((a, b) => a + b, 0) / 5;
+      if (last5 < first5 - 0.2) trend = 'improving';
+      else if (last5 > first5 + 0.2) trend = 'declining';
+    }
+
+    holes.push({
+      holeNumber: holeNum,
+      par: data.par,
+      averageScore: Math.round(avgScore * 100) / 100,
+      averageToPar: Math.round(avgToPar * 100) / 100,
+      timesPlayed: data.scores.length,
+      birdieOrBetter,
+      pars,
+      bogeys,
+      doublePlus,
+      trend,
+    });
+  }
+
+  // Sort by average to par (worst first)
+  const sortedByToPar = [...holes].sort((a, b) => b.averageToPar - a.averageToPar);
+  const worstHoles = sortedByToPar.slice(0, 3);
+  const bestHoles = sortedByToPar.slice(-3).reverse();
+
+  // Calculate par-specific averages
+  const par3s = holes.filter(h => h.par === 3);
+  const par4s = holes.filter(h => h.par === 4);
+  const par5s = holes.filter(h => h.par === 5);
+  const closingHoles = holes.filter(h => h.holeNumber >= 16);
+
+  const calcAvg = (arr: HoleAnalysis[]) =>
+    arr.length > 0
+      ? Math.round((arr.reduce((a, b) => a + b.averageToPar, 0) / arr.length) * 100) / 100
+      : null;
+
+  return {
+    holes,
+    worstHoles,
+    bestHoles,
+    par3Average: calcAvg(par3s),
+    par4Average: calcAvg(par4s),
+    par5Average: calcAvg(par5s),
+    closingHolesAverage: calcAvg(closingHoles),
   };
 }

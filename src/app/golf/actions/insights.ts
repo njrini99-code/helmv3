@@ -31,6 +31,8 @@ import type {
   PlayerAnalysis,
 } from '@/lib/coachhelm/v2/types';
 import type { InsightType, InsightPriority } from '@/lib/coachhelm/insight-types';
+import type { CoachPhilosophy } from '@/lib/coachhelm/types';
+import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 
 // Re-export types for consumers
 export type { ComposedInsight, MinedPattern, PerformancePrediction, PlayerAnalysis };
@@ -95,6 +97,165 @@ function determineInsightType(
   if (insight.tone === 'cautionary') return 'scoring_decline';
 
   return 'team_trend';
+}
+
+// ============================================================================
+// PHILOSOPHY HELPERS
+// ============================================================================
+
+// Database row type - Supabase types may not be updated after migration
+interface PhilosophyDbRow {
+  id: string;
+  coach_id: string;
+  priority_ball_striking: number | null;
+  priority_short_game: number | null;
+  priority_putting: number | null;
+  priority_course_management: number | null;
+  priority_mental_game: number | null;
+  alert_sensitivity: string | null;
+  decline_threshold: string | number | null;
+  pressure_gap_threshold: string | number | null;
+  bubble_zone_range: string | number | null;
+  weight_historical?: number | null;
+  weight_recent_form?: number | null;
+  weight_tournament?: number | null;
+  weight_qualifying?: number | null;
+  weight_subjective?: number | null;
+  alert_scoring_decline?: boolean | null;
+  alert_stat_regression?: boolean | null;
+  alert_tournament_pressure?: boolean | null;
+  alert_plateau?: boolean | null;
+  alert_bubble_player?: boolean | null;
+  alert_surge_player?: boolean | null;
+  alert_streaks?: boolean | null;
+  alert_recurring_weakness?: boolean | null;
+  alert_closing_holes?: boolean | null;
+  alert_par_3_issues?: boolean | null;
+  show_strokes_gained?: boolean | null;
+  show_advanced_stats?: boolean | null;
+  insight_verbosity?: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Fetches coach philosophy from database, returns defaults if not found
+ */
+async function getCoachPhilosophy(coachId: string): Promise<CoachPhilosophy> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('golf_coach_philosophy')
+    .select('*')
+    .eq('coach_id', coachId)
+    .maybeSingle();
+
+  const defaults: CoachPhilosophy = {
+    id: '',
+    coachId,
+    ...PHILOSOPHY_DEFAULTS,
+    alertScoringDecline: true,
+    alertStatRegression: true,
+    alertTournamentPressure: true,
+    alertPlateau: false,
+    alertBubblePlayer: true,
+    alertSurgePlayer: true,
+    alertStreaks: true,
+    alertRecurringWeakness: true,
+    alertClosingHoles: false,
+    alertPar3Issues: false,
+    showStrokesGained: true,
+    showAdvancedStats: true,
+    insightVerbosity: 'detailed',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (!data) {
+    return defaults;
+  }
+
+  const row = data as PhilosophyDbRow;
+
+  // Parse numeric values that might be strings
+  const parseNum = (val: string | number | null | undefined, def: number): number => {
+    if (val === null || val === undefined) return def;
+    return typeof val === 'string' ? parseFloat(val) : val;
+  };
+
+  // Map snake_case to camelCase with proper null handling
+  return {
+    id: row.id,
+    coachId: row.coach_id,
+    priorityBallStriking: row.priority_ball_striking ?? defaults.priorityBallStriking,
+    priorityShortGame: row.priority_short_game ?? defaults.priorityShortGame,
+    priorityPutting: row.priority_putting ?? defaults.priorityPutting,
+    priorityCourseManagement: row.priority_course_management ?? defaults.priorityCourseManagement,
+    priorityMentalGame: row.priority_mental_game ?? defaults.priorityMentalGame,
+    alertSensitivity: (row.alert_sensitivity as CoachPhilosophy['alertSensitivity']) ?? defaults.alertSensitivity,
+    declineThreshold: parseNum(row.decline_threshold, defaults.declineThreshold),
+    pressureGapThreshold: parseNum(row.pressure_gap_threshold, defaults.pressureGapThreshold),
+    bubbleZoneRange: parseNum(row.bubble_zone_range, defaults.bubbleZoneRange),
+    weightHistorical: row.weight_historical ?? defaults.weightHistorical,
+    weightRecentForm: row.weight_recent_form ?? defaults.weightRecentForm,
+    weightTournament: row.weight_tournament ?? defaults.weightTournament,
+    weightQualifying: row.weight_qualifying ?? defaults.weightQualifying,
+    weightSubjective: row.weight_subjective ?? defaults.weightSubjective,
+    alertScoringDecline: row.alert_scoring_decline ?? defaults.alertScoringDecline,
+    alertStatRegression: row.alert_stat_regression ?? defaults.alertStatRegression,
+    alertTournamentPressure: row.alert_tournament_pressure ?? defaults.alertTournamentPressure,
+    alertPlateau: row.alert_plateau ?? defaults.alertPlateau,
+    alertBubblePlayer: row.alert_bubble_player ?? defaults.alertBubblePlayer,
+    alertSurgePlayer: row.alert_surge_player ?? defaults.alertSurgePlayer,
+    alertStreaks: row.alert_streaks ?? defaults.alertStreaks,
+    alertRecurringWeakness: row.alert_recurring_weakness ?? defaults.alertRecurringWeakness,
+    alertClosingHoles: row.alert_closing_holes ?? defaults.alertClosingHoles,
+    alertPar3Issues: row.alert_par_3_issues ?? defaults.alertPar3Issues,
+    showStrokesGained: row.show_strokes_gained ?? defaults.showStrokesGained,
+    showAdvancedStats: row.show_advanced_stats ?? defaults.showAdvancedStats,
+    insightVerbosity: row.insight_verbosity === 'detailed' ? 'detailed' : 'brief',
+    createdAt: row.created_at ?? defaults.createdAt,
+    updatedAt: row.updated_at ?? defaults.updatedAt,
+  };
+}
+
+/**
+ * Filters insights based on coach philosophy alert toggles
+ */
+function shouldIncludeInsight(insightType: InsightType, philosophy: CoachPhilosophy): boolean {
+  const alertMap: Record<string, keyof CoachPhilosophy> = {
+    scoring_decline: 'alertScoringDecline',
+    stat_regression: 'alertStatRegression',
+    tournament_pressure: 'alertTournamentPressure',
+    plateau: 'alertPlateau',
+    bubble_player: 'alertBubblePlayer',
+    surge_player: 'alertSurgePlayer',
+    streak: 'alertStreaks',
+    recurring_weakness: 'alertRecurringWeakness',
+    closing_holes: 'alertClosingHoles',
+    par_3_issues: 'alertPar3Issues',
+  };
+
+  const alertKey = alertMap[insightType];
+  if (!alertKey) return true; // Include unrecognized types by default
+
+  return philosophy[alertKey] as boolean;
+}
+
+/**
+ * Gets the minimum confidence threshold based on alert sensitivity
+ */
+function getConfidenceThreshold(sensitivity: CoachPhilosophy['alertSensitivity']): number {
+  switch (sensitivity) {
+    case 'aggressive':
+      return 0.4; // Show more insights
+    case 'conservative':
+      return 0.7; // Only high confidence insights
+    case 'balanced':
+    default:
+      return 0.55;
+  }
 }
 
 /**
@@ -183,6 +344,10 @@ export async function generateTeamInsights() {
       return { success: false, error: coachHelmStatus.disabledReason || 'CoachHelm is disabled' };
     }
 
+    // 2.5. Fetch coach philosophy settings
+    const philosophy = await getCoachPhilosophy(coach.id);
+    const confidenceThreshold = getConfidenceThreshold(philosophy.alertSensitivity);
+
     // 3. Get team players via golf_team_members
     const { data: teamMembers, error: membersError } = await supabase
       .from('golf_team_members')
@@ -251,6 +416,9 @@ export async function generateTeamInsights() {
         const insight = analysis.insights[i];
         if (!insight) continue;  // Skip if undefined
 
+        // Apply philosophy-based confidence filter
+        if (insight.confidence < confidenceThreshold) continue;
+
         const pattern = analysis.patterns[i]; // May be undefined
         const prediction = analysis.predictions[0]; // Use first prediction
 
@@ -263,6 +431,9 @@ export async function generateTeamInsights() {
           prediction
         );
 
+        // Apply philosophy-based alert type filter
+        if (!shouldIncludeInsight(record.insight_type as InsightType, philosophy)) continue;
+
         // Check for duplicates
         const insightKey = `${player.id}:${record.insight_type}`;
         if (!existingInsightKeys.has(insightKey)) {
@@ -273,32 +444,38 @@ export async function generateTeamInsights() {
       }
 
       // Also add pattern-specific insights if high impact
-      for (const pattern of analysis.patterns.filter(p => p.isActive && p.strokeImpact > 1)) {
-        const patternInsight: InsightRecord = {
-          coach_id: coach.id,
-          team_id: teamId,
-          insight_type: 'recurring_weakness',
-          priority: pattern.strokeImpact > 2 ? 'high' : 'medium',
-          player_id: player.id,
-          title: `Pattern: ${pattern.description || 'Performance Pattern'}`,
-          description: pattern.recommendation || `Pattern detected with ${(pattern.confidence * 100).toFixed(0)}% confidence.`,
-          recommendation: pattern.recommendation || 'Work with coach to address this pattern.',
-          metadata: {
-            v2_engine: true,
-            pattern_type: pattern.patternType,
-            support: pattern.support,
-            confidence: pattern.confidence,
-            stroke_impact: pattern.strokeImpact,
-          },
-          status: 'active',
-          expires_at: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
-        };
+      // Skip if recurring_weakness alerts are disabled
+      if (shouldIncludeInsight('recurring_weakness', philosophy)) {
+        for (const pattern of analysis.patterns.filter(p => p.isActive && p.strokeImpact > 1)) {
+          // Apply philosophy-based confidence filter to patterns
+          if (pattern.confidence < confidenceThreshold) continue;
 
-        const patternKey = `${player.id}:${patternInsight.insight_type}:${pattern.id}`;
-        if (!existingInsightKeys.has(patternKey)) {
-          allInsights.push(patternInsight);
-          existingInsightKeys.add(patternKey);
-          totalInsightsCreated++;
+          const patternInsight: InsightRecord = {
+            coach_id: coach.id,
+            team_id: teamId,
+            insight_type: 'recurring_weakness',
+            priority: pattern.strokeImpact > 2 ? 'high' : 'medium',
+            player_id: player.id,
+            title: `Pattern: ${pattern.description || 'Performance Pattern'}`,
+            description: pattern.recommendation || `Pattern detected with ${(pattern.confidence * 100).toFixed(0)}% confidence.`,
+            recommendation: pattern.recommendation || 'Work with coach to address this pattern.',
+            metadata: {
+              v2_engine: true,
+              pattern_type: pattern.patternType,
+              support: pattern.support,
+              confidence: pattern.confidence,
+              stroke_impact: pattern.strokeImpact,
+            },
+            status: 'active',
+            expires_at: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+          };
+
+          const patternKey = `${player.id}:${patternInsight.insight_type}:${pattern.id}`;
+          if (!existingInsightKeys.has(patternKey)) {
+            allInsights.push(patternInsight);
+            existingInsightKeys.add(patternKey);
+            totalInsightsCreated++;
+          }
         }
       }
     }
@@ -606,6 +783,8 @@ export async function generateTeamInsight(): Promise<{
   patterns?: MinedPattern[];
   predictions?: Array<PerformancePrediction & { playerName?: string }>;
   playersAnalyzed?: number;
+  playersWithoutData?: number;
+  playersMissingData?: string[];
   error?: string;
 }> {
   const supabase = await createClient();
@@ -737,8 +916,9 @@ export async function generateTeamInsight(): Promise<{
     if (playersAnalyzed === 0 && players.length > 0) {
       return {
         success: false,
-        error: `Unable to analyze team: No players have completed rounds in the last 90 days. Players need round data for AI analysis.`,
+        error: `Unable to analyze team: No players have completed rounds in the last 90 days. Players need round data for AI analysis.${playersMissingData.length > 0 ? ` Missing data for: ${playersMissingData.join(', ')}` : ''}`,
         playersAnalyzed: 0,
+        playersWithoutData,
       };
     }
 
@@ -775,6 +955,8 @@ export async function generateTeamInsight(): Promise<{
       patterns: allPatterns,
       predictions: allPredictions,
       playersAnalyzed,
+      playersWithoutData,
+      playersMissingData: playersMissingData.length > 0 ? playersMissingData : undefined,
     };
   } catch (error) {
     console.error('Error in generateTeamInsight:', error);

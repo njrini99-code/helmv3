@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward, IconChartBar, IconCrosshair, IconFilter, IconChevronDown } from '@/components/icons';
+import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward, IconChartBar, IconCrosshair, IconFilter, IconChevronDown, IconDownload, IconPrinter, IconHome } from '@/components/icons';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import ProgressStats from './ProgressStats';
@@ -98,10 +98,124 @@ function useAnimatedNumber(value: number | null, duration: number = 800): number
 }
 
 // ============================================================================
+// SPARKLINE COMPONENT
+// ============================================================================
+
+interface SparklineProps {
+  data: number[];
+  width?: number;
+  height?: number;
+  color?: string;
+  showDots?: boolean;
+  lowerIsBetter?: boolean;
+}
+
+function Sparkline({
+  data,
+  width = 80,
+  height = 24,
+  color = '#16A34A',
+  showDots = false,
+  lowerIsBetter = false,
+}: SparklineProps) {
+  if (!data || data.length < 2) return null;
+
+  const padding = 2;
+  const actualWidth = width - padding * 2;
+  const actualHeight = height - padding * 2;
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  // Calculate points
+  const points = data.map((value, index) => {
+    const x = padding + (index / (data.length - 1)) * actualWidth;
+    const y = padding + actualHeight - ((value - min) / range) * actualHeight;
+    return { x, y, value };
+  });
+
+  // Create path
+  const pathD = points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+    .join(' ');
+
+  // Determine trend color
+  const first = data[0];
+  const last = data[data.length - 1];
+
+  // Safety check (should never happen after length check above, but TypeScript needs this)
+  if (first === undefined || last === undefined) return null;
+
+  const isImproving = lowerIsBetter ? last < first : last > first;
+  const trendColor = isImproving ? '#16A34A' : last === first ? '#94A3B8' : '#DC2626';
+
+  // Get first and last points (guaranteed to exist since data.length >= 2)
+  const firstPoint = points[0];
+  const lastPoint = points[points.length - 1];
+  if (!firstPoint || !lastPoint) return null;
+
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      className="overflow-visible"
+    >
+      {/* Gradient fill */}
+      <defs>
+        <linearGradient id={`sparkGradient-${color}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={trendColor} stopOpacity={0.3} />
+          <stop offset="100%" stopColor={trendColor} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+
+      {/* Area fill */}
+      <path
+        d={`${pathD} L ${lastPoint.x} ${height} L ${firstPoint.x} ${height} Z`}
+        fill={`url(#sparkGradient-${color})`}
+      />
+
+      {/* Line */}
+      <path
+        d={pathD}
+        fill="none"
+        stroke={trendColor}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      {/* Dots */}
+      {showDots && (
+        <>
+          <circle
+            cx={firstPoint.x}
+            cy={firstPoint.y}
+            r={2}
+            fill="white"
+            stroke={trendColor}
+            strokeWidth={1}
+          />
+          <circle
+            cx={lastPoint.x}
+            cy={lastPoint.y}
+            r={2.5}
+            fill={trendColor}
+            stroke="white"
+            strokeWidth={1}
+          />
+        </>
+      )}
+    </svg>
+  );
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
-type StatsCategory = 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling' | 'strokes-gained' | 'progress' | 'dispersion';
+type StatsCategory = 'overview' | 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling' | 'strokes-gained' | 'progress' | 'dispersion' | 'analysis';
 
 interface RoundOption {
   id: string;
@@ -111,12 +225,139 @@ interface RoundOption {
   total_to_par: number;
 }
 
+// Filter types
+interface StatsFilter {
+  preset?: 'last5' | 'last10' | 'last20' | 'tournaments' | 'practice' | 'thisMonth' | 'thisYear' | 'custom';
+  startDate?: string;
+  endDate?: string;
+  courseName?: string;
+  roundType?: 'practice' | 'qualifying' | 'tournament';
+  season?: number;
+}
+
+interface FilterOptions {
+  courses: string[];
+  seasons: number[];
+  roundTypes: string[];
+}
+
+interface CourseStats {
+  courseName: string;
+  roundCount: number;
+  scoringAverage: number | null;
+  bestRound: number | null;
+  girPct: number | null;
+  fairwayPct: number | null;
+  puttsPerRound: number | null;
+  lastPlayed: string;
+}
+
+interface CourseBreakdownResponse {
+  courses: CourseStats[];
+  bestCourse: string | null;
+  worstCourse: string | null;
+}
+
+interface HoleAnalysis {
+  holeNumber: number;
+  par: number;
+  averageScore: number;
+  averageToPar: number;
+  timesPlayed: number;
+  birdieOrBetter: number;
+  pars: number;
+  bogeys: number;
+  doublePlus: number;
+  trend: 'improving' | 'declining' | 'stable';
+}
+
+interface WorstHoleResponse {
+  holes: HoleAnalysis[];
+  worstHoles: HoleAnalysis[];
+  bestHoles: HoleAnalysis[];
+  par3Average: number | null;
+  par4Average: number | null;
+  par5Average: number | null;
+  closingHolesAverage: number | null;
+}
+
+interface PersonalBest {
+  value: number;
+  date: string;
+  course: string;
+}
+
+interface PeriodStats {
+  roundCount: number;
+  scoringAvg: number | null;
+  girPct: number | null;
+  fairwayPct: number | null;
+  puttsPerRound: number | null;
+}
+
+interface TrendAnalysisResponse {
+  rounds: Array<{
+    id: string;
+    date: string;
+    score: number;
+    toPar: number;
+    courseName: string;
+    roundType: string | null;
+    girPct: number | null;
+    fairwayPct: number | null;
+    putts: number | null;
+    scrambling: number | null;
+  }>;
+  trends: {
+    score: Array<{ date: string; value: number; roundId: string; courseName: string }>;
+    gir: Array<{ date: string; value: number; roundId: string; courseName: string }>;
+    fairway: Array<{ date: string; value: number; roundId: string; courseName: string }>;
+    putts: Array<{ date: string; value: number; roundId: string; courseName: string }>;
+  };
+  rollingAverages: {
+    score5: (number | null)[];
+    score10: (number | null)[];
+    score20: (number | null)[];
+  };
+  periodComparison: {
+    last30Days: PeriodStats;
+    previous30Days: PeriodStats;
+  };
+  personalBests: {
+    bestScore: PersonalBest | null;
+    bestToPar: PersonalBest | null;
+    bestGir: PersonalBest | null;
+    lowestPutts: PersonalBest | null;
+  };
+}
+
+// Player profile for coach view
+interface PlayerProfile {
+  avatarUrl?: string | null;
+  gradYear?: number | null;
+  handicap?: number | null;
+  roundsPlayed?: number;
+  scoringAverage?: number | null;
+  bestRound?: number | null;
+}
+
 interface StatsDisplayProps {
   stats: GolfStats;
   playerName?: string;
+  // Player profile (for coach view dashboard header)
+  playerProfile?: PlayerProfile;
+  isCoachView?: boolean;
   rounds?: RoundOption[];
   selectedRoundId?: string | 'overall';
   onRoundChange?: (roundId: string | 'overall') => void;
+  // Filter props
+  activeFilter?: StatsFilter | null;
+  onFilterChange?: (filter: StatsFilter | null) => void;
+  filterOptions?: FilterOptions | null;
+  // Analytics props
+  courseBreakdown?: CourseBreakdownResponse | null;
+  worstHoleData?: WorstHoleResponse | null;
+  trendData?: TrendAnalysisResponse | null;
 }
 
 // ============================================================================
@@ -133,6 +374,11 @@ function StatCard({
   decimals = 1,
   animate = true,
   index = 0,
+  trend,
+  comparisonValue,
+  comparisonLabel,
+  sparklineData,
+  sparklineLowerIsBetter,
 }: {
   label: string;
   value: string;
@@ -143,6 +389,11 @@ function StatCard({
   decimals?: number;
   animate?: boolean;
   index?: number;
+  trend?: 'improving' | 'declining' | 'stable';
+  comparisonValue?: number | null;
+  comparisonLabel?: string;
+  sparklineData?: number[];
+  sparklineLowerIsBetter?: boolean;
 }) {
   const animatedValue = useAnimatedNumber(
     animate && numericValue !== undefined ? numericValue : null,
@@ -151,6 +402,20 @@ function StatCard({
   const displayValue = animate && numericValue !== undefined
     ? animatedValue.toFixed(decimals)
     : value;
+
+  // Get trend indicator styling
+  const getTrendStyles = () => {
+    if (!trend) return null;
+    switch (trend) {
+      case 'improving':
+        return { icon: '↑', color: 'text-green-500', bg: 'bg-green-50' };
+      case 'declining':
+        return { icon: '↓', color: 'text-red-500', bg: 'bg-red-50' };
+      case 'stable':
+        return { icon: '→', color: 'text-slate-500', bg: 'bg-slate-50' };
+    }
+  };
+  const trendStyles = getTrendStyles();
 
   return (
     <motion.div
@@ -183,8 +448,20 @@ function StatCard({
         />
       )}
 
-      <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-        {label}
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+          {label}
+        </span>
+        {trendStyles && (
+          <motion.span
+            className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium ${trendStyles.bg} ${trendStyles.color}`}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            {trendStyles.icon}
+          </motion.span>
+        )}
       </div>
       <motion.div
         className={`font-bold ${large ? 'text-3xl' : 'text-2xl'} ${highlight ? 'text-green-600' : 'text-slate-900'} tabular-nums`}
@@ -202,6 +479,36 @@ function StatCard({
           transition={{ delay: 0.2 + index * 0.05 }}
         >
           {subValue}
+        </motion.div>
+      )}
+      {comparisonValue !== undefined && comparisonValue !== null && (
+        <motion.div
+          className="flex items-center gap-1 mt-1.5 text-xs"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <span className="text-slate-400">{comparisonLabel || 'vs team'}:</span>
+          <span className={comparisonValue > 0 ? 'text-red-500' : comparisonValue < 0 ? 'text-green-500' : 'text-slate-500'}>
+            {comparisonValue > 0 ? '+' : ''}{comparisonValue.toFixed(1)}
+          </span>
+        </motion.div>
+      )}
+      {/* Sparkline */}
+      {sparklineData && sparklineData.length >= 3 && (
+        <motion.div
+          className="mt-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Sparkline
+            data={sparklineData}
+            width={70}
+            height={20}
+            showDots
+            lowerIsBetter={sparklineLowerIsBetter}
+          />
         </motion.div>
       )}
     </motion.div>
@@ -652,6 +959,61 @@ function ApproachStats({ stats }: { stats: GolfStats }) {
           </motion.table>
         </div>
       </StatSection>
+
+      {/* Approach Miss Direction (when missing green) */}
+      {stats.approachMissTotal > 0 && (
+        <StatSection title="Miss Direction Pattern (when missing green)" delay={0.5} collapsible>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+            {[
+              { label: 'Short', value: stats.approachMissShortPct, bg: 'bg-blue-50', color: 'text-blue-600' },
+              { label: 'Long', value: stats.approachMissLongPct, bg: 'bg-purple-50', color: 'text-purple-600' },
+              { label: 'Left', value: stats.approachMissLeftPct, bg: 'bg-red-50', color: 'text-red-600' },
+              { label: 'Right', value: stats.approachMissRightPct, bg: 'bg-orange-50', color: 'text-orange-600' },
+            ].map((item, idx) => (
+              <motion.div
+                key={item.label}
+                className={`text-center p-3 ${item.bg} rounded-lg hover:scale-105 transition-transform cursor-default`}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.55 + idx * 0.04, type: 'spring', stiffness: 300 }}
+              >
+                <div className={`text-xl font-bold ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
+                <div className="text-xs text-slate-500">{item.label}</div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Compound miss directions - more detailed pattern analysis */}
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <div className="text-sm font-medium text-slate-700 mb-3">Compound Miss Patterns</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { label: 'Short-Left', value: stats.approachMissShortLeftPct, icon: '↙' },
+                { label: 'Short-Right', value: stats.approachMissShortRightPct, icon: '↘' },
+                { label: 'Long-Left', value: stats.approachMissLongLeftPct, icon: '↖' },
+                { label: 'Long-Right', value: stats.approachMissLongRightPct, icon: '↗' },
+              ].map((item, idx) => (
+                <motion.div
+                  key={item.label}
+                  className="text-center p-2 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-default"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + idx * 0.04 }}
+                >
+                  <div className="text-lg font-bold text-slate-700 tabular-nums">
+                    <span className="text-slate-400 mr-1">{item.icon}</span>
+                    {formatStat(item.value, '%', 0)}
+                  </div>
+                  <div className="text-xs text-slate-500">{item.label}</div>
+                </motion.div>
+              ))}
+            </div>
+            <div className="text-xs text-slate-400 mt-2 text-center">
+              Based on {stats.approachMissTotal} missed greens
+            </div>
+          </div>
+        </StatSection>
+      )}
     </motion.div>
   );
 }
@@ -964,8 +1326,58 @@ function ScramblingStats({ stats }: { stats: GolfStats }) {
         <StatRow label="From Sand" value={formatStat(stats.atgEffSand, '', 2)} index={2} />
       </StatSection>
 
+      {/* ATG Efficiency Matrix (Distance x Lie) */}
+      {stats.atgEffByDistanceLie && Object.keys(stats.atgEffByDistanceLie).length > 0 && (
+        <StatSection title="Around the Green Efficiency Matrix (Distance × Lie)" delay={0.3} collapsible>
+          <div className="overflow-x-auto">
+            <motion.table
+              className="w-full text-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35 }}
+            >
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="text-left py-2 px-2 font-semibold text-slate-700">Distance</th>
+                  <th className="text-center py-2 px-2 font-semibold text-green-600">Fairway</th>
+                  <th className="text-center py-2 px-2 font-semibold text-amber-600">Rough</th>
+                  <th className="text-center py-2 px-2 font-semibold text-orange-600">Sand</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: '0-10 yds', key: '0_10' },
+                  { label: '10-20 yds', key: '10_20' },
+                  { label: '20-30 yds', key: '20_30' },
+                ].map((row, idx) => {
+                  const data = stats.atgEffByDistanceLie[row.key];
+                  if (!data) return null;
+                  return (
+                    <motion.tr
+                      key={row.key}
+                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 + idx * 0.03 }}
+                    >
+                      <td className="py-2 px-2 text-slate-600">{row.label}</td>
+                      <td className="py-2 px-2 text-center text-slate-900 tabular-nums">{formatStat(data.fairway, '', 2)}</td>
+                      <td className="py-2 px-2 text-center text-slate-900 tabular-nums">{formatStat(data.rough, '', 2)}</td>
+                      <td className="py-2 px-2 text-center text-slate-900 tabular-nums">{formatStat(data.sand, '', 2)}</td>
+                    </motion.tr>
+                  );
+                })}
+              </tbody>
+            </motion.table>
+          </div>
+          <div className="text-xs text-slate-400 mt-2 text-center">
+            Average strokes to hole out from each distance and lie combination
+          </div>
+        </StatSection>
+      )}
+
       {/* Sand Saves & Penalties */}
-      <StatSection title="Sand Saves & Penalties" delay={0.3}>
+      <StatSection title="Sand Saves & Penalties" delay={0.35}>
         <StatRow label="Sand Saves" value={`${stats.sandSavesMade} / ${stats.sandSaveAttempts}`} index={0} />
         <StatRow label="Total Penalties" value={formatStatInt(stats.totalPenalties)} index={1} />
       </StatSection>
@@ -1065,20 +1477,982 @@ function StrokesGainedStats({ stats }: { stats: GolfStats }) {
 }
 
 // ============================================================================
+// OVERVIEW STATS COMPONENT (Player Dashboard)
+// ============================================================================
+
+function OverviewStats({
+  stats,
+  playerName,
+  playerProfile,
+  trendData,
+}: {
+  stats: GolfStats;
+  playerName?: string;
+  playerProfile?: PlayerProfile;
+  trendData?: TrendAnalysisResponse | null;
+}) {
+  return (
+    <motion.div
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Player Header Card */}
+      <motion.div
+        variants={sectionVariants}
+        className="relative glass-standard rounded-2xl overflow-hidden p-6"
+      >
+        <div className="flex items-start gap-5">
+          {/* Player Avatar */}
+          <div className="flex-shrink-0">
+            {playerProfile?.avatarUrl ? (
+              <img
+                src={playerProfile.avatarUrl}
+                alt={playerName || 'Player'}
+                className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-lg"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center border-2 border-white shadow-lg">
+                <span className="text-white font-bold text-2xl">
+                  {playerName?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Player Info */}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-2xl font-bold text-slate-900 truncate">
+              {playerName || 'Player'}
+            </h2>
+            <div className="flex flex-wrap items-center gap-3 mt-1">
+              {playerProfile?.gradYear && (
+                <span className="px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-600 rounded-full">
+                  Class of {playerProfile.gradYear}
+                </span>
+              )}
+              {playerProfile?.handicap !== null && playerProfile?.handicap !== undefined && (
+                <span className="px-2.5 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                  {playerProfile.handicap > 0 ? '+' : ''}{playerProfile.handicap} HCP
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Stats Bar */}
+        <div className="grid grid-cols-3 gap-4 mt-6 pt-5 border-t border-slate-200/60">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-slate-900 tabular-nums">
+              {stats.roundsPlayed}
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5">Rounds</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600 tabular-nums">
+              {stats.scoringAverage !== null ? stats.scoringAverage.toFixed(1) : '--'}
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5">Scoring Avg</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-slate-900 tabular-nums">
+              {stats.bestRound || '--'}
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5">Best Round</div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Key Performance Metrics */}
+      <motion.div variants={sectionVariants}>
+        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+          Performance Overview
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard
+            label="GIR %"
+            value={formatStat(stats.girPercentage, '%', 1)}
+            numericValue={stats.girPercentage}
+            highlight={stats.girPercentage !== null && stats.girPercentage >= 50}
+            animate
+          />
+          <StatCard
+            label="Fairways"
+            value={formatStat(stats.fairwayPercentage, '%', 1)}
+            numericValue={stats.fairwayPercentage}
+            highlight={stats.fairwayPercentage !== null && stats.fairwayPercentage >= 60}
+            animate
+          />
+          <StatCard
+            label="Putts/Rnd"
+            value={formatStat(stats.puttsPerRound, '', 1)}
+            numericValue={stats.puttsPerRound}
+            highlight={stats.puttsPerRound !== null && stats.puttsPerRound < 30}
+            animate
+          />
+          <StatCard
+            label="Scrambling"
+            value={formatStat(stats.scramblingPercentage, '%', 1)}
+            numericValue={stats.scramblingPercentage}
+            highlight={stats.scramblingPercentage !== null && stats.scramblingPercentage >= 50}
+            animate
+          />
+        </div>
+      </motion.div>
+
+      {/* Strokes Gained Summary */}
+      {stats.strokesGainedTotal !== null && (
+        <motion.div variants={sectionVariants}>
+          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+            Strokes Gained
+          </h3>
+          <div className="glass-standard rounded-xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium text-slate-600">Total</span>
+              <span className={`text-xl font-bold tabular-nums ${stats.strokesGainedTotal >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                {stats.strokesGainedTotal >= 0 ? '+' : ''}{stats.strokesGainedTotal.toFixed(2)}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { label: 'Tee', value: stats.strokesGainedTee },
+                { label: 'Approach', value: stats.strokesGainedApproach },
+                { label: 'Around Green', value: stats.strokesGainedAroundGreen },
+                { label: 'Putting', value: stats.strokesGainedPutting },
+              ].map(sg => (
+                <div key={sg.label} className="text-center p-2 rounded-lg bg-slate-50/80">
+                  <div className={`text-sm font-bold tabular-nums ${sg.value !== null && sg.value >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                    {sg.value !== null ? (sg.value >= 0 ? '+' : '') + sg.value.toFixed(2) : '--'}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-0.5">{sg.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Personal Bests */}
+      {trendData?.personalBests && (
+        <motion.div variants={sectionVariants}>
+          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+            🏆 Personal Records
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {trendData.personalBests.bestScore && (
+              <div className="glass-standard rounded-xl p-4 text-center">
+                <div className="text-2xl font-bold text-amber-600 tabular-nums">
+                  {trendData.personalBests.bestScore.value}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">Best Score</div>
+                <div className="text-xs text-slate-400 mt-0.5 truncate">
+                  {trendData.personalBests.bestScore.course}
+                </div>
+              </div>
+            )}
+            {trendData.personalBests.bestToPar && (
+              <div className="glass-standard rounded-xl p-4 text-center">
+                <div className="text-2xl font-bold text-amber-600 tabular-nums">
+                  {trendData.personalBests.bestToPar.value > 0 ? '+' : ''}{trendData.personalBests.bestToPar.value}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">Best to Par</div>
+                <div className="text-xs text-slate-400 mt-0.5 truncate">
+                  {trendData.personalBests.bestToPar.course}
+                </div>
+              </div>
+            )}
+            {trendData.personalBests.bestGir && (
+              <div className="glass-standard rounded-xl p-4 text-center">
+                <div className="text-2xl font-bold text-amber-600 tabular-nums">
+                  {trendData.personalBests.bestGir.value}%
+                </div>
+                <div className="text-xs text-slate-500 mt-1">Best GIR</div>
+                <div className="text-xs text-slate-400 mt-0.5 truncate">
+                  {trendData.personalBests.bestGir.course}
+                </div>
+              </div>
+            )}
+            {trendData.personalBests.lowestPutts && (
+              <div className="glass-standard rounded-xl p-4 text-center">
+                <div className="text-2xl font-bold text-amber-600 tabular-nums">
+                  {trendData.personalBests.lowestPutts.value}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">Lowest Putts</div>
+                <div className="text-xs text-slate-400 mt-0.5 truncate">
+                  {trendData.personalBests.lowestPutts.course}
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Recent Trend */}
+      {trendData?.periodComparison && (
+        <motion.div variants={sectionVariants}>
+          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+            Recent Form (Last 30 Days)
+          </h3>
+          <div className="glass-standard rounded-xl p-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-lg font-bold text-slate-900 tabular-nums">
+                  {trendData.periodComparison.last30Days.roundCount}
+                </div>
+                <div className="text-xs text-slate-500">Rounds</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-slate-900 tabular-nums">
+                  {trendData.periodComparison.last30Days.scoringAvg?.toFixed(1) || '--'}
+                </div>
+                <div className="text-xs text-slate-500">Avg Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-slate-900 tabular-nums">
+                  {trendData.periodComparison.last30Days.girPct?.toFixed(0) || '--'}%
+                </div>
+                <div className="text-xs text-slate-500">GIR</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-slate-900 tabular-nums">
+                  {trendData.periodComparison.last30Days.puttsPerRound?.toFixed(1) || '--'}
+                </div>
+                <div className="text-xs text-slate-500">Putts/Rnd</div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
+// ============================================================================
+// ANALYSIS STATS COMPONENT (Course & Hole Breakdown)
+// ============================================================================
+
+function AnalysisStats({
+  worstHoleData,
+  courseBreakdown,
+  trendData,
+}: {
+  worstHoleData?: WorstHoleResponse | null;
+  courseBreakdown?: CourseBreakdownResponse | null;
+  trendData?: TrendAnalysisResponse | null;
+}) {
+  // Helper to format date
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  // Calculate trend direction from period comparison
+  const getTrend = (current: number | null, previous: number | null, lowerIsBetter = true): 'improving' | 'declining' | 'stable' => {
+    if (current === null || previous === null) return 'stable';
+    const diff = current - previous;
+    if (Math.abs(diff) < 0.5) return 'stable';
+    if (lowerIsBetter) {
+      return diff < 0 ? 'improving' : 'declining';
+    }
+    return diff > 0 ? 'improving' : 'declining';
+  };
+
+  return (
+    <motion.div
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Personal Bests */}
+      {trendData?.personalBests && (
+        <StatSection title="🏆 Personal Records" delay={0}>
+          <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3" variants={containerVariants}>
+            {trendData.personalBests.bestScore && (
+              <motion.div
+                className="p-4 rounded-xl bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="text-xs text-amber-600 font-medium mb-1">Best Score</div>
+                <div className="text-2xl font-bold text-amber-700">{trendData.personalBests.bestScore.value}</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {formatDate(trendData.personalBests.bestScore.date)}
+                </div>
+                <div className="text-xs text-slate-400 truncate">
+                  {trendData.personalBests.bestScore.course}
+                </div>
+              </motion.div>
+            )}
+            {trendData.personalBests.bestToPar && (
+              <motion.div
+                className="p-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.15 }}
+              >
+                <div className="text-xs text-green-600 font-medium mb-1">Best vs Par</div>
+                <div className="text-2xl font-bold text-green-700">
+                  {trendData.personalBests.bestToPar.value > 0 ? '+' : ''}{trendData.personalBests.bestToPar.value}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {formatDate(trendData.personalBests.bestToPar.date)}
+                </div>
+                <div className="text-xs text-slate-400 truncate">
+                  {trendData.personalBests.bestToPar.course}
+                </div>
+              </motion.div>
+            )}
+            {trendData.personalBests.bestGir && (
+              <motion.div
+                className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="text-xs text-blue-600 font-medium mb-1">Best GIR %</div>
+                <div className="text-2xl font-bold text-blue-700">{trendData.personalBests.bestGir.value}%</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {formatDate(trendData.personalBests.bestGir.date)}
+                </div>
+                <div className="text-xs text-slate-400 truncate">
+                  {trendData.personalBests.bestGir.course}
+                </div>
+              </motion.div>
+            )}
+            {trendData.personalBests.lowestPutts && (
+              <motion.div
+                className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-200"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.25 }}
+              >
+                <div className="text-xs text-purple-600 font-medium mb-1">Fewest Putts</div>
+                <div className="text-2xl font-bold text-purple-700">{trendData.personalBests.lowestPutts.value}</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {formatDate(trendData.personalBests.lowestPutts.date)}
+                </div>
+                <div className="text-xs text-slate-400 truncate">
+                  {trendData.personalBests.lowestPutts.course}
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        </StatSection>
+      )}
+
+      {/* Period Comparison - Last 30 Days vs Previous */}
+      {trendData?.periodComparison && trendData.periodComparison.last30Days.roundCount > 0 && (
+        <StatSection title="📈 Last 30 Days vs Previous 30 Days" delay={0.1}>
+          <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3" variants={containerVariants}>
+            <StatCard
+              label="Scoring Avg"
+              value={trendData.periodComparison.last30Days.scoringAvg?.toFixed(1) || '--'}
+              numericValue={trendData.periodComparison.last30Days.scoringAvg}
+              decimals={1}
+              trend={getTrend(
+                trendData.periodComparison.last30Days.scoringAvg,
+                trendData.periodComparison.previous30Days.scoringAvg,
+                true
+              )}
+              comparisonValue={
+                trendData.periodComparison.last30Days.scoringAvg && trendData.periodComparison.previous30Days.scoringAvg
+                  ? trendData.periodComparison.last30Days.scoringAvg - trendData.periodComparison.previous30Days.scoringAvg
+                  : null
+              }
+              comparisonLabel="vs prev"
+              index={0}
+              sparklineData={trendData.trends.score.slice(-10).map(t => t.value)}
+              sparklineLowerIsBetter={true}
+            />
+            <StatCard
+              label="GIR %"
+              value={trendData.periodComparison.last30Days.girPct !== null ? `${trendData.periodComparison.last30Days.girPct}%` : '--'}
+              numericValue={trendData.periodComparison.last30Days.girPct}
+              decimals={0}
+              trend={getTrend(
+                trendData.periodComparison.last30Days.girPct,
+                trendData.periodComparison.previous30Days.girPct,
+                false
+              )}
+              comparisonValue={
+                trendData.periodComparison.last30Days.girPct !== null && trendData.periodComparison.previous30Days.girPct !== null
+                  ? trendData.periodComparison.last30Days.girPct - trendData.periodComparison.previous30Days.girPct
+                  : null
+              }
+              comparisonLabel="vs prev"
+              index={1}
+              sparklineData={trendData.trends.gir.slice(-10).map(t => t.value)}
+              sparklineLowerIsBetter={false}
+            />
+            <StatCard
+              label="Fairway %"
+              value={trendData.periodComparison.last30Days.fairwayPct !== null ? `${trendData.periodComparison.last30Days.fairwayPct}%` : '--'}
+              numericValue={trendData.periodComparison.last30Days.fairwayPct}
+              decimals={0}
+              trend={getTrend(
+                trendData.periodComparison.last30Days.fairwayPct,
+                trendData.periodComparison.previous30Days.fairwayPct,
+                false
+              )}
+              comparisonValue={
+                trendData.periodComparison.last30Days.fairwayPct !== null && trendData.periodComparison.previous30Days.fairwayPct !== null
+                  ? trendData.periodComparison.last30Days.fairwayPct - trendData.periodComparison.previous30Days.fairwayPct
+                  : null
+              }
+              comparisonLabel="vs prev"
+              index={2}
+              sparklineData={trendData.trends.fairway.slice(-10).map(t => t.value)}
+              sparklineLowerIsBetter={false}
+            />
+            <StatCard
+              label="Putts/Rd"
+              value={trendData.periodComparison.last30Days.puttsPerRound?.toFixed(1) || '--'}
+              numericValue={trendData.periodComparison.last30Days.puttsPerRound}
+              decimals={1}
+              trend={getTrend(
+                trendData.periodComparison.last30Days.puttsPerRound,
+                trendData.periodComparison.previous30Days.puttsPerRound,
+                true
+              )}
+              comparisonValue={
+                trendData.periodComparison.last30Days.puttsPerRound && trendData.periodComparison.previous30Days.puttsPerRound
+                  ? trendData.periodComparison.last30Days.puttsPerRound - trendData.periodComparison.previous30Days.puttsPerRound
+                  : null
+              }
+              comparisonLabel="vs prev"
+              index={3}
+              sparklineData={trendData.trends.putts.slice(-10).map(t => t.value)}
+              sparklineLowerIsBetter={true}
+            />
+          </motion.div>
+          <motion.p
+            className="text-xs text-slate-400 mt-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            {trendData.periodComparison.last30Days.roundCount} rounds in last 30 days
+            {trendData.periodComparison.previous30Days.roundCount > 0 && (
+              <> • {trendData.periodComparison.previous30Days.roundCount} in previous 30 days</>
+            )}
+          </motion.p>
+        </StatSection>
+      )}
+
+      {/* Hole Performance Summary */}
+      {worstHoleData && worstHoleData.holes.length > 0 && (
+        <>
+          {/* Par Type Performance */}
+          <StatSection title="Performance by Par Type" delay={0}>
+            <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3" variants={containerVariants}>
+              <StatCard
+                label="Par 3s"
+                value={worstHoleData.par3Average !== null ? `${worstHoleData.par3Average > 0 ? '+' : ''}${worstHoleData.par3Average.toFixed(2)}` : '--'}
+                subValue="avg to par"
+                highlight={worstHoleData.par3Average !== null && worstHoleData.par3Average < 0}
+                index={0}
+              />
+              <StatCard
+                label="Par 4s"
+                value={worstHoleData.par4Average !== null ? `${worstHoleData.par4Average > 0 ? '+' : ''}${worstHoleData.par4Average.toFixed(2)}` : '--'}
+                subValue="avg to par"
+                highlight={worstHoleData.par4Average !== null && worstHoleData.par4Average < 0}
+                index={1}
+              />
+              <StatCard
+                label="Par 5s"
+                value={worstHoleData.par5Average !== null ? `${worstHoleData.par5Average > 0 ? '+' : ''}${worstHoleData.par5Average.toFixed(2)}` : '--'}
+                subValue="avg to par"
+                highlight={worstHoleData.par5Average !== null && worstHoleData.par5Average < 0}
+                index={2}
+              />
+              <StatCard
+                label="Closing (16-18)"
+                value={worstHoleData.closingHolesAverage !== null ? `${worstHoleData.closingHolesAverage > 0 ? '+' : ''}${worstHoleData.closingHolesAverage.toFixed(2)}` : '--'}
+                subValue="avg to par"
+                highlight={worstHoleData.closingHolesAverage !== null && worstHoleData.closingHolesAverage < 0}
+                index={3}
+              />
+            </motion.div>
+          </StatSection>
+
+          {/* Worst & Best Holes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Worst Holes */}
+            <StatSection title="Areas to Improve (Worst Holes)" delay={0.1}>
+              {worstHoleData.worstHoles.map((hole, idx) => (
+                <motion.div
+                  key={hole.holeNumber}
+                  className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+                      <span className="text-sm font-bold text-red-600">#{hole.holeNumber}</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">Par {hole.par}</p>
+                      <p className="text-xs text-slate-500">{hole.timesPlayed} rounds</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-red-600">
+                      +{hole.averageToPar.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-slate-400">avg {hole.averageScore.toFixed(1)}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </StatSection>
+
+            {/* Best Holes */}
+            <StatSection title="Strengths (Best Holes)" delay={0.15}>
+              {worstHoleData.bestHoles.map((hole, idx) => (
+                <motion.div
+                  key={hole.holeNumber}
+                  className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+                      <span className="text-sm font-bold text-green-600">#{hole.holeNumber}</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">Par {hole.par}</p>
+                      <p className="text-xs text-slate-500">{hole.timesPlayed} rounds</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-green-600">
+                      {hole.averageToPar > 0 ? '+' : ''}{hole.averageToPar.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-slate-400">avg {hole.averageScore.toFixed(1)}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </StatSection>
+          </div>
+
+          {/* Full Hole-by-Hole Breakdown */}
+          <StatSection title="All Holes Performance" delay={0.2} collapsible>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+              {worstHoleData.holes.map((hole, idx) => (
+                <motion.div
+                  key={hole.holeNumber}
+                  className={`p-3 rounded-lg text-center ${
+                    hole.averageToPar <= -0.1 ? 'bg-green-50 border border-green-200' :
+                    hole.averageToPar >= 0.3 ? 'bg-red-50 border border-red-200' :
+                    'bg-slate-50 border border-slate-200'
+                  }`}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: idx * 0.02 }}
+                >
+                  <div className="text-xs text-slate-500">Hole {hole.holeNumber}</div>
+                  <div className={`text-sm font-bold ${
+                    hole.averageToPar <= -0.1 ? 'text-green-600' :
+                    hole.averageToPar >= 0.3 ? 'text-red-600' :
+                    'text-slate-700'
+                  }`}>
+                    {hole.averageToPar > 0 ? '+' : ''}{hole.averageToPar.toFixed(2)}
+                  </div>
+                  <div className="text-xs text-slate-400">Par {hole.par}</div>
+                  {hole.trend !== 'stable' && (
+                    <span className={`text-xs ${hole.trend === 'improving' ? 'text-green-500' : 'text-red-500'}`}>
+                      {hole.trend === 'improving' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </StatSection>
+        </>
+      )}
+
+      {/* Course Breakdown */}
+      {courseBreakdown && courseBreakdown.courses.length > 0 && (
+        <StatSection title="Performance by Course" delay={0.25}>
+          <div className="space-y-2">
+            {courseBreakdown.courses.slice(0, 10).map((course, idx) => (
+              <motion.div
+                key={course.courseName}
+                className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-slate-50 transition-colors"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.03 }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    course.courseName === courseBreakdown.bestCourse ? 'bg-green-100' :
+                    course.courseName === courseBreakdown.worstCourse ? 'bg-red-100' :
+                    'bg-slate-100'
+                  }`}>
+                    <span className={`text-xs font-bold ${
+                      course.courseName === courseBreakdown.bestCourse ? 'text-green-600' :
+                      course.courseName === courseBreakdown.worstCourse ? 'text-red-600' :
+                      'text-slate-500'
+                    }`}>
+                      {idx + 1}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{course.courseName}</p>
+                    <p className="text-xs text-slate-500">{course.roundCount} rounds</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="text-center hidden md:block">
+                    <p className="text-xs text-slate-400">Avg Score</p>
+                    <p className="text-sm font-semibold text-slate-700">{course.scoringAverage?.toFixed(1) || '--'}</p>
+                  </div>
+                  <div className="text-center hidden md:block">
+                    <p className="text-xs text-slate-400">Best</p>
+                    <p className="text-sm font-semibold text-green-600">{course.bestRound || '--'}</p>
+                  </div>
+                  <div className="text-center hidden md:block">
+                    <p className="text-xs text-slate-400">GIR%</p>
+                    <p className="text-sm font-semibold text-slate-700">{course.girPct !== null ? `${course.girPct}%` : '--'}</p>
+                  </div>
+                  <div className="text-center md:hidden">
+                    <p className="text-sm font-bold text-slate-800">{course.scoringAverage?.toFixed(1) || '--'}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </StatSection>
+      )}
+
+      {/* Empty State */}
+      {(!worstHoleData || worstHoleData.holes.length === 0) && (!courseBreakdown || courseBreakdown.courses.length === 0) && (
+        <motion.div
+          className="text-center py-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <IconTarget size={28} className="text-slate-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">Analysis Data Loading</h3>
+          <p className="text-sm text-slate-500">Hole and course breakdown will appear here once data is loaded.</p>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 export default function GolfStatsDisplay({
   stats,
   playerName,
+  playerProfile,
+  isCoachView = false,
   rounds = [],
   selectedRoundId = 'overall',
-  onRoundChange
+  onRoundChange,
+  activeFilter,
+  onFilterChange,
+  filterOptions,
+  courseBreakdown,
+  worstHoleData,
+  trendData,
 }: StatsDisplayProps) {
-  const [activeCategory, setActiveCategory] = useState<StatsCategory>('scoring');
+  // Default to overview tab when coach is viewing a player
+  const [activeCategory, setActiveCategory] = useState<StatsCategory>(isCoachView ? 'overview' : 'scoring');
   const [showFilters, setShowFilters] = useState(false);
+  const [showCourseDropdown, setShowCourseDropdown] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Generate export summary data
+  const getExportSummary = () => {
+    const summary = {
+      // Scoring
+      avgScore: stats.scoringAverage,
+      bestRound: stats.bestRound,
+      worstRound: stats.worstRound,
+      roundsPlayed: stats.roundsPlayed,
+      holesPlayed: stats.holesPlayed,
+      // Performance
+      girPct: stats.girPercentage,
+      fairwayPct: stats.fairwayPercentage,
+      avgPutts: stats.puttsPerRound,
+      scramblingPct: stats.scramblingPercentage,
+      // Strokes Gained (if available)
+      sgTotal: stats.strokesGainedTotal,
+      sgTee: stats.strokesGainedTee,
+      sgApproach: stats.strokesGainedApproach,
+      sgAroundGreen: stats.strokesGainedAroundGreen,
+      sgPutting: stats.strokesGainedPutting,
+    };
+    return summary;
+  };
+
+  // Export to PDF using html2canvas and jsPDF
+  const handleExportPDF = async () => {
+    if (isExporting) return;
+
+    setIsExporting(true);
+    try {
+      // Dynamically import to avoid SSR issues
+      const [html2canvas, { jsPDF }] = await Promise.all([
+        import('html2canvas').then(m => m.default),
+        import('jspdf'),
+      ]);
+
+      // Create a temporary export-friendly element
+      const exportDiv = document.createElement('div');
+      exportDiv.style.position = 'absolute';
+      exportDiv.style.left = '-9999px';
+      exportDiv.style.width = '800px';
+      exportDiv.style.padding = '40px';
+      exportDiv.style.backgroundColor = '#ffffff';
+      exportDiv.style.fontFamily = 'Inter, system-ui, sans-serif';
+
+      const summary = getExportSummary();
+      const exportDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+
+      exportDiv.innerHTML = `
+        <div style="margin-bottom: 32px;">
+          <h1 style="font-size: 28px; font-weight: 700; color: #0f172a; margin: 0 0 8px 0;">
+            ${playerName || 'Golf'} Stats Report
+          </h1>
+          <p style="font-size: 14px; color: #64748b; margin: 0;">
+            Generated on ${exportDate} • ${stats.roundsPlayed} rounds • ${stats.holesPlayed} holes
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+          <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
+            <h2 style="font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px 0;">
+              Scoring Overview
+            </h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <div style="font-size: 28px; font-weight: 700; color: #16a34a;">${formatStat(summary.avgScore, '', 1)}</div>
+                <div style="font-size: 12px; color: #64748b;">Scoring Avg</div>
+              </div>
+              <div>
+                <div style="font-size: 28px; font-weight: 700; color: #0f172a;">${summary.bestRound || '-'}</div>
+                <div style="font-size: 12px; color: #64748b;">Best Round</div>
+              </div>
+              <div>
+                <div style="font-size: 20px; font-weight: 600; color: #0f172a;">${summary.worstRound || '-'}</div>
+                <div style="font-size: 12px; color: #64748b;">Worst Round</div>
+              </div>
+              <div>
+                <div style="font-size: 20px; font-weight: 600; color: #0f172a;">${stats.roundsPlayed}</div>
+                <div style="font-size: 12px; color: #64748b;">Rounds Played</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
+            <h2 style="font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px 0;">
+              Performance Metrics
+            </h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <div style="font-size: 28px; font-weight: 700; color: #16a34a;">${formatStat(summary.girPct, '%', 1)}</div>
+                <div style="font-size: 12px; color: #64748b;">GIR %</div>
+              </div>
+              <div>
+                <div style="font-size: 28px; font-weight: 700; color: #0f172a;">${formatStat(summary.fairwayPct, '%', 1)}</div>
+                <div style="font-size: 12px; color: #64748b;">Fairways Hit</div>
+              </div>
+              <div>
+                <div style="font-size: 20px; font-weight: 600; color: #0f172a;">${formatStat(summary.avgPutts, '', 1)}</div>
+                <div style="font-size: 12px; color: #64748b;">Putts/Round</div>
+              </div>
+              <div>
+                <div style="font-size: 20px; font-weight: 600; color: #0f172a;">${formatStat(summary.scramblingPct, '%', 1)}</div>
+                <div style="font-size: 12px; color: #64748b;">Scrambling</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        ${summary.sgTotal !== null ? `
+        <div style="background: #f0fdf4; border-radius: 12px; padding: 20px; margin-bottom: 32px;">
+          <h2 style="font-size: 14px; font-weight: 600; color: #166534; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px 0;">
+            Strokes Gained Analysis
+          </h2>
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: ${(summary.sgTotal || 0) >= 0 ? '#16a34a' : '#dc2626'};">
+                ${(summary.sgTotal || 0) >= 0 ? '+' : ''}${formatStat(summary.sgTotal, '', 2)}
+              </div>
+              <div style="font-size: 11px; color: #64748b;">Total</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 18px; font-weight: 600; color: ${(summary.sgTee || 0) >= 0 ? '#16a34a' : '#dc2626'};">
+                ${(summary.sgTee || 0) >= 0 ? '+' : ''}${formatStat(summary.sgTee, '', 2)}
+              </div>
+              <div style="font-size: 11px; color: #64748b;">Tee</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 18px; font-weight: 600; color: ${(summary.sgApproach || 0) >= 0 ? '#16a34a' : '#dc2626'};">
+                ${(summary.sgApproach || 0) >= 0 ? '+' : ''}${formatStat(summary.sgApproach, '', 2)}
+              </div>
+              <div style="font-size: 11px; color: #64748b;">Approach</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 18px; font-weight: 600; color: ${(summary.sgAroundGreen || 0) >= 0 ? '#16a34a' : '#dc2626'};">
+                ${(summary.sgAroundGreen || 0) >= 0 ? '+' : ''}${formatStat(summary.sgAroundGreen, '', 2)}
+              </div>
+              <div style="font-size: 11px; color: #64748b;">Around Green</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 18px; font-weight: 600; color: ${(summary.sgPutting || 0) >= 0 ? '#16a34a' : '#dc2626'};">
+                ${(summary.sgPutting || 0) >= 0 ? '+' : ''}${formatStat(summary.sgPutting, '', 2)}
+              </div>
+              <div style="font-size: 11px; color: #64748b;">Putting</div>
+            </div>
+          </div>
+        </div>
+        ` : ''}
+
+        ${trendData?.personalBests ? `
+        <div style="background: #fef3c7; border-radius: 12px; padding: 20px;">
+          <h2 style="font-size: 14px; font-weight: 600; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px 0;">
+            🏆 Personal Records
+          </h2>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+            ${trendData.personalBests.bestScore ? `
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: #92400e;">${trendData.personalBests.bestScore.value}</div>
+              <div style="font-size: 11px; color: #92400e;">Best Score</div>
+            </div>
+            ` : ''}
+            ${trendData.personalBests.bestToPar ? `
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: #92400e;">
+                ${trendData.personalBests.bestToPar.value > 0 ? '+' : ''}${trendData.personalBests.bestToPar.value}
+              </div>
+              <div style="font-size: 11px; color: #92400e;">Best to Par</div>
+            </div>
+            ` : ''}
+            ${trendData.personalBests.bestGir ? `
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: #92400e;">${trendData.personalBests.bestGir.value}%</div>
+              <div style="font-size: 11px; color: #92400e;">Best GIR</div>
+            </div>
+            ` : ''}
+            ${trendData.personalBests.lowestPutts ? `
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: #92400e;">${trendData.personalBests.lowestPutts.value}</div>
+              <div style="font-size: 11px; color: #92400e;">Lowest Putts</div>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+        ` : ''}
+
+        <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+          <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">
+            Generated by GolfHelm • helm.app
+          </p>
+        </div>
+      `;
+
+      document.body.appendChild(exportDiv);
+
+      const canvas = await html2canvas(exportDiv, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      document.body.removeChild(exportDiv);
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2],
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+      pdf.save(`${playerName || 'Golf'}-Stats-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Print functionality
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Filter presets configuration
+  const filterPresets: { label: string; filter: StatsFilter }[] = [
+    { label: 'Last 5 Rounds', filter: { preset: 'last5' } },
+    { label: 'Last 10 Rounds', filter: { preset: 'last10' } },
+    { label: 'Tournaments Only', filter: { preset: 'tournaments' } },
+    { label: 'Practice Only', filter: { preset: 'practice' } },
+    { label: 'This Month', filter: { preset: 'thisMonth' } },
+    { label: 'This Year', filter: { preset: 'thisYear' } },
+  ];
+
+  // Check if a filter is active
+  const isFilterActive = (filter: StatsFilter) => {
+    if (!activeFilter) return false;
+    return JSON.stringify(filter) === JSON.stringify(activeFilter);
+  };
+
+  // Handle filter click
+  const handleFilterClick = (filter: StatsFilter) => {
+    if (isFilterActive(filter)) {
+      // Toggle off
+      onFilterChange?.(null);
+    } else {
+      onFilterChange?.(filter);
+    }
+  };
+
+  // Handle course filter
+  const handleCourseFilter = (courseName: string) => {
+    if (activeFilter?.courseName === courseName) {
+      onFilterChange?.(null);
+    } else {
+      onFilterChange?.({ courseName });
+    }
+    setShowCourseDropdown(false);
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    onFilterChange?.(null);
+  };
+
+  // Get active filter label
+  const getActiveFilterLabel = (): string | null => {
+    if (!activeFilter) return null;
+    if (activeFilter.courseName) return activeFilter.courseName;
+    const preset = filterPresets.find(p => isFilterActive(p.filter));
+    return preset?.label || null;
+  };
 
   const categories: { id: StatsCategory; label: string; icon: React.ReactNode; description: string }[] = [
+    { id: 'overview', label: 'Overview', icon: <IconHome size={16} />, description: 'Player dashboard summary' },
     { id: 'progress', label: 'Progress', icon: <IconChartBar size={16} />, description: 'Track improvement over time' },
     { id: 'dispersion', label: 'Spray Charts', icon: <IconCrosshair size={16} />, description: 'Visualize shot patterns' },
     { id: 'scoring', label: 'Scoring', icon: <IconAward size={16} />, description: 'Score breakdown and trends' },
@@ -1087,6 +2461,7 @@ export default function GolfStatsDisplay({
     { id: 'putting', label: 'Putting', icon: <IconFlag size={16} />, description: 'Putting efficiency by distance' },
     { id: 'scrambling', label: 'Scrambling', icon: <IconTrendingUp size={16} />, description: 'Short game recovery' },
     { id: 'strokes-gained', label: 'Strokes Gained', icon: <IconChartBar size={16} />, description: 'Tour-level comparison' },
+    { id: 'analysis', label: 'Analysis', icon: <IconTarget size={16} />, description: 'Course & hole analysis' },
   ];
 
   const formatRoundDate = (dateStr: string) => {
@@ -1098,8 +2473,8 @@ export default function GolfStatsDisplay({
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF6F1]">
-      <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="min-h-screen bg-[#FAF6F1] print:bg-white">
+      <div ref={contentRef} className="max-w-4xl mx-auto px-4 py-6 print:max-w-none print:px-8">
 
         {/* Header with animation */}
         <motion.div
@@ -1108,10 +2483,11 @@ export default function GolfStatsDisplay({
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         >
-          <div className="flex items-start justify-between gap-4 mb-3">
-            <div>
+          {/* Mobile: Stack vertically, Desktop: Side by side */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-3">
+            <div className="flex-1 min-w-0">
               <motion.h1
-                className="text-2xl font-bold text-slate-900"
+                className="text-xl sm:text-2xl font-bold text-slate-900 truncate"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
@@ -1119,7 +2495,7 @@ export default function GolfStatsDisplay({
                 {playerName ? `${playerName}'s Stats` : 'My Stats'}
               </motion.h1>
               <motion.p
-                className="text-slate-500 text-sm mt-1"
+                className="text-slate-500 text-xs sm:text-sm mt-1"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
@@ -1128,8 +2504,43 @@ export default function GolfStatsDisplay({
               </motion.p>
             </div>
 
-            {/* Round Selector & Filter Controls */}
-            <div className="flex items-center gap-3">
+            {/* Round Selector & Filter Controls - Full width on mobile */}
+            <div className="flex items-center gap-1.5 sm:gap-2 print:hidden flex-shrink-0">
+              {/* Export PDF Button */}
+              <motion.button
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className={`p-2.5 rounded-lg border transition-all ${
+                  isExporting
+                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:text-green-600'
+                }`}
+                whileHover={isExporting ? {} : { scale: 1.05 }}
+                whileTap={isExporting ? {} : { scale: 0.95 }}
+                title="Export as PDF"
+              >
+                {isExporting ? (
+                  <motion.div
+                    className="h-[18px] w-[18px] border-2 border-slate-300 border-t-green-500 rounded-full"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  />
+                ) : (
+                  <IconDownload size={18} />
+                )}
+              </motion.button>
+
+              {/* Print Button */}
+              <motion.button
+                onClick={handlePrint}
+                className="p-2.5 rounded-lg border bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:text-green-600 transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Print stats"
+              >
+                <IconPrinter size={18} />
+              </motion.button>
+
               {/* Filter Toggle */}
               <motion.button
                 onClick={() => setShowFilters(!showFilters)}
@@ -1145,23 +2556,23 @@ export default function GolfStatsDisplay({
                 <IconFilter size={18} />
               </motion.button>
 
-              {/* Round Selector */}
+              {/* Round Selector - Compact on mobile */}
               {onRoundChange && rounds.length > 0 && (
                 <motion.div
-                  className="min-w-[200px]"
+                  className="flex-1 min-w-[100px] sm:min-w-[200px] max-w-[200px] sm:max-w-none"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.15 }}
                 >
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
+                  <label className="hidden sm:block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">
                     View Stats
                   </label>
                   <select
                     value={selectedRoundId}
                     onChange={(e) => onRoundChange(e.target.value as string | 'overall')}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 bg-white hover:border-green-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all"
+                    className="w-full px-2 sm:px-3 py-2 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium text-slate-700 bg-white hover:border-green-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all"
                   >
-                    <option value="overall">Overall Stats</option>
+                    <option value="overall">Overall</option>
                     <optgroup label="Individual Rounds">
                       {rounds.map(round => (
                         <option key={round.id} value={round.id}>
@@ -1174,6 +2585,26 @@ export default function GolfStatsDisplay({
               )}
             </div>
           </div>
+
+          {/* Active Filter Indicator */}
+          {activeFilter && (
+            <motion.div
+              className="flex items-center gap-2 mb-3"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <span className="text-xs text-slate-500">Filtered by:</span>
+              <span className="px-2.5 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                {getActiveFilterLabel()}
+              </span>
+              <button
+                onClick={clearFilters}
+                className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+              >
+                Clear
+              </button>
+            </motion.div>
+          )}
 
           {/* Filter Panel */}
           <AnimatePresence>
@@ -1194,21 +2625,79 @@ export default function GolfStatsDisplay({
                     Close
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {['Last 5 Rounds', 'Last 10 Rounds', 'Tournaments Only', 'Practice Only', 'This Month', 'This Year'].map((filter, idx) => (
+
+                {/* Preset Filters */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {filterPresets.map((preset, idx) => (
                     <motion.button
-                      key={filter}
-                      className="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded-full text-slate-600 hover:border-green-300 hover:bg-green-50 hover:text-green-700 transition-all"
+                      key={preset.label}
+                      onClick={() => handleFilterClick(preset.filter)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                        isFilterActive(preset.filter)
+                          ? 'bg-green-600 text-white border border-green-600'
+                          : 'bg-white border border-slate-200 text-slate-600 hover:border-green-300 hover:bg-green-50 hover:text-green-700'
+                      }`}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: idx * 0.03 }}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      {filter}
+                      {preset.label}
                     </motion.button>
                   ))}
                 </div>
+
+                {/* Course Filter Dropdown */}
+                {filterOptions && filterOptions.courses.length > 0 && (
+                  <div className="relative">
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
+                      Filter by Course
+                    </label>
+                    <button
+                      onClick={() => setShowCourseDropdown(!showCourseDropdown)}
+                      className={`w-full px-3 py-2 rounded-lg border text-sm font-medium text-left flex items-center justify-between transition-all ${
+                        activeFilter?.courseName
+                          ? 'bg-green-50 border-green-300 text-green-700'
+                          : 'bg-white border-slate-200 text-slate-600 hover:border-green-300'
+                      }`}
+                    >
+                      <span>{activeFilter?.courseName || 'All Courses'}</span>
+                      <IconChevronDown size={16} className={`transition-transform ${showCourseDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    <AnimatePresence>
+                      {showCourseDropdown && (
+                        <motion.div
+                          className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-slate-200 shadow-lg z-20 max-h-48 overflow-y-auto"
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                        >
+                          <button
+                            onClick={() => { onFilterChange?.(null); setShowCourseDropdown(false); }}
+                            className="w-full px-3 py-2 text-sm text-left hover:bg-slate-50 text-slate-600"
+                          >
+                            All Courses
+                          </button>
+                          {filterOptions.courses.map(course => (
+                            <button
+                              key={course}
+                              onClick={() => handleCourseFilter(course)}
+                              className={`w-full px-3 py-2 text-sm text-left transition-colors ${
+                                activeFilter?.courseName === course
+                                  ? 'bg-green-50 text-green-700'
+                                  : 'hover:bg-slate-50 text-slate-600'
+                              }`}
+                            >
+                              {course}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -1276,6 +2765,14 @@ export default function GolfStatsDisplay({
             exit="exit"
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
+            {activeCategory === 'overview' && (
+              <OverviewStats
+                stats={stats}
+                playerName={playerName}
+                playerProfile={playerProfile}
+                trendData={trendData}
+              />
+            )}
             {activeCategory === 'progress' && <ProgressStats stats={stats} rounds={rounds} />}
             {activeCategory === 'dispersion' && <ShotDispersionChart stats={stats} />}
             {activeCategory === 'scoring' && <ScoringStats stats={stats} />}
@@ -1284,6 +2781,13 @@ export default function GolfStatsDisplay({
             {activeCategory === 'putting' && <PuttingStats stats={stats} />}
             {activeCategory === 'scrambling' && <ScramblingStats stats={stats} />}
             {activeCategory === 'strokes-gained' && <StrokesGainedStats stats={stats} />}
+            {activeCategory === 'analysis' && (
+              <AnalysisStats
+                worstHoleData={worstHoleData}
+                courseBreakdown={courseBreakdown}
+                trendData={trendData}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
 

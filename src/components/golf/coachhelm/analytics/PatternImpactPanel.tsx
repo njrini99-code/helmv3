@@ -1,0 +1,522 @@
+'use client';
+
+/**
+ * PatternImpactPanel - Shows patterns detected vs addressed
+ *
+ * Displays total strokes saved, most impactful patterns,
+ * and pattern lifecycle funnel (detected -> confirmed -> addressed -> resolved).
+ */
+
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { cn } from '@/lib/utils';
+import {
+  IconChartRadar,
+  IconCheck,
+  IconTrendingUp,
+  IconTrendingDown,
+} from '@/components/icons';
+import type { PatternImpactData, ImpactfulPattern } from '@/app/golf/actions/coachhelm-analytics';
+
+interface PatternImpactPanelProps {
+  data: PatternImpactData;
+  compact?: boolean;
+  className?: string;
+}
+
+const LIFECYCLE_COLORS = {
+  detected: '#94A3B8',
+  confirmed: '#3B82F6',
+  addressed: '#F59E0B',
+  resolved: '#16A34A',
+  dismissed: '#6B7280',
+};
+
+const LIFECYCLE_LABELS = {
+  detected: 'Detected',
+  confirmed: 'Confirmed',
+  addressed: 'Addressed',
+  resolved: 'Resolved',
+  dismissed: 'Dismissed',
+};
+
+export function PatternImpactPanel({
+  data,
+  compact = false,
+  className,
+}: PatternImpactPanelProps) {
+  const hasPatterns = data.patternsDetected > 0;
+
+  // Prepare pie chart data
+  const lifecycleChartData = useMemo(() => {
+    return Object.entries(data.lifecycle)
+      .filter(([, count]) => count > 0)
+      .map(([state, count]) => ({
+        name: LIFECYCLE_LABELS[state as keyof typeof LIFECYCLE_LABELS],
+        value: count,
+        color: LIFECYCLE_COLORS[state as keyof typeof LIFECYCLE_COLORS],
+      }));
+  }, [data.lifecycle]);
+
+  // Compact view for overview tab
+  if (compact) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        {/* Summary Stats */}
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard
+            label="Detected"
+            value={data.patternsDetected}
+            icon={<IconChartRadar size={14} className="text-slate-500" />}
+            color="slate"
+          />
+          <StatCard
+            label="Resolved"
+            value={data.patternsResolved}
+            icon={<IconCheck size={14} className="text-green-500" />}
+            color="green"
+          />
+          <StatCard
+            label="Strokes Saved"
+            value={data.totalStrokesSaved.toFixed(1)}
+            icon={<IconTrendingUp size={14} className="text-emerald-500" />}
+            color="emerald"
+          />
+        </div>
+
+        {/* Conversion Rate */}
+        <div className="p-3 bg-slate-50 rounded-xl">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-slate-500">Resolution Rate</span>
+            <span
+              className={cn(
+                'text-sm font-bold',
+                data.conversionRate >= 0.5 ? 'text-green-600' : 'text-amber-600'
+              )}
+            >
+              {Math.round(data.conversionRate * 100)}%
+            </span>
+          </div>
+          <div className="h-1.5 bg-white rounded-full overflow-hidden">
+            <motion.div
+              className={cn(
+                'h-full rounded-full',
+                data.conversionRate >= 0.5 ? 'bg-green-500' : 'bg-amber-500'
+              )}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(data.conversionRate * 100, 100)}%` }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+            />
+          </div>
+        </div>
+
+        {/* Top Patterns */}
+        {data.topPatterns.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+              Top Impactful Patterns
+            </p>
+            {data.topPatterns.slice(0, 2).map((pattern, i) => (
+              <PatternRow key={pattern.id} pattern={pattern} index={i} compact />
+            ))}
+          </div>
+        )}
+
+        {!hasPatterns && <EmptyState compact />}
+      </div>
+    );
+  }
+
+  // Full view for patterns tab
+  return (
+    <div className={cn('space-y-6', className)}>
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCardLarge
+          label="Patterns Detected"
+          value={data.patternsDetected}
+          subtext="Total found"
+        />
+        <StatCardLarge
+          label="Patterns Addressed"
+          value={data.patternsAddressed}
+          subtext="Being worked on"
+          color={data.patternsAddressed > 0 ? 'amber' : 'slate'}
+        />
+        <StatCardLarge
+          label="Patterns Resolved"
+          value={data.patternsResolved}
+          subtext="Successfully fixed"
+          color={data.patternsResolved > 0 ? 'green' : 'slate'}
+        />
+        <StatCardLarge
+          label="Strokes Saved"
+          value={data.totalStrokesSaved.toFixed(1)}
+          subtext="Estimated impact"
+          color="green"
+        />
+      </div>
+
+      {/* Lifecycle Funnel and Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Lifecycle Funnel */}
+        <div className="bg-white rounded-xl border border-slate-100 p-4">
+          <h4 className="text-sm font-medium text-slate-700 mb-4">Pattern Lifecycle Funnel</h4>
+          <LifecycleFunnel data={data.lifecycle} />
+          <div className="mt-4 p-3 bg-slate-50 rounded-lg">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-slate-700">Conversion Rate</span>
+              <span
+                className={cn(
+                  'text-lg font-bold',
+                  data.conversionRate >= 0.5 ? 'text-green-600' : 'text-amber-600'
+                )}
+              >
+                {Math.round(data.conversionRate * 100)}%
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">
+              Percentage of detected patterns that are fully resolved
+            </p>
+          </div>
+        </div>
+
+        {/* Lifecycle Distribution Chart */}
+        {lifecycleChartData.length > 0 && (
+          <div className="bg-white rounded-xl border border-slate-100 p-4">
+            <h4 className="text-sm font-medium text-slate-700 mb-4">Current Distribution</h4>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={lifecycleChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {lifecycleChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<LifecycleTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3 mt-2">
+              {lifecycleChartData.map((d) => (
+                <span key={d.name} className="flex items-center gap-1 text-xs text-slate-600">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
+                  {d.name} ({d.value})
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Top Impactful Patterns */}
+      {data.topPatterns.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100">
+            <h4 className="text-sm font-medium text-slate-700">Most Impactful Patterns</h4>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {data.topPatterns.map((pattern, index) => (
+              <PatternRow key={pattern.id} pattern={pattern} index={index} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!hasPatterns && <EmptyState />}
+    </div>
+  );
+}
+
+// Helper Components
+
+function StatCard({
+  label,
+  value,
+  icon,
+  color,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: 'slate' | 'green' | 'emerald';
+}) {
+  const colors = {
+    slate: 'bg-slate-50 border-slate-100',
+    green: 'bg-green-50 border-green-100',
+    emerald: 'bg-emerald-50 border-emerald-100',
+  };
+
+  return (
+    <div className={cn('p-3 rounded-xl border', colors[color])}>
+      <div className="flex items-center gap-2 mb-1">
+        {icon}
+        <span className="text-xs text-slate-500">{label}</span>
+      </div>
+      <span className="text-lg font-bold text-slate-900">{value}</span>
+    </div>
+  );
+}
+
+function StatCardLarge({
+  label,
+  value,
+  subtext,
+  color = 'slate',
+}: {
+  label: string;
+  value: string | number;
+  subtext: string;
+  color?: 'green' | 'amber' | 'slate';
+}) {
+  return (
+    <div className="p-4 bg-slate-50 rounded-xl">
+      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{label}</p>
+      <p
+        className={cn(
+          'text-2xl font-bold tabular-nums',
+          color === 'green' && 'text-green-600',
+          color === 'amber' && 'text-amber-600',
+          color === 'slate' && 'text-slate-900'
+        )}
+      >
+        {value}
+      </p>
+      <p className="text-xs text-slate-400 mt-1">{subtext}</p>
+    </div>
+  );
+}
+
+function LifecycleFunnel({ data }: { data: PatternImpactData['lifecycle'] }) {
+  const stages = [
+    { key: 'detected', label: 'Detected', value: data.detected, color: LIFECYCLE_COLORS.detected },
+    { key: 'confirmed', label: 'Confirmed', value: data.confirmed, color: LIFECYCLE_COLORS.confirmed },
+    { key: 'addressed', label: 'Addressed', value: data.addressed, color: LIFECYCLE_COLORS.addressed },
+    { key: 'resolved', label: 'Resolved', value: data.resolved, color: LIFECYCLE_COLORS.resolved },
+  ];
+
+  const maxValue = Math.max(...stages.map((s) => s.value), 1);
+
+  return (
+    <div className="space-y-2">
+      {stages.map((stage, index) => {
+        const widthPercent = (stage.value / maxValue) * 100;
+        const nextStage = stages[index + 1];
+        const conversionToNext =
+          nextStage && stage.value > 0
+            ? Math.round((nextStage.value / stage.value) * 100)
+            : null;
+
+        return (
+          <div key={stage.key}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-slate-600">{stage.label}</span>
+              <span className="text-xs text-slate-500">{stage.value}</span>
+            </div>
+            <motion.div
+              className="h-6 rounded-lg overflow-hidden bg-slate-100"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <motion.div
+                className="h-full rounded-lg flex items-center justify-end pr-2"
+                style={{ backgroundColor: stage.color }}
+                initial={{ width: 0 }}
+                animate={{ width: `${widthPercent}%` }}
+                transition={{ duration: 0.6, delay: index * 0.1, ease: 'easeOut' }}
+              >
+                {widthPercent > 20 && (
+                  <span className="text-xs font-medium text-white">{stage.value}</span>
+                )}
+              </motion.div>
+            </motion.div>
+            {conversionToNext !== null && nextStage && (
+              <div className="flex items-center gap-1 mt-1 ml-2">
+                <span className="text-[10px] text-slate-400">
+                  {conversionToNext}% to {nextStage.label.toLowerCase()}
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Dismissed row (separate) */}
+      {data.dismissed > 0 && (
+        <div className="pt-2 mt-2 border-t border-slate-100">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500">Dismissed</span>
+            <span className="text-xs text-slate-400">{data.dismissed}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PatternRow({
+  pattern,
+  index,
+  compact = false,
+}: {
+  pattern: ImpactfulPattern;
+  index: number;
+  compact?: boolean;
+}) {
+  const stateColors: Record<string, { bg: string; text: string }> = {
+    detected: { bg: 'bg-slate-100', text: 'text-slate-600' },
+    confirmed: { bg: 'bg-blue-100', text: 'text-blue-700' },
+    addressed: { bg: 'bg-amber-100', text: 'text-amber-700' },
+    resolved: { bg: 'bg-green-100', text: 'text-green-700' },
+    dismissed: { bg: 'bg-slate-100', text: 'text-slate-500' },
+  };
+
+  const stateStyle = stateColors[pattern.lifecycleState] || stateColors.detected;
+
+  if (compact) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: index * 0.1 }}
+        className="flex items-center justify-between p-2 bg-slate-50 rounded-lg"
+      >
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-slate-700 truncate">{pattern.description}</p>
+          <p className="text-xs text-slate-400">{pattern.playerName}</p>
+        </div>
+        <div className="flex items-center gap-2 ml-2">
+          <span
+            className={cn(
+              'text-xs font-medium',
+              pattern.strokesImpact > 0 ? 'text-red-600' : 'text-green-600'
+            )}
+          >
+            {pattern.strokesImpact > 0 ? '+' : ''}
+            {pattern.strokesImpact.toFixed(1)}
+          </span>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="px-4 py-3 hover:bg-slate-50 transition-colors"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-slate-900">{pattern.description}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-slate-500">{pattern.playerName}</span>
+            <span className="text-slate-300">|</span>
+            <span className="text-xs text-slate-400">
+              {Math.round(pattern.confidence * 100)}% confidence
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Strokes Impact */}
+          <div className="text-right">
+            <div
+              className={cn(
+                'flex items-center gap-1',
+                pattern.strokesImpact > 0 ? 'text-red-600' : 'text-green-600'
+              )}
+            >
+              {pattern.strokesImpact > 0 ? (
+                <IconTrendingDown size={14} />
+              ) : (
+                <IconTrendingUp size={14} />
+              )}
+              <span className="text-sm font-bold tabular-nums">
+                {pattern.strokesImpact > 0 ? '+' : ''}
+                {pattern.strokesImpact.toFixed(1)}
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400">strokes/round</span>
+          </div>
+
+          {/* State Badge */}
+          <span
+            className={cn(
+              'px-2 py-0.5 text-xs font-medium rounded-full',
+              stateStyle?.bg ?? 'bg-slate-100',
+              stateStyle?.text ?? 'text-slate-600'
+            )}
+          >
+            {LIFECYCLE_LABELS[pattern.lifecycleState as keyof typeof LIFECYCLE_LABELS] ||
+              pattern.lifecycleState}
+          </span>
+        </div>
+      </div>
+
+      {/* Dates */}
+      <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-400">
+        <span>Detected: {formatDate(pattern.detectedAt)}</span>
+        {pattern.resolvedAt && <span>Resolved: {formatDate(pattern.resolvedAt)}</span>}
+      </div>
+    </motion.div>
+  );
+}
+
+function LifecycleTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: { name: string; value: number } }>;
+}) {
+  if (active && payload && payload.length && payload[0]) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 px-3 py-2">
+        <p className="text-sm font-medium text-slate-900">{data.name}</p>
+        <p className="text-xs text-slate-600">{data.value} patterns</p>
+      </div>
+    );
+  }
+  return null;
+}
+
+function EmptyState({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className={cn('text-center', compact ? 'py-4' : 'py-8')}>
+      <div
+        className={cn(
+          'mx-auto mb-3 rounded-xl bg-slate-100 flex items-center justify-center',
+          compact ? 'w-10 h-10' : 'w-12 h-12'
+        )}
+      >
+        <IconChartRadar size={compact ? 20 : 24} className="text-slate-400" />
+      </div>
+      <h4 className={cn('font-medium text-slate-700 mb-1', compact ? 'text-xs' : 'text-sm')}>
+        No Patterns Detected
+      </h4>
+      <p className={cn('text-slate-500 max-w-xs mx-auto', compact ? 'text-[10px]' : 'text-xs')}>
+        Pattern detection requires round data. As players log more rounds, patterns will emerge.
+      </p>
+    </div>
+  );
+}
+
+// Utility functions
+
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}

@@ -14,8 +14,8 @@ import type { CoachHelmSettings, CoachHelmStatus } from './types';
 // Internal types for database rows (tables created via migration)
 interface CoachHelmSettingsRow {
   enabled: boolean;
-  disabled_at: string | null;
-  disabled_reason: string | null;
+  // Note: golf_coachhelm_settings uses coach_id, not user_id
+  // and doesn't have disabled_at/disabled_reason columns
 }
 
 interface TeamCoachHelmSettingsRow {
@@ -35,22 +35,22 @@ export function isCoachHelmEnabled(): boolean {
 }
 
 /**
- * Gets CoachHelm settings for a user
+ * Gets CoachHelm settings for a coach
  *
- * @param userId - The user's UUID
+ * @param coachId - The coach's UUID (from golf_coaches.id)
  * @returns Settings or null if not found
  */
 export async function getCoachHelmSettings(
-  userId: string
+  coachId: string
 ): Promise<CoachHelmSettings | null> {
   const supabase = await createClient();
 
   try {
-    // Type assertion for new table
+    // Type assertion for new table - uses coach_id column
     const { data, error } = await (supabase
       .from('golf_coachhelm_settings' as 'users')
-      .select('enabled, disabled_at, disabled_reason')
-      .eq('user_id', userId)
+      .select('enabled')
+      .eq('coach_id', coachId)
       .maybeSingle() as unknown as Promise<{
       data: CoachHelmSettingsRow | null;
       error: Error | null;
@@ -62,8 +62,8 @@ export async function getCoachHelmSettings(
 
     return {
       enabled: data.enabled,
-      disabledAt: data.disabled_at,
-      disabledReason: data.disabled_reason,
+      disabledAt: null,
+      disabledReason: null,
     };
   } catch {
     // Table doesn't exist yet - return null to use defaults (enabled)
@@ -148,16 +148,16 @@ export async function isCoachHelmEnabledForCoach(
     };
   }
 
-  // Check user-level settings
-  const userSettings = await getCoachHelmSettings(coach.user_id);
-  const userEnabled = userSettings?.enabled ?? true;
+  // Check coach-level settings (using coach.id, not user_id)
+  const coachSettings = await getCoachHelmSettings(coachId);
+  const userEnabled = coachSettings?.enabled ?? true;
 
   if (!userEnabled) {
     return {
       userEnabled: false,
       teamEnabled: true,
       effectivelyEnabled: false,
-      disabledReason: userSettings?.disabledReason ?? 'Disabled by user',
+      disabledReason: coachSettings?.disabledReason ?? 'Disabled by user',
       disabledBy: 'user',
     };
   }
