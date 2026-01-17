@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function POST(_request: NextRequest) {
   // Feature not yet implemented - requires schema additions
   return NextResponse.json(

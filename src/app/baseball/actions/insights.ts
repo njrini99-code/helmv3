@@ -289,7 +289,8 @@ function analyzePlayer(
 function analyzeTeam(
   playerCount: number,
   aggregates: BaseballPlayerAggregates[],
-  _config: BaseballCoachPhilosophy
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _config: BaseballCoachPhilosophy // Reserved: will customize thresholds based on coach philosophy
 ): Partial<BaseballCoachInsight>[] {
   const insights: Partial<BaseballCoachInsight>[] = [];
 

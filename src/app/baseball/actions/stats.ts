@@ -235,7 +235,8 @@ export async function uploadStatsCSV(
  */
 export async function resolveUnmatchedPlayers(
   uploadId: string,
-  _mappings: Array<{ csvName: string; playerId: string }>
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _mappings: Array<{ csvName: string; playerId: string }> // Reserved: will be used when CSV re-processing is implemented
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
 

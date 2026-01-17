@@ -87,7 +87,7 @@ export default function CoachOnboarding() {
         console.error('❌ Auth signup error:', authError);
 
         // Handle user already exists - try to sign them in instead
-        if (authError.status === 422 || authError.message?.includes('already registered') || (authError as any).code === 'user_already_exists') {
+        if (authError.status === 422 || authError.message?.includes('already registered') || (authError as { code?: string }).code === 'user_already_exists') {
           // Try signing in with the provided credentials
           const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
             email: data.email?.trim() || '',

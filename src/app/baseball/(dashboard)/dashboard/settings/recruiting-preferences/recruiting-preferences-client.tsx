@@ -23,6 +23,7 @@ interface RecruitingPreferencesClientProps {
 }
 
 export function RecruitingPreferencesClient({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   coachId: _coachId, // Reserved for future use (match score preview)
   initialWeights,
   initialStandards,

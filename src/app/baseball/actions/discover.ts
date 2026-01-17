@@ -433,7 +433,8 @@ export async function getWatchlistIds(coachId: string): Promise<string[]> {
 export async function getStateCounts(
   mode: 'players' | 'teams',
   coachId?: string,
-  _coachType?: CoachType
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _coachType?: CoachType // Reserved: will filter differently by coach type
 ): Promise<Record<string, number>> {
   const supabase = await createClient();
 

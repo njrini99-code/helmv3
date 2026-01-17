@@ -812,7 +812,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               </button>
             </div>
             <VersionHistory
-              document={versionHistoryDocument as any}
+              document={versionHistoryDocument as GolfDocument}
               versions={versions}
               onPreviewVersion={handlePreviewVersion}
               onReverted={() => {
