@@ -10,7 +10,7 @@
 import type {
   PlayerStats,
   TrendDirection,
-  StrokesGainedResult,
+  PlayerStrokesGained,
 } from '@/lib/types/golf';
 import { formatStrokesGained, getStrokesGainedColor } from '@/lib/golf/strokes-gained';
 import { cn } from '@/lib/utils';
@@ -197,7 +197,7 @@ export function PlayerStatsCard({
                 { key: 'sg_around_green', label: 'ARG' },
                 { key: 'sg_putting', label: 'PUT' },
               ].map((cat) => {
-                const value = stats.strokes_gained[cat.key as keyof StrokesGainedResult];
+                const value = stats.strokes_gained[cat.key as keyof PlayerStrokesGained];
                 return (
                   <Badge
                     key={cat.key}

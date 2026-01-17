@@ -12,14 +12,139 @@
  */
 
 import type {
-  GolfShot,
-  GolfHole,
-  GolfRound,
-  StrokesGainedResult,
-  StrokesGainedBreakdown,
-  LieType,
-  BaselineData,
-} from '@/lib/types';
+  GolfShot as DbGolfShot,
+  GolfHole as DbGolfHole,
+  GolfRound as DbGolfRound,
+} from '@/lib/types/golf';
+
+// ============================================
+// LOCAL TYPE DEFINITIONS
+// ============================================
+
+/**
+ * Lie types for strokes gained calculation
+ */
+export type LieType = 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'recovery';
+
+/**
+ * Baseline data structure for expected strokes from each lie type
+ * Key is distance (yards for non-green, feet for green), value is expected strokes
+ */
+export type BaselineData = Record<LieType, Record<number, number>>;
+
+/**
+ * Internal shot representation for strokes gained calculations
+ * Maps from database fields to calculation-friendly names
+ */
+export interface SGShot {
+  hole_id: string | null;
+  shot_number: number;
+  starting_lie: LieType;
+  starting_distance_yards: number;
+  ending_lie: LieType;
+  ending_distance_yards: number;
+  is_holed: boolean;
+  is_penalty: boolean;
+}
+
+/**
+ * Internal hole representation for strokes gained calculations
+ * Maps from database fields to calculation-friendly names
+ */
+export interface SGHole {
+  id: string;
+  par: number;
+  score: number;
+  putts: number;
+  fairway_hit: boolean | null;
+  green_in_regulation: boolean | null;
+  up_and_down: boolean | null;
+  sand_save: boolean | null;
+  shots?: SGShot[];
+}
+
+/**
+ * Internal round representation for strokes gained calculations
+ */
+export interface SGRound {
+  holes: SGHole[];
+}
+
+/**
+ * Convert database shot to internal shot format
+ */
+export function convertDbShot(shot: DbGolfShot): SGShot {
+  return {
+    hole_id: shot.hole_id,
+    shot_number: shot.shot_number,
+    starting_lie: mapLieType(shot.lie_before),
+    starting_distance_yards: shot.distance_to_hole_before ?? 0,
+    ending_lie: mapLieType(shot.lie_after),
+    ending_distance_yards: shot.distance_to_hole_after ?? 0,
+    is_holed: shot.putt_made === true || shot.result === 'holed',
+    is_penalty: shot.is_penalty === true,
+  };
+}
+
+/**
+ * Convert database hole to internal hole format
+ */
+export function convertDbHole(hole: DbGolfHole, shots?: DbGolfShot[]): SGHole {
+  return {
+    id: hole.id,
+    par: hole.par,
+    score: hole.score ?? 0,
+    putts: hole.putts ?? 0,
+    fairway_hit: hole.fairway_hit,
+    green_in_regulation: hole.gir,
+    up_and_down: hole.up_and_down,
+    sand_save: hole.sand_save,
+    shots: shots?.map(convertDbShot),
+  };
+}
+
+/**
+ * Map database lie string to LieType enum
+ */
+export function mapLieType(lie: string | null): LieType {
+  if (!lie) return 'fairway';
+  const normalized = lie.toLowerCase();
+  if (normalized === 'tee' || normalized === 'teebox') return 'tee';
+  if (normalized === 'fairway') return 'fairway';
+  if (normalized === 'rough' || normalized === 'primary_rough' || normalized === 'deep_rough') return 'rough';
+  if (normalized === 'sand' || normalized === 'bunker' || normalized === 'greenside_bunker' || normalized === 'fairway_bunker') return 'sand';
+  if (normalized === 'green' || normalized === 'fringe') return 'green';
+  if (normalized === 'recovery' || normalized === 'hazard' || normalized === 'penalty') return 'recovery';
+  return 'fairway'; // Default fallback
+}
+
+/**
+ * Strokes gained result with breakdown by category
+ */
+export interface StrokesGainedResult {
+  sg_off_tee: number;
+  sg_approach: number;
+  sg_around_green: number;
+  sg_putting: number;
+  sg_total: number;
+}
+
+/**
+ * Extended strokes gained breakdown with shot counts and per-shot averages
+ */
+export interface StrokesGainedBreakdown extends StrokesGainedResult {
+  shots_off_tee: number;
+  shots_approach: number;
+  shots_around_green: number;
+  shots_putting: number;
+  sg_per_shot_off_tee: number;
+  sg_per_shot_approach: number;
+  sg_per_shot_around_green: number;
+  sg_per_shot_putting: number;
+}
+
+// Re-export database types for external use
+export type { DbGolfShot as GolfShot, DbGolfHole as GolfHole, DbGolfRound as GolfRound };
 
 // ============================================
 // PGA TOUR BASELINE DATA
@@ -113,23 +238,31 @@ export function getExpectedStrokes(
     .map(Number)
     .sort((a, b) => b - a); // Sort descending
 
+  // Handle empty baseline
+  if (distances.length === 0) {
+    return 3.0;
+  }
+
+  const maxDist = distances[0]!;
+  const minDist = distances[distances.length - 1]!;
+
   // If distance is beyond max, extrapolate
-  if (distance >= distances[0]) {
-    return baseline[distances[0]];
+  if (distance >= maxDist) {
+    return baseline[maxDist] ?? 3.0;
   }
 
   // If distance is below min, use minimum
-  if (distance <= distances[distances.length - 1]) {
-    return baseline[distances[distances.length - 1]];
+  if (distance <= minDist) {
+    return baseline[minDist] ?? 3.0;
   }
 
   // Find surrounding data points and interpolate
   for (let i = 0; i < distances.length - 1; i++) {
-    if (distance <= distances[i] && distance >= distances[i + 1]) {
-      const upperDist = distances[i];
-      const lowerDist = distances[i + 1];
-      const upperStrokes = baseline[upperDist];
-      const lowerStrokes = baseline[lowerDist];
+    const upperDist = distances[i]!;
+    const lowerDist = distances[i + 1]!;
+    if (distance <= upperDist && distance >= lowerDist) {
+      const upperStrokes = baseline[upperDist] ?? 3.0;
+      const lowerStrokes = baseline[lowerDist] ?? 3.0;
 
       // Linear interpolation
       const ratio = (distance - lowerDist) / (upperDist - lowerDist);
@@ -138,13 +271,13 @@ export function getExpectedStrokes(
   }
 
   // Fallback - shouldn't reach here
-  return baseline[distances[distances.length - 1]];
+  return baseline[minDist] ?? 3.0;
 }
 
 /**
  * Calculate strokes gained for a single shot
  */
-export function calculateShotStrokesGained(shot: GolfShot): number {
+export function calculateShotStrokesGained(shot: SGShot): number {
   const expectedBefore = getExpectedStrokes(
     shot.starting_lie,
     shot.starting_distance_yards,
@@ -170,7 +303,7 @@ export function calculateShotStrokesGained(shot: GolfShot): number {
 /**
  * Categorize a shot into SG category
  */
-export function categorizeShot(shot: GolfShot, holePar: number): keyof StrokesGainedResult | null {
+export function categorizeShot(shot: SGShot, holePar: number): keyof StrokesGainedResult | null {
   // Penalty shots don't contribute to SG categories meaningfully
   if (shot.is_penalty) return null;
 
@@ -185,7 +318,8 @@ export function categorizeShot(shot: GolfShot, holePar: number): keyof StrokesGa
   }
 
   // Around the Green (within 30 yards, not on green)
-  if (shot.starting_distance_yards <= 30 && shot.starting_lie !== 'green') {
+  // Note: green case already handled above
+  if (shot.starting_distance_yards <= 30) {
     return 'sg_around_green';
   }
 
@@ -201,8 +335,8 @@ export function categorizeShot(shot: GolfShot, holePar: number): keyof StrokesGa
  * Calculate strokes gained for an array of shots
  */
 export function calculateStrokesGained(
-  shots: GolfShot[],
-  holes: GolfHole[]
+  shots: SGShot[],
+  holes: SGHole[]
 ): StrokesGainedResult {
   const result: StrokesGainedResult = {
     sg_off_tee: 0,
@@ -216,7 +350,7 @@ export function calculateStrokesGained(
   const holeMap = new Map(holes.map(h => [h.id, h]));
 
   for (const shot of shots) {
-    const hole = holeMap.get(shot.hole_id);
+    const hole = shot.hole_id ? holeMap.get(shot.hole_id) : null;
     if (!hole) continue;
 
     const category = categorizeShot(shot, hole.par);
@@ -239,8 +373,8 @@ export function calculateStrokesGained(
  * Calculate detailed strokes gained breakdown with per-shot averages
  */
 export function calculateStrokesGainedBreakdown(
-  shots: GolfShot[],
-  holes: GolfHole[]
+  shots: SGShot[],
+  holes: SGHole[]
 ): StrokesGainedBreakdown {
   const counts = {
     off_tee: 0,
@@ -260,7 +394,7 @@ export function calculateStrokesGainedBreakdown(
   const holeMap = new Map(holes.map(h => [h.id, h]));
 
   for (const shot of shots) {
-    const hole = holeMap.get(shot.hole_id);
+    const hole = shot.hole_id ? holeMap.get(shot.hole_id) : null;
     if (!hole) continue;
 
     const category = categorizeShot(shot, hole.par);
@@ -301,14 +435,15 @@ export function calculateStrokesGainedBreakdown(
  * Estimate strokes gained from hole-level data when shot data is unavailable
  * This provides approximate SG values based on traditional stats
  */
-export function estimateStrokesGainedFromHoles(holes: GolfHole[]): StrokesGainedResult {
+export function estimateStrokesGainedFromHoles(holes: SGHole[]): StrokesGainedResult {
   let sg_off_tee = 0;
   let sg_approach = 0;
   let sg_around_green = 0;
   let sg_putting = 0;
 
   for (const hole of holes) {
-    const scoreToPar = hole.score - hole.par;
+    // Note: scoreToPar could be used for more sophisticated estimation
+    // const scoreToPar = hole.score - hole.par;
 
     // Estimate putting SG based on number of putts
     // Average PGA player takes ~1.75 putts per hole
@@ -362,9 +497,9 @@ export function estimateStrokesGainedFromHoles(holes: GolfHole[]): StrokesGained
 /**
  * Calculate strokes gained for a complete round
  */
-export function calculateRoundStrokesGained(round: GolfRound): StrokesGainedResult {
+export function calculateRoundStrokesGained(round: SGRound): StrokesGainedResult {
   // If we have shot-level data, use precise calculation
-  const allShots: GolfShot[] = [];
+  const allShots: SGShot[] = [];
   const holes = round.holes || [];
 
   for (const hole of holes) {
@@ -395,7 +530,7 @@ export function calculateRoundStrokesGained(round: GolfRound): StrokesGainedResu
 /**
  * Aggregate strokes gained across multiple rounds
  */
-export function aggregateStrokesGained(rounds: GolfRound[]): StrokesGainedResult {
+export function aggregateStrokesGained(rounds: SGRound[]): StrokesGainedResult {
   if (rounds.length === 0) {
     return {
       sg_off_tee: 0,
@@ -448,14 +583,16 @@ export function compareToBaseline(
   // Scratch golfer = 0 SG (by definition)
   // Tour average is slightly positive (due to selection bias)
   // Amateur is typically negative
-  const baselines: Record<string, StrokesGainedResult> = {
-    scratch: {
-      sg_off_tee: 0,
-      sg_approach: 0,
-      sg_around_green: 0,
-      sg_putting: 0,
-      sg_total: 0,
-    },
+  const scratchBaseline: StrokesGainedResult = {
+    sg_off_tee: 0,
+    sg_approach: 0,
+    sg_around_green: 0,
+    sg_putting: 0,
+    sg_total: 0,
+  };
+
+  const baselines: Record<'scratch' | 'tour_avg' | 'amateur', StrokesGainedResult> = {
+    scratch: scratchBaseline,
     tour_avg: {
       sg_off_tee: 0.5,
       sg_approach: 0.5,
@@ -472,7 +609,7 @@ export function compareToBaseline(
     },
   };
 
-  const baselineData = baselines[baseline] || baselines.scratch;
+  const baselineData = baselines[baseline];
 
   return {
     sg_off_tee: playerSG.sg_off_tee - baselineData.sg_off_tee,
@@ -505,11 +642,14 @@ export function identifyStrengthsWeaknesses(sg: StrokesGainedResult): {
   const strengths = sorted.filter(c => c.value > 0.2).map(c => c.label);
   const weaknesses = sorted.filter(c => c.value < -0.2).map(c => c.label);
 
+  const best = sorted[0];
+  const worst = sorted[sorted.length - 1];
+
   return {
     strengths,
     weaknesses,
-    primaryStrength: sorted[0].value > 0 ? sorted[0].label : null,
-    primaryWeakness: sorted[sorted.length - 1].value < 0 ? sorted[sorted.length - 1].label : null,
+    primaryStrength: best && best.value > 0 ? best.label : null,
+    primaryWeakness: worst && worst.value < 0 ? worst.label : null,
   };
 }
 

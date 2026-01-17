@@ -172,7 +172,7 @@ export async function refreshStatsCacheAction(
         .eq('user_id', user.id)
         .single();
 
-      if (coach) {
+      if (coach && coach.organization_id) {
         // Coach - verify player is on their team
         const { data: team } = await supabase
           .from('golf_teams')
@@ -248,6 +248,10 @@ export async function getTeamStatsAction(): Promise<
       return { success: false, error: 'Coach profile not found' };
     }
 
+    if (!coach.organization_id) {
+      return { success: false, error: 'Coach not assigned to an organization' };
+    }
+
     // Get team
     const { data: team } = await supabase
       .from('golf_teams')
@@ -290,6 +294,10 @@ export async function getTeamTopPlayersAction(
 
     if (!coach) {
       return { success: false, error: 'Coach profile not found' };
+    }
+
+    if (!coach.organization_id) {
+      return { success: false, error: 'Coach not assigned to an organization' };
     }
 
     // Get team
@@ -390,10 +398,10 @@ export async function getPlayerStatsDirectAction(
       .select(`
         total_score,
         total_putts,
-        fairways_hit,
-        fairways_total,
-        greens_in_regulation,
-        greens_total
+        total_fairways_hit,
+        total_fairways,
+        total_gir,
+        total_gir_possible
       `)
       .eq('player_id', targetPlayerId)
       .eq('status', 'completed')
@@ -424,15 +432,15 @@ export async function getPlayerStatsDirectAction(
     const worstRound = scores.length > 0 ? Math.max(...scores) : null;
 
     // Calculate GIR percentage
-    const totalGreens = rounds.reduce((sum, r) => sum + (r.greens_total || 0), 0);
-    const totalGir = rounds.reduce((sum, r) => sum + (r.greens_in_regulation || 0), 0);
+    const totalGreens = rounds.reduce((sum, r) => sum + (r.total_gir_possible || 0), 0);
+    const totalGir = rounds.reduce((sum, r) => sum + (r.total_gir || 0), 0);
     const girPercentage = totalGreens > 0
       ? Math.round((totalGir / totalGreens) * 1000) / 10
       : null;
 
     // Calculate fairway percentage
-    const totalFairways = rounds.reduce((sum, r) => sum + (r.fairways_total || 0), 0);
-    const totalFairwaysHit = rounds.reduce((sum, r) => sum + (r.fairways_hit || 0), 0);
+    const totalFairways = rounds.reduce((sum, r) => sum + (r.total_fairways || 0), 0);
+    const totalFairwaysHit = rounds.reduce((sum, r) => sum + (r.total_fairways_hit || 0), 0);
     const fairwayPercentage = totalFairways > 0
       ? Math.round((totalFairwaysHit / totalFairways) * 1000) / 10
       : null;

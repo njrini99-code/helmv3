@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 interface DocumentPreviewProps {
-  document?: GolfDocument | null;
+  golfDocument?: GolfDocument | null;
   version?: DocumentVersion | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -55,7 +55,7 @@ function FileTypeIcon({ mimeType, className }: { mimeType: string; className?: s
 }
 
 export function DocumentPreview({
-  document,
+  golfDocument,
   version,
   open,
   onOpenChange,
@@ -64,13 +64,14 @@ export function DocumentPreview({
   const [textContent, setTextContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  // isFullScreen state used in toggleFullScreen callback
+  const [, setIsFullScreen] = useState(false);
 
   // Determine the active file info
-  const activeFile = version || (document ? {
-    file_name: document.original_file_name || document.title,
-    file_size: document.file_size,
-    mime_type: document.file_type,
+  const activeFile = version || (golfDocument ? {
+    file_name: golfDocument.title,
+    file_size: golfDocument.file_size,
+    mime_type: golfDocument.file_type,
     storage_path: '',
   } : null);
 
@@ -83,7 +84,7 @@ export function DocumentPreview({
   // Load preview content
   useEffect(() => {
     async function loadPreview() {
-      if (!open || !document) return;
+      if (!open || !golfDocument) return;
 
       setIsLoading(true);
       setError(null);
@@ -93,7 +94,7 @@ export function DocumentPreview({
       try {
         // Get the preview URL
         const versionNumber = version?.version_number;
-        const { data, error: urlError } = await getPreviewUrl(document.id, versionNumber);
+        const { data, error: urlError } = await getPreviewUrl(golfDocument.id, versionNumber);
 
         if (urlError) throw new Error(urlError);
         if (!data) throw new Error('No preview URL available');
@@ -102,7 +103,7 @@ export function DocumentPreview({
 
         // For text files, also fetch the content
         if (previewStrategy === 'custom' && mimeType.startsWith('text/') || mimeType === 'application/json') {
-          const { data: content, error: contentError } = await getTextFileContent(document.id, versionNumber);
+          const { data: content, error: contentError } = await getTextFileContent(golfDocument.id, versionNumber);
           if (!contentError && content) {
             setTextContent(content);
           }
@@ -115,11 +116,11 @@ export function DocumentPreview({
     }
 
     loadPreview();
-  }, [open, document, version, previewStrategy, mimeType]);
+  }, [open, golfDocument, version, previewStrategy, mimeType]);
 
   const handleDownload = useCallback(() => {
     if (previewUrl) {
-      const link = document.createElement('a');
+      const link = window.document.createElement('a');
       link.href = previewUrl;
       link.download = fileName;
       link.click();
@@ -133,16 +134,16 @@ export function DocumentPreview({
   }, [previewUrl]);
 
   const toggleFullScreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
+    if (!window.document.fullscreenElement) {
+      window.document.documentElement.requestFullscreen();
       setIsFullScreen(true);
     } else {
-      document.exitFullscreen();
+      window.document.exitFullscreen();
       setIsFullScreen(false);
     }
   }, []);
 
-  const renderPreview = () => {
+  const renderPreview = (): React.ReactNode => {
     if (isLoading) {
       return (
         <div className="flex items-center justify-center h-[60vh]">
@@ -162,12 +163,12 @@ export function DocumentPreview({
             <p className="text-destructive font-medium mb-2">Preview unavailable</p>
             <p className="text-muted-foreground text-sm mb-4">{error}</p>
             <div className="flex gap-2 justify-center">
-              <Button variant="outline" onClick={handleDownload}>
+              <Button variant="secondary" onClick={handleDownload}>
                 <DownloadIcon className="h-4 w-4 mr-2" />
                 Download
               </Button>
               {previewUrl && (
-                <Button variant="outline" onClick={handleOpenExternal}>
+                <Button variant="secondary" onClick={handleOpenExternal}>
                   <ExternalLinkIcon className="h-4 w-4 mr-2" />
                   Open in Browser
                 </Button>
@@ -215,6 +216,7 @@ export function DocumentPreview({
             </div>
           );
         }
+        // Break to default download fallback for unhandled custom types
         break;
 
       case 'native':
@@ -246,7 +248,7 @@ export function DocumentPreview({
                 </video>
               </div>
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" size="sm" onClick={handleDownload}>
+                <Button variant="secondary" size="sm" onClick={handleDownload}>
                   <DownloadIcon className="h-4 w-4 mr-2" />
                   Download
                 </Button>
@@ -263,13 +265,14 @@ export function DocumentPreview({
               <audio src={previewUrl} controls className="w-full max-w-md mb-4">
                 Your browser does not support the audio element.
               </audio>
-              <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Button variant="secondary" size="sm" onClick={handleDownload}>
                 <DownloadIcon className="h-4 w-4 mr-2" />
                 Download
               </Button>
             </div>
           );
         }
+        // Break to default download fallback for unhandled native types
         break;
 
       case 'iframe':
@@ -278,11 +281,11 @@ export function DocumentPreview({
           <div className="h-[70vh]">
             <div className="flex flex-col h-full">
               <div className="flex justify-end gap-2 mb-2">
-                <Button variant="outline" size="sm" onClick={handleDownload}>
+                <Button variant="secondary" size="sm" onClick={handleDownload}>
                   <DownloadIcon className="h-4 w-4 mr-2" />
                   Download
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleOpenExternal}>
+                <Button variant="secondary" size="sm" onClick={handleOpenExternal}>
                   <ExternalLinkIcon className="h-4 w-4 mr-2" />
                   Open External
                 </Button>
@@ -301,38 +304,40 @@ export function DocumentPreview({
       case 'download':
       default:
         // Fallback - show download option
-        return (
-          <div className="flex flex-col items-center justify-center h-[40vh]">
-            <FileTypeIcon mimeType={mimeType} className="h-16 w-16 mb-4" />
-            <p className="text-lg font-medium mb-2">{fileName}</p>
-            <p className="text-sm text-muted-foreground mb-4">
-              {formatFileSize(fileSize)}
-            </p>
-            <p className="text-sm text-muted-foreground mb-4">
-              Preview not available for this file type
-            </p>
-            <div className="flex gap-2">
-              <Button onClick={handleDownload}>
-                <DownloadIcon className="h-4 w-4 mr-2" />
-                Download
-              </Button>
-              <Button variant="outline" onClick={handleOpenExternal}>
-                <ExternalLinkIcon className="h-4 w-4 mr-2" />
-                Open in Browser
-              </Button>
-            </div>
-          </div>
-        );
+        break;
     }
+
+    // Default fallback for all unhandled cases
+    return (
+      <div className="flex flex-col items-center justify-center h-[40vh]">
+        <FileTypeIcon mimeType={mimeType} className="h-16 w-16 mb-4" />
+        <p className="text-lg font-medium mb-2">{fileName}</p>
+        <p className="text-sm text-muted-foreground mb-4">
+          {formatFileSize(fileSize)}
+        </p>
+        <p className="text-sm text-muted-foreground mb-4">
+          Preview not available for this file type
+        </p>
+        <div className="flex gap-2">
+          <Button onClick={handleDownload}>
+            <DownloadIcon className="h-4 w-4 mr-2" />
+            Download
+          </Button>
+          <Button variant="secondary" onClick={handleOpenExternal}>
+            <ExternalLinkIcon className="h-4 w-4 mr-2" />
+            Open in Browser
+          </Button>
+        </div>
+      </div>
+    );
   };
 
-  if (!document) return null;
+  if (!golfDocument) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-5xl h-[90vh] flex flex-col p-0"
-        showCloseButton={false}
       >
         {/* Header */}
         <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
@@ -340,7 +345,7 @@ export function DocumentPreview({
             <div className="flex items-center gap-3">
               <FileTypeIcon mimeType={mimeType} className="h-6 w-6" />
               <div>
-                <DialogTitle className="text-lg">{document.title}</DialogTitle>
+                <DialogTitle className="text-lg">{golfDocument.title}</DialogTitle>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                   <span>{formatFileSize(fileSize)}</span>
                   {version && (
@@ -349,18 +354,14 @@ export function DocumentPreview({
                       <span className="font-medium">v{version.version_number}</span>
                     </>
                   )}
-                  {!version && document.current_version > 1 && (
-                    <>
-                      <span>•</span>
-                      <span className="font-medium">v{document.current_version}</span>
-                    </>
-                  )}
+                  {/* Version display removed - current_version not available in schema */}
                 </div>
               </div>
             </div>
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
+              className="px-2"
               onClick={() => onOpenChange(false)}
             >
               <XIcon className="h-5 w-5" />

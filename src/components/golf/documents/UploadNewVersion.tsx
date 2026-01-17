@@ -10,8 +10,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { formatFileSize, type GolfDocument } from '@/lib/types/golf';
 import { uploadNewVersion } from '@/app/golf/actions/documents';
@@ -24,8 +22,13 @@ import {
   AlertCircleIcon,
 } from 'lucide-react';
 
+// Extended document type to include current_version which exists in DB but not in generated types
+interface DocumentWithVersion extends GolfDocument {
+  current_version?: number;
+}
+
 interface UploadNewVersionProps {
-  document: GolfDocument;
+  document: DocumentWithVersion;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -108,7 +111,7 @@ export function UploadNewVersion({
     }, 200);
 
     try {
-      const { data, error: uploadError } = await uploadNewVersion(
+      const result = await uploadNewVersion(
         document.id,
         file,
         changeNotes || undefined
@@ -116,8 +119,8 @@ export function UploadNewVersion({
 
       clearInterval(progressInterval);
 
-      if (uploadError) {
-        setError(uploadError);
+      if (!result.success || result.error) {
+        setError(result.error || 'Upload failed');
         setUploadProgress(0);
         return;
       }
@@ -251,7 +254,7 @@ export function UploadNewVersion({
 
           {/* Change notes */}
           <div className="space-y-2">
-            <Label htmlFor="changeNotes">Change Notes (optional)</Label>
+            <label htmlFor="changeNotes" className="text-sm font-medium">Change Notes (optional)</label>
             <textarea
               id="changeNotes"
               className="w-full px-3 py-2 text-sm border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"

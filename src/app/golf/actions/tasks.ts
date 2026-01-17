@@ -945,11 +945,11 @@ export async function createTaskFromTemplate(
     }
 
     // Calculate due date if not provided
-    let dueDate = customDueDate || null;
+    let dueDate: string | null = customDueDate ?? null;
     if (!dueDate && template.default_due_days) {
       const date = new Date();
       date.setDate(date.getDate() + template.default_due_days);
-      dueDate = date.toISOString().split('T')[0];
+      dueDate = date.toISOString().split('T')[0] ?? null;
     }
 
     // Create the task

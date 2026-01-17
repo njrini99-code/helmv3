@@ -5,20 +5,50 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Dropdown,
+  DropdownItem,
+  DropdownSeparator,
+} from '@/components/ui/dropdown';
 import { cn } from '@/lib/utils';
 import {
   formatFileSize,
-  getFileTypeLabel,
-  getFileIcon,
-  DOCUMENT_CATEGORIES,
   type GolfDocument,
 } from '@/lib/types/golf';
+
+// Document categories for display
+const DOCUMENT_CATEGORIES = [
+  { value: 'playbook', label: 'Playbook' },
+  { value: 'schedule', label: 'Schedule' },
+  { value: 'travel', label: 'Travel' },
+  { value: 'roster', label: 'Roster' },
+  { value: 'academic', label: 'Academic' },
+  { value: 'compliance', label: 'Compliance' },
+  { value: 'other', label: 'Other' },
+];
+
+// Get file type label from MIME type
+function getFileTypeLabel(mimeType: string): string {
+  if (mimeType === 'application/pdf') return 'PDF';
+  if (mimeType.startsWith('image/')) return 'Image';
+  if (mimeType.startsWith('video/')) return 'Video';
+  if (mimeType.startsWith('audio/')) return 'Audio';
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType === 'text/csv') return 'Spreadsheet';
+  if (mimeType.includes('word') || mimeType.includes('document')) return 'Document';
+  if (mimeType.startsWith('text/')) return 'Text';
+  return 'File';
+}
+
+// Get file icon type from MIME type
+function getFileIcon(mimeType: string): string {
+  if (mimeType === 'application/pdf') return 'pdf';
+  if (mimeType.startsWith('image/')) return 'image';
+  if (mimeType.startsWith('video/')) return 'video';
+  if (mimeType.startsWith('audio/')) return 'audio';
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType === 'text/csv') return 'spreadsheet';
+  if (mimeType.includes('word') || mimeType.includes('document')) return 'document';
+  if (mimeType.startsWith('text/')) return 'text';
+  return 'file';
+}
 import {
   EyeIcon,
   DownloadIcon,
@@ -87,7 +117,7 @@ export function DocumentCard({
 }: DocumentCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const categoryLabel = DOCUMENT_CATEGORIES.find(c => c.value === document.category)?.label || document.category;
+  const categoryLabel = DOCUMENT_CATEGORIES.find((c: { value: string; label: string }) => c.value === document.category)?.label || document.category;
 
   const handlePreview = useCallback(() => {
     onPreview?.(document);
@@ -100,7 +130,7 @@ export function DocumentCard({
       // Default download behavior
       const link = window.document.createElement('a');
       link.href = document.file_url;
-      link.download = document.original_file_name || document.title;
+      link.download = document.title;
       link.click();
     }
   }, [document, onDownload]);
@@ -118,7 +148,7 @@ export function DocumentCard({
         <div className="flex items-start gap-4">
           {/* File Icon */}
           <div className="flex-shrink-0 p-3 bg-muted/50 rounded-lg group-hover:bg-muted transition-colors">
-            <FileTypeIcon mimeType={document.file_type} className="h-8 w-8" />
+            <FileTypeIcon mimeType={document.file_type || ''} className="h-8 w-8" />
           </div>
 
           {/* Content */}
@@ -131,11 +161,11 @@ export function DocumentCard({
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-sm text-muted-foreground">
-                    {getFileTypeLabel(document.file_type)}
+                    {getFileTypeLabel(document.file_type || '')}
                   </span>
                   <span className="text-muted-foreground">•</span>
                   <span className="text-sm text-muted-foreground">
-                    {formatFileSize(document.file_size)}
+                    {formatFileSize(document.file_size || 0)}
                   </span>
                 </div>
               </div>
@@ -165,66 +195,60 @@ export function DocumentCard({
                 </Button>
 
                 {/* More actions dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <Dropdown
+                  trigger={
                     <Button variant="ghost" size="icon-sm">
                       <MoreVerticalIcon className="h-4 w-4" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    {onPreview && (
-                      <DropdownMenuItem onClick={handlePreview}>
-                        <EyeIcon className="h-4 w-4 mr-2" />
-                        Preview
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={handleDownload}>
-                      <DownloadIcon className="h-4 w-4 mr-2" />
-                      Download
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.open(document.file_url, '_blank')}>
-                      <ExternalLinkIcon className="h-4 w-4 mr-2" />
-                      Open in Browser
-                    </DropdownMenuItem>
+                  }
+                  align="end"
+                >
+                  {onPreview && (
+                    <DropdownItem icon={EyeIcon} onClick={handlePreview}>
+                      Preview
+                    </DropdownItem>
+                  )}
+                  <DropdownItem icon={DownloadIcon} onClick={handleDownload}>
+                    Download
+                  </DropdownItem>
+                  <DropdownItem icon={ExternalLinkIcon} onClick={() => window.open(document.file_url, '_blank')}>
+                    Open in Browser
+                  </DropdownItem>
 
-                    {onViewHistory && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onViewHistory(document)}>
-                          <HistoryIcon className="h-4 w-4 mr-2" />
-                          Version History
-                        </DropdownMenuItem>
-                      </>
-                    )}
+                  {onViewHistory && (
+                    <>
+                      <DropdownSeparator />
+                      <DropdownItem icon={HistoryIcon} onClick={() => onViewHistory(document)}>
+                        Version History
+                      </DropdownItem>
+                    </>
+                  )}
 
-                    {isCoach && (
-                      <>
-                        <DropdownMenuSeparator />
-                        {onUploadVersion && (
-                          <DropdownMenuItem onClick={() => onUploadVersion(document)}>
-                            <UploadIcon className="h-4 w-4 mr-2" />
-                            Upload New Version
-                          </DropdownMenuItem>
-                        )}
-                        {onEdit && (
-                          <DropdownMenuItem onClick={() => onEdit(document)}>
-                            <PencilIcon className="h-4 w-4 mr-2" />
-                            Edit Details
-                          </DropdownMenuItem>
-                        )}
-                        {onDelete && (
-                          <DropdownMenuItem
-                            onClick={() => onDelete(document)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2Icon className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        )}
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  {isCoach && (
+                    <>
+                      <DropdownSeparator />
+                      {onUploadVersion && (
+                        <DropdownItem icon={UploadIcon} onClick={() => onUploadVersion(document)}>
+                          Upload New Version
+                        </DropdownItem>
+                      )}
+                      {onEdit && (
+                        <DropdownItem icon={PencilIcon} onClick={() => onEdit(document)}>
+                          Edit Details
+                        </DropdownItem>
+                      )}
+                      {onDelete && (
+                        <DropdownItem
+                          icon={Trash2Icon}
+                          onClick={() => onDelete(document)}
+                          danger
+                        >
+                          Delete
+                        </DropdownItem>
+                      )}
+                    </>
+                  )}
+                </Dropdown>
               </div>
             </div>
 
@@ -237,14 +261,6 @@ export function DocumentCard({
 
             {/* Metadata Row */}
             <div className="flex flex-wrap items-center gap-2 mt-3">
-              {/* Version Badge */}
-              {document.current_version > 1 && (
-                <Badge variant="secondary" className="gap-1">
-                  <HistoryIcon className="h-3 w-3" />
-                  v{document.current_version}
-                </Badge>
-              )}
-
               {/* Category Badge */}
               {document.category && (
                 <Badge variant="outline" className="text-xs">
@@ -257,20 +273,20 @@ export function DocumentCard({
                 variant="outline"
                 className={cn(
                   'text-xs gap-1',
-                  document.player_visible
+                  document.is_public
                     ? 'text-green-600 border-green-200 bg-green-50 dark:bg-green-950'
                     : 'text-amber-600 border-amber-200 bg-amber-50 dark:bg-amber-950'
                 )}
               >
-                {document.player_visible ? (
+                {document.is_public ? (
                   <>
                     <GlobeIcon className="h-3 w-3" />
-                    Visible to Players
+                    Public
                   </>
                 ) : (
                   <>
                     <LockIcon className="h-3 w-3" />
-                    Coaches Only
+                    Private
                   </>
                 )}
               </Badge>
@@ -278,11 +294,10 @@ export function DocumentCard({
 
             {/* Footer */}
             <div className="flex items-center justify-between mt-3 pt-3 border-t text-xs text-muted-foreground">
-              <span>
-                Updated {formatDistanceToNow(new Date(document.updated_at), { addSuffix: true })}
-              </span>
-              {document.uploader?.full_name && (
-                <span>by {document.uploader.full_name}</span>
+              {document.created_at && (
+                <span>
+                  Created {formatDistanceToNow(new Date(document.created_at), { addSuffix: true })}
+                </span>
               )}
             </div>
           </div>

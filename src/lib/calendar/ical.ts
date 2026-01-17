@@ -12,11 +12,7 @@
 
 import { format, parseISO } from 'date-fns';
 import {
-  DEFAULT_TIMEZONE,
-  formatICalDateTimeUTC,
-  formatICalDate,
   getValidTimezone,
-  isValidTimezone,
 } from './timezone';
 
 // ============================================================================

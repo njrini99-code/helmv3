@@ -49,12 +49,6 @@ function getDayOfWeek(date: Date): number {
   return date.getDay(); // 0 = Sunday, 6 = Saturday
 }
 
-function getWeekNumber(date: Date, firstDayOfYear: Date): number {
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const daysSinceStart = Math.floor((date.getTime() - firstDayOfYear.getTime()) / msPerDay);
-  return Math.floor((daysSinceStart + getDayOfWeek(firstDayOfYear)) / 7);
-}
-
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -73,7 +67,7 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
   const [hoveredRound, setHoveredRound] = useState<RoundData | null>(null);
 
   // Filter rounds for selected year and create lookup map
-  const { roundsByDate, yearRounds, stats } = useMemo(() => {
+  const { roundsByDate, stats } = useMemo(() => {
     const filtered = rounds.filter((r) => {
       const roundDate = new Date(r.date);
       return roundDate.getFullYear() === year;
@@ -81,7 +75,8 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
 
     const map = new Map<string, RoundData[]>();
     filtered.forEach((r) => {
-      const key = r.date.split('T')[0]; // YYYY-MM-DD
+      const dateStr = r.date.split('T')[0];
+      const key = dateStr ?? r.date; // Fallback to full date if split fails
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(r);
     });
@@ -92,7 +87,6 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
 
     return {
       roundsByDate: map,
-      yearRounds: filtered,
       stats: {
         totalRounds: filtered.length,
         avgScore: scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null,
@@ -120,7 +114,8 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
     }
 
     while (currentDate <= lastDay) {
-      const dateKey = currentDate.toISOString().split('T')[0];
+      const isoDateStr = currentDate.toISOString().split('T')[0];
+      const dateKey = isoDateStr ?? currentDate.toISOString();
       const dayRounds = roundsByDate.get(dateKey) || [];
 
       currentWeek.push({ date: new Date(currentDate), rounds: dayRounds });
@@ -154,7 +149,10 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
       if (firstDayOfWeek) {
         const month = firstDayOfWeek.date.getMonth();
         if (month !== lastMonth) {
-          positions.push({ month: MONTHS[month], week: weekIndex });
+          const monthName = MONTHS[month];
+          if (monthName) {
+            positions.push({ month: monthName, week: weekIndex });
+          }
           lastMonth = month;
         }
       }
@@ -251,15 +249,19 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
           <div className="min-w-[800px]">
             {/* Month labels */}
             <div className="flex mb-1 pl-8">
-              {monthPositions.map((pos, i) => (
-                <div
-                  key={i}
-                  className="text-[10px] text-slate-400 font-medium"
-                  style={{ marginLeft: i === 0 ? pos.week * 12 : (pos.week - monthPositions[i - 1].week) * 12 - 24 }}
-                >
-                  {pos.month}
-                </div>
-              ))}
+              {monthPositions.map((pos, i) => {
+                const prevPos = monthPositions[i - 1];
+                const marginLeft = i === 0 ? pos.week * 12 : (pos.week - (prevPos?.week ?? 0)) * 12 - 24;
+                return (
+                  <div
+                    key={i}
+                    className="text-[10px] text-slate-400 font-medium"
+                    style={{ marginLeft }}
+                  >
+                    {pos.month}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Grid with day labels */}
@@ -287,27 +289,28 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
                       }
 
                       const hasRounds = day.rounds.length > 0;
-                      const bestRound = hasRounds
-                        ? day.rounds.reduce((best, r) => (r.toPar < best.toPar ? r : best), day.rounds[0])
+                      const firstRound = day.rounds[0];
+                      const bestRound = hasRounds && firstRound
+                        ? day.rounds.reduce((best, r) => (r.toPar < best.toPar ? r : best), firstRound)
                         : null;
 
                       return (
                         <div
                           key={dayIndex}
                           className={`w-[10px] h-[10px] rounded-sm cursor-pointer transition-all ${
-                            hasRounds
-                              ? `${getScoreColor(bestRound!.toPar)} hover:ring-2 hover:ring-slate-400 hover:ring-offset-1`
+                            hasRounds && bestRound
+                              ? `${getScoreColor(bestRound.toPar)} hover:ring-2 hover:ring-slate-400 hover:ring-offset-1`
                               : 'bg-slate-100 hover:bg-slate-200'
                           }`}
-                          style={{ opacity: hasRounds ? getScoreOpacity(bestRound!.toPar) : 0.5 }}
-                          onMouseEnter={() => hasRounds && setHoveredRound(bestRound)}
+                          style={{ opacity: hasRounds && bestRound ? getScoreOpacity(bestRound.toPar) : 0.5 }}
+                          onMouseEnter={() => hasRounds && bestRound && setHoveredRound(bestRound)}
                           onMouseLeave={() => setHoveredRound(null)}
-                          onClick={() => hasRounds && onRoundClick?.(bestRound!)}
+                          onClick={() => hasRounds && bestRound && onRoundClick?.(bestRound)}
                           title={
-                            hasRounds
-                              ? `${day.date.toLocaleDateString()}: ${bestRound!.score} (${
-                                  bestRound!.toPar >= 0 ? '+' : ''
-                                }${bestRound!.toPar})`
+                            hasRounds && bestRound
+                              ? `${day.date.toLocaleDateString()}: ${bestRound.score} (${
+                                  bestRound.toPar >= 0 ? '+' : ''
+                                }${bestRound.toPar})`
                               : day.date.toLocaleDateString()
                           }
                         />

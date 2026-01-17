@@ -3,9 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage } from '@/app/golf/actions/messages';
-import { getSignedUrlsForAttachments } from '@/app/golf/actions/message-attachments';
 import type { GolfMessageRow } from '@/lib/types';
-import type { MessageAttachmentData } from '@/components/golf/messages/MessageAttachment';
 
 export interface GolfConversationParticipant {
   id: string;
@@ -28,34 +26,13 @@ export interface GolfConversationWithMeta {
   participant_count?: number;
 }
 
-// Extended message type with read receipt info, edit/delete status, and attachments
+// Extended message type with read receipt info
 export interface GolfMessage extends GolfMessageRow {
   isRead?: boolean; // Whether the other participant has read this message
-  edited_at?: string | null; // When the message was last edited
-  is_deleted?: boolean; // Whether the message has been deleted
-  has_attachments?: boolean; // Whether the message has attachments
-  attachments?: MessageAttachmentData[]; // Attachment data with signed URLs
 }
 
 // Keep old name for backward compatibility
 export type MessageWithReadStatus = GolfMessage;
-
-// Attachment row from database
-interface AttachmentRow {
-  id: string;
-  message_id: string;
-  file_name: string;
-  file_type: string;
-  mime_type: string;
-  file_size: number;
-  storage_path: string;
-  url?: string;
-  thumbnail_url?: string;
-  width?: number;
-  height?: number;
-  duration_seconds?: number;
-  created_at: string;
-}
 
 export function useGolfMessages(conversationId: string) {
   const [messages, setMessages] = useState<MessageWithReadStatus[]>([]);
@@ -102,65 +79,14 @@ export function useGolfMessages(conversationId: string) {
     }
 
     setLoading(true);
-    // Use explicit columns instead of SELECT * for better performance
-    // Include edited_at, is_deleted, and has_attachments for edit/delete/attachment functionality
+    // Fetch messages with columns that exist in the database
     const { data } = await supabase
       .from('golf_messages')
-      .select('id, conversation_id, sender_id, content, read, created_at, edited_at, is_deleted, has_attachments')
+      .select('id, conversation_id, sender_id, content, read, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
-    // Filter out deleted messages on the client side
-    // (Server-side filtering would be better but requires RLS updates)
-    const filteredMessages = (data || []).filter(msg => !msg.is_deleted);
-
-    // Check if any messages have attachments
-    const messagesWithAttachments = filteredMessages.filter(msg => msg.has_attachments);
-
-    if (messagesWithAttachments.length > 0) {
-      // Fetch attachments for messages that have them
-      const messageIds = messagesWithAttachments.map(m => m.id);
-      const { data: attachments } = await supabase
-        .from('golf_message_attachments')
-        .select('*')
-        .in('message_id', messageIds)
-        .order('created_at', { ascending: true });
-
-      if (attachments && attachments.length > 0) {
-        // Get signed URLs for all attachments
-        const storagePaths = attachments.map(a => a.storage_path);
-        const signedUrls = await getSignedUrlsForAttachments(storagePaths);
-
-        // Group attachments by message_id with signed URLs
-        const attachmentsByMessage = new Map<string, MessageAttachmentData[]>();
-
-        for (const att of attachments as AttachmentRow[]) {
-          const messageAttachments = attachmentsByMessage.get(att.message_id) || [];
-          messageAttachments.push({
-            id: att.id,
-            fileName: att.file_name,
-            fileType: att.file_type as 'image' | 'video' | 'document' | 'audio',
-            mimeType: att.mime_type,
-            fileSize: att.file_size,
-            url: signedUrls[att.storage_path] || '',
-            thumbnailUrl: att.thumbnail_url,
-            width: att.width,
-            height: att.height,
-            durationSeconds: att.duration_seconds,
-          });
-          attachmentsByMessage.set(att.message_id, messageAttachments);
-        }
-
-        // Add attachments to messages
-        for (const msg of filteredMessages) {
-          if (attachmentsByMessage.has(msg.id)) {
-            (msg as MessageWithReadStatus).attachments = attachmentsByMessage.get(msg.id);
-          }
-        }
-      }
-    }
-
-    setMessages(filteredMessages as MessageWithReadStatus[]);
+    setMessages((data || []) as MessageWithReadStatus[]);
     setLoading(false);
 
     // Mark messages as read
@@ -179,7 +105,9 @@ export function useGolfMessages(conversationId: string) {
       if (msg.sender_id !== currentUserId) return msg;
 
       // Message is read if it was created before the other participant's last_read_at
-      const isRead = msg.created_at && new Date(msg.created_at) <= new Date(otherParticipantLastReadAt);
+      const isRead = msg.created_at
+        ? new Date(msg.created_at) <= new Date(otherParticipantLastReadAt)
+        : false;
       return { ...msg, isRead };
     }));
   }, [otherParticipantLastReadAt, currentUserId]);
@@ -200,45 +128,16 @@ export function useGolfMessages(conversationId: string) {
           table: 'golf_messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
-        async (payload) => {
+        (payload) => {
           const newMessage = payload.new as MessageWithReadStatus;
-          // Only add if not deleted
-          if (!newMessage.is_deleted) {
-            // If message has attachments, fetch them
-            if (newMessage.has_attachments) {
-              const { data: attachments } = await supabase
-                .from('golf_message_attachments')
-                .select('*')
-                .eq('message_id', newMessage.id)
-                .order('created_at', { ascending: true });
-
-              if (attachments && attachments.length > 0) {
-                const storagePaths = attachments.map(a => a.storage_path);
-                const signedUrls = await getSignedUrlsForAttachments(storagePaths);
-
-                newMessage.attachments = (attachments as AttachmentRow[]).map(att => ({
-                  id: att.id,
-                  fileName: att.file_name,
-                  fileType: att.file_type as 'image' | 'video' | 'document' | 'audio',
-                  mimeType: att.mime_type,
-                  fileSize: att.file_size,
-                  url: signedUrls[att.storage_path] || '',
-                  thumbnailUrl: att.thumbnail_url,
-                  width: att.width,
-                  height: att.height,
-                  durationSeconds: att.duration_seconds,
-                }));
-              }
-            }
-            setMessages(prev => [...prev, newMessage]);
-          }
+          setMessages(prev => [...prev, newMessage]);
           // Clear typing indicator when message is received
           if (newMessage.sender_id !== currentUserId) {
             setIsOtherTyping(false);
           }
         }
       )
-      // Listen for message updates (edits and deletes)
+      // Listen for message updates
       .on(
         'postgres_changes',
         {
@@ -249,18 +148,13 @@ export function useGolfMessages(conversationId: string) {
         },
         (payload) => {
           const updatedMessage = payload.new as MessageWithReadStatus;
-          setMessages(prev => {
-            // If message was deleted, remove it from the list
-            if (updatedMessage.is_deleted) {
-              return prev.filter(msg => msg.id !== updatedMessage.id);
-            }
-            // Otherwise update the message (for edits)
-            return prev.map(msg =>
+          setMessages(prev =>
+            prev.map(msg =>
               msg.id === updatedMessage.id
-                ? { ...msg, content: updatedMessage.content, edited_at: updatedMessage.edited_at }
+                ? { ...msg, content: updatedMessage.content }
                 : msg
-            );
-          });
+            )
+          );
         }
       )
       // Listen for read receipt updates (when other participant reads messages)
@@ -437,7 +331,7 @@ export function useGolfConversations() {
     );
     let conversationsData = rawData as ConversationRow[] | null;
 
-    // Also fetch group conversations directly (in case DB function doesn't include them)
+    // Also fetch team chat conversations directly (in case DB function doesn't include them)
     const { data: groupConvs } = await supabase
       .from('golf_conversation_participants')
       .select(`
@@ -445,14 +339,14 @@ export function useGolfConversations() {
           id,
           created_at,
           updated_at,
-          is_group,
+          is_team_chat,
           title,
           created_by
         )
       `)
       .eq('user_id', userId);
 
-    // Extract group conversations and merge them
+    // Extract team chat conversations and merge them
     const groupConversations: ConversationRow[] = [];
     const existingIds = new Set(conversationsData?.map(c => c.id) || []);
 
@@ -462,14 +356,14 @@ export function useGolfConversations() {
           id: string;
           created_at: string;
           updated_at: string;
-          is_group: boolean;
+          is_team_chat: boolean | null;
           title: string | null;
           created_by: string | null;
         } | null;
 
-        if (conv && conv.is_group && !existingIds.has(conv.id)) {
-          // Fetch participant count and last message for group
-          const [{ count: participantCount }, { data: lastMsg }] = await Promise.all([
+        if (conv && conv.is_team_chat && !existingIds.has(conv.id)) {
+          // Fetch participant count and last message for team chat
+          const [{ count: _participantCount }, { data: lastMsg }] = await Promise.all([
             supabase
               .from('golf_conversation_participants')
               .select('*', { count: 'exact', head: true })

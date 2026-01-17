@@ -99,8 +99,8 @@ export function OfflineProvider({
   // Connection status
   const connectionStatus = useConnectionStatus();
 
-  // Service worker
-  const serviceWorker = useServiceWorker({
+  // Service worker - register and handle events
+  useServiceWorker({
     immediate: true,
     onRegistered: (registration) => {
       console.log('[OfflineProvider] Service worker registered:', registration.scope);
@@ -130,8 +130,9 @@ export function OfflineProvider({
             console.log('[OfflineProvider] Sync progress:', progress);
           },
           onSyncComplete: (result) => {
-            useOfflineSyncStore.getState().completeSync(result.syncedCount > 0);
-            onSyncComplete?.(result.syncedCount > 0, result.syncedCount);
+            const syncedCount = result.syncedRounds + result.syncedHoles + result.syncedShots;
+            useOfflineSyncStore.getState().completeSync(syncedCount > 0);
+            onSyncComplete?.(syncedCount > 0, syncedCount);
           },
           onSyncError: (error) => {
             useOfflineSyncStore.getState().failSync(error.message);
@@ -182,12 +183,14 @@ export function OfflineProvider({
 
       return () => clearTimeout(timeout);
     }
+    return undefined;
   }, [connectionStatus.isOnline, connectionStatus.quality, syncStatus.pendingCount.total, onConnectionChange]);
 
   // Listen for service worker sync requests
   useEffect(() => {
-    const handleSyncRequest = async (event: CustomEvent) => {
-      console.log('[OfflineProvider] Sync requested by service worker:', event.detail);
+    const handleSyncRequest = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('[OfflineProvider] Sync requested by service worker:', customEvent.detail);
       try {
         const syncEngine = getSyncEngine();
         await syncEngine.syncAll();
@@ -196,10 +199,10 @@ export function OfflineProvider({
       }
     };
 
-    window.addEventListener('sw-sync-requested', handleSyncRequest as EventListener);
+    window.addEventListener('sw-sync-requested', handleSyncRequest);
 
     return () => {
-      window.removeEventListener('sw-sync-requested', handleSyncRequest as EventListener);
+      window.removeEventListener('sw-sync-requested', handleSyncRequest);
     };
   }, []);
 

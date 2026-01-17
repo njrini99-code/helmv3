@@ -65,8 +65,10 @@ const QUICK_DAY_PATTERNS = [
  */
 function timeToMinutes(time: string | null): number | null {
   if (!time) return null;
-  const [hours, minutes] = time.split(':').map(Number);
-  if (isNaN(hours) || isNaN(minutes)) return null;
+  const parts = time.split(':').map(Number);
+  const hours = parts[0];
+  const minutes = parts[1];
+  if (hours === undefined || minutes === undefined || isNaN(hours) || isNaN(minutes)) return null;
   return hours * 60 + minutes;
 }
 

@@ -9,21 +9,160 @@
  */
 
 import type {
-  GolfRound,
-  TrendPoint,
-  TrendAnalysis,
-  TrendDirection,
-  MultiMetricTrend,
-  StrokesGainedResult,
-  ComparisonBaseline,
-  ComparisonResult,
-  StatComparison,
+  GolfRound as BaseGolfRound,
   PlayerStats,
-} from '@/lib/types';
+  TrendDirection as GolfTrendDirection,
+} from '@/lib/types/golf';
+
+// ============================================
+// LOCAL TYPE DEFINITIONS
+// These extend or adapt types from @/lib/types/golf
+// ============================================
+
+/**
+ * Extended GolfRound type with additional fields used by this module.
+ * The base GolfRound from the database has:
+ * - total_fairways, total_fairways_hit (instead of fairways_possible, fairways_hit)
+ * - total_gir (instead of greens_in_regulation)
+ * This type maps between what we need and what exists.
+ */
+interface GolfRound extends BaseGolfRound {
+  // These are aliases computed from base fields
+  fairways_possible?: number;
+  fairways_hit?: number;
+  greens_in_regulation?: number;
+  // These fields may not exist in database but are used for SG calculations
+  up_and_down_attempts?: number;
+  up_and_downs?: number;
+  sand_save_attempts?: number;
+  sand_saves?: number;
+  sg_total?: number | null;
+  sg_off_tee?: number | null;
+  sg_approach?: number | null;
+  sg_around_green?: number | null;
+  sg_putting?: number | null;
+  // For strokes-gained calculation from shot data
+  holes?: Array<{
+    id: string;
+    par: number;
+    score: number;
+    putts: number;
+    fairway_hit?: boolean | null;
+    green_in_regulation?: boolean;
+    up_and_down?: boolean | null;
+    sand_save?: boolean | null;
+    shots?: unknown[];
+  }>;
+}
+
+/**
+ * Extended trend direction compatible with this module
+ */
+type TrendDirection = GolfTrendDirection;
+
+/**
+ * A data point for trend analysis
+ */
+interface TrendPoint {
+  date: string;
+  value: number;
+  round_id?: string;
+  round_type?: string | null;
+  label?: string;
+}
+
+/**
+ * Result of analyzing a trend for a metric
+ */
+interface TrendAnalysis {
+  metric: string;
+  data: TrendPoint[];
+  current_value: number;
+  trend: TrendDirection;
+  velocity: number;
+  prediction: number;
+  confidence: number;
+  moving_average: number;
+  best_value: number;
+  worst_value: number;
+  std_deviation: number;
+}
+
+/**
+ * Collection of trend analyses for multiple metrics
+ */
+interface MultiMetricTrend {
+  scoring_avg: TrendAnalysis;
+  putts: TrendAnalysis;
+  fairway_pct: TrendAnalysis;
+  gir_pct: TrendAnalysis;
+  sg_total: TrendAnalysis;
+  sg_off_tee: TrendAnalysis;
+  sg_approach: TrendAnalysis;
+  sg_around_green: TrendAnalysis;
+  sg_putting: TrendAnalysis;
+  [key: string]: TrendAnalysis | undefined;
+}
+
+/**
+ * Comparison baseline type
+ */
+type ComparisonBaseline = 'personal_best' | 'team_avg' | 'scratch' | 'tour_avg';
+
+/**
+ * Single stat comparison result
+ */
+interface StatComparison {
+  metric: string;
+  player_value: number;
+  comparison_value: number;
+  difference: number;
+  baseline: ComparisonBaseline;
+}
+
+/**
+ * Full comparison result
+ */
+interface ComparisonResult {
+  player_id: string;
+  player_name: string;
+  baseline: ComparisonBaseline;
+  baseline_label: string;
+  comparisons: StatComparison[];
+  strengths: string[];
+  weaknesses: string[];
+}
+
+/**
+ * Extended PlayerStats with sand_save_percentage
+ */
+interface ExtendedPlayerStats extends PlayerStats {
+  sand_save_percentage: number;
+}
 import {
   calculateRoundStrokesGained,
   identifyStrengthsWeaknesses,
+  type SGRound,
+  type SGHole,
 } from './strokes-gained';
+
+/**
+ * Convert local GolfRound to SGRound for strokes-gained calculations
+ */
+function toSGRound(round: GolfRound): SGRound {
+  const holes: SGHole[] = (round.holes ?? []).map(hole => ({
+    id: hole.id,
+    par: hole.par,
+    score: hole.score,
+    putts: hole.putts,
+    fairway_hit: hole.fairway_hit ?? null,
+    green_in_regulation: hole.green_in_regulation ?? null,
+    up_and_down: hole.up_and_down ?? null,
+    sand_save: hole.sand_save ?? null,
+    shots: undefined, // Shots would need separate conversion if available
+  }));
+  return { holes };
+}
 
 // ============================================
 // STATISTICAL HELPERS
@@ -61,7 +200,7 @@ function linearRegression(points: { x: number; y: number }[]): { slope: number; 
   const sumY = points.reduce((sum, p) => sum + p.y, 0);
   const sumXY = points.reduce((sum, p) => sum + p.x * p.y, 0);
   const sumXX = points.reduce((sum, p) => sum + p.x * p.x, 0);
-  const sumYY = points.reduce((sum, p) => sum + p.y * p.y, 0);
+  // sumYY not used - R² calculated via residual method below
 
   const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
   const intercept = (sumY - slope * sumX) / n;
@@ -168,7 +307,7 @@ export function analyzeTrend(
   return {
     metric,
     data: sortedData,
-    current_value: values[values.length - 1],
+    current_value: values[values.length - 1] ?? 0,
     trend,
     velocity: Math.round(slope * 1000) / 1000, // Rate of change per round
     prediction: Math.round(prediction * 100) / 100,
@@ -182,6 +321,7 @@ export function analyzeTrend(
 
 /**
  * Extract trend points for a specific metric from rounds
+ * Note: Uses actual database column names (total_fairways, total_fairways_hit, total_gir)
  */
 export function extractTrendPoints(
   rounds: GolfRound[],
@@ -193,50 +333,64 @@ export function extractTrendPoints(
 
   return sortedRounds.map(round => {
     let value: number;
+    // Use actual database column names with null coalescing
+    const totalScore = round.total_score ?? 0;
+    const scoreToPar = round.score_to_par ?? 0;
+    const totalPutts = round.total_putts ?? 0;
+    const totalFairways = round.total_fairways ?? 0;
+    const totalFairwaysHit = round.total_fairways_hit ?? 0;
+    const totalGir = round.total_gir ?? 0;
+    const totalGirPossible = round.total_gir_possible ?? 18;
 
     switch (metric) {
       case 'scoring_avg':
       case 'total_score':
-        value = round.total_score;
+        value = totalScore;
         break;
       case 'score_to_par':
-        value = round.score_to_par;
+        value = scoreToPar;
         break;
       case 'putts':
-        value = round.total_putts;
+        value = totalPutts;
         break;
       case 'fairway_pct':
-        value = round.fairways_possible > 0
-          ? (round.fairways_hit / round.fairways_possible) * 100
+        // Use actual DB columns: total_fairways (possible), total_fairways_hit
+        value = totalFairways > 0
+          ? (totalFairwaysHit / totalFairways) * 100
           : 0;
         break;
       case 'gir_pct':
-        value = (round.greens_in_regulation / 18) * 100;
+        // Use actual DB column: total_gir
+        value = totalGirPossible > 0
+          ? (totalGir / totalGirPossible) * 100
+          : 0;
         break;
       case 'up_and_down_pct':
-        value = round.up_and_down_attempts > 0
-          ? (round.up_and_downs / round.up_and_down_attempts) * 100
+        // Extended field - use optional chaining
+        value = (round.up_and_down_attempts ?? 0) > 0
+          ? ((round.up_and_downs ?? 0) / (round.up_and_down_attempts ?? 1)) * 100
           : 0;
         break;
       case 'sand_save_pct':
-        value = round.sand_save_attempts > 0
-          ? (round.sand_saves / round.sand_save_attempts) * 100
+        // Extended field - use optional chaining
+        value = (round.sand_save_attempts ?? 0) > 0
+          ? ((round.sand_saves ?? 0) / (round.sand_save_attempts ?? 1)) * 100
           : 0;
         break;
       case 'sg_total':
-        value = round.sg_total ?? calculateRoundStrokesGained(round).sg_total;
+        value = round.sg_total ?? calculateRoundStrokesGained(toSGRound(round)).sg_total;
         break;
       case 'sg_off_tee':
-        value = round.sg_off_tee ?? calculateRoundStrokesGained(round).sg_off_tee;
+        value = round.sg_off_tee ?? calculateRoundStrokesGained(toSGRound(round)).sg_off_tee;
         break;
       case 'sg_approach':
-        value = round.sg_approach ?? calculateRoundStrokesGained(round).sg_approach;
+        value = round.sg_approach ?? calculateRoundStrokesGained(toSGRound(round)).sg_approach;
         break;
       case 'sg_around_green':
-        value = round.sg_around_green ?? calculateRoundStrokesGained(round).sg_around_green;
+        value = round.sg_around_green ?? calculateRoundStrokesGained(toSGRound(round)).sg_around_green;
         break;
       case 'sg_putting':
-        value = round.sg_putting ?? calculateRoundStrokesGained(round).sg_putting;
+        value = round.sg_putting ?? calculateRoundStrokesGained(toSGRound(round)).sg_putting;
         break;
       default:
         value = 0;
@@ -358,11 +512,11 @@ function getBaselineLabel(baseline: ComparisonBaseline): string {
  * Compare player stats to a baseline
  */
 export function compareToBaseline(
-  stats: PlayerStats,
+  stats: ExtendedPlayerStats,
   baseline: ComparisonBaseline,
   customBaseline?: Record<string, number>
 ): ComparisonResult {
-  const baselineData = customBaseline || BASELINES[baseline];
+  const baselineData = customBaseline ?? BASELINES[baseline] ?? BASELINES.scratch;
 
   const comparisons: StatComparison[] = [];
 
@@ -370,16 +524,16 @@ export function compareToBaseline(
   comparisons.push({
     metric: 'Scoring Average',
     player_value: stats.scoring_avg,
-    comparison_value: baselineData.scoring_avg,
-    difference: baselineData.scoring_avg - stats.scoring_avg, // Positive = player is better
+    comparison_value: baselineData.scoring_avg ?? 72,
+    difference: (baselineData.scoring_avg ?? 72) - stats.scoring_avg, // Positive = player is better
     baseline,
   });
 
   comparisons.push({
     metric: 'Putts per Round',
     player_value: stats.avg_putts,
-    comparison_value: baselineData.putts,
-    difference: baselineData.putts - stats.avg_putts,
+    comparison_value: baselineData.putts ?? 32,
+    difference: (baselineData.putts ?? 32) - stats.avg_putts,
     baseline,
   });
 
@@ -387,32 +541,32 @@ export function compareToBaseline(
   comparisons.push({
     metric: 'Fairway %',
     player_value: stats.fairway_percentage,
-    comparison_value: baselineData.fairway_pct,
-    difference: stats.fairway_percentage - baselineData.fairway_pct,
+    comparison_value: baselineData.fairway_pct ?? 50,
+    difference: stats.fairway_percentage - (baselineData.fairway_pct ?? 50),
     baseline,
   });
 
   comparisons.push({
     metric: 'GIR %',
     player_value: stats.gir_percentage,
-    comparison_value: baselineData.gir_pct,
-    difference: stats.gir_percentage - baselineData.gir_pct,
+    comparison_value: baselineData.gir_pct ?? 50,
+    difference: stats.gir_percentage - (baselineData.gir_pct ?? 50),
     baseline,
   });
 
   comparisons.push({
     metric: 'Up & Down %',
     player_value: stats.up_and_down_percentage,
-    comparison_value: baselineData.up_and_down_pct,
-    difference: stats.up_and_down_percentage - baselineData.up_and_down_pct,
+    comparison_value: baselineData.up_and_down_pct ?? 40,
+    difference: stats.up_and_down_percentage - (baselineData.up_and_down_pct ?? 40),
     baseline,
   });
 
   comparisons.push({
     metric: 'Sand Save %',
     player_value: stats.sand_save_percentage,
-    comparison_value: baselineData.sand_save_pct,
-    difference: stats.sand_save_percentage - baselineData.sand_save_pct,
+    comparison_value: baselineData.sand_save_pct ?? 40,
+    difference: stats.sand_save_percentage - (baselineData.sand_save_pct ?? 40),
     baseline,
   });
 
@@ -420,40 +574,40 @@ export function compareToBaseline(
   comparisons.push({
     metric: 'SG: Total',
     player_value: stats.strokes_gained.sg_total,
-    comparison_value: baselineData.sg_total,
-    difference: stats.strokes_gained.sg_total - baselineData.sg_total,
+    comparison_value: baselineData.sg_total ?? 0,
+    difference: stats.strokes_gained.sg_total - (baselineData.sg_total ?? 0),
     baseline,
   });
 
   comparisons.push({
     metric: 'SG: Off the Tee',
     player_value: stats.strokes_gained.sg_off_tee,
-    comparison_value: baselineData.sg_off_tee,
-    difference: stats.strokes_gained.sg_off_tee - baselineData.sg_off_tee,
+    comparison_value: baselineData.sg_off_tee ?? 0,
+    difference: stats.strokes_gained.sg_off_tee - (baselineData.sg_off_tee ?? 0),
     baseline,
   });
 
   comparisons.push({
     metric: 'SG: Approach',
     player_value: stats.strokes_gained.sg_approach,
-    comparison_value: baselineData.sg_approach,
-    difference: stats.strokes_gained.sg_approach - baselineData.sg_approach,
+    comparison_value: baselineData.sg_approach ?? 0,
+    difference: stats.strokes_gained.sg_approach - (baselineData.sg_approach ?? 0),
     baseline,
   });
 
   comparisons.push({
     metric: 'SG: Around the Green',
     player_value: stats.strokes_gained.sg_around_green,
-    comparison_value: baselineData.sg_around_green,
-    difference: stats.strokes_gained.sg_around_green - baselineData.sg_around_green,
+    comparison_value: baselineData.sg_around_green ?? 0,
+    difference: stats.strokes_gained.sg_around_green - (baselineData.sg_around_green ?? 0),
     baseline,
   });
 
   comparisons.push({
     metric: 'SG: Putting',
     player_value: stats.strokes_gained.sg_putting,
-    comparison_value: baselineData.sg_putting,
-    difference: stats.strokes_gained.sg_putting - baselineData.sg_putting,
+    comparison_value: baselineData.sg_putting ?? 0,
+    difference: stats.strokes_gained.sg_putting - (baselineData.sg_putting ?? 0),
     baseline,
   });
 
@@ -461,7 +615,7 @@ export function compareToBaseline(
   const { strengths, weaknesses } = identifyStrengthsWeaknesses(stats.strokes_gained);
 
   return {
-    player_id: stats.player_id,
+    player_id: stats.player_id ?? '',
     player_name: '', // Will be filled by caller
     baseline,
     baseline_label: getBaselineLabel(baseline),
@@ -473,24 +627,35 @@ export function compareToBaseline(
 
 /**
  * Calculate personal best baseline from rounds
+ * Note: Uses actual database column names (total_fairways, total_fairways_hit, total_gir)
  */
 export function calculatePersonalBestBaseline(rounds: GolfRound[]): Record<string, number> {
   if (rounds.length === 0) {
     return BASELINES.scratch;
   }
 
-  const scores = rounds.map(r => r.total_score);
-  const putts = rounds.map(r => r.total_putts);
-  const fairways = rounds.map(r =>
-    r.fairways_possible > 0 ? (r.fairways_hit / r.fairways_possible) * 100 : 0
-  );
-  const girs = rounds.map(r => (r.greens_in_regulation / 18) * 100);
-  const upAndDowns = rounds.map(r =>
-    r.up_and_down_attempts > 0 ? (r.up_and_downs / r.up_and_down_attempts) * 100 : 0
-  );
-  const sandSaves = rounds.map(r =>
-    r.sand_save_attempts > 0 ? (r.sand_saves / r.sand_save_attempts) * 100 : 0
-  );
+  const scores = rounds.map(r => r.total_score ?? 0);
+  const putts = rounds.map(r => r.total_putts ?? 0);
+  const fairways = rounds.map(r => {
+    const totalFairways = r.total_fairways ?? 0;
+    const totalFairwaysHit = r.total_fairways_hit ?? 0;
+    return totalFairways > 0 ? (totalFairwaysHit / totalFairways) * 100 : 0;
+  });
+  const girs = rounds.map(r => {
+    const totalGir = r.total_gir ?? 0;
+    const totalGirPossible = r.total_gir_possible ?? 18;
+    return totalGirPossible > 0 ? (totalGir / totalGirPossible) * 100 : 0;
+  });
+  const upAndDowns = rounds.map(r => {
+    const attempts = r.up_and_down_attempts ?? 0;
+    const converted = r.up_and_downs ?? 0;
+    return attempts > 0 ? (converted / attempts) * 100 : 0;
+  });
+  const sandSaves = rounds.map(r => {
+    const attempts = r.sand_save_attempts ?? 0;
+    const saved = r.sand_saves ?? 0;
+    return attempts > 0 ? (saved / attempts) * 100 : 0;
+  });
 
   const sgTotals: number[] = [];
   const sgOffTee: number[] = [];
@@ -499,7 +664,7 @@ export function calculatePersonalBestBaseline(rounds: GolfRound[]): Record<strin
   const sgPutting: number[] = [];
 
   for (const round of rounds) {
-    const sg = calculateRoundStrokesGained(round);
+    const sg = calculateRoundStrokesGained(toSGRound(round));
     sgTotals.push(sg.sg_total);
     sgOffTee.push(sg.sg_off_tee);
     sgApproach.push(sg.sg_approach);
@@ -526,7 +691,7 @@ export function calculatePersonalBestBaseline(rounds: GolfRound[]): Record<strin
  * Calculate team average baseline from multiple players
  */
 export function calculateTeamAverageBaseline(
-  allPlayerStats: PlayerStats[]
+  allPlayerStats: ExtendedPlayerStats[]
 ): Record<string, number> {
   if (allPlayerStats.length === 0) {
     return BASELINES.team_avg;
@@ -540,7 +705,7 @@ export function calculateTeamAverageBaseline(
     fairway_pct: avg(allPlayerStats.map(p => p.fairway_percentage)),
     gir_pct: avg(allPlayerStats.map(p => p.gir_percentage)),
     up_and_down_pct: avg(allPlayerStats.map(p => p.up_and_down_percentage)),
-    sand_save_pct: avg(allPlayerStats.map(p => p.sand_save_percentage)),
+    sand_save_pct: avg(allPlayerStats.map(p => p.sand_save_percentage ?? 0)),
     sg_total: avg(allPlayerStats.map(p => p.strokes_gained.sg_total)),
     sg_off_tee: avg(allPlayerStats.map(p => p.strokes_gained.sg_off_tee)),
     sg_approach: avg(allPlayerStats.map(p => p.strokes_gained.sg_approach)),
@@ -584,8 +749,9 @@ export function generateTrendInsights(trends: MultiMetricTrend): string[] {
       .filter(c => trends[c.key]?.trend === 'improving')
       .sort((a, b) => (trends[b.key]?.velocity || 0) - (trends[a.key]?.velocity || 0));
 
-    if (improving.length > 0) {
-      insights.push(`Strongest improvement area: ${improving[0].label}`);
+    const topImproving = improving[0];
+    if (topImproving) {
+      insights.push(`Strongest improvement area: ${topImproving.label}`);
     }
 
     // Find biggest decline
@@ -593,8 +759,9 @@ export function generateTrendInsights(trends: MultiMetricTrend): string[] {
       .filter(c => trends[c.key]?.trend === 'declining')
       .sort((a, b) => (trends[a.key]?.velocity || 0) - (trends[b.key]?.velocity || 0));
 
-    if (declining.length > 0) {
-      insights.push(`Area needing attention: ${declining[0].label}`);
+    const topDeclining = declining[0];
+    if (topDeclining) {
+      insights.push(`Area needing attention: ${topDeclining.label}`);
     }
   }
 

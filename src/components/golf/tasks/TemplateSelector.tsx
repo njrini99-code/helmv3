@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useTransition, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { getTeamTemplates, searchTemplates, createTaskFromTemplate } from '@/app/golf/actions/task-templates';
-import type { TaskTemplate, TaskCategory } from '@/lib/types/golf';
+import { getTeamTemplates, createTaskFromTemplate } from '@/app/golf/actions/task-templates';
+import type { TaskTemplate, CreateTaskFromTemplate } from '@/lib/types/golf';
 
 interface TemplateSelectorProps {
   teamId: string;
@@ -56,7 +56,6 @@ export function TemplateSelector({
     const filtered = templates.filter(
       (t) =>
         t.name.toLowerCase().includes(query) ||
-        t.title.toLowerCase().includes(query) ||
         t.description?.toLowerCase().includes(query) ||
         t.category?.toLowerCase().includes(query)
     );
@@ -125,9 +124,11 @@ export function TemplateSelector({
   const handleQuickCreate = (template: TaskTemplate) => {
     setCreatingId(template.id);
     startTransition(async () => {
-      const { data, error } = await createTaskFromTemplate({
+      const createData: CreateTaskFromTemplate = {
         template_id: template.id,
-      });
+        team_id: teamId,
+      };
+      const { data, error } = await createTaskFromTemplate(createData);
 
       if (data) {
         onTaskCreated?.();
@@ -141,16 +142,21 @@ export function TemplateSelector({
   };
 
   // Get category badge color
-  const getCategoryColor = (category?: string): string => {
-    const colors: Record<string, string> = {
+  const getCategoryColor = (category?: string | null): string => {
+    const colors: { [key: string]: string } = {
       practice: 'bg-blue-50 text-blue-700',
       tournament: 'bg-purple-50 text-purple-700',
       academic: 'bg-amber-50 text-amber-700',
       equipment: 'bg-gray-50 text-gray-700',
       travel: 'bg-green-50 text-green-700',
+      fitness: 'bg-cyan-50 text-cyan-700',
+      mental: 'bg-purple-50 text-purple-700',
+      administrative: 'bg-orange-50 text-orange-700',
       other: 'bg-slate-50 text-slate-700',
     };
-    return colors[category || 'other'] || colors.other;
+    const key = category || 'other';
+    const result = colors[key];
+    return result !== undefined ? result : 'bg-slate-50 text-slate-700';
   };
 
   // Recent/favorite templates (first 3)
@@ -348,24 +354,13 @@ export function TemplateSelector({
                         <span className="font-medium text-sm text-gray-900 truncate">
                           {template.name}
                         </span>
-                        {template.is_recurring && (
-                          <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            className="text-brand-600 flex-shrink-0"
-                          >
-                            <path d="M17 1l4 4-4 4" />
-                            <path d="M3 11V9a4 4 0 014-4h14" />
-                            <path d="M7 23l-4-4 4-4" />
-                            <path d="M21 13v2a4 4 0 01-4 4H3" />
-                          </svg>
+                        {template.is_active && (
+                          <span className="text-[10px] px-1 py-0.5 rounded bg-brand-50 text-brand-600 flex-shrink-0">
+                            Active
+                          </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 truncate">{template.title}</p>
+                      <p className="text-xs text-gray-500 truncate">{template.description}</p>
                       <div className="flex items-center gap-2 mt-1">
                         {template.category && (
                           <span
@@ -377,9 +372,9 @@ export function TemplateSelector({
                             {template.category}
                           </span>
                         )}
-                        {template.default_due_offset_days && (
+                        {template.default_due_days && (
                           <span className="text-[10px] text-gray-400">
-                            {template.default_due_offset_days}d
+                            {template.default_due_days}d
                           </span>
                         )}
                       </div>

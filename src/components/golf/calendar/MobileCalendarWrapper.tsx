@@ -17,16 +17,16 @@
  * - Smooth transitions between views
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { format, startOfDay } from 'date-fns';
+import { startOfDay } from 'date-fns';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { useMobileDetection, useSafeAreaInsets } from '@/hooks/use-mobile-detection';
+import { useMobileDetection } from '@/hooks/use-mobile-detection';
 import { CalendarDayViewSwipeable, MobileWeekPicker } from './CalendarDayViewSwipeable';
 import { MobileEventSheet, type MobileEventFormData } from './MobileEventSheet';
 import { QuickAddEventFAB } from './QuickAddEventFAB';
-import { RSVPButtonsEnhanced, type RSVPResponseType } from './RSVPButtonsEnhanced';
+import type { RSVPResponseType } from './RSVPButtonsEnhanced';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPResponse } from './MobileRSVPButtons';
 import {
@@ -62,7 +62,6 @@ interface MobileCalendarWrapperProps {
 
 export function MobileCalendarWrapper({
   events,
-  teamId,
   isCoach,
   onCreateEvent,
   onUpdateEvent,
@@ -77,7 +76,6 @@ export function MobileCalendarWrapper({
   const router = useRouter();
   const isMobileQuery = useMediaQuery('(max-width: 768px)');
   const { isMobile: isMobileDevice, isTablet, preferMobileUI } = useMobileDetection();
-  const { bottom: safeAreaBottom } = useSafeAreaInsets();
 
   // Determine if we should show mobile UI
   const showMobileUI = isMobileQuery || (isMobileDevice && preferMobileUI) || (isTablet && preferMobileUI);
@@ -88,7 +86,8 @@ export function MobileCalendarWrapper({
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_isSaving, setIsSaving] = useState(false);
 
   // If not mobile, don't render this component - let parent handle desktop view
   if (!showMobileUI) {
@@ -103,7 +102,7 @@ export function MobileCalendarWrapper({
   }, []);
 
   // Add event handler (for FAB)
-  const handleAddEvent = useCallback((eventType?: string) => {
+  const handleAddEvent = useCallback((_eventType?: string) => {
     setSelectedEvent(null);
     setIsCreatingEvent(true);
     setIsSheetOpen(true);

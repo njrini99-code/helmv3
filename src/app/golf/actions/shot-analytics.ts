@@ -118,6 +118,47 @@ export interface PlayerShotAnalytics {
   primaryStrength: string;
 }
 
+// Types for database query results
+interface RoundRow {
+  id: string;
+  round_date: string;
+  total_putts: number | null;
+  total_fairways_hit: number | null;
+  total_fairways: number | null;
+  total_gir: number | null;
+  total_gir_possible: number | null;
+  total_score: number | null;
+}
+
+interface HoleRow {
+  id: string;
+  round_id: string;
+  hole_number: number;
+  par: number;
+  score: number | null;
+  putts: number | null;
+  fairway_hit: boolean | null;
+  gir: boolean | null;
+  up_and_down: boolean | null;
+  sand_save: boolean | null;
+}
+
+interface ShotRow {
+  id: string;
+  round_id: string;
+  hole_number: number;
+  shot_number: number;
+  shot_type: string | null;
+  club_type: string | null;
+  lie_before: string | null;
+  distance_to_hole_before: number | null;
+  distance_to_hole_after: number | null;
+  miss_direction: string | null;
+  result: string | null;
+  putt_distance_feet: number | null;
+  putt_made: boolean | null;
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -127,7 +168,7 @@ function calculatePercentage(part: number, total: number): number {
   return Math.round((part / total) * 1000) / 10; // One decimal place
 }
 
-function determineTrend(current: number, previous: number, higherIsBetter: boolean): TrendData['direction'] {
+function determineTrend(current: number, previous: number, _higherIsBetter: boolean): TrendData['direction'] {
   const diff = current - previous;
   const threshold = 0.5; // 0.5% threshold for "flat"
 
@@ -176,86 +217,74 @@ export async function getPlayerShotAnalytics(
     const previousPeriodStart = new Date(periodStart.getTime() - periodDays * 24 * 60 * 60 * 1000);
 
     // Get rounds from current period
-    const { data: rounds } = await supabase
+    const { data: roundsData } = await supabase
       .from('golf_rounds')
-      .select('id, round_date, total_putts, fairways_hit, fairways_total, greens_in_regulation, greens_total, driving_distance_avg, total_score')
+      .select('id, round_date, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, total_score')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .gte('round_date', periodStart.toISOString().split('T')[0])
       .order('round_date', { ascending: false });
 
+    const rounds = (roundsData || []) as RoundRow[];
+
     // Get rounds from previous period for trends
-    const { data: previousRounds } = await supabase
+    const { data: previousRoundsData } = await supabase
       .from('golf_rounds')
-      .select('id, total_putts, fairways_hit, fairways_total, greens_in_regulation, greens_total')
+      .select('id, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .gte('round_date', previousPeriodStart.toISOString().split('T')[0])
       .lt('round_date', periodStart.toISOString().split('T')[0]);
 
-    if (!rounds || rounds.length === 0) {
+    const previousRounds = (previousRoundsData || []) as RoundRow[];
+
+    if (rounds.length === 0) {
       return { success: false, error: 'No rounds found in the selected period' };
     }
 
     const roundIds = rounds.map(r => r.id);
 
     // Get holes data
-    const { data: holes } = await supabase
+    const { data: holesData } = await supabase
       .from('golf_holes')
       .select(`
         id, round_id, hole_number, par, score, putts,
-        fairway_hit, green_in_regulation,
-        driving_distance, drive_miss_direction,
-        approach_distance, approach_miss_direction, approach_proximity,
-        scramble_attempt, scramble_made,
-        sand_save_attempt, sand_save_made,
-        first_putt_distance, first_putt_miss_direction
+        fairway_hit, gir, up_and_down, sand_save
       `)
       .in('round_id', roundIds);
 
+    const holes = (holesData || []) as HoleRow[];
+
     // Get shot-level data
-    const { data: shots } = await supabase
+    const { data: shotsData } = await supabase
       .from('golf_shots')
       .select(`
         id, round_id, hole_number, shot_number, shot_type, club_type,
         lie_before, distance_to_hole_before, distance_to_hole_after,
-        miss_direction, result
+        miss_direction, result, putt_distance_feet, putt_made
       `)
       .in('round_id', roundIds);
 
-    // Get putt details if available
-    let puttDetails: Array<{
-      shot_id: string;
-      miss_tags: string[];
-      distance_feet: number | null;
-      made: boolean;
-    }> = [];
-
-    if (shots && shots.length > 0) {
-      const puttShotIds = shots.filter(s => s.shot_type === 'putting').map(s => s.id);
-      if (puttShotIds.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: details } = await (supabase as any)
-          .from('putt_details')
-          .select('shot_id, miss_tags, distance_feet, made')
-          .in('shot_id', puttShotIds);
-        puttDetails = details || [];
-      }
-    }
+    const shots = (shotsData || []) as ShotRow[];
 
     // ========================================================================
     // CALCULATE TEE STATS
     // ========================================================================
 
-    const par4And5Holes = holes?.filter(h => h.par >= 4) || [];
+    const par4And5Holes = holes.filter(h => h.par >= 4);
     const totalDrives = par4And5Holes.length;
     const fairwaysHit = par4And5Holes.filter(h => h.fairway_hit === true).length;
-    const leftMisses = par4And5Holes.filter(h => h.drive_miss_direction?.toLowerCase().includes('left')).length;
-    const rightMisses = par4And5Holes.filter(h => h.drive_miss_direction?.toLowerCase().includes('right')).length;
 
-    const drivingDistances = par4And5Holes
-      .filter(h => h.driving_distance && h.driving_distance > 0)
-      .map(h => h.driving_distance!);
+    // Get miss directions from shots (drive shots)
+    const driveShots = shots.filter(s => s.shot_type === 'drive' || s.shot_type === 'tee' || s.shot_number === 1);
+    const leftMisses = driveShots.filter(s => s.miss_direction?.toLowerCase().includes('left')).length;
+    const rightMisses = driveShots.filter(s => s.miss_direction?.toLowerCase().includes('right')).length;
+
+    // Get driving distances from shots
+    const drivingDistances = driveShots
+      .filter(s => s.distance_to_hole_before != null && s.distance_to_hole_after != null)
+      .map(s => (s.distance_to_hole_before! - s.distance_to_hole_after!))
+      .filter(d => d > 0);
 
     const teeStats: TeeStats = {
       totalDrives,
@@ -271,10 +300,9 @@ export async function getPlayerShotAnalytics(
     // CALCULATE APPROACH STATS
     // ========================================================================
 
-    const approachHoles = holes?.filter(h => h.approach_distance != null) || [];
-    const approachShots = shots?.filter(s => s.shot_type === 'approach') || [];
-    const totalApproaches = Math.max(approachHoles.length, approachShots.length);
-    const girHoles = holes?.filter(h => h.green_in_regulation === true).length || 0;
+    const approachShots = shots.filter(s => s.shot_type === 'approach' || s.shot_type === 'iron');
+    const totalApproaches = Math.max(holes.length, approachShots.length);
+    const girHoles = holes.filter(h => h.gir === true).length;
 
     // Count miss directions
     const approachMissCounts = {
@@ -282,10 +310,9 @@ export async function getPlayerShotAnalytics(
       short_left: 0, short_right: 0, long_left: 0, long_right: 0,
     };
 
-    const allApproachMisses = [
-      ...(holes?.filter(h => h.approach_miss_direction).map(h => h.approach_miss_direction!) || []),
-      ...(approachShots.filter(s => s.miss_direction).map(s => s.miss_direction!) || []),
-    ];
+    const allApproachMisses = approachShots
+      .filter(s => s.miss_direction)
+      .map(s => s.miss_direction!);
 
     allApproachMisses.forEach(dir => {
       const normalized = dir.toLowerCase().replace('-', '_');
@@ -296,9 +323,9 @@ export async function getPlayerShotAnalytics(
 
     const totalApproachMisses = allApproachMisses.length || 1;
 
-    const approachProximities = holes
-      ?.filter(h => h.approach_proximity != null && h.approach_proximity > 0)
-      .map(h => h.approach_proximity!) || [];
+    const approachProximities = approachShots
+      .filter(s => s.distance_to_hole_after != null && s.distance_to_hole_after > 0)
+      .map(s => s.distance_to_hole_after!);
 
     const approachStats: ApproachStats = {
       totalApproaches,
@@ -322,12 +349,12 @@ export async function getPlayerShotAnalytics(
     // CALCULATE AROUND GREEN STATS
     // ========================================================================
 
-    const scrambleAttempts = holes?.filter(h => h.scramble_attempt === true).length || 0;
-    const scramblesMade = holes?.filter(h => h.scramble_made === true).length || 0;
-    const sandSaveAttempts = holes?.filter(h => h.sand_save_attempt === true).length || 0;
-    const sandSavesMade = holes?.filter(h => h.sand_save_made === true).length || 0;
+    const upAndDownAttempts = holes.filter(h => h.up_and_down !== null).length;
+    const upAndDownsMade = holes.filter(h => h.up_and_down === true).length;
+    const sandSaveAttempts = holes.filter(h => h.sand_save !== null).length;
+    const sandSavesMade = holes.filter(h => h.sand_save === true).length;
 
-    const aroundGreenShots = shots?.filter(s => s.shot_type === 'around_green' || s.shot_type === 'chip' || s.shot_type === 'pitch') || [];
+    const aroundGreenShots = shots.filter(s => s.shot_type === 'around_green' || s.shot_type === 'chip' || s.shot_type === 'pitch');
     const aroundGreenMisses: Record<string, number> = {};
 
     aroundGreenShots.forEach(s => {
@@ -340,8 +367,8 @@ export async function getPlayerShotAnalytics(
     const totalAroundGreenMisses = Object.values(aroundGreenMisses).reduce((a, b) => a + b, 0) || 1;
 
     const aroundGreenStats: AroundGreenStats = {
-      totalShots: aroundGreenShots.length + scrambleAttempts,
-      upAndDownPct: calculatePercentage(scramblesMade, scrambleAttempts),
+      totalShots: aroundGreenShots.length + upAndDownAttempts,
+      upAndDownPct: calculatePercentage(upAndDownsMade, upAndDownAttempts),
       sandSavePct: calculatePercentage(sandSavesMade, sandSaveAttempts),
       missBreakdown: Object.entries(aroundGreenMisses)
         .map(([direction, count]) => ({
@@ -356,68 +383,52 @@ export async function getPlayerShotAnalytics(
     // CALCULATE PUTTING STATS
     // ========================================================================
 
-    const allHolesWithPutts = holes?.filter(h => h.putts != null) || [];
+    const allHolesWithPutts = holes.filter(h => h.putts != null);
     const totalPutts = allHolesWithPutts.reduce((sum, h) => sum + (h.putts || 0), 0);
     const onePutts = allHolesWithPutts.filter(h => h.putts === 1).length;
     const twoPutts = allHolesWithPutts.filter(h => h.putts === 2).length;
     const threePlusPutts = allHolesWithPutts.filter(h => (h.putts || 0) >= 3).length;
     const holesWithPutts = allHolesWithPutts.length || 1;
 
-    // Putt miss tendencies from putt_details
-    const puttMissTendencies = { low: 0, high: 0, short: 0 };
-    puttDetails.forEach(p => {
-      if (p.miss_tags && !p.made) {
-        p.miss_tags.forEach(tag => {
-          if (tag in puttMissTendencies) {
-            puttMissTendencies[tag as keyof typeof puttMissTendencies]++;
-          }
-        });
-      }
-    });
-
-    const totalMissedPutts = puttDetails.filter(p => !p.made).length || 1;
-
-    // Distance-based putting stats
+    // Distance-based putting stats from golf_shots
     const puttsByDistance = {
       inside5ft: { attempts: 0, made: 0 },
       fiveTo10ft: { attempts: 0, made: 0 },
       outside10ft: { attempts: 0, made: 0 },
     };
 
-    puttDetails.forEach(p => {
-      const dist = p.distance_feet;
+    const puttShots = shots.filter(s => s.shot_type === 'putt' || s.shot_type === 'putting');
+
+    puttShots.forEach(p => {
+      const dist = p.putt_distance_feet;
       if (dist != null) {
         if (dist <= 5) {
           puttsByDistance.inside5ft.attempts++;
-          if (p.made) puttsByDistance.inside5ft.made++;
+          if (p.putt_made) puttsByDistance.inside5ft.made++;
         } else if (dist <= 10) {
           puttsByDistance.fiveTo10ft.attempts++;
-          if (p.made) puttsByDistance.fiveTo10ft.made++;
+          if (p.putt_made) puttsByDistance.fiveTo10ft.made++;
         } else {
           puttsByDistance.outside10ft.attempts++;
-          if (p.made) puttsByDistance.outside10ft.made++;
+          if (p.putt_made) puttsByDistance.outside10ft.made++;
         }
       }
     });
 
-    // Also calculate from first_putt_distance in holes if putt_details is sparse
-    if (puttsByDistance.inside5ft.attempts === 0 && puttsByDistance.fiveTo10ft.attempts === 0) {
-      allHolesWithPutts.forEach(h => {
-        const dist = h.first_putt_distance;
-        if (dist != null) {
-          if (dist <= 5) {
-            puttsByDistance.inside5ft.attempts++;
-            if (h.putts === 1) puttsByDistance.inside5ft.made++;
-          } else if (dist <= 10) {
-            puttsByDistance.fiveTo10ft.attempts++;
-            if (h.putts === 1) puttsByDistance.fiveTo10ft.made++;
-          } else {
-            puttsByDistance.outside10ft.attempts++;
-            if (h.putts === 1) puttsByDistance.outside10ft.made++;
-          }
-        }
-      });
-    }
+    // Putt miss tendencies from shots
+    const puttMissTendencies = { low: 0, high: 0, short: 0 };
+    const missedPuttShots = puttShots.filter(p => p.putt_made === false);
+
+    missedPuttShots.forEach(p => {
+      if (p.miss_direction) {
+        const dir = p.miss_direction.toLowerCase();
+        if (dir.includes('low')) puttMissTendencies.low++;
+        if (dir.includes('high')) puttMissTendencies.high++;
+        if (dir.includes('short')) puttMissTendencies.short++;
+      }
+    });
+
+    const totalMissedPutts = missedPuttShots.length || 1;
 
     const puttingStats: PuttingAnalytics = {
       totalPutts,
@@ -463,12 +474,12 @@ export async function getPlayerShotAnalytics(
     ];
 
     const distanceRangeAnalytics: DistanceRangeAnalytics[] = distanceRanges.map(range => {
-      const rangeShots = shots?.filter(s => {
+      const rangeShots = shots.filter(s => {
         const dist = s.distance_to_hole_before;
-        return dist != null && dist >= range.min && dist < range.max && s.shot_type !== 'putting' && s.shot_type !== 'drive';
-      }) || [];
+        return dist != null && dist >= range.min && dist < range.max && s.shot_type !== 'putting' && s.shot_type !== 'putt' && s.shot_type !== 'drive' && s.shot_type !== 'tee';
+      });
 
-      const greenHits = rangeShots.filter(s => s.result === 'green' || s.result === 'hole').length;
+      const greenHits = rangeShots.filter(s => s.result === 'green' || s.result === 'hole' || s.result === 'gir').length;
       const proximities = rangeShots
         .filter(s => s.distance_to_hole_after != null)
         .map(s => s.distance_to_hole_after!);
@@ -509,10 +520,10 @@ export async function getPlayerShotAnalytics(
 
     const trends: TrendData[] = [];
 
-    if (previousRounds && previousRounds.length > 0) {
+    if (previousRounds.length > 0) {
       // Fairway percentage trend
-      const prevFairwaysHit = previousRounds.reduce((sum, r) => sum + (r.fairways_hit || 0), 0);
-      const prevFairwaysTotal = previousRounds.reduce((sum, r) => sum + (r.fairways_total || 0), 0);
+      const prevFairwaysHit = previousRounds.reduce((sum, r) => sum + (r.total_fairways_hit || 0), 0);
+      const prevFairwaysTotal = previousRounds.reduce((sum, r) => sum + (r.total_fairways || 0), 0);
       const prevFairwayPct = calculatePercentage(prevFairwaysHit, prevFairwaysTotal);
 
       if (prevFairwaysTotal > 0) {
@@ -528,8 +539,8 @@ export async function getPlayerShotAnalytics(
       }
 
       // GIR trend
-      const prevGirHit = previousRounds.reduce((sum, r) => sum + (r.greens_in_regulation || 0), 0);
-      const prevGirTotal = previousRounds.reduce((sum, r) => sum + (r.greens_total || 0), 0);
+      const prevGirHit = previousRounds.reduce((sum, r) => sum + (r.total_gir || 0), 0);
+      const prevGirTotal = previousRounds.reduce((sum, r) => sum + (r.total_gir_possible || 0), 0);
       const prevGirPct = calculatePercentage(prevGirHit, prevGirTotal);
 
       if (prevGirTotal > 0) {
@@ -574,10 +585,13 @@ export async function getPlayerShotAnalytics(
       .filter(([, pct]) => pct > 0)
       .sort((a, b) => b[1] - a[1]);
 
-    if (approachMissArray.length > 0 && approachMissArray[0][1] > 40) {
-      const [missDir, pct] = approachMissArray[0];
-      insights.push(`Your approach shots miss ${missDir.replace('_', '-')} ${pct}% of the time. Consider adjusting your aim.`);
-      primaryWeakness = `Approach shots trending ${missDir.replace('_', '-')}`;
+    if (approachMissArray.length > 0) {
+      const firstEntry = approachMissArray[0];
+      if (firstEntry && firstEntry[1] > 40) {
+        const [missDir, pct] = firstEntry;
+        insights.push(`Your approach shots miss ${missDir.replace('_', '-')} ${pct}% of the time. Consider adjusting your aim.`);
+        primaryWeakness = `Approach shots trending ${missDir.replace('_', '-')}`;
+      }
     }
 
     // Putting insights

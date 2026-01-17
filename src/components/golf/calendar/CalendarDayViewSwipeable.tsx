@@ -12,7 +12,7 @@
  * - Today indicator and quick navigation
  */
 
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import {
   format,
@@ -118,12 +118,12 @@ export function CalendarDayViewSwipeable({
 
   // Touch handlers for swipe navigation
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    // Check if we're at the top of the scroll (for pull-to-refresh)
-    const isAtTop = scrollRef.current ? scrollRef.current.scrollTop <= 0 : true;
+    const touch = e.touches[0];
+    if (!touch) return;
 
     setTouchStart({
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY,
+      x: touch.clientX,
+      y: touch.clientY,
       time: Date.now(),
     });
     setPullDistance(0);
@@ -132,8 +132,11 @@ export function CalendarDayViewSwipeable({
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!touchStart || isTransitioning) return;
 
-    const deltaX = e.touches[0].clientX - touchStart.x;
-    const deltaY = e.touches[0].clientY - touchStart.y;
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = touch.clientY - touchStart.y;
     const isAtTop = scrollRef.current ? scrollRef.current.scrollTop <= 0 : true;
 
     // Determine if horizontal or vertical swipe
@@ -156,8 +159,11 @@ export function CalendarDayViewSwipeable({
   const handleTouchEnd = useCallback(async (e: React.TouchEvent) => {
     if (!touchStart) return;
 
-    const deltaX = e.changedTouches[0].clientX - touchStart.x;
-    const deltaY = e.changedTouches[0].clientY - touchStart.y;
+    const touch = e.changedTouches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = touch.clientY - touchStart.y;
     const deltaTime = Date.now() - touchStart.time;
     const velocity = Math.abs(deltaX) / deltaTime;
     const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);

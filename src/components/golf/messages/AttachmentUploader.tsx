@@ -15,11 +15,8 @@ import {
   ALLOWED_MIME_TYPES,
   FILE_SIZE_LIMITS,
   validateFile,
-  getFileType,
-  createPreviewUrl,
   formatFileSize,
   getFileSizeLimitsDescription,
-  type PendingAttachment,
 } from '@/lib/storage/attachments';
 
 interface AttachmentUploaderProps {
@@ -161,10 +158,10 @@ export function AttachmentUploader({
 
   // Clear error after 5 seconds
   useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(null), 5000);
-      return () => clearTimeout(timer);
-    }
+    if (!error) return;
+
+    const timer = setTimeout(() => setError(null), 5000);
+    return () => clearTimeout(timer);
   }, [error]);
 
   // Compact version - just a button row
@@ -317,7 +314,7 @@ export function AttachmentUploader({
           <FileTypeButton
             icon={<IconImage size={18} />}
             label="Images"
-            limit={formatFileSize(FILE_SIZE_LIMITS.image)}
+            limit={formatFileSize(FILE_SIZE_LIMITS.image ?? 0)}
             onClick={(e) => {
               e.stopPropagation();
               handleClick('image');
@@ -327,7 +324,7 @@ export function AttachmentUploader({
           <FileTypeButton
             icon={<IconVideo size={18} />}
             label="Videos"
-            limit={formatFileSize(FILE_SIZE_LIMITS.video)}
+            limit={formatFileSize(FILE_SIZE_LIMITS.video ?? 0)}
             onClick={(e) => {
               e.stopPropagation();
               handleClick('video');
@@ -337,7 +334,7 @@ export function AttachmentUploader({
           <FileTypeButton
             icon={<IconFile size={18} />}
             label="Docs"
-            limit={formatFileSize(FILE_SIZE_LIMITS.document)}
+            limit={formatFileSize(FILE_SIZE_LIMITS.document ?? 0)}
             onClick={(e) => {
               e.stopPropagation();
               handleClick('document');
@@ -347,7 +344,7 @@ export function AttachmentUploader({
           <FileTypeButton
             icon={<IconMusic size={18} />}
             label="Audio"
-            limit={formatFileSize(FILE_SIZE_LIMITS.audio)}
+            limit={formatFileSize(FILE_SIZE_LIMITS.audio ?? 0)}
             onClick={(e) => {
               e.stopPropagation();
               handleClick();

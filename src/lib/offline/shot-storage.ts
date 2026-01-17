@@ -12,7 +12,7 @@
  * - Exponential backoff retry metadata
  */
 
-import type { GolfShot, GolfHole, GolfRound, CreateShotData, CreateHoleData, CreateRoundData } from '@/lib/types';
+import type { GolfShot, GolfHole, GolfRound } from '@/lib/types/golf';
 
 // ============================================================================
 // TYPES

@@ -13,6 +13,7 @@ import {
   getVersionHistory,
 } from '@/app/golf/actions/documents';
 import type { DocumentVersion } from '@/app/golf/actions/documents';
+import type { GolfDocument } from '@/lib/types/golf';
 import { DocumentPreview } from '@/components/golf/documents/DocumentPreview';
 import { VersionHistory } from '@/components/golf/documents/VersionHistory';
 import { UploadNewVersionModal } from '@/components/golf/documents/UploadNewVersionModal';
@@ -793,7 +794,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           onOpenChange={(open) => {
             if (!open) closePreview();
           }}
-          document={previewDocument as any}
+          golfDocument={previewDocument as unknown as GolfDocument}
         />
       )}
 

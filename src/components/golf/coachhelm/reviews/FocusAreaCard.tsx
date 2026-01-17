@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
-  IconTarget,
   IconCheck,
   IconChevronRight,
   IconTrendingUp,
@@ -224,9 +223,9 @@ export function FocusAreaCard({
       >
         <div className={cn(
           'w-8 h-8 rounded-lg flex items-center justify-center text-base',
-          areaConfig.bgColor
+          areaConfig?.bgColor
         )}>
-          {areaConfig.icon}
+          {areaConfig?.icon}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -267,9 +266,9 @@ export function FocusAreaCard({
         <div className="flex items-start gap-3">
           <div className={cn(
             'w-10 h-10 rounded-xl flex items-center justify-center text-lg',
-            areaConfig.bgColor
+            areaConfig?.bgColor
           )}>
-            {areaConfig.icon}
+            {areaConfig?.icon}
           </div>
 
           <div className="flex-1 min-w-0">

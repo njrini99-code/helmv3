@@ -12,12 +12,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import type {
-  MultiMetricTrend,
-  TrendAnalysis,
-  TrendDirection,
-  RoundType,
-} from '@/lib/types/golf';
+import type { TrendDirection } from '@/lib/types/golf';
 import { TrendLineChart } from './TrendLineChart';
 import { cn } from '@/lib/utils';
 import {
@@ -27,11 +22,34 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 
+// Local type definitions for this component's data structure
+interface TrendDataPoint {
+  date: string;
+  value: number;
+}
+
+interface MetricTrendData {
+  trend: TrendDirection;
+  current_value: number;
+  data: TrendDataPoint[];
+}
+
+interface MultiMetricTrendData {
+  scoring_avg?: MetricTrendData;
+  putts?: MetricTrendData;
+  fairway_pct?: MetricTrendData;
+  gir_pct?: MetricTrendData;
+  sg_total?: MetricTrendData;
+  sg_off_tee?: MetricTrendData;
+  sg_approach?: MetricTrendData;
+  sg_around_green?: MetricTrendData;
+  sg_putting?: MetricTrendData;
+}
+
 interface TrendVisualizationProps {
-  trends: MultiMetricTrend;
+  trends: MultiMetricTrendData;
   insights?: string[];
   prediction?: {
     predicted_score: number;
@@ -136,32 +154,38 @@ export function TrendVisualization({
   const currentMetrics = activeCategory === 'performance' ? performanceMetrics : strokesGainedMetrics;
 
   // Get trend data for selected metric
-  const selectedTrend = trends[selectedMetric as keyof MultiMetricTrend] as TrendAnalysis | undefined;
+  const selectedTrend = trends[selectedMetric as keyof MultiMetricTrendData];
   const config = METRICS_CONFIG[selectedMetric];
 
   // Get trend indicator styling
-  const getTrendBadge = (trend?: TrendAnalysis) => {
-    if (!trend) return null;
+  const getTrendBadge = (trendData?: MetricTrendData) => {
+    if (!trendData) return null;
 
-    const config = METRICS_CONFIG[selectedMetric];
-    const isGood = config.isHigherBetter
-      ? trend.trend === 'improving'
-      : trend.trend === 'improving';
+    const metricConfig = METRICS_CONFIG[selectedMetric];
+    const direction = trendData.trend;
+    const isGood = metricConfig.isHigherBetter
+      ? direction === 'improving'
+      : direction === 'improving';
 
     return {
-      icon: trend.trend === 'improving' ? '↑' : trend.trend === 'declining' ? '↓' : '→',
-      color: trend.trend === 'stable'
+      icon: direction === 'improving' ? '↑' : direction === 'declining' ? '↓' : '→',
+      color: direction === 'stable' || direction === 'insufficient_data'
         ? 'bg-gray-100 text-gray-700'
         : isGood
         ? 'bg-green-100 text-green-700'
         : 'bg-red-100 text-red-700',
-      label: trend.trend.charAt(0).toUpperCase() + trend.trend.slice(1),
+      label: direction.charAt(0).toUpperCase() + direction.slice(1).replace('_', ' '),
     };
   };
 
   // Quick stats summary
   const quickStats = useMemo(() => {
-    const stats = [];
+    const stats: Array<{
+      label: string;
+      value: string;
+      trend: TrendDirection;
+      isHigherBetter: boolean;
+    }> = [];
 
     if (trends.scoring_avg) {
       stats.push({
@@ -273,7 +297,7 @@ export function TrendVisualization({
       <div className="flex flex-wrap gap-2">
         {currentMetrics.map((metric) => {
           const metricConfig = METRICS_CONFIG[metric];
-          const trendData = trends[metric as keyof MultiMetricTrend] as TrendAnalysis | undefined;
+          const trendData = trends[metric as keyof MultiMetricTrendData];
           const badge = getTrendBadge(trendData);
 
           return (
@@ -327,11 +351,10 @@ export function TrendVisualization({
           {selectedTrend && selectedTrend.data.length > 0 ? (
             <TrendLineChart
               data={selectedTrend.data}
-              analysis={selectedTrend}
               metric={selectedMetric}
               color={config.color}
               height={300}
-              showPrediction={true}
+              showPrediction={false}
               showMovingAverage={true}
               isHigherBetter={config.isHigherBetter}
               formatValue={config.format}
@@ -351,7 +374,7 @@ export function TrendVisualization({
           .slice(0, 4)
           .map((metric) => {
             const metricConfig = METRICS_CONFIG[metric];
-            const trendData = trends[metric as keyof MultiMetricTrend] as TrendAnalysis | undefined;
+            const trendData = trends[metric as keyof MultiMetricTrendData];
 
             return (
               <Card

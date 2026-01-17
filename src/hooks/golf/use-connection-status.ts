@@ -424,4 +424,4 @@ export function useOnlineStatus(): {
 // EXPORTS
 // ============================================================================
 
-export type { ConnectionQuality, ConnectionStatus, UseConnectionStatusOptions };
+// Types are already exported at definition, no need to re-export

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { IconPlus, IconMail } from '@/components/icons';
 import type { ConversationWithMeta } from '@/lib/types/messages';
 
-interface ConversationListProps {
+export interface ConversationListProps {
   conversations: ConversationWithMeta[];
   selectedId: string | null;
   currentUserId: string;
@@ -47,7 +47,7 @@ export function ConversationList({
 
     const coach = otherUser.coach || otherUser.coaches;
     if (coach) {
-      return coach.full_name || coach.school_name || 'Coach';
+      return coach.full_name || 'Coach';
     }
 
     const player = otherUser.player || otherUser.players;

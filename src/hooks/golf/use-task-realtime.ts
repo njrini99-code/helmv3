@@ -146,7 +146,13 @@ export function useTaskRealtime(
       let inProgressCount = 0;
       let overdueCount = 0;
 
+      // Type assertion for task data that includes columns added via migration
+      type TaskDataWithExtras = typeof tasksData[number] & {
+        category?: string | null;
+      };
+
       const transformedTasks: TaskWithPlayer[] = (tasksData || []).map((task) => {
+        const taskWithExtras = task as TaskDataWithExtras;
         const assignedPlayer = task.assigned_player as { id: string; first_name: string | null; last_name: string | null } | null;
 
         // Calculate if overdue
@@ -184,7 +190,7 @@ export function useTaskRealtime(
           is_overdue: isOverdue ?? false,
           reminder_at: task.reminder_at || null,
           reminder_sent: task.reminder_sent || false,
-          category: task.category || null,
+          category: taskWithExtras.category || null,
         };
       });
 
@@ -280,6 +286,8 @@ export function useSingleTaskRealtime(taskId: string | null) {
 
       if (taskError) throw taskError;
 
+      // Type assertion for task data that includes columns added via migration
+      const taskWithExtras = taskData as typeof taskData & { category?: string | null };
       const assignedPlayer = taskData.assigned_player as { id: string; first_name: string | null; last_name: string | null } | null;
 
       // Calculate if overdue
@@ -307,7 +315,7 @@ export function useSingleTaskRealtime(taskId: string | null) {
         is_overdue: isOverdue ?? false,
         reminder_at: taskData.reminder_at || null,
         reminder_sent: taskData.reminder_sent || false,
-        category: taskData.category || null,
+        category: taskWithExtras.category || null,
       });
     } catch (err) {
       console.error('Error fetching task:', err);
@@ -479,7 +487,10 @@ export function useReminderRealtime(userId: string, enabled = true) {
 
     const fetchReminders = async () => {
       setLoading(true);
-      const { data } = await supabase
+      // Note: golf_task_reminders may not exist in generated types
+      // Using type assertion for tables added via migration
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
         .from('golf_task_reminders')
         .select(`
           *,
@@ -538,12 +549,14 @@ export function useTemplateRealtime(teamId: string, enabled = true) {
 
     const fetchTemplates = async () => {
       setLoading(true);
-      const { data } = await supabase
+      // Note: golf_task_templates may not exist in generated types
+      // Using type assertion for tables added via migration
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
         .from('golf_task_templates')
         .select('*')
         .eq('team_id', teamId)
-        .eq('is_active', true)
-        .order('name', { ascending: true });
+        .order('title', { ascending: true });
 
       setTemplates(data || []);
       setLoading(false);

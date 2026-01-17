@@ -3,13 +3,15 @@
 import { useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
 import { ReminderPicker } from './ReminderPicker';
-import { createTask, updateTask } from '@/app/golf/actions/tasks';
+import { createTask } from '@/app/golf/actions/tasks';
+import { createClient } from '@/lib/supabase/client';
 import type {
   GolfTask,
-  CreateTaskData,
-  TaskPriority,
   ReminderType,
 } from '@/lib/types/golf';
+
+// Task priority type for this form
+type TaskPriority = 'low' | 'medium' | 'high';
 
 interface TaskFormWithReminderProps {
   teamId: string;
@@ -34,7 +36,9 @@ export function TaskFormWithReminder({
   // Form state
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
-  const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
+  const [priority, setPriority] = useState<TaskPriority>(
+    (task?.priority as TaskPriority) || 'medium'
+  );
   const [dueDate, setDueDate] = useState(
     task?.due_date ? task.due_date.split('T')[0] : ''
   );
@@ -70,47 +74,78 @@ export function TaskFormWithReminder({
         const fullDueDate = getFullDueDate();
 
         if (isEditing && task) {
-          // Update existing task
-          const { data, error: updateError } = await updateTask(task.id, {
-            title: title.trim(),
-            description: description.trim() || undefined,
-            priority,
-            due_date: fullDueDate,
-            assigned_to: assignedTo || undefined,
-            reminder_at: reminderAt || undefined,
-            reminder_type: reminderAt ? reminderType : undefined,
-          });
+          // Update existing task using direct Supabase client
+          const supabase = createClient();
+          const { error: updateError } = await supabase
+            .from('golf_tasks')
+            .update({
+              title: title.trim(),
+              description: description.trim() || null,
+              priority,
+              due_date: fullDueDate || null,
+              assigned_to: assignedTo || null,
+              reminder_at: reminderAt || null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', task.id);
 
           if (updateError) {
-            setError(updateError);
+            setError(updateError.message);
             return;
           }
 
-          if (data && onSuccess) {
-            onSuccess(data);
+          // Fetch the updated task to return
+          const { data: updatedTask } = await supabase
+            .from('golf_tasks')
+            .select('*')
+            .eq('id', task.id)
+            .single();
+
+          if (updatedTask && onSuccess) {
+            onSuccess(updatedTask as GolfTask);
           }
         } else {
-          // Create new task
-          const taskData: CreateTaskData = {
-            team_id: teamId,
-            title: title.trim(),
-            description: description.trim() || undefined,
+          // Create new task using server action
+          // createTask signature: (teamId, title, description?, dueDate?, priority?, assignToPlayerIds?)
+          const assignToIds = assignedTo ? [assignedTo] : undefined;
+          const result = await createTask(
+            teamId,
+            title.trim(),
+            description.trim() || undefined,
+            fullDueDate,
             priority,
-            due_date: fullDueDate,
-            assigned_to: assignedTo || undefined,
-            reminder_at: reminderAt || undefined,
-            reminder_type: reminderAt ? reminderType : undefined,
-          };
+            assignToIds
+          );
 
-          const { data, error: createError } = await createTask(taskData);
-
-          if (createError) {
-            setError(createError);
+          if (!result.success) {
+            setError(result.error || 'Failed to create task');
             return;
           }
 
-          if (data && onSuccess) {
-            onSuccess(data);
+          // Set reminder if provided (separate update since createTask doesn't support it)
+          if (reminderAt && result.data?.taskId) {
+            const supabase = createClient();
+            await supabase
+              .from('golf_tasks')
+              .update({
+                reminder_at: reminderAt,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', result.data.taskId);
+          }
+
+          // Fetch the created task to return
+          if (result.data?.taskId && onSuccess) {
+            const supabase = createClient();
+            const { data: createdTask } = await supabase
+              .from('golf_tasks')
+              .select('*')
+              .eq('id', result.data.taskId)
+              .single();
+
+            if (createdTask) {
+              onSuccess(createdTask as GolfTask);
+            }
           }
         }
       } catch (err) {

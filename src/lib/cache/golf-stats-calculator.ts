@@ -161,8 +161,10 @@ export async function getPlayerStatsSummary(playerId: string): Promise<PlayerSta
       const supabase = await createClient();
 
       // Use the database function for consistent stats
-      const { data, error } = await supabase
-        .rpc('get_player_stats_summary', { p_player_id: playerId });
+      // Note: This RPC function may not be in generated types yet
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .rpc('get_player_stats_summary', { p_player_id: playerId }) as { data: Record<string, unknown>[] | null; error: Error | null };
 
       if (error || !data || data.length === 0) {
         // No cached stats - try direct query
@@ -179,22 +181,22 @@ export async function getPlayerStatsSummary(playerId: string): Promise<PlayerSta
         return transformToSummary(directData);
       }
 
-      const row = data[0];
+      const row = data[0] as Record<string, unknown>;
       return {
-        scoringAverage: row.scoring_average,
-        roundsPlayed: row.rounds_played || 0,
-        bestRound: row.best_round,
-        worstRound: row.worst_round,
-        last5Average: row.last_5_average,
-        last10Average: row.last_10_average,
-        improvementTrend: row.improvement_trend,
-        trendDirection: row.trend_direction || 'stable',
-        girPercentage: row.gir_percentage,
-        fairwayPercentage: row.fairway_percentage,
-        puttsPerRound: row.putts_per_round,
-        scramblingPercentage: row.scrambling_percentage,
-        isStale: row.is_stale || false,
-        lastUpdated: row.last_updated,
+        scoringAverage: row.scoring_average as number | null,
+        roundsPlayed: (row.rounds_played as number) || 0,
+        bestRound: row.best_round as number | null,
+        worstRound: row.worst_round as number | null,
+        last5Average: row.last_5_average as number | null,
+        last10Average: row.last_10_average as number | null,
+        improvementTrend: row.improvement_trend as number | null,
+        trendDirection: (row.trend_direction as 'improving' | 'stable' | 'declining') || 'stable',
+        girPercentage: row.gir_percentage as number | null,
+        fairwayPercentage: row.fairway_percentage as number | null,
+        puttsPerRound: row.putts_per_round as number | null,
+        scramblingPercentage: row.scrambling_percentage as number | null,
+        isStale: (row.is_stale as boolean) || false,
+        lastUpdated: row.last_updated as string | null,
       };
     },
     { ttl: golfCache.playerStats.ttl }
@@ -254,7 +256,9 @@ export async function refreshStatsCache(playerId: string): Promise<void> {
   const supabase = await createClient();
 
   // Call the database function to refresh
-  const { error } = await supabase
+  // Note: This RPC function may not be in generated types yet
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .rpc('refresh_player_stats_cache', { p_player_id: playerId });
 
   if (error) {
@@ -273,7 +277,9 @@ export async function refreshStatsCache(playerId: string): Promise<void> {
 export async function markStatsStale(playerId: string): Promise<void> {
   const supabase = await createClient();
 
-  const { error } = await supabase
+  // Note: This RPC function may not be in generated types yet
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .rpc('mark_player_stats_stale', { p_player_id: playerId });
 
   if (error) {

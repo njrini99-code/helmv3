@@ -32,7 +32,7 @@ export function TrendLineChart({
   data,
   analysis,
   title,
-  metric,
+  metric: _metric, // prefixed to indicate intentionally unused
   color = '#22c55e',
   height = 200,
   showPrediction = true,
@@ -97,12 +97,16 @@ export function TrendLineChart({
     .map((v, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)},${yScale(v)}`)
     .join(' ');
 
-  // Generate prediction point
-  const predictionPoint = analysis && showPrediction
+  // Generate prediction point (using last data point's value as fallback since TrendAnalysis doesn't have prediction)
+  const lastDataPoint = sortedData.length > 0 ? sortedData[sortedData.length - 1] : null;
+  const predictionValue = analysis && lastDataPoint
+    ? lastDataPoint.value + (analysis.changePercent / 100 * lastDataPoint.value)
+    : null;
+  const predictionPoint = analysis && showPrediction && predictionValue !== null
     ? {
         x: xScale(sortedData.length),
-        y: yScale(analysis.prediction),
-        value: analysis.prediction,
+        y: yScale(predictionValue),
+        value: predictionValue,
       }
     : null;
 
@@ -131,7 +135,7 @@ export function TrendLineChart({
     };
   };
 
-  const trendIndicator = getTrendIndicator(analysis?.trend);
+  const trendIndicator = getTrendIndicator(analysis?.direction);
 
   return (
     <div className={cn('', className)}>
@@ -226,11 +230,11 @@ export function TrendLineChart({
         ))}
 
         {/* Prediction point */}
-        {predictionPoint && (
+        {predictionPoint && sortedData.length > 0 && (
           <g>
             <line
               x1={xScale(sortedData.length - 1)}
-              y1={yScale(sortedData[sortedData.length - 1].value)}
+              y1={yScale(sortedData[sortedData.length - 1]!.value)}
               x2={predictionPoint.x}
               y2={predictionPoint.y}
               stroke={color}
@@ -335,23 +339,19 @@ export function TrendLineChart({
       </div>
 
       {/* Analysis summary */}
-      {analysis && (
-        <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
+      {analysis && sortedData.length > 0 && (
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
           <div className="bg-gray-50 rounded p-2">
             <div className="text-gray-500">Current</div>
-            <div className="font-semibold text-gray-900">{formatValue(analysis.current_value)}</div>
+            <div className="font-semibold text-gray-900">{formatValue(sortedData[sortedData.length - 1]!.value)}</div>
           </div>
           <div className="bg-gray-50 rounded p-2">
             <div className="text-gray-500">Best</div>
-            <div className="font-semibold text-green-600">{formatValue(analysis.best_value)}</div>
+            <div className="font-semibold text-green-600">{formatValue(Math.min(...sortedData.map(d => d.value)))}</div>
           </div>
           <div className="bg-gray-50 rounded p-2">
-            <div className="text-gray-500">Avg</div>
-            <div className="font-semibold text-gray-900">{formatValue(analysis.moving_average)}</div>
-          </div>
-          <div className="bg-gray-50 rounded p-2">
-            <div className="text-gray-500">Confidence</div>
-            <div className="font-semibold text-gray-900">{Math.round(analysis.confidence * 100)}%</div>
+            <div className="text-gray-500">Change</div>
+            <div className="font-semibold text-gray-900">{analysis.changePercent >= 0 ? '+' : ''}{analysis.changePercent.toFixed(1)}%</div>
           </div>
         </div>
       )}

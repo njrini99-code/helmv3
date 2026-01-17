@@ -27,13 +27,10 @@ import {
   updateOfflineRound,
   updateOfflineHole,
   updateOfflineShot,
-  getOfflineHolesForRound,
-  getOfflineShotsForRound,
   setSyncMetadata,
   getSyncMetadata,
   clearSyncedData,
   shouldRetry,
-  calculateRetryDelay,
   type OfflineRound,
   type OfflineHole,
   type OfflineShot,
@@ -202,6 +199,38 @@ class SyncEngine {
     if (this.state.isOnline) {
       this.syncPendingData();
     }
+  }
+
+  /**
+   * Initialize the sync engine
+   * TODO: Add any async initialization logic needed (e.g., loading persisted state)
+   */
+  async initialize(): Promise<void> {
+    await this.loadSyncMetadata();
+    await this.refreshPendingCount();
+    this.start();
+  }
+
+  /**
+   * Set all callbacks at once (convenience method for providers)
+   */
+  setCallbacks(callbacks: SyncCallback): void {
+    // Store as config callbacks so they're used in notifyCallbacks
+    this.config.callbacks = callbacks;
+  }
+
+  /**
+   * Sync all pending data (alias for syncPendingData for API compatibility)
+   */
+  async syncAll(): Promise<SyncResult> {
+    return this.syncPendingData();
+  }
+
+  /**
+   * Stop auto-sync interval (alias for stop for API compatibility)
+   */
+  stopAutoSync(): void {
+    this.stop();
   }
 
   /**
@@ -418,6 +447,7 @@ class SyncEngine {
       }
 
       const round = pendingRounds[i];
+      if (!round) continue;
 
       // Update progress
       this.updateProgress('rounds', i + 1, pendingRounds.length, round._offline_id);
@@ -478,6 +508,7 @@ class SyncEngine {
       }
 
       const hole = pendingHoles[i];
+      if (!hole) continue;
 
       // Update progress
       this.updateProgress('holes', i + 1, pendingHoles.length, hole._offline_id);
@@ -528,6 +559,7 @@ class SyncEngine {
       }
 
       const shot = pendingShots[i];
+      if (!shot) continue;
 
       // Update progress
       this.updateProgress('shots', i + 1, pendingShots.length, shot._offline_id);
@@ -660,7 +692,7 @@ class SyncEngine {
         courseSlope: round.course_slope?.toString() || '',
         teesPlayed: round.tees_played || '',
         roundType: (round.round_type as 'practice' | 'tournament' | 'qualifier') || 'practice',
-        roundDate: round.round_date || new Date().toISOString().split('T')[0],
+        roundDate: round.round_date ?? new Date().toISOString().split('T')[0] ?? '',
       },
       holes: [],
       completedHoleStats: [],
@@ -821,7 +853,7 @@ class SyncEngine {
 
     // Compare fields
     for (const [field, label] of Object.entries(fieldLabels)) {
-      const localValue = (local as Record<string, unknown>)[field];
+      const localValue = (local as unknown as Record<string, unknown>)[field];
       const serverValue = server[field];
 
       // Skip metadata fields
@@ -872,6 +904,9 @@ class SyncEngine {
       }
 
       const conflict = this.state.pendingConflicts[conflictIndex];
+      if (!conflict) {
+        return { success: false, error: 'Conflict not found' };
+      }
 
       // Apply the resolution
       if (strategy === 'local') {
@@ -892,12 +927,13 @@ class SyncEngine {
         }
       } else if (strategy === 'server') {
         // Accept server version, mark as synced
+        const serverId = conflict.serverVersion?.id as string | undefined;
         if (conflict.type === 'round') {
-          await markRoundSynced(offlineId, conflict.serverVersion?.id as string);
+          await markRoundSynced(offlineId, serverId);
         } else if (conflict.type === 'hole') {
-          await markHoleSynced(offlineId, conflict.serverVersion?.id as string);
+          await markHoleSynced(offlineId, serverId);
         } else if (conflict.type === 'shot') {
-          await markShotSynced(offlineId, conflict.serverVersion?.id as string);
+          await markShotSynced(offlineId, serverId);
         }
       } else if (strategy === 'merge' && mergedData) {
         // Apply merged data

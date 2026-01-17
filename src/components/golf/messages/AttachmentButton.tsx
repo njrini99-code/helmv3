@@ -9,13 +9,11 @@ import {
   IconFile,
   IconMusic,
   IconCamera,
-  IconX,
 } from '@/components/icons';
 import {
   ALLOWED_MIME_TYPES,
   FILE_SIZE_LIMITS,
   formatFileSize,
-  getFileSizeLimitsDescription,
   validateFile,
 } from '@/lib/storage/attachments';
 
@@ -42,16 +40,16 @@ export function AttachmentButton({
 
   // Close dropdown when clicking outside
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
   const handleButtonClick = () => {
@@ -152,25 +150,25 @@ export function AttachmentButton({
           <AttachmentTypeOption
             icon={<IconImage size={18} />}
             label="Images"
-            description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.image)}`}
+            description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.image ?? 0)}`}
             onClick={() => handleSelectType('image')}
           />
           <AttachmentTypeOption
             icon={<IconVideo size={18} />}
             label="Videos"
-            description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.video)}`}
+            description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.video ?? 0)}`}
             onClick={() => handleSelectType('video')}
           />
           <AttachmentTypeOption
             icon={<IconFile size={18} />}
             label="Documents"
-            description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.document)}`}
+            description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.document ?? 0)}`}
             onClick={() => handleSelectType('document')}
           />
           <AttachmentTypeOption
             icon={<IconMusic size={18} />}
             label="Audio"
-            description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.audio)}`}
+            description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.audio ?? 0)}`}
             onClick={() => handleSelectType('audio')}
           />
 

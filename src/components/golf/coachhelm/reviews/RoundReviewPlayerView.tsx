@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,13 +19,58 @@ import { ReviewInsightCard } from './ReviewInsightCard';
 import type {
   EnhancedRoundReview,
   ReviewInsight,
+  ReviewStatus as CoachHelmReviewStatus,
 } from '@/lib/coachhelm/review-types';
+import type { GolfRoundReview, ReviewStatus as GolfReviewStatus } from '@/lib/types/golf';
 import {
   getReviewByRoundId,
   markReviewViewedByPlayer,
   acknowledgeReview,
 } from '@/app/golf/actions/round-reviews';
-import { INSIGHT_TYPE_CONFIG, SEVERITY_CONFIG } from '@/lib/coachhelm/review-types';
+
+// Map GolfReviewStatus to CoachHelmReviewStatus
+function mapStatus(status: GolfReviewStatus | undefined): CoachHelmReviewStatus {
+  if (!status) return 'draft';
+  // 'shared' and 'approved' map to 'published' in the coachhelm context
+  if (status === 'shared' || status === 'approved') return 'published';
+  // 'pending', 'generating', 'coach_review', 'failed' all map to 'draft'
+  return 'draft';
+}
+
+// Transform GolfRoundReview (snake_case) to EnhancedRoundReview (camelCase)
+function transformToEnhancedReview(review: GolfRoundReview): EnhancedRoundReview {
+  return {
+    id: review.id,
+    roundId: review.round_id,
+    playerId: review.player_id,
+    status: mapStatus(review.status),
+    publishedAt: review.shared_at ?? null,
+    publishedBy: review.coach_approved_by ?? null,
+    roundScore: review.round_score ?? 0,
+    roundScoreToPar: review.round_score_to_par ?? 0,
+    scoringAvgBefore: review.scoring_avg_before,
+    scoringAvgAfter: review.scoring_avg_after,
+    qualifyingPositionBefore: null,
+    qualifyingPositionAfter: null,
+    gapToNextPosition: null,
+    summary: review.summary ?? '',
+    primaryTakeaway: review.primary_takeaway ?? '',
+    nextPracticePriority: review.next_practice_priority,
+    insights: [], // Would need separate query to populate
+    coachRating: review.coach_rating ?? null,
+    coachFeedbackText: null,
+    coachNotes: review.coach_notes,
+    coachViewedAt: review.coach_viewed_at,
+    playerViewedAt: review.player_viewed_at ?? null,
+    playerAcknowledgedAt: review.player_acknowledged ? new Date().toISOString() : null,
+    actionItems: [], // Would need separate query to populate
+    linkedFocusAreaId: null,
+    version: 1,
+    generationMethod: review.engine_version ?? 'unknown',
+    createdAt: review.created_at ?? new Date().toISOString(),
+    updatedAt: review.updated_at ?? new Date().toISOString(),
+  };
+}
 
 // ============================================================================
 // TYPES
@@ -60,8 +105,7 @@ function LoadingSkeleton() {
 // EMPTY STATE
 // ============================================================================
 
-function EmptyState({ roundId, onGenerate, generating }: {
-  roundId: string;
+function EmptyState({ onGenerate, generating }: {
   onGenerate?: () => void;
   generating?: boolean;
 }) {
@@ -402,13 +446,16 @@ export function RoundReviewPlayerView({ roundId, className }: RoundReviewPlayerV
 
       if (!result.success) {
         setError(result.error || 'Failed to load review');
-      } else {
-        setReview(result.data || null);
+      } else if (result.review) {
+        const enhancedReview = transformToEnhancedReview(result.review);
+        setReview(enhancedReview);
 
         // Mark as viewed if it's a published review
-        if (result.data && result.data.status === 'published' && !result.data.playerViewedAt) {
-          await markReviewViewedByPlayer(result.data.id);
+        if (enhancedReview.status === 'published' && !enhancedReview.playerViewedAt) {
+          await markReviewViewedByPlayer(enhancedReview.id);
         }
+      } else {
+        setReview(null);
       }
 
       setLoading(false);
@@ -446,9 +493,7 @@ export function RoundReviewPlayerView({ roundId, className }: RoundReviewPlayerV
   // No review or draft review (not yet published)
   if (!review || review.status === 'draft') {
     return (
-      <EmptyState
-        roundId={roundId}
-      />
+      <EmptyState />
     );
   }
 

@@ -3,15 +3,86 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type {
-  GolfRound,
   GolfRoundReview,
   ReviewStatus,
   CoachFeedbackInput,
   GenerateReviewResponse,
   ReviewKeyStats,
-  DrillRecommendation,
   RoundReviewWithDetails,
-} from '@/types/golf';
+} from '@/lib/types/golf';
+import type { Json } from '@/lib/types/database';
+
+// ============================================================================
+// INTERNAL TYPES
+// ============================================================================
+
+/**
+ * Extended round data type to handle database columns
+ */
+interface RoundDataForReview {
+  id: string;
+  player_id: string;
+  total_score: number | null;
+  score_to_par: number | null;
+  total_putts: number | null;
+  total_fairways_hit: number | null;
+  total_fairways: number | null;
+  total_gir: number | null;
+  total_gir_possible: number | null;
+  status?: string | null;
+  course_name?: string | null;
+}
+
+/**
+ * Database row type for golf_round_reviews (matching actual schema)
+ */
+interface ReviewDbRow {
+  id: string;
+  round_id: string;
+  player_id: string;
+  summary: string | null;
+  highlights: unknown | null;
+  areas_to_review: unknown | null;
+  patterns_detected: unknown | null;
+  round_stats: unknown | null;
+  primary_takeaway: string | null;
+  next_practice_priority: string | null;
+  round_score: number | null;
+  round_score_to_par: number | null;
+  scoring_avg_before: number | null;
+  scoring_avg_after: number | null;
+  engine_version: string | null;
+  shared_with_coach: boolean | null;
+  shared_at: string | null;
+  coach_notes: string | null;
+  coach_viewed_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Extended data stored in JSON columns
+ */
+interface ReviewExtendedData {
+  status?: ReviewStatus;
+  generation_attempts?: number;
+  generation_started_at?: string;
+  generation_completed_at?: string;
+  last_error?: string;
+  ai_recommendations?: string[];
+  ai_model_used?: string;
+  ai_generation_duration_ms?: number;
+  coach_rating?: number;
+  coach_highlights?: string[];
+  coach_focus_areas?: string[];
+  coach_approved?: boolean;
+  coach_approved_at?: string;
+  coach_approved_by?: string;
+  shared_with_player?: boolean;
+  player_viewed_at?: string;
+  player_feedback?: string;
+  player_acknowledged?: boolean;
+}
 
 // ============================================================================
 // CONSTANTS
@@ -27,69 +98,44 @@ const MAX_GENERATION_ATTEMPTS = 3;
 /**
  * Calculate key stats from round data
  */
-function calculateKeyStats(round: GolfRound): ReviewKeyStats {
-  const fairway_pct = round.fairways_hit && round.fairways_total
-    ? Math.round((round.fairways_hit / round.fairways_total) * 100)
+function calculateKeyStats(round: RoundDataForReview): ReviewKeyStats {
+  const fairway_pct = round.total_fairways_hit != null && round.total_fairways && round.total_fairways > 0
+    ? Math.round((round.total_fairways_hit / round.total_fairways) * 100)
     : null;
 
-  const gir_pct = round.greens_in_regulation
-    ? Math.round((round.greens_in_regulation / round.greens_total) * 100)
+  const gir_pct = round.total_gir != null && round.total_gir_possible && round.total_gir_possible > 0
+    ? Math.round((round.total_gir / round.total_gir_possible) * 100)
     : null;
 
-  const putts_per_gir = round.total_putts && round.greens_in_regulation && round.greens_in_regulation > 0
-    ? Math.round((round.total_putts / round.greens_in_regulation) * 100) / 100
-    : null;
-
-  // Calculate scramble percentage (up and downs / (18 - GIR))
-  const missed_greens = round.greens_total - (round.greens_in_regulation || 0);
-  const scramble_pct = round.up_and_downs && missed_greens > 0
-    ? Math.round((round.up_and_downs / missed_greens) * 100)
-    : null;
-
-  // Three-putt and one-putt percentages
-  const three_putt_pct = round.three_putts && round.greens_total > 0
-    ? Math.round((round.three_putts / round.greens_total) * 100)
-    : null;
-
-  const one_putt_pct = round.one_putts && round.greens_total > 0
-    ? Math.round((round.one_putts / round.greens_total) * 100)
+  const putts_per_gir = round.total_putts != null && round.total_gir && round.total_gir > 0
+    ? Math.round((round.total_putts / round.total_gir) * 100) / 100
     : null;
 
   return {
-    scoring_avg: round.gross_score,
-    score_vs_par: round.gross_score - round.par,
+    scoring_avg: round.total_score,
+    score_vs_par: round.score_to_par,
     putts_per_round: round.total_putts,
     putts_per_gir,
     fairway_pct,
     gir_pct,
-    scramble_pct,
-    three_putt_pct,
-    one_putt_pct,
-    penalty_count: round.total_penalties,
-    strokes_gained: round.strokes_gained_total ? {
-      total: round.strokes_gained_total,
-      off_tee: round.strokes_gained_off_tee,
-      approach: round.strokes_gained_approach,
-      around_green: round.strokes_gained_around_green,
-      putting: round.strokes_gained_putting,
-    } : undefined,
+    scramble_pct: null, // Would need to compute from holes
+    three_putt_pct: null,
+    one_putt_pct: null,
+    penalty_count: null,
+    strokes_gained: undefined,
   };
 }
 
 /**
- * Generate AI review content using the round data
- * This is a placeholder that would be replaced with actual AI integration
+ * Generate AI review content
  */
-async function generateAIReviewContent(round: GolfRound, keyStats: ReviewKeyStats): Promise<{
+async function generateAIReviewContent(round: RoundDataForReview, keyStats: ReviewKeyStats): Promise<{
   summary: string;
   strengths: string[];
   areas_for_improvement: string[];
   ai_recommendations: string[];
 }> {
-  // In production, this would call OpenAI/Anthropic API
-  // For now, we generate intelligent content based on the stats
-
-  const score_vs_par = round.gross_score - round.par;
+  const score_vs_par = keyStats.score_vs_par ?? 0;
   const strengths: string[] = [];
   const areas_for_improvement: string[] = [];
   const ai_recommendations: string[] = [];
@@ -124,53 +170,27 @@ async function generateAIReviewContent(round: GolfRound, keyStats: ReviewKeyStat
     }
   }
 
-  // Analyze penalties
-  if (keyStats.penalty_count > 0) {
-    if (keyStats.penalty_count >= 3) {
-      areas_for_improvement.push(`${keyStats.penalty_count} penalty strokes cost you significantly this round`);
-      ai_recommendations.push('Work on course management to avoid penalty situations');
-    }
-  }
-
-  // Analyze three-putts
-  if (keyStats.three_putt_pct && keyStats.three_putt_pct > 15) {
-    areas_for_improvement.push('Three-putt frequency is high - focus on speed control');
-    ai_recommendations.push('Practice 30-40 foot lag putts to get closer on first putt');
-  }
-
-  // One-putts are a strength
-  if (keyStats.one_putt_pct && keyStats.one_putt_pct >= 40) {
-    strengths.push(`Outstanding one-putt percentage at ${keyStats.one_putt_pct}%`);
-  }
-
-  // Scrambling
-  if (keyStats.scramble_pct !== null) {
-    if (keyStats.scramble_pct >= 50) {
-      strengths.push(`Solid short game with ${keyStats.scramble_pct}% scrambling`);
-    } else if (keyStats.scramble_pct < 30) {
-      areas_for_improvement.push('Short game needs work - scrambling is below 30%');
-      ai_recommendations.push('Dedicate practice time to chipping and pitching from various lies');
-    }
-  }
-
   // Generate summary
+  const totalScore = round.total_score ?? 0;
   let summary = '';
   if (score_vs_par <= -2) {
-    summary = `Exceptional round of ${round.gross_score} (${score_vs_par >= 0 ? '+' : ''}${score_vs_par}). `;
+    summary = `Exceptional round of ${totalScore} (${score_vs_par >= 0 ? '+' : ''}${score_vs_par}). `;
   } else if (score_vs_par <= 0) {
-    summary = `Solid round of ${round.gross_score} (${score_vs_par === 0 ? 'E' : score_vs_par}). `;
+    summary = `Solid round of ${totalScore} (${score_vs_par === 0 ? 'E' : score_vs_par}). `;
   } else if (score_vs_par <= 5) {
-    summary = `Decent round of ${round.gross_score} (+${score_vs_par}) with room for improvement. `;
+    summary = `Decent round of ${totalScore} (+${score_vs_par}) with room for improvement. `;
   } else {
-    summary = `Challenging round of ${round.gross_score} (+${score_vs_par}). `;
+    summary = `Challenging round of ${totalScore} (+${score_vs_par}). `;
   }
 
-  if (strengths.length > 0) {
-    summary += `Key strength: ${strengths[0].toLowerCase()}. `;
+  const firstStrength = strengths[0];
+  if (firstStrength) {
+    summary += `Key strength: ${firstStrength.toLowerCase()}. `;
   }
 
-  if (areas_for_improvement.length > 0) {
-    summary += `Focus area: ${areas_for_improvement[0].toLowerCase()}.`;
+  const firstArea = areas_for_improvement[0];
+  if (firstArea) {
+    summary += `Focus area: ${firstArea.toLowerCase()}.`;
   }
 
   // Ensure we have at least some content
@@ -195,13 +215,68 @@ async function generateAIReviewContent(round: GolfRound, keyStats: ReviewKeyStat
   };
 }
 
+/**
+ * Convert database row to GolfRoundReview type
+ */
+function dbRowToReview(row: ReviewDbRow): GolfRoundReview {
+  const extData = row.patterns_detected as ReviewExtendedData | null;
+  const highlights = row.highlights as string[] | null;
+  const areasToReview = row.areas_to_review as string[] | null;
+  const roundStats = row.round_stats as ReviewKeyStats | null;
+
+  return {
+    id: row.id,
+    round_id: row.round_id,
+    player_id: row.player_id,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    summary: row.summary,
+    highlights: row.highlights,
+    areas_to_review: row.areas_to_review,
+    patterns_detected: row.patterns_detected,
+    primary_takeaway: row.primary_takeaway,
+    next_practice_priority: row.next_practice_priority,
+    round_stats: row.round_stats,
+    round_score: row.round_score,
+    round_score_to_par: row.round_score_to_par,
+    scoring_avg_before: row.scoring_avg_before,
+    scoring_avg_after: row.scoring_avg_after,
+    engine_version: row.engine_version,
+    shared_with_coach: row.shared_with_coach,
+    shared_at: row.shared_at,
+    coach_notes: row.coach_notes,
+    coach_viewed_at: row.coach_viewed_at,
+    // Extended fields from patterns_detected JSON
+    status: extData?.status ?? (row.shared_with_coach ? 'shared' : 'draft'),
+    strengths: highlights ?? undefined,
+    areas_for_improvement: areasToReview ?? undefined,
+    key_stats: roundStats ?? undefined,
+    ai_recommendations: extData?.ai_recommendations,
+    ai_model_used: extData?.ai_model_used,
+    ai_generation_duration_ms: extData?.ai_generation_duration_ms,
+    generation_attempts: extData?.generation_attempts,
+    generation_started_at: extData?.generation_started_at,
+    generation_completed_at: extData?.generation_completed_at,
+    last_error: extData?.last_error,
+    coach_rating: extData?.coach_rating,
+    coach_highlights: extData?.coach_highlights,
+    coach_focus_areas: extData?.coach_focus_areas,
+    coach_approved: extData?.coach_approved,
+    coach_approved_at: extData?.coach_approved_at,
+    coach_approved_by: extData?.coach_approved_by,
+    shared_with_player: extData?.shared_with_player,
+    player_viewed_at: extData?.player_viewed_at,
+    player_feedback: extData?.player_feedback,
+    player_acknowledged: extData?.player_acknowledged,
+  };
+}
+
 // ============================================================================
 // ROUND REVIEW ACTIONS
 // ============================================================================
 
 /**
  * Generate a review for a completed round
- * Handles timeout and retry logic for reliable generation
  */
 export async function generateRoundReview(
   roundId: string,
@@ -216,18 +291,10 @@ export async function generateRoundReview(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // 2. Get the round and verify it exists and is complete
+    // 2. Get the round
     const { data: round, error: roundError } = await supabase
       .from('golf_rounds')
-      .select(`
-        *,
-        player:golf_players!inner(
-          id,
-          profile_id,
-          profile:profiles!inner(id, first_name, last_name)
-        ),
-        course:golf_courses(*)
-      `)
+      .select('*')
       .eq('id', roundId)
       .single();
 
@@ -235,19 +302,23 @@ export async function generateRoundReview(
       return { success: false, error: 'Round not found' };
     }
 
-    if (!round.is_complete) {
+    // Check if round is complete
+    if (round.status !== 'completed') {
       return { success: false, error: 'Round must be marked as complete before generating a review' };
     }
 
     // 3. Check if review already exists
     const { data: existingReview } = await supabase
       .from('golf_round_reviews')
-      .select('id, status, generation_attempts')
+      .select('*')
       .eq('round_id', roundId)
       .single();
 
     if (existingReview && !forceRegenerate) {
-      if (existingReview.status === 'generating') {
+      const extData = existingReview.patterns_detected as ReviewExtendedData | null;
+      const status = extData?.status ?? 'draft';
+
+      if (status === 'generating') {
         return {
           success: true,
           review_id: existingReview.id,
@@ -256,17 +327,18 @@ export async function generateRoundReview(
         };
       }
 
-      if (!['pending', 'failed'].includes(existingReview.status)) {
+      if (!['pending', 'failed'].includes(status)) {
         return {
           success: true,
           review_id: existingReview.id,
-          status: existingReview.status as ReviewStatus,
+          status: status as ReviewStatus,
           message: 'Review already exists',
         };
       }
 
       // Check max attempts
-      if (existingReview.generation_attempts >= MAX_GENERATION_ATTEMPTS && !forceRegenerate) {
+      const attempts = extData?.generation_attempts ?? 0;
+      if (attempts >= MAX_GENERATION_ATTEMPTS && !forceRegenerate) {
         return {
           success: false,
           review_id: existingReview.id,
@@ -276,19 +348,25 @@ export async function generateRoundReview(
       }
     }
 
-    // 4. Create or update review record with status='generating'
+    // 4. Create or update review record
     let reviewId: string;
     const generationStartTime = new Date().toISOString();
+    const roundData = round as RoundDataForReview;
 
     if (existingReview) {
+      const existingExt = existingReview.patterns_detected as ReviewExtendedData | null;
+      const newExtData: ReviewExtendedData = {
+        ...existingExt,
+        status: 'generating',
+        generation_started_at: generationStartTime,
+        generation_attempts: (existingExt?.generation_attempts ?? 0) + 1,
+        last_error: undefined,
+      };
+
       const { error: updateError } = await supabase
         .from('golf_round_reviews')
         .update({
-          status: 'generating',
-          status_message: 'Analyzing round data...',
-          generation_started_at: generationStartTime,
-          generation_attempts: existingReview.generation_attempts + 1,
-          last_error: null,
+          patterns_detected: newExtData as Json,
         })
         .eq('id', existingReview.id);
 
@@ -297,14 +375,18 @@ export async function generateRoundReview(
       }
       reviewId = existingReview.id;
     } else {
+      const initialExtData: ReviewExtendedData = {
+        status: 'generating',
+        generation_started_at: generationStartTime,
+        generation_attempts: 1,
+      };
+
       const { data: newReview, error: insertError } = await supabase
         .from('golf_round_reviews')
         .insert({
           round_id: roundId,
-          status: 'generating',
-          status_message: 'Analyzing round data...',
-          generation_started_at: generationStartTime,
-          generation_attempts: 1,
+          player_id: round.player_id,
+          patterns_detected: initialExtData as Json,
         })
         .select('id')
         .single();
@@ -315,21 +397,14 @@ export async function generateRoundReview(
       reviewId = newReview.id;
     }
 
-    // 5. Calculate key stats synchronously (fast)
-    const keyStats = calculateKeyStats(round as GolfRound);
+    // 5. Calculate key stats
+    const keyStats = calculateKeyStats(roundData);
 
-    // 6. Generate AI content with timeout handling
+    // 6. Generate AI content
     const startTime = Date.now();
 
     try {
-      // Update status
-      await supabase
-        .from('golf_round_reviews')
-        .update({ status_message: 'Generating insights...' })
-        .eq('id', reviewId);
-
-      // Generate AI content (with timeout)
-      const aiContentPromise = generateAIReviewContent(round as GolfRound, keyStats);
+      const aiContentPromise = generateAIReviewContent(roundData, keyStats);
 
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Review generation timed out')), REVIEW_GENERATION_TIMEOUT_MS);
@@ -340,20 +415,25 @@ export async function generateRoundReview(
       const generationDuration = Date.now() - startTime;
 
       // 7. Update review with generated content
+      const finalExtData: ReviewExtendedData = {
+        status: 'draft',
+        generation_completed_at: new Date().toISOString(),
+        ai_recommendations: aiContent.ai_recommendations,
+        ai_model_used: 'rule-based-v1',
+        ai_generation_duration_ms: generationDuration,
+      };
+
       const { error: finalUpdateError } = await supabase
         .from('golf_round_reviews')
         .update({
           summary: aiContent.summary,
-          strengths: aiContent.strengths,
-          areas_for_improvement: aiContent.areas_for_improvement,
-          key_stats: keyStats,
-          ai_recommendations: aiContent.ai_recommendations,
-          ai_model_used: 'rule-based-v1', // Would be 'gpt-4' or 'claude-3' in production
-          ai_generation_duration_ms: generationDuration,
-          status: 'draft',
-          status_message: 'Ready for coach review',
-          generation_completed_at: new Date().toISOString(),
-          last_error: null,
+          highlights: aiContent.strengths,
+          areas_to_review: aiContent.areas_for_improvement,
+          round_stats: keyStats as unknown as Json,
+          patterns_detected: finalExtData as Json,
+          round_score: round.total_score,
+          round_score_to_par: round.score_to_par,
+          engine_version: 'v1.0',
         })
         .eq('id', reviewId);
 
@@ -374,16 +454,18 @@ export async function generateRoundReview(
       };
 
     } catch (genError) {
-      // Handle generation failure
       const errorMessage = genError instanceof Error ? genError.message : 'Unknown generation error';
+
+      const failedExtData: ReviewExtendedData = {
+        status: 'failed',
+        generation_completed_at: new Date().toISOString(),
+        last_error: errorMessage,
+      };
 
       await supabase
         .from('golf_round_reviews')
         .update({
-          status: 'failed',
-          status_message: 'Generation failed',
-          last_error: errorMessage,
-          generation_completed_at: new Date().toISOString(),
+          patterns_detected: failedExtData as Json,
         })
         .eq('id', reviewId);
 
@@ -461,12 +543,12 @@ export async function getReviewByRoundId(roundId: string): Promise<{
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return { success: true, review: undefined }; // No review yet
+        return { success: true, review: undefined };
       }
       return { success: false, error: 'Failed to fetch review' };
     }
 
-    return { success: true, review: review as GolfRoundReview };
+    return { success: true, review: dbRowToReview(review as ReviewDbRow) };
   } catch (error) {
     console.error('Error fetching review:', error);
     return { success: false, error: 'Failed to fetch review' };
@@ -475,7 +557,6 @@ export async function getReviewByRoundId(roundId: string): Promise<{
 
 /**
  * Add or update coach feedback on a review
- * This is the critical missing piece for the coach feedback loop
  */
 export async function saveCoachFeedback(
   reviewId: string,
@@ -493,7 +574,7 @@ export async function saveCoachFeedback(
 
     // Get coach info
     const { data: coach, error: coachError } = await supabase
-      .from('coaches')
+      .from('golf_coaches')
       .select('id')
       .eq('profile_id', user.id)
       .single();
@@ -502,17 +583,10 @@ export async function saveCoachFeedback(
       return { success: false, error: 'Only coaches can add feedback' };
     }
 
-    // 2. Verify the review exists and coach has access
+    // 2. Get the existing review
     const { data: review, error: reviewError } = await supabase
       .from('golf_round_reviews')
-      .select(`
-        id,
-        status,
-        round:golf_rounds!inner(
-          player_id,
-          player:golf_players!inner(id)
-        )
-      `)
+      .select('*')
       .eq('id', reviewId)
       .single();
 
@@ -520,44 +594,51 @@ export async function saveCoachFeedback(
       return { success: false, error: 'Review not found or access denied' };
     }
 
-    // Check if review is in an editable state
+    // 3. Build update object
+    const existingExt = review.patterns_detected as ReviewExtendedData | null;
+    const status = existingExt?.status ?? 'draft';
+
     const editableStatuses = ['draft', 'coach_review', 'approved'];
-    if (!editableStatuses.includes(review.status)) {
-      return { success: false, error: `Cannot edit review in ${review.status} status` };
+    if (!editableStatuses.includes(status)) {
+      return { success: false, error: `Cannot edit review in ${status} status` };
     }
 
-    // 3. Build update object
-    const updateData: Partial<GolfRoundReview> = {
+    const updatedExtData: ReviewExtendedData = {
+      ...existingExt,
       status: approve ? 'approved' : 'coach_review',
       coach_approved: approve,
+    };
+
+    if (feedback.coach_notes !== undefined) {
+      // coach_notes is a direct column
+    }
+
+    if (feedback.coach_rating !== undefined) {
+      updatedExtData.coach_rating = feedback.coach_rating;
+    }
+
+    if (feedback.coach_highlights !== undefined) {
+      updatedExtData.coach_highlights = feedback.coach_highlights;
+    }
+
+    if (feedback.coach_focus_areas !== undefined) {
+      updatedExtData.coach_focus_areas = feedback.coach_focus_areas;
+    }
+
+    if (approve) {
+      updatedExtData.coach_approved_at = new Date().toISOString();
+      updatedExtData.coach_approved_by = coach.id;
+    }
+
+    // 4. Update the review
+    const updateData: Record<string, unknown> = {
+      patterns_detected: updatedExtData,
     };
 
     if (feedback.coach_notes !== undefined) {
       updateData.coach_notes = feedback.coach_notes;
     }
 
-    if (feedback.coach_rating !== undefined) {
-      updateData.coach_rating = feedback.coach_rating;
-    }
-
-    if (feedback.coach_highlights !== undefined) {
-      updateData.coach_highlights = feedback.coach_highlights;
-    }
-
-    if (feedback.coach_focus_areas !== undefined) {
-      updateData.coach_focus_areas = feedback.coach_focus_areas;
-    }
-
-    if (feedback.coach_drill_recommendations !== undefined) {
-      updateData.coach_drill_recommendations = feedback.coach_drill_recommendations;
-    }
-
-    if (approve) {
-      updateData.coach_approved_at = new Date().toISOString();
-      updateData.coach_approved_by = coach.id;
-    }
-
-    // 4. Update the review
     const { error: updateError } = await supabase
       .from('golf_round_reviews')
       .update(updateData)
@@ -585,7 +666,7 @@ export async function saveCoachFeedback(
  */
 export async function shareReviewWithPlayer(
   reviewId: string,
-  includeCoachNotes: boolean = true
+  _includeCoachNotes: boolean = true
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
 
@@ -596,10 +677,10 @@ export async function shareReviewWithPlayer(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // 2. Get the review and verify it can be shared
+    // 2. Get the review
     const { data: review, error: reviewError } = await supabase
       .from('golf_round_reviews')
-      .select('id, status, coach_approved, shared_with_player')
+      .select('*')
       .eq('id', reviewId)
       .single();
 
@@ -607,23 +688,30 @@ export async function shareReviewWithPlayer(
       return { success: false, error: 'Review not found or access denied' };
     }
 
-    if (review.shared_with_player) {
+    const extData = review.patterns_detected as ReviewExtendedData | null;
+
+    if (extData?.shared_with_player) {
       return { success: false, error: 'Review is already shared with the player' };
     }
 
-    if (!review.coach_approved && review.status !== 'approved') {
+    const status = extData?.status ?? 'draft';
+    if (!extData?.coach_approved && status !== 'approved') {
       return { success: false, error: 'Review must be approved before sharing' };
     }
 
     // 3. Update review to shared status
+    const updatedExtData: ReviewExtendedData = {
+      ...extData,
+      status: 'shared',
+      shared_with_player: true,
+    };
+
     const { error: updateError } = await supabase
       .from('golf_round_reviews')
       .update({
-        shared_with_player: true,
+        shared_with_coach: true,
         shared_at: new Date().toISOString(),
-        status: 'shared',
-        // Optionally clear coach notes if not including them
-        ...(includeCoachNotes ? {} : { coach_notes: null }),
+        patterns_detected: updatedExtData as Json,
       })
       .eq('id', reviewId);
 
@@ -660,10 +748,10 @@ export async function getTeamReviews(
   error?: string;
 }> {
   const supabase = await createClient();
-  const { status, limit = 20, offset = 0 } = options;
+  const { limit = 20, offset = 0 } = options;
 
   try {
-    let query = supabase
+    const { data: reviews, error, count } = await supabase
       .from('golf_round_reviews')
       .select(`
         *,
@@ -680,21 +768,24 @@ export async function getTeamReviews(
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    const { data: reviews, error, count } = await query;
-
     if (error) {
       console.error('Error fetching team reviews:', error);
       return { success: false, error: 'Failed to fetch reviews' };
     }
 
+    // Filter by status if specified (status is in patterns_detected JSON)
+    let filteredReviews = reviews as unknown as RoundReviewWithDetails[];
+    if (options.status) {
+      filteredReviews = filteredReviews.filter(r => {
+        const extData = (r as unknown as ReviewDbRow).patterns_detected as ReviewExtendedData | null;
+        return extData?.status === options.status;
+      });
+    }
+
     return {
       success: true,
-      reviews: reviews as unknown as RoundReviewWithDetails[],
-      total: count || 0,
+      reviews: filteredReviews,
+      total: count ?? 0,
     };
 
   } catch (error) {
@@ -706,7 +797,7 @@ export async function getTeamReviews(
 /**
  * Get reviews pending coach action
  */
-export async function getPendingCoachReviews(coachId?: string): Promise<{
+export async function getPendingCoachReviews(_coachId?: string): Promise<{
   success: boolean;
   reviews?: RoundReviewWithDetails[];
   error?: string;
@@ -714,7 +805,6 @@ export async function getPendingCoachReviews(coachId?: string): Promise<{
   const supabase = await createClient();
 
   try {
-    // Get the coach's profile ID if not provided
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -730,14 +820,9 @@ export async function getPendingCoachReviews(coachId?: string): Promise<{
             *,
             profile:profiles!inner(id, first_name, last_name, email, avatar_url)
           ),
-          course:golf_courses(*),
-          team:golf_teams!inner(
-            coach:coaches!inner(profile_id)
-          )
+          course:golf_courses(*)
         )
       `)
-      .in('status', ['draft', 'coach_review'])
-      .eq('round.team.coach.profile_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -745,9 +830,16 @@ export async function getPendingCoachReviews(coachId?: string): Promise<{
       return { success: false, error: 'Failed to fetch pending reviews' };
     }
 
+    // Filter to only draft/coach_review status
+    const pendingReviews = (reviews as unknown as RoundReviewWithDetails[]).filter(r => {
+      const extData = (r as unknown as ReviewDbRow).patterns_detected as ReviewExtendedData | null;
+      const status = extData?.status ?? 'draft';
+      return ['draft', 'coach_review'].includes(status);
+    });
+
     return {
       success: true,
-      reviews: reviews as unknown as RoundReviewWithDetails[],
+      reviews: pendingReviews,
     };
 
   } catch (error) {
@@ -769,17 +861,8 @@ export async function getPlayerReviewHistory(playerId: string): Promise<{
   try {
     const { data: reviews, error } = await supabase
       .from('golf_round_reviews')
-      .select(`
-        *,
-        round:golf_rounds!inner(
-          id,
-          round_date,
-          gross_score,
-          par,
-          course:golf_courses(name)
-        )
-      `)
-      .eq('round.player_id', playerId)
+      .select('*')
+      .eq('player_id', playerId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -787,8 +870,10 @@ export async function getPlayerReviewHistory(playerId: string): Promise<{
       return { success: false, error: 'Failed to fetch reviews' };
     }
 
-    return { success: true, reviews: reviews as GolfRoundReview[] };
-
+    return {
+      success: true,
+      reviews: (reviews as ReviewDbRow[]).map(dbRowToReview)
+    };
   } catch (error) {
     console.error('Error fetching player reviews:', error);
     return { success: false, error: 'An unexpected error occurred' };
@@ -805,13 +890,33 @@ export async function markReviewAsViewed(reviewId: string): Promise<{
   const supabase = await createClient();
 
   try {
+    // Get existing review
+    const { data: review, error: fetchError } = await supabase
+      .from('golf_round_reviews')
+      .select('patterns_detected')
+      .eq('id', reviewId)
+      .single();
+
+    if (fetchError || !review) {
+      return { success: false, error: 'Review not found' };
+    }
+
+    const extData = review.patterns_detected as ReviewExtendedData | null;
+    if (extData?.player_viewed_at) {
+      return { success: true }; // Already viewed
+    }
+
+    const updatedExtData: ReviewExtendedData = {
+      ...extData,
+      player_viewed_at: new Date().toISOString(),
+    };
+
     const { error } = await supabase
       .from('golf_round_reviews')
       .update({
-        player_viewed_at: new Date().toISOString(),
+        patterns_detected: updatedExtData as Json,
       })
-      .eq('id', reviewId)
-      .is('player_viewed_at', null); // Only update if not already viewed
+      .eq('id', reviewId);
 
     if (error) {
       return { success: false, error: 'Failed to mark as viewed' };
@@ -835,11 +940,28 @@ export async function addPlayerFeedback(
   const supabase = await createClient();
 
   try {
+    // Get existing review
+    const { data: review, error: fetchError } = await supabase
+      .from('golf_round_reviews')
+      .select('patterns_detected')
+      .eq('id', reviewId)
+      .single();
+
+    if (fetchError || !review) {
+      return { success: false, error: 'Review not found' };
+    }
+
+    const extData = review.patterns_detected as ReviewExtendedData | null;
+    const updatedExtData: ReviewExtendedData = {
+      ...extData,
+      player_feedback: feedback,
+      player_acknowledged: true,
+    };
+
     const { error } = await supabase
       .from('golf_round_reviews')
       .update({
-        player_feedback: feedback,
-        player_acknowledged: true,
+        patterns_detected: updatedExtData as Json,
       })
       .eq('id', reviewId);
 
@@ -863,10 +985,9 @@ export async function retryReviewGeneration(reviewId: string): Promise<GenerateR
   const supabase = await createClient();
 
   try {
-    // Get the review to find the round ID
     const { data: review, error } = await supabase
       .from('golf_round_reviews')
-      .select('round_id, status')
+      .select('round_id, patterns_detected')
       .eq('id', reviewId)
       .single();
 
@@ -874,11 +995,11 @@ export async function retryReviewGeneration(reviewId: string): Promise<GenerateR
       return { success: false, error: 'Review not found' };
     }
 
-    if (review.status !== 'failed') {
+    const extData = review.patterns_detected as ReviewExtendedData | null;
+    if (extData?.status !== 'failed') {
       return { success: false, error: 'Can only retry failed reviews' };
     }
 
-    // Re-run generation
     return generateRoundReview(review.round_id, true);
 
   } catch (error) {
@@ -902,7 +1023,7 @@ export async function getReviewGenerationStatus(reviewId: string): Promise<{
   try {
     const { data: review, error } = await supabase
       .from('golf_round_reviews')
-      .select('status, status_message, generation_started_at')
+      .select('patterns_detected')
       .eq('id', reviewId)
       .single();
 
@@ -910,24 +1031,97 @@ export async function getReviewGenerationStatus(reviewId: string): Promise<{
       return { success: false, error: 'Review not found' };
     }
 
-    // Calculate approximate progress for generating status
+    const extData = review.patterns_detected as ReviewExtendedData | null;
+    const status = extData?.status ?? 'draft';
+
+    // Calculate approximate progress
     let progress = 0;
-    if (review.status === 'generating' && review.generation_started_at) {
-      const elapsed = Date.now() - new Date(review.generation_started_at).getTime();
+    if (status === 'generating' && extData?.generation_started_at) {
+      const elapsed = Date.now() - new Date(extData.generation_started_at).getTime();
       progress = Math.min(90, Math.round((elapsed / REVIEW_GENERATION_TIMEOUT_MS) * 100));
-    } else if (review.status === 'draft' || review.status === 'approved' || review.status === 'shared') {
+    } else if (status === 'draft' || status === 'approved' || status === 'shared') {
       progress = 100;
     }
 
     return {
       success: true,
-      status: review.status as ReviewStatus,
-      message: review.status_message || undefined,
+      status: status as ReviewStatus,
+      message: status === 'generating' ? 'Generating insights...' : undefined,
       progress,
     };
 
   } catch (error) {
     console.error('Error getting review status:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
+// STUB FUNCTIONS - TODO: Implement these
+// ============================================================================
+
+export async function annotateInsight(
+  _insightId: string,
+  _annotation: string
+): Promise<{ success: boolean; error?: string }> {
+  return { success: false, error: 'Not implemented yet' };
+}
+
+export async function annotateReview(
+  _reviewId: string,
+  _annotation: string
+): Promise<{ success: boolean; error?: string }> {
+  return { success: false, error: 'Not implemented yet' };
+}
+
+export async function publishReview(
+  _reviewId: string
+): Promise<{ success: boolean; error?: string }> {
+  return { success: false, error: 'Not implemented yet' };
+}
+
+export async function createFocusAreaFromReview(
+  _reviewId: string,
+  _focusAreaData: { name: string; description?: string }
+): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
+  return { success: false, error: 'Not implemented yet' };
+}
+
+export async function markReviewViewedByPlayer(
+  reviewId: string
+): Promise<{ success: boolean; error?: string }> {
+  return markReviewAsViewed(reviewId);
+}
+
+export async function acknowledgeReview(
+  _reviewId: string,
+  _acknowledgement?: string
+): Promise<{ success: boolean; error?: string }> {
+  return { success: false, error: 'Not implemented yet' };
+}
+
+export async function markReviewViewedByCoach(
+  reviewId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  try {
+    const { error } = await supabase
+      .from('golf_round_reviews')
+      .update({
+        coach_viewed_at: new Date().toISOString(),
+      })
+      .eq('id', reviewId)
+      .is('coach_viewed_at', null);
+
+    if (error) {
+      return { success: false, error: 'Failed to mark as viewed' };
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('Error marking review as viewed by coach:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }

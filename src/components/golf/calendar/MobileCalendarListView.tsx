@@ -105,7 +105,8 @@ export function MobileCalendarListView({
   );
 
   // Find today's group index for initial scroll position
-  const todayGroupIndex = useMemo(() => {
+  // Note: Computed for potential future scroll positioning
+  void useMemo(() => {
     return eventGroups.findIndex((g) => g.isToday);
   }, [eventGroups]);
 

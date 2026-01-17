@@ -540,8 +540,8 @@ export default function GolfMessagesPage() {
                               <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                                 {msg.content}
                               </p>
-                              {/* Edited indicator */}
-                              {(msg as MessageWithReadStatus).edited_at && (
+                              {/* Edited indicator - check if property exists on message */}
+                              {'edited_at' in msg && (msg as MessageWithReadStatus & { edited_at?: string }).edited_at && (
                                 <span className={cn(
                                   'text-[10px] mt-1 block',
                                   isOwn ? 'text-emerald-200' : 'text-slate-400'

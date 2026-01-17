@@ -8,10 +8,10 @@
  */
 
 import { useMemo } from 'react';
-import type { StrokesGainedResult } from '@/lib/types/golf';
 import {
   formatStrokesGained,
   getStrokesGainedColor,
+  type StrokesGainedResult,
 } from '@/lib/golf/strokes-gained';
 import { cn } from '@/lib/utils';
 
@@ -181,7 +181,7 @@ export function StrokesGainedRadar({
             const isLeft = i === 3;
             const isRight = i === 1;
 
-            let textAnchor = 'middle';
+            let textAnchor: 'start' | 'middle' | 'end' = 'middle';
             let dy = 0;
 
             if (isLeft) textAnchor = 'end';

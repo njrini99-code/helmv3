@@ -9,9 +9,14 @@
 import type { TrendDirection, StatCardProps } from '@/lib/types/golf';
 import { cn } from '@/lib/utils';
 
+type FormatType = 'number' | 'percentage' | 'score' | 'strokes_gained';
+
 interface GolfStatCardProps extends StatCardProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  format?: FormatType;
+  comparisonValue?: number;
+  comparisonLabel?: string;
 }
 
 export function GolfStatCard({
@@ -123,7 +128,7 @@ export function GolfStatCard({
           >
             <span>{trendStyles.icon}</span>
             {trendValue !== undefined && (
-              <span>{Math.abs(trendValue).toFixed(2)}</span>
+              <span>{typeof trendValue === 'number' ? Math.abs(trendValue).toFixed(2) : trendValue}</span>
             )}
           </div>
         )}
@@ -190,7 +195,7 @@ export function KPIRow({
   };
   className?: string;
 }) {
-  const stats: StatCardProps[] = [
+  const stats: GolfStatCardProps[] = [
     {
       label: 'Scoring Average',
       value: scoringAvg,

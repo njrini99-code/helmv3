@@ -213,7 +213,9 @@ export function OfflineSyncStatus({
   // Update relative time text periodically
   useEffect(() => {
     const updateTime = () => {
-      setLastSyncText(formatTimeSince(lastSuccessfulSync));
+      // Convert Date to ISO string for formatTimeSince, or pass null
+      const syncTimeString = lastSuccessfulSync ? lastSuccessfulSync.toISOString() : null;
+      setLastSyncText(formatTimeSince(syncTimeString));
     };
 
     updateTime();
@@ -238,6 +240,7 @@ export function OfflineSyncStatus({
       return () => clearTimeout(timer);
     } else {
       setIsVisible(true);
+      return undefined;
     }
   }, [autoHide, autoHideDelay, isOnline, pendingCount.total, syncError, syncStatus]);
 

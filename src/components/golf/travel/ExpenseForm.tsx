@@ -82,7 +82,7 @@ export function ExpenseForm({
     setDescription('');
     setAmount('');
     setVendorName('');
-    setExpenseDate(new Date().toISOString().split('T')[0]);
+    setExpenseDate(new Date().toISOString().split('T')[0] || '');
     setPaidBy('team');
     setNotes('');
     setReceiptUrl(null);

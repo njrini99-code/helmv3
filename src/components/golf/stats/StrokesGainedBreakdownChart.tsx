@@ -9,11 +9,12 @@
  * - Category details and per-shot averages
  */
 
-import type { StrokesGainedResult, StrokesGainedBreakdown } from '@/lib/types/golf';
 import {
   formatStrokesGained,
   getStrokesGainedColor,
   getStrokesGainedBgColor,
+  type StrokesGainedResult,
+  type StrokesGainedBreakdown,
 } from '@/lib/golf/strokes-gained';
 import { cn } from '@/lib/utils';
 

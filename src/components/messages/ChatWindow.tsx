@@ -8,7 +8,7 @@ import { IconSend, IconArrowLeft } from '@/components/icons';
 import type { Message } from '@/lib/types';
 import type { ParticipantDetails } from '@/lib/types/messages';
 
-interface ChatWindowProps {
+export interface ChatWindowProps {
   messages: Message[];
   participant?: ParticipantDetails | null;
   currentUserId: string;
@@ -130,7 +130,7 @@ export function ChatWindow({
                     'text-xs mt-1',
                     isOwn ? 'text-green-200' : 'text-slate-400'
                   )}>
-                    {formatTime(message.sent_at)}
+                    {formatTime(message.created_at)}
                   </p>
                 </div>
               </div>

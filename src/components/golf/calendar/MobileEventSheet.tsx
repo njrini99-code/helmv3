@@ -170,6 +170,7 @@ export function MobileEventSheet({
         document.body.style.overflow = '';
       };
     }
+    return undefined;
   }, [isOpen]);
 
   const handleClose = useCallback(() => {

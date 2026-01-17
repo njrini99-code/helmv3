@@ -2,7 +2,7 @@
 
 import { memo, Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { IconTrendingUp, IconTrendingDown, IconMinus, IconUsers, IconUser, IconClock } from '@/components/icons';
+import { IconTrendingUp, IconTrendingDown, IconMinus, IconUsers, IconClock } from '@/components/icons';
 
 // Dynamic imports for recharts
 const BarChart = dynamic(() => import('recharts').then(mod => mod.BarChart), { ssr: false });
@@ -12,7 +12,7 @@ const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: fa
 const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false });
 const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false });
 const Cell = dynamic(() => import('recharts').then(mod => mod.Cell), { ssr: false });
-const ReferenceLine = dynamic(() => import('recharts').then(mod => mod.ReferenceLine), { ssr: false });
+// ReferenceLine removed - not used in this component
 
 // ============================================================================
 // TYPES
@@ -183,7 +183,7 @@ const StatComparisonCard = memo(function StatComparisonCard({
                     width={40}
                   />
                   <Tooltip
-                    formatter={(value: number) => [player.format(value), '']}
+                    formatter={(value) => [player.format(value as number), '']}
                     contentStyle={{
                       backgroundColor: 'rgba(255,255,255,0.95)',
                       borderRadius: '8px',

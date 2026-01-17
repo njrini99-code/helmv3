@@ -163,7 +163,7 @@ interface ReceiptUploadProps {
 }
 
 export function ReceiptUpload({
-  expenseId,
+  expenseId: _expenseId,
   currentUrl,
   onUpload,
   onRemove,

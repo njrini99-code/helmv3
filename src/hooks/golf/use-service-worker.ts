@@ -361,4 +361,4 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
 // EXPORTS
 // ============================================================================
 
-export type { UseServiceWorkerOptions };
+// UseServiceWorkerOptions is already exported as an interface above

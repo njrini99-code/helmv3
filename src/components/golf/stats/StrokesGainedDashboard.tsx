@@ -12,14 +12,14 @@
  */
 
 import { useState } from 'react';
-import type {
-  StrokesGainedResult,
-  StrokesGainedBreakdown,
-  ComparisonBaseline,
-  ComparisonResult,
-  StrokesGainedTrend,
-} from '@/lib/types/golf';
-import { identifyStrengthsWeaknesses, formatStrokesGained, getStrokesGainedColor } from '@/lib/golf/strokes-gained';
+import type { ComparisonBaseline } from '@/lib/types/golf';
+import {
+  identifyStrengthsWeaknesses,
+  formatStrokesGained,
+  getStrokesGainedColor,
+  type StrokesGainedResult,
+  type StrokesGainedBreakdown,
+} from '@/lib/golf/strokes-gained';
 import { StrokesGainedRadar } from './StrokesGainedRadar';
 import { StrokesGainedBreakdownChart, StrokesGainedCompact } from './StrokesGainedBreakdownChart';
 import { TrendLineChart } from './TrendLineChart';
@@ -33,6 +33,12 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+
+// Local type for trend data points
+interface StrokesGainedTrend extends StrokesGainedResult {
+  date: string;
+  round_id?: string;
+}
 
 interface StrokesGainedDashboardProps {
   data: StrokesGainedResult | StrokesGainedBreakdown;
@@ -57,11 +63,14 @@ export function StrokesGainedDashboard({
   showComparison = true,
   className,
 }: StrokesGainedDashboardProps) {
-  const [activeTab, setActiveTab] = useState('overview');
   const [selectedCategory, setSelectedCategory] = useState<keyof StrokesGainedResult | null>(null);
 
+  // Cast data to StrokesGainedResult since StrokesGainedBreakdown extends it
+  // This ensures we can access the common SG properties
+  const sgData = data as StrokesGainedResult;
+
   // Identify strengths and weaknesses
-  const { strengths, weaknesses, primaryStrength, primaryWeakness } = identifyStrengthsWeaknesses(data);
+  const { strengths, weaknesses, primaryStrength, primaryWeakness } = identifyStrengthsWeaknesses(sgData);
 
   // Categories for trend selection
   const categories = [
@@ -98,10 +107,10 @@ export function StrokesGainedDashboard({
           <div
             className={cn(
               'px-3 py-1.5 rounded-full text-sm font-medium',
-              data.sg_total >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              sgData.sg_total >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
             )}
           >
-            {formatStrokesGained(data.sg_total)} Total
+            {formatStrokesGained(sgData.sg_total)} Total
           </div>
           {primaryStrength && (
             <Badge variant="outline" className="text-green-600 border-green-200">
@@ -117,7 +126,7 @@ export function StrokesGainedDashboard({
       </div>
 
       {/* Main content tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="overview">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="breakdown">Detailed Breakdown</TabsTrigger>
@@ -142,7 +151,7 @@ export function StrokesGainedDashboard({
               </CardHeader>
               <CardContent>
                 <StrokesGainedRadar
-                  data={data}
+                  data={sgData}
                   comparisonData={comparisonData?.data}
                   comparisonLabel={comparisonData?.label}
                   showComparison={showComparison && !!comparisonData}
@@ -155,7 +164,7 @@ export function StrokesGainedDashboard({
             <div className="space-y-4">
               {/* Category Cards */}
               {categories.map((cat) => {
-                const value = data[cat.key];
+                const value = sgData[cat.key];
                 return (
                   <Card
                     key={cat.key}
@@ -347,7 +356,7 @@ export function StrokesGainedDashboard({
                 <div className="space-y-6">
                   {/* Radar comparison */}
                   <StrokesGainedRadar
-                    data={data}
+                    data={sgData}
                     comparisonData={comparisonData.data}
                     comparisonLabel={comparisonData.label}
                     showComparison={true}
@@ -375,7 +384,7 @@ export function StrokesGainedDashboard({
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {categories.map((cat) => {
-                          const yours = data[cat.key];
+                          const yours = sgData[cat.key];
                           const theirs = comparisonData.data[cat.key];
                           const diff = yours - theirs;
 

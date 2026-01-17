@@ -183,14 +183,52 @@ export interface CreateAnnouncementData {
 // STATISTICS TYPES
 // ============================================================================
 
+/**
+ * Strokes Gained breakdown for PlayerStats
+ */
+export interface PlayerStrokesGained {
+  sg_total: number;
+  sg_off_tee: number;
+  sg_approach: number;
+  sg_around_green: number;
+  sg_putting: number;
+}
+
 export interface PlayerStats {
+  // Player identifier
+  player_id?: string;
+
+  // Round count (both names supported for compatibility)
   rounds_played: number;
+  total_rounds: number;
+
+  // Scoring (both names supported for compatibility)
   scoring_average: number;
+  scoring_avg: number;
+
+  // Best/worst rounds
   best_round: number;
   worst_round: number;
+
+  // Putting stats (both names supported for compatibility)
   putts_per_round: number;
+  avg_putts: number;
+
+  // Fairway stats (both names supported for compatibility)
   fairways_hit_percentage: number;
+  fairway_percentage: number;
+
+  // GIR stats (both names supported for compatibility)
   greens_in_regulation_percentage: number;
+  gir_percentage: number;
+
+  // Short game stats
+  up_and_down_percentage: number;
+
+  // Strokes gained breakdown
+  strokes_gained: PlayerStrokesGained;
+
+  // Optional handicap
   handicap_index?: number;
 }
 
@@ -601,4 +639,464 @@ export interface StatCardProps {
   trendValue?: string;
   description?: string;
   icon?: React.ReactNode;
+}
+
+// ============================================================================
+// ROUND REVIEW TYPES
+// ============================================================================
+
+/**
+ * Review status enum for round reviews
+ */
+export type ReviewStatus =
+  | 'pending'
+  | 'generating'
+  | 'draft'
+  | 'coach_review'
+  | 'approved'
+  | 'shared'
+  | 'failed';
+
+/**
+ * Key statistics extracted from a round for review
+ */
+export interface ReviewKeyStats {
+  scoring_avg: number | null;
+  score_vs_par: number | null;
+  putts_per_round: number | null;
+  putts_per_gir: number | null;
+  fairway_pct: number | null;
+  gir_pct: number | null;
+  scramble_pct: number | null;
+  three_putt_pct: number | null;
+  one_putt_pct: number | null;
+  penalty_count: number | null;
+  strokes_gained?: {
+    total: number | null;
+    off_tee: number | null;
+    approach: number | null;
+    around_green: number | null;
+    putting: number | null;
+  };
+}
+
+/**
+ * Drill recommendation from AI or coach
+ */
+export interface DrillRecommendation {
+  id: string;
+  name: string;
+  description: string;
+  focus_area: string;
+  duration_minutes?: number;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  video_url?: string;
+}
+
+/**
+ * Coach feedback input for round reviews
+ */
+export interface CoachFeedbackInput {
+  coach_notes?: string;
+  coach_rating?: number;
+  coach_highlights?: string[];
+  coach_focus_areas?: string[];
+  coach_drill_recommendations?: DrillRecommendation[];
+}
+
+/**
+ * Response from generate review action
+ */
+export interface GenerateReviewResponse {
+  success: boolean;
+  review_id?: string;
+  status?: ReviewStatus;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Extended GolfRoundReview type that includes all fields used by the review system.
+ * This extends beyond the database schema to include computed/virtual fields.
+ */
+export interface GolfRoundReview {
+  id: string;
+  round_id: string;
+  player_id: string;
+  created_at: string | null;
+  updated_at: string | null;
+
+  // Core review content (from database)
+  summary: string | null;
+  highlights: unknown | null;
+  areas_to_review: unknown | null;
+  patterns_detected: unknown | null;
+  primary_takeaway: string | null;
+  next_practice_priority: string | null;
+  round_stats: unknown | null;
+  round_score: number | null;
+  round_score_to_par: number | null;
+  scoring_avg_before: number | null;
+  scoring_avg_after: number | null;
+  engine_version: string | null;
+
+  // Sharing (from database)
+  shared_with_coach: boolean | null;
+  shared_at: string | null;
+  coach_notes: string | null;
+  coach_viewed_at: string | null;
+
+  // Extended fields for review system (may need migration)
+  status?: ReviewStatus;
+  status_message?: string | null;
+  generation_attempts?: number;
+  generation_started_at?: string | null;
+  generation_completed_at?: string | null;
+  last_error?: string | null;
+
+  // AI-generated content
+  strengths?: string[];
+  areas_for_improvement?: string[];
+  key_stats?: ReviewKeyStats;
+  ai_recommendations?: string[];
+  ai_model_used?: string | null;
+  ai_generation_duration_ms?: number | null;
+
+  // Coach feedback
+  coach_rating?: number | null;
+  coach_highlights?: string[];
+  coach_focus_areas?: string[];
+  coach_drill_recommendations?: DrillRecommendation[];
+  coach_approved?: boolean;
+  coach_approved_at?: string | null;
+  coach_approved_by?: string | null;
+
+  // Player interaction
+  shared_with_player?: boolean;
+  player_viewed_at?: string | null;
+  player_feedback?: string | null;
+  player_acknowledged?: boolean;
+}
+
+/**
+ * Round review with full round and player details
+ */
+export interface RoundReviewWithDetails extends GolfRoundReview {
+  round: GolfRound & {
+    player: GolfPlayer & {
+      profile?: {
+        id: string;
+        first_name: string;
+        last_name: string;
+        email?: string;
+        avatar_url?: string;
+      };
+    };
+    course?: {
+      id: string;
+      name: string;
+      city?: string;
+      state?: string;
+    };
+  };
+}
+
+// ============================================================================
+// ROUND DRAFT EXTENDED TYPES
+// ============================================================================
+
+/**
+ * Extended GolfRound type with draft-related fields.
+ * The code uses these fields for round drafts, which may need a migration.
+ */
+export interface GolfRoundDraftFields {
+  is_draft?: boolean;
+  draft_data?: Record<string, unknown> | null;
+  last_auto_save?: string | null;
+  holes_to_play?: number;
+  total_to_par?: number | null;
+}
+
+/**
+ * GolfRound extended with draft fields
+ */
+export type GolfRoundWithDraft = GolfRound & GolfRoundDraftFields;
+
+// ============================================================================
+// ADVANCED STATISTICS TYPES
+// ============================================================================
+
+export type RoundType = 'practice' | 'qualifying' | 'tournament' | 'all';
+
+export type ComparisonBaseline = 'pga' | 'scratch' | 'team' | 'personal_best';
+
+export interface DataQuality {
+  roundCount: number;
+  isReliable: boolean;
+  message?: string;
+}
+
+export interface StatsOptions {
+  playerId: string;
+  dateRange?: { start: string; end: string };
+  roundType?: RoundType;
+  includeQualifiers?: boolean;
+}
+
+export interface StatsResponse<T> {
+  data: T | null;
+  error: string | null;
+  quality: DataQuality;
+}
+
+export interface MultiMetricTrend {
+  metric: string;
+  values: { date: string; value: number }[];
+  trend: 'improving' | 'declining' | 'stable';
+  changePercent: number;
+}
+
+export interface ComparisonResult {
+  metric: string;
+  playerValue: number;
+  baselineValue: number;
+  difference: number;
+  percentile?: number;
+}
+
+export interface CoursePerformance {
+  courseName: string;
+  roundsPlayed: number;
+  scoringAverage: number;
+  bestScore: number;
+  worstScore: number;
+}
+
+export interface HolePerformance {
+  holeNumber: number;
+  par: number;
+  averageScore: number;
+  scoreToPar: number;
+  birdieRate: number;
+  parRate: number;
+  bogeyPlusRate: number;
+}
+
+export interface WeakAreaIdentification {
+  area: string;
+  severity: 'critical' | 'moderate' | 'minor';
+  metric: string;
+  value: number;
+  benchmark: number;
+  recommendation: string;
+}
+
+// ============================================================================
+// STAT GOALS
+// ============================================================================
+
+export interface StatGoal {
+  id: string;
+  player_id: string;
+  metric: string;
+  target_value: number;
+  current_value?: number;
+  deadline?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ============================================================================
+// TASK TEMPLATE DATA TYPES
+// ============================================================================
+
+export interface CreateTemplateData {
+  team_id: string;
+  name: string;
+  description?: string;
+  category?: TaskCategory;
+  default_priority?: 'low' | 'normal' | 'high' | 'urgent';
+  default_due_days?: number;
+  created_by: string;
+}
+
+export interface UpdateTemplateData {
+  name?: string;
+  description?: string;
+  category?: TaskCategory;
+  default_priority?: 'low' | 'normal' | 'high' | 'urgent';
+  default_due_days?: number;
+  is_active?: boolean;
+}
+
+export interface CreateTaskFromTemplate {
+  template_id: string;
+  team_id: string;
+  assigned_to?: string[];
+  due_date?: string;
+  custom_title?: string;
+  custom_description?: string;
+}
+
+export const DEFAULT_TEMPLATES: Omit<TaskTemplate, 'id' | 'team_id' | 'created_by' | 'created_at' | 'updated_at'>[] = [
+  {
+    name: 'Weekly Practice Log',
+    description: 'Complete weekly practice hours log',
+    category: 'practice',
+    default_priority: 'normal',
+    default_due_days: 7,
+    is_active: true,
+  },
+  {
+    name: 'Fitness Check-in',
+    description: 'Complete weekly fitness metrics',
+    category: 'fitness',
+    default_priority: 'normal',
+    default_due_days: 7,
+    is_active: true,
+  },
+];
+
+// ============================================================================
+// HOLE SCORE TYPES
+// ============================================================================
+
+/**
+ * Individual hole score for scorecard display
+ */
+export interface HoleScore {
+  hole_number: number;
+  par: number;
+  score: number;
+  putts?: number;
+  fairway_hit?: boolean;
+  green_in_regulation?: boolean;
+}
+
+// ============================================================================
+// REVIEW TIMELINE TYPES
+// ============================================================================
+
+/**
+ * Timeline item for displaying review history
+ */
+export interface ReviewTimelineItem {
+  id: string;
+  round_id: string;
+  player_id: string;
+  status: ReviewStatus;
+  created_at: string;
+  updated_at?: string;
+  round_date?: string;
+  course_name?: string;
+  total_score?: number;
+  score_to_par?: number;
+  player_name?: string;
+}
+
+/**
+ * Player's review history summary
+ */
+export interface PlayerReviewHistory {
+  player_id: string;
+  player_name: string;
+  total_reviews: number;
+  reviews: ReviewTimelineItem[];
+  average_score?: number;
+  recent_trend?: 'improving' | 'declining' | 'stable';
+}
+
+// ============================================================================
+// UI UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Get badge color classes for review status
+ */
+export function getStatusBadgeColor(status: ReviewStatus): string {
+  switch (status) {
+    case 'pending':
+      return 'bg-gray-100 text-gray-700';
+    case 'generating':
+      return 'bg-blue-100 text-blue-700';
+    case 'draft':
+      return 'bg-yellow-100 text-yellow-700';
+    case 'coach_review':
+      return 'bg-purple-100 text-purple-700';
+    case 'approved':
+      return 'bg-green-100 text-green-700';
+    case 'shared':
+      return 'bg-emerald-100 text-emerald-700';
+    case 'failed':
+      return 'bg-red-100 text-red-700';
+    default:
+      return 'bg-gray-100 text-gray-700';
+  }
+}
+
+/**
+ * Get human-readable label for review status
+ */
+export function getStatusLabel(status: ReviewStatus): string {
+  switch (status) {
+    case 'pending':
+      return 'Pending';
+    case 'generating':
+      return 'Generating';
+    case 'draft':
+      return 'Draft';
+    case 'coach_review':
+      return 'Coach Review';
+    case 'approved':
+      return 'Approved';
+    case 'shared':
+      return 'Shared';
+    case 'failed':
+      return 'Failed';
+    default:
+      return 'Unknown';
+  }
+}
+
+/**
+ * Check if a review is in an editable state
+ */
+export function isReviewEditable(status: ReviewStatus): boolean {
+  return status === 'draft' || status === 'coach_review';
+}
+
+/**
+ * Check if a review can be shared with the player
+ */
+export function canShareReview(status: ReviewStatus): boolean {
+  return status === 'approved';
+}
+
+/**
+ * Get color class for score display based on relation to par
+ */
+export function getScoreColor(score: number, par: number): string {
+  const diff = score - par;
+  if (diff <= -2) return 'text-amber-600'; // Eagle or better
+  if (diff === -1) return 'text-red-600'; // Birdie
+  if (diff === 0) return 'text-gray-900'; // Par
+  if (diff === 1) return 'text-blue-600'; // Bogey
+  if (diff === 2) return 'text-blue-700'; // Double bogey
+  return 'text-blue-800'; // Triple+
+}
+
+/**
+ * Calculate fairway hit percentage
+ */
+export function calculateFairwayPercentage(hit: number | null, total: number | null): number | null {
+  if (hit === null || total === null || total === 0) return null;
+  return Math.round((hit / total) * 100);
+}
+
+/**
+ * Calculate greens in regulation percentage
+ */
+export function calculateGIRPercentage(gir: number | null, total: number | null): number | null {
+  if (gir === null || total === null || total === 0) return null;
+  return Math.round((gir / total) * 100);
 }

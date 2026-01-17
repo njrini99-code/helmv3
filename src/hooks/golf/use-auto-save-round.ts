@@ -48,7 +48,8 @@ interface UseAutoSaveRoundOptions {
 
 const DEFAULT_INTERVAL = 30000; // 30 seconds
 const DEBOUNCE_DELAY = 2000; // 2 seconds debounce for rapid changes
-const OFFLINE_RETRY_DELAY = 5000; // 5 seconds retry when offline
+// Note: OFFLINE_RETRY_DELAY is reserved for future offline retry logic
+void (5000); // 5 seconds retry when offline
 const LOCAL_STORAGE_KEY = 'golf_round_draft_backup';
 
 /**

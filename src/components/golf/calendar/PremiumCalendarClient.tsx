@@ -23,9 +23,8 @@ import { DayView } from '@/components/golf/calendar/DayView';
 import { EventCard } from '@/components/golf/calendar/EventCard';
 import { EventDetailModal, type GolfEventFormData } from '@/components/golf/calendar/EventDetailModal';
 import { NotificationCenter } from '@/components/golf/calendar/NotificationCenter';
-import { MobileCalendarListView } from '@/components/golf/calendar/MobileCalendarListView';
 import { MobileEventSheet, type MobileEventFormData } from '@/components/golf/calendar/MobileEventSheet';
-import { CalendarDayViewSwipeable, MobileWeekPicker } from '@/components/golf/calendar/CalendarDayViewSwipeable';
+import { CalendarDayViewSwipeable } from '@/components/golf/calendar/CalendarDayViewSwipeable';
 import { QuickAddEventFAB } from '@/components/golf/calendar/QuickAddEventFAB';
 import type { RSVPResponse } from '@/components/golf/calendar/MobileRSVPButtons';
 import { createGolfEvent, updateGolfEvent, deleteGolfEvent, respondToEvent } from '@/app/golf/actions/golf';
@@ -97,7 +96,7 @@ export function PremiumCalendarClient({
   const [userRsvpStatuses, setUserRsvpStatuses] = useState<Map<string, RSVPResponse>>(new Map());
 
   // Get RSVP status for selected event (for mobile sheet)
-  const { status: selectedEventRsvpStatus, respond: respondToSelectedEvent } = usePlayerEventRSVP(
+  const { status: selectedEventRsvpStatus } = usePlayerEventRSVP(
     selectedEvent?.id,
     !isCoach && !!selectedEvent
   );
@@ -747,7 +746,7 @@ export function PremiumCalendarClient({
       {/* Mobile FAB for quick event creation (coaches only) */}
       {showMobileUI && isCoach && (
         <QuickAddEventFAB
-          onAddEvent={(eventType) => {
+          onAddEvent={(_eventType) => {
             handleAddEvent();
             // If eventType is provided, we could pre-fill the form
             // This would require passing the eventType to the modal/sheet

@@ -98,14 +98,31 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
           if (round.greens_total) greensTotal = round.greens_total;
         });
 
+        const puttsPerRound = totalPutts > 0 ? totalPutts / roundsPlayed : 0;
+        const fairwayPct = fairwaysTotal > 0 ? (fairwaysHit / fairwaysTotal) * 100 : 0;
+        const girPct = greensTotal > 0 ? (greensInReg / greensTotal) * 100 : 0;
+
         setStats({
           rounds_played: roundsPlayed,
+          total_rounds: roundsPlayed,
           scoring_average: scoringAverage,
+          scoring_avg: scoringAverage,
           best_round: bestRound,
           worst_round: worstRound || 0,
-          putts_per_round: totalPutts > 0 ? totalPutts / roundsPlayed : 0,
-          fairways_hit_percentage: fairwaysTotal > 0 ? (fairwaysHit / fairwaysTotal) * 100 : 0,
-          greens_in_regulation_percentage: greensTotal > 0 ? (greensInReg / greensTotal) * 100 : 0,
+          putts_per_round: puttsPerRound,
+          avg_putts: puttsPerRound,
+          fairways_hit_percentage: fairwayPct,
+          fairway_percentage: fairwayPct,
+          greens_in_regulation_percentage: girPct,
+          gir_percentage: girPct,
+          up_and_down_percentage: 0,
+          strokes_gained: {
+            sg_total: 0,
+            sg_off_tee: 0,
+            sg_approach: 0,
+            sg_around_green: 0,
+            sg_putting: 0,
+          },
           handicap_index: undefined,
         });
       } else {

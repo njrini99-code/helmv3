@@ -61,13 +61,11 @@ export async function getStatsSummary(playerId: string): Promise<SummaryStatsRes
       round_type,
       total_score,
       score_to_par,
-      fairways_hit,
-      fairway_opportunities,
-      greens_in_regulation,
-      gir_opportunities,
-      total_putts,
-      scrambles_made,
-      scramble_opportunities
+      total_fairways_hit,
+      total_fairways,
+      total_gir,
+      total_gir_possible,
+      total_putts
     `)
     .eq('player_id', playerId)
     .eq('status', 'completed')
@@ -101,24 +99,18 @@ export async function getStatsSummary(playerId: string): Promise<SummaryStatsRes
   let totalGir = 0;
   let totalGirOpp = 0;
   let totalPutts = 0;
-  let totalScramblesMade = 0;
-  let totalScrambleOpp = 0;
 
   for (const round of roundsData) {
-    if (round.fairways_hit !== null && round.fairway_opportunities !== null) {
-      totalFairwaysHit += round.fairways_hit;
-      totalFairwayOpp += round.fairway_opportunities;
+    if (round.total_fairways_hit !== null && round.total_fairways !== null) {
+      totalFairwaysHit += round.total_fairways_hit;
+      totalFairwayOpp += round.total_fairways;
     }
-    if (round.greens_in_regulation !== null && round.gir_opportunities !== null) {
-      totalGir += round.greens_in_regulation;
-      totalGirOpp += round.gir_opportunities;
+    if (round.total_gir !== null && round.total_gir_possible !== null) {
+      totalGir += round.total_gir;
+      totalGirOpp += round.total_gir_possible;
     }
     if (round.total_putts !== null) {
       totalPutts += round.total_putts;
-    }
-    if (round.scrambles_made !== null && round.scramble_opportunities !== null) {
-      totalScramblesMade += round.scrambles_made;
-      totalScrambleOpp += round.scramble_opportunities;
     }
   }
 
@@ -139,9 +131,7 @@ export async function getStatsSummary(playerId: string): Promise<SummaryStatsRes
     puttsPerRound: roundsPlayed > 0
       ? Math.round((totalPutts / roundsPlayed) * 10) / 10
       : null,
-    scramblingPercentage: totalScrambleOpp > 0
-      ? Math.round((totalScramblesMade / totalScrambleOpp) * 1000) / 10
-      : null,
+    scramblingPercentage: null, // Scrambling data not available in summary view
   };
 
   const rounds: RoundSummary[] = roundsData.map(r => ({
@@ -337,13 +327,11 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
       round_type,
       total_score,
       score_to_par,
-      fairways_hit,
-      fairway_opportunities,
-      greens_in_regulation,
-      gir_opportunities,
-      total_putts,
-      scrambles_made,
-      scramble_opportunities
+      total_fairways_hit,
+      total_fairways,
+      total_gir,
+      total_gir_possible,
+      total_putts
     `)
     .eq('player_id', playerId)
     .eq('status', 'completed')
@@ -371,16 +359,14 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
     toPar: r.score_to_par ?? 0,
     courseName: r.course_name || 'Unknown Course',
     roundType: r.round_type,
-    girPct: r.greens_in_regulation !== null && r.gir_opportunities !== null && r.gir_opportunities > 0
-      ? Math.round((r.greens_in_regulation / r.gir_opportunities) * 100)
+    girPct: r.total_gir !== null && r.total_gir_possible !== null && r.total_gir_possible > 0
+      ? Math.round((r.total_gir / r.total_gir_possible) * 100)
       : null,
-    fairwayPct: r.fairways_hit !== null && r.fairway_opportunities !== null && r.fairway_opportunities > 0
-      ? Math.round((r.fairways_hit / r.fairway_opportunities) * 100)
+    fairwayPct: r.total_fairways_hit !== null && r.total_fairways !== null && r.total_fairways > 0
+      ? Math.round((r.total_fairways_hit / r.total_fairways) * 100)
       : null,
     putts: r.total_putts,
-    scrambling: r.scrambles_made !== null && r.scramble_opportunities !== null && r.scramble_opportunities > 0
-      ? Math.round((r.scrambles_made / r.scramble_opportunities) * 100)
-      : null,
+    scrambling: null, // Scrambling data not available at round level
   }));
 
   // Build trend data points
@@ -478,6 +464,8 @@ function findBest<T extends { date: string; courseName: string }>(
   });
 
   const best = sorted[0];
+  if (!best) return null;
+
   return {
     value: best[key] as number,
     date: best.date,
@@ -558,13 +546,11 @@ export async function getTeamComparison(
       player_id,
       total_score,
       score_to_par,
-      fairways_hit,
-      fairway_opportunities,
-      greens_in_regulation,
-      gir_opportunities,
-      total_putts,
-      scrambles_made,
-      scramble_opportunities
+      total_fairways_hit,
+      total_fairways,
+      total_gir,
+      total_gir_possible,
+      total_putts
     `)
     .in('player_id', playerIds)
     .eq('status', 'completed')
@@ -587,14 +573,12 @@ export async function getTeamComparison(
     fairways: number[];
     fairwayOpps: number[];
     putts: number[];
-    scrambles: number[];
-    scrambleOpps: number[];
   }>();
 
   // Initialize map
   playerIds.forEach(id => {
     playerStatsMap.set(id, {
-      scores: [], girs: [], girOpps: [], fairways: [], fairwayOpps: [], putts: [], scrambles: [], scrambleOpps: []
+      scores: [], girs: [], girOpps: [], fairways: [], fairwayOpps: [], putts: []
     });
   });
 
@@ -604,13 +588,11 @@ export async function getTeamComparison(
     if (!stats) return;
 
     if (round.total_score !== null) stats.scores.push(round.total_score);
-    if (round.greens_in_regulation !== null) stats.girs.push(round.greens_in_regulation);
-    if (round.gir_opportunities !== null) stats.girOpps.push(round.gir_opportunities);
-    if (round.fairways_hit !== null) stats.fairways.push(round.fairways_hit);
-    if (round.fairway_opportunities !== null) stats.fairwayOpps.push(round.fairway_opportunities);
+    if (round.total_gir !== null) stats.girs.push(round.total_gir);
+    if (round.total_gir_possible !== null) stats.girOpps.push(round.total_gir_possible);
+    if (round.total_fairways_hit !== null) stats.fairways.push(round.total_fairways_hit);
+    if (round.total_fairways !== null) stats.fairwayOpps.push(round.total_fairways);
     if (round.total_putts !== null) stats.putts.push(round.total_putts);
-    if (round.scrambles_made !== null) stats.scrambles.push(round.scrambles_made);
-    if (round.scramble_opportunities !== null) stats.scrambleOpps.push(round.scramble_opportunities);
   });
 
   // Build team stats
@@ -623,8 +605,6 @@ export async function getTeamComparison(
     const totalFairways = stats.fairways.reduce((a, b) => a + b, 0);
     const totalFairwayOpps = stats.fairwayOpps.reduce((a, b) => a + b, 0);
     const totalPutts = stats.putts.reduce((a, b) => a + b, 0);
-    const totalScrambles = stats.scrambles.reduce((a, b) => a + b, 0);
-    const totalScrambleOpps = stats.scrambleOpps.reduce((a, b) => a + b, 0);
 
     return {
       playerId: id,
@@ -639,7 +619,7 @@ export async function getTeamComparison(
       puttsPerRound: stats.scores.length > 0
         ? Math.round((totalPutts / stats.scores.length) * 10) / 10
         : null,
-      scramblingPct: totalScrambleOpps > 0 ? Math.round((totalScrambles / totalScrambleOpps) * 100) : null,
+      scramblingPct: null, // Scrambling data not available at round level
     };
   }).filter(s => s.roundCount > 0);
 

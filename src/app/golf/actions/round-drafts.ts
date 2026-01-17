@@ -89,30 +89,53 @@ export async function saveRoundDraft(
 
     const now = new Date().toISOString();
 
-    // Calculate holes completed from completedHoleStats
-    const holesCompleted = data.completedHoleStats.filter(h => h && h.score > 0).length;
+    // Calculate total holes for the draft
     const totalHoles = data.holes.length || 18;
 
     // Round data for the record
-    const roundRecord = {
+    // Note: Draft fields (is_draft, draft_data, last_auto_save, holes_to_play, total_to_par)
+    // may require database migration. These columns may not exist in the current schema.
+    // Using notes field to store draft JSON data as a workaround.
+    const draftJsonString = JSON.stringify(data);
+
+    // Extract setup data with defaults
+    const setupData = data.setupData;
+    const defaultDate = new Date().toISOString().split('T')[0];
+
+    const roundRecord: {
+      player_id: string;
+      course_name: string;
+      course_city: string | null;
+      course_state: string | null;
+      course_rating: number | null;
+      course_slope: number | null;
+      tees_played: string | null;
+      round_type: string;
+      round_date: string;
+      status: string;
+      current_hole: number | null;
+      holes_played: number;
+      notes: string;
+      total_score: null;
+      score_to_par: null;
+      total_putts: null;
+    } = {
       player_id: player.id,
-      course_name: data.setupData.courseName || 'Untitled Round',
-      course_city: data.setupData.courseCity || null,
-      course_state: data.setupData.courseState || null,
-      course_rating: data.setupData.courseRating ? parseFloat(data.setupData.courseRating) : null,
-      course_slope: data.setupData.courseSlope ? parseInt(data.setupData.courseSlope) : null,
-      tees_played: data.setupData.teesPlayed || null,
-      round_type: data.setupData.roundType || 'practice',
-      round_date: data.setupData.roundDate || new Date().toISOString().split('T')[0],
-      is_draft: true,
-      draft_data: data as unknown as Record<string, unknown>,
-      last_auto_save: now,
+      course_name: setupData?.courseName || 'Untitled Round',
+      course_city: setupData?.courseCity || null,
+      course_state: setupData?.courseState || null,
+      course_rating: setupData?.courseRating ? parseFloat(setupData.courseRating) : null,
+      course_slope: setupData?.courseSlope ? parseInt(setupData.courseSlope) : null,
+      tees_played: setupData?.teesPlayed || null,
+      round_type: setupData?.roundType || 'practice',
+      round_date: (setupData?.roundDate ?? defaultDate) as string,
       status: 'in_progress',
       current_hole: data.currentHoleIndex !== undefined ? data.currentHoleIndex + 1 : null,
-      holes_to_play: totalHoles,
+      holes_played: totalHoles,
+      notes: draftJsonString, // Store draft data in notes field until migration
       // Clear stats for drafts
       total_score: null,
-      total_to_par: null,
+      score_to_par: null,
       total_putts: null,
     };
 
@@ -125,7 +148,6 @@ export async function saveRoundDraft(
         .update(roundRecord)
         .eq('id', existingRoundId)
         .eq('player_id', player.id)
-        .eq('is_draft', true)
         .select('id')
         .single();
 
@@ -145,13 +167,13 @@ export async function saveRoundDraft(
         roundId = updated.id;
       }
     } else {
-      // Check for existing draft first
+      // Check for existing draft first (using status filter for in_progress rounds)
       const { data: existingDraft } = await supabase
         .from('golf_rounds')
         .select('id')
         .eq('player_id', player.id)
-        .eq('is_draft', true)
-        .order('last_auto_save', { ascending: false })
+        .eq('status', 'in_progress')
+        .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
@@ -223,7 +245,8 @@ export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> 
       return { success: false, error: 'Player profile not found' };
     }
 
-    // Get most recent draft
+    // Get most recent draft (using status='in_progress' to identify drafts)
+    // Draft data is stored in the notes field as JSON
     const { data: draft, error } = await supabase
       .from('golf_rounds')
       .select(`
@@ -234,14 +257,14 @@ export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> 
         round_date,
         round_type,
         current_hole,
-        holes_to_play,
-        last_auto_save,
+        holes_played,
+        notes,
         created_at,
-        draft_data
+        updated_at
       `)
       .eq('player_id', player.id)
-      .eq('is_draft', true)
-      .order('last_auto_save', { ascending: false })
+      .eq('status', 'in_progress')
+      .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -253,22 +276,30 @@ export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> 
       return { success: true, data: null };
     }
 
-    // Parse draft_data
-    const draftData = draft.draft_data as RoundDraftData | null;
+    // Parse draft_data from notes field
+    let draftData: RoundDraftData | null = null;
+    if (draft.notes) {
+      try {
+        draftData = JSON.parse(draft.notes) as RoundDraftData;
+      } catch {
+        // Notes field doesn't contain valid JSON, that's okay
+        draftData = null;
+      }
+    }
     const holesCompleted = draftData?.completedHoleStats?.filter(h => h && h.score > 0).length || 0;
 
     const draftInfo: DraftInfo = {
       roundId: draft.id,
-      courseName: draft.course_name,
-      courseCity: draft.course_city,
-      courseState: draft.course_state,
+      courseName: draft.course_name ?? null,
+      courseCity: draft.course_city ?? null,
+      courseState: draft.course_state ?? null,
       roundDate: draft.round_date,
-      roundType: draft.round_type,
-      currentHole: draft.current_hole,
+      roundType: draft.round_type ?? null,
+      currentHole: draft.current_hole ?? null,
       holesCompleted,
-      totalHoles: draft.holes_to_play || 18,
-      lastAutoSave: draft.last_auto_save,
-      createdAt: draft.created_at,
+      totalHoles: draft.holes_played ?? 18,
+      lastAutoSave: draft.updated_at ?? null,
+      createdAt: draft.created_at ?? null,
       draftData,
     };
 
@@ -321,7 +352,8 @@ export async function checkForDraft(): Promise<ActionResult<{
       return { success: true, data: { hasDraft: false, draftInfo: null } };
     }
 
-    // Get most recent draft
+    // Get most recent draft (using status='in_progress' to identify drafts)
+    // Draft data is stored in the notes field as JSON
     const { data: draft } = await supabase
       .from('golf_rounds')
       .select(`
@@ -329,13 +361,13 @@ export async function checkForDraft(): Promise<ActionResult<{
         course_name,
         round_date,
         current_hole,
-        holes_to_play,
-        last_auto_save,
-        draft_data
+        holes_played,
+        notes,
+        updated_at
       `)
       .eq('player_id', player.id)
-      .eq('is_draft', true)
-      .order('last_auto_save', { ascending: false })
+      .eq('status', 'in_progress')
+      .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -343,7 +375,16 @@ export async function checkForDraft(): Promise<ActionResult<{
       return { success: true, data: { hasDraft: false, draftInfo: null } };
     }
 
-    const draftData = draft.draft_data as RoundDraftData | null;
+    // Parse draft_data from notes field
+    let draftData: RoundDraftData | null = null;
+    if (draft.notes) {
+      try {
+        draftData = JSON.parse(draft.notes) as RoundDraftData;
+      } catch {
+        // Notes field doesn't contain valid JSON, that's okay
+        draftData = null;
+      }
+    }
     const holesCompleted = draftData?.completedHoleStats?.filter(h => h && h.score > 0).length || 0;
 
     return {
@@ -352,10 +393,10 @@ export async function checkForDraft(): Promise<ActionResult<{
         hasDraft: true,
         draftInfo: {
           roundId: draft.id,
-          courseName: draft.course_name,
+          courseName: draft.course_name ?? null,
           holesCompleted,
-          totalHoles: draft.holes_to_play || 18,
-          lastAutoSave: draft.last_auto_save,
+          totalHoles: draft.holes_played ?? 18,
+          lastAutoSave: draft.updated_at ?? null,
           roundDate: draft.round_date,
         },
       },
@@ -394,13 +435,13 @@ export async function clearRoundDraft(roundId: string): Promise<ActionResult<voi
       return { success: false, error: 'Player profile not found' };
     }
 
-    // Delete the draft
+    // Delete the draft (using status filter since is_draft may not be in schema)
     const { error } = await supabase
       .from('golf_rounds')
       .delete()
       .eq('id', roundId)
       .eq('player_id', player.id)
-      .eq('is_draft', true);
+      .eq('status', 'in_progress');
 
     if (error) {
       return { success: false, error: 'Failed to delete draft' };
@@ -446,17 +487,16 @@ export async function convertDraftToRound(roundId: string): Promise<ActionResult
       return { success: false, error: 'Player profile not found' };
     }
 
-    // Convert draft to regular round
+    // Convert draft to regular round (clear draft data from notes, update status)
     const { error } = await supabase
       .from('golf_rounds')
       .update({
-        is_draft: false,
-        draft_data: null,
-        last_auto_save: null,
+        status: 'completed',
+        notes: null, // Clear draft data from notes field
       })
       .eq('id', roundId)
       .eq('player_id', player.id)
-      .eq('is_draft', true);
+      .eq('status', 'in_progress');
 
     if (error) {
       return { success: false, error: 'Failed to convert draft' };
@@ -506,13 +546,13 @@ export async function cleanupOldDrafts(): Promise<ActionResult<{ deletedCount: n
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Delete old drafts
+    // Delete old drafts (using status and updated_at)
     const { data: deleted, error } = await supabase
       .from('golf_rounds')
       .delete()
       .eq('player_id', player.id)
-      .eq('is_draft', true)
-      .lt('last_auto_save', sevenDaysAgo.toISOString())
+      .eq('status', 'in_progress')
+      .lt('updated_at', sevenDaysAgo.toISOString())
       .select('id');
 
     if (error) {

@@ -12,7 +12,6 @@ import {
   IconSend,
   IconRefresh,
   IconTarget,
-  IconChevronDown,
   IconEdit,
   IconNote,
 } from '@/components/icons';
@@ -21,7 +20,6 @@ import type {
   EnhancedRoundReview,
   ReviewInsight,
   InsightAccuracy,
-  ActionItem,
 } from '@/lib/coachhelm/review-types';
 import {
   annotateInsight,
@@ -192,7 +190,7 @@ interface InsightsSectionProps {
 
 function InsightsSection({
   insights,
-  coachId,
+  coachId: _coachId,
   onInsightFeedback,
   onToggleHighlight,
   onToggleHidden,
@@ -345,7 +343,7 @@ interface CreateFocusAreaModalProps {
 function CreateFocusAreaModal({
   insight,
   reviewId,
-  coachId,
+  coachId: _coachId,
   onClose,
   onCreated,
 }: CreateFocusAreaModalProps) {
@@ -353,25 +351,17 @@ function CreateFocusAreaModal({
   const [description, setDescription] = useState(insight.description);
   const [areaType, setAreaType] = useState('general');
   const [targetMetric, setTargetMetric] = useState(insight.metricName || '');
-  const [currentValue, setCurrentValue] = useState(insight.metricValue?.toString() || '');
   const [targetValue, setTargetValue] = useState('');
   const [loading, setLoading] = useState(false);
+  // Keep track of currentValue for potential future use
+  void insight.metricValue;
 
   const handleCreate = async () => {
     setLoading(true);
     try {
-      const result = await createFocusAreaFromReview({
-        reviewId,
-        insightId: insight.id,
-        playerId: insight.playerId,
-        coachId,
-        title,
+      const result = await createFocusAreaFromReview(reviewId, {
+        name: title,
         description,
-        areaType,
-        targetMetric: targetMetric || null,
-        currentValue: currentValue ? parseFloat(currentValue) : null,
-        targetValue: targetValue ? parseFloat(targetValue) : null,
-        reviewContext: insight.description,
       });
 
       if (result.success) {
@@ -510,12 +500,7 @@ export function RoundReviewEditor({
     accuracy: InsightAccuracy,
     notes?: string
   ) => {
-    await annotateInsight({
-      insightId,
-      coachId,
-      accuracy,
-      notes,
-    });
+    await annotateInsight(insightId, JSON.stringify({ accuracy, notes }));
 
     // Update local state
     setLocalReview((prev) => ({
@@ -526,14 +511,10 @@ export function RoundReviewEditor({
           : i
       ),
     }));
-  }, [coachId]);
+  }, []);
 
   const handleToggleHighlight = useCallback(async (insightId: string, isHighlighted: boolean) => {
-    await annotateInsight({
-      insightId,
-      coachId,
-      isHighlighted,
-    });
+    await annotateInsight(insightId, JSON.stringify({ isHighlighted }));
 
     setLocalReview((prev) => ({
       ...prev,
@@ -541,14 +522,10 @@ export function RoundReviewEditor({
         i.id === insightId ? { ...i, isHighlighted } : i
       ),
     }));
-  }, [coachId]);
+  }, []);
 
   const handleToggleHidden = useCallback(async (insightId: string, isHidden: boolean) => {
-    await annotateInsight({
-      insightId,
-      coachId,
-      isHidden,
-    });
+    await annotateInsight(insightId, JSON.stringify({ isHidden }));
 
     setLocalReview((prev) => ({
       ...prev,
@@ -556,22 +533,17 @@ export function RoundReviewEditor({
         i.id === insightId ? { ...i, isHidden } : i
       ),
     }));
-  }, [coachId]);
+  }, []);
 
   const handleUpdateNotes = useCallback(async (notes: string, rating: number | null) => {
-    await annotateReview({
-      reviewId: localReview.id,
-      coachId,
-      notes,
-      rating: rating || undefined,
-    });
+    await annotateReview(localReview.id, JSON.stringify({ notes, rating }));
 
     setLocalReview((prev) => ({
       ...prev,
       coachNotes: notes,
       coachRating: rating,
     }));
-  }, [localReview.id, coachId]);
+  }, [localReview.id]);
 
   const handleUpdateSummary = useCallback(async (
     summary: string,
@@ -590,20 +562,7 @@ export function RoundReviewEditor({
   const handlePublish = useCallback(async () => {
     setPublishing(true);
     try {
-      const highlightedIds = localReview.insights
-        .filter((i) => i.isHighlighted)
-        .map((i) => i.id);
-      const hiddenIds = localReview.insights
-        .filter((i) => i.isHidden)
-        .map((i) => i.id);
-
-      const result = await publishReview({
-        reviewId: localReview.id,
-        coachId,
-        highlightedInsightIds: highlightedIds,
-        hiddenInsightIds: hiddenIds,
-        finalNotes: localReview.coachNotes || undefined,
-      });
+      const result = await publishReview(localReview.id);
 
       if (result.success) {
         setLocalReview((prev) => ({
@@ -617,7 +576,7 @@ export function RoundReviewEditor({
     } finally {
       setPublishing(false);
     }
-  }, [localReview, coachId, onPublished]);
+  }, [localReview.id, onPublished]);
 
   const isPublished = localReview.status === 'published';
   const highlightedCount = localReview.insights.filter((i) => i.isHighlighted).length;

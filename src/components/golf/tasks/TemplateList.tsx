@@ -8,7 +8,7 @@ import {
   duplicateTemplate,
   createTaskFromTemplate,
 } from '@/app/golf/actions/task-templates';
-import type { TaskTemplate, TASK_CATEGORIES } from '@/lib/types/golf';
+import type { TaskTemplate, CreateTaskFromTemplate } from '@/lib/types/golf';
 
 interface TemplateListProps {
   teamId: string;
@@ -91,9 +91,11 @@ export function TemplateList({
   const handleQuickCreate = (template: TaskTemplate) => {
     setActionInProgress(template.id);
     startTransition(async () => {
-      const { data, error } = await createTaskFromTemplate({
+      const createData: CreateTaskFromTemplate = {
         template_id: template.id,
-      });
+        team_id: teamId,
+      };
+      const { data, error } = await createTaskFromTemplate(createData);
       if (data) {
         onTaskCreated?.();
       } else {
@@ -104,16 +106,21 @@ export function TemplateList({
   };
 
   // Get category color
-  const getCategoryColor = (category?: string): string => {
-    const colors: Record<string, string> = {
+  const getCategoryColor = (category?: string | null): string => {
+    const colors: { [key: string]: string } = {
       practice: 'bg-blue-50 text-blue-700 border-blue-100',
       tournament: 'bg-purple-50 text-purple-700 border-purple-100',
       academic: 'bg-amber-50 text-amber-700 border-amber-100',
       equipment: 'bg-gray-50 text-gray-700 border-gray-100',
       travel: 'bg-green-50 text-green-700 border-green-100',
+      fitness: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+      mental: 'bg-purple-50 text-purple-700 border-purple-100',
+      administrative: 'bg-orange-50 text-orange-700 border-orange-100',
       other: 'bg-slate-50 text-slate-700 border-slate-100',
     };
-    return colors[category || 'other'] || colors.other;
+    const key = category || 'other';
+    const result = colors[key];
+    return result !== undefined ? result : 'bg-slate-50 text-slate-700 border-slate-100';
   };
 
   if (loading) {
@@ -243,26 +250,13 @@ export function TemplateList({
                     <h4 className="font-medium text-gray-900 truncate">
                       {template.name}
                     </h4>
-                    {template.is_recurring && (
+                    {template.is_active && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-brand-50 text-brand-700">
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        >
-                          <path d="M17 1l4 4-4 4" />
-                          <path d="M3 11V9a4 4 0 014-4h14" />
-                          <path d="M7 23l-4-4 4-4" />
-                          <path d="M21 13v2a4 4 0 01-4 4H3" />
-                        </svg>
-                        Recurring
+                        Active
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 truncate">{template.title}</p>
+                  <p className="text-sm text-gray-600 truncate">{template.description}</p>
                   {template.description && (
                     <p className="text-xs text-gray-500 mt-1 line-clamp-2">
                       {template.description}
@@ -279,26 +273,10 @@ export function TemplateList({
                         {template.category}
                       </span>
                     )}
-                    {template.default_due_offset_days && (
+                    {template.default_due_days && (
                       <span className="text-xs text-gray-500">
-                        Due in {template.default_due_offset_days} day
-                        {template.default_due_offset_days !== 1 ? 's' : ''}
-                      </span>
-                    )}
-                    {template.default_reminder_offset_hours && (
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        >
-                          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                        </svg>
-                        {template.default_reminder_offset_hours}h before
+                        Due in {template.default_due_days} day
+                        {template.default_due_days !== 1 ? 's' : ''}
                       </span>
                     )}
                   </div>

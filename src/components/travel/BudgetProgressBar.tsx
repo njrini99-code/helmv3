@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import type { TravelBudget, ExpenseCategory } from '@/types/travel.types';
+import type { TravelBudget, ExpenseCategory } from '@/lib/types/travel';
 
 // Format currency
 const formatCurrency = (amount: number, currency: string = 'USD') => {

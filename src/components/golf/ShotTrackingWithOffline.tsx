@@ -20,7 +20,7 @@ import dynamic from 'next/dynamic';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useOfflineSyncStore, useOfflineSyncStatus, useOfflineSyncActions } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
-import { saveOfflineShot, saveOfflineHole, saveOfflineRound, type OfflineShot, type OfflineHole } from '@/lib/offline/shot-storage';
+import { saveOfflineShot, saveOfflineHole, saveOfflineRound } from '@/lib/offline/shot-storage';
 import { OfflineSyncStatus } from './OfflineSyncStatus';
 import { OfflineWarningBanner } from './OfflineWarningBanner';
 import type { ShotRecord, HoleStats } from './ShotTrackingComprehensive';
@@ -108,8 +108,9 @@ export default function ShotTrackingWithOffline({
             useOfflineSyncStore.getState().startSync();
           },
           onSyncComplete: (result) => {
-            useOfflineSyncStore.getState().completeSync(result.syncedCount > 0);
-            onSyncComplete?.(result.syncedCount > 0, result.syncedCount);
+            const syncedCount = result.syncedRounds + result.syncedHoles + result.syncedShots;
+            useOfflineSyncStore.getState().completeSync(syncedCount > 0);
+            onSyncComplete?.(syncedCount > 0, syncedCount);
           },
           onSyncError: (error) => {
             useOfflineSyncStore.getState().failSync(error.message);
@@ -152,6 +153,7 @@ export default function ShotTrackingWithOffline({
       }, 3000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [connectionStatus.isOnline, syncStatus.pendingCount.total, syncStatus.syncError]);
 
   // Auto-sync when coming back online
@@ -168,6 +170,7 @@ export default function ShotTrackingWithOffline({
 
       return () => clearTimeout(timeout);
     }
+    return undefined;
   }, [connectionStatus.isOnline, syncStatus.pendingCount.total, isInitialized]);
 
   /**
@@ -180,25 +183,27 @@ export default function ShotTrackingWithOffline({
     // Save shots to IndexedDB
     for (const shot of shots) {
       try {
-        const offlineShot: OfflineShot = {
-          // Map ShotRecord fields to OfflineShot
-          round_id: roundId,
+        // Map ShotRecord fields to OfflineShot interface
+        // Note: roundId is used as round_offline_id for tracking purposes
+        const offlineShotData = {
+          round_offline_id: roundId,
           hole_number: currentHole.number,
           shot_number: shot.shotNumber,
-          club: shot.club,
-          shot_type: shot.type || 'approach',
-          distance: shot.distance || null,
-          distance_to_pin: shot.distanceToPin || null,
-          lie: shot.lie || 'fairway',
+          shot_type: shot.shotType || 'approach',
+          club_type: shot.clubType || 'non_driver',
           result: shot.result || 'fairway',
-          outcome: shot.outcome || 'good',
+          distance_to_hole_before: shot.distanceToHoleBefore || null,
+          distance_to_hole_after: shot.distanceToHoleAfter || null,
+          shot_distance: shot.shotDistance || null,
           is_penalty: shot.isPenalty || false,
-          is_ob: shot.isOB || false,
-          is_in_hole: shot.isInHole || false,
-          notes: shot.notes || null,
+          penalty_type: shot.penaltyType || null,
+          miss_direction: shot.missDirection || null,
+          lie_before: shot.lieBefore || null,
+          distance_unit_before: shot.distanceUnitBefore || null,
+          distance_unit_after: shot.distanceUnitAfter || null,
         };
 
-        await saveOfflineShot(offlineShot);
+        await saveOfflineShot(offlineShotData);
       } catch (error) {
         console.error('[ShotTrackingWithOffline] Failed to save shot to IndexedDB:', error);
       }
@@ -209,17 +214,21 @@ export default function ShotTrackingWithOffline({
       try {
         await saveOfflineRound({
           player_id: playerId,
-          round_date: new Date().toISOString(),
-          round_type: 'practice',
+          course_name: (draftData.courseName as string | undefined) ?? 'Unknown Course',
+          round_date: new Date().toISOString().split('T')[0] ?? new Date().toISOString().slice(0, 10),
+          round_type: (draftData.roundType as string | undefined) ?? 'practice',
           status: 'in_progress',
+          holes_to_play: 18,
           total_score: null,
           total_putts: null,
           fairways_hit: null,
           greens_in_regulation: null,
-          ...draftData,
-          currentHoleIndex: holeIndex,
-          inProgressShots: { [holeIndex]: shots },
-        } as Parameters<typeof saveOfflineRound>[0], roundId);
+          draft_data: {
+            ...draftData,
+            currentHoleIndex: holeIndex,
+            inProgressShots: { [holeIndex]: shots },
+          },
+        });
       } catch (error) {
         console.error('[ShotTrackingWithOffline] Failed to save round draft:', error);
       }
@@ -256,24 +265,26 @@ export default function ShotTrackingWithOffline({
 
     // Save shot to IndexedDB
     try {
-      const offlineShot: OfflineShot = {
-        round_id: roundId,
+      // Map ShotRecord fields to OfflineShot interface
+      const offlineShotData = {
+        round_offline_id: roundId,
         hole_number: currentHole.number,
         shot_number: shot.shotNumber,
-        club: shot.club,
-        shot_type: shot.type || 'approach',
-        distance: shot.distance || null,
-        distance_to_pin: shot.distanceToPin || null,
-        lie: shot.lie || 'fairway',
+        shot_type: shot.shotType || 'approach',
+        club_type: shot.clubType || 'non_driver',
         result: shot.result || 'fairway',
-        outcome: shot.outcome || 'good',
+        distance_to_hole_before: shot.distanceToHoleBefore || null,
+        distance_to_hole_after: shot.distanceToHoleAfter || null,
+        shot_distance: shot.shotDistance || null,
         is_penalty: shot.isPenalty || false,
-        is_ob: shot.isOB || false,
-        is_in_hole: shot.isInHole || false,
-        notes: shot.notes || null,
+        penalty_type: shot.penaltyType || null,
+        miss_direction: shot.missDirection || null,
+        lie_before: shot.lieBefore || null,
+        distance_unit_before: shot.distanceUnitBefore || null,
+        distance_unit_after: shot.distanceUnitAfter || null,
       };
 
-      await saveOfflineShot(offlineShot);
+      await saveOfflineShot(offlineShotData);
       await syncActions.refreshPendingCounts();
     } catch (error) {
       console.error('[ShotTrackingWithOffline] Failed to queue shot:', error);
@@ -297,16 +308,16 @@ export default function ShotTrackingWithOffline({
 
     // Save hole data to IndexedDB
     try {
-      const offlineHole: OfflineHole = {
-        round_id: roundId,
-        hole_number: currentHole.number,
+      // Map HoleStats to OfflineHole interface
+      const offlineHoleData = {
+        round_offline_id: roundId,
+        hole_number: stats.holeNumber,
         par: stats.par,
-        yardage: currentHole.yardage,
-        score: stats.score,
-        putts: stats.putts,
+        yardage: stats.yardage || null,
+        score: stats.score || null,
+        putts: stats.putts || null,
         fairway_hit: stats.fairwayHit,
         green_in_regulation: stats.greenInRegulation,
-        penalties: stats.penalties || 0,
         driving_distance: stats.drivingDistance || null,
         approach_proximity: stats.approachProximity || null,
         first_putt_distance: stats.firstPuttDistance || null,
@@ -316,7 +327,7 @@ export default function ShotTrackingWithOffline({
         sand_save_made: stats.sandSaveMade || false,
       };
 
-      await saveOfflineHole(offlineHole);
+      await saveOfflineHole(offlineHoleData);
       await syncActions.refreshPendingCounts();
     } catch (error) {
       console.error('[ShotTrackingWithOffline] Failed to save hole:', error);

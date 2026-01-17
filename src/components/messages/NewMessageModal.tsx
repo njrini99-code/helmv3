@@ -75,7 +75,7 @@ export function NewMessageModal({
         // Player searching for coaches
         let coachQuery = supabase
           .from('baseball_coaches')
-          .select('id, user_id, full_name, school_name, avatar_url');
+          .select('id, user_id, full_name, title, avatar_url, organization:organizations(name)');
 
         if (query.trim()) {
           coachQuery = coachQuery.ilike('full_name', `%${query}%`);
@@ -94,7 +94,7 @@ export function NewMessageModal({
             id: c.id,
             userId: c.user_id,
             name: c.full_name || 'Coach',
-            subtitle: c.school_name || 'Baseball Coach',
+            subtitle: (c.organization as { name: string } | null)?.name || c.title || 'Baseball Coach',
             avatar: c.avatar_url,
             type: 'coach' as const,
           }));

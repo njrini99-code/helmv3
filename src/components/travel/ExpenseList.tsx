@@ -1,22 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, type SelectOption } from '@/components/ui/select';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptViewer } from './ReceiptViewer';
 import {
@@ -30,9 +17,7 @@ import type {
   TravelExpenseWithDetails,
   ExpenseCategory,
   ExpenseStatus,
-  EXPENSE_CATEGORY_LABELS,
-  EXPENSE_STATUS_LABELS,
-} from '@/types/travel.types';
+} from '@/lib/types/travel';
 
 // Format currency
 const formatCurrency = (amount: number, currency: string = 'USD') => {
@@ -52,7 +37,7 @@ const formatDate = (dateString: string) => {
 };
 
 // Category icons
-const CATEGORY_ICONS: Record<ExpenseCategory, JSX.Element> = {
+const CATEGORY_ICONS: Record<ExpenseCategory, React.ReactNode> = {
   transportation: (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
@@ -86,11 +71,11 @@ const CATEGORY_ICONS: Record<ExpenseCategory, JSX.Element> = {
 };
 
 // Status badge variants
-const STATUS_VARIANTS: Record<ExpenseStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+const STATUS_VARIANTS: Record<ExpenseStatus, 'secondary' | 'success' | 'danger' | 'info'> = {
   pending: 'secondary',
-  approved: 'default',
-  rejected: 'destructive',
-  reimbursed: 'outline',
+  approved: 'success',
+  rejected: 'danger',
+  reimbursed: 'info',
 };
 
 // Category labels
@@ -115,7 +100,6 @@ interface ExpenseListProps {
   expenses: TravelExpenseWithDetails[];
   itineraryId: string;
   teamId: string;
-  players?: Array<{ id: string; name: string }>;
   isCoach?: boolean;
   onRefresh?: () => void;
 }
@@ -124,7 +108,6 @@ export function ExpenseList({
   expenses,
   itineraryId,
   teamId,
-  players = [],
   isCoach = false,
   onRefresh,
 }: ExpenseListProps) {
@@ -133,9 +116,22 @@ export function ExpenseList({
   const [receiptViewerOpen, setReceiptViewerOpen] = useState(false);
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [filterCategory, setFilterCategory] = useState<ExpenseCategory | 'all'>('all');
-  const [filterStatus, setFilterStatus] = useState<ExpenseStatus | 'all'>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Filter expenses
   const filteredExpenses = expenses.filter((expense) => {
@@ -144,28 +140,30 @@ export function ExpenseList({
     return true;
   });
 
-  // Group by category
-  const groupedByCategory = filteredExpenses.reduce(
-    (acc, expense) => {
-      if (!acc[expense.category]) {
-        acc[expense.category] = [];
-      }
-      acc[expense.category].push(expense);
-      return acc;
-    },
-    {} as Record<ExpenseCategory, TravelExpenseWithDetails[]>
-  );
+  // Category options for select
+  const categoryOptions: SelectOption[] = [
+    { value: 'all', label: 'All Categories' },
+    ...Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
+  ];
+
+  // Status options for select
+  const statusOptions: SelectOption[] = [
+    { value: 'all', label: 'All Status' },
+    ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
+  ];
 
   // Handlers
   const handleEdit = (expense: TravelExpenseWithDetails) => {
     setSelectedExpense(expense);
     setEditDialogOpen(true);
+    setOpenMenuId(null);
   };
 
   const handleDelete = async (expense: TravelExpenseWithDetails) => {
     if (!confirm('Are you sure you want to delete this expense?')) return;
 
     setIsProcessing(true);
+    setOpenMenuId(null);
     const result = await deleteExpense(expense.id);
     setIsProcessing(false);
 
@@ -179,6 +177,7 @@ export function ExpenseList({
 
   const handleApprove = async (expense: TravelExpenseWithDetails) => {
     setIsProcessing(true);
+    setOpenMenuId(null);
     const result = await approveExpense(expense.id);
     setIsProcessing(false);
 
@@ -195,6 +194,7 @@ export function ExpenseList({
     if (!reason) return;
 
     setIsProcessing(true);
+    setOpenMenuId(null);
     const result = await rejectExpense(expense.id, reason);
     setIsProcessing(false);
 
@@ -208,6 +208,7 @@ export function ExpenseList({
 
   const handleMarkReimbursed = async (expense: TravelExpenseWithDetails) => {
     setIsProcessing(true);
+    setOpenMenuId(null);
     const result = await markAsReimbursed(expense.id);
     setIsProcessing(false);
 
@@ -238,6 +239,7 @@ export function ExpenseList({
   const handleViewReceipt = (url: string) => {
     setReceiptUrl(url);
     setReceiptViewerOpen(true);
+    setOpenMenuId(null);
   };
 
   const toggleSelection = (id: string) => {
@@ -251,7 +253,7 @@ export function ExpenseList({
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredExpenses.length) {
+    if (selectedIds.size === filteredExpenses.length && filteredExpenses.length > 0) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(filteredExpenses.map((e) => e.id)));
@@ -261,9 +263,9 @@ export function ExpenseList({
   if (expenses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+        <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-4">
           <svg
-            className="w-6 h-6 text-muted-foreground"
+            className="w-6 h-6 text-warm-400"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
@@ -276,8 +278,8 @@ export function ExpenseList({
             />
           </svg>
         </div>
-        <h3 className="font-medium text-foreground mb-1">No expenses yet</h3>
-        <p className="text-sm text-muted-foreground max-w-sm">
+        <h3 className="font-medium text-warm-900 mb-1">No expenses yet</h3>
+        <p className="text-sm text-warm-500 max-w-sm">
           Start tracking expenses by adding your first one.
         </p>
       </div>
@@ -289,44 +291,28 @@ export function ExpenseList({
       {/* Filters and Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Select
-            value={filterCategory}
-            onValueChange={(v) => setFilterCategory(v as ExpenseCategory | 'all')}
-          >
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-[180px]">
+            <Select
+              options={categoryOptions}
+              value={filterCategory}
+              onChange={(v) => setFilterCategory(v)}
+              placeholder="All Categories"
+            />
+          </div>
 
-          <Select
-            value={filterStatus}
-            onValueChange={(v) => setFilterStatus(v as ExpenseStatus | 'all')}
-          >
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-[150px]">
+            <Select
+              options={statusOptions}
+              value={filterStatus}
+              onChange={(v) => setFilterStatus(v)}
+              placeholder="All Status"
+            />
+          </div>
         </div>
 
         {isCoach && selectedIds.size > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-warm-500">
               {selectedIds.size} selected
             </span>
             <Button
@@ -341,9 +327,9 @@ export function ExpenseList({
       </div>
 
       {/* Expense Table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border border-warm-200 rounded-lg overflow-hidden">
         <table className="w-full">
-          <thead className="bg-muted/50">
+          <thead className="bg-warm-50">
             <tr>
               {isCoach && (
                 <th className="w-10 px-4 py-3">
@@ -351,35 +337,35 @@ export function ExpenseList({
                     type="checkbox"
                     checked={selectedIds.size === filteredExpenses.length && filteredExpenses.length > 0}
                     onChange={toggleSelectAll}
-                    className="rounded border-input"
+                    className="rounded border-warm-300"
                   />
                 </th>
               )}
-              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
                 Description
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
                 Category
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <th className="px-4 py-3 text-right text-xs font-medium text-warm-500 uppercase tracking-wider">
                 Amount
               </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <th className="px-4 py-3 text-center text-xs font-medium text-warm-500 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
                 Date
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <th className="px-4 py-3 text-right text-xs font-medium text-warm-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-warm-100">
             {filteredExpenses.map((expense) => (
               <tr
                 key={expense.id}
-                className="hover:bg-muted/30 transition-colors"
+                className="hover:bg-warm-50 transition-colors"
               >
                 {isCoach && (
                   <td className="px-4 py-3">
@@ -387,23 +373,23 @@ export function ExpenseList({
                       type="checkbox"
                       checked={selectedIds.has(expense.id)}
                       onChange={() => toggleSelection(expense.id)}
-                      className="rounded border-input"
+                      className="rounded border-warm-300"
                       disabled={expense.status !== 'pending'}
                     />
                   </td>
                 )}
                 <td className="px-4 py-3">
                   <div className="flex flex-col">
-                    <span className="font-medium text-sm">{expense.description}</span>
+                    <span className="font-medium text-sm text-warm-900">{expense.description}</span>
                     {expense.per_player && expense.player && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-warm-500">
                         For: {expense.player.profile?.full_name}
                       </span>
                     )}
                     {expense.receipt_url && (
                       <button
                         onClick={() => handleViewReceipt(expense.receipt_url!)}
-                        className="text-xs text-primary hover:underline mt-0.5 text-left"
+                        className="text-xs text-primary-600 hover:underline mt-0.5 text-left"
                       >
                         View Receipt
                       </button>
@@ -412,14 +398,14 @@ export function ExpenseList({
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">
+                    <span className="text-warm-400">
                       {CATEGORY_ICONS[expense.category]}
                     </span>
-                    <span className="text-sm">{CATEGORY_LABELS[expense.category]}</span>
+                    <span className="text-sm text-warm-700">{CATEGORY_LABELS[expense.category]}</span>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <span className="font-medium">
+                  <span className="font-medium text-warm-900">
                     {formatCurrency(expense.amount, expense.currency)}
                   </span>
                 </td>
@@ -429,69 +415,83 @@ export function ExpenseList({
                   </Badge>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-warm-500">
                     {formatDate(expense.created_at)}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon-sm">
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
-                          />
-                        </svg>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(expense)}>
-                        Edit
-                      </DropdownMenuItem>
-                      {expense.receipt_url && (
-                        <DropdownMenuItem
-                          onClick={() => handleViewReceipt(expense.receipt_url!)}
-                        >
-                          View Receipt
-                        </DropdownMenuItem>
-                      )}
-                      {isCoach && expense.status === 'pending' && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleApprove(expense)}>
-                            Approve
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleReject(expense)}
-                            className="text-destructive"
-                          >
-                            Reject
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                      {isCoach && expense.status === 'approved' && (
-                        <DropdownMenuItem onClick={() => handleMarkReimbursed(expense)}>
-                          Mark Reimbursed
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(expense)}
-                        className="text-destructive"
-                        disabled={expense.status === 'approved' || expense.status === 'reimbursed'}
+                  <div className="relative inline-block" ref={openMenuId === expense.id ? menuRef : null}>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setOpenMenuId(openMenuId === expense.id ? null : expense.id)}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        viewBox="0 0 24 24"
                       >
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
+                        />
+                      </svg>
+                    </Button>
+                    {openMenuId === expense.id && (
+                      <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg border border-warm-200 shadow-lg z-50 py-1">
+                        <button
+                          onClick={() => handleEdit(expense)}
+                          className="w-full px-4 py-2 text-left text-sm text-warm-700 hover:bg-warm-50"
+                        >
+                          Edit
+                        </button>
+                        {expense.receipt_url && (
+                          <button
+                            onClick={() => handleViewReceipt(expense.receipt_url!)}
+                            className="w-full px-4 py-2 text-left text-sm text-warm-700 hover:bg-warm-50"
+                          >
+                            View Receipt
+                          </button>
+                        )}
+                        {isCoach && expense.status === 'pending' && (
+                          <>
+                            <div className="my-1 border-t border-warm-100" />
+                            <button
+                              onClick={() => handleApprove(expense)}
+                              className="w-full px-4 py-2 text-left text-sm text-warm-700 hover:bg-warm-50"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleReject(expense)}
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-warm-50"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {isCoach && expense.status === 'approved' && (
+                          <button
+                            onClick={() => handleMarkReimbursed(expense)}
+                            className="w-full px-4 py-2 text-left text-sm text-warm-700 hover:bg-warm-50"
+                          >
+                            Mark Reimbursed
+                          </button>
+                        )}
+                        <div className="my-1 border-t border-warm-100" />
+                        <button
+                          onClick={() => handleDelete(expense)}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-warm-50 disabled:opacity-50"
+                          disabled={expense.status === 'approved' || expense.status === 'reimbursed'}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -500,7 +500,7 @@ export function ExpenseList({
       </div>
 
       {/* Summary */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground pt-2">
+      <div className="flex items-center justify-between text-sm text-warm-500 pt-2">
         <span>
           Showing {filteredExpenses.length} of {expenses.length} expenses
         </span>
@@ -515,7 +515,6 @@ export function ExpenseList({
           itineraryId={itineraryId}
           teamId={teamId}
           expense={selectedExpense}
-          players={players}
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
           onSuccess={() => {

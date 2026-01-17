@@ -15,7 +15,7 @@ import type { SyncStatus } from '@/lib/offline/shot-storage';
 /**
  * Extended hole data that includes offline sync metadata
  */
-export interface OfflineHoleExtended extends Partial<HoleReviewData> {
+export interface OfflineHoleExtended extends Omit<Partial<HoleReviewData>, 'shots'> {
   _offline_id?: string;
   _sync_status?: SyncStatus;
   _created_offline?: string;
@@ -230,7 +230,7 @@ export function HoleAccordion({
             )}
 
             {/* FIR (for par 4s and 5s) */}
-            {hole.par >= 4 && hole.fairway_hit !== null && (
+            {(hole.par ?? 0) >= 4 && hole.fairway_hit !== null && (
               <div className="flex items-center gap-1">
                 {hole.fairway_hit ? (
                   <IconCheck size={14} className="text-green-600" />
@@ -296,7 +296,7 @@ export function HoleAccordion({
                     {hole.putts ?? '--'}
                   </div>
                 </div>
-                {hole.par >= 4 && (
+                {(hole.par ?? 0) >= 4 && (
                   <div className="text-center">
                     <div className="text-xs text-slate-500">FIR</div>
                     <div className={cn(

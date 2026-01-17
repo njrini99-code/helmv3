@@ -9,13 +9,9 @@ import {
   IconFile,
   IconVideo,
   IconZoomIn,
-  IconMusic,
   IconVolume2,
   IconVolumeX,
-  IconMaximize,
   IconX,
-  IconChevronLeft,
-  IconChevronRight,
 } from '@/components/icons';
 import {
   formatFileSize,
@@ -117,10 +113,11 @@ interface ImageAttachmentProps {
   fileName: string;
   width?: number;
   height?: number;
+  isOwnMessage?: boolean;
   className?: string;
 }
 
-function ImageAttachment({ url, fileName, width, height, className }: ImageAttachmentProps) {
+function ImageAttachment({ url, fileName, width, height, isOwnMessage: _isOwnMessage, className }: ImageAttachmentProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -175,6 +172,7 @@ interface VideoAttachmentProps {
   thumbnailUrl?: string;
   fileName: string;
   durationSeconds?: number;
+  isOwnMessage?: boolean;
   className?: string;
 }
 
@@ -183,6 +181,7 @@ function VideoAttachment({
   thumbnailUrl,
   fileName,
   durationSeconds,
+  isOwnMessage: _isOwnMessage,
   className,
 }: VideoAttachmentProps) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -589,23 +588,31 @@ function ImageLightbox({ url, fileName, onClose }: ImageLightboxProps) {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
-      const distance = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      setLastTouchDistance(distance);
+      const touch0 = e.touches[0];
+      const touch1 = e.touches[1];
+      if (touch0 && touch1) {
+        const distance = Math.hypot(
+          touch0.clientX - touch1.clientX,
+          touch0.clientY - touch1.clientY
+        );
+        setLastTouchDistance(distance);
+      }
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length === 2 && lastTouchDistance !== null) {
-      const distance = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      const delta = (distance - lastTouchDistance) * 0.01;
-      setScale((s) => Math.min(Math.max(s + delta, 0.5), 4));
-      setLastTouchDistance(distance);
+      const touch0 = e.touches[0];
+      const touch1 = e.touches[1];
+      if (touch0 && touch1) {
+        const distance = Math.hypot(
+          touch0.clientX - touch1.clientX,
+          touch0.clientY - touch1.clientY
+        );
+        const delta = (distance - lastTouchDistance) * 0.01;
+        setScale((s) => Math.min(Math.max(s + delta, 0.5), 4));
+        setLastTouchDistance(distance);
+      }
     }
   };
 
@@ -727,9 +734,11 @@ export function MessageAttachments({
 
   // Single attachment
   if (attachments.length === 1) {
+    const attachment = attachments[0];
+    if (!attachment) return null;
     return (
       <MessageAttachment
-        attachment={attachments[0]}
+        attachment={attachment}
         isOwnMessage={isOwnMessage}
         className={className}
       />

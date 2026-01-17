@@ -4,13 +4,11 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
-  IconAlertTriangle,
   IconCheck,
   IconClock,
-  IconCloud,
-  IconDeviceMobile,
   IconX,
 } from '@/components/icons';
+import { AlertTriangle, Cloud, Smartphone } from 'lucide-react';
 
 // Types for conflict data
 export interface ConflictData {
@@ -79,6 +77,8 @@ export function ConflictResolutionModal({
 
   // Handle resolution for current conflict
   const handleResolution = (resolution: 'local' | 'server' | 'merge') => {
+    if (!currentConflict) return;
+
     let result: ConflictResolutionResult;
 
     if (resolution === 'merge') {
@@ -109,8 +109,11 @@ export function ConflictResolutionModal({
       handleSubmitAll(newResolutions);
     } else {
       // Move to next conflict
-      setCurrentIndex(currentIndex + 1);
-      initializeSelectedFields(conflicts[currentIndex + 1]);
+      const nextConflict = conflicts[currentIndex + 1];
+      if (nextConflict) {
+        setCurrentIndex(currentIndex + 1);
+        initializeSelectedFields(nextConflict);
+      }
     }
   };
 
@@ -185,7 +188,7 @@ export function ConflictResolutionModal({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                  <IconAlertTriangle size={20} className="text-amber-600" />
+                  <AlertTriangle size={20} className="text-amber-600" />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">
@@ -222,7 +225,7 @@ export function ConflictResolutionModal({
               {/* Local Version */}
               <div className="border border-blue-200 rounded-xl overflow-hidden">
                 <div className="bg-blue-50 px-4 py-3 flex items-center gap-2">
-                  <IconDeviceMobile size={18} className="text-blue-600" />
+                  <Smartphone size={18} className="text-blue-600" />
                   <span className="font-medium text-blue-900">Your Device</span>
                 </div>
                 <div className="px-4 py-3 space-y-1">
@@ -236,7 +239,7 @@ export function ConflictResolutionModal({
               {/* Server Version */}
               <div className="border border-green-200 rounded-xl overflow-hidden">
                 <div className="bg-green-50 px-4 py-3 flex items-center gap-2">
-                  <IconCloud size={18} className="text-green-600" />
+                  <Cloud size={18} className="text-green-600" />
                   <span className="font-medium text-green-900">Server</span>
                 </div>
                 <div className="px-4 py-3 space-y-1">
@@ -258,13 +261,13 @@ export function ConflictResolutionModal({
                       <th className="px-4 py-2 font-medium">Field</th>
                       <th className="px-4 py-2 font-medium">
                         <span className="flex items-center gap-1">
-                          <IconDeviceMobile size={14} className="text-blue-500" />
+                          <Smartphone size={14} className="text-blue-500" />
                           Local
                         </span>
                       </th>
                       <th className="px-4 py-2 font-medium">
                         <span className="flex items-center gap-1">
-                          <IconCloud size={14} className="text-green-500" />
+                          <Cloud size={14} className="text-green-500" />
                           Server
                         </span>
                       </th>
@@ -332,7 +335,7 @@ export function ConflictResolutionModal({
                   disabled={resolving}
                   className="flex items-center gap-2"
                 >
-                  <IconDeviceMobile size={16} className="text-blue-500" />
+                  <Smartphone size={16} className="text-blue-500" />
                   Keep Local
                 </Button>
                 <Button
@@ -341,7 +344,7 @@ export function ConflictResolutionModal({
                   disabled={resolving}
                   className="flex items-center gap-2"
                 >
-                  <IconCloud size={16} className="text-green-500" />
+                  <Cloud size={16} className="text-green-500" />
                   Keep Server
                 </Button>
                 <Button

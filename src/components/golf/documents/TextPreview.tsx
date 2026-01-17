@@ -38,7 +38,7 @@ export function TextPreview({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [wordWrap, setWordWrap] = useState(true);
-  const [lineNumbers, setLineNumbers] = useState(true);
+  const [lineNumbers, _setLineNumbers] = useState(true);
 
   const isJson = mimeType === 'application/json';
   const isMarkdown = mimeType === 'text/markdown' || fileName?.endsWith('.md');

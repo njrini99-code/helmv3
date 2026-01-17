@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { getUpcomingReminders } from '@/app/golf/actions/task-reminders';
 import type { TaskReminderWithTask } from '@/lib/types/golf';

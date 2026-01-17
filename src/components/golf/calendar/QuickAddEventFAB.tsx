@@ -109,6 +109,7 @@ export function QuickAddEventFAB({
         document.body.style.overflow = '';
       };
     }
+    return undefined;
   }, [isExpanded]);
 
   const handleToggle = useCallback(() => {

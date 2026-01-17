@@ -31,10 +31,9 @@ import {
   type OfflineShot,
   type OfflineRound,
   MAX_SYNC_ATTEMPTS,
-  SYNC_RETRY_DELAY_MS,
 } from '@/lib/offline/indexed-db';
-import { saveRoundDraft } from '@/app/golf/actions/round-drafts';
-import type { ShotRecord, HoleStats } from '@/components/golf/ShotTrackingComprehensive';
+import { saveRoundDraft, type RoundDraftData } from '@/app/golf/actions/round-drafts';
+import type { ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 
 // ============================================================================
 // TYPES
@@ -230,7 +229,7 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
 
           // Attempt to sync to server
           const result = await saveRoundDraft(
-            round.draftData as Parameters<typeof saveRoundDraft>[0],
+            round.draftData as unknown as RoundDraftData,
             round.serverRoundId
           );
 

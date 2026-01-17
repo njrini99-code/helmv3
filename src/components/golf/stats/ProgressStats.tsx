@@ -501,7 +501,7 @@ const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats 
                 tickFormatter={(value) => `${value}%`}
               />
               <Tooltip
-                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Make Rate']}
+                formatter={(value) => [`${(value as number).toFixed(1)}%`, 'Make Rate']}
                 contentStyle={{
                   backgroundColor: 'rgba(255,255,255,0.95)',
                   borderRadius: '8px',
@@ -557,7 +557,7 @@ const GirByParChart = memo(function GirByParChart({ stats }: { stats: GolfStats 
                 tickFormatter={(value) => `${value}%`}
               />
               <Tooltip
-                formatter={(value: number) => [`${value.toFixed(1)}%`, 'GIR Rate']}
+                formatter={(value) => [`${(value as number).toFixed(1)}%`, 'GIR Rate']}
                 contentStyle={{
                   backgroundColor: 'rgba(255,255,255,0.95)',
                   borderRadius: '8px',
@@ -653,10 +653,13 @@ const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: 
                 width={80}
               />
               <Tooltip
-                formatter={(value: number) => [
-                  `${value >= 0 ? '+' : ''}${value.toFixed(2)}`,
-                  'SG/Round'
-                ]}
+                formatter={(value) => {
+                  const num = value as number;
+                  return [
+                    `${num >= 0 ? '+' : ''}${num.toFixed(2)}`,
+                    'SG/Round'
+                  ];
+                }}
                 contentStyle={{
                   backgroundColor: 'rgba(255,255,255,0.95)',
                   borderRadius: '8px',

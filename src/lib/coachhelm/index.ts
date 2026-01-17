@@ -129,4 +129,4 @@ export type { CoachPhilosophy } from './types';
 // Review Types
 // ============================================================================
 
-export type { RoundReview } from './review-types';
+export type { EnhancedRoundReview as RoundReview } from './review-types';

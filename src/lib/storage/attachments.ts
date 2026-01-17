@@ -129,7 +129,7 @@ export function getFileSizeLimit(fileType: AttachmentFileType): number {
  * Get human-readable file type limits description
  */
 export function getFileSizeLimitsDescription(): string {
-  return `Images: ${formatFileSize(FILE_SIZE_LIMITS.image)}, Videos: ${formatFileSize(FILE_SIZE_LIMITS.video)}, Documents: ${formatFileSize(FILE_SIZE_LIMITS.document)}, Audio: ${formatFileSize(FILE_SIZE_LIMITS.audio)}`;
+  return `Images: ${formatFileSize(FILE_SIZE_LIMITS.image ?? 0)}, Videos: ${formatFileSize(FILE_SIZE_LIMITS.video ?? 0)}, Documents: ${formatFileSize(FILE_SIZE_LIMITS.document ?? 0)}, Audio: ${formatFileSize(FILE_SIZE_LIMITS.audio ?? 0)}`;
 }
 
 /**

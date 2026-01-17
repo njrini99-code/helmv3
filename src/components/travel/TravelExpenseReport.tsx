@@ -3,20 +3,13 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, type SelectOption } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import type {
   ExpenseSummary,
   TravelExpenseWithDetails,
   ExpenseCategory,
-} from '@/types/travel.types';
+} from '@/lib/types/travel';
 
 // Format currency
 const formatCurrency = (amount: number, currency: string = 'USD') => {
@@ -82,6 +75,21 @@ export function TravelExpenseReport({
     ).values()
   );
 
+  // Build itinerary options
+  const itineraryOptions: SelectOption[] = [
+    { value: 'all', label: 'All Itineraries' },
+    ...uniqueItineraries.map((itinerary) => ({
+      value: itinerary.title || itinerary.event_name || 'unknown',
+      label: itinerary.title || itinerary.event_name || 'Unknown',
+    })),
+  ];
+
+  // Build category options
+  const categoryOptions: SelectOption[] = [
+    { value: 'all', label: 'All Categories' },
+    ...Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
+  ];
+
   // Export to CSV
   const exportToCSV = () => {
     const headers = [
@@ -101,7 +109,7 @@ export function TravelExpenseReport({
       CATEGORY_LABELS[expense.category],
       expense.amount.toFixed(2),
       expense.status,
-      expense.itinerary?.title || '',
+      expense.itinerary?.title || expense.itinerary?.event_name || '',
       expense.per_player ? expense.player?.profile?.full_name || '' : 'Team',
       expense.creator?.full_name || '',
     ]);
@@ -166,14 +174,14 @@ export function TravelExpenseReport({
           {/* Date range */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Start Date</Label>
+              <label className="block text-sm font-medium text-warm-700">Start Date</label>
               <Input
                 type="date"
                 defaultValue={summary.date_range.start}
               />
             </div>
             <div className="space-y-2">
-              <Label>End Date</Label>
+              <label className="block text-sm font-medium text-warm-700">End Date</label>
               <Input
                 type="date"
                 defaultValue={summary.date_range.end}
@@ -184,42 +192,28 @@ export function TravelExpenseReport({
           {/* Filters */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Itinerary</Label>
-              <Select value={filterItinerary} onValueChange={setFilterItinerary}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All itineraries" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Itineraries</SelectItem>
-                  {uniqueItineraries.map((itinerary) => (
-                    <SelectItem key={itinerary.title} value={itinerary.title || 'unknown'}>
-                      {itinerary.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="block text-sm font-medium text-warm-700">Itinerary</label>
+              <Select
+                options={itineraryOptions}
+                value={filterItinerary}
+                onChange={setFilterItinerary}
+                placeholder="All itineraries"
+              />
             </div>
             <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="block text-sm font-medium text-warm-700">Category</label>
+              <Select
+                options={categoryOptions}
+                value={filterCategory}
+                onChange={setFilterCategory}
+                placeholder="All categories"
+              />
             </div>
           </div>
 
           {/* Export buttons */}
           <div className="flex gap-2 pt-2">
-            <Button onClick={exportToCSV} variant="outline">
+            <Button onClick={exportToCSV} variant="secondary">
               <svg
                 className="w-4 h-4 mr-2"
                 fill="none"
@@ -235,7 +229,7 @@ export function TravelExpenseReport({
               </svg>
               Export CSV
             </Button>
-            <Button onClick={printReport} variant="outline">
+            <Button onClick={printReport} variant="secondary">
               <svg
                 className="w-4 h-4 mr-2"
                 fill="none"
@@ -270,37 +264,37 @@ export function TravelExpenseReport({
           <CardContent className="space-y-6">
             {/* Summary stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-4 border rounded-lg">
-                <p className="text-2xl font-bold">{formatCurrency(filteredTotal)}</p>
-                <p className="text-xs text-muted-foreground">Total Expenses</p>
+              <div className="p-4 border border-warm-200 rounded-lg">
+                <p className="text-2xl font-bold text-warm-900">{formatCurrency(filteredTotal)}</p>
+                <p className="text-xs text-warm-500">Total Expenses</p>
               </div>
-              <div className="p-4 border rounded-lg">
-                <p className="text-2xl font-bold text-primary">{formatCurrency(filteredApproved)}</p>
-                <p className="text-xs text-muted-foreground">Approved</p>
+              <div className="p-4 border border-warm-200 rounded-lg">
+                <p className="text-2xl font-bold text-primary-600">{formatCurrency(filteredApproved)}</p>
+                <p className="text-xs text-warm-500">Approved</p>
               </div>
-              <div className="p-4 border rounded-lg">
-                <p className="text-2xl font-bold">{filteredExpenses.length}</p>
-                <p className="text-xs text-muted-foreground">Transactions</p>
+              <div className="p-4 border border-warm-200 rounded-lg">
+                <p className="text-2xl font-bold text-warm-900">{filteredExpenses.length}</p>
+                <p className="text-xs text-warm-500">Transactions</p>
               </div>
-              <div className="p-4 border rounded-lg">
-                <p className="text-2xl font-bold">{summary.by_itinerary.length}</p>
-                <p className="text-xs text-muted-foreground">Itineraries</p>
+              <div className="p-4 border border-warm-200 rounded-lg">
+                <p className="text-2xl font-bold text-warm-900">{summary.by_itinerary.length}</p>
+                <p className="text-xs text-warm-500">Itineraries</p>
               </div>
             </div>
 
             {/* Category breakdown */}
             <div>
-              <h3 className="font-semibold mb-3">By Category</h3>
+              <h3 className="font-semibold text-warm-900 mb-3">By Category</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {Object.entries(summary.by_category)
                   .filter(([_, amount]) => amount > 0)
                   .map(([category, amount]) => (
                     <div
                       key={category}
-                      className="flex items-center justify-between p-3 border rounded-lg"
+                      className="flex items-center justify-between p-3 border border-warm-200 rounded-lg"
                     >
-                      <span className="text-sm">{CATEGORY_LABELS[category as ExpenseCategory]}</span>
-                      <span className="font-medium">{formatCurrency(amount)}</span>
+                      <span className="text-sm text-warm-700">{CATEGORY_LABELS[category as ExpenseCategory]}</span>
+                      <span className="font-medium text-warm-900">{formatCurrency(amount)}</span>
                     </div>
                   ))}
               </div>
@@ -309,15 +303,15 @@ export function TravelExpenseReport({
             {/* Itinerary breakdown */}
             {summary.by_itinerary.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-3">By Itinerary</h3>
+                <h3 className="font-semibold text-warm-900 mb-3">By Itinerary</h3>
                 <div className="space-y-2">
                   {summary.by_itinerary.map((item) => (
                     <div
-                      key={item.itinerary_id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
+                      key={item.itinerary_id || item.id}
+                      className="flex items-center justify-between p-3 border border-warm-200 rounded-lg"
                     >
-                      <span className="text-sm">{item.itinerary_title}</span>
-                      <span className="font-medium">{formatCurrency(item.total)}</span>
+                      <span className="text-sm text-warm-700">{item.itinerary_title || item.title}</span>
+                      <span className="font-medium text-warm-900">{formatCurrency(item.total)}</span>
                     </div>
                   ))}
                 </div>
@@ -327,15 +321,15 @@ export function TravelExpenseReport({
             {/* Player breakdown */}
             {summary.by_player.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-3">By Player</h3>
+                <h3 className="font-semibold text-warm-900 mb-3">By Player</h3>
                 <div className="space-y-2">
                   {summary.by_player.map((item) => (
                     <div
-                      key={item.player_id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
+                      key={item.player_id || item.id}
+                      className="flex items-center justify-between p-3 border border-warm-200 rounded-lg"
                     >
-                      <span className="text-sm">{item.player_name}</span>
-                      <span className="font-medium">{formatCurrency(item.total)}</span>
+                      <span className="text-sm text-warm-700">{item.player_name || item.name}</span>
+                      <span className="font-medium text-warm-900">{formatCurrency(item.total)}</span>
                     </div>
                   ))}
                 </div>
@@ -344,60 +338,60 @@ export function TravelExpenseReport({
 
             {/* Detailed transactions */}
             <div>
-              <h3 className="font-semibold mb-3">All Transactions ({filteredExpenses.length})</h3>
-              <div className="border rounded-lg overflow-hidden">
+              <h3 className="font-semibold text-warm-900 mb-3">All Transactions ({filteredExpenses.length})</h3>
+              <div className="border border-warm-200 rounded-lg overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-muted/50">
+                  <thead className="bg-warm-50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-warm-500">
                         Date
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-warm-500">
                         Description
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-warm-500">
                         Category
                       </th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
+                      <th className="px-4 py-2 text-right text-xs font-medium text-warm-500">
                         Amount
                       </th>
-                      <th className="px-4 py-2 text-center text-xs font-medium text-muted-foreground">
+                      <th className="px-4 py-2 text-center text-xs font-medium text-warm-500">
                         Status
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
+                  <tbody className="divide-y divide-warm-100">
                     {filteredExpenses.map((expense) => (
                       <tr key={expense.id}>
-                        <td className="px-4 py-2 text-sm">
+                        <td className="px-4 py-2 text-sm text-warm-700">
                           {formatDate(expense.created_at)}
                         </td>
-                        <td className="px-4 py-2 text-sm">
+                        <td className="px-4 py-2 text-sm text-warm-700">
                           {expense.description}
                           {expense.per_player && expense.player && (
-                            <span className="text-muted-foreground text-xs block">
+                            <span className="text-warm-500 text-xs block">
                               ({expense.player.profile?.full_name})
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-2 text-sm">
+                        <td className="px-4 py-2 text-sm text-warm-700">
                           {CATEGORY_LABELS[expense.category]}
                         </td>
-                        <td className="px-4 py-2 text-sm text-right font-medium">
+                        <td className="px-4 py-2 text-sm text-right font-medium text-warm-900">
                           {formatCurrency(expense.amount)}
                         </td>
-                        <td className="px-4 py-2 text-sm text-center capitalize">
+                        <td className="px-4 py-2 text-sm text-center capitalize text-warm-700">
                           {expense.status}
                         </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-muted/50">
+                  <tfoot className="bg-warm-50">
                     <tr>
-                      <td colSpan={3} className="px-4 py-2 text-sm font-medium">
+                      <td colSpan={3} className="px-4 py-2 text-sm font-medium text-warm-900">
                         Total
                       </td>
-                      <td className="px-4 py-2 text-sm text-right font-bold">
+                      <td className="px-4 py-2 text-sm text-right font-bold text-warm-900">
                         {formatCurrency(filteredTotal)}
                       </td>
                       <td></td>

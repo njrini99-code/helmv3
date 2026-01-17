@@ -15,9 +15,7 @@ import type {
   PlayerStats,
   WeakAreaIdentification,
   StatGoal,
-  StrokesGainedResult,
 } from '@/lib/types/golf';
-import { formatStrokesGained, getStrokesGainedColor } from '@/lib/golf/strokes-gained';
 import { cn } from '@/lib/utils';
 import {
   Card,
@@ -63,13 +61,9 @@ export function DevelopmentIntegration({
     const severityScores = { critical: 3, moderate: 2, minor: 1 };
     const baseScore = severityScores[area.severity] || 1;
 
-    // If related to strokes gained, weight by impact
-    if (area.related_strokes_gained_category) {
-      const sgValue = stats.strokes_gained[area.related_strokes_gained_category];
-      return baseScore * Math.abs(sgValue);
-    }
-
-    return baseScore;
+    // Weight by difference from benchmark
+    const gap = Math.abs(area.value - area.benchmark);
+    return baseScore * (1 + gap);
   };
 
   // Sort by priority
@@ -80,7 +74,8 @@ export function DevelopmentIntegration({
     const recommendations: { category: string; drills: string[]; time: string }[] = [];
 
     if (criticalAreas.length > 0) {
-      const criticalDrills = criticalAreas.flatMap(a => a.recommended_drills.slice(0, 2));
+      // Generate drills from recommendations
+      const criticalDrills = criticalAreas.map(a => a.recommendation);
       recommendations.push({
         category: 'Priority Focus',
         drills: [...new Set(criticalDrills)].slice(0, 4),
@@ -89,7 +84,7 @@ export function DevelopmentIntegration({
     }
 
     if (moderateAreas.length > 0) {
-      const moderateDrills = moderateAreas.flatMap(a => a.recommended_drills.slice(0, 1));
+      const moderateDrills = moderateAreas.map(a => a.recommendation);
       recommendations.push({
         category: 'Secondary Focus',
         drills: [...new Set(moderateDrills)].slice(0, 3),
@@ -202,13 +197,13 @@ export function DevelopmentIntegration({
                   <div className="text-left">
                     <div className="font-medium text-gray-900">{area.area}</div>
                     <div className="text-sm text-gray-500">
-                      Current: {area.current_value.toFixed(2)} | Target: {area.target_value.toFixed(2)}
+                      Current: {area.value.toFixed(2)} | Benchmark: {area.benchmark.toFixed(2)}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   {hasGoal(area) && (
-                    <Badge variant="outline" className="text-green-600 border-green-200">
+                    <Badge variant="secondary" className="text-green-600 border-green-200">
                       Goal Set
                     </Badge>
                   )}
@@ -230,52 +225,45 @@ export function DevelopmentIntegration({
               {expandedArea === area.area && (
                 <div className="px-4 pb-4 border-t border-gray-100 bg-gray-50">
                   <div className="py-4 space-y-4">
-                    {/* Progress bar */}
+                    {/* Gap from benchmark */}
                     <div>
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-500">Progress to Target</span>
+                        <span className="text-gray-500">Gap from Benchmark</span>
                         <span className="font-medium">
-                          {Math.max(0, Math.min(100, ((area.target_value - area.current_value) / area.target_value) * 100)).toFixed(0)}%
+                          {Math.abs(area.value - area.benchmark).toFixed(2)}
                         </span>
                       </div>
                       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-green-500 rounded-full"
                           style={{
-                            width: `${Math.max(0, Math.min(100, ((area.target_value - area.current_value) / area.target_value) * 100))}%`,
+                            width: `${Math.max(0, Math.min(100, (area.value / area.benchmark) * 100))}%`,
                           }}
                         />
                       </div>
                     </div>
 
-                    {/* Estimated time */}
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Estimated improvement time: <strong>{area.estimated_improvement_time}</strong></span>
+                    {/* Recommendation */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Recommendation</h4>
+                      <div className="text-sm text-gray-600 bg-white p-3 rounded-lg border border-gray-200">
+                        {area.recommendation}
+                      </div>
                     </div>
 
-                    {/* Recommended drills */}
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Recommended Drills</h4>
-                      <div className="space-y-2">
-                        {area.recommended_drills.map((drill, j) => (
-                          <div key={j} className="flex items-center gap-2 text-sm">
-                            <span className="w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-medium">
-                              {j + 1}
-                            </span>
-                            <span className="text-gray-700">{drill}</span>
-                          </div>
-                        ))}
-                      </div>
+                    {/* Metric details */}
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      <span>Metric: <strong>{area.metric}</strong></span>
                     </div>
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 pt-2">
                       {!hasGoal(area) && onCreateGoal && (
                         <Button
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
                           onClick={() => onCreateGoal(area)}
                         >
@@ -284,7 +272,7 @@ export function DevelopmentIntegration({
                       )}
                       {onAddToPlan && (
                         <Button
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
                           onClick={() => onAddToPlan(area)}
                         >
@@ -346,26 +334,32 @@ export function DevelopmentIntegration({
             <CardTitle className="text-base">Active Stat Goals</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {statGoals.map((goal, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <div className="font-medium text-gray-900">{goal.metric}</div>
-                  <div className="text-sm text-gray-500">
-                    {goal.current_value?.toFixed(2) || '-'} → {goal.target_value.toFixed(2)}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-green-600">
-                    {goal.progress_percentage.toFixed(0)}%
-                  </div>
-                  {goal.deadline && (
-                    <div className="text-xs text-gray-400">
-                      Due {new Date(goal.deadline).toLocaleDateString()}
+            {statGoals.map((goal, i) => {
+              // Calculate progress percentage based on current vs target
+              const progressPct = goal.current_value !== undefined && goal.target_value !== 0
+                ? Math.max(0, Math.min(100, (goal.current_value / goal.target_value) * 100))
+                : 0;
+              return (
+                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <div className="font-medium text-gray-900">{goal.metric}</div>
+                    <div className="text-sm text-gray-500">
+                      {goal.current_value?.toFixed(2) || '-'} → {goal.target_value.toFixed(2)}
                     </div>
-                  )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-green-600">
+                      {progressPct.toFixed(0)}%
+                    </div>
+                    {goal.deadline && (
+                      <div className="text-xs text-gray-400">
+                        Due {new Date(goal.deadline).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}

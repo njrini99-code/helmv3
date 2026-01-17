@@ -108,13 +108,14 @@ export function ExpenseSummary({
 
   // Custom tooltip
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; payload: { color: string } }> }) => {
-    if (active && payload && payload.length) {
+    if (active && payload && payload.length && payload[0]) {
+      const item = payload[0];
       return (
         <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 px-3 py-2">
-          <p className="text-sm font-medium text-slate-900">{payload[0].name}</p>
-          <p className="text-sm text-slate-600">{formatCurrency(payload[0].value)}</p>
+          <p className="text-sm font-medium text-slate-900">{item.name}</p>
+          <p className="text-sm text-slate-600">{formatCurrency(item.value)}</p>
           <p className="text-xs text-slate-400">
-            {((payload[0].value / summary.total) * 100).toFixed(1)}% of total
+            {((item.value / summary.total) * 100).toFixed(1)}% of total
           </p>
         </div>
       );

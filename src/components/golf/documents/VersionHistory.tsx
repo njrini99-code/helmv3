@@ -62,7 +62,7 @@ export function VersionHistory({
     setRevertError(null);
 
     try {
-      const { success, error } = await revertToVersion(document.id, revertingTo);
+      const { success, error } = await revertToVersion(document.id, String(revertingTo));
 
       if (error) {
         setRevertError(error);
@@ -82,7 +82,8 @@ export function VersionHistory({
   }, [document.id, revertingTo, onReverted]);
 
   const sortedVersions = [...versions].sort((a, b) => b.version_number - a.version_number);
-  const currentVersion = document.current_version;
+  // Use the latest version number as current since golf_documents doesn't have current_version column
+  const currentVersion = sortedVersions[0]?.version_number ?? 1;
 
   return (
     <>
@@ -179,7 +180,8 @@ export function VersionHistory({
                           {onPreviewVersion && (
                             <Button
                               variant="ghost"
-                              size="icon-sm"
+                              size="sm"
+                              className="px-2"
                               onClick={() => onPreviewVersion(version)}
                               title="Preview this version"
                             >
@@ -189,7 +191,8 @@ export function VersionHistory({
                           {onDownloadVersion && (
                             <Button
                               variant="ghost"
-                              size="icon-sm"
+                              size="sm"
+                              className="px-2"
                               onClick={() => onDownloadVersion(version)}
                               title="Download this version"
                             >
@@ -199,7 +202,8 @@ export function VersionHistory({
                           {!isCurrent && (
                             <Button
                               variant="ghost"
-                              size="icon-sm"
+                              size="sm"
+                              className="px-2"
                               onClick={() => handleRevertClick(version.version_number)}
                               title="Revert to this version"
                             >
@@ -240,7 +244,7 @@ export function VersionHistory({
 
           <DialogFooter>
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={() => setShowRevertDialog(false)}
               disabled={isReverting}
             >

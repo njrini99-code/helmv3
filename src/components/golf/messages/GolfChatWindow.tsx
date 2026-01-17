@@ -38,7 +38,7 @@ export function GolfChatWindow({
   messages,
   participant,
   currentUserId,
-  conversationId,
+  conversationId: _conversationId, // Reserved for future use
   loading,
   onSend,
   onBack,

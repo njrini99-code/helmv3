@@ -1,11 +1,10 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import type { HoleScore } from '@/types/golf';
+import type { HoleScore } from '@/lib/types/golf';
 
 interface RoundScorecardProps {
   holeScores: HoleScore[];
-  par: number;
 }
 
 function getScoreClass(score: number, par: number): string {
@@ -30,7 +29,7 @@ function getScoreLabel(score: number, par: number): string {
   return `+${diff}`;
 }
 
-export function RoundScorecard({ holeScores, par }: RoundScorecardProps) {
+export function RoundScorecard({ holeScores }: RoundScorecardProps) {
   // Split into front 9 and back 9
   const front9 = holeScores.slice(0, 9);
   const back9 = holeScores.slice(9, 18);
@@ -38,15 +37,14 @@ export function RoundScorecard({ holeScores, par }: RoundScorecardProps) {
   // Calculate totals
   const front9Score = front9.reduce((sum, h) => sum + h.score, 0);
   const front9Par = front9.reduce((sum, h) => sum + h.par, 0);
-  const front9Putts = front9.reduce((sum, h) => sum + h.putts, 0);
+  const front9Putts = front9.reduce((sum, h) => sum + (h.putts ?? 0), 0);
 
   const back9Score = back9.length > 0 ? back9.reduce((sum, h) => sum + h.score, 0) : 0;
   const back9Par = back9.length > 0 ? back9.reduce((sum, h) => sum + h.par, 0) : 0;
-  const back9Putts = back9.length > 0 ? back9.reduce((sum, h) => sum + h.putts, 0) : 0;
+  const back9Putts = back9.length > 0 ? back9.reduce((sum, h) => sum + (h.putts ?? 0), 0) : 0;
 
   const totalScore = front9Score + back9Score;
   const totalPar = front9Par + back9Par;
-  const totalPutts = front9Putts + back9Putts;
 
   const renderHoles = (holes: HoleScore[], startHole: number) => (
     <>
@@ -105,10 +103,10 @@ export function RoundScorecard({ holeScores, par }: RoundScorecardProps) {
         {holes.map((hole, index) => (
           <td key={index} className={cn(
             'px-2 py-1.5 text-xs text-center',
-            hole.putts >= 3 ? 'text-red-600 font-medium' :
+            (hole.putts ?? 0) >= 3 ? 'text-red-600 font-medium' :
             hole.putts === 1 ? 'text-green-600 font-medium' : 'text-gray-500'
           )}>
-            {hole.putts}
+            {hole.putts ?? '-'}
           </td>
         ))}
         <td className="px-2 py-1.5 text-xs font-medium text-gray-600 text-center border-l border-border-light bg-gray-50">
@@ -122,7 +120,7 @@ export function RoundScorecard({ holeScores, par }: RoundScorecardProps) {
         {holes.map((hole, index) => (
           <td key={index} className="px-2 py-1.5 text-xs text-center">
             {hole.par >= 4 ? (
-              hole.fairway ? (
+              hole.fairway_hit ? (
                 <svg className="w-4 h-4 mx-auto text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
@@ -137,7 +135,7 @@ export function RoundScorecard({ holeScores, par }: RoundScorecardProps) {
           </td>
         ))}
         <td className="px-2 py-1.5 text-xs text-center border-l border-border-light bg-gray-50">
-          {holes.filter(h => h.par >= 4 && h.fairway).length}/
+          {holes.filter(h => h.par >= 4 && h.fairway_hit).length}/
           {holes.filter(h => h.par >= 4).length}
         </td>
       </tr>
@@ -147,7 +145,7 @@ export function RoundScorecard({ holeScores, par }: RoundScorecardProps) {
         <td className="px-2 py-1.5 text-xs font-medium text-gray-500 border-r border-border-light">GIR</td>
         {holes.map((hole, index) => (
           <td key={index} className="px-2 py-1.5 text-xs text-center">
-            {hole.gir ? (
+            {hole.green_in_regulation ? (
               <svg className="w-4 h-4 mx-auto text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
@@ -159,7 +157,7 @@ export function RoundScorecard({ holeScores, par }: RoundScorecardProps) {
           </td>
         ))}
         <td className="px-2 py-1.5 text-xs text-center border-l border-border-light bg-gray-50">
-          {holes.filter(h => h.gir).length}/{holes.length}
+          {holes.filter(h => h.green_in_regulation).length}/{holes.length}
         </td>
       </tr>
     </>

@@ -22,9 +22,7 @@ import { immer } from 'zustand/middleware/immer';
 
 import {
   getSyncEngine,
-  type SyncEngineState,
   type SyncProgress,
-  type SyncResult,
   type SyncCallback,
 } from '@/lib/offline/sync-engine';
 
@@ -32,7 +30,7 @@ import {
   getOfflineStats,
   isOfflineStorageAvailable,
   clearAllOfflineData,
-  type OfflineStats,
+  type SyncResult,
 } from '@/lib/offline/shot-storage';
 
 // ============================================================================
@@ -66,6 +64,7 @@ export interface OfflineSyncState {
   isOnline: boolean;
   isSlowConnection: boolean;
   lastOnlineAt: string | null;
+  connectionQuality: string | null;
 
   // Storage
   isStorageAvailable: boolean;
@@ -77,8 +76,11 @@ export interface OfflineSyncState {
   isSyncing: boolean;
   syncProgress: SyncProgress | null;
   lastSyncAttempt: string | null;
-  lastSuccessfulSync: string | null;
+  lastSuccessfulSync: Date | null;
   syncError: string | null;
+
+  // Engine ready state
+  isReady: boolean;
 
   // Pending items
   pendingCount: {
@@ -103,6 +105,7 @@ export interface OfflineSyncActions {
   // Connection actions
   setOnline: (isOnline: boolean) => void;
   setSlowConnection: (isSlow: boolean) => void;
+  setConnectionStatus: (isOnline: boolean, quality: string) => void;
 
   // Storage actions
   checkStorageAvailability: () => Promise<void>;
@@ -116,10 +119,16 @@ export interface OfflineSyncActions {
   // Progress updates
   updateSyncProgress: (progress: SyncProgress) => void;
   updatePendingCount: () => Promise<void>;
+  refreshPendingCounts: () => Promise<void>;
 
   // Sync completion
   onSyncComplete: (result: SyncResult) => void;
   onSyncError: (error: string) => void;
+  completeSync: (success: boolean) => void;
+  failSync: (error: string) => void;
+
+  // Ready state
+  setReady: (ready: boolean) => void;
 
   // UI actions
   showBanner: () => void;
@@ -129,6 +138,7 @@ export interface OfflineSyncActions {
   addNotification: (message: string) => void;
   clearNotification: () => void;
   clearSyncError: () => void;
+  clearError: () => void;
 
   // History
   addHistoryEntry: (entry: Omit<SyncHistoryEntry, 'id'>) => void;
@@ -150,6 +160,7 @@ const initialState: OfflineSyncState = {
   isOnline: true,
   isSlowConnection: false,
   lastOnlineAt: null,
+  connectionQuality: null,
 
   isStorageAvailable: false,
   storageUsed: 0,
@@ -161,6 +172,8 @@ const initialState: OfflineSyncState = {
   lastSyncAttempt: null,
   lastSuccessfulSync: null,
   syncError: null,
+
+  isReady: false,
 
   pendingCount: {
     rounds: 0,
@@ -216,6 +229,20 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
         setSlowConnection: (isSlow: boolean) => {
           set((state) => {
             state.isSlowConnection = isSlow;
+          });
+        },
+
+        setConnectionStatus: (isOnline: boolean, quality: string) => {
+          set((state) => {
+            state.isOnline = isOnline;
+            state.connectionQuality = quality;
+            if (isOnline) {
+              state.lastOnlineAt = new Date().toISOString();
+              state.showOfflineBanner = false;
+            } else {
+              state.syncStatus = 'offline';
+              state.showOfflineBanner = true;
+            }
           });
         },
 
@@ -299,11 +326,11 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
               s.showSyncProgress = false;
 
               if (result.success && (result.syncedRounds > 0 || result.syncedHoles > 0 || result.syncedShots > 0)) {
-                s.lastSuccessfulSync = new Date().toISOString();
+                s.lastSuccessfulSync = new Date();
               }
 
               if (!result.success && result.errors.length > 0) {
-                s.syncError = result.errors[0];
+                s.syncError = result.errors[0] ?? null;
               }
             });
 
@@ -396,6 +423,11 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
           }
         },
 
+        // Alias for updatePendingCount (for API compatibility)
+        refreshPendingCounts: async () => {
+          return get().updatePendingCount();
+        },
+
         // ====================================================================
         // SYNC COMPLETION
         // ====================================================================
@@ -407,14 +439,14 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
             state.showSyncProgress = false;
 
             if (result.success) {
-              state.lastSuccessfulSync = new Date().toISOString();
+              state.lastSuccessfulSync = new Date();
 
               if (result.syncedRounds > 0 || result.syncedHoles > 0 || result.syncedShots > 0) {
                 const total = result.syncedRounds + result.syncedHoles + result.syncedShots;
                 state.notificationQueue.push(`Synced ${total} items`);
               }
             } else if (result.errors.length > 0) {
-              state.syncError = result.errors[0];
+              state.syncError = result.errors[0] ?? null;
             }
           });
 
@@ -428,6 +460,37 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
             state.syncStatus = 'error';
             state.syncError = error;
             state.showSyncProgress = false;
+          });
+        },
+
+        // Simplified sync completion handler (for provider compatibility)
+        completeSync: (success: boolean) => {
+          set((state) => {
+            state.isSyncing = false;
+            state.syncStatus = success ? 'success' : 'error';
+            state.showSyncProgress = false;
+            if (success) {
+              state.lastSuccessfulSync = new Date();
+            }
+          });
+          // Refresh pending count
+          get().updatePendingCount();
+        },
+
+        // Simplified sync failure handler (for provider compatibility)
+        failSync: (error: string) => {
+          set((state) => {
+            state.isSyncing = false;
+            state.syncStatus = 'error';
+            state.syncError = error;
+            state.showSyncProgress = false;
+          });
+        },
+
+        // Set the ready state of the sync engine
+        setReady: (ready: boolean) => {
+          set((state) => {
+            state.isReady = ready;
           });
         },
 
@@ -472,6 +535,16 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
         },
 
         clearSyncError: () => {
+          set((state) => {
+            state.syncError = null;
+            if (state.syncStatus === 'error') {
+              state.syncStatus = 'idle';
+            }
+          });
+        },
+
+        // Alias for clearSyncError (for API compatibility)
+        clearError: () => {
           set((state) => {
             state.syncError = null;
             if (state.syncStatus === 'error') {
@@ -615,6 +688,7 @@ export function useOfflineSyncStatus() {
     pendingCount: state.pendingCount,
     lastSuccessfulSync: state.lastSuccessfulSync,
     syncError: state.syncError,
+    isReady: state.isReady,
   }));
 }
 
@@ -629,5 +703,6 @@ export function useOfflineSyncActions() {
     clearSyncError: state.clearSyncError,
     hideBanner: state.hideBanner,
     updatePendingCount: state.updatePendingCount,
+    refreshPendingCounts: state.refreshPendingCounts,
   }));
 }

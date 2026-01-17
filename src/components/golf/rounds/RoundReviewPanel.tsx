@@ -7,15 +7,14 @@ import type {
   GolfRound,
   ReviewStatus,
   CoachFeedbackInput,
-  DrillRecommendation,
-} from '@/types/golf';
+} from '@/lib/types/golf';
 import {
   getStatusBadgeColor,
   getStatusLabel,
   isReviewEditable,
   canShareReview,
   getScoreColor,
-} from '@/types/golf';
+} from '@/lib/types/golf';
 import {
   saveCoachFeedback,
   shareReviewWithPlayer,
@@ -248,7 +247,7 @@ export function RoundReviewPanel({
 
   // Form state for coach feedback
   const [coachNotes, setCoachNotes] = useState(review.coach_notes || '');
-  const [coachRating, setCoachRating] = useState<number | null>(review.coach_rating);
+  const [coachRating, setCoachRating] = useState<number | null>(review.coach_rating ?? null);
   const [coachHighlights, setCoachHighlights] = useState<string[]>(review.coach_highlights || []);
   const [coachFocusAreas, setCoachFocusAreas] = useState<string[]>(review.coach_focus_areas || []);
 
@@ -275,7 +274,7 @@ export function RoundReviewPanel({
   // Reset form when review changes
   useEffect(() => {
     setCoachNotes(review.coach_notes || '');
-    setCoachRating(review.coach_rating);
+    setCoachRating(review.coach_rating ?? null);
     setCoachHighlights(review.coach_highlights || []);
     setCoachFocusAreas(review.coach_focus_areas || []);
   }, [review]);
@@ -444,10 +443,10 @@ export function RoundReviewPanel({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-semibold text-gray-900">Round Review</h2>
-          <StatusBadge status={review.status} />
+          {review.status && <StatusBadge status={review.status} />}
         </div>
         <div className="flex items-center gap-2">
-          {isCoach && isReviewEditable(review.status) && (
+          {isCoach && review.status && isReviewEditable(review.status) && (
             <>
               {isEditing ? (
                 <>
@@ -482,7 +481,7 @@ export function RoundReviewPanel({
               )}
             </>
           )}
-          {isCoach && canShareReview(review.status, review.coach_approved) && (
+          {isCoach && review.status && canShareReview(review.status) && (
             <button
               onClick={handleShare}
               disabled={isSharing}
@@ -507,11 +506,13 @@ export function RoundReviewPanel({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-xs text-gray-500">Score</p>
-              <p className={cn('text-2xl font-semibold', getScoreColor(round.gross_score, round.par))}>
-                {round.gross_score}
-                <span className="text-sm font-normal text-gray-500 ml-1">
-                  ({review.key_stats.score_vs_par >= 0 ? '+' : ''}{review.key_stats.score_vs_par})
-                </span>
+              <p className={cn('text-2xl font-semibold', round.total_score && round.score_to_par !== null ? getScoreColor(round.total_score, round.total_score - (round.score_to_par ?? 0)) : 'text-gray-900')}>
+                {round.total_score ?? '-'}
+                {review.key_stats.score_vs_par !== null && (
+                  <span className="text-sm font-normal text-gray-500 ml-1">
+                    ({review.key_stats.score_vs_par >= 0 ? '+' : ''}{review.key_stats.score_vs_par})
+                  </span>
+                )}
               </p>
             </div>
             {review.key_stats.fairway_pct !== null && (
@@ -545,36 +546,40 @@ export function RoundReviewPanel({
       {/* AI Analysis */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Strengths */}
-        <SectionCard title="Strengths">
-          <ul className="space-y-2">
-            {review.strengths.map((strength, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-sm text-gray-600">{strength}</span>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
+        {review.strengths && review.strengths.length > 0 && (
+          <SectionCard title="Strengths">
+            <ul className="space-y-2">
+              {review.strengths.map((strength, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm text-gray-600">{strength}</span>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+        )}
 
         {/* Areas for Improvement */}
-        <SectionCard title="Areas for Improvement">
-          <ul className="space-y-2">
-            {review.areas_for_improvement.map((area, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                </svg>
-                <span className="text-sm text-gray-600">{area}</span>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
+        {review.areas_for_improvement && review.areas_for_improvement.length > 0 && (
+          <SectionCard title="Areas for Improvement">
+            <ul className="space-y-2">
+              {review.areas_for_improvement.map((area, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                  </svg>
+                  <span className="text-sm text-gray-600">{area}</span>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+        )}
       </div>
 
       {/* AI Recommendations */}
-      {review.ai_recommendations.length > 0 && (
+      {review.ai_recommendations && review.ai_recommendations.length > 0 && (
         <SectionCard title="Recommendations">
           <ul className="space-y-2">
             {review.ai_recommendations.map((rec, index) => (
@@ -600,7 +605,7 @@ export function RoundReviewPanel({
               Overall Rating
             </label>
             <StarRating
-              value={isEditing ? coachRating : review.coach_rating}
+              value={isEditing ? coachRating : (review.coach_rating ?? null)}
               onChange={isEditing ? setCoachRating : undefined}
               disabled={!isEditing}
             />
@@ -632,7 +637,7 @@ export function RoundReviewPanel({
               Highlights
             </label>
             <EditableList
-              items={isEditing ? coachHighlights : review.coach_highlights}
+              items={isEditing ? coachHighlights : (review.coach_highlights ?? [])}
               onChange={isEditing ? setCoachHighlights : undefined}
               placeholder="Add a highlight..."
               disabled={!isEditing}
@@ -645,7 +650,7 @@ export function RoundReviewPanel({
               Focus Areas for Next Round
             </label>
             <EditableList
-              items={isEditing ? coachFocusAreas : review.coach_focus_areas}
+              items={isEditing ? coachFocusAreas : (review.coach_focus_areas ?? [])}
               onChange={isEditing ? setCoachFocusAreas : undefined}
               placeholder="Add a focus area..."
               disabled={!isEditing}

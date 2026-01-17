@@ -69,6 +69,7 @@
     "archive",
     "helm-website-ui",
     "helm-intelligence",
-    "scripts"
+    "scripts",
+    "supabase/functions"
   ]
 }

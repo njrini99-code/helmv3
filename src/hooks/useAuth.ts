@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getDevModeConfig, getDevModeUserData } from '@/lib/dev-mode'
-import { getSessionData } from '@/lib/auth/session'
 
 interface PlayerAuthData {
   userId: string
@@ -38,44 +36,51 @@ export function usePlayerAuth(): AuthHookResult<PlayerAuthData> {
   useEffect(() => {
     async function loadPlayerAuth() {
       try {
-        // Check dev mode first
-        const devConfig = getDevModeConfig()
-        if (devConfig.enabled && devConfig.role === 'player') {
-          const devData = getDevModeUserData('player') as PlayerAuthData
-          setData(devData)
+        const supabase = createClient()
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !user) {
+          setError('Not authenticated')
           setLoading(false)
           return
         }
 
-        // Get real session data
-        const sessionData = await getSessionData()
+        // Get user record to check role
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single()
 
-        if (!sessionData.user || sessionData.role !== 'player') {
+        if (userData?.role !== 'player') {
           setError('Not authenticated as player')
           setLoading(false)
           return
         }
 
-        // TODO: Enable when player columns are added to database
-        // const supabase = createClient()
-        // const { data: player, error: playerError } = await supabase
-        //   .from('players')
-        //   .select('id, first_name, last_name')
-        //   .eq('user_id', sessionData.user.id)
-        //   .single()
-        // if (playerError || !player) {
-        //   setError('Player profile not found')
-        //   setLoading(false)
-        //   return
-        // }
+        // Get player profile
+        const { data: player, error: playerError } = await supabase
+          .from('baseball_players')
+          .select('id, first_name, last_name')
+          .eq('user_id', user.id)
+          .single()
 
-        // Temporary: use default values
-        setData({
-          userId: sessionData.user.id,
-          playerId: sessionData.user.id, // temporary
-          playerName: sessionData.user.email?.split('@')[0] || 'Player',
-          isDevMode: false,
-        })
+        if (playerError || !player) {
+          // Fallback: use user data if player profile doesn't exist
+          setData({
+            userId: user.id,
+            playerId: user.id,
+            playerName: user.email?.split('@')[0] || 'Player',
+            isDevMode: false,
+          })
+        } else {
+          setData({
+            userId: user.id,
+            playerId: player.id,
+            playerName: `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Player',
+            isDevMode: false,
+          })
+        }
         setLoading(false)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
@@ -101,49 +106,53 @@ export function useCoachAuth(): AuthHookResult<CoachAuthData> {
   useEffect(() => {
     async function loadCoachAuth() {
       try {
-        // Check dev mode first
-        const devConfig = getDevModeConfig()
-        if (
-          devConfig.enabled &&
-          devConfig.role &&
-          devConfig.role !== 'player'
-        ) {
-          const devData = getDevModeUserData(devConfig.role) as CoachAuthData
-          setData(devData)
+        const supabase = createClient()
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !user) {
+          setError('Not authenticated')
           setLoading(false)
           return
         }
 
-        // Get real session data
-        const sessionData = await getSessionData()
+        // Get user record to check role
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single()
 
-        if (!sessionData.user || sessionData.role !== 'coach') {
+        if (userData?.role !== 'coach') {
           setError('Not authenticated as coach')
           setLoading(false)
           return
         }
 
-        // TODO: Enable when coach columns are added to database
-        // const supabase = createClient()
-        // const { data: coach, error: coachError } = await supabase
-        //   .from('coaches')
-        //   .select('id, full_name, coach_type')
-        //   .eq('user_id', sessionData.user.id)
-        //   .single()
-        // if (coachError || !coach) {
-        //   setError('Coach profile not found')
-        //   setLoading(false)
-        //   return
-        // }
+        // Get coach profile
+        const { data: coach, error: coachError } = await supabase
+          .from('baseball_coaches')
+          .select('id, full_name, coach_type')
+          .eq('user_id', user.id)
+          .single()
 
-        // Temporary: use default values
-        setData({
-          userId: sessionData.user.id,
-          coachId: sessionData.user.id, // temporary
-          coachName: sessionData.user.email?.split('@')[0] || 'Coach',
-          coachType: sessionData.coachType || 'college',
-          isDevMode: false,
-        })
+        if (coachError || !coach) {
+          // Fallback: use user data if coach profile doesn't exist
+          setData({
+            userId: user.id,
+            coachId: user.id,
+            coachName: user.email?.split('@')[0] || 'Coach',
+            coachType: 'college',
+            isDevMode: false,
+          })
+        } else {
+          setData({
+            userId: user.id,
+            coachId: coach.id,
+            coachName: coach.full_name || 'Coach',
+            coachType: (coach.coach_type as CoachAuthData['coachType']) || 'college',
+            isDevMode: false,
+          })
+        }
         setLoading(false)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
@@ -161,34 +170,49 @@ export function useCoachAuth(): AuthHookResult<CoachAuthData> {
  * Hook for general authentication (any role)
  */
 export function useAuth() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{
+    userId: string
+    role: string | null
+    coachType?: string | null
+    isDevMode: boolean
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadAuth() {
       try {
-        // Check dev mode
-        const devConfig = getDevModeConfig()
-        if (devConfig.enabled && devConfig.role) {
-          const devData = getDevModeUserData(devConfig.role)
-          setUser(devData)
-          setLoading(false)
-          return
-        }
+        const supabase = createClient()
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
 
-        // Get real session
-        const sessionData = await getSessionData()
-        if (!sessionData.user) {
+        if (authError || !authUser) {
           setError('Not authenticated')
           setLoading(false)
           return
         }
 
+        // Get user record
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', authUser.id)
+          .single()
+
+        // Get coach type if coach
+        let coachType: string | null = null
+        if (userData?.role === 'coach') {
+          const { data: coach } = await supabase
+            .from('baseball_coaches')
+            .select('coach_type')
+            .eq('user_id', authUser.id)
+            .single()
+          coachType = coach?.coach_type || null
+        }
+
         setUser({
-          userId: sessionData.user.id,
-          role: sessionData.role,
-          coachType: sessionData.coachType,
+          userId: authUser.id,
+          role: userData?.role || null,
+          coachType,
           isDevMode: false,
         })
         setLoading(false)

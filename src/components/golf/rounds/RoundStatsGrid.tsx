@@ -1,11 +1,32 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import type { GolfRound } from '@/types/golf';
-import { calculateFairwayPercentage, calculateGIRPercentage } from '@/types/golf';
+import type { GolfRound } from '@/lib/types/golf';
+import { calculateFairwayPercentage, calculateGIRPercentage } from '@/lib/types/golf';
+
+/**
+ * Extended round type for stats display.
+ * Some fields may come from hole-level aggregations or external stats sources.
+ */
+interface ExtendedRoundStats {
+  // Optional fields that may come from aggregated hole data
+  up_and_downs?: number | null;
+  total_penalties?: number | null;
+  one_putts?: number | null;
+  three_putts?: number | null;
+  driving_distance_avg?: number | null;
+  longest_drive?: number | null;
+  strokes_gained_total?: number | null;
+  strokes_gained_off_tee?: number | null;
+  strokes_gained_approach?: number | null;
+  strokes_gained_around_green?: number | null;
+  strokes_gained_putting?: number | null;
+  // Course par (may come from course data)
+  par?: number | null;
+}
 
 interface RoundStatsGridProps {
-  round: GolfRound;
+  round: GolfRound & ExtendedRoundStats;
 }
 
 interface StatCardProps {
@@ -65,14 +86,29 @@ function StatCard({ label, value, suffix = '', trend, trendValue, highlight }: S
 }
 
 export function RoundStatsGrid({ round }: RoundStatsGridProps) {
-  const fairwayPct = calculateFairwayPercentage(round.fairways_hit, round.fairways_total);
-  const girPct = calculateGIRPercentage(round.greens_in_regulation, round.greens_total);
+  // Map database fields to display names
+  const fairwaysHit = round.total_fairways_hit;
+  const fairwaysTotal = round.total_fairways;
+  const girHit = round.total_gir;
+  const girTotal = round.total_gir_possible;
+  const grossScore = round.total_score;
+  const scoreToPar = round.score_to_par;
 
-  // Calculate scramble percentage
-  const missedGreens = round.greens_total - (round.greens_in_regulation || 0);
+  const fairwayPct = calculateFairwayPercentage(fairwaysHit, fairwaysTotal);
+  const girPct = calculateGIRPercentage(girHit, girTotal);
+
+  // Calculate scramble percentage (if extended stats available)
+  const missedGreens = (girTotal ?? 0) - (girHit ?? 0);
   const scramblePct = round.up_and_downs && missedGreens > 0
     ? Math.round((round.up_and_downs / missedGreens) * 100)
     : null;
+
+  // Format score suffix (show +/- to par if available)
+  const getScoreSuffix = (): string => {
+    if (scoreToPar === null || scoreToPar === undefined) return '';
+    const prefix = scoreToPar >= 0 ? '+' : '';
+    return `(${prefix}${scoreToPar})`;
+  };
 
   return (
     <div className="space-y-4">
@@ -80,8 +116,8 @@ export function RoundStatsGrid({ round }: RoundStatsGridProps) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           label="Score"
-          value={round.gross_score}
-          suffix={`(${round.gross_score - round.par >= 0 ? '+' : ''}${round.gross_score - round.par})`}
+          value={grossScore}
+          suffix={getScoreSuffix()}
           highlight
         />
         <StatCard
@@ -104,11 +140,11 @@ export function RoundStatsGrid({ round }: RoundStatsGridProps) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           label="Fairways Hit"
-          value={round.fairways_hit !== null ? `${round.fairways_hit}/${round.fairways_total}` : null}
+          value={fairwaysHit !== null ? `${fairwaysHit}/${fairwaysTotal ?? '--'}` : null}
         />
         <StatCard
           label="GIR"
-          value={round.greens_in_regulation !== null ? `${round.greens_in_regulation}/${round.greens_total}` : null}
+          value={girHit !== null ? `${girHit}/${girTotal ?? '--'}` : null}
         />
         <StatCard
           label="Scrambling"
@@ -117,7 +153,7 @@ export function RoundStatsGrid({ round }: RoundStatsGridProps) {
         />
         <StatCard
           label="Penalties"
-          value={round.total_penalties}
+          value={round.total_penalties ?? null}
         />
       </div>
 
@@ -125,49 +161,49 @@ export function RoundStatsGrid({ round }: RoundStatsGridProps) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           label="One-Putts"
-          value={round.one_putts}
+          value={round.one_putts ?? null}
         />
         <StatCard
           label="Three-Putts"
-          value={round.three_putts}
+          value={round.three_putts ?? null}
         />
         <StatCard
           label="Avg Driving"
-          value={round.driving_distance_avg}
+          value={round.driving_distance_avg ?? null}
           suffix="yds"
         />
         <StatCard
           label="Longest Drive"
-          value={round.longest_drive}
+          value={round.longest_drive ?? null}
           suffix="yds"
         />
       </div>
 
       {/* Strokes Gained (if available) */}
-      {round.strokes_gained_total !== null && (
+      {round.strokes_gained_total != null && (
         <div className="pt-4 border-t border-border-light">
           <h4 className="text-sm font-medium text-gray-700 mb-3">Strokes Gained</h4>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <StatCard
               label="Total"
-              value={round.strokes_gained_total?.toFixed(2)}
+              value={round.strokes_gained_total?.toFixed(2) ?? null}
               highlight
             />
             <StatCard
               label="Off the Tee"
-              value={round.strokes_gained_off_tee?.toFixed(2)}
+              value={round.strokes_gained_off_tee?.toFixed(2) ?? null}
             />
             <StatCard
               label="Approach"
-              value={round.strokes_gained_approach?.toFixed(2)}
+              value={round.strokes_gained_approach?.toFixed(2) ?? null}
             />
             <StatCard
               label="Around Green"
-              value={round.strokes_gained_around_green?.toFixed(2)}
+              value={round.strokes_gained_around_green?.toFixed(2) ?? null}
             />
             <StatCard
               label="Putting"
-              value={round.strokes_gained_putting?.toFixed(2)}
+              value={round.strokes_gained_putting?.toFixed(2) ?? null}
             />
           </div>
         </div>

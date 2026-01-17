@@ -255,7 +255,7 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false }: Shot
             <div className="flex items-center gap-2 text-slate-600">
               <span className="text-xs text-slate-400">From:</span>
               <span className="font-medium">
-                {formatDistance(distanceBefore, shot.distance_unit_before)}
+                {formatDistance(distanceBefore ?? null, shot.distance_unit_before ?? null)}
               </span>
             </div>
 
@@ -273,7 +273,7 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false }: Shot
               )}>
                 {shot.result === 'holed' || shot.result === 'hole'
                   ? 'Holed!'
-                  : formatDistance(distanceAfter, shot.distance_unit_after)}
+                  : formatDistance(distanceAfter ?? null, shot.distance_unit_after ?? null)}
               </span>
             </div>
 

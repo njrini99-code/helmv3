@@ -25,7 +25,7 @@ interface DraftIndicatorProps {
  */
 export function DraftIndicator({
   saveStatus,
-  isOnline,
+  isOnline: _isOnline, // Currently unused, but kept for future use
   getTimeSinceLastSave,
   className,
   compact = false,

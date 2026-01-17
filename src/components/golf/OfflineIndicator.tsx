@@ -7,7 +7,7 @@
  * with a premium glass design that integrates with the shot tracking UI.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ============================================================================

@@ -9,14 +9,84 @@ import type {
   UpdateItineraryData,
   ItineraryFilters,
   ActionResult,
-} from '@/types/travel.types';
+  Json,
+} from '@/lib/types/travel';
+
+// -----------------------------------------------------------------------------
+// Helper to transform database itinerary to UI-compatible format
+// -----------------------------------------------------------------------------
+
+function transformItinerary(dbItinerary: Record<string, unknown>): TravelItineraryWithDetails {
+  return {
+    id: dbItinerary.id as string,
+    team_id: dbItinerary.team_id as string,
+    event_id: dbItinerary.event_id as string | null,
+    event_name: dbItinerary.event_name as string | null,
+    destination: dbItinerary.destination as string | null,
+    transportation_type: dbItinerary.transportation_type as string | null,
+    departure_date: dbItinerary.departure_date as string | null,
+    departure_time: dbItinerary.departure_time as string | null,
+    departure_location: dbItinerary.departure_location as string | null,
+    return_date: dbItinerary.return_date as string | null,
+    return_time: dbItinerary.return_time as string | null,
+    flight_info: (dbItinerary.flight_info ?? null) as Json | null,
+    hotel_name: dbItinerary.hotel_name as string | null,
+    hotel_address: dbItinerary.hotel_address as string | null,
+    hotel_phone: dbItinerary.hotel_phone as string | null,
+    hotel_confirmation: dbItinerary.hotel_confirmation as string | null,
+    room_assignments: (dbItinerary.room_assignments ?? null) as Json | null,
+    uniform_requirements: dbItinerary.uniform_requirements as string | null,
+    gear_list: dbItinerary.gear_list as string[] | null,
+    notes: dbItinerary.notes as string | null,
+    created_by: dbItinerary.created_by as string | null,
+    created_at: dbItinerary.created_at as string | null,
+    updated_at: dbItinerary.updated_at as string | null,
+    // UI compatibility fields
+    title: (dbItinerary.event_name as string | null) || undefined,
+    status: 'active',
+    team: dbItinerary.team ? {
+      id: (dbItinerary.team as Record<string, unknown>).id as string,
+      name: (dbItinerary.team as Record<string, unknown>).name as string,
+    } : null,
+  };
+}
 
 // -----------------------------------------------------------------------------
 // Travel Itinerary Actions
 // -----------------------------------------------------------------------------
 
 /**
- * Get all itineraries for the current user's teams
+ * Get all itineraries for a team
+ */
+export async function getTeamItineraries(
+  teamId: string
+): Promise<ActionResult<TravelItineraryWithDetails[]>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { data: itineraries, error } = await supabase
+    .from('golf_travel_itineraries')
+    .select(`
+      *,
+      team:golf_teams(id, name)
+    `)
+    .eq('team_id', teamId)
+    .order('departure_date', { ascending: false });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  const transformedItineraries = (itineraries || []).map(transformItinerary);
+  return { success: true, data: transformedItineraries };
+}
+
+/**
+ * Get itineraries with filters
  */
 export async function getItineraries(
   filters?: ItineraryFilters
@@ -29,60 +99,38 @@ export async function getItineraries(
   }
 
   let query = supabase
-    .from('travel_itineraries')
+    .from('golf_travel_itineraries')
     .select(`
       *,
-      travel_team:travel_teams(
-        id,
-        name,
-        high_school_program:high_school_programs(id, name, city, state)
-      ),
-      creator:profiles!travel_itineraries_created_by_fkey(full_name, avatar_url)
+      team:golf_teams(id, name)
     `);
 
   // Apply filters
-  if (filters?.travel_team_id) {
-    query = query.eq('travel_team_id', filters.travel_team_id);
+  if (filters?.team_id) {
+    query = query.eq('team_id', filters.team_id);
   }
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
-  }
-  if (filters?.event_type) {
-    query = query.eq('event_type', filters.event_type);
+  if (filters?.event_id) {
+    query = query.eq('event_id', filters.event_id);
   }
   if (filters?.date_range?.start) {
     query = query.gte('departure_date', filters.date_range.start);
   }
   if (filters?.date_range?.end) {
-    query = query.lte('return_date', filters.date_range.end);
+    query = query.lte('departure_date', filters.date_range.end);
   }
 
-  const { data: itineraries, error } = await query.order('departure_date', { ascending: true });
+  const { data: itineraries, error } = await query.order('departure_date', { ascending: false });
 
   if (error) {
     return { success: false, error: error.message };
   }
 
-  // Get expense counts for each itinerary
-  const itinerariesWithCounts = await Promise.all(
-    (itineraries || []).map(async (itinerary) => {
-      const { count } = await supabase
-        .from('travel_expenses')
-        .select('*', { count: 'exact', head: true })
-        .eq('itinerary_id', itinerary.id);
-
-      return {
-        ...itinerary,
-        expenses_count: count || 0,
-      };
-    })
-  );
-
-  return { success: true, data: itinerariesWithCounts };
+  const transformedItineraries = (itineraries || []).map(transformItinerary);
+  return { success: true, data: transformedItineraries };
 }
 
 /**
- * Get a single itinerary by ID with full details
+ * Get a single itinerary by ID
  */
 export async function getItinerary(id: string): Promise<ActionResult<TravelItineraryWithDetails>> {
   const supabase = await createClient();
@@ -93,22 +141,10 @@ export async function getItinerary(id: string): Promise<ActionResult<TravelItine
   }
 
   const { data: itinerary, error } = await supabase
-    .from('travel_itineraries')
+    .from('golf_travel_itineraries')
     .select(`
       *,
-      travel_team:travel_teams(
-        id,
-        name,
-        coach_id,
-        high_school_program:high_school_programs(id, name, city, state),
-        coach:high_school_coaches(
-          id,
-          profile_id,
-          title,
-          profile:profiles(full_name, avatar_url)
-        )
-      ),
-      creator:profiles!travel_itineraries_created_by_fkey(full_name, avatar_url)
+      team:golf_teams(id, name)
     `)
     .eq('id', id)
     .single();
@@ -117,41 +153,7 @@ export async function getItinerary(id: string): Promise<ActionResult<TravelItine
     return { success: false, error: error.message };
   }
 
-  // Get expense count
-  const { count } = await supabase
-    .from('travel_expenses')
-    .select('*', { count: 'exact', head: true })
-    .eq('itinerary_id', id);
-
-  // Get budget summary using the database function
-  const { data: budgetData } = await supabase
-    .rpc('get_itinerary_budget_summary', { p_itinerary_id: id });
-
-  const budgetSummary = budgetData?.[0] ? {
-    itinerary_id: id,
-    total_budget: budgetData[0].total_budget || 0,
-    total_spent: budgetData[0].total_spent || 0,
-    remaining: budgetData[0].remaining || 0,
-    by_category: {
-      transportation: budgetData[0].transportation_total || 0,
-      lodging: budgetData[0].lodging_total || 0,
-      meals: budgetData[0].meals_total || 0,
-      entry_fees: budgetData[0].entry_fees_total || 0,
-      equipment: budgetData[0].equipment_total || 0,
-      other: budgetData[0].other_total || 0,
-    },
-    pending_count: budgetData[0].pending_count || 0,
-    approved_count: budgetData[0].approved_count || 0,
-  } : null;
-
-  return {
-    success: true,
-    data: {
-      ...itinerary,
-      expenses_count: count || 0,
-      budget_summary: budgetSummary,
-    },
-  };
+  return { success: true, data: transformItinerary(itinerary) };
 }
 
 /**
@@ -167,16 +169,40 @@ export async function createItinerary(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Validate dates
-  if (new Date(data.return_date) < new Date(data.departure_date)) {
-    return { success: false, error: 'Return date must be after departure date' };
+  // Get the coach record for created_by
+  const { data: coach, error: coachError } = await supabase
+    .from('golf_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (coachError || !coach) {
+    return { success: false, error: 'Coach record not found' };
   }
 
   const { data: itinerary, error } = await supabase
-    .from('travel_itineraries')
+    .from('golf_travel_itineraries')
     .insert({
-      ...data,
-      created_by: user.id,
+      team_id: data.team_id,
+      event_id: data.event_id,
+      event_name: data.event_name,
+      destination: data.destination,
+      transportation_type: data.transportation_type || 'team_bus',
+      departure_date: data.departure_date,
+      departure_time: data.departure_time,
+      departure_location: data.departure_location,
+      return_date: data.return_date,
+      return_time: data.return_time,
+      flight_info: data.flight_info,
+      hotel_name: data.hotel_name,
+      hotel_address: data.hotel_address,
+      hotel_phone: data.hotel_phone,
+      hotel_confirmation: data.hotel_confirmation,
+      room_assignments: data.room_assignments,
+      uniform_requirements: data.uniform_requirements,
+      gear_list: data.gear_list,
+      notes: data.notes,
+      created_by: coach.id,
     })
     .select()
     .single();
@@ -185,8 +211,8 @@ export async function createItinerary(
     return { success: false, error: error.message };
   }
 
-  revalidatePath('/travel');
-  return { success: true, data: itinerary };
+  revalidatePath('/golf/dashboard/travel');
+  return { success: true, data: itinerary as TravelItinerary };
 }
 
 /**
@@ -203,16 +229,29 @@ export async function updateItinerary(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Validate dates if both are provided
-  if (data.departure_date && data.return_date) {
-    if (new Date(data.return_date) < new Date(data.departure_date)) {
-      return { success: false, error: 'Return date must be after departure date' };
-    }
-  }
+  // Build update object with only the fields that match the database schema
+  const updateData: Record<string, unknown> = {};
+  if (data.event_name !== undefined) updateData.event_name = data.event_name;
+  if (data.destination !== undefined) updateData.destination = data.destination;
+  if (data.transportation_type !== undefined) updateData.transportation_type = data.transportation_type;
+  if (data.departure_date !== undefined) updateData.departure_date = data.departure_date;
+  if (data.departure_time !== undefined) updateData.departure_time = data.departure_time;
+  if (data.departure_location !== undefined) updateData.departure_location = data.departure_location;
+  if (data.return_date !== undefined) updateData.return_date = data.return_date;
+  if (data.return_time !== undefined) updateData.return_time = data.return_time;
+  if (data.flight_info !== undefined) updateData.flight_info = data.flight_info;
+  if (data.hotel_name !== undefined) updateData.hotel_name = data.hotel_name;
+  if (data.hotel_address !== undefined) updateData.hotel_address = data.hotel_address;
+  if (data.hotel_phone !== undefined) updateData.hotel_phone = data.hotel_phone;
+  if (data.hotel_confirmation !== undefined) updateData.hotel_confirmation = data.hotel_confirmation;
+  if (data.room_assignments !== undefined) updateData.room_assignments = data.room_assignments;
+  if (data.uniform_requirements !== undefined) updateData.uniform_requirements = data.uniform_requirements;
+  if (data.gear_list !== undefined) updateData.gear_list = data.gear_list;
+  if (data.notes !== undefined) updateData.notes = data.notes;
 
   const { data: itinerary, error } = await supabase
-    .from('travel_itineraries')
-    .update(data)
+    .from('golf_travel_itineraries')
+    .update(updateData)
     .eq('id', id)
     .select()
     .single();
@@ -221,9 +260,9 @@ export async function updateItinerary(
     return { success: false, error: error.message };
   }
 
-  revalidatePath('/travel');
-  revalidatePath(`/travel/itinerary/${id}`);
-  return { success: true, data: itinerary };
+  revalidatePath('/golf/dashboard/travel');
+  revalidatePath(`/golf/dashboard/travel/itinerary/${id}`);
+  return { success: true, data: itinerary as TravelItinerary };
 }
 
 /**
@@ -237,69 +276,26 @@ export async function deleteItinerary(id: string): Promise<ActionResult> {
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Check if there are any expenses attached
-  const { count } = await supabase
-    .from('travel_expenses')
-    .select('*', { count: 'exact', head: true })
-    .eq('itinerary_id', id);
+  const { error } = await supabase
+    .from('golf_travel_itineraries')
+    .delete()
+    .eq('id', id);
 
-  if (count && count > 0) {
-    // Set status to cancelled instead of deleting
-    const { error } = await supabase
-      .from('travel_itineraries')
-      .update({ status: 'cancelled' })
-      .eq('id', id);
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-  } else {
-    // Safe to delete
-    const { error } = await supabase
-      .from('travel_itineraries')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
+  if (error) {
+    return { success: false, error: error.message };
   }
 
-  revalidatePath('/travel');
+  revalidatePath('/golf/dashboard/travel');
   return { success: true };
 }
 
 /**
- * Update itinerary status
+ * Get upcoming itineraries for a team
  */
-export async function updateItineraryStatus(
-  id: string,
-  status: 'draft' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
-): Promise<ActionResult<TravelItinerary>> {
-  return updateItinerary(id, { status });
-}
-
-/**
- * Get upcoming itineraries (departure in the next 30 days)
- */
-export async function getUpcomingItineraries(): Promise<ActionResult<TravelItineraryWithDetails[]>> {
-  const now = new Date();
-  const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-  return getItineraries({
-    date_range: {
-      start: now.toISOString().split('T')[0],
-      end: thirtyDaysLater.toISOString().split('T')[0],
-    },
-  });
-}
-
-/**
- * Get past itineraries
- */
-export async function getPastItineraries(): Promise<ActionResult<TravelItineraryWithDetails[]>> {
-  const now = new Date();
-
+export async function getUpcomingItineraries(
+  teamId: string,
+  limit = 5
+): Promise<ActionResult<TravelItineraryWithDetails[]>> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -307,23 +303,58 @@ export async function getPastItineraries(): Promise<ActionResult<TravelItinerary
     return { success: false, error: 'Not authenticated' };
   }
 
+  const today = new Date().toISOString().split('T')[0];
+
   const { data: itineraries, error } = await supabase
-    .from('travel_itineraries')
+    .from('golf_travel_itineraries')
     .select(`
       *,
-      travel_team:travel_teams(
-        id,
-        name,
-        high_school_program:high_school_programs(id, name, city, state)
-      ),
-      creator:profiles!travel_itineraries_created_by_fkey(full_name, avatar_url)
+      team:golf_teams(id, name)
     `)
-    .lt('return_date', now.toISOString().split('T')[0])
-    .order('departure_date', { ascending: false });
+    .eq('team_id', teamId)
+    .gte('departure_date', today)
+    .order('departure_date', { ascending: true })
+    .limit(limit);
 
   if (error) {
     return { success: false, error: error.message };
   }
 
-  return { success: true, data: itineraries || [] };
+  const transformedItineraries = (itineraries || []).map(transformItinerary);
+  return { success: true, data: transformedItineraries };
+}
+
+/**
+ * Get past itineraries for a team
+ */
+export async function getPastItineraries(
+  teamId: string,
+  limit = 10
+): Promise<ActionResult<TravelItineraryWithDetails[]>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: itineraries, error } = await supabase
+    .from('golf_travel_itineraries')
+    .select(`
+      *,
+      team:golf_teams(id, name)
+    `)
+    .eq('team_id', teamId)
+    .lt('departure_date', today)
+    .order('departure_date', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  const transformedItineraries = (itineraries || []).map(transformItinerary);
+  return { success: true, data: transformedItineraries };
 }

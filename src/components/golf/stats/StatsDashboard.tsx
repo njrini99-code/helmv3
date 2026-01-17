@@ -11,37 +11,100 @@
  * 5. Comparison Views
  */
 
-import { useState, useEffect } from 'react';
 import type {
   PlayerStats,
-  MultiMetricTrend,
-  StrokesGainedResult,
-  StrokesGainedTrend,
   ComparisonBaseline,
-  ComparisonResult,
-  WeakAreaIdentification,
   DataQuality,
+  TrendDirection,
 } from '@/lib/types/golf';
-import { GolfStatCard, KPIRow, ScoringDistribution } from './StatCard';
+import { KPIRow, ScoringDistribution } from './StatCard';
 import { StrokesGainedDashboard, StrokesGainedSummary } from './StrokesGainedDashboard';
-import { TrendVisualization, TrendIndicator } from './TrendVisualization';
+import { TrendVisualization } from './TrendVisualization';
 import { cn } from '@/lib/utils';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 
+// Extended stats that may come from a more detailed stats computation
+interface ExtendedPlayerStats extends PlayerStats {
+  period_start?: string;
+  period_end?: string;
+  eagles?: number;
+  birdies?: number;
+  pars?: number;
+  bogeys?: number;
+  double_bogeys_plus?: number;
+  sand_save_percentage?: number;
+  avg_penalty_strokes?: number;
+}
+
+// Individual metric trend data
+interface MetricTrendData {
+  trend: TrendDirection;
+  current_value?: number;
+  changePercent?: number;
+  dataPoints?: { date: string; value: number }[];
+  periodLabel?: string;
+}
+
+// Multi-metric trend object for KPI trends and TrendVisualization
+interface KPITrends {
+  scoring_avg?: MetricTrendData;
+  putts?: MetricTrendData;
+  fairway_pct?: MetricTrendData;
+  gir_pct?: MetricTrendData;
+  sg_total?: MetricTrendData;
+  sg_off_tee?: MetricTrendData;
+  sg_approach?: MetricTrendData;
+  sg_around_green?: MetricTrendData;
+  sg_putting?: MetricTrendData;
+}
+
+// Comparison data structure for the dashboard
+interface DashboardComparison {
+  baseline_label: string;
+  comparisons: Array<{
+    metric: string;
+    player_value: number;
+    comparison_value: number;
+    difference: number;
+  }>;
+  strengths: string[];
+  weaknesses: string[];
+}
+
+// Strokes gained trend item
+interface SGTrendItem {
+  date: string;
+  sg_total: number;
+  sg_off_tee?: number;
+  sg_approach?: number;
+  sg_around_green?: number;
+  sg_putting?: number;
+}
+
+// Weak area with full details
+interface WeakAreaWithDetails {
+  area: string;
+  severity: 'critical' | 'moderate' | 'minor';
+  metric: string;
+  current_value: number;
+  target_value: number;
+  estimated_improvement_time?: string;
+  recommended_drills?: string[];
+}
+
 interface StatsDashboardProps {
-  stats: PlayerStats;
-  trends?: MultiMetricTrend;
-  strokesGainedTrends?: StrokesGainedTrend[];
-  comparison?: ComparisonResult;
-  weakAreas?: WeakAreaIdentification[];
+  stats: ExtendedPlayerStats;
+  trends?: KPITrends;
+  strokesGainedTrends?: SGTrendItem[];
+  comparison?: DashboardComparison;
+  weakAreas?: WeakAreaWithDetails[];
   dataQuality?: DataQuality;
   trendInsights?: string[];
   prediction?: {
@@ -68,23 +131,27 @@ export function StatsDashboard({
   loading = false,
   className,
 }: StatsDashboardProps) {
-  const [activeTab, setActiveTab] = useState('overview');
 
   // Data quality indicator
   const getDataQualityBadge = () => {
     if (!dataQuality) return null;
 
-    const colors = {
+    // Determine confidence level based on roundCount and isReliable
+    const confidenceLevel = dataQuality.isReliable
+      ? (dataQuality.roundCount >= 10 ? 'high' : 'medium')
+      : 'low';
+
+    const colors: Record<string, string> = {
       high: 'bg-green-100 text-green-700',
       medium: 'bg-yellow-100 text-yellow-700',
       low: 'bg-red-100 text-red-700',
     };
 
     return (
-      <Badge className={cn('text-xs', colors[dataQuality.data_confidence])}>
-        {dataQuality.data_confidence === 'high'
+      <Badge className={cn('text-xs', colors[confidenceLevel])}>
+        {confidenceLevel === 'high'
           ? 'Full Data'
-          : dataQuality.data_confidence === 'medium'
+          : confidenceLevel === 'medium'
           ? 'Partial Data'
           : 'Limited Data'}
       </Badge>
@@ -176,7 +243,7 @@ export function StatsDashboard({
       />
 
       {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="overview">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="strokes-gained">Strokes Gained</TabsTrigger>
@@ -218,16 +285,18 @@ export function StatsDashboard({
                   </div>
 
                   {/* Scoring Distribution */}
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Scoring Distribution</h4>
-                    <ScoringDistribution
-                      eagles={stats.eagles}
-                      birdies={stats.birdies}
-                      pars={stats.pars}
-                      bogeys={stats.bogeys}
-                      doublePlus={stats.double_bogeys_plus}
-                    />
-                  </div>
+                  {(stats.eagles !== undefined || stats.birdies !== undefined) && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Scoring Distribution</h4>
+                      <ScoringDistribution
+                        eagles={stats.eagles ?? 0}
+                        birdies={stats.birdies ?? 0}
+                        pars={stats.pars ?? 0}
+                        bogeys={stats.bogeys ?? 0}
+                        doublePlus={stats.double_bogeys_plus ?? 0}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -257,14 +326,18 @@ export function StatsDashboard({
                         <span className="text-sm text-gray-600">Up & Down %</span>
                         <span className="font-semibold">{stats.up_and_down_percentage.toFixed(1)}%</span>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-sm text-gray-600">Sand Save %</span>
-                        <span className="font-semibold">{stats.sand_save_percentage.toFixed(1)}%</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-sm text-gray-600">Penalties / Round</span>
-                        <span className="font-semibold">{stats.avg_penalty_strokes.toFixed(1)}</span>
-                      </div>
+                      {stats.sand_save_percentage !== undefined && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <span className="text-sm text-gray-600">Sand Save %</span>
+                          <span className="font-semibold">{stats.sand_save_percentage.toFixed(1)}%</span>
+                        </div>
+                      )}
+                      {stats.avg_penalty_strokes !== undefined && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <span className="text-sm text-gray-600">Penalties / Round</span>
+                          <span className="font-semibold">{stats.avg_penalty_strokes.toFixed(1)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -278,7 +351,16 @@ export function StatsDashboard({
                   <CardTitle className="text-base">Strokes Gained Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <StrokesGainedSummary data={stats.strokes_gained} showDetails={true} />
+                  <StrokesGainedSummary
+                    data={{
+                      sg_total: stats.strokes_gained.sg_total,
+                      sg_off_tee: stats.strokes_gained.sg_off_tee,
+                      sg_approach: stats.strokes_gained.sg_approach,
+                      sg_around_green: stats.strokes_gained.sg_around_green,
+                      sg_putting: stats.strokes_gained.sg_putting,
+                    }}
+                    showDetails={true}
+                  />
                 </CardContent>
               </Card>
 
@@ -327,18 +409,31 @@ export function StatsDashboard({
         {/* Strokes Gained Tab */}
         <TabsContent value="strokes-gained">
           <StrokesGainedDashboard
-            data={stats.strokes_gained}
-            trendData={strokesGainedTrends}
+            data={{
+              sg_total: stats.strokes_gained.sg_total,
+              sg_off_tee: stats.strokes_gained.sg_off_tee,
+              sg_approach: stats.strokes_gained.sg_approach,
+              sg_around_green: stats.strokes_gained.sg_around_green,
+              sg_putting: stats.strokes_gained.sg_putting,
+            }}
+            trendData={strokesGainedTrends?.map((t) => ({
+              date: t.date,
+              sg_total: t.sg_total,
+              sg_off_tee: t.sg_off_tee ?? 0,
+              sg_approach: t.sg_approach ?? 0,
+              sg_around_green: t.sg_around_green ?? 0,
+              sg_putting: t.sg_putting ?? 0,
+            }))}
             comparisonData={
               comparison
                 ? {
-                    baseline: comparison.baseline,
+                    baseline: 'scratch' as ComparisonBaseline,
                     data: {
-                      sg_off_tee: comparison.comparisons.find(c => c.metric === 'SG: Off the Tee')?.comparison_value || 0,
-                      sg_approach: comparison.comparisons.find(c => c.metric === 'SG: Approach')?.comparison_value || 0,
-                      sg_around_green: comparison.comparisons.find(c => c.metric === 'SG: Around the Green')?.comparison_value || 0,
-                      sg_putting: comparison.comparisons.find(c => c.metric === 'SG: Putting')?.comparison_value || 0,
-                      sg_total: comparison.comparisons.find(c => c.metric === 'SG: Total')?.comparison_value || 0,
+                      sg_total: comparison.comparisons.find((c) => c.metric === 'SG: Total')?.comparison_value || 0,
+                      sg_off_tee: comparison.comparisons.find((c) => c.metric === 'SG: Off the Tee')?.comparison_value || 0,
+                      sg_approach: comparison.comparisons.find((c) => c.metric === 'SG: Approach')?.comparison_value || 0,
+                      sg_around_green: comparison.comparisons.find((c) => c.metric === 'SG: Around the Green')?.comparison_value || 0,
+                      sg_putting: comparison.comparisons.find((c) => c.metric === 'SG: Putting')?.comparison_value || 0,
                     },
                     label: comparison.baseline_label,
                   }
@@ -351,7 +446,9 @@ export function StatsDashboard({
         <TabsContent value="trends">
           {trends ? (
             <TrendVisualization
-              trends={trends}
+              // TrendVisualization expects an object with metric keys, not MultiMetricTrend type
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              trends={trends as any}
               insights={trendInsights}
               prediction={prediction}
             />
@@ -473,21 +570,25 @@ export function StatsDashboard({
                             Current: {area.current_value.toFixed(2)} | Target: {area.target_value.toFixed(2)}
                           </p>
                         </div>
-                        <div className="text-right text-sm text-gray-500">
-                          Est. {area.estimated_improvement_time}
-                        </div>
+                        {area.estimated_improvement_time && (
+                          <div className="text-right text-sm text-gray-500">
+                            Est. {area.estimated_improvement_time}
+                          </div>
+                        )}
                       </div>
 
-                      <div className="mt-4">
-                        <h5 className="text-sm font-medium text-gray-700 mb-2">Recommended Drills:</h5>
-                        <div className="flex flex-wrap gap-2">
-                          {area.recommended_drills.map((drill, j) => (
-                            <Badge key={j} variant="outline" className="text-xs">
-                              {drill}
-                            </Badge>
-                          ))}
+                      {area.recommended_drills && area.recommended_drills.length > 0 && (
+                        <div className="mt-4">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Recommended Drills:</h5>
+                          <div className="flex flex-wrap gap-2">
+                            {area.recommended_drills.map((drill: string, j: number) => (
+                              <Badge key={j} variant="outline" className="text-xs">
+                                {drill}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

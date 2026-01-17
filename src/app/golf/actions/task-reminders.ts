@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import type { ReminderType, TaskReminder, TaskReminderWithTask, GolfTask } from '@/lib/types/golf';
+import type { ReminderType, TaskReminderWithTask, GolfTask } from '@/lib/types/golf';
 
 /**
  * Set a reminder on a task
@@ -118,9 +118,9 @@ export async function getUpcomingReminders(
     }
 
     // Filter to only include reminders for tasks the user owns or is assigned to
-    const filteredReminders = (reminders || []).filter((reminder: any) => {
-      const task = reminder.task as GolfTask;
-      return task && (task.created_by === userId || task.assigned_to === userId);
+    const filteredReminders = (reminders || []).filter((reminder: { task: GolfTask | null }) => {
+      const task = reminder.task;
+      return task && (task.assigned_by === userId || task.assigned_to === userId);
     }) as TaskReminderWithTask[];
 
     return { data: filteredReminders };
@@ -311,30 +311,38 @@ async function sendReminderNotification(
 
 /**
  * Send in-app notification
+ * Uses 'event_reminder' type since 'task_reminder' is not in the enum.
+ * Task-specific info is stored in the data field.
  */
 async function sendInAppNotification(task: GolfTask): Promise<void> {
   const supabase = await createClient();
+
+  const notificationData = {
+    task_id: task.id,
+    task_type: 'task_reminder',
+    action_url: `/golf/dashboard/tasks?task=${task.id}`,
+  };
 
   // Create notification for the assignee
   if (task.assigned_to) {
     await supabase.from('notifications').insert({
       user_id: task.assigned_to,
-      notification_type: 'task_reminder',
+      type: 'event_reminder' as const,
       title: 'Task Reminder',
       body: `Reminder: "${task.title}" is due${task.due_date ? ` on ${new Date(task.due_date).toLocaleDateString()}` : ' soon'}`,
-      action_url: `/golf/dashboard/tasks?task=${task.id}`,
+      data: notificationData,
       read: false,
     });
   }
 
-  // Also notify the creator if different from assignee
-  if (task.created_by && task.created_by !== task.assigned_to) {
+  // Also notify the coach who assigned it if different from assignee
+  if (task.assigned_by && task.assigned_by !== task.assigned_to) {
     await supabase.from('notifications').insert({
-      user_id: task.created_by,
-      notification_type: 'task_reminder',
+      user_id: task.assigned_by,
+      type: 'event_reminder' as const,
       title: 'Task Reminder',
       body: `Reminder: "${task.title}" is due${task.due_date ? ` on ${new Date(task.due_date).toLocaleDateString()}` : ' soon'}`,
-      action_url: `/golf/dashboard/tasks?task=${task.id}`,
+      data: notificationData,
       read: false,
     });
   }
@@ -411,15 +419,28 @@ export async function getReminderStats(
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // First, get task IDs for this team
+  const { data: teamTasks } = await supabase
+    .from('golf_tasks')
+    .select('id')
+    .eq('team_id', teamId);
+
+  const taskIds = teamTasks?.map((t) => t.id) || [];
+
+  if (taskIds.length === 0) {
+    return {
+      pendingReminders: 0,
+      sentToday: 0,
+      failedToday: 0,
+    };
+  }
+
   // Get pending reminders count
   const { count: pending } = await supabase
     .from('golf_task_reminders')
     .select('*', { count: 'exact', head: true })
     .eq('sent', false)
-    .in(
-      'task_id',
-      supabase.from('golf_tasks').select('id').eq('team_id', teamId)
-    );
+    .in('task_id', taskIds);
 
   // Get sent today count
   const { count: sentToday } = await supabase
@@ -428,10 +449,7 @@ export async function getReminderStats(
     .eq('sent', true)
     .gte('sent_at', today.toISOString())
     .is('error', null)
-    .in(
-      'task_id',
-      supabase.from('golf_tasks').select('id').eq('team_id', teamId)
-    );
+    .in('task_id', taskIds);
 
   // Get failed today count
   const { count: failedToday } = await supabase
@@ -440,10 +458,7 @@ export async function getReminderStats(
     .eq('sent', true)
     .gte('sent_at', today.toISOString())
     .not('error', 'is', null)
-    .in(
-      'task_id',
-      supabase.from('golf_tasks').select('id').eq('team_id', teamId)
-    );
+    .in('task_id', taskIds);
 
   return {
     pendingReminders: pending || 0,

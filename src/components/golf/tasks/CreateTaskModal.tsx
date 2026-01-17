@@ -156,9 +156,9 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
             />
           </div>
           <ReminderPicker
-            taskDueDate={dueDate}
-            currentReminder={reminderAt}
-            onSelect={setReminderAt}
+            dueDate={dueDate}
+            value={reminderAt ?? undefined}
+            onChange={(newReminderAt) => setReminderAt(newReminderAt)}
           />
         </div>
 
