@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { logError } from '@/lib/error-logging';
 
@@ -19,6 +19,26 @@ interface RouteErrorBoundaryProps {
   homePath?: string;
   /** Optional: Show home button (default: true) */
   showHomeButton?: boolean;
+  /** Optional: Enable auto-retry for transient errors (default: true) */
+  autoRetry?: boolean;
+}
+
+/**
+ * Check if an error appears to be transient (retryable)
+ */
+function isTransientError(error: Error): boolean {
+  const msg = error.message?.toLowerCase() || '';
+  return (
+    msg.includes('503') ||
+    msg.includes('502') ||
+    msg.includes('504') ||
+    msg.includes('timeout') ||
+    msg.includes('connection') ||
+    msg.includes('network') ||
+    msg.includes('fetch') ||
+    msg.includes('unavailable') ||
+    msg.includes('temporarily')
+  );
 }
 
 /**
@@ -60,7 +80,25 @@ export function RouteErrorBoundary({
   message,
   homePath,
   showHomeButton = true,
+  autoRetry = true,
 }: RouteErrorBoundaryProps) {
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  const isTransient = isTransientError(error);
+
+  const handleRetry = useCallback(async () => {
+    setIsRetrying(true);
+    // Small delay before retry
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setRetryCount(prev => prev + 1);
+    try {
+      reset();
+    } finally {
+      setIsRetrying(false);
+    }
+  }, [reset]);
+
   useEffect(() => {
     // Log error to monitoring service
     logError(error, {
@@ -70,7 +108,25 @@ export function RouteErrorBoundary({
     }, 'high');
   }, [error, route, component]);
 
-  const defaultMessage = error.message || 'An unexpected error occurred. Please try refreshing the page.';
+  // Auto-retry once for transient errors
+  useEffect(() => {
+    if (autoRetry && isTransient && retryCount === 0) {
+      const timer = setTimeout(() => {
+        handleRetry();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [autoRetry, isTransient, retryCount, handleRetry]);
+
+  // Better default messages for different error types
+  const getDefaultMessage = () => {
+    if (isTransient) {
+      return 'Our servers are temporarily busy. This usually resolves quickly.';
+    }
+    return error.message || 'An unexpected error occurred. Please try refreshing the page.';
+  };
+
+  const defaultMessage = getDefaultMessage();
 
   return (
     <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-6">
@@ -117,18 +173,37 @@ export function RouteErrorBoundary({
           </details>
         )}
 
+        {/* Retry indicator */}
+        {isRetrying && (
+          <div className="mb-4 flex items-center justify-center gap-2 text-sm text-slate-500">
+            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Retrying...
+          </div>
+        )}
+
+        {/* Retry count indicator */}
+        {retryCount > 0 && !isRetrying && (
+          <p className="text-xs text-slate-400 mb-4">
+            {retryCount === 1 ? 'Retried once' : `Retried ${retryCount} times`}
+          </p>
+        )}
+
         {/* Actions */}
         <div className="flex gap-3 justify-center">
           {showHomeButton && homePath && (
             <Button
               variant="secondary"
               onClick={() => window.location.href = homePath}
+              disabled={isRetrying}
             >
               Go Home
             </Button>
           )}
-          <Button variant="primary" onClick={reset}>
-            Try Again
+          <Button variant="primary" onClick={handleRetry} disabled={isRetrying}>
+            {isRetrying ? 'Retrying...' : 'Try Again'}
           </Button>
         </div>
       </div>
