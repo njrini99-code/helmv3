@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   IconSearch, IconUsers, IconCalendar, IconChart, IconMessage,
-  IconSettings, IconBaseball, IconChevronRight
+  IconSettings, IconTarget, IconChevronRight
 } from '@/components/icons';
 
 interface CommandItem {
@@ -41,7 +41,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       id: 'pipeline',
       label: 'Recruiting Pipeline',
       description: 'Manage recruiting prospects',
-      icon: <IconBaseball size={18} />,
+      icon: <IconTarget size={18} />,
       action: () => router.push('/baseball/dashboard/pipeline'),
       keywords: ['recruits', 'prospects'],
     },
@@ -92,7 +92,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       id: 'profile',
       label: 'My Profile',
       description: 'View and edit your profile',
-      icon: <IconBaseball size={18} />,
+      icon: <IconTarget size={18} />,
       action: () => router.push('/baseball/dashboard/profile'),
       keywords: ['me', 'info'],
     },

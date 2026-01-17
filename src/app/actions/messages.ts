@@ -213,7 +213,7 @@ export async function createConversation({
     }
   }
 
-  // Create new conversation directly
+  // Create new conversation
   const conversationsTable = sport === 'golf' ? 'golf_conversations' : 'baseball_conversations';
   const { data: newConversation, error: convError } = await supabase
     .from(conversationsTable as any)
@@ -240,11 +240,11 @@ export async function createConversation({
   const conversationId = newConversation.id;
 
   // Add all participants (including current user)
-  const allParticipants = [user.id, ...participantUserIds].filter((id, idx, arr) => arr.indexOf(id) === idx);
-  const participantInserts = allParticipants.map(userId => ({
+  const allParticipantIds = [...new Set([user.id, ...participantUserIds].filter(Boolean))];
+  const participantInserts = allParticipantIds.map(userId => ({
     conversation_id: conversationId,
     user_id: userId,
-    created_at: new Date().toISOString(),
+    joined_at: new Date().toISOString(),
   }));
 
   const { error: participantsError } = await supabase
@@ -252,12 +252,12 @@ export async function createConversation({
     .insert(participantInserts);
 
   if (participantsError) {
-    console.error('[Security] Failed to add participants:', {
+    console.error('[Security] Participants insert error:', {
       error: participantsError.message,
       conversationId,
-      participantUserIds,
+      userId: user.id,
     });
-    // Note: conversation created but participants failed - may need cleanup
+    await supabase.from(conversationsTable as any).delete().eq('id', conversationId);
     throw new Error(`Failed to add participants: ${participantsError.message}`);
   }
 
