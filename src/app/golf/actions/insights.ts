@@ -699,6 +699,9 @@ export async function generateTeamInsight(): Promise<{
 
     // Aggregate results
     let playersAnalyzed = 0;
+    let playersWithoutData = 0;
+    const playersMissingData: string[] = [];
+
     for (const result of analysisResults) {
       if (result.success && result.analysis) {
         playersAnalyzed++;
@@ -721,7 +724,22 @@ export async function generateTeamInsight(): Promise<{
             });
           }
         }
+      } else {
+        // Track players who couldn't be analyzed (likely missing round data)
+        playersWithoutData++;
+        if (result.playerName) {
+          playersMissingData.push(result.playerName);
+        }
       }
+    }
+
+    // If no players could be analyzed, return informative error
+    if (playersAnalyzed === 0 && players.length > 0) {
+      return {
+        success: false,
+        error: `Unable to analyze team: No players have completed rounds in the last 90 days. Players need round data for AI analysis.`,
+        playersAnalyzed: 0,
+      };
     }
 
     // 5. Generate team-level alerts

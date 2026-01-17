@@ -45,25 +45,30 @@ export async function getCoachHelmSettings(
 ): Promise<CoachHelmSettings | null> {
   const supabase = await createClient();
 
-  // Type assertion for new table
-  const { data, error } = await (supabase
-    .from('golf_coachhelm_settings' as 'users')
-    .select('enabled, disabled_at, disabled_reason')
-    .eq('user_id', userId)
-    .maybeSingle() as unknown as Promise<{
-    data: CoachHelmSettingsRow | null;
-    error: Error | null;
-  }>);
+  try {
+    // Type assertion for new table
+    const { data, error } = await (supabase
+      .from('golf_coachhelm_settings' as 'users')
+      .select('enabled, disabled_at, disabled_reason')
+      .eq('user_id', userId)
+      .maybeSingle() as unknown as Promise<{
+      data: CoachHelmSettingsRow | null;
+      error: Error | null;
+    }>);
 
-  if (error || !data) {
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      enabled: data.enabled,
+      disabledAt: data.disabled_at,
+      disabledReason: data.disabled_reason,
+    };
+  } catch {
+    // Table doesn't exist yet - return null to use defaults (enabled)
     return null;
   }
-
-  return {
-    enabled: data.enabled,
-    disabledAt: data.disabled_at,
-    disabledReason: data.disabled_reason,
-  };
 }
 
 /**
@@ -77,23 +82,29 @@ export async function getTeamCoachHelmSettings(
 ): Promise<{ enabled: boolean; disabledReason: string | null } | null> {
   const supabase = await createClient();
 
-  const { data, error } = await (supabase
-    .from('golf_team_coachhelm_settings' as 'users')
-    .select('enabled, disabled_reason')
-    .eq('team_id', teamId)
-    .maybeSingle() as unknown as Promise<{
-    data: TeamCoachHelmSettingsRow | null;
-    error: Error | null;
-  }>);
+  try {
+    const { data, error } = await (supabase
+      .from('golf_team_coachhelm_settings' as 'users')
+      .select('enabled, disabled_reason')
+      .eq('team_id', teamId)
+      .maybeSingle() as unknown as Promise<{
+      data: TeamCoachHelmSettingsRow | null;
+      error: Error | null;
+    }>);
 
-  if (error || !data) {
+    if (error || !data) {
+      // Table may not exist or no settings configured - return null to use defaults
+      return null;
+    }
+
+    return {
+      enabled: data.enabled,
+      disabledReason: data.disabled_reason,
+    };
+  } catch {
+    // Table doesn't exist yet - return null to use defaults (enabled)
     return null;
   }
-
-  return {
-    enabled: data.enabled,
-    disabledReason: data.disabled_reason,
-  };
 }
 
 /**

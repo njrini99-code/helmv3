@@ -116,6 +116,7 @@ export function RouteErrorBoundary({
       }, 2000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [autoRetry, isTransient, retryCount, handleRetry]);
 
   // Better default messages for different error types
