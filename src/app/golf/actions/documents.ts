@@ -1,11 +1,31 @@
-// @ts-nocheck
-// Database types are out of sync with actual schema
-// TODO: Run `npm run db:types` to regenerate types after migrations are applied
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Note: This file uses 'as any' casts for golf_document_versions table queries
+// because the Supabase types need to be regenerated to include the table.
+// Once `npm run db:types` is run against the active database, these casts can be removed.
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GolfDocument, DocumentVersion, VersionComparison } from '@/lib/types/golf';
+
+// Type helper for golf_document_versions table (until types are regenerated)
+interface DocumentVersionRow {
+  id: string;
+  document_id: string;
+  version_number: number;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  storage_path: string;
+  change_notes: string | null;
+  uploaded_by: string | null;
+  created_by?: string | null;
+  created_at: string | null;
+  uploader?: {
+    full_name: string | null;
+    email: string | null;
+  } | null;
+}
 
 // Error handling helper
 function handleError(error: unknown): string {
@@ -195,7 +215,7 @@ export async function deleteDocument(documentId: string): Promise<{ success: boo
     const supabase = await createClient();
 
     // Get document to find storage paths
-    const { data: document, error: fetchError } = await supabase
+    const { data: _document, error: fetchError } = await supabase
       .from('golf_documents')
       .select('file_url, team_id')
       .eq('id', documentId)
@@ -204,10 +224,11 @@ export async function deleteDocument(documentId: string): Promise<{ success: boo
     if (fetchError) throw fetchError;
 
     // Get all versions for cleanup
-    const { data: versions } = await supabase
+    const { data: versionsData } = await supabase
       .from('golf_document_versions' as any)
       .select('storage_path')
       .eq('document_id', documentId);
+    const versions = versionsData as Pick<DocumentVersionRow, 'storage_path'>[] | null;
 
     // Delete from storage (all versions)
     if (versions && versions.length > 0) {
@@ -317,7 +338,7 @@ export async function uploadNewVersion(
     return {
       success: true,
       version: {
-        ...version as DocumentVersion,
+        ...(version as unknown as DocumentVersion),
         file_url: urlData.publicUrl,
         file_size: file.size,
       }
@@ -331,7 +352,7 @@ export async function getDocumentVersions(documentId: string): Promise<{ data: D
   try {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
+    const { data: rawData, error } = await supabase
       .from('golf_document_versions' as any)
       .select(`
         *,
@@ -345,8 +366,11 @@ export async function getDocumentVersions(documentId: string): Promise<{ data: D
 
     if (error) throw error;
 
+    // Cast to proper type
+    const versionsData = rawData as unknown as DocumentVersionRow[] | null;
+
     // Add file_url to each version
-    const versionsWithUrls = (data || []).map(version => {
+    const versionsWithUrls = (versionsData || []).map(version => {
       const { data: urlData } = supabase.storage
         .from('documents')
         .getPublicUrl(version.storage_path);
@@ -375,7 +399,7 @@ export async function revertToVersion(
     if (userError || !user) throw new Error('Not authenticated');
 
     // Get the version to revert to by ID
-    const { data: version, error: versionError } = await supabase
+    const { data: versionData, error: versionError } = await supabase
       .from('golf_document_versions' as any)
       .select('*')
       .eq('document_id', documentId)
@@ -383,6 +407,7 @@ export async function revertToVersion(
       .single();
 
     if (versionError) throw versionError;
+    const version = versionData as unknown as DocumentVersionRow;
 
     // Get current document version number
     const { data: document, error: docError } = await supabase
@@ -445,7 +470,7 @@ export async function compareVersions(
   try {
     const supabase = await createClient();
 
-    const { data: versions, error } = await supabase
+    const { data: versionsData, error } = await supabase
       .from('golf_document_versions' as any)
       .select(`
         *,
@@ -458,12 +483,13 @@ export async function compareVersions(
       .in('version_number', [version1, version2]);
 
     if (error) throw error;
+    const versions = versionsData as unknown as DocumentVersionRow[] | null;
     if (!versions || versions.length !== 2) {
       throw new Error('Could not find both versions');
     }
 
-    const v1 = versions.find(v => v.version_number === version1) as DocumentVersion;
-    const v2 = versions.find(v => v.version_number === version2) as DocumentVersion;
+    const v1 = versions.find(v => v.version_number === version1) as unknown as DocumentVersion;
+    const v2 = versions.find(v => v.version_number === version2) as unknown as DocumentVersion;
 
     const date1 = new Date(v1.created_at);
     const date2 = new Date(v2.created_at);
@@ -496,7 +522,7 @@ export async function getPreviewUrl(
 
     if (versionNumber) {
       // Get specific version
-      const { data: version, error } = await supabase
+      const { data: versionData, error } = await supabase
         .from('golf_document_versions' as any)
         .select('storage_path, mime_type')
         .eq('document_id', documentId)
@@ -504,6 +530,7 @@ export async function getPreviewUrl(
         .single();
 
       if (error) throw error;
+      const version = versionData as unknown as Pick<DocumentVersionRow, 'storage_path' | 'mime_type'>;
 
       // Generate signed URL for preview (expires in 1 hour)
       const { data: signedUrl, error: signError } = await supabase.storage
@@ -523,7 +550,7 @@ export async function getPreviewUrl(
 
       if (error) throw error;
 
-      return { data: { url: document.file_url, mimeType: document.file_type }, error: null };
+      return { data: { url: document.file_url, mimeType: document.file_type || 'application/octet-stream' }, error: null };
     }
   } catch (error) {
     return { data: null, error: handleError(error) };
@@ -696,7 +723,7 @@ export async function deleteVersion(
     const supabase = await createClient();
 
     // Get the version to delete by ID
-    const { data: version, error: fetchError } = await supabase
+    const { data: versionData, error: fetchError } = await supabase
       .from('golf_document_versions' as any)
       .select('storage_path, version_number')
       .eq('document_id', documentId)
@@ -704,6 +731,7 @@ export async function deleteVersion(
       .single();
 
     if (fetchError) throw fetchError;
+    const version = versionData as unknown as Pick<DocumentVersionRow, 'storage_path' | 'version_number'>;
 
     // Get current document version
     const { data: document, error: docError } = await supabase
@@ -753,7 +781,7 @@ export async function getTextFileContent(
     let storagePath: string;
 
     if (versionNumber) {
-      const { data: version, error } = await supabase
+      const { data: versionData, error } = await supabase
         .from('golf_document_versions' as any)
         .select('storage_path')
         .eq('document_id', documentId)
@@ -761,6 +789,7 @@ export async function getTextFileContent(
         .single();
 
       if (error) throw error;
+      const version = versionData as unknown as Pick<DocumentVersionRow, 'storage_path'>;
       storagePath = version.storage_path;
     } else {
       // Get latest version
@@ -772,7 +801,7 @@ export async function getTextFileContent(
 
       if (error) throw error;
 
-      const { data: version, error: vError } = await supabase
+      const { data: versionData, error: vError } = await supabase
         .from('golf_document_versions' as any)
         .select('storage_path')
         .eq('document_id', documentId)
@@ -780,6 +809,7 @@ export async function getTextFileContent(
         .single();
 
       if (vError) throw vError;
+      const version = versionData as unknown as Pick<DocumentVersionRow, 'storage_path'>;
       storagePath = version.storage_path;
     }
 

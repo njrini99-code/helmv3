@@ -105,7 +105,7 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
     const lastDay = new Date(year, 11, 31);
     const weeks: Array<Array<{ date: Date; rounds: RoundData[] } | null>> = [];
 
-    let currentDate = new Date(firstDay);
+    const currentDate = new Date(firstDay);
     let currentWeek: Array<{ date: Date; rounds: RoundData[] } | null> = [];
 
     // Fill in empty days before first day of year

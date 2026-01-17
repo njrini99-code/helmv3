@@ -108,7 +108,7 @@ export function ExpenseForm({
 
     try {
       // Handle receipt upload if there's a new file
-      let finalReceiptUrl = receiptUrl;
+      const finalReceiptUrl = receiptUrl;
       if (receiptFile) {
         // For now, we'll handle receipt upload in a separate flow
         // In production, you'd upload to Supabase Storage here

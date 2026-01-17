@@ -4117,7 +4117,7 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
         let distanceAfter: number;
         let distanceUnitBefore: 'yards' | 'feet' = currentDistance <= 30 ? 'feet' : 'yards';
         let distanceUnitAfter: 'yards' | 'feet';
-        let isPenalty = false;
+        const isPenalty = false;
         let puttMade: boolean | undefined;
         let puttDistanceFeet: number | undefined;
         let puttBreak: 'left_to_right' | 'right_to_left' | 'straight' | 'multiple' | undefined;

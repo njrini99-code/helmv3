@@ -3068,40 +3068,52 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string | null
+          current_version: number | null
           description: string | null
           file_size: number | null
           file_type: string | null
           file_url: string
           id: string
           is_public: boolean | null
+          original_file_name: string | null
+          player_visible: boolean | null
           team_id: string
           title: string
+          updated_at: string | null
           uploaded_by: string | null
         }
         Insert: {
           category?: string | null
           created_at?: string | null
+          current_version?: number | null
           description?: string | null
           file_size?: number | null
           file_type?: string | null
           file_url: string
           id?: string
           is_public?: boolean | null
+          original_file_name?: string | null
+          player_visible?: boolean | null
           team_id: string
           title: string
+          updated_at?: string | null
           uploaded_by?: string | null
         }
         Update: {
           category?: string | null
           created_at?: string | null
+          current_version?: number | null
           description?: string | null
           file_size?: number | null
           file_type?: string | null
           file_url?: string
           id?: string
           is_public?: boolean | null
+          original_file_name?: string | null
+          player_visible?: boolean | null
           team_id?: string
           title?: string
+          updated_at?: string | null
           uploaded_by?: string | null
         }
         Relationships: [
@@ -3117,6 +3129,60 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_document_versions: {
+        Row: {
+          change_notes: string | null
+          created_at: string | null
+          document_id: string
+          file_name: string
+          file_size: number
+          id: string
+          mime_type: string
+          storage_path: string
+          uploaded_by: string | null
+          version_number: number
+        }
+        Insert: {
+          change_notes?: string | null
+          created_at?: string | null
+          document_id: string
+          file_name: string
+          file_size: number
+          id?: string
+          mime_type: string
+          storage_path: string
+          uploaded_by?: string | null
+          version_number: number
+        }
+        Update: {
+          change_notes?: string | null
+          created_at?: string | null
+          document_id?: string
+          file_name?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          storage_path?: string
+          uploaded_by?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_document_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "golf_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_document_versions_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -3423,6 +3489,7 @@ export type Database = {
           sand_save: boolean | null
           score: number | null
           up_and_down: boolean | null
+          yardage: number | null
         }
         Insert: {
           created_at?: string | null
@@ -3438,6 +3505,7 @@ export type Database = {
           sand_save?: boolean | null
           score?: number | null
           up_and_down?: boolean | null
+          yardage?: number | null
         }
         Update: {
           created_at?: string | null
@@ -3453,6 +3521,7 @@ export type Database = {
           sand_save?: boolean | null
           score?: number | null
           up_and_down?: boolean | null
+          yardage?: number | null
         }
         Relationships: [
           {
@@ -3520,6 +3589,7 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string | null
+          has_attachments: boolean | null
           id: string
           read: boolean | null
           sender_id: string
@@ -3528,6 +3598,7 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string | null
+          has_attachments?: boolean | null
           id?: string
           read?: boolean | null
           sender_id: string
@@ -3536,6 +3607,7 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string | null
+          has_attachments?: boolean | null
           id?: string
           read?: boolean | null
           sender_id?: string
@@ -3553,6 +3625,59 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_message_attachments: {
+        Row: {
+          created_at: string | null
+          duration_seconds: number | null
+          file_name: string
+          file_size: number
+          file_type: string
+          height: number | null
+          id: string
+          message_id: string
+          mime_type: string
+          storage_path: string
+          thumbnail_url: string | null
+          width: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          file_name: string
+          file_size: number
+          file_type: string
+          height?: number | null
+          id?: string
+          message_id: string
+          mime_type: string
+          storage_path: string
+          thumbnail_url?: string | null
+          width?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          height?: number | null
+          id?: string
+          message_id?: string
+          mime_type?: string
+          storage_path?: string
+          thumbnail_url?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "golf_messages"
             referencedColumns: ["id"]
           },
         ]
@@ -4737,6 +4862,7 @@ export type Database = {
           course_city: string | null
           course_id: string | null
           course_name: string | null
+          course_par: number | null
           course_rating: number | null
           course_slope: number | null
           course_state: string | null
@@ -4767,6 +4893,7 @@ export type Database = {
           course_city?: string | null
           course_id?: string | null
           course_name?: string | null
+          course_par?: number | null
           course_rating?: number | null
           course_slope?: number | null
           course_state?: string | null
@@ -4797,6 +4924,7 @@ export type Database = {
           course_city?: string | null
           course_id?: string | null
           course_name?: string | null
+          course_par?: number | null
           course_rating?: number | null
           course_slope?: number | null
           course_state?: string | null
@@ -4864,6 +4992,7 @@ export type Database = {
           lie_before: string | null
           miss_direction: string | null
           notes: string | null
+          penalty_strokes: number | null
           penalty_type: string | null
           putt_break: string | null
           putt_distance_feet: number | null
@@ -4893,6 +5022,7 @@ export type Database = {
           lie_before?: string | null
           miss_direction?: string | null
           notes?: string | null
+          penalty_strokes?: number | null
           penalty_type?: string | null
           putt_break?: string | null
           putt_distance_feet?: number | null
@@ -4922,6 +5052,7 @@ export type Database = {
           lie_before?: string | null
           miss_direction?: string | null
           notes?: string | null
+          penalty_strokes?: number | null
           penalty_type?: string | null
           putt_break?: string | null
           putt_distance_feet?: number | null

@@ -22,9 +22,9 @@ import {
   AlertCircleIcon,
 } from 'lucide-react';
 
-// Extended document type to include current_version which exists in DB but not in generated types
+// Extended document type for documents with version info
 interface DocumentWithVersion extends GolfDocument {
-  current_version?: number;
+  // current_version is already in GolfDocument as number | null
 }
 
 interface UploadNewVersionProps {

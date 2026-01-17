@@ -1,6 +1,3 @@
-// @ts-nocheck
-// Database types are out of sync - golf_message_attachments table not in types
-// TODO: Run `npm run db:types` to regenerate types after migrations
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -125,10 +122,11 @@ export async function getGolfMessageAttachments(messageId: string): Promise<{
     mimeType: string;
     fileSize: number;
     storagePath: string;
-    thumbnailUrl?: string;
-    width?: number;
-    height?: number;
-    durationSeconds?: number;
+    url?: string;
+    thumbnailUrl?: string | null;
+    width?: number | null;
+    height?: number | null;
+    durationSeconds?: number | null;
   }>;
   error?: string;
 }> {

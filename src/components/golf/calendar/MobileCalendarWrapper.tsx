@@ -26,6 +26,7 @@ import { useMobileDetection } from '@/hooks/use-mobile-detection';
 import { CalendarDayViewSwipeable, MobileWeekPicker } from './CalendarDayViewSwipeable';
 import { MobileEventSheet, type MobileEventFormData } from './MobileEventSheet';
 import { QuickAddEventFAB } from './QuickAddEventFAB';
+import { MobileCalendarListView } from './MobileCalendarListView';
 import type { RSVPResponseType } from './RSVPButtonsEnhanced';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPResponse } from './MobileRSVPButtons';
@@ -292,9 +293,6 @@ function MobileListView({
   onRsvp?: (eventId: string, response: RSVPResponse) => Promise<{ success: boolean; error?: string }>;
   onEventClick?: (event: CalendarEvent) => void;
 }) {
-  // Import the existing list view component
-  const { MobileCalendarListView } = require('./MobileCalendarListView');
-
   const handleRsvp = useCallback(
     (eventId: string, response: RSVPResponse) => {
       if (!onRsvp) return Promise.resolve({ success: false, error: 'RSVP not available' });

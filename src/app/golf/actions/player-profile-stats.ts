@@ -1,6 +1,3 @@
-// @ts-nocheck
-// Database types are out of sync - course_par, yardage columns not in types
-// TODO: Run `npm run db:types` to regenerate types after migrations
 'use server';
 
 /**
@@ -173,7 +170,7 @@ export async function getPlayerProfileStats(
     }));
 
     // 6. Calculate comprehensive stats
-    const stats = calculateStatsFromShots(rawShots, roundsInfo, holesInfo);
+    const stats = calculateStatsFromShots(rawShots, holesInfo, roundsInfo);
 
     return {
       success: true,
@@ -216,10 +213,10 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
     .select(`
       total_score,
       score_to_par,
-      fairways_hit,
-      fairway_opportunities,
-      greens_in_regulation,
-      gir_opportunities
+      total_fairways_hit,
+      total_fairways,
+      total_gir,
+      total_gir_possible
     `)
     .eq('player_id', playerId)
     .eq('status', 'completed')
@@ -247,13 +244,13 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
   let totalGirOpps = 0;
 
   for (const r of rounds) {
-    if (r.fairways_hit !== null && r.fairway_opportunities !== null) {
-      totalFairwaysHit += r.fairways_hit;
-      totalFairwayOpps += r.fairway_opportunities;
+    if (r.total_fairways_hit !== null && r.total_fairways !== null) {
+      totalFairwaysHit += r.total_fairways_hit;
+      totalFairwayOpps += r.total_fairways;
     }
-    if (r.greens_in_regulation !== null && r.gir_opportunities !== null) {
-      totalGir += r.greens_in_regulation;
-      totalGirOpps += r.gir_opportunities;
+    if (r.total_gir !== null && r.total_gir_possible !== null) {
+      totalGir += r.total_gir;
+      totalGirOpps += r.total_gir_possible;
     }
   }
 

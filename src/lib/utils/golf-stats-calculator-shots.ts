@@ -15,27 +15,31 @@
 export interface RawShot {
   id: string;
   round_id: string;
-  hole_id: string | null;
+  hole_id?: string | null;
   hole_number: number;
   shot_number: number;
-  shot_type: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty';
-  club_type: 'driver' | 'non_driver' | 'putter';
-  lie_before: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other';
-  distance_to_hole_before: number;
-  distance_unit_before: 'yards' | 'feet';
-  result: 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty';
-  distance_to_hole_after: number;
-  distance_unit_after: 'yards' | 'feet';
-  shot_distance: number;
+  shot_type: string | null;
+  club_used?: string | null;
+  club_type: string | null;
+  lie_before: string | null;
+  lie_after?: string | null;
+  distance_to_hole_before: number | null;
+  distance_unit_before?: string | null;
+  result: string | null;
+  distance_to_hole_after: number | null;
+  distance_unit_after?: string | null;
+  shot_distance?: number | null;
   miss_direction: string | null;
   putt_break: string | null;
-  putt_slope: string | null;
-  is_penalty: boolean;
-  penalty_type: string | null;
+  putt_distance_feet?: number | null;
+  putt_slope?: string | null;
+  is_penalty?: boolean | null;
+  penalty_type?: string | null;
+  penalty_strokes?: number | null;
 }
 
 export interface HoleInfo {
-  id: string;
+  id?: string;
   round_id: string;
   hole_number: number;
   par: number;
@@ -45,8 +49,10 @@ export interface HoleInfo {
 export interface RoundInfo {
   id: string;
   round_date: string;
-  course_name: string;
-  round_type: 'practice' | 'qualifying' | 'tournament';
+  course_name: string | null;
+  round_type: 'practice' | 'qualifying' | 'tournament' | null;
+  course_par?: number | null;
+  holes_played?: number | null;
 }
 
 // ============================================================================
@@ -60,6 +66,7 @@ export interface GolfStats {
 
   // Scoring
   scoringAverage: number | null;
+  avgScoreToPar: number | null;
   bestRound: number | null;
   worstRound: number | null;
   totalBirdies: number;
@@ -305,11 +312,13 @@ export interface PuttingBreakStats {
 // HELPER FUNCTIONS
 // ============================================================================
 
-function normalizeToYards(distance: number, unit: string): number {
+function normalizeToYards(distance: number | null | undefined, unit: string | null | undefined): number {
+  if (distance == null) return 0;
   return unit === 'feet' ? distance / 3 : distance;
 }
 
-function normalizeToFeet(distance: number, unit: string): number {
+function normalizeToFeet(distance: number | null | undefined, unit: string | null | undefined): number {
+  if (distance == null) return 0;
   return unit === 'yards' ? distance * 3 : distance;
 }
 
@@ -397,7 +406,8 @@ const STROKES_GAINED_BENCHMARKS = {
 };
 
 // Helper to get expected strokes from position
-function getExpectedStrokes(lie: string, distanceYards: number, distanceFeet?: number): number {
+function getExpectedStrokes(lie: string | null, distanceYards: number, distanceFeet?: number): number {
+  if (!lie) return 0;
   if (lie === 'green' && distanceFeet !== undefined) {
     // Putting - use feet
     const distances = Object.keys(STROKES_GAINED_BENCHMARKS.green).map(Number).sort((a, b) => a - b);
@@ -555,8 +565,8 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
   const firstPuttLeave = firstPutt && firstPutt.result !== 'hole'
     ? normalizeToFeet(firstPutt.distance_to_hole_after, firstPutt.distance_unit_after)
     : null;
-  const firstPuttBreak = firstPutt ? firstPutt.putt_break : null;
-  const firstPuttSlope = firstPutt ? firstPutt.putt_slope : null;
+  const firstPuttBreak = firstPutt ? (firstPutt.putt_break ?? null) : null;
+  const firstPuttSlope = firstPutt ? (firstPutt.putt_slope ?? null) : null;
 
   // Scrambling = missed GIR but made par or better
   const scrambleAttempt = !greenInRegulation;
@@ -689,6 +699,7 @@ function aggregateRoundStats(rounds: Array<{
     roundsPlayed: rounds.length,
     holesPlayed: 0,
     scoringAverage: null,
+    avgScoreToPar: null,
     bestRound: null,
     worstRound: null,
     totalBirdies: 0,
@@ -920,6 +931,7 @@ function aggregateRoundStats(rounds: Array<{
 
   // Accumulators
   let totalScore = 0;
+  let totalPar = 0;
   let practiceScore = 0;
   let qualifyingScore = 0;
   let tournamentScore = 0;
@@ -1059,6 +1071,7 @@ function aggregateRoundStats(rounds: Array<{
     // Process each hole
     for (const hole of round.holes) {
       const scoreToPar = hole.score - hole.par;
+      totalPar += hole.par;
 
       // Scoring counts
       if (scoreToPar <= -2) stats.totalEagles++;
@@ -1103,7 +1116,8 @@ function aggregateRoundStats(rounds: Array<{
         }
       }
 
-      if (hole.fairwayHit !== null) {
+      // Fairway stats - only count par 4s and par 5s (par 3s have no fairway to hit)
+      if (hole.fairwayHit !== null && hole.par !== 3) {
         stats.fairwayOpportunities++;
         if (hole.fairwayHit) stats.fairwaysHit++;
 
@@ -1395,6 +1409,7 @@ function aggregateRoundStats(rounds: Array<{
 
   // Calculate averages and percentages
   stats.scoringAverage = safeAverage(totalScore, rounds.length);
+  stats.avgScoreToPar = rounds.length > 0 ? (totalScore - totalPar) / rounds.length : null;
   stats.birdiesPerRound = safeAverage(stats.totalBirdies, rounds.length);
   stats.eaglesPerRound = safeAverage(stats.totalEagles, rounds.length);
   stats.parsPerRound = safeAverage(stats.totalPars, rounds.length);

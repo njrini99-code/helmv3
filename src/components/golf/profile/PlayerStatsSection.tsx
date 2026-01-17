@@ -1,5 +1,3 @@
-// @ts-nocheck
-// TODO: Fix property name mismatches with GolfStats interface
 'use client';
 
 /**
@@ -178,7 +176,7 @@ const ScoreDistribution = memo(function ScoreDistribution({ stats }: { stats: Go
     { name: 'Birdies', count: stats.totalBirdies, color: '#16a34a' },
     { name: 'Pars', count: stats.totalPars, color: '#64748b' },
     { name: 'Bogeys', count: stats.totalBogeys, color: '#f59e0b' },
-    { name: 'Doubles+', count: stats.totalDoubleBogeys + stats.totalTriplePlus, color: '#ef4444' },
+    { name: 'Doubles+', count: stats.totalDoublePlus, color: '#ef4444' },
   ].filter(d => d.count > 0);
 
   const total = distribution.reduce((sum, d) => sum + d.count, 0);
@@ -216,7 +214,10 @@ const ScoreDistribution = memo(function ScoreDistribution({ stats }: { stats: Go
                   border: '1px solid #e2e8f0',
                   fontSize: '12px',
                 }}
-                formatter={(value: number) => [`${value} (${((value / total) * 100).toFixed(0)}%)`, 'Count']}
+                formatter={(value) => {
+                  const numValue = Number(value);
+                  return [`${numValue} (${((numValue / total) * 100).toFixed(0)}%)`, 'Count'];
+                }}
               />
               <Bar
                 dataKey="count"
@@ -254,11 +255,11 @@ function StatsTabContent({ tab, stats }: { tab: StatsTab; stats: GolfStats }) {
           <StatRow label="Scoring Average" value={stats.scoringAverage?.toFixed(1) ?? '—'} highlight />
           <StatRow label="Best Round" value={stats.bestRound?.toString() ?? '—'} />
           <StatRow label="Worst Round" value={stats.worstRound?.toString() ?? '—'} />
-          <StatRow label="Par 3 Average" value={stats.par3ScoringAvg?.toFixed(2) ?? '—'} />
-          <StatRow label="Par 4 Average" value={stats.par4ScoringAvg?.toFixed(2) ?? '—'} />
-          <StatRow label="Par 5 Average" value={stats.par5ScoringAvg?.toFixed(2) ?? '—'} />
-          <StatRow label="Birdie Streak (Best)" value={stats.birdieStreak?.toString() ?? '—'} />
-          <StatRow label="Bounce Back %" value={stats.bounceBackPercentage !== null ? `${stats.bounceBackPercentage.toFixed(0)}%` : '—'} />
+          <StatRow label="GIR % (Par 3s)" value={stats.girPctPar3 !== null ? `${stats.girPctPar3.toFixed(0)}%` : '—'} />
+          <StatRow label="GIR % (Par 4s)" value={stats.girPctPar4 !== null ? `${stats.girPctPar4.toFixed(0)}%` : '—'} />
+          <StatRow label="GIR % (Par 5s)" value={stats.girPctPar5 !== null ? `${stats.girPctPar5.toFixed(0)}%` : '—'} />
+          <StatRow label="Best Birdie Streak" value={stats.mostBirdiesRow?.toString() ?? '—'} />
+          <StatRow label="Best Par Streak" value={stats.mostParsRow?.toString() ?? '—'} />
         </div>
       );
 
@@ -280,8 +281,8 @@ function StatsTabContent({ tab, stats }: { tab: StatsTab; stats: GolfStats }) {
           <StatRow label="GIR from Fairway" value={stats.girPctFromFairway !== null ? `${stats.girPctFromFairway.toFixed(0)}%` : '—'} />
           <StatRow label="GIR from Rough" value={stats.girPctFromRough !== null ? `${stats.girPctFromRough.toFixed(0)}%` : '—'} />
           <StatRow label="Approach Proximity (avg)" value={stats.approachProximityAvg !== null ? `${stats.approachProximityAvg.toFixed(0)} ft` : '—'} />
-          <StatRow label="Proximity 100-150 yds" value={stats.approxProx100_150 !== null ? `${stats.approxProx100_150.toFixed(0)} ft` : '—'} />
-          <StatRow label="Proximity 150-200 yds" value={stats.approxProx150_200 !== null ? `${stats.approxProx150_200.toFixed(0)} ft` : '—'} />
+          <StatRow label="Proximity 125-150 yds" value={stats.approachProx125_150 !== null ? `${stats.approachProx125_150.toFixed(0)} ft` : '—'} />
+          <StatRow label="Proximity 175-200 yds" value={stats.approachProx175_200 !== null ? `${stats.approachProx175_200.toFixed(0)} ft` : '—'} />
         </div>
       );
 
@@ -303,9 +304,9 @@ function StatsTabContent({ tab, stats }: { tab: StatsTab; stats: GolfStats }) {
         <div className="space-y-1">
           <StatRow label="Scrambling %" value={stats.scramblingPercentage !== null ? `${stats.scramblingPercentage.toFixed(0)}%` : '—'} highlight />
           <StatRow label="Sand Save %" value={stats.sandSavePercentage !== null ? `${stats.sandSavePercentage.toFixed(0)}%` : '—'} />
-          <StatRow label="Scrambles Made" value={`${stats.scramblesMade}/${stats.scrambleOpportunities}`} />
-          <StatRow label="Sand Saves Made" value={`${stats.sandSavesMade}/${stats.sandSaveOpportunities}`} />
-          <StatRow label="Up & Down from Fringe" value={stats.upAndDownFromFringe !== null ? `${stats.upAndDownFromFringe.toFixed(0)}%` : '—'} />
+          <StatRow label="Scrambles Made" value={`${stats.scramblesMade}/${stats.scrambleAttempts}`} />
+          <StatRow label="Sand Saves Made" value={`${stats.sandSavesMade}/${stats.sandSaveAttempts}`} />
+          <StatRow label="Scrambling from Rough" value={stats.scramblingPctRough !== null ? `${stats.scramblingPctRough.toFixed(0)}%` : '—'} />
         </div>
       );
 

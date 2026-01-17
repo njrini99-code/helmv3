@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Note: This file uses 'as any' casts for dynamic table names (baseball_* vs golf_* tables)
+// because Supabase types can't infer types from dynamic table name strings.
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -10,6 +13,14 @@ import {
 import { MessageSchemas } from '@/lib/validation/action-schemas';
 
 type Sport = 'baseball' | 'golf';
+
+// Supabase error type for type-safe error handling
+interface SupabaseError {
+  message: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+}
 
 interface SendMessageOptions {
   conversationId: string;
@@ -212,7 +223,7 @@ export async function createConversation({
       updated_at: new Date().toISOString(),
     })
     .select('id')
-    .single() as { data: { id: string } | null; error: any };
+    .single() as { data: { id: string } | null; error: SupabaseError | null };
 
   if (convError || !newConversation) {
     console.error('[Security] Conversation create error:', {
@@ -620,7 +631,7 @@ export async function updateMessage({
       .from(messagesTable as any)
       .select('id, sender_id, conversation_id')
       .eq('id', messageId)
-      .single() as { data: { id: string; sender_id: string; conversation_id: string } | null; error: any };
+      .single() as { data: { id: string; sender_id: string; conversation_id: string } | null; error: SupabaseError | null };
 
     if (fetchError || !existingMessage) {
       throw new Error('Message not found');
@@ -695,7 +706,7 @@ export async function deleteMessage({
       .from(messagesTable as any)
       .select('id, sender_id, conversation_id')
       .eq('id', messageId)
-      .single() as { data: { id: string; sender_id: string; conversation_id: string } | null; error: any };
+      .single() as { data: { id: string; sender_id: string; conversation_id: string } | null; error: SupabaseError | null };
 
     if (fetchError || !existingMessage) {
       throw new Error('Message not found');

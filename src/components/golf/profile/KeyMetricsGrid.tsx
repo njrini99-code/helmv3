@@ -1,5 +1,3 @@
-// @ts-nocheck
-// TODO: Fix property name mismatches with GolfStats interface
 'use client';
 
 /**
@@ -160,13 +158,13 @@ export const KeyMetricsGrid = memo(function KeyMetricsGrid({
     },
     {
       label: 'GIR',
-      value: stats?.girPercentage !== null ? `${stats.girPercentage.toFixed(0)}%` : '—',
+      value: stats?.girPercentage != null ? `${stats.girPercentage.toFixed(0)}%` : '—',
       subtext: stats?.girTotal ? `${stats.girTotal}/${stats.girOpportunities}` : undefined,
       colorClass: getPercentageColor(stats?.girPercentage ?? null, 55),
     },
     {
       label: 'Fairway',
-      value: stats?.fairwayPercentage !== null ? `${stats.fairwayPercentage.toFixed(0)}%` : '—',
+      value: stats?.fairwayPercentage != null ? `${stats.fairwayPercentage.toFixed(0)}%` : '—',
       subtext: stats?.fairwaysHit ? `${stats.fairwaysHit}/${stats.fairwayOpportunities}` : undefined,
       colorClass: getPercentageColor(stats?.fairwayPercentage ?? null, 55),
     },
