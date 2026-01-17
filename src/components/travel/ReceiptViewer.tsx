@@ -114,7 +114,6 @@ export function ReceiptViewer({
               />
             ) : (
               <div className="flex items-center justify-center p-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={url}
                   alt={title}
@@ -272,7 +271,6 @@ export function ReceiptUpload({
               <span className="text-sm text-muted-foreground">PDF Receipt</span>
             </div>
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={previewUrl}
               alt="Receipt preview"

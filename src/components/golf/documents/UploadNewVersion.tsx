@@ -22,13 +22,8 @@ import {
   AlertCircleIcon,
 } from 'lucide-react';
 
-// Extended document type for documents with version info
-interface DocumentWithVersion extends GolfDocument {
-  // current_version is already in GolfDocument as number | null
-}
-
 interface UploadNewVersionProps {
-  document: DocumentWithVersion;
+  document: GolfDocument;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;

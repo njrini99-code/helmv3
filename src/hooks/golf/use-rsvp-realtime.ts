@@ -280,7 +280,7 @@ export function useTeamEventsAttendanceRealtime(
       const eventIds = (eventsData || []).map(e => e.id);
 
       // Fetch all attendance records for these events
-      let attendanceByEvent = new Map<string, AttendanceCounts>();
+      const attendanceByEvent = new Map<string, AttendanceCounts>();
 
       if (eventIds.length > 0) {
         const { data: allAttendance, error: attendanceError } = await supabase

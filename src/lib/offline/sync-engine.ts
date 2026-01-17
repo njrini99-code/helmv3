@@ -632,7 +632,7 @@ class SyncEngine {
           _conflict_resolved: true,
         };
 
-      case 'merge':
+      case 'merge': {
         // Merge strategy: combine data, preferring newer timestamps
         const localTime = new Date(local._created_offline).getTime();
         const remoteTime = remote._created_offline
@@ -655,6 +655,7 @@ class SyncEngine {
             _conflict_resolved: true,
           } as T;
         }
+      }
 
       default:
         return local;

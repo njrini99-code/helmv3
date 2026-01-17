@@ -59,7 +59,7 @@ export function GolfChatWindow({
     return () => {
       pendingAttachments.forEach((a) => revokePreviewUrl(a.previewUrl));
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pendingAttachments]);
 
   const handleFilesSelected = useCallback((files: File[]) => {
     const newAttachments: PendingAttachment[] = [];
