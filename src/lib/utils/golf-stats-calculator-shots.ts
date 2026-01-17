@@ -129,6 +129,17 @@ export interface GolfStats {
   girPctFromRough: number | null;
   girPctFromSand: number | null;
 
+  // Approach miss direction (when missing green)
+  approachMissShortPct: number | null;
+  approachMissLongPct: number | null;
+  approachMissLeftPct: number | null;
+  approachMissRightPct: number | null;
+  approachMissShortLeftPct: number | null;
+  approachMissShortRightPct: number | null;
+  approachMissLongLeftPct: number | null;
+  approachMissLongRightPct: number | null;
+  approachMissTotal: number;
+
   // Putting
   totalPutts: number;
   puttsPerRound: number | null;
@@ -462,6 +473,7 @@ interface CalculatedHoleStats {
   approachDistance: number | null;
   approachLie: string | null;
   approachProximity: number | null;
+  approachMissDirection: string | null; // Where approach missed when not GIR
   firstPuttDistance: number | null;
   firstPuttLeave: number | null;
   firstPuttBreak: string | null;
@@ -520,6 +532,21 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
     ? normalizeToFeet(shotToGreen.distance_to_hole_after, shotToGreen.distance_unit_after)
     : null;
 
+  // Approach miss direction - when NOT GIR, find the approach/around-green shot that missed
+  // This is the last approach/around-green shot that didn't land on green
+  const approachMissDirection = !greenInRegulation
+    ? (() => {
+        // Find approach/around-green shots that missed the green
+        const missedApproachShots = sortedShots.filter(
+          s => (s.shot_type === 'approach' || s.shot_type === 'around_green') &&
+               s.result !== 'green' && s.result !== 'hole'
+        );
+        // Get the last one (closest to finally getting on the green)
+        const lastMissedApproach = missedApproachShots[missedApproachShots.length - 1];
+        return lastMissedApproach?.miss_direction || null;
+      })()
+    : null;
+
   // First putt analysis
   const firstPutt = puttingShots[0];
   const firstPuttDistance = firstPutt
@@ -562,6 +589,7 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
     approachDistance,
     approachLie,
     approachProximity,
+    approachMissDirection,
     firstPuttDistance,
     firstPuttLeave,
     firstPuttBreak,
@@ -717,6 +745,15 @@ function aggregateRoundStats(rounds: Array<{
     girPctFromFairway: null,
     girPctFromRough: null,
     girPctFromSand: null,
+    approachMissShortPct: null,
+    approachMissLongPct: null,
+    approachMissLeftPct: null,
+    approachMissRightPct: null,
+    approachMissShortLeftPct: null,
+    approachMissShortRightPct: null,
+    approachMissLongLeftPct: null,
+    approachMissLongRightPct: null,
+    approachMissTotal: 0,
     totalPutts: 0,
     puttsPerRound: null,
     puttsPerHole: null,
@@ -939,6 +976,17 @@ function aggregateRoundStats(rounds: Array<{
   let puttMissHigh = 0;  // New: Broke too much
   let puttMissTotal = 0;
 
+  // Approach miss direction counters
+  let approachMissShort = 0;
+  let approachMissLong = 0;
+  let approachMissLeft = 0;
+  let approachMissRight = 0;
+  let approachMissShortLeft = 0;
+  let approachMissShortRight = 0;
+  let approachMissLongLeft = 0;
+  let approachMissLongRight = 0;
+  let approachMissTotal = 0;
+
   const approachProximities: number[] = [];
   const greenHitProximities: number[] = [];  // Proximity when hit green
   const greenMissProximities: number[] = [];  // Proximity when missed green
@@ -1131,6 +1179,21 @@ function aggregateRoundStats(rounds: Array<{
         }
       }
 
+      // Approach miss direction - track where misses go when NOT GIR
+      if (!hole.greenInRegulation && hole.approachMissDirection) {
+        approachMissTotal++;
+        const missDir = hole.approachMissDirection.toLowerCase();
+        // Track compound directions (e.g., 'short_left', 'long_right')
+        if (missDir === 'short_left') approachMissShortLeft++;
+        else if (missDir === 'short_right') approachMissShortRight++;
+        else if (missDir === 'long_left') approachMissLongLeft++;
+        else if (missDir === 'long_right') approachMissLongRight++;
+        else if (missDir === 'short') approachMissShort++;
+        else if (missDir === 'long') approachMissLong++;
+        else if (missDir === 'left') approachMissLeft++;
+        else if (missDir === 'right') approachMissRight++;
+      }
+
       // Putts
       stats.totalPutts += hole.putts;
       if (hole.threePutts) stats.threePuttsTotal++;
@@ -1169,9 +1232,9 @@ function aggregateRoundStats(rounds: Array<{
             if (firstPuttShot.miss_direction.includes('right')) puttMissRight++;
             if (firstPuttShot.miss_direction.includes('short')) puttMissShort++;
             if (firstPuttShot.miss_direction.includes('long')) puttMissLong++;
-            // New miss direction values for putting
-            if (firstPuttShot.miss_direction === 'low') puttMissLow++;
-            if (firstPuttShot.miss_direction === 'high') puttMissHigh++;
+            // Miss direction values for putting (use includes for compound tags like 'low_short')
+            if (firstPuttShot.miss_direction.includes('low')) puttMissLow++;
+            if (firstPuttShot.miss_direction.includes('high')) puttMissHigh++;
           }
         }
 
@@ -1195,12 +1258,12 @@ function aggregateRoundStats(rounds: Array<{
             puttStatsByBreak[breakType].make[bucket].made++;
           }
 
-          // Miss direction for this break type
+          // Miss direction for this break type (use includes for compound tags like 'low_short')
           if (hole.putts > 1 && firstPuttShot.miss_direction) {
             puttStatsByBreak[breakType].missTotal++;
-            if (firstPuttShot.miss_direction === 'short') puttStatsByBreak[breakType].missShort++;
-            if (firstPuttShot.miss_direction === 'low') puttStatsByBreak[breakType].missLow++;
-            if (firstPuttShot.miss_direction === 'high') puttStatsByBreak[breakType].missHigh++;
+            if (firstPuttShot.miss_direction.includes('short')) puttStatsByBreak[breakType].missShort++;
+            if (firstPuttShot.miss_direction.includes('low')) puttStatsByBreak[breakType].missLow++;
+            if (firstPuttShot.miss_direction.includes('high')) puttStatsByBreak[breakType].missHigh++;
           }
         }
       }
@@ -1462,6 +1525,17 @@ function aggregateRoundStats(rounds: Array<{
   stats.girPctFromFairway = safePercent(girByLie.fairway.made, girByLie.fairway.total);
   stats.girPctFromRough = safePercent(girByLie.rough.made, girByLie.rough.total);
   stats.girPctFromSand = safePercent(girByLie.sand.made, girByLie.sand.total);
+
+  // Approach miss direction (when missing green)
+  stats.approachMissTotal = approachMissTotal;
+  stats.approachMissShortPct = safePercent(approachMissShort + approachMissShortLeft + approachMissShortRight, approachMissTotal);
+  stats.approachMissLongPct = safePercent(approachMissLong + approachMissLongLeft + approachMissLongRight, approachMissTotal);
+  stats.approachMissLeftPct = safePercent(approachMissLeft + approachMissShortLeft + approachMissLongLeft, approachMissTotal);
+  stats.approachMissRightPct = safePercent(approachMissRight + approachMissShortRight + approachMissLongRight, approachMissTotal);
+  stats.approachMissShortLeftPct = safePercent(approachMissShortLeft, approachMissTotal);
+  stats.approachMissShortRightPct = safePercent(approachMissShortRight, approachMissTotal);
+  stats.approachMissLongLeftPct = safePercent(approachMissLongLeft, approachMissTotal);
+  stats.approachMissLongRightPct = safePercent(approachMissLongRight, approachMissTotal);
 
   // Proximity split (hit vs miss)
   stats.approachProximityWhenHitGreen = safeAverage(

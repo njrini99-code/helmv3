@@ -563,6 +563,11 @@ function ApproachDispersionVisual({
   girFromSand,
   girTotal,
   girOpportunities,
+  approachMissShortPct,
+  approachMissLongPct,
+  approachMissLeftPct,
+  approachMissRightPct,
+  approachMissTotal,
 }: {
   girPct: number | null;
   girFromFairway: number | null;
@@ -570,8 +575,13 @@ function ApproachDispersionVisual({
   girFromSand: number | null;
   girTotal: number;
   girOpportunities: number;
+  approachMissShortPct: number | null;
+  approachMissLongPct: number | null;
+  approachMissLeftPct: number | null;
+  approachMissRightPct: number | null;
+  approachMissTotal: number;
 }) {
-  const [isHovered, setIsHovered] = useState<'green' | 'fringe' | null>(null);
+  const [isHovered, setIsHovered] = useState<'green' | 'fringe' | 'short' | 'long' | 'left' | 'right' | null>(null);
   const animatedGir = useAnimatedNumber(girPct, 1000);
 
   const missedGreen = girOpportunities - girTotal;
@@ -582,6 +592,22 @@ function ApproachDispersionVisual({
   const fairwayAdvantage = girFromFairway !== null && girFromRough !== null
     ? girFromFairway - girFromRough
     : null;
+
+  // Miss direction values
+  const missShort = approachMissShortPct ?? 0;
+  const missLong = approachMissLongPct ?? 0;
+  const missLeft = approachMissLeftPct ?? 0;
+  const missRight = approachMissRightPct ?? 0;
+
+  // Find dominant miss pattern
+  const misses = [
+    { type: 'short' as const, pct: missShort, label: 'Short', color: 'blue' },
+    { type: 'long' as const, pct: missLong, label: 'Long', color: 'purple' },
+    { type: 'left' as const, pct: missLeft, label: 'Left', color: 'red' },
+    { type: 'right' as const, pct: missRight, label: 'Right', color: 'orange' },
+  ];
+  const dominantMiss = misses.reduce((a, b) => a.pct > b.pct ? a : b);
+  const hasDominantPattern = dominantMiss.pct > 35;
 
   return (
     <motion.div
@@ -948,6 +974,132 @@ function ApproachDispersionVisual({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Approach miss direction breakdown - shown when we have miss data */}
+        {approachMissTotal > 0 && (
+          <motion.div
+            className="space-y-3 pt-4 mt-4 border-t border-slate-100"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Miss Direction Pattern</div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {/* Short */}
+              <motion.div
+                className={cn(
+                  "flex items-center justify-between p-2 rounded-lg transition-all",
+                  isHovered === 'short' ? 'bg-blue-100' : 'bg-slate-50'
+                )}
+                onMouseEnter={() => setIsHovered('short')}
+                onMouseLeave={() => setIsHovered(null)}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.7 }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-600">↓</span>
+                  <span className="text-sm text-slate-600">Short</span>
+                </div>
+                <span className="text-sm font-semibold text-slate-900">{missShort.toFixed(0)}%</span>
+              </motion.div>
+
+              {/* Long */}
+              <motion.div
+                className={cn(
+                  "flex items-center justify-between p-2 rounded-lg transition-all",
+                  isHovered === 'long' ? 'bg-purple-100' : 'bg-slate-50'
+                )}
+                onMouseEnter={() => setIsHovered('long')}
+                onMouseLeave={() => setIsHovered(null)}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.75 }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-purple-600">↑</span>
+                  <span className="text-sm text-slate-600">Long</span>
+                </div>
+                <span className="text-sm font-semibold text-slate-900">{missLong.toFixed(0)}%</span>
+              </motion.div>
+
+              {/* Left */}
+              <motion.div
+                className={cn(
+                  "flex items-center justify-between p-2 rounded-lg transition-all",
+                  isHovered === 'left' ? 'bg-red-100' : 'bg-slate-50'
+                )}
+                onMouseEnter={() => setIsHovered('left')}
+                onMouseLeave={() => setIsHovered(null)}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-red-600">←</span>
+                  <span className="text-sm text-slate-600">Left</span>
+                </div>
+                <span className="text-sm font-semibold text-slate-900">{missLeft.toFixed(0)}%</span>
+              </motion.div>
+
+              {/* Right */}
+              <motion.div
+                className={cn(
+                  "flex items-center justify-between p-2 rounded-lg transition-all",
+                  isHovered === 'right' ? 'bg-orange-100' : 'bg-slate-50'
+                )}
+                onMouseEnter={() => setIsHovered('right')}
+                onMouseLeave={() => setIsHovered(null)}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.85 }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-orange-600">→</span>
+                  <span className="text-sm text-slate-600">Right</span>
+                </div>
+                <span className="text-sm font-semibold text-slate-900">{missRight.toFixed(0)}%</span>
+              </motion.div>
+            </div>
+
+            {/* Dominant miss insight */}
+            <AnimatePresence>
+              {hasDominantPattern && (
+                <motion.div
+                  className={cn(
+                    'mt-2 p-3 rounded-lg flex items-center gap-3',
+                    dominantMiss.color === 'blue' ? 'bg-blue-50 border border-blue-100' :
+                    dominantMiss.color === 'purple' ? 'bg-purple-50 border border-purple-100' :
+                    dominantMiss.color === 'red' ? 'bg-red-50 border border-red-100' :
+                    'bg-orange-50 border border-orange-100'
+                  )}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ delay: 0.9 }}
+                >
+                  <motion.div
+                    className={cn(
+                      'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
+                      dominantMiss.color === 'blue' ? 'bg-blue-100 text-blue-600' :
+                      dominantMiss.color === 'purple' ? 'bg-purple-100 text-purple-600' :
+                      dominantMiss.color === 'red' ? 'bg-red-100 text-red-600' :
+                      'bg-orange-100 text-orange-600'
+                    )}
+                  >
+                    {dominantMiss.type === 'short' ? '↓' :
+                     dominantMiss.type === 'long' ? '↑' :
+                     dominantMiss.type === 'left' ? '←' : '→'}
+                  </motion.div>
+                  <div className="text-sm text-slate-700">
+                    Tend to miss <span className="font-medium">{dominantMiss.label.toLowerCase()}</span> ({dominantMiss.pct.toFixed(0)}% of misses)
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
       </div>
     </motion.div>
   );
@@ -962,6 +1114,8 @@ function PuttingDispersionVisual({
   puttMissRightPct,
   puttMissShortPct,
   puttMissLongPct,
+  puttMissLowPct,
+  puttMissHighPct,
   totalPutts,
   onePuttsTotal,
   threePuttsTotal,
@@ -970,11 +1124,13 @@ function PuttingDispersionVisual({
   puttMissRightPct: number | null;
   puttMissShortPct: number | null;
   puttMissLongPct: number | null;
+  puttMissLowPct: number | null;
+  puttMissHighPct: number | null;
   totalPutts: number;
   onePuttsTotal: number;
   threePuttsTotal: number;
 }) {
-  const [hoveredZone, setHoveredZone] = useState<'left' | 'right' | 'short' | 'long' | 'hole' | null>(null);
+  const [hoveredZone, setHoveredZone] = useState<'left' | 'right' | 'short' | 'long' | 'hole' | 'low' | 'high' | null>(null);
   const animatedTotalPutts = useAnimatedNumber(totalPutts, 800);
   const animatedOnePutts = useAnimatedNumber(onePuttsTotal, 1000);
   const animatedThreePutts = useAnimatedNumber(threePuttsTotal, 1000);
@@ -983,6 +1139,12 @@ function PuttingDispersionVisual({
   const right = puttMissRightPct ?? 0;
   const short = puttMissShortPct ?? 0;
   const long = puttMissLongPct ?? 0;
+  const low = puttMissLowPct ?? 0;   // Didn't break enough (amateur miss)
+  const high = puttMissHighPct ?? 0; // Broke too much (pro miss)
+
+  // Determine read tendency
+  const hasReadData = low > 0 || high > 0;
+  const readTendency = low > high + 10 ? 'under-read' : high > low + 10 ? 'over-read' : 'balanced';
 
   // Find dominant miss pattern
   const misses = [
@@ -1374,6 +1536,96 @@ function PuttingDispersionVisual({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Read Pattern (Low/High) - shown when we have read data */}
+        {hasReadData && (
+          <motion.div
+            className="space-y-3 pt-4 mt-4 border-t border-slate-100"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Green Reading Pattern</div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {/* Low (Under-read) */}
+              <motion.div
+                className={cn(
+                  "flex items-center justify-between p-3 rounded-lg transition-all cursor-default",
+                  hoveredZone === 'low' ? 'bg-amber-100 border border-amber-200' : 'bg-slate-50'
+                )}
+                onMouseEnter={() => setHoveredZone('low')}
+                onMouseLeave={() => setHoveredZone(null)}
+                whileHover={{ scale: 1.02 }}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.7 }}
+              >
+                <div>
+                  <div className="text-sm font-medium text-slate-700">Low</div>
+                  <div className="text-xs text-slate-500">Under-read break</div>
+                </div>
+                <div className="text-xl font-bold text-amber-600 tabular-nums">{low.toFixed(0)}%</div>
+              </motion.div>
+
+              {/* High (Over-read) */}
+              <motion.div
+                className={cn(
+                  "flex items-center justify-between p-3 rounded-lg transition-all cursor-default",
+                  hoveredZone === 'high' ? 'bg-cyan-100 border border-cyan-200' : 'bg-slate-50'
+                )}
+                onMouseEnter={() => setHoveredZone('high')}
+                onMouseLeave={() => setHoveredZone(null)}
+                whileHover={{ scale: 1.02 }}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.75 }}
+              >
+                <div>
+                  <div className="text-sm font-medium text-slate-700">High</div>
+                  <div className="text-xs text-slate-500">Over-read break</div>
+                </div>
+                <div className="text-xl font-bold text-cyan-600 tabular-nums">{high.toFixed(0)}%</div>
+              </motion.div>
+            </div>
+
+            {/* Read tendency insight */}
+            <AnimatePresence>
+              {readTendency !== 'balanced' && (
+                <motion.div
+                  className={cn(
+                    'mt-2 p-3 rounded-lg flex items-center gap-3',
+                    readTendency === 'under-read' ? 'bg-amber-50 border border-amber-100' :
+                    'bg-cyan-50 border border-cyan-100'
+                  )}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <motion.div
+                    className={cn(
+                      'w-8 h-8 rounded-full flex items-center justify-center text-sm',
+                      readTendency === 'under-read' ? 'bg-amber-100' : 'bg-cyan-100'
+                    )}
+                  >
+                    {readTendency === 'under-read' ? '📉' : '📈'}
+                  </motion.div>
+                  <div>
+                    <div className="text-sm font-medium text-slate-700">
+                      {readTendency === 'under-read' ? 'Tendency to under-read break' : 'Tendency to over-read break'}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {readTendency === 'under-read'
+                        ? 'Putts often miss low (on the amateur side)'
+                        : 'Putts often miss high (on the pro side)'}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
       </div>
     </motion.div>
   );
@@ -1505,6 +1757,11 @@ export const ShotDispersionChart = memo(function ShotDispersionChart({
           girFromSand={stats.girPctFromSand}
           girTotal={stats.girTotal}
           girOpportunities={stats.girOpportunities}
+          approachMissShortPct={stats.approachMissShortPct}
+          approachMissLongPct={stats.approachMissLongPct}
+          approachMissLeftPct={stats.approachMissLeftPct}
+          approachMissRightPct={stats.approachMissRightPct}
+          approachMissTotal={stats.approachMissTotal}
         />
       </motion.div>
 
@@ -1514,6 +1771,8 @@ export const ShotDispersionChart = memo(function ShotDispersionChart({
         puttMissRightPct={stats.puttMissRightPct}
         puttMissShortPct={stats.puttMissShortPct}
         puttMissLongPct={stats.puttMissLongPct}
+        puttMissLowPct={stats.puttMissLowPct}
+        puttMissHighPct={stats.puttMissHighPct}
         totalPutts={stats.totalPutts}
         onePuttsTotal={stats.onePuttsTotal}
         threePuttsTotal={stats.threePuttsTotal}

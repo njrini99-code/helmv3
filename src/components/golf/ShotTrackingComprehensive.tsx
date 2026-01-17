@@ -764,6 +764,20 @@ export default function ShotTrackingComprehensive({
       effectiveMissDirection
     ));
     
+    // Calculate unified miss direction for database storage
+    // This populates the miss_direction column used by spray charts and stats
+    let unifiedMissDirection: string | undefined;
+    if (isPutting && puttMissTags.length > 0) {
+      // For putts: use puttMissTags (e.g., 'low', 'high', 'short')
+      unifiedMissDirection = puttMissTags.join('_'); // e.g., 'low_short' or just 'low'
+    } else if (isApproachOrAroundGreen && approachMissDirection) {
+      // For approach/around-green: use approachMissDirection (e.g., 'long_left', 'short_right')
+      unifiedMissDirection = approachMissDirection;
+    } else if (missDirection) {
+      // For tee shots: use missDirection (e.g., 'left', 'right')
+      unifiedMissDirection = missDirection;
+    }
+
     // Create shot record
     const shotRecord: ShotRecord = {
       shotNumber: currentShot,
@@ -776,7 +790,7 @@ export default function ShotTrackingComprehensive({
       distanceToHoleAfter: distanceAfter,
       distanceUnitAfter: unitAfter,
       shotDistance: shotDistance,
-      missDirection: missDirection || undefined, // Legacy field
+      missDirection: unifiedMissDirection, // Unified miss direction for all shot types
       puttBreak: isPutting ? (puttBreak ?? undefined) : undefined,
       puttSlope: isPutting ? (puttSlope ?? undefined) : undefined,
       isPenalty: false,
@@ -812,6 +826,9 @@ export default function ShotTrackingComprehensive({
     setMissDirection(null);
     setPuttBreak(null);
     setPuttSlope(null);
+    setPuttMissTags([]); // Reset putt miss tags for next shot
+    setApproachMissDirection(null); // Reset approach miss direction for next shot
+    setApproachMissLieType(undefined); // Reset approach lie type for next shot
     setDistanceAfterShot('');
     setDistanceAfterUnit(newLie === 'green' ? 'feet' : 'yards');
   };
@@ -991,12 +1008,27 @@ export default function ShotTrackingComprehensive({
 
   const handleResultSelect = (result: string) => {
     setResultOfShot(result as ShotRecord['result']);
-    // Clear miss direction if not needed
-    if (!['rough', 'sand', 'other'].includes(result) && !isPutting) {
+    // Clear miss direction states if not needed for the selected result
+    if (result === 'hole' || result === 'green') {
+      // Holing out or hitting the green means no miss to record
       setMissDirection(null);
-    }
-    if (result === 'hole') {
+      setApproachMissDirection(null);
+      setApproachMissLieType(undefined);
+      setPuttMissTags([]);
+    } else if (isTeeShot) {
+      // For tee shots, clear approach/putt miss states
+      setApproachMissDirection(null);
+      setApproachMissLieType(undefined);
+      setPuttMissTags([]);
+    } else if (isPutting) {
+      // For putting, clear tee/approach miss states
       setMissDirection(null);
+      setApproachMissDirection(null);
+      setApproachMissLieType(undefined);
+    } else if (isApproachOrAroundGreen) {
+      // For approach shots, clear tee/putt miss states
+      setMissDirection(null);
+      setPuttMissTags([]);
     }
   };
 
