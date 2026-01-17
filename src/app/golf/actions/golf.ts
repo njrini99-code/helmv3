@@ -3882,7 +3882,8 @@ export async function getRoundShotDetails(
     }
 
     // Fetch holes for the round
-    const { data: holes, error: holesError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: holes, error: holesError } = await (supabase as any)
       .from('golf_holes')
       .select(`
         id,
@@ -3905,7 +3906,7 @@ export async function getRoundShotDetails(
         sand_save_made
       `)
       .eq('round_id', roundId)
-      .order('hole_number', { ascending: true });
+      .order('hole_number', { ascending: true }) as { data: HoleReviewData[] | null; error: unknown };
 
     if (holesError) {
       return { success: false, error: 'Failed to fetch holes' };
@@ -3947,24 +3948,27 @@ export async function getRoundShotDetails(
       if (!shotsByHole[shot.hole_number]) {
         shotsByHole[shot.hole_number] = [];
       }
-      shotsByHole[shot.hole_number].push({
-        id: shot.id,
-        shot_number: shot.shot_number,
-        shot_type: shot.shot_type,
-        club_type: shot.club_type,
-        lie_before: shot.lie_before,
-        result: shot.result,
-        distance_to_hole_before: shot.distance_to_hole_before,
-        distance_to_hole_after: shot.distance_to_hole_after,
-        distance_unit_before: shot.distance_unit_before,
-        distance_unit_after: shot.distance_unit_after,
-        shot_distance: shot.shot_distance,
-        miss_direction: shot.miss_direction,
-        putt_break: shot.putt_break,
-        putt_slope: shot.putt_slope,
-        is_penalty: shot.is_penalty,
-        penalty_type: shot.penalty_type,
-      });
+      const holeShots = shotsByHole[shot.hole_number];
+      if (holeShots) {
+        holeShots.push({
+          id: shot.id,
+          shot_number: shot.shot_number,
+          shot_type: shot.shot_type ?? 'approach',
+          club_type: shot.club_type ?? 'non_driver',
+          lie_before: shot.lie_before,
+          result: shot.result ?? 'other',
+          distance_to_hole_before: shot.distance_to_hole_before,
+          distance_to_hole_after: shot.distance_to_hole_after,
+          distance_unit_before: shot.distance_unit_before,
+          distance_unit_after: shot.distance_unit_after,
+          shot_distance: shot.shot_distance,
+          miss_direction: shot.miss_direction,
+          putt_break: shot.putt_break,
+          putt_slope: shot.putt_slope,
+          is_penalty: shot.is_penalty,
+          penalty_type: shot.penalty_type,
+        });
+      }
     }
 
     // Combine holes with their shots
@@ -4300,7 +4304,7 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
           shot_type: shotType,
           club_type: clubType,
           club_used: clubUsed,
-          lie_before: currentLie === 'tee' ? 'tee' : shotNumber === 1 ? 'tee' : currentLie,
+          lie_before: (currentLie as string) === 'tee' ? 'tee' : shotNumber === 1 ? 'tee' : currentLie,
           result: result,
           distance_to_hole_before: distanceUnitBefore === 'feet' ? currentDistance : (shotNumber === 1 ? yardage : currentDistance + shotDistance),
           distance_unit_before: distanceUnitBefore,

@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward, IconChartBar } from '@/components/icons';
+import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward, IconChartBar, IconCrosshair } from '@/components/icons';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import ProgressStats from './ProgressStats';
+import ShotDispersionChart from './ShotDispersionChart';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-type StatsCategory = 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling' | 'strokes-gained' | 'progress';
+type StatsCategory = 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling' | 'strokes-gained' | 'progress' | 'dispersion';
 
 interface RoundOption {
   id: string;
@@ -774,6 +775,7 @@ export default function GolfStatsDisplay({
 
   const categories: { id: StatsCategory; label: string; icon: React.ReactNode }[] = [
     { id: 'progress', label: 'Progress', icon: <IconChartBar size={16} /> },
+    { id: 'dispersion', label: 'Spray Charts', icon: <IconCrosshair size={16} /> },
     { id: 'scoring', label: 'Scoring', icon: <IconAward size={16} /> },
     { id: 'driving', label: 'Driving', icon: <IconGolf size={16} /> },
     { id: 'approach', label: 'Approach', icon: <IconTarget size={16} /> },
@@ -852,6 +854,7 @@ export default function GolfStatsDisplay({
         {/* Stats Content */}
         <div>
           {activeCategory === 'progress' && <ProgressStats stats={stats} rounds={rounds} />}
+          {activeCategory === 'dispersion' && <ShotDispersionChart stats={stats} />}
           {activeCategory === 'scoring' && <ScoringStats stats={stats} />}
           {activeCategory === 'driving' && <DrivingStats stats={stats} />}
           {activeCategory === 'approach' && <ApproachStats stats={stats} />}

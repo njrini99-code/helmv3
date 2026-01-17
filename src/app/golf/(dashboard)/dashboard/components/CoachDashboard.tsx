@@ -410,7 +410,7 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                                         type="rounds"
                                         variant="compact"
                                         description="Players can submit rounds from their dashboard"
-                                        action={undefined}
+                                        action={null}
                                     />
                                 ) : (
                                     <div className="divide-y divide-white/20">

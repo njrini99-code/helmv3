@@ -206,11 +206,12 @@ export function EmptyState({
   const config = type ? emptyStateConfigs[type] : null;
 
   // Final values (custom props override config)
+  // Use !== undefined check so that explicit null can disable defaults
   const finalIcon = customIcon ?? config?.icon;
   const finalTitle = customTitle ?? config?.title;
   const finalDescription = customDescription ?? config?.description;
-  const finalAction = customAction ?? config?.action;
-  const finalSecondaryAction = customSecondaryAction ?? config?.secondaryAction;
+  const finalAction = customAction !== undefined ? customAction : config?.action;
+  const finalSecondaryAction = customSecondaryAction !== undefined ? customSecondaryAction : config?.secondaryAction;
 
   // Render action button helper
   const renderAction = (actionConfig: { label: string; href?: string; onClick?: () => void } | React.ReactNode, isPrimary = true) => {

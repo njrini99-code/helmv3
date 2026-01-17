@@ -249,6 +249,8 @@ export async function generateTeamInsights() {
       // Convert each V2 insight
       for (let i = 0; i < analysis.insights.length; i++) {
         const insight = analysis.insights[i];
+        if (!insight) continue;  // Skip if undefined
+
         const pattern = analysis.patterns[i]; // May be undefined
         const prediction = analysis.predictions[0]; // Use first prediction
 

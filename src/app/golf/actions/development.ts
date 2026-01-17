@@ -404,11 +404,12 @@ export async function resolveFocusAreaAndInsight(
   }
 
   // Get the focus area with its source insight
-  const { data: focusArea, error: faError } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: focusArea, error: faError } = await (supabase as any)
     .from('golf_player_focus_areas')
     .select('id, source_insight_id')
     .eq('id', focusAreaId)
-    .single();
+    .single() as { data: { id: string; source_insight_id?: string } | null; error: unknown };
 
   if (faError || !focusArea) {
     return { success: false, error: 'Focus area not found' };

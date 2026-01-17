@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';

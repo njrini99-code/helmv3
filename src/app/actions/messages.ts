@@ -757,3 +757,24 @@ export async function updateBaseballMessage(messageId: string, content: string) 
 export async function deleteBaseballMessage(messageId: string) {
   return deleteMessage({ messageId, sport: 'baseball' });
 }
+
+/**
+ * Get the user_id for a golf player by their player_id
+ * Used when starting conversations from the roster page
+ */
+export async function getGolfPlayerUserId(playerId: string): Promise<string | null> {
+  const supabase = await createClient();
+
+  const { data: player, error } = await supabase
+    .from('golf_players')
+    .select('user_id')
+    .eq('id', playerId)
+    .single();
+
+  if (error || !player) {
+    console.error('[getGolfPlayerUserId] Error:', error);
+    return null;
+  }
+
+  return player.user_id;
+}

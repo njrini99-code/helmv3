@@ -15,7 +15,7 @@ import type { CoachAlert } from '@/components/golf/coachhelm/alerts/AlertCard';
 
 export async function getCoachAlerts(
   coachId: string,
-  teamId: string,
+  _teamId: string,  // Reserved for future use
   options?: {
     includeAcknowledged?: boolean;
     limit?: number;
@@ -85,7 +85,7 @@ export async function getCoachAlerts(
         title: insight.title,
         message: insight.content || insight.title,
         callToAction: (insight.metadata as Record<string, string>)?.callToAction,
-        createdAt: insight.created_at,
+        createdAt: insight.created_at || new Date().toISOString(),
         acknowledgedAt: insight.acknowledged_at,
         insightType: insight.insight_type,
         metadata: insight.metadata as Record<string, unknown>,
@@ -364,7 +364,8 @@ export async function generateAlerts(
 
     // Insert new alerts
     if (newAlerts.length > 0) {
-      const { error: insertError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: insertError } = await (supabase as any)
         .from('golf_coach_insights')
         .insert(newAlerts);
 
