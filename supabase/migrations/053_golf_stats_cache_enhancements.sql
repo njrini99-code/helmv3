@@ -71,7 +71,7 @@ WHERE is_stale = TRUE;
 
 CREATE INDEX IF NOT EXISTS idx_golf_player_stats_cache_refresh
 ON golf_player_stats_cache(next_refresh_due)
-WHERE next_refresh_due < NOW();
+WHERE next_refresh_due IS NOT NULL;
 
 -- ============================================================================
 -- 3. Enhanced update function for player stats with trend calculation

@@ -208,7 +208,7 @@ CREATE INDEX IF NOT EXISTS idx_golf_insight_weights_team ON golf_insight_weights
 -- Update timestamp trigger for review_insights
 CREATE OR REPLACE TRIGGER update_golf_review_insights_timestamp
   BEFORE UPDATE ON golf_review_insights
-  FOR EACH ROW EXECUTE FUNCTION update_golf_updated_at_column();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- Log review events automatically
 CREATE OR REPLACE FUNCTION log_review_status_change()

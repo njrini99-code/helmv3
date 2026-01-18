@@ -112,7 +112,7 @@ USING (
     JOIN golf_team_members tm ON d.team_id = tm.team_id
     JOIN golf_players p ON tm.player_id = p.id
     WHERE d.id = golf_document_versions.document_id
-    AND d.player_visible = true
+    AND d.is_public = true
     AND p.user_id = auth.uid()
   )
 );
