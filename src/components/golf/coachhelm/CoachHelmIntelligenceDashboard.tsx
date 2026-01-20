@@ -20,6 +20,7 @@ import {
   IconWarning,
 } from '@/components/icons';
 import { getTeamInsightsSummary, dismissInsight, acknowledgeInsight } from '@/app/golf/actions/intelligence-dashboard';
+import { generateTeamInsights } from '@/app/golf/actions/insights';
 import { ErrorBoundary, SectionErrorFallback } from '@/components/error-boundary';
 import type { PersistedInsight } from '@/lib/coachhelm/v2/services/insight-persistence';
 import type { TrendAnalysis, TeamComparison } from '@/lib/coachhelm/v2/mining/stats-insight-generator';
@@ -788,9 +789,19 @@ export function CoachHelmIntelligenceDashboard({
 
   const handleGenerateInsights = useCallback(async () => {
     setIsLoading(true);
-    // Trigger a full refresh which will include newly generated insights
-    await handleRefresh();
-    setIsLoading(false);
+    try {
+      // Actually generate new insights by analyzing all players
+      const result = await generateTeamInsights();
+      if (!result.success) {
+        console.error('Failed to generate insights:', result.error);
+      }
+      // Refresh to show newly generated insights
+      await handleRefresh();
+    } catch (error) {
+      console.error('Error generating insights:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, [handleRefresh]);
 
   return (

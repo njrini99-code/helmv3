@@ -114,21 +114,34 @@ async function verifyTeamAccess(
     return { authorized: false, error: 'Not authenticated' };
   }
 
-  // Type assertion: team_id exists in DB but not in generated Supabase types
+  // Note: golf_coaches doesn't have team_id - we look it up via organization_id
   const { data: coachData } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
-    .eq('team_id', teamId)
     .single();
 
-  const coach = coachData as { id: string; team_id: string | null } | null;
+  const coach = coachData as { id: string; organization_id: string | null } | null;
 
   if (!coach) {
-    return { authorized: false, error: 'Not authorized to access this team' };
+    return { authorized: false, error: 'Not a coach' };
   }
 
-  return { authorized: true, coachId: coach.id };
+  // Look up team via organization_id
+  if (coach.organization_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .eq('id', teamId)
+      .maybeSingle();
+
+    if (team) {
+      return { authorized: true, coachId: coach.id };
+    }
+  }
+
+  return { authorized: false, error: 'Not authorized to access this team' };
 }
 
 /**
@@ -160,22 +173,36 @@ async function verifyInsightAccess(
   }
 
   // Get the current user's coach record
-  // Type assertion: team_id exists in DB but not in generated Supabase types
+  // Note: golf_coaches doesn't have team_id - we look it up via organization_id
   const { data: coachData } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
-  const coach = coachData as { id: string; team_id: string | null } | null;
+  const coach = coachData as { id: string; organization_id: string | null } | null;
 
   if (!coach) {
     return { authorized: false, error: 'Not a coach' };
   }
 
-  // Check if coach created the insight OR is on the same team
-  if (insight.coach_id === coach.id || insight.team_id === coach.team_id) {
+  // Check if coach created the insight
+  if (insight.coach_id === coach.id) {
     return { authorized: true, coachId: coach.id, insight };
+  }
+
+  // Check if coach is on the same team (via organization)
+  if (coach.organization_id && insight.team_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .eq('id', insight.team_id)
+      .maybeSingle();
+
+    if (team) {
+      return { authorized: true, coachId: coach.id, insight };
+    }
   }
 
   return { authorized: false, error: 'Not authorized to modify this insight' };
