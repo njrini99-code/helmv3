@@ -1468,20 +1468,20 @@ export interface PlayerCoachHelmDashboardData {
 
 export async function getPlayerCoachHelmDashboard(
   playerId: string
-): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string }> {
+): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' }> {
   const supabase = await createClient();
 
   try {
     // Verify user has access to this player
     const access = await verifyPlayerAccess(playerId);
     if (!access.authorized) {
-      return { success: false, error: access.error || 'Not authorized' };
+      return { success: false, error: access.error || 'Not authorized', errorCode: 'UNAUTHORIZED' };
     }
 
     // Check if CoachHelm is enabled for this player
     const status = await isCoachHelmEnabledForPlayer(playerId);
     if (!status.effectivelyEnabled) {
-      return { success: false, error: status.disabledReason || 'CoachHelm is disabled' };
+      return { success: false, error: status.disabledReason || 'CoachHelm is disabled', errorCode: 'COACHHELM_DISABLED' };
     }
 
     // Get player info
@@ -1492,7 +1492,7 @@ export async function getPlayerCoachHelmDashboard(
       .single();
 
     if (playerError || !player) {
-      return { success: false, error: 'Player not found' };
+      return { success: false, error: 'Player not found', errorCode: 'NOT_FOUND' };
     }
 
     const playerName = [player.first_name, player.last_name]

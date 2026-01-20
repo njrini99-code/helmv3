@@ -121,8 +121,15 @@ export default async function RoundsPage() {
           .order('updated_at', { ascending: false })
       ]);
 
-      rounds = completedData as unknown as RoundWithPlayer[] || [];
-      inProgressRounds = inProgressData as unknown as RoundWithPlayer[] || [];
+      // Transform Supabase response to expected shape with null safety
+      rounds = (completedData ?? []).map(r => ({
+        ...r,
+        player: r.player && !('error' in r.player) ? r.player : null
+      })) as RoundWithPlayer[];
+      inProgressRounds = (inProgressData ?? []).map(r => ({
+        ...r,
+        player: r.player && !('error' in r.player) ? r.player : null
+      })) as RoundWithPlayer[];
     }
   } else if (userRole === 'player' && player) {
     // Fetch both completed and in-progress rounds in parallel (performance optimization)
@@ -170,8 +177,15 @@ export default async function RoundsPage() {
         .order('updated_at', { ascending: false })
     ]);
 
-    rounds = completedData as unknown as RoundWithPlayer[] || [];
-    inProgressRounds = inProgressData as unknown as RoundWithPlayer[] || [];
+    // Transform Supabase response to expected shape with null safety
+    rounds = (completedData ?? []).map(r => ({
+      ...r,
+      player: r.player && !('error' in r.player) ? r.player : null
+    })) as RoundWithPlayer[];
+    inProgressRounds = (inProgressData ?? []).map(r => ({
+      ...r,
+      player: r.player && !('error' in r.player) ? r.player : null
+    })) as RoundWithPlayer[];
   }
 
   // Group rounds by date

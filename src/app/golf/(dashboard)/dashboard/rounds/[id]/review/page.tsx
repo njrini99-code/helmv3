@@ -124,7 +124,7 @@ export default function RoundReviewPage() {
           }
           setRound(roundData);
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load round');
       } finally {
         setLoadingRound(false);
@@ -183,7 +183,7 @@ export default function RoundReviewPage() {
       } else {
         setError(result.error ?? 'Failed to generate review');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setGeneratingReview(false);

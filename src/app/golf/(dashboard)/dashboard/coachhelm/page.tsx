@@ -135,12 +135,12 @@ export default async function PlayerCoachHelmPage() {
     getPlayerShotAnalytics(player.id, 30),
   ]);
 
-  // Handle CoachHelm disabled
+  // Handle CoachHelm disabled or other errors
   if (!dashboardResult.success) {
     const error = dashboardResult.error || 'Failed to load AI dashboard';
 
-    // Check if CoachHelm is disabled
-    if (error.toLowerCase().includes('disabled')) {
+    // Check if CoachHelm is disabled using explicit error code (more reliable than string matching)
+    if (dashboardResult.errorCode === 'COACHHELM_DISABLED') {
       return <CoachHelmDisabledState reason={error} />;
     }
 

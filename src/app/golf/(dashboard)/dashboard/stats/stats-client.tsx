@@ -82,6 +82,7 @@ export default function StatsClient({
 
   // Stats state - separating summary from detailed
   // Summary is kept for potential future display during detailed loading
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_summary, setSummary] = useState<StatsSummary | null>(initialSummary ?? null);
   const [rounds, setRounds] = useState<RoundSummary[]>(initialRounds);
   const [detailedStats, setDetailedStats] = useState<GolfStats | null>(null);
@@ -91,6 +92,7 @@ export default function StatsClient({
   const [loading, setLoading] = useState(!initialUserRole);
   const [loadingDetailed, setLoadingDetailed] = useState(false);
   // Active tab is tracked for potential category-specific lazy loading
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [activeTab, _setActiveTab] = useState<StatsCategory>('scoring');
 
   // Filter state

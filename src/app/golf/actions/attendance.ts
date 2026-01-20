@@ -180,7 +180,7 @@ export async function checkInPlayer(
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to check in player. Please try again.',
@@ -251,7 +251,7 @@ export async function bulkCheckIn(
       success: true,
       data: { successCount, failureCount },
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to bulk check-in. Please try again.',
@@ -302,7 +302,7 @@ export async function markNoShow(
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to mark no-show. Please try again.',
@@ -353,7 +353,7 @@ export async function getAttendanceReport(
         attendance: attendance as unknown as AttendanceRecord[] | null,
       },
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to get attendance report. Please try again.',

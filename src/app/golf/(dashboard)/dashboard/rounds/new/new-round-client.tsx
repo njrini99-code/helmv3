@@ -73,11 +73,13 @@ export default function NewRoundClient() {
   // Auto-save hook with database persistence
   const {
     scheduleSave,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     saveNow: _saveNow, // Available for manual save if needed
     loadDraft,
     clearDraft,
     saveStatus,
     isOnline,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     roundId: _draftRoundId, // Reserved for future offline storage integration
     getTimeSinceLastSave,
   } = useAutoSaveRound(null);
