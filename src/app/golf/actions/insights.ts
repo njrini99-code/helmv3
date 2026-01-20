@@ -94,25 +94,30 @@ function determineInsightType(
   pattern?: MinedPattern,
   prediction?: PerformancePrediction
 ): InsightType {
+  // Map to allowed DB types:
+  // 'performance_decline', 'performance_improvement', 'pattern_detected',
+  // 'practice_recommendation', 'roster_alert', 'qualifying_watch',
+  // 'attendance_concern', 'milestone_reached', 'comparison_insight'
+
   // Pattern-based insights
   if (pattern) {
-    if (pattern.patternType === 'temporal') return 'scoring_decline';
-    if (pattern.strokeImpact > 1.5) return 'recurring_weakness';
-    if (pattern.outcome?.metric === 'tournament_score') return 'tournament_pressure';
+    if (pattern.patternType === 'temporal') return 'performance_decline';
+    if (pattern.strokeImpact > 1.5) return 'pattern_detected';  // was 'recurring_weakness'
+    if (pattern.outcome?.metric === 'tournament_score') return 'qualifying_watch';  // was 'tournament_pressure'
   }
 
   // Prediction-based insights
   if (prediction) {
-    if (prediction.trend === 'improving') return 'surge_player';
-    if (prediction.trend === 'declining') return 'scoring_decline';
+    if (prediction.trend === 'improving') return 'performance_improvement';  // was 'surge_player'
+    if (prediction.trend === 'declining') return 'performance_decline';  // was 'scoring_decline'
   }
 
   // Tone-based fallbacks
-  if (insight.tone === 'celebratory') return 'surge_player';
-  if (insight.tone === 'urgent') return 'bubble_player';
-  if (insight.tone === 'cautionary') return 'scoring_decline';
+  if (insight.tone === 'celebratory') return 'milestone_reached';  // was 'surge_player'
+  if (insight.tone === 'urgent') return 'roster_alert';  // was 'bubble_player'
+  if (insight.tone === 'cautionary') return 'performance_decline';  // was 'scoring_decline'
 
-  return 'team_trend';
+  return 'pattern_detected';  // was 'team_trend'
 }
 
 // ============================================================================
@@ -603,7 +608,7 @@ export async function generateTeamInsights() {
           const patternInsight: InsightRecord = {
             coach_id: coach.id,
             team_id: teamId,
-            insight_type: 'recurring_weakness',
+            insight_type: 'pattern_detected',  // maps to allowed DB type
             priority: pattern.strokeImpact > 2 ? 'high' : 'medium',
             player_id: player.id,
             title: `Pattern: ${pattern.description || 'Performance Pattern'}`,
@@ -1941,7 +1946,7 @@ export async function acknowledgeComposedInsight(
         coach_id: coach.id,
         team_id: teamId,
         player_id: playerId || null,
-        insight_type: 'ai_generated',
+        insight_type: 'pattern_detected',  // maps to allowed DB type
         priority: mapToneToPriority(insight.tone, insight.confidence),
         title: insight.headline,
         description: insight.body,
@@ -2030,7 +2035,7 @@ export async function dismissComposedInsight(
         coach_id: coach.id,
         team_id: teamId,
         player_id: playerId || null,
-        insight_type: 'ai_generated',
+        insight_type: 'pattern_detected',  // maps to allowed DB type
         priority: mapToneToPriority(insight.tone, insight.confidence),
         title: insight.headline,
         description: insight.body,
