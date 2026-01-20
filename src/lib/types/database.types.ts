@@ -5082,6 +5082,88 @@ export type Database = {
           },
         ]
       }
+      putt_details: {
+        Row: {
+          id: string
+          shot_id: string
+          miss_tags: string[] | null
+          break_direction: string | null
+          estimated_break_inches: number | null
+          distance_feet: number | null
+          made: boolean
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          shot_id: string
+          miss_tags?: string[] | null
+          break_direction?: string | null
+          estimated_break_inches?: number | null
+          distance_feet?: number | null
+          made?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          shot_id?: string
+          miss_tags?: string[] | null
+          break_direction?: string | null
+          estimated_break_inches?: number | null
+          distance_feet?: number | null
+          made?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "putt_details_shot_id_fkey"
+            columns: ["shot_id"]
+            isOneToOne: true
+            referencedRelation: "golf_shots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approach_miss_details: {
+        Row: {
+          id: string
+          shot_id: string
+          miss_direction: string | null
+          lie_type: string | null
+          distance_from_green_yards: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          shot_id: string
+          miss_direction?: string | null
+          lie_type?: string | null
+          distance_from_green_yards?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          shot_id?: string
+          miss_direction?: string | null
+          lie_type?: string | null
+          distance_from_green_yards?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approach_miss_details_shot_id_fkey"
+            columns: ["shot_id"]
+            isOneToOne: true
+            referencedRelation: "golf_shots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_task_reminders: {
         Row: {
           created_at: string

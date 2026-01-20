@@ -33,9 +33,17 @@ export interface RawShot {
   putt_break: string | null;
   putt_distance_feet?: number | null;
   putt_slope?: string | null;
+  putt_made?: boolean | null;
   is_penalty?: boolean | null;
   penalty_type?: string | null;
-  penalty_strokes?: number | null;
+  // Extended detail fields from putt_details table
+  putt_miss_tags?: string[] | null;
+  putt_break_direction?: string | null;
+  putt_estimated_break_inches?: number | null;
+  // Extended detail fields from approach_miss_details table
+  approach_miss_direction?: string | null;
+  approach_miss_lie_type?: string | null;
+  approach_miss_distance_from_green?: number | null;
 }
 
 export interface HoleInfo {
@@ -331,6 +339,16 @@ function normalizeShotType(shotType: string | null | undefined): string | null {
   return shotType;
 }
 
+/**
+ * Check if a shot result indicates the ball reached the green
+ * Handles multiple possible result values: 'green', 'gir', 'hole' (for hole-outs)
+ */
+function isGreenHit(result: string | null | undefined): boolean {
+  if (!result) return false;
+  const normalized = result.toLowerCase();
+  return normalized === 'green' || normalized === 'gir' || normalized === 'hole';
+}
+
 function normalizeRoundType(
   roundType: RoundInfo['round_type']
 ): 'practice' | 'qualifier' | 'tournament' | null {
@@ -361,6 +379,9 @@ function getPuttDistanceBucket(distance: number): string {
 }
 
 function getApproachDistanceBucket(distance: number): string {
+  // Approach shots are from >= 30 yards
+  // Shots < 30 yards are "around the green" and tracked separately
+  if (distance < 30) return '';
   if (distance <= 75) return '30_75';
   if (distance <= 100) return '75_100';
   if (distance <= 125) return '100_125';
@@ -446,14 +467,23 @@ function getExpectedStrokes(lie: string | null, distanceYards: number, distanceF
 }
 
 // Calculate Strokes Gained for a shot
-function calculateStrokesGainedForShot(shot: RawShot): number {
+// Returns null when data is incomplete (cannot calculate accurately)
+function calculateStrokesGainedForShot(shot: RawShot): number | null {
   // Strokes Gained = Expected strokes BEFORE - (1 + Expected strokes AFTER)
+
+  // CRITICAL: Cannot calculate SG without lie_before and distance_to_hole_before
+  // Return null to indicate incomplete data (not 0, which would skew averages)
+  if (!shot.lie_before || shot.distance_to_hole_before == null) {
+    return null;
+  }
 
   const lieBefore = shot.lie_before;
   const distBefore = normalizeToYards(shot.distance_to_hole_before, shot.distance_unit_before);
   const distBeforeFeet = normalizeToFeet(shot.distance_to_hole_before, shot.distance_unit_before);
 
-  const lieAfter = shot.result === 'green' ? 'green' : shot.result;
+  // Use lie_after if available, otherwise derive from result
+  // Result values like 'fairway', 'rough', 'sand', 'green', 'hole' map to lie types
+  const lieAfter = shot.lie_after || (isGreenHit(shot.result) ? 'green' : shot.result);
   const distAfter = normalizeToYards(shot.distance_to_hole_after, shot.distance_unit_after);
   const distAfterFeet = normalizeToFeet(shot.distance_to_hole_after, shot.distance_unit_after);
 
@@ -465,6 +495,11 @@ function calculateStrokesGainedForShot(shot: RawShot): number {
   // Get expected strokes after (0 if holed)
   let expectedAfter = 0;
   if (shot.result !== 'hole') {
+    // Also need distance_to_hole_after to calculate expected strokes after
+    // If missing, we can't calculate SG accurately - return null
+    if (shot.distance_to_hole_after == null) {
+      return null;
+    }
     expectedAfter = lieAfter === 'green'
       ? getExpectedStrokes('green', 0, distAfterFeet)
       : getExpectedStrokes(lieAfter, distAfter);
@@ -497,6 +532,7 @@ interface CalculatedHoleStats {
   drivingDistance: number | null;
   driveMissDirection: string | null;
   greenInRegulation: boolean;
+  approachShotNumber: number | null; // Shot number of the approach attempt
   approachDistance: number | null;
   approachLie: string | null;
   approachProximity: number | null;
@@ -544,45 +580,66 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
     : null;
 
   // GIR = shot that lands on green has shot_number <= par - 2
-  const shotToGreen = normalizedShots.find(s => s.result === 'green');
+  // Use isGreenHit to handle multiple result values: 'green', 'gir', 'hole'
+  const shotToGreen = normalizedShots.find(s => isGreenHit(s.result));
   const greenInRegulation = shotToGreen
     ? shotToGreen.shot_number <= (par - 2)
     : false;
 
-  // Approach distance and lie - use the shot that landed on green when it IS an approach/ATG shot
-  const approachDistance = shotToGreen && (shotToGreen.shot_type === 'approach' || shotToGreen.shot_type === 'around_green')
-    ? normalizeToYards(shotToGreen.distance_to_hole_before, shotToGreen.distance_unit_before)
+  // APPROACH SHOT IDENTIFICATION
+  // The "approach shot" is the GIR attempt - the shot trying to reach the green in regulation:
+  // - Par 3: Shot #1 (trying to hit green in 1)
+  // - Par 4: Shot #2 (trying to hit green in 2)
+  // - Par 5: Shot #2 or #3 depending on strategy
+  //
+  // For stats purposes, we use: shot_number === par - 2 (the regulation attempt)
+  // If that shot doesn't exist, fall back to shotToGreen
+  const girAttemptShotNumber = par - 2 + 1; // par 3 → shot 1, par 4 → shot 2, par 5 → shot 3
+
+  // Find the GIR attempt shot (the approach)
+  // Priority: 1) Shot at GIR attempt number, 2) Shot that landed on green (if earlier)
+  let approachShot = normalizedShots.find(s => s.shot_number === girAttemptShotNumber);
+
+  // If we hit green earlier (e.g., eagle attempt on par 5), use that shot instead
+  if (shotToGreen && shotToGreen.shot_number < girAttemptShotNumber) {
+    approachShot = shotToGreen;
+  }
+
+  // Fall back to shotToGreen if no approach shot found at expected position
+  if (!approachShot && shotToGreen) {
+    approachShot = shotToGreen;
+  }
+
+  // Approach distance - distance FROM which the approach was hit
+  // Only set if we have actual distance data (null means "no data")
+  const approachDistance = approachShot && approachShot.distance_to_hole_before !== null
+    ? normalizeToYards(approachShot.distance_to_hole_before, approachShot.distance_unit_before)
     : null;
 
-  const approachLie = shotToGreen && (shotToGreen.shot_type === 'approach' || shotToGreen.shot_type === 'around_green')
-    ? shotToGreen.lie_before
-    : null;
+  // Approach lie - where the approach was hit FROM (fairway, rough, sand, etc.)
+  // Normalize 'tee' lie (par 3 first shots) → treat as 'fairway' for stats
+  const rawLie = approachShot ? approachShot.lie_before : null;
+  const approachLie = rawLie === 'tee' ? 'fairway' : rawLie;
 
-  const approachProximity = shotToGreen && shotToGreen.result === 'green'
+  // Approach proximity - how close to the hole the ball landed
+  // This is ONLY meaningful if the approach landed on the green
+  // Use shotToGreen for this (the actual green-landing shot)
+  const approachProximity = shotToGreen && shotToGreen.distance_to_hole_after !== null
     ? normalizeToFeet(shotToGreen.distance_to_hole_after, shotToGreen.distance_unit_after)
     : null;
 
-  // Approach miss direction - when NOT GIR, find the approach/around-green shot that missed
-  // This is the last approach/around-green shot that didn't land on green
-  const approachMissDirection = !greenInRegulation
-    ? (() => {
-        // Find approach/around-green shots that missed the green
-        const missedApproachShots = normalizedShots.filter(
-          s => (s.shot_type === 'approach' || s.shot_type === 'around_green') &&
-               s.result !== 'green' && s.result !== 'hole'
-        );
-        // Get the last one (closest to finally getting on the green)
-        const lastMissedApproach = missedApproachShots[missedApproachShots.length - 1];
-        return lastMissedApproach?.miss_direction || null;
-      })()
+  // Approach miss direction - when NOT GIR, get the miss direction from the approach shot
+  // Use the identified approach shot (the GIR attempt), not searching for any missed shot
+  const approachMissDirection = !greenInRegulation && approachShot && !isGreenHit(approachShot.result)
+    ? approachShot.miss_direction ?? null
     : null;
 
-  // First putt analysis
+  // First putt analysis - only set if we have actual distance data
   const firstPutt = puttingShots[0];
-  const firstPuttDistance = firstPutt
+  const firstPuttDistance = firstPutt && firstPutt.distance_to_hole_before !== null
     ? normalizeToFeet(firstPutt.distance_to_hole_before, firstPutt.distance_unit_before)
     : null;
-  const firstPuttLeave = firstPutt && firstPutt.result !== 'hole'
+  const firstPuttLeave = firstPutt && firstPutt.result !== 'hole' && firstPutt.distance_to_hole_after !== null
     ? normalizeToFeet(firstPutt.distance_to_hole_after, firstPutt.distance_unit_after)
     : null;
   const firstPuttBreak = firstPutt ? (firstPutt.putt_break ?? null) : null;
@@ -594,7 +651,7 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
 
   // Sand save = missed GIR from sand, made par or better
   const lastShotBeforeGreen = normalizedShots
-    .filter(s => s.result !== 'green' && s.shot_number < (shotToGreen?.shot_number || 999))
+    .filter(s => !isGreenHit(s.result) && s.shot_number < (shotToGreen?.shot_number || 999))
     .sort((a, b) => b.shot_number - a.shot_number)[0];
 
   const sandSaveAttempt = !greenInRegulation && lastShotBeforeGreen?.lie_before === 'sand';
@@ -616,6 +673,7 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
     drivingDistance,
     driveMissDirection,
     greenInRegulation,
+    approachShotNumber: approachShot?.shot_number ?? null,
     approachDistance,
     approachLie,
     approachProximity,
@@ -638,11 +696,54 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
 // MAIN CALCULATOR - Calculate stats from raw shots
 // ============================================================================
 
+// Debug mode - set to true to see diagnostic output in console
+// Enable this to diagnose approach efficiency calculation issues
+const DEBUG_STATS = false;
+
 export function calculateStatsFromShots(
   shots: RawShot[],
   holes: HoleInfo[],
   rounds: RoundInfo[]
 ): GolfStats {
+  // DEBUG: Diagnostic output for approach data quality
+  if (DEBUG_STATS) {
+    const greenShots = shots.filter(s => isGreenHit(s.result));
+    const withDistanceBefore = greenShots.filter(s => s.distance_to_hole_before !== null);
+    const with30PlusYards = withDistanceBefore.filter(s => {
+      const yards = s.distance_unit_before === 'feet'
+        ? (s.distance_to_hole_before || 0) / 3
+        : (s.distance_to_hole_before || 0);
+      return yards >= 30;
+    });
+
+    // Check proximity data (distance_to_hole_after)
+    const withDistanceAfter = greenShots.filter(s => s.distance_to_hole_after !== null);
+
+    console.log('[STATS DEBUG] Approach efficiency data quality:');
+    console.log(`  Total shots: ${shots.length}`);
+    console.log(`  Shots with result='green': ${greenShots.length}`);
+    console.log(`  Green shots with distance_to_hole_before: ${withDistanceBefore.length}`);
+    console.log(`  Green shots with distance_to_hole_after (proximity): ${withDistanceAfter.length}`);
+    console.log(`  Green shots with distance >= 30 yards: ${with30PlusYards.length}`);
+
+    // Check for shots that have BOTH before AND after distances (required for proximity by distance)
+    const withBothDistances = greenShots.filter(s =>
+      s.distance_to_hole_before !== null && s.distance_to_hole_after !== null
+    );
+    console.log(`  Green shots with BOTH before & after distances: ${withBothDistances.length}`);
+
+    if (greenShots.length > 0 && withDistanceAfter.length === 0) {
+      console.log('  [WARNING] No green shots have distance_to_hole_after - proximity stats will be empty!');
+      console.log('  Sample green shot:', JSON.stringify(greenShots[0], null, 2));
+    }
+
+    if (greenShots.length > 0 && withDistanceBefore.length < greenShots.length) {
+      console.log('  [WARNING] Some green shots are missing distance_to_hole_before data!');
+      console.log('  Sample green shot without distance:',
+        greenShots.find(s => s.distance_to_hole_before === null));
+    }
+  }
+
   // Group shots by round
   const shotsByRound = new Map<string, RawShot[]>();
   for (const shot of shots) {
@@ -995,10 +1096,15 @@ function aggregateRoundStats(rounds: Array<{
   };
 
   // Strokes Gained accumulators
+  // Track both the sum and count of valid shots to properly handle incomplete data
   let sgTee = 0;
+  let sgTeeCount = 0;
   let sgApproach = 0;
+  let sgApproachCount = 0;
   let sgAroundGreen = 0;
+  let sgAroundGreenCount = 0;
   let sgPutting = 0;
+  let sgPuttingCount = 0;
 
   const puttMake: Record<string, { made: number; total: number }> = {};
   const puttProximity: Record<string, number[]> = {};
@@ -1308,6 +1414,7 @@ function aggregateRoundStats(rounds: Array<{
       }
 
       // Approach proximity (ALL approach shots, split by hit/miss)
+      // This requires proximity data (distance_to_hole_after on the green shot)
       if (hole.approachProximity !== null) {
         approachProximities.push(hole.approachProximity);
 
@@ -1328,23 +1435,33 @@ function aggregateRoundStats(rounds: Array<{
 
         if (hole.approachDistance !== null) {
           const bucket = getApproachDistanceBucket(hole.approachDistance);
-          if (!approachProxByDistance[bucket]) approachProxByDistance[bucket] = [];
-          approachProxByDistance[bucket].push(hole.approachProximity);
-
-          // Approach efficiency (strokes to hole out)
-          const shotsAfterApproach = hole.shots.filter(s =>
-            s.shot_type === 'around_green' || s.shot_type === 'putting'
-          ).length;
-
-          if (!approachEffByDistanceLie[bucket]) {
-            approachEffByDistanceLie[bucket] = { fairway: [], rough: [], sand: [] };
+          // Only track approach proximity for actual approach shots (> 30 yards)
+          if (bucket) {
+            if (!approachProxByDistance[bucket]) approachProxByDistance[bucket] = [];
+            approachProxByDistance[bucket].push(hole.approachProximity);
           }
-          const lie = (hole.approachLie || 'other') as string;
-          if (lie === 'fairway' || lie === 'rough' || lie === 'sand') {
-            const bucketData = approachEffByDistanceLie[bucket];
-            if (bucketData && bucketData[lie]) {
-              bucketData[lie].push(shotsAfterApproach);
-            }
+        }
+      }
+
+      // Approach efficiency (strokes to hole out from approach distance)
+      // This is SEPARATE from proximity - we can calculate efficiency even without proximity data
+      // We need: approachDistance (where they hit from), approachShotNumber, score, and lie
+      // Only for approach shots (>= 30 yards) - around-the-green shots are tracked separately
+      if (hole.approachDistance !== null && hole.approachDistance >= 30 && hole.approachShotNumber !== null) {
+        const bucket = getApproachDistanceBucket(hole.approachDistance);
+        // Strokes to hole out = total shots - approach shot number + 1
+        // Example: 5 total shots, approach is shot #2 → 5 - 2 + 1 = 4 strokes to hole out from approach
+        const strokesToHoleOut = hole.score - hole.approachShotNumber + 1;
+
+        if (bucket && !approachEffByDistanceLie[bucket]) {
+          approachEffByDistanceLie[bucket] = { fairway: [], rough: [], sand: [] };
+        }
+        // Default to 'fairway' when lie is unknown - most approach shots are from fairway
+        const lie = (hole.approachLie || 'fairway') as string;
+        if (bucket && (lie === 'fairway' || lie === 'rough' || lie === 'sand')) {
+          const bucketData = approachEffByDistanceLie[bucket];
+          if (bucketData && bucketData[lie]) {
+            bucketData[lie].push(strokesToHoleOut);
           }
         }
       }
@@ -1380,22 +1497,37 @@ function aggregateRoundStats(rounds: Array<{
         }
       }
 
-      // Around the green efficiency
-      if (hole.approachDistance !== null && hole.approachDistance <= 30) {
+      // Around the green efficiency - track actual around_green shots
+      // For each around_green shot, calculate shots to hole out from that point
+      const aroundGreenShots = hole.shots.filter(s => s.shot_type === 'around_green');
+      for (const atgShot of aroundGreenShots) {
+        // Skip shots without distance data
+        if (atgShot.distance_to_hole_before === null) continue;
+
+        const distYards = normalizeToYards(atgShot.distance_to_hole_before, atgShot.distance_unit_before);
+        // Only track shots from 0-30 yards (typical around_green distances)
+        if (distYards > 30) continue;
+
+        // Count shots from this around_green shot to hole out
+        // Include this shot plus all subsequent putting shots
         const shotsToHoleOut = hole.shots.filter(s =>
-          s.shot_type === 'around_green' || s.shot_type === 'putting'
+          s.shot_number >= atgShot.shot_number &&
+          (s.shot_type === 'around_green' || s.shot_type === 'putting')
         ).length;
 
-        const bucket = getAtgDistanceBucket(hole.approachDistance);
+        // Bucket by distance
+        const bucket = getAtgDistanceBucket(distYards);
         if (bucket === '0_10') atgEff0_10.push(shotsToHoleOut);
         else if (bucket === '10_20') atgEff10_20.push(shotsToHoleOut);
         else atgEff20_30.push(shotsToHoleOut);
 
-        if (hole.approachLie === 'fairway') atgEffFairway.push(shotsToHoleOut);
-        else if (hole.approachLie === 'rough') atgEffRough.push(shotsToHoleOut);
-        else if (hole.approachLie === 'sand') atgEffSand.push(shotsToHoleOut);
+        // Track by lie (use the around_green shot's lie_before)
+        const lie = atgShot.lie_before;
+        if (lie === 'fairway') atgEffFairway.push(shotsToHoleOut);
+        else if (lie === 'rough') atgEffRough.push(shotsToHoleOut);
+        else if (lie === 'sand') atgEffSand.push(shotsToHoleOut);
 
-        const lie = (hole.approachLie || 'other') as string;
+        // Populate the distance x lie matrix
         if (lie === 'fairway' || lie === 'rough' || lie === 'sand') {
           const bucketData = atgEffByDistanceLie[bucket];
           if (bucketData && bucketData[lie]) {
@@ -1421,11 +1553,32 @@ function aggregateRoundStats(rounds: Array<{
         const sg = calculateStrokesGainedForShot(shot);
         const category = getStrokesGainedCategory(shot);
 
-        // Accumulate by category
-        if (category === 'tee') sgTee += sg;
-        else if (category === 'approach') sgApproach += sg;
-        else if (category === 'around_green') sgAroundGreen += sg;
-        else if (category === 'putting') sgPutting += sg;
+        // Accumulate by category - only when SG is calculable (not null)
+        // This ensures incomplete data doesn't skew averages
+        if (sg !== null) {
+          if (category === 'tee') {
+            sgTee += sg;
+            sgTeeCount++;
+          } else if (category === 'approach') {
+            sgApproach += sg;
+            sgApproachCount++;
+          } else if (category === 'around_green') {
+            sgAroundGreen += sg;
+            sgAroundGreenCount++;
+          } else if (category === 'putting') {
+            sgPutting += sg;
+            sgPuttingCount++;
+          }
+        }
+
+        // Track longest hole-out (non-putt shots that go directly in the hole)
+        // Typically chip-ins, approach hole-outs, etc.
+        if (shot.result === 'hole' && shot.shot_type !== 'putting' && shot.distance_to_hole_before !== null) {
+          const distanceYards = normalizeToYards(shot.distance_to_hole_before, shot.distance_unit_before);
+          if (stats.longestHoleOut === null || distanceYards > stats.longestHoleOut) {
+            stats.longestHoleOut = distanceYards;
+          }
+        }
       }
     }
   }
@@ -1615,20 +1768,23 @@ function aggregateRoundStats(rounds: Array<{
     }
   }
 
-  // Strokes Gained
+  // Strokes Gained - only assign when we have valid data
+  // Setting to null when no valid shots prevents misleading 0 values
+  const hasSgData = sgTeeCount > 0 || sgApproachCount > 0 || sgAroundGreenCount > 0 || sgPuttingCount > 0;
   const sgTotal = sgTee + sgApproach + sgAroundGreen + sgPutting;
-  stats.strokesGainedTotal = sgTotal;
-  stats.strokesGainedTee = sgTee;
-  stats.strokesGainedApproach = sgApproach;
-  stats.strokesGainedAroundGreen = sgAroundGreen;
-  stats.strokesGainedPutting = sgPutting;
 
-  // Strokes Gained per round
-  stats.sgTeePerRound = safeAverage(sgTee, rounds.length);
-  stats.sgApproachPerRound = safeAverage(sgApproach, rounds.length);
-  stats.sgAroundGreenPerRound = safeAverage(sgAroundGreen, rounds.length);
-  stats.sgPuttingPerRound = safeAverage(sgPutting, rounds.length);
-  stats.sgTotalPerRound = safeAverage(sgTotal, rounds.length);
+  stats.strokesGainedTotal = hasSgData ? sgTotal : null;
+  stats.strokesGainedTee = sgTeeCount > 0 ? sgTee : null;
+  stats.strokesGainedApproach = sgApproachCount > 0 ? sgApproach : null;
+  stats.strokesGainedAroundGreen = sgAroundGreenCount > 0 ? sgAroundGreen : null;
+  stats.strokesGainedPutting = sgPuttingCount > 0 ? sgPutting : null;
+
+  // Strokes Gained per round - only calculate when we have valid data
+  stats.sgTeePerRound = sgTeeCount > 0 ? safeAverage(sgTee, rounds.length) : null;
+  stats.sgApproachPerRound = sgApproachCount > 0 ? safeAverage(sgApproach, rounds.length) : null;
+  stats.sgAroundGreenPerRound = sgAroundGreenCount > 0 ? safeAverage(sgAroundGreen, rounds.length) : null;
+  stats.sgPuttingPerRound = sgPuttingCount > 0 ? safeAverage(sgPutting, rounds.length) : null;
+  stats.sgTotalPerRound = hasSgData ? safeAverage(sgTotal, rounds.length) : null;
 
   // Approach proximity
   stats.approachProximityAvg = safeAverage(
@@ -1694,10 +1850,34 @@ function aggregateRoundStats(rounds: Array<{
     (approachProxByDistance['225_plus'] || []).length
   );
 
+  // DEBUG: Log approach proximity collection results
+  if (DEBUG_STATS) {
+    console.log('[STATS DEBUG] Approach proximity collection results:');
+    console.log(`  approachProximities collected: ${approachProximities.length}`);
+    console.log(`  approachProxByDistance buckets:`);
+    for (const [bucket, values] of Object.entries(approachProxByDistance)) {
+      console.log(`    ${bucket}: ${(values as number[]).length} shots, avg: ${safeAverage((values as number[]).reduce((a, b) => a + b, 0), (values as number[]).length)?.toFixed(1) || 'N/A'}`);
+    }
+    console.log(`  Final stats.approachProx125_150: ${stats.approachProx125_150}`);
+    console.log(`  Final stats.approachProx150_175: ${stats.approachProx150_175}`);
+  }
+
   // Approach efficiency by distance and lie
+  // Map bucket names to stats property names
+  const bucketToStatsKey: Record<string, keyof GolfStats> = {
+    '30_75': 'approachEff30_75',
+    '75_100': 'approachEff75_100',
+    '100_125': 'approachEff100_125',
+    '125_150': 'approachEff125_150',
+    '150_175': 'approachEff150_175',
+    '175_200': 'approachEff175_200',
+    '200_225': 'approachEff200_225',
+    '225_plus': 'approachEff225Plus',
+  };
+
   for (const bucket of Object.keys(approachEffByDistanceLie)) {
-    const bucketKey = bucket.replace('_', '') as keyof GolfStats;
-    if (bucketKey.toString().startsWith('approachEff')) {
+    const statsKey = bucketToStatsKey[bucket];
+    if (statsKey) {
       const lies = approachEffByDistanceLie[bucket];
       if (lies) {
         const effData = {
@@ -1716,7 +1896,7 @@ function aggregateRoundStats(rounds: Array<{
         };
         // Type-safe dynamic assignment
         const statsRecord = stats as unknown as Record<string, unknown>;
-        statsRecord[bucketKey] = effData;
+        statsRecord[statsKey] = effData;
       }
     }
   }

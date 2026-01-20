@@ -693,7 +693,7 @@ function ScoringStats({ stats }: { stats: GolfStats }) {
         <StatRow label="Most Pars in a Row" value={formatStatInt(stats.mostParsRow)} index={2} />
         <StatRow label="Current No 3-Putt Streak" value={`${formatStatInt(stats.currentNo3PuttStreak)} holes`} index={3} />
         <StatRow label="Longest No 3-Putt Streak" value={`${formatStatInt(stats.longestNo3PuttStreak)} holes`} index={4} />
-        <StatRow label="Longest Hole Out" value={stats.longestHoleOut ? `${stats.longestHoleOut} feet` : '-'} index={5} />
+        <StatRow label="Longest Hole Out" value={stats.longestHoleOut ? `${Math.round(stats.longestHoleOut)} yards` : '-'} index={5} />
       </StatSection>
     </motion.div>
   );

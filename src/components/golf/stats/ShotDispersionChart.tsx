@@ -17,6 +17,9 @@ import { memo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { cn } from '@/lib/utils';
+import { ApproachDispersionPremium } from './ApproachDispersionPremium';
+import { DrivingDispersionPremium } from './DrivingDispersionPremium';
+import { PuttingDispersionPremium } from './PuttingDispersionPremium';
 
 // ============================================================================
 // ANIMATION VARIANTS
@@ -136,10 +139,11 @@ interface ShotDispersionChartProps {
 }
 
 // ============================================================================
-// DRIVING DISPERSION CHART - Premium Visual
+// DRIVING DISPERSION CHART - Legacy (replaced by DrivingDispersionPremium)
 // ============================================================================
 
-function DrivingDispersionVisual({
+/** @internal Legacy component - use DrivingDispersionPremium instead */
+export function DrivingDispersionVisualLegacy({
   fairwayPct,
   driverFairwayPct,
   missLeftCount,
@@ -553,10 +557,12 @@ function DrivingDispersionVisual({
 }
 
 // ============================================================================
-// APPROACH DISPERSION CHART - Premium Visual
+// APPROACH DISPERSION CHART - Legacy (replaced by ApproachDispersionPremium)
+// Kept for reference - can be deleted when premium version is stable
 // ============================================================================
 
-function ApproachDispersionVisual({
+/** @internal Legacy component - use ApproachDispersionPremium instead */
+export function ApproachDispersionVisualLegacy({
   girPct,
   girFromFairway,
   girFromRough,
@@ -567,6 +573,10 @@ function ApproachDispersionVisual({
   approachMissLongPct,
   approachMissLeftPct,
   approachMissRightPct,
+  approachMissShortLeftPct,
+  approachMissShortRightPct,
+  approachMissLongLeftPct,
+  approachMissLongRightPct,
   approachMissTotal,
 }: {
   girPct: number | null;
@@ -579,9 +589,13 @@ function ApproachDispersionVisual({
   approachMissLongPct: number | null;
   approachMissLeftPct: number | null;
   approachMissRightPct: number | null;
+  approachMissShortLeftPct: number | null;
+  approachMissShortRightPct: number | null;
+  approachMissLongLeftPct: number | null;
+  approachMissLongRightPct: number | null;
   approachMissTotal: number;
 }) {
-  const [isHovered, setIsHovered] = useState<'green' | 'fringe' | 'short' | 'long' | 'left' | 'right' | null>(null);
+  const [isHovered, setIsHovered] = useState<'green' | 'fringe' | 'short' | 'long' | 'left' | 'right' | 'short_left' | 'short_right' | 'long_left' | 'long_right' | null>(null);
   const animatedGir = useAnimatedNumber(girPct, 1000);
 
   const missedGreen = girOpportunities - girTotal;
@@ -593,20 +607,31 @@ function ApproachDispersionVisual({
     ? girFromFairway - girFromRough
     : null;
 
-  // Miss direction values
+  // Miss direction values - both cardinal and diagonal
   const missShort = approachMissShortPct ?? 0;
   const missLong = approachMissLongPct ?? 0;
   const missLeft = approachMissLeftPct ?? 0;
   const missRight = approachMissRightPct ?? 0;
+  const missShortLeft = approachMissShortLeftPct ?? 0;
+  const missShortRight = approachMissShortRightPct ?? 0;
+  const missLongLeft = approachMissLongLeftPct ?? 0;
+  const missLongRight = approachMissLongRightPct ?? 0;
 
-  // Find dominant miss pattern
-  const misses = [
-    { type: 'short' as const, pct: missShort, label: 'Short', color: 'blue' },
-    { type: 'long' as const, pct: missLong, label: 'Long', color: 'purple' },
-    { type: 'left' as const, pct: missLeft, label: 'Left', color: 'red' },
-    { type: 'right' as const, pct: missRight, label: 'Right', color: 'orange' },
+  // All 8-direction miss data for visualization
+  const missDirections = [
+    { type: 'short' as const, pct: missShort, label: 'Short', color: '#3b82f6', angle: 180 },
+    { type: 'long' as const, pct: missLong, label: 'Long', color: '#8b5cf6', angle: 0 },
+    { type: 'left' as const, pct: missLeft, label: 'Left', color: '#ef4444', angle: 270 },
+    { type: 'right' as const, pct: missRight, label: 'Right', color: '#f97316', angle: 90 },
+    { type: 'short_left' as const, pct: missShortLeft, label: 'Short-Left', color: '#6366f1', angle: 225 },
+    { type: 'short_right' as const, pct: missShortRight, label: 'Short-Right', color: '#0ea5e9', angle: 135 },
+    { type: 'long_left' as const, pct: missLongLeft, label: 'Long-Left', color: '#a855f7', angle: 315 },
+    { type: 'long_right' as const, pct: missLongRight, label: 'Long-Right', color: '#ec4899', angle: 45 },
   ];
-  const dominantMiss = misses.reduce((a, b) => a.pct > b.pct ? a : b);
+
+  // Find dominant miss pattern (from cardinal directions only for the insight)
+  const cardinalMisses = missDirections.slice(0, 4);
+  const dominantMiss = cardinalMisses.reduce((a, b) => a.pct > b.pct ? a : b);
   const hasDominantPattern = dominantMiss.pct > 35;
 
   return (
@@ -750,25 +775,77 @@ function ApproachDispersionVisual({
               );
             })}
 
-            {/* Missed green shots - animated dots */}
-            {missedPct > 0 && Array.from({ length: Math.min(Math.round(missedPct / 10), 8) }).map((_, i) => {
-              const angle = ((i + 3) / 8) * 2 * Math.PI;
-              const radius = 65 + (i % 2) * 15;
-              const x = 100 + Math.cos(angle) * radius;
-              const y = 100 + Math.sin(angle) * (radius * 0.75);
+            {/* Missed green shots - positioned by actual miss direction data */}
+            {missDirections.filter(d => d.pct > 0).map((dir, idx) => {
+              // Calculate position based on angle and percentage (higher % = more dots closer to that zone)
+              const dotCount = Math.max(1, Math.round(dir.pct / 20)); // 1-5 dots per direction
+              const angleRad = (dir.angle - 90) * (Math.PI / 180);
+
+              return Array.from({ length: Math.min(dotCount, 5) }).map((_, i) => {
+                // Spread dots in the direction zone with some variance
+                const seed = (idx * 1000 + i * 7919);
+                const variance = ((seed % 100) / 100 - 0.5) * 20; // ±10 degrees
+                const adjustedAngle = angleRad + (variance * Math.PI / 180);
+                const baseRadius = 68 + (i % 2) * 12;
+                const x = 100 + Math.cos(adjustedAngle) * baseRadius;
+                const y = 100 + Math.sin(adjustedAngle) * (baseRadius * 0.8);
+
+                return (
+                  <motion.circle
+                    key={`miss-${dir.type}-${i}`}
+                    cx={x}
+                    cy={y}
+                    r="5"
+                    fill={dir.color}
+                    variants={shotDotVariants}
+                    initial="hidden"
+                    animate="visible"
+                    custom={idx + i}
+                    whileHover={{ scale: 1.5, opacity: 1 }}
+                    className="cursor-pointer"
+                    onMouseEnter={() => setIsHovered(dir.type as typeof isHovered)}
+                    onMouseLeave={() => setIsHovered(null)}
+                    style={{
+                      filter: isHovered === dir.type ? 'brightness(1.3)' : 'none',
+                      opacity: isHovered && isHovered !== dir.type && isHovered !== 'green' && isHovered !== 'fringe' ? 0.3 : 0.85
+                    }}
+                  />
+                );
+              });
+            })}
+
+            {/* Direction zone indicators (wedge segments) for miss patterns */}
+            {missDirections.filter(d => d.pct >= 15).map((dir, idx) => {
+              const segmentAngle = 35; // degrees
+              const startAngle = (dir.angle - segmentAngle / 2 - 90) * (Math.PI / 180);
+              const endAngle = (dir.angle + segmentAngle / 2 - 90) * (Math.PI / 180);
+              const innerR = 62;
+              const outerR = 85;
+
+              const x1 = 100 + Math.cos(startAngle) * innerR;
+              const y1 = 100 + Math.sin(startAngle) * (innerR * 0.8);
+              const x2 = 100 + Math.cos(startAngle) * outerR;
+              const y2 = 100 + Math.sin(startAngle) * (outerR * 0.8);
+              const x3 = 100 + Math.cos(endAngle) * outerR;
+              const y3 = 100 + Math.sin(endAngle) * (outerR * 0.8);
+              const x4 = 100 + Math.cos(endAngle) * innerR;
+              const y4 = 100 + Math.sin(endAngle) * (innerR * 0.8);
+
               return (
-                <motion.circle
-                  key={`miss-${i}`}
-                  cx={x}
-                  cy={y}
-                  r="5"
-                  fill="#f97316"
-                  variants={shotDotVariants}
-                  initial="hidden"
-                  animate="visible"
-                  custom={i + 5}
-                  whileHover={{ scale: 1.5, opacity: 1 }}
-                  style={{ filter: isHovered === 'fringe' ? 'brightness(1.2)' : 'none' }}
+                <motion.path
+                  key={`zone-${dir.type}`}
+                  d={`M${x1},${y1} L${x2},${y2} A${outerR},${outerR * 0.8} 0 0,1 ${x3},${y3} L${x4},${y4} A${innerR},${innerR * 0.8} 0 0,0 ${x1},${y1} Z`}
+                  fill={dir.color}
+                  fillOpacity={isHovered === dir.type ? 0.25 : 0.08}
+                  stroke={dir.color}
+                  strokeWidth={isHovered === dir.type ? 2 : 1}
+                  strokeOpacity={isHovered === dir.type ? 0.6 : 0.2}
+                  className="cursor-pointer transition-all"
+                  onMouseEnter={() => setIsHovered(dir.type as typeof isHovered)}
+                  onMouseLeave={() => setIsHovered(null)}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4 + idx * 0.05 }}
                 />
               );
             })}
@@ -787,21 +864,9 @@ function ApproachDispersionVisual({
             >
               GREEN
             </motion.text>
-            <motion.text
-              x="100" y="185"
-              textAnchor="middle"
-              fontSize="9"
-              fill={isHovered === 'fringe' ? '#f97316' : '#64748b'}
-              fontWeight={isHovered === 'fringe' ? '600' : '500'}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-            >
-              FRINGE
-            </motion.text>
           </svg>
 
-          {/* Hover tooltip */}
+          {/* Hover tooltip - now shows direction-specific info */}
           <AnimatePresence>
             {isHovered && (
               <motion.div
@@ -812,6 +877,9 @@ function ApproachDispersionVisual({
               >
                 {isHovered === 'green' && `${gir.toFixed(0)}% GIR (${girTotal}/${girOpportunities})`}
                 {isHovered === 'fringe' && `${missedPct.toFixed(0)}% missed (${missedGreen} shots)`}
+                {missDirections.find(d => d.type === isHovered) && (
+                  <span>{missDirections.find(d => d.type === isHovered)!.pct.toFixed(0)}% miss {missDirections.find(d => d.type === isHovered)!.label.toLowerCase()}</span>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -985,108 +1053,92 @@ function ApproachDispersionVisual({
           >
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Miss Direction Pattern</div>
 
+            {/* Cardinal directions (primary) */}
             <div className="grid grid-cols-2 gap-2">
-              {/* Short */}
-              <motion.div
-                className={cn(
-                  "flex items-center justify-between p-2 rounded-lg transition-all",
-                  isHovered === 'short' ? 'bg-blue-100' : 'bg-slate-50'
-                )}
-                onMouseEnter={() => setIsHovered('short')}
-                onMouseLeave={() => setIsHovered(null)}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.7 }}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-600">↓</span>
-                  <span className="text-sm text-slate-600">Short</span>
-                </div>
-                <span className="text-sm font-semibold text-slate-900">{missShort.toFixed(0)}%</span>
-              </motion.div>
-
-              {/* Long */}
-              <motion.div
-                className={cn(
-                  "flex items-center justify-between p-2 rounded-lg transition-all",
-                  isHovered === 'long' ? 'bg-purple-100' : 'bg-slate-50'
-                )}
-                onMouseEnter={() => setIsHovered('long')}
-                onMouseLeave={() => setIsHovered(null)}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.75 }}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-purple-600">↑</span>
-                  <span className="text-sm text-slate-600">Long</span>
-                </div>
-                <span className="text-sm font-semibold text-slate-900">{missLong.toFixed(0)}%</span>
-              </motion.div>
-
-              {/* Left */}
-              <motion.div
-                className={cn(
-                  "flex items-center justify-between p-2 rounded-lg transition-all",
-                  isHovered === 'left' ? 'bg-red-100' : 'bg-slate-50'
-                )}
-                onMouseEnter={() => setIsHovered('left')}
-                onMouseLeave={() => setIsHovered(null)}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.8 }}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-red-600">←</span>
-                  <span className="text-sm text-slate-600">Left</span>
-                </div>
-                <span className="text-sm font-semibold text-slate-900">{missLeft.toFixed(0)}%</span>
-              </motion.div>
-
-              {/* Right */}
-              <motion.div
-                className={cn(
-                  "flex items-center justify-between p-2 rounded-lg transition-all",
-                  isHovered === 'right' ? 'bg-orange-100' : 'bg-slate-50'
-                )}
-                onMouseEnter={() => setIsHovered('right')}
-                onMouseLeave={() => setIsHovered(null)}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.85 }}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-orange-600">→</span>
-                  <span className="text-sm text-slate-600">Right</span>
-                </div>
-                <span className="text-sm font-semibold text-slate-900">{missRight.toFixed(0)}%</span>
-              </motion.div>
+              {cardinalMisses.map((dir, idx) => {
+                const arrowMap: Record<string, string> = { short: '↓', long: '↑', left: '←', right: '→' };
+                return (
+                  <motion.div
+                    key={dir.type}
+                    className={cn(
+                      "flex items-center justify-between p-2 rounded-lg transition-all cursor-pointer",
+                      isHovered === dir.type ? 'ring-2 ring-offset-1' : 'bg-slate-50',
+                      dir.pct >= 35 && 'font-semibold'
+                    )}
+                    style={{
+                      backgroundColor: isHovered === dir.type ? `${dir.color}20` : undefined,
+                      borderColor: dir.color,
+                    }}
+                    onMouseEnter={() => setIsHovered(dir.type as typeof isHovered)}
+                    onMouseLeave={() => setIsHovered(null)}
+                    initial={{ opacity: 0, x: idx % 2 === 0 ? -10 : 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.7 + idx * 0.05 }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span style={{ color: dir.color }}>{arrowMap[dir.type] || '•'}</span>
+                      <span className="text-sm text-slate-600">{dir.label}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-900">{dir.pct.toFixed(0)}%</span>
+                  </motion.div>
+                );
+              })}
             </div>
+
+            {/* Diagonal directions (shown only if significant) */}
+            {(missShortLeft > 5 || missShortRight > 5 || missLongLeft > 5 || missLongRight > 5) && (
+              <motion.div
+                className="grid grid-cols-4 gap-1.5 mt-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.9 }}
+              >
+                {missDirections.slice(4).filter(d => d.pct > 5).map((dir, idx) => {
+                  const arrowMap: Record<string, string> = {
+                    short_left: '↙', short_right: '↘', long_left: '↖', long_right: '↗'
+                  };
+                  return (
+                    <motion.div
+                      key={dir.type}
+                      className={cn(
+                        "flex flex-col items-center p-1.5 rounded-lg transition-all cursor-pointer text-center",
+                        isHovered === dir.type ? 'ring-1 ring-offset-1' : 'bg-slate-50/50'
+                      )}
+                      style={{
+                        backgroundColor: isHovered === dir.type ? `${dir.color}15` : undefined,
+                      }}
+                      onMouseEnter={() => setIsHovered(dir.type as typeof isHovered)}
+                      onMouseLeave={() => setIsHovered(null)}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.95 + idx * 0.05 }}
+                    >
+                      <span style={{ color: dir.color }} className="text-xs">{arrowMap[dir.type] || '•'}</span>
+                      <span className="text-[10px] text-slate-500 mt-0.5">{dir.pct.toFixed(0)}%</span>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            )}
 
             {/* Dominant miss insight */}
             <AnimatePresence>
               {hasDominantPattern && (
                 <motion.div
-                  className={cn(
-                    'mt-2 p-3 rounded-lg flex items-center gap-3',
-                    dominantMiss.color === 'blue' ? 'bg-blue-50 border border-blue-100' :
-                    dominantMiss.color === 'purple' ? 'bg-purple-50 border border-purple-100' :
-                    dominantMiss.color === 'red' ? 'bg-red-50 border border-red-100' :
-                    'bg-orange-50 border border-orange-100'
-                  )}
+                  className="mt-2 p-3 rounded-lg flex items-center gap-3"
+                  style={{
+                    backgroundColor: `${dominantMiss.color}10`,
+                    borderWidth: 1,
+                    borderColor: `${dominantMiss.color}30`,
+                  }}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ delay: 0.9 }}
                 >
                   <motion.div
-                    className={cn(
-                      'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
-                      dominantMiss.color === 'blue' ? 'bg-blue-100 text-blue-600' :
-                      dominantMiss.color === 'purple' ? 'bg-purple-100 text-purple-600' :
-                      dominantMiss.color === 'red' ? 'bg-red-100 text-red-600' :
-                      'bg-orange-100 text-orange-600'
-                    )}
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={{ backgroundColor: `${dominantMiss.color}20`, color: dominantMiss.color }}
                   >
                     {dominantMiss.type === 'short' ? '↓' :
                      dominantMiss.type === 'long' ? '↑' :
@@ -1106,10 +1158,154 @@ function ApproachDispersionVisual({
 }
 
 // ============================================================================
-// PUTTING DISPERSION CHART - Premium Visual
+// APPROACH PROXIMITY BY DISTANCE CHART
 // ============================================================================
 
-function PuttingDispersionVisual({
+function ApproachProximityChart({ stats }: { stats: GolfStats }) {
+  const [hoveredBucket, setHoveredBucket] = useState<string | null>(null);
+
+  // Distance buckets with their data
+  const buckets = [
+    { key: '30_75', label: '30-75y', value: stats.approachProx30_75, color: '#16a34a' },
+    { key: '75_100', label: '75-100y', value: stats.approachProx75_100, color: '#22c55e' },
+    { key: '100_125', label: '100-125y', value: stats.approachProx100_125, color: '#4ade80' },
+    { key: '125_150', label: '125-150y', value: stats.approachProx125_150, color: '#86efac' },
+    { key: '150_175', label: '150-175y', value: stats.approachProx150_175, color: '#f59e0b' },
+    { key: '175_200', label: '175-200y', value: stats.approachProx175_200, color: '#f97316' },
+    { key: '200_225', label: '200-225y', value: stats.approachProx200_225, color: '#ef4444' },
+    { key: '225_plus', label: '225y+', value: stats.approachProx225Plus, color: '#dc2626' },
+  ].filter(b => b.value !== null && b.value > 0);
+
+  if (buckets.length === 0) return null;
+
+  // Find max for scaling
+  const maxValue = Math.max(...buckets.map(b => b.value || 0));
+  const avgProx = stats.approachProximityAvg;
+
+  return (
+    <motion.div
+      className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-slate-100">
+        <div className="flex items-start justify-between">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Approach Proximity</h3>
+            <p className="text-sm text-slate-500 mt-0.5">How close approach shots land by distance</p>
+          </motion.div>
+          {avgProx !== null && (
+            <motion.div
+              className="text-right"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring' }}
+            >
+              <div className="text-3xl font-bold text-green-600 tabular-nums tracking-tight">
+                {Math.round(avgProx)}&apos;
+              </div>
+              <div className="text-xs font-medium text-slate-400 uppercase tracking-wide">Avg</div>
+            </motion.div>
+          )}
+        </div>
+      </div>
+
+      {/* Bar Chart */}
+      <div className="px-6 py-6">
+        <div className="space-y-3">
+          {buckets.map((bucket, idx) => {
+            const barWidth = maxValue > 0 ? ((bucket.value || 0) / maxValue) * 100 : 0;
+            const isHovered = hoveredBucket === bucket.key;
+
+            return (
+              <motion.div
+                key={bucket.key}
+                className="flex items-center gap-4"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + idx * 0.05 }}
+                onMouseEnter={() => setHoveredBucket(bucket.key)}
+                onMouseLeave={() => setHoveredBucket(null)}
+              >
+                {/* Label */}
+                <div className="w-20 text-sm font-medium text-slate-600 text-right shrink-0">
+                  {bucket.label}
+                </div>
+
+                {/* Bar container */}
+                <div className="flex-1 h-8 bg-slate-100 rounded-lg overflow-hidden relative">
+                  <motion.div
+                    className="h-full rounded-lg relative"
+                    style={{ backgroundColor: bucket.color }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${barWidth}%` }}
+                    transition={{ delay: 0.4 + idx * 0.05, duration: 0.6, ease: [0.33, 1, 0.68, 1] }}
+                  >
+                    {/* Shimmer effect on hover */}
+                    {isHovered && (
+                      <motion.div
+                        className="absolute inset-0"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        style={{
+                          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                        }}
+                      />
+                    )}
+                  </motion.div>
+
+                  {/* Value label inside bar */}
+                  <div className={cn(
+                    "absolute inset-y-0 flex items-center px-3 text-sm font-semibold transition-colors",
+                    barWidth > 40 ? "text-white left-0" : "text-slate-700 right-0"
+                  )}>
+                    {Math.round(bucket.value || 0)}&apos;
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Legend/Insight */}
+        <motion.div
+          className="mt-6 pt-4 border-t border-slate-100"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+        >
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-green-600" />
+              <span className="text-slate-500">Close range</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-amber-500" />
+              <span className="text-slate-500">Mid range</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <span className="text-slate-500">Long range</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ============================================================================
+// PUTTING DISPERSION CHART - Legacy (replaced by PuttingDispersionPremium)
+// ============================================================================
+
+/** @internal Legacy component - use PuttingDispersionPremium instead */
+export function PuttingDispersionVisualLegacy({
   puttMissLeftPct,
   puttMissRightPct,
   puttMissShortPct,
@@ -1739,8 +1935,8 @@ export const ShotDispersionChart = memo(function ShotDispersionChart({
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         variants={containerVariants}
       >
-        {/* Driving Dispersion */}
-        <DrivingDispersionVisual
+        {/* Driving Dispersion - Premium Version */}
+        <DrivingDispersionPremium
           fairwayPct={stats.fairwayPercentage}
           driverFairwayPct={stats.fairwayPctDriver}
           missLeftCount={stats.missLeftCount}
@@ -1749,8 +1945,8 @@ export const ShotDispersionChart = memo(function ShotDispersionChart({
           fairwayOpportunities={stats.fairwayOpportunities}
         />
 
-        {/* Approach Dispersion */}
-        <ApproachDispersionVisual
+        {/* Approach Dispersion - Premium Version */}
+        <ApproachDispersionPremium
           girPct={stats.girPercentage}
           girFromFairway={stats.girPctFromFairway}
           girFromRough={stats.girPctFromRough}
@@ -1765,8 +1961,11 @@ export const ShotDispersionChart = memo(function ShotDispersionChart({
         />
       </motion.div>
 
-      {/* Putting Dispersion - Full Width */}
-      <PuttingDispersionVisual
+      {/* Approach Proximity by Distance - Full Width */}
+      <ApproachProximityChart stats={stats} />
+
+      {/* Putting Dispersion - Premium Version */}
+      <PuttingDispersionPremium
         puttMissLeftPct={stats.puttMissLeftPct}
         puttMissRightPct={stats.puttMissRightPct}
         puttMissShortPct={stats.puttMissShortPct}

@@ -99,10 +99,14 @@ export async function getPlayerProfileStats(
       ? rounds.map(r => r.id)
       : [roundId];
 
-    // 3. Fetch all shots for the selected round(s)
+    // 3. Fetch all shots for the selected round(s) with detail tables
     const { data: shotsData, error: shotsError } = await supabase
       .from('golf_shots')
-      .select('*')
+      .select(`
+        *,
+        putt_details(miss_tags, break_direction, estimated_break_inches, distance_feet, made),
+        approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
+      `)
       .in('round_id', roundIdsToFetch)
       .order('hole_number')
       .order('shot_number');
@@ -148,33 +152,24 @@ export async function getPlayerProfileStats(
       yardage: null,
     }));
 
-    const filteredShots = shotsData.filter(s =>
-      s.distance_to_hole_before !== null &&
-      s.distance_to_hole_after !== null
-    );
-
-    if (filteredShots.length === 0) {
-      return {
-        success: true,
-        stats: null,
-        rounds,
-      };
-    }
-
-    // Transform shots to RawShot format
-    // Calculate shot_distance from before/after if not stored
-    const rawShots: RawShot[] = filteredShots.map(s => {
+    // Transform shots to RawShot format - don't filter out shots with missing distances
+    // as they're still needed for GIR calculation (shots with result='green') and scoring
+    const rawShots: RawShot[] = shotsData.map(s => {
       // Calculate shot_distance from before/after if missing
-      // Normalize both to yards for calculation
-      const beforeYards = s.distance_unit_before === 'feet'
-        ? (s.distance_to_hole_before ?? 0) / 3
-        : (s.distance_to_hole_before ?? 0);
-      const afterYards = s.distance_unit_after === 'feet'
-        ? (s.distance_to_hole_after ?? 0) / 3
-        : (s.distance_to_hole_after ?? 0);
-      // Simple calculation: difference between before and after
-      const calculatedShotDistance = Math.max(0, Math.round(beforeYards - afterYards));
-      const shotDistance = s.shot_distance ?? calculatedShotDistance;
+      let shotDistance = s.shot_distance;
+      if (shotDistance === null && s.distance_to_hole_before !== null && s.distance_to_hole_after !== null) {
+        const beforeYards = s.distance_unit_before === 'feet'
+          ? s.distance_to_hole_before / 3
+          : s.distance_to_hole_before;
+        const afterYards = s.distance_unit_after === 'feet'
+          ? s.distance_to_hole_after / 3
+          : s.distance_to_hole_after;
+        shotDistance = Math.max(0, Math.round(beforeYards - afterYards));
+      }
+
+      // Extract detail table data (Supabase returns arrays for 1:1 relations, take first item)
+      const puttDetails = Array.isArray(s.putt_details) ? s.putt_details[0] : s.putt_details;
+      const approachMissDetails = Array.isArray(s.approach_miss_details) ? s.approach_miss_details[0] : s.approach_miss_details;
 
       return {
         id: s.id,
@@ -196,10 +191,27 @@ export async function getPlayerProfileStats(
         putt_break: s.putt_break,
         putt_distance_feet: s.putt_distance_feet,
         putt_slope: s.putt_slope,
+        putt_made: s.putt_made,
         is_penalty: s.is_penalty,
         penalty_type: s.penalty_type,
+        // Extended putt detail fields
+        putt_miss_tags: puttDetails?.miss_tags ?? null,
+        putt_break_direction: puttDetails?.break_direction ?? null,
+        putt_estimated_break_inches: puttDetails?.estimated_break_inches ?? null,
+        // Extended approach miss detail fields
+        approach_miss_direction: approachMissDetails?.miss_direction ?? null,
+        approach_miss_lie_type: approachMissDetails?.lie_type ?? null,
+        approach_miss_distance_from_green: approachMissDetails?.distance_from_green_yards ?? null,
       };
     });
+
+    if (rawShots.length === 0) {
+      return {
+        success: true,
+        stats: null,
+        rounds,
+      };
+    }
 
     // 6. Calculate comprehensive stats
     const stats = calculateStatsFromShots(rawShots, holesInfo, roundsInfo);

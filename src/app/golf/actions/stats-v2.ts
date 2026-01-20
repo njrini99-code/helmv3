@@ -106,6 +106,11 @@ interface LocalPlayerStats {
   period_start?: string;
   period_end?: string;
   round_type_filter?: RoundType[];
+  // Raw counts for proper team aggregation
+  fairways_hit: number;
+  fairways_total: number;
+  gir_hit: number;
+  gir_total: number;
 }
 
 interface LocalTeamStats {
@@ -465,6 +470,11 @@ export async function getPlayerStats(
     period_start: options.dateRange?.start,
     period_end: options.dateRange?.end,
     round_type_filter: options.roundTypes,
+    // Raw counts for proper team aggregation
+    fairways_hit: totalFairwaysHit,
+    fairways_total: totalFairwaysPossible,
+    gir_hit: totalGIR,
+    gir_total: totalGIRPossible,
   };
 
   return {
@@ -508,6 +518,11 @@ function createEmptyPlayerStats(playerId: string): LocalPlayerStats {
       sg_putting: 0,
       sg_total: 0,
     },
+    // Raw counts
+    fairways_hit: 0,
+    fairways_total: 0,
+    gir_hit: 0,
+    gir_total: 0,
   };
 }
 
@@ -548,9 +563,15 @@ export async function getTeamStats(
     return null;
   }
 
-  // Aggregate team stats
+  // Aggregate team stats using raw counts for proper percentage calculation
   const totalRounds = activeStats.reduce((sum, s) => sum + s.total_rounds, 0);
   const bestRounds = activeStats.map(s => s.best_round).filter(s => s > 0);
+
+  // Aggregate raw counts for proper team percentage calculations
+  const totalFairwaysHit = activeStats.reduce((sum, s) => sum + s.fairways_hit, 0);
+  const totalFairwaysTotal = activeStats.reduce((sum, s) => sum + s.fairways_total, 0);
+  const totalGirHit = activeStats.reduce((sum, s) => sum + s.gir_hit, 0);
+  const totalGirTotal = activeStats.reduce((sum, s) => sum + s.gir_total, 0);
 
   return {
     team_id: teamId,
@@ -568,15 +589,12 @@ export async function getTeamStats(
           (activeStats.reduce((sum, s) => sum + s.avg_putts * s.total_rounds, 0) / totalRounds) * 100
         ) / 100
       : 0,
-    fairway_percentage: activeStats.length > 0
-      ? Math.round(
-          (activeStats.reduce((sum, s) => sum + s.fairway_percentage, 0) / activeStats.length) * 100
-        ) / 100
+    // Use aggregated raw counts for accurate team percentages
+    fairway_percentage: totalFairwaysTotal > 0
+      ? Math.round((totalFairwaysHit / totalFairwaysTotal) * 10000) / 100
       : 0,
-    gir_percentage: activeStats.length > 0
-      ? Math.round(
-          (activeStats.reduce((sum, s) => sum + s.gir_percentage, 0) / activeStats.length) * 100
-        ) / 100
+    gir_percentage: totalGirTotal > 0
+      ? Math.round((totalGirHit / totalGirTotal) * 10000) / 100
       : 0,
     strokes_gained: {
       sg_off_tee: activeStats.length > 0

@@ -343,10 +343,15 @@ export async function getDetailedStats(
     .select('id, round_id, hole_number, par')
     .in('round_id', roundIds);
 
-  // Fetch ALL shots (the expensive query)
+  // Fetch ALL shots with detail tables (the expensive query)
+  // Include putt_details and approach_miss_details for complete stats calculation
   const { data: shotsData } = await supabase
     .from('golf_shots')
-    .select('*')
+    .select(`
+      *,
+      putt_details(miss_tags, break_direction, estimated_break_inches, distance_feet, made),
+      approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
+    `)
     .in('round_id', roundIds)
     .order('hole_number')
     .order('shot_number');
@@ -371,46 +376,60 @@ export async function getDetailedStats(
     yardage: 0,
   }));
 
-  const shots: RawShot[] = (shotsData || [])
-    .filter(s =>
-      s.distance_to_hole_before !== null &&
-      s.distance_to_hole_after !== null
-    )
-    .map(s => {
-      // Calculate shot_distance from before/after if not stored
-      // Normalize both to yards for calculation
+  // Map all shots - don't filter out shots with missing distances as they're still
+  // needed for GIR calculation (shots with result='green') and scoring.
+  // The calculator handles null distances gracefully.
+  const shots: RawShot[] = (shotsData || []).map(s => {
+    // Calculate shot_distance from before/after if both are available
+    let shotDistance = s.shot_distance;
+    if (shotDistance === null && s.distance_to_hole_before !== null && s.distance_to_hole_after !== null) {
       const beforeYards = s.distance_unit_before === 'feet'
-        ? (s.distance_to_hole_before ?? 0) / 3
-        : (s.distance_to_hole_before ?? 0);
+        ? s.distance_to_hole_before / 3
+        : s.distance_to_hole_before;
       const afterYards = s.distance_unit_after === 'feet'
-        ? (s.distance_to_hole_after ?? 0) / 3
-        : (s.distance_to_hole_after ?? 0);
-      // Simple calculation: difference between before and after (assumes ball moved toward hole)
-      const calculatedShotDistance = Math.max(0, Math.round(beforeYards - afterYards));
-      const shotDistance = s.shot_distance ?? calculatedShotDistance;
+        ? s.distance_to_hole_after / 3
+        : s.distance_to_hole_after;
+      shotDistance = Math.max(0, Math.round(beforeYards - afterYards));
+    }
 
-      return {
-        id: s.id,
-        round_id: s.round_id,
-        hole_id: s.hole_id,
-        hole_number: s.hole_number,
-        shot_number: s.shot_number,
-        shot_type: s.shot_type as 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty',
-        club_type: s.club_type as 'driver' | 'non_driver' | 'putter',
-        lie_before: s.lie_before as 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other',
-        distance_to_hole_before: s.distance_to_hole_before!,
-        distance_unit_before: s.distance_unit_before as 'yards' | 'feet',
-        result: s.result as 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty',
-        distance_to_hole_after: s.distance_to_hole_after!,
-        distance_unit_after: s.distance_unit_after as 'yards' | 'feet',
-        shot_distance: shotDistance,
-        miss_direction: s.miss_direction,
-        putt_break: s.putt_break,
-        putt_slope: s.putt_slope,
-        is_penalty: s.is_penalty ?? false,
-        penalty_type: s.penalty_type,
-      };
-    });
+    // Extract detail table data (Supabase returns arrays for 1:1 relations, take first item)
+    const puttDetails = Array.isArray(s.putt_details) ? s.putt_details[0] : s.putt_details;
+    const approachMissDetails = Array.isArray(s.approach_miss_details) ? s.approach_miss_details[0] : s.approach_miss_details;
+
+    return {
+      id: s.id,
+      round_id: s.round_id,
+      hole_id: s.hole_id,
+      hole_number: s.hole_number,
+      shot_number: s.shot_number,
+      shot_type: s.shot_type as 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty',
+      club_used: s.club_used,
+      club_type: s.club_type as 'driver' | 'non_driver' | 'putter',
+      lie_before: s.lie_before as 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other',
+      lie_after: s.lie_after as 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' | null,
+      distance_to_hole_before: s.distance_to_hole_before,
+      distance_unit_before: s.distance_unit_before as 'yards' | 'feet',
+      result: s.result as 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty',
+      distance_to_hole_after: s.distance_to_hole_after,
+      distance_unit_after: s.distance_unit_after as 'yards' | 'feet',
+      shot_distance: shotDistance,
+      miss_direction: s.miss_direction,
+      putt_break: s.putt_break,
+      putt_distance_feet: s.putt_distance_feet,
+      putt_slope: s.putt_slope,
+      putt_made: s.putt_made,
+      is_penalty: s.is_penalty ?? false,
+      penalty_type: s.penalty_type,
+      // Extended putt detail fields
+      putt_miss_tags: puttDetails?.miss_tags ?? null,
+      putt_break_direction: puttDetails?.break_direction ?? null,
+      putt_estimated_break_inches: puttDetails?.estimated_break_inches ?? null,
+      // Extended approach miss detail fields
+      approach_miss_direction: approachMissDetails?.miss_direction ?? null,
+      approach_miss_lie_type: approachMissDetails?.lie_type ?? null,
+      approach_miss_distance_from_green: approachMissDetails?.distance_from_green_yards ?? null,
+    };
+  });
 
   return calculateStatsFromShots(shots, holesInfo, roundsInfo);
 }
@@ -526,10 +545,10 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
     courseName: r.course_name || 'Unknown Course',
     roundType: r.round_type ? roundTypeFromDb(r.round_type) : null,
     girPct: r.total_gir !== null && r.total_gir_possible !== null && r.total_gir_possible > 0
-      ? Math.round((r.total_gir / r.total_gir_possible) * 100)
+      ? Math.round((r.total_gir / r.total_gir_possible) * 1000) / 10
       : null,
     fairwayPct: r.total_fairways_hit !== null && r.total_fairways !== null && r.total_fairways > 0
-      ? Math.round((r.total_fairways_hit / r.total_fairways) * 100)
+      ? Math.round((r.total_fairways_hit / r.total_fairways) * 1000) / 10
       : null,
     putts: r.total_putts,
     scrambling: null, // Scrambling data not available at round level
@@ -781,8 +800,8 @@ export async function getTeamComparison(
         ? Math.round((stats.scores.reduce((a, b) => a + b, 0) / stats.scores.length) * 10) / 10
         : null,
       bestRound: stats.scores.length > 0 ? Math.min(...stats.scores) : null,
-      girPct: totalGirOpps > 0 ? Math.round((totalGirs / totalGirOpps) * 100) : null,
-      fairwayPct: totalFairwayOpps > 0 ? Math.round((totalFairways / totalFairwayOpps) * 100) : null,
+      girPct: totalGirOpps > 0 ? Math.round((totalGirs / totalGirOpps) * 1000) / 10 : null,
+      fairwayPct: totalFairwayOpps > 0 ? Math.round((totalFairways / totalFairwayOpps) * 1000) / 10 : null,
       puttsPerRound: stats.scores.length > 0
         ? Math.round((totalPutts / stats.scores.length) * 10) / 10
         : null,
@@ -802,16 +821,16 @@ export async function getTeamComparison(
       ? Math.round((validScoring.reduce((a, b) => a + b.scoringAverage!, 0) / validScoring.length) * 10) / 10
       : null,
     girPct: validGir.length > 0
-      ? Math.round(validGir.reduce((a, b) => a + b.girPct!, 0) / validGir.length)
+      ? Math.round((validGir.reduce((a, b) => a + b.girPct!, 0) / validGir.length) * 10) / 10
       : null,
     fairwayPct: validFairway.length > 0
-      ? Math.round(validFairway.reduce((a, b) => a + b.fairwayPct!, 0) / validFairway.length)
+      ? Math.round((validFairway.reduce((a, b) => a + b.fairwayPct!, 0) / validFairway.length) * 10) / 10
       : null,
     puttsPerRound: validPutts.length > 0
       ? Math.round((validPutts.reduce((a, b) => a + b.puttsPerRound!, 0) / validPutts.length) * 10) / 10
       : null,
     scramblingPct: validScrambling.length > 0
-      ? Math.round(validScrambling.reduce((a, b) => a + b.scramblingPct!, 0) / validScrambling.length)
+      ? Math.round((validScrambling.reduce((a, b) => a + b.scramblingPct!, 0) / validScrambling.length) * 10) / 10
       : null,
   };
 
@@ -977,8 +996,8 @@ export async function getCourseBreakdown(playerId: string): Promise<CourseBreakd
         ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
         : null,
       bestRound: scores.length > 0 ? Math.min(...scores) : null,
-      girPct: totalGirOpp > 0 ? Math.round((totalGir / totalGirOpp) * 100) : null,
-      fairwayPct: totalFairwayOpp > 0 ? Math.round((totalFairways / totalFairwayOpp) * 100) : null,
+      girPct: totalGirOpp > 0 ? Math.round((totalGir / totalGirOpp) * 1000) / 10 : null,
+      fairwayPct: totalFairwayOpp > 0 ? Math.round((totalFairways / totalFairwayOpp) * 1000) / 10 : null,
       puttsPerRound: rounds.length > 0
         ? Math.round((totalPutts / rounds.length) * 10) / 10
         : null,

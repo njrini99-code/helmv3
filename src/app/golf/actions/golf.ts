@@ -4169,12 +4169,34 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
           distanceUnitAfter = distanceAfter <= 30 ? 'feet' : 'yards';
 
           // Determine result based on randomness
+          // Par 3 tee shots: ~55% GIR rate (realistic for amateur golfers)
+          // Par 4/5 tee shots: hit fairway ~65% of time
+          const hitGreen = par === 3 ? Math.random() > 0.45 : false; // 55% GIR for par 3s
           const hitFairway = Math.random() > 0.35;
-          if (distanceAfter <= 30) {
+
+          if (distanceAfter <= 30 && hitGreen) {
+            // Par 3: hit the green
             result = 'green';
             currentLie = 'green';
             distanceUnitAfter = 'feet';
-            distanceAfter = Math.floor(distanceAfter * 3); // Convert to feet for putting
+            distanceAfter = Math.floor(Math.random() * 25) + 5; // 5-30 feet from pin
+          } else if (distanceAfter <= 30 && par === 3) {
+            // Par 3: missed the green (around the green)
+            const missResult = Math.random();
+            if (missResult < 0.5) {
+              result = 'rough';
+              currentLie = 'rough';
+              distanceAfter = Math.floor(Math.random() * 15) + 10; // 10-25 yards from pin
+            } else if (missResult < 0.8) {
+              result = 'sand';
+              currentLie = 'sand';
+              distanceAfter = Math.floor(Math.random() * 10) + 15; // 15-25 yards from pin
+            } else {
+              result = 'fairway';
+              currentLie = 'fairway';
+              distanceAfter = Math.floor(Math.random() * 20) + 10; // 10-30 yards from pin
+            }
+            distanceUnitAfter = 'yards';
           } else if (hitFairway) {
             result = 'fairway';
             currentLie = 'fairway';
@@ -4256,18 +4278,47 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
 
           shotDistance = currentDistance;
 
-          // Determine result - either on green or in hole (if close enough and final shot)
-          if (shotNumber === score - 1 && Math.random() > 0.9) {
-            // Chip in!
+          // Determine result - around-the-green shots have ~75% success rate
+          // Better from fairway (~85%), worse from sand (~60%)
+          const chipSuccessRate = currentLie === 'sand' ? 0.60 : currentLie === 'rough' ? 0.70 : 0.85;
+          const hitGreenFromChip = Math.random() < chipSuccessRate;
+
+          if (shotNumber === score - 1 && Math.random() > 0.92) {
+            // Chip in! (~8% chance on final chip)
             result = 'hole';
             distanceAfter = 0;
-          } else {
+            distanceUnitAfter = 'feet';
+            currentLie = 'green';
+          } else if (hitGreenFromChip) {
+            // Successfully chipped onto green
             result = 'green';
             distanceAfter = Math.floor(Math.random() * 15) + 3; // 3-18 feet left
+            distanceUnitAfter = 'feet';
+            currentLie = 'green';
+          } else {
+            // Missed chip - chunk, blade, or poor contact
+            const missResult = Math.random();
+            if (missResult < 0.4) {
+              // Chunked it - still short
+              result = currentLie === 'sand' ? 'sand' : 'rough';
+              currentLie = result as 'rough' | 'sand';
+              distanceAfter = Math.floor(Math.random() * 15) + 5; // 5-20 yards
+              distanceUnitAfter = 'yards';
+            } else if (missResult < 0.7) {
+              // Thin/bladed - went too far
+              result = 'rough';
+              currentLie = 'rough';
+              distanceAfter = Math.floor(Math.random() * 20) + 10; // 10-30 yards through green
+              distanceUnitAfter = 'yards';
+            } else {
+              // Landed on green but rolled off
+              result = 'rough';
+              currentLie = 'rough';
+              distanceAfter = Math.floor(Math.random() * 10) + 8; // 8-18 yards
+              distanceUnitAfter = 'yards';
+            }
           }
-          distanceUnitAfter = 'feet';
           currentDistance = distanceAfter;
-          currentLie = distanceAfter === 0 ? 'green' : 'green';
         }
 
         const shotData: {
