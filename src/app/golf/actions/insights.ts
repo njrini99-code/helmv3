@@ -45,11 +45,9 @@ interface InsightRecord {
   priority: string;
   player_id: string;
   title: string;
-  description: string;
-  recommendation: string;
-  metadata: Record<string, unknown>;
+  content: string;  // DB column is 'content', not 'description'
+  metadata: Record<string, unknown>;  // recommendation goes in metadata
   status: 'active';
-  expires_at: string | null;
 }
 
 interface TeamPlayerRow {
@@ -424,18 +422,17 @@ function convertV2ToInsightRecord(
     priority,
     player_id: playerId,
     title: insight.headline,
-    description: insight.body,
-    recommendation: insight.callToAction || 'Review this insight with your coach.',
+    content: insight.body,  // DB column is 'content'
     metadata: {
       confidence: insight.confidence,
       tone: insight.tone,
+      recommendation: insight.callToAction || 'Review this insight with your coach.',
       reasoning_steps: insight.reasoning?.reasoningChain?.length ?? 0,
       v2_engine: true,
       pattern_id: pattern?.id,
       prediction_value: prediction?.predictedValue,
     },
     status: 'active',
-    expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days default
   };
 }
 
@@ -610,17 +607,16 @@ export async function generateTeamInsights() {
             priority: pattern.strokeImpact > 2 ? 'high' : 'medium',
             player_id: player.id,
             title: `Pattern: ${pattern.description || 'Performance Pattern'}`,
-            description: pattern.recommendation || `Pattern detected with ${(pattern.confidence * 100).toFixed(0)}% confidence.`,
-            recommendation: pattern.recommendation || 'Work with coach to address this pattern.',
+            content: pattern.recommendation || `Pattern detected with ${(pattern.confidence * 100).toFixed(0)}% confidence.`,
             metadata: {
               v2_engine: true,
               pattern_type: pattern.patternType,
               support: pattern.support,
               confidence: pattern.confidence,
               stroke_impact: pattern.strokeImpact,
+              recommendation: pattern.recommendation || 'Work with coach to address this pattern.',
             },
             status: 'active',
-            expires_at: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
           };
 
           const patternKey = `${player.id}:${patternInsight.insight_type}:${pattern.id}`;
