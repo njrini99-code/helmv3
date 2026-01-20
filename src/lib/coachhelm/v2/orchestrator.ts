@@ -12,8 +12,8 @@
  */
 
 import { extractAllFeatures } from './features';
-import { PatternMiner, CausalEngine, ShotPatternMiner, StatsInsightGenerator } from './mining';
-import type { StatsInsight } from './mining';
+import { PatternMiner, CausalEngine, ShotPatternMiner, StatsInsightGenerator, CorrelationDiscovery } from './mining';
+import type { StatsInsight, MetricCorrelation } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
 import { BehaviorLearner, OutcomeValidator, CrossLearner } from './learning';
 import { ReasoningEngine, ConfidenceCalibrator } from './reasoning';
@@ -336,6 +336,10 @@ export class CoachHelmIntelligence {
       const statsInsights = await this.generateStatsInsights(playerId, stats);
       insights.push(...statsInsights);
     }
+
+    // Cross-metric correlation insights (pressure, scoring patterns)
+    const correlationInsights = await this.generateCorrelationInsights(playerId, context);
+    insights.push(...correlationInsights);
 
     // Pattern insights
     for (const pattern of patterns.filter((p) => p.isActive).slice(0, 3)) {
@@ -769,6 +773,148 @@ export class CoachHelmIntelligence {
 
     // Convert stats insights to composed insights format
     return statsInsights.map((insight) => this.convertStatsInsightToComposed(insight));
+  }
+
+  /**
+   * Generates insights from cross-metric correlations
+   * Discovers relationships between metrics that reveal deeper patterns
+   */
+  private async generateCorrelationInsights(
+    playerId: string,
+    context: InsightContext
+  ): Promise<ComposedInsight[]> {
+    const insights: ComposedInsight[] = [];
+
+    try {
+      const correlationDiscovery = new CorrelationDiscovery(playerId);
+      const correlations = await correlationDiscovery.discoverMetricCorrelations();
+
+      // Take top 3 most significant correlations
+      for (const correlation of correlations.slice(0, 3)) {
+        const composedInsight = this.convertCorrelationToComposed(correlation, context);
+        insights.push(composedInsight);
+      }
+    } catch (error) {
+      console.error('[CoachHelm] Error generating correlation insights:', error);
+    }
+
+    return insights;
+  }
+
+  /**
+   * Converts a MetricCorrelation to the ComposedInsight format
+   */
+  private convertCorrelationToComposed(
+    correlation: MetricCorrelation,
+    _context: InsightContext
+  ): ComposedInsight {
+    // Map significance to tone
+    const toneMap: Record<string, ComposedInsight['tone']> = {
+      high: correlation.correlation < 0 ? 'cautionary' : 'neutral',
+      medium: 'neutral',
+      low: 'encouraging',
+    };
+
+    // Build reasoning chain
+    type ReasoningType = 'inductive' | 'deductive' | 'abductive';
+    const reasoningChain: Array<{
+      stepNumber: number;
+      type: ReasoningType;
+      premise: string;
+      inference: string;
+      conclusion: string;
+      confidence: number;
+      evidence: string[];
+    }> = [
+      {
+        stepNumber: 1,
+        type: 'inductive' as ReasoningType,
+        premise: `Analyzed correlation between ${correlation.metricA} and ${correlation.metricB}`,
+        inference: `Correlation coefficient of ${correlation.correlation.toFixed(2)} indicates ${
+          Math.abs(correlation.correlation) >= 0.6 ? 'strong' :
+          Math.abs(correlation.correlation) >= 0.4 ? 'moderate' : 'weak'
+        } relationship`,
+        conclusion: `${correlation.significance} significance correlation discovered`,
+        confidence: Math.abs(correlation.correlation),
+        evidence: [
+          `r = ${correlation.correlation.toFixed(2)}`,
+          `Sample size: ${correlation.sampleSize} rounds`,
+          correlation.context || 'Overall analysis',
+        ],
+      },
+      {
+        stepNumber: 2,
+        type: 'deductive' as ReasoningType,
+        premise: `Estimated stroke impact: ${correlation.strokeImpact.toFixed(1)} strokes/round`,
+        inference: correlation.strokeImpact > 1
+          ? 'This is a significant area affecting scoring'
+          : 'This pattern has measurable impact on performance',
+        conclusion: `Addressing this correlation could save ${correlation.strokeImpact.toFixed(1)} strokes per round`,
+        confidence: Math.min(0.9, Math.abs(correlation.correlation) + 0.2),
+        evidence: [`Stroke impact: ${correlation.strokeImpact.toFixed(2)}`],
+      },
+    ];
+
+    // Create headline from the insight
+    const headline = this.createCorrelationHeadline(correlation);
+
+    return {
+      headline,
+      body: correlation.insight,
+      callToAction: correlation.recommendation,
+      tone: toneMap[correlation.significance] ?? 'neutral',
+      confidence: Math.abs(correlation.correlation),
+      reasoning: {
+        conclusion: correlation.insight,
+        confidence: Math.abs(correlation.correlation),
+        calibratedConfidence: Math.abs(correlation.correlation), // Will be calibrated if needed
+        reasoningChain,
+        alternatives: [],
+        sensitivities: [
+          {
+            assumption: 'Correlation reflects causal relationship',
+            ifChanged: 'If confounding variables exist',
+            impactOnConclusion: 'Relationship strength may vary',
+          },
+        ],
+      },
+    };
+  }
+
+  /**
+   * Creates a concise headline for a correlation insight
+   */
+  private createCorrelationHeadline(correlation: MetricCorrelation): string {
+    // Generate contextual headlines based on metric types
+    if (correlation.metricA.includes('putt') && correlation.metricB.includes('pressure')) {
+      return 'Pressure Putting Pattern';
+    }
+    if (correlation.metricA.includes('gir') && correlation.metricB.includes('score')) {
+      return 'Approach Impact on Scoring';
+    }
+    if (correlation.metricA.includes('fairway') && correlation.metricB.includes('scoring')) {
+      return 'Fairway Accuracy Impact';
+    }
+    if (correlation.metricA.includes('penalty')) {
+      return 'Penalty Impact Analysis';
+    }
+    if (correlation.metricA.includes('three_putt')) {
+      return 'Three-Putt Pattern';
+    }
+
+    // Default headline
+    return `${this.formatMetricName(correlation.metricA)} Correlation`;
+  }
+
+  /**
+   * Formats a metric name for display
+   */
+  private formatMetricName(metric: string): string {
+    return metric
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase())
+      .replace('Gir', 'GIR')
+      .replace('Pct', '%');
   }
 
   /**

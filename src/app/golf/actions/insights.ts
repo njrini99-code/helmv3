@@ -38,6 +38,26 @@ import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 // TYPES
 // ============================================================================
 
+/**
+ * Philosophy category for insight classification
+ */
+export type PhilosophyCategory =
+  | 'ball_striking'
+  | 'short_game'
+  | 'putting'
+  | 'course_management'
+  | 'mental_game';
+
+/**
+ * Extended insight record with philosophy-based weighting
+ */
+export interface WeightedInsight extends InsightRecord {
+  philosophyScore: number;           // 0-100 based on coach priorities
+  matchesCoachPriority: boolean;     // Top priority badge flag
+  priorityCategory: PhilosophyCategory;
+  strokeImpactScore: number;         // Normalized stroke impact for comparison
+}
+
 interface InsightRecord {
   coach_id: string;
   team_id: string;
@@ -277,6 +297,241 @@ function getConfidenceThreshold(sensitivity: CoachPhilosophy['alertSensitivity']
     default:
       return 0.55;
   }
+}
+
+// ============================================================================
+// PHILOSOPHY-WEIGHTED INSIGHT PRIORITIZATION
+// ============================================================================
+
+/**
+ * Maps insight types and their metadata to philosophy categories
+ * Uses insight type, title content, and metadata to determine category
+ */
+function categorizeInsight(insight: InsightRecord): PhilosophyCategory {
+  const type = insight.insight_type;
+  const title = insight.title.toLowerCase();
+  const content = insight.content.toLowerCase();
+  const metadata = insight.metadata || {};
+
+  // Check metadata for explicit category
+  if (metadata.category && typeof metadata.category === 'string') {
+    const cat = metadata.category.toLowerCase();
+    if (cat.includes('putting') || cat.includes('putt')) return 'putting';
+    if (cat.includes('short') || cat.includes('scrambl') || cat.includes('around')) return 'short_game';
+    if (cat.includes('ball') || cat.includes('driving') || cat.includes('approach') || cat.includes('tee')) return 'ball_striking';
+    if (cat.includes('course') || cat.includes('manage') || cat.includes('penalty')) return 'course_management';
+    if (cat.includes('mental') || cat.includes('pressure') || cat.includes('tournament')) return 'mental_game';
+  }
+
+  // Putting category detection
+  if (
+    type === 'performance_decline' && (title.includes('putt') || content.includes('putt') || content.includes('three-putt')) ||
+    title.includes('putting') ||
+    content.includes('putts per round') ||
+    metadata.metric === 'strokes_gained_putting' ||
+    metadata.stat_name === 'putting' ||
+    title.includes('sg putting')
+  ) {
+    return 'putting';
+  }
+
+  // Short game category detection
+  if (
+    title.includes('scrambl') ||
+    title.includes('around the green') ||
+    title.includes('short game') ||
+    title.includes('up-and-down') ||
+    title.includes('sand save') ||
+    content.includes('scrambling') ||
+    metadata.metric === 'strokes_gained_around_green' ||
+    metadata.stat_name === 'short_game'
+  ) {
+    return 'short_game';
+  }
+
+  // Ball striking category detection
+  if (
+    type === 'pattern_detected' && (title.includes('driv') || title.includes('fairway') || content.includes('tee shot')) ||
+    title.includes('ball striking') ||
+    title.includes('off the tee') ||
+    title.includes('approach') ||
+    title.includes('gir') ||
+    title.includes('greens in regulation') ||
+    title.includes('driving') ||
+    title.includes('fairway') ||
+    metadata.metric === 'strokes_gained_tee' ||
+    metadata.metric === 'strokes_gained_approach' ||
+    metadata.stat_name === 'ball_striking'
+  ) {
+    return 'ball_striking';
+  }
+
+  // Course management category detection
+  if (
+    title.includes('course management') ||
+    title.includes('penalty') ||
+    title.includes('decision') ||
+    content.includes('course management') ||
+    content.includes('penalty stroke') ||
+    metadata.stat_name === 'course_management'
+  ) {
+    return 'course_management';
+  }
+
+  // Mental game category detection - pressure-related and tournament performance
+  if (
+    type === 'qualifying_watch' ||
+    type === 'roster_alert' ||
+    title.includes('pressure') ||
+    title.includes('tournament') ||
+    title.includes('mental') ||
+    title.includes('closing hole') ||
+    title.includes('back nine') ||
+    content.includes('pressure') ||
+    content.includes('tournament') ||
+    content.includes('mental game') ||
+    metadata.is_tournament_related ||
+    metadata.is_pressure_related ||
+    metadata.stat_name === 'mental_game'
+  ) {
+    return 'mental_game';
+  }
+
+  // Default to ball_striking for general performance insights
+  return 'ball_striking';
+}
+
+/**
+ * Gets the priority weight (1-5) for a category from philosophy
+ * Lower number = higher priority (1 is most important)
+ */
+function getCategoryPriorityWeight(category: PhilosophyCategory, philosophy: CoachPhilosophy): number {
+  switch (category) {
+    case 'ball_striking':
+      return philosophy.priorityBallStriking;
+    case 'short_game':
+      return philosophy.priorityShortGame;
+    case 'putting':
+      return philosophy.priorityPutting;
+    case 'course_management':
+      return philosophy.priorityCourseManagement;
+    case 'mental_game':
+      return philosophy.priorityMentalGame;
+  }
+}
+
+/**
+ * Calculates philosophy score for an insight (0-100)
+ * Higher score = more aligned with coach priorities
+ */
+function calculatePhilosophyScore(
+  insight: InsightRecord,
+  category: PhilosophyCategory,
+  philosophy: CoachPhilosophy
+): number {
+  // Get the priority weight for this category (1-5, 1 = highest priority)
+  const priorityWeight = getCategoryPriorityWeight(category, philosophy);
+
+  // Convert to a 0-60 base score (priority 1 = 60, priority 5 = 20)
+  const priorityScore = (6 - priorityWeight) * 12;
+
+  // Add confidence bonus (0-20)
+  const confidence = (insight.metadata?.confidence as number) ?? 0.5;
+  const confidenceBonus = confidence * 20;
+
+  // Add stroke impact bonus (0-20)
+  const strokeImpact = (insight.metadata?.stroke_impact as number) ?? 0;
+  const strokeImpactBonus = Math.min(strokeImpact * 5, 20);
+
+  // Apply sensitivity adjustment
+  const sensitivityMultiplier =
+    philosophy.alertSensitivity === 'aggressive' ? 1.1 :
+    philosophy.alertSensitivity === 'conservative' ? 0.9 : 1.0;
+
+  // Calculate final score, clamped to 0-100
+  const rawScore = (priorityScore + confidenceBonus + strokeImpactBonus) * sensitivityMultiplier;
+  return Math.min(100, Math.max(0, Math.round(rawScore)));
+}
+
+/**
+ * Weights and ranks insights based on coach philosophy settings
+ * Returns insights sorted by philosophy score (highest first)
+ */
+export function weightInsightsByPhilosophy(
+  insights: InsightRecord[],
+  philosophy: CoachPhilosophy
+): WeightedInsight[] {
+  // Get the top priority category (lowest number = highest priority)
+  const priorities = [
+    { category: 'ball_striking' as const, weight: philosophy.priorityBallStriking },
+    { category: 'short_game' as const, weight: philosophy.priorityShortGame },
+    { category: 'putting' as const, weight: philosophy.priorityPutting },
+    { category: 'course_management' as const, weight: philosophy.priorityCourseManagement },
+    { category: 'mental_game' as const, weight: philosophy.priorityMentalGame },
+  ];
+
+  const topPriorityCategory = priorities.reduce((a, b) =>
+    a.weight < b.weight ? a : b
+  ).category;
+
+  // Weight each insight
+  const weightedInsights: WeightedInsight[] = insights.map(insight => {
+    const category = categorizeInsight(insight);
+    const philosophyScore = calculatePhilosophyScore(insight, category, philosophy);
+    const matchesCoachPriority = category === topPriorityCategory;
+
+    // Normalize stroke impact for comparison
+    const strokeImpact = (insight.metadata?.stroke_impact as number) ?? 0;
+    const strokeImpactScore = Math.min(100, strokeImpact * 20);
+
+    return {
+      ...insight,
+      philosophyScore,
+      matchesCoachPriority,
+      priorityCategory: category,
+      strokeImpactScore,
+    };
+  });
+
+  // Sort by philosophy score (highest first)
+  return weightedInsights.sort((a, b) => b.philosophyScore - a.philosophyScore);
+}
+
+/**
+ * Gets insights matching coach's top priorities
+ * Returns only insights from the top 2 priority categories
+ */
+export function getTopPriorityInsights(
+  weightedInsights: WeightedInsight[],
+  philosophy: CoachPhilosophy,
+  limit: number = 5
+): WeightedInsight[] {
+  const priorities = [
+    { category: 'ball_striking' as const, weight: philosophy.priorityBallStriking },
+    { category: 'short_game' as const, weight: philosophy.priorityShortGame },
+    { category: 'putting' as const, weight: philosophy.priorityPutting },
+    { category: 'course_management' as const, weight: philosophy.priorityCourseManagement },
+    { category: 'mental_game' as const, weight: philosophy.priorityMentalGame },
+  ].sort((a, b) => a.weight - b.weight);
+
+  const topCategories = new Set([priorities[0]?.category, priorities[1]?.category]);
+
+  return weightedInsights
+    .filter(insight => topCategories.has(insight.priorityCategory))
+    .slice(0, limit);
+}
+
+/**
+ * Gets insights sorted by stroke impact (highest first)
+ * For the "Top Insights by Stroke Impact" section
+ */
+export function getTopInsightsByStrokeImpact(
+  weightedInsights: WeightedInsight[],
+  limit: number = 5
+): WeightedInsight[] {
+  return [...weightedInsights]
+    .sort((a, b) => b.strokeImpactScore - a.strokeImpactScore)
+    .slice(0, limit);
 }
 
 // ============================================================================
@@ -634,10 +889,37 @@ export async function generateTeamInsights() {
       }
     }
 
-    // 7. Bulk insert insights
-    if (allInsights.length > 0) {
+    // 6.5. Apply philosophy weighting to sort and enhance insights
+    const weightedInsights = weightInsightsByPhilosophy(allInsights, philosophy);
+
+    // Enhance insights with philosophy metadata before insertion
+    const insightsWithPhilosophy = weightedInsights.map(insight => ({
+      ...insight,
+      metadata: {
+        ...insight.metadata,
+        philosophy_score: insight.philosophyScore,
+        matches_coach_priority: insight.matchesCoachPriority,
+        priority_category: insight.priorityCategory,
+        stroke_impact_score: insight.strokeImpactScore,
+      },
+      // Remove the extended properties that aren't part of the DB schema
+      philosophyScore: undefined,
+      matchesCoachPriority: undefined,
+      priorityCategory: undefined,
+      strokeImpactScore: undefined,
+    }));
+
+    // Clean up undefined properties
+    const cleanInsights: InsightRecord[] = insightsWithPhilosophy.map(insight => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { philosophyScore, matchesCoachPriority, priorityCategory, strokeImpactScore, ...cleanInsight } = insight;
+      return cleanInsight as InsightRecord;
+    });
+
+    // 7. Bulk insert insights (now sorted by philosophy score)
+    if (cleanInsights.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: insertError } = await (supabase as any).from('golf_coach_insights').insert(allInsights);
+      const { error: insertError } = await (supabase as any).from('golf_coach_insights').insert(cleanInsights);
 
       if (insertError) {
         console.error('Failed to insert insights:', insertError);
@@ -647,6 +929,9 @@ export async function generateTeamInsights() {
 
     // 8. Log generation
     const executionTime = Date.now() - startTime;
+
+    // Get top priority insights for summary
+    const topPriorityInsights = getTopPriorityInsights(weightedInsights, philosophy, 3);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('golf_insight_generation_log').insert({
@@ -659,6 +944,8 @@ export async function generateTeamInsights() {
       metadata: {
         engine_version: 'v2',
         analysis_depth: 'standard',
+        philosophy_weighted: true,
+        top_priority_count: topPriorityInsights.length,
       },
     });
 

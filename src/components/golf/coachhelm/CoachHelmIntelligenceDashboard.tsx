@@ -29,10 +29,25 @@ import type { TrendAnalysis, TeamComparison } from '@/lib/coachhelm/v2/mining/st
 // TYPES
 // ============================================================================
 
+/**
+ * Philosophy category for insight classification
+ */
+type PhilosophyCategory =
+  | 'ball_striking'
+  | 'short_game'
+  | 'putting'
+  | 'course_management'
+  | 'mental_game';
+
 interface InsightWithEnhancements extends PersistedInsight {
   trend?: TrendAnalysis;
   teamComparison?: TeamComparison;
   correlatedInsights?: string[];
+  // Philosophy-weighted fields from metadata
+  philosophyScore?: number;
+  matchesCoachPriority?: boolean;
+  priorityCategory?: PhilosophyCategory;
+  strokeImpactScore?: number;
 }
 
 interface TeamInsightSummary {
@@ -362,7 +377,7 @@ function InsightCard({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               {/* Header row */}
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className={cn(
                   'inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full',
                   config.badge
@@ -370,9 +385,20 @@ function InsightCard({
                   {config.icon}
                   {insight.priority}
                 </span>
+                {insight.matchesCoachPriority && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-primary-500 text-white">
+                    <IconTarget size={12} />
+                    Your Priority
+                  </span>
+                )}
                 {insight.strokeImpact && insight.strokeImpact > 0 && (
                   <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium text-warm-600 bg-warm-100/80 rounded-full">
                     {insight.strokeImpact.toFixed(1)} strokes/round
+                  </span>
+                )}
+                {insight.philosophyScore !== undefined && insight.philosophyScore > 70 && (
+                  <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium text-primary-700 bg-primary-50/80 rounded-full">
+                    Score: {insight.philosophyScore}
                   </span>
                 )}
                 {trendIcon && (
@@ -728,7 +754,7 @@ export function CoachHelmIntelligenceDashboard({
     });
   }, [insights, timeScope]);
 
-  // Sort by priority and stroke impact
+  // Sort by priority and stroke impact (default sorting)
   const sortedInsights = useMemo(() => {
     const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
     return [...filteredInsights].sort((a, b) => {
@@ -737,6 +763,39 @@ export function CoachHelmIntelligenceDashboard({
       return (b.strokeImpact || 0) - (a.strokeImpact || 0);
     });
   }, [filteredInsights]);
+
+  // Extract philosophy data from metadata and enhance insights
+  const insightsWithPhilosophy = useMemo(() => {
+    return filteredInsights.map(insight => {
+      const metadata = (insight as unknown as { metadata?: Record<string, unknown> }).metadata;
+      return {
+        ...insight,
+        philosophyScore: (metadata?.philosophy_score as number) ?? 50,
+        matchesCoachPriority: (metadata?.matches_coach_priority as boolean) ?? false,
+        priorityCategory: (metadata?.priority_category as PhilosophyCategory) ?? 'ball_striking',
+        strokeImpactScore: (metadata?.stroke_impact_score as number) ?? ((insight.strokeImpact || 0) * 20),
+      };
+    });
+  }, [filteredInsights]);
+
+  // Top insights sorted by philosophy score (matches YOUR priorities)
+  const topPriorityInsights = useMemo(() => {
+    return [...insightsWithPhilosophy]
+      .sort((a, b) => (b.philosophyScore ?? 0) - (a.philosophyScore ?? 0))
+      .slice(0, 5);
+  }, [insightsWithPhilosophy]);
+
+  // Top insights sorted by stroke impact
+  const topStrokeImpactInsights = useMemo(() => {
+    return [...insightsWithPhilosophy]
+      .sort((a, b) => (b.strokeImpactScore ?? 0) - (a.strokeImpactScore ?? 0))
+      .slice(0, 5);
+  }, [insightsWithPhilosophy]);
+
+  // Count insights that match coach priorities
+  const matchesPriorityCount = useMemo(() => {
+    return insightsWithPhilosophy.filter(i => i.matchesCoachPriority).length;
+  }, [insightsWithPhilosophy]);
 
   // Handlers
   const handleRefresh = useCallback(async () => {
@@ -981,26 +1040,76 @@ export function CoachHelmIntelligenceDashboard({
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
-                  className="lg:col-span-2 space-y-4"
+                  className="lg:col-span-2 space-y-6"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-lg font-semibold text-warm-900">Priority Insights</h2>
-                    <span className="text-sm text-warm-500">{sortedInsights.length} active</span>
+                  {/* Section 1: Top Insights for YOUR Priorities */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <IconTarget size={18} className="text-primary-600" />
+                        <h2 className="text-lg font-semibold text-warm-900">Top Insights for YOUR Priorities</h2>
+                      </div>
+                      <span className="text-sm text-warm-500">{matchesPriorityCount} match your focus areas</span>
+                    </div>
+
+                    <ErrorBoundary fallback={SectionErrorFallback}>
+                      <AnimatePresence mode="popLayout">
+                        {topPriorityInsights.length > 0 ? (
+                          topPriorityInsights.map((insight, index) => (
+                            <InsightCard
+                              key={`priority-${insight.id}`}
+                              insight={insight}
+                              onDismiss={handleDismiss}
+                              onAcknowledge={handleAcknowledge}
+                              index={index}
+                            />
+                          ))
+                        ) : (
+                          <div className="p-4 rounded-xl bg-warm-50/50 border border-warm-200/40 text-center">
+                            <p className="text-sm text-warm-500">No insights match your priority settings yet.</p>
+                          </div>
+                        )}
+                      </AnimatePresence>
+                    </ErrorBoundary>
                   </div>
 
-                  <ErrorBoundary fallback={SectionErrorFallback}>
-                    <AnimatePresence mode="popLayout">
-                      {sortedInsights.slice(0, 6).map((insight, index) => (
-                        <InsightCard
-                          key={insight.id}
-                          insight={insight}
-                          onDismiss={handleDismiss}
-                          onAcknowledge={handleAcknowledge}
-                          index={index}
-                        />
-                      ))}
-                    </AnimatePresence>
-                  </ErrorBoundary>
+                  {/* Divider */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 h-px bg-warm-200/60" />
+                    <span className="text-xs font-medium text-warm-400 uppercase tracking-wider">vs</span>
+                    <div className="flex-1 h-px bg-warm-200/60" />
+                  </div>
+
+                  {/* Section 2: Top Insights by Stroke Impact */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <IconChartBar size={18} className="text-amber-600" />
+                        <h2 className="text-lg font-semibold text-warm-900">Top Insights by Stroke Impact</h2>
+                      </div>
+                      <span className="text-sm text-warm-500">{stats.avgStrokeImpact.toFixed(1)} avg strokes/round</span>
+                    </div>
+
+                    <ErrorBoundary fallback={SectionErrorFallback}>
+                      <AnimatePresence mode="popLayout">
+                        {topStrokeImpactInsights.length > 0 ? (
+                          topStrokeImpactInsights.map((insight, index) => (
+                            <InsightCard
+                              key={`impact-${insight.id}`}
+                              insight={insight}
+                              onDismiss={handleDismiss}
+                              onAcknowledge={handleAcknowledge}
+                              index={index}
+                            />
+                          ))
+                        ) : (
+                          <div className="p-4 rounded-xl bg-warm-50/50 border border-warm-200/40 text-center">
+                            <p className="text-sm text-warm-500">No insights with stroke impact data available.</p>
+                          </div>
+                        )}
+                      </AnimatePresence>
+                    </ErrorBoundary>
+                  </div>
 
                   {sortedInsights.length === 0 && (
                     <EmptyState
