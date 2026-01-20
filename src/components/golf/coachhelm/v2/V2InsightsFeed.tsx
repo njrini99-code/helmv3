@@ -17,7 +17,12 @@ import { GlassCard } from '@/components/ui/glass-card';
 import { InsightCard } from './V2InsightCard';
 import { PatternCard } from './PatternCard';
 import { PredictionCard } from './PredictionCard';
-import { generateTeamInsight, recordInteraction } from '@/app/golf/actions/insights';
+import {
+  generateTeamInsight,
+  recordInteraction,
+  acknowledgeComposedInsight,
+  dismissComposedInsight,
+} from '@/app/golf/actions/insights';
 import type { ComposedInsight, MinedPattern, PerformancePrediction } from '@/lib/coachhelm/v2/types';
 
 interface InsightsFeedProps {
@@ -81,11 +86,29 @@ export function InsightsFeed({
   };
 
   const handleInsightAction = async (insight: ComposedInsight, action: 'acknowledge' | 'dismiss') => {
-    // Record interaction
-    await recordInteraction(coachId, 'coach', action === 'acknowledge' ? 'action' : 'dismiss', 'insight');
-    
-    // Remove from local state
+    // Optimistically remove from local state for immediate UI feedback
     setInsights(prev => prev.filter(i => i !== insight));
+
+    try {
+      // Persist the action to the database
+      // Note: These insights are in-memory (V2 ComposedInsight), so we use the
+      // acknowledgeComposedInsight/dismissComposedInsight actions which persist
+      // and mark as acknowledged/dismissed in one operation
+      const result = action === 'acknowledge'
+        ? await acknowledgeComposedInsight(insight)
+        : await dismissComposedInsight(insight);
+
+      if (!result.success) {
+        // Revert the optimistic update on failure
+        setInsights(prev => [...prev, insight]);
+        setError(result.error || `Failed to ${action} insight`);
+      }
+    } catch (err) {
+      // Revert the optimistic update on error
+      setInsights(prev => [...prev, insight]);
+      console.error(`Error ${action}ing insight:`, err);
+      setError(`Failed to ${action} insight. Please try again.`);
+    }
   };
 
   const tabs: { id: TabType; label: string; count: number }[] = [

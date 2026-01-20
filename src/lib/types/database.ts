@@ -7072,6 +7072,56 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          device_name: string | null
+          endpoint: string
+          expiration_time: string | null
+          failed_count: number
+          id: string
+          keys: Json
+          last_push_at: string | null
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_name?: string | null
+          endpoint: string
+          expiration_time?: string | null
+          failed_count?: number
+          id?: string
+          keys: Json
+          last_push_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_name?: string | null
+          endpoint?: string
+          expiration_time?: string | null
+          failed_count?: number
+          id?: string
+          keys?: Json
+          last_push_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       putt_details: {
         Row: {
           break_direction: string | null
@@ -7121,6 +7171,7 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          notification_preferences: Json | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
         }
@@ -7128,6 +7179,7 @@ export type Database = {
           created_at?: string | null
           email: string
           id: string
+          notification_preferences?: Json | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
@@ -7135,6 +7187,7 @@ export type Database = {
           created_at?: string | null
           email?: string
           id?: string
+          notification_preferences?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }

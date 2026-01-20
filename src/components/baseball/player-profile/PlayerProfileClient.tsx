@@ -79,6 +79,7 @@ export function PlayerProfileClient({
   insights,
   notes,
   videos,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   teamId: _teamId,
   teamName,
   coachId,

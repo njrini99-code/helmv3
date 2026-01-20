@@ -26,7 +26,7 @@ export function GenerateReviewButton({ roundId }: GenerateReviewButtonProps) {
       } else {
         setError(result.error || 'Failed to generate review');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setIsGenerating(false);

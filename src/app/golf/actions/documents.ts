@@ -66,7 +66,6 @@ export async function getDocument(documentId: string): Promise<{ data: GolfDocum
   try {
     const supabase = await createClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('golf_documents')
       .select(`
@@ -213,6 +212,7 @@ export async function deleteDocument(documentId: string): Promise<{ success: boo
     const supabase = await createClient();
 
     // Get document to find storage paths
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { data: _document, error: fetchError } = await supabase
       .from('golf_documents')
       .select('file_url, team_id')
@@ -386,6 +386,7 @@ export async function getDocumentVersions(documentId: string): Promise<{ data: D
 export async function revertToVersion(
   documentId: string,
   versionId: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _coachId?: string  // Not used, uses authenticated user
 ): Promise<{ success: boolean; error: string | null }> {
   try {
@@ -667,6 +668,7 @@ export async function createGolfDocument(data: {
  */
 export async function deleteGolfDocument(
   documentId: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _filePath?: string
 ): Promise<{ success: boolean; error?: string }> {
   const result = await deleteDocument(documentId);

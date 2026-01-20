@@ -18,6 +18,7 @@ export interface ConversationListProps {
 export function ConversationList({
   conversations,
   selectedId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   currentUserId: _currentUserId,
   onSelect,
   onNewConversation,

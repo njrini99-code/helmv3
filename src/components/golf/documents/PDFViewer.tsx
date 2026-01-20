@@ -29,6 +29,7 @@ export function PDFViewer({
   className,
 }: PDFViewerProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [totalPages, _setTotalPages] = useState(1);
   const [scale, setScale] = useState(1);
   const [isLoading, setIsLoading] = useState(true);

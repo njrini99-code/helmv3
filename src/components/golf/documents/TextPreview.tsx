@@ -38,6 +38,7 @@ export function TextPreview({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [wordWrap, setWordWrap] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [lineNumbers, _setLineNumbers] = useState(true);
 
   const isJson = mimeType === 'application/json';
@@ -72,7 +73,7 @@ export function TextPreview({
           setError(null);
           const text = await fetchContent();
           setContent(formatContent(text));
-        } catch (err) {
+        } catch {
           setError('Failed to load file content');
         } finally {
           setIsLoading(false);

@@ -196,6 +196,7 @@ export class CorrelationEngine {
    */
   async discoverCorrelations(
     stats: GolfStats,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _roundData?: Array<Partial<GolfStats>>
   ): Promise<CorrelationInsight[]> {
     const insights: CorrelationInsight[] = [];
@@ -322,6 +323,7 @@ export class CorrelationEngine {
     pair: typeof MEANINGFUL_METRIC_PAIRS[0],
     value1: number,
     value2: number,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _stats: GolfStats
   ): number {
     // Base correlation from known golf relationships
@@ -389,6 +391,7 @@ export class CorrelationEngine {
   /**
    * Estimate stroke impact of improving a metric
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private estimateStrokeImpact(metric: string, currentValue: number, _stats: GolfStats): number {
     const impacts: Record<string, (val: number) => number> = {
       threePuttsPerRound: (val) => val > 0.8 ? val - 0.8 : 0,
@@ -433,6 +436,7 @@ export class CorrelationEngine {
   /**
    * Get recommendation based on correlation
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private getCorrelationRecommendation(correlation: Correlation, _stats: GolfStats): string {
     const metric = correlation.metric1;
 

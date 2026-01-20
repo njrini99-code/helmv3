@@ -301,6 +301,7 @@ export async function enableCoachHelm(coachId: string): Promise<boolean> {
  */
 export async function disableCoachHelm(
   coachId: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _reason?: string
 ): Promise<boolean> {
   const supabase = await createClient();

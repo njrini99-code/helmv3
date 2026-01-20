@@ -368,6 +368,7 @@ export default async function GolfRosterPage() {
                       <PlayerActionsMenu
                         playerId={player.id}
                         playerName={`${player.first_name} ${player.last_name}`}
+                        currentStatus={player.status}
                       />
                     </div>
                   </div>

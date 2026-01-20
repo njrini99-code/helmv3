@@ -5,6 +5,10 @@ import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences
+} from '@/app/baseball/actions/profile-settings';
 
 interface NotificationsModalProps {
   isOpen: boolean;
@@ -12,28 +16,28 @@ interface NotificationsModalProps {
 }
 
 interface NotificationPreferences {
-  email_rounds: boolean;
+  // Email preferences (mapped to database fields)
   email_messages: boolean;
   email_announcements: boolean;
-  email_tasks: boolean;
-  push_rounds: boolean;
+  email_event_reminders: boolean;
+  email_task_reminders: boolean;
+  // Push preferences
   push_messages: boolean;
-  push_announcements: boolean;
-  push_tasks: boolean;
+  push_events: boolean;
+  push_task_reminders: boolean;
 }
 
 export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps) {
   const [loading, setLoading] = useState(false);
   const [loadingPrefs, setLoadingPrefs] = useState(true);
   const [preferences, setPreferences] = useState<NotificationPreferences>({
-    email_rounds: true,
     email_messages: true,
     email_announcements: true,
-    email_tasks: true,
-    push_rounds: true,
-    push_messages: true,
-    push_announcements: true,
-    push_tasks: true,
+    email_event_reminders: true,
+    email_task_reminders: true,
+    push_messages: false,
+    push_events: false,
+    push_task_reminders: true,
   });
   const { showToast } = useToast();
 
@@ -46,12 +50,20 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
   async function loadPreferences() {
     setLoadingPrefs(true);
     try {
-      const stored = localStorage.getItem('golf_notification_preferences');
-      if (stored) {
-        setPreferences(JSON.parse(stored));
+      const result = await getNotificationPreferences();
+      if (result.data) {
+        setPreferences({
+          email_messages: result.data.email_messages ?? true,
+          email_announcements: result.data.email_announcements ?? true,
+          email_event_reminders: result.data.email_event_reminders ?? true,
+          email_task_reminders: result.data.email_task_reminders ?? true,
+          push_messages: result.data.push_messages ?? false,
+          push_events: result.data.push_events ?? false,
+          push_task_reminders: result.data.push_task_reminders ?? true,
+        });
       }
     } catch {
-      // Use defaults if no preferences exist
+      // Use defaults if fetch fails
     } finally {
       setLoadingPrefs(false);
     }
@@ -61,9 +73,22 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
     setLoading(true);
 
     try {
-      localStorage.setItem('golf_notification_preferences', JSON.stringify(preferences));
-      showToast('Notification preferences updated', 'success');
-      onClose();
+      const result = await updateNotificationPreferences({
+        email_messages: preferences.email_messages,
+        email_announcements: preferences.email_announcements,
+        email_event_reminders: preferences.email_event_reminders,
+        email_task_reminders: preferences.email_task_reminders,
+        push_messages: preferences.push_messages,
+        push_events: preferences.push_events,
+        push_task_reminders: preferences.push_task_reminders,
+      });
+
+      if (result.success) {
+        showToast('Notification preferences updated', 'success');
+        onClose();
+      } else {
+        showToast(result.error || 'Failed to update preferences', 'error');
+      }
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Failed to update preferences', 'error');
     } finally {
@@ -90,12 +115,6 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
             <h3 className="text-sm font-semibold text-slate-700 mb-3">Email Notifications</h3>
             <div className="space-y-2">
               <ToggleRow
-                label="Round Updates"
-                description="Get notified about new rounds and scores"
-                checked={preferences.email_rounds}
-                onChange={() => togglePreference('email_rounds')}
-              />
-              <ToggleRow
                 label="Messages"
                 description="Receive email for new messages"
                 checked={preferences.email_messages}
@@ -108,10 +127,16 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
                 onChange={() => togglePreference('email_announcements')}
               />
               <ToggleRow
-                label="Tasks & Reminders"
-                description="Practice tasks and schedule reminders"
-                checked={preferences.email_tasks}
-                onChange={() => togglePreference('email_tasks')}
+                label="Event Reminders"
+                description="Reminders for upcoming events and schedule changes"
+                checked={preferences.email_event_reminders}
+                onChange={() => togglePreference('email_event_reminders')}
+              />
+              <ToggleRow
+                label="Tasks & Practice Reminders"
+                description="Practice tasks and assignment reminders"
+                checked={preferences.email_task_reminders}
+                onChange={() => togglePreference('email_task_reminders')}
               />
             </div>
           </div>
@@ -120,28 +145,22 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
             <h3 className="text-sm font-semibold text-slate-700 mb-3">Push Notifications</h3>
             <div className="space-y-2">
               <ToggleRow
-                label="Round Updates"
-                description="Get notified about new rounds and scores"
-                checked={preferences.push_rounds}
-                onChange={() => togglePreference('push_rounds')}
-              />
-              <ToggleRow
                 label="Messages"
                 description="Instant notifications for new messages"
                 checked={preferences.push_messages}
                 onChange={() => togglePreference('push_messages')}
               />
               <ToggleRow
-                label="Announcements"
-                description="Team announcements and updates"
-                checked={preferences.push_announcements}
-                onChange={() => togglePreference('push_announcements')}
+                label="Events"
+                description="Notifications for events and schedule updates"
+                checked={preferences.push_events}
+                onChange={() => togglePreference('push_events')}
               />
               <ToggleRow
                 label="Tasks & Reminders"
-                description="Practice tasks and schedule reminders"
-                checked={preferences.push_tasks}
-                onChange={() => togglePreference('push_tasks')}
+                description="Push notifications for tasks and reminders"
+                checked={preferences.push_task_reminders}
+                onChange={() => togglePreference('push_task_reminders')}
               />
             </div>
           </div>

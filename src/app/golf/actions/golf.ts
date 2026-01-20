@@ -1696,20 +1696,16 @@ export async function updatePlayerStatus(
     // Verify ownership - checks golf_team_members for player-team relationship
     await verifyGolfTeamOwnership(supabase, playerId, coach.team_id, 'golf_players');
 
-    // Map our status values to the database enum values
-    // team_member_status enum: 'pending' | 'active' | 'inactive' | 'removed'
-    const statusMap: Record<string, 'active' | 'inactive'> = {
-      'active': 'active',
-      'injured': 'inactive', // injured maps to inactive
-      'redshirt': 'inactive', // redshirt maps to inactive
-      'inactive': 'inactive',
-    };
-
-    // Update status on golf_team_members (not golf_players - which doesn't have status)
+    // Update status on golf_team_members
+    // NOTE: The golf_team_members.status column uses a CHECK constraint allowing:
+    // 'active', 'inactive', 'injured', 'redshirt' (see migration 042_sport_specific_messaging_tables.sql)
+    // The TypeScript types show team_member_status enum which is different, so we cast here.
     const { error } = await supabase
       .from('golf_team_members')
       .update({
-        status: statusMap[status],
+        // Cast to unknown first to bypass strict enum typing - the actual DB constraint
+        // supports all four player status values via CHECK constraint
+        status: status as unknown as 'active' | 'inactive',
         updated_at: new Date().toISOString()
       })
       .eq('player_id', playerId)
@@ -2631,7 +2627,7 @@ export async function savePartialRound(
 
     return { success: true, data: { roundId } };
 
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to save round. Please try again.'
@@ -2683,7 +2679,7 @@ export async function getInProgressRounds(): Promise<ActionResult<InProgressRoun
 
     return { success: true, data: rounds || [] };
 
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to fetch rounds. Please try again.'
@@ -2748,7 +2744,7 @@ export async function loadInProgressRound(roundId: string): Promise<ActionResult
       }
     };
 
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to load round. Please try again.'
@@ -2794,7 +2790,7 @@ export async function deleteInProgressRound(roundId: string): Promise<ActionResu
 
     return { success: true, data: undefined };
 
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to delete round. Please try again.'
@@ -2944,7 +2940,7 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
 
     return { success: true, data: qualifiers };
 
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to fetch qualifiers. Please try again.'
@@ -3032,7 +3028,7 @@ export async function getNextQualifierRoundNumber(
       data: { nextRoundNumber, availableRounds }
     };
 
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to get round number. Please try again.'
@@ -3251,7 +3247,7 @@ export async function getQualifierLeaderboard(
       }
     };
 
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to fetch leaderboard. Please try again.'

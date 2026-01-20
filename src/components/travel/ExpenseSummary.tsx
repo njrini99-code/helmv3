@@ -69,6 +69,7 @@ export function ExpenseSummary({ budget, pendingCount, className }: ExpenseSumma
 
   // Sort categories by amount
   const sortedCategories = Object.entries(by_category)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     .filter(([_, amount]) => amount > 0)
     .sort(([, a], [, b]) => b - a);
 

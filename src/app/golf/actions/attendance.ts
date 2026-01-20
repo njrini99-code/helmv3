@@ -393,7 +393,7 @@ export async function getPlayerAttendanceStats(
     }
 
     return { success: true, data: data as unknown as PlayerAttendanceStats[] };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Failed to get attendance stats. Please try again.',
@@ -434,7 +434,7 @@ export async function verifyQRCodeCheckIn(
         eventTitle: event.title,
       },
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Invalid QR code. Please try again.',

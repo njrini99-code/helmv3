@@ -1893,3 +1893,182 @@ function buildStatInsightsForTeam(
     .slice(0, 8)
     .map((entry) => entry.insight);
 }
+
+// ============================================================================
+// ACKNOWLEDGE COMPOSED INSIGHT (For V2 in-memory insights)
+// ============================================================================
+
+/**
+ * Acknowledges a composed insight by persisting it to the database and marking
+ * it as acknowledged in one operation. Used for V2 insights that are generated
+ * in-memory and don't have a database ID yet.
+ */
+export async function acknowledgeComposedInsight(
+  insight: ComposedInsight,
+  playerId?: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get coach info
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    // Get team_id from organization
+    let teamId: string | null = null;
+    if (coach.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', coach.organization_id)
+        .maybeSingle();
+      teamId = team?.id ?? null;
+    }
+
+    // Insert the insight with acknowledged status
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insertError } = await (supabase as any)
+      .from('golf_coach_insights')
+      .insert({
+        coach_id: coach.id,
+        team_id: teamId,
+        player_id: playerId || null,
+        insight_type: 'ai_generated',
+        priority: mapToneToPriority(insight.tone, insight.confidence),
+        title: insight.headline,
+        description: insight.body,
+        recommendation: insight.callToAction || '',
+        status: 'acknowledged',
+        acknowledged_at: new Date().toISOString(),
+        metadata: {
+          confidence: insight.confidence,
+          tone: insight.tone,
+          v2_engine: true,
+          reasoning_steps: insight.reasoning?.reasoningChain?.length ?? 0,
+        },
+      });
+
+    if (insertError) {
+      console.error('Failed to persist acknowledged insight:', insertError);
+      return { success: false, error: 'Failed to save insight' };
+    }
+
+    // Record interaction for learning
+    try {
+      await recordInteraction(coach.id, 'coach', 'action', 'insight_acknowledged', {
+        insightTone: insight.tone,
+        confidence: insight.confidence,
+      });
+    } catch {
+      // Non-critical, don't fail the operation
+    }
+
+    revalidatePath('/golf/dashboard');
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error acknowledging composed insight:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
+// DISMISS COMPOSED INSIGHT (For V2 in-memory insights)
+// ============================================================================
+
+/**
+ * Dismisses a composed insight by persisting it to the database and marking
+ * it as dismissed in one operation. Used for V2 insights that are generated
+ * in-memory and don't have a database ID yet.
+ */
+export async function dismissComposedInsight(
+  insight: ComposedInsight,
+  playerId?: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get coach info
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    // Get team_id from organization
+    let teamId: string | null = null;
+    if (coach.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', coach.organization_id)
+        .maybeSingle();
+      teamId = team?.id ?? null;
+    }
+
+    // Insert the insight with dismissed status
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insertError } = await (supabase as any)
+      .from('golf_coach_insights')
+      .insert({
+        coach_id: coach.id,
+        team_id: teamId,
+        player_id: playerId || null,
+        insight_type: 'ai_generated',
+        priority: mapToneToPriority(insight.tone, insight.confidence),
+        title: insight.headline,
+        description: insight.body,
+        recommendation: insight.callToAction || '',
+        status: 'dismissed',
+        dismissed: true,
+        dismissed_at: new Date().toISOString(),
+        metadata: {
+          confidence: insight.confidence,
+          tone: insight.tone,
+          v2_engine: true,
+          reasoning_steps: insight.reasoning?.reasoningChain?.length ?? 0,
+        },
+      });
+
+    if (insertError) {
+      console.error('Failed to persist dismissed insight:', insertError);
+      return { success: false, error: 'Failed to save insight' };
+    }
+
+    // Record interaction for learning
+    try {
+      await recordInteraction(coach.id, 'coach', 'dismiss', 'insight_dismissed', {
+        insightTone: insight.tone,
+        confidence: insight.confidence,
+      });
+    } catch {
+      // Non-critical, don't fail the operation
+    }
+
+    revalidatePath('/golf/dashboard');
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error dismissing composed insight:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}

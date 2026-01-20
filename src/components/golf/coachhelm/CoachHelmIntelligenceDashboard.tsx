@@ -677,6 +677,7 @@ function EmptyState({
 
 export function CoachHelmIntelligenceDashboard({
   teamId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   coachId: _coachId,
   initialInsights = [],
   initialPlayerSummaries = [],

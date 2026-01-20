@@ -15,6 +15,288 @@ import { formatISO } from 'date-fns';
 import { generateICalendar, type ICalEvent } from './ical';
 
 // ============================================================================
+// ICALENDAR PARSING
+// ============================================================================
+
+/**
+ * Parse an iCalendar (.ics) format string into ICalEvent objects
+ *
+ * Handles common iCalendar properties:
+ * - VEVENT: Event component
+ * - DTSTART/DTEND: Start and end dates/times
+ * - SUMMARY: Event title
+ * - DESCRIPTION: Event description
+ * - LOCATION: Event location
+ * - RRULE: Recurrence rule
+ * - UID: Unique identifier
+ * - ORGANIZER: Event organizer
+ * - ATTENDEE: Event attendees
+ *
+ * @param icalData - Raw iCalendar format string
+ * @returns Array of parsed ICalEvent objects
+ */
+export function parseICalendar(icalData: string): ICalEvent[] {
+  const events: ICalEvent[] = [];
+
+  // Normalize line endings and unfold continued lines (RFC 5545 Section 3.1)
+  // Lines can be folded at 75 octets by inserting CRLF followed by whitespace
+  const normalizedData = icalData
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/\n[ \t]/g, ''); // Unfold continued lines
+
+  // Split into lines
+  const lines = normalizedData.split('\n');
+
+  let inEvent = false;
+  let currentEvent: Partial<ICalEvent> & {
+    uid?: string;
+    organizer?: { name: string; email?: string };
+    attendees?: Array<{ name: string; email?: string; status?: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE' | 'NEEDS-ACTION' }>;
+  } = {};
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) continue;
+
+    if (trimmedLine === 'BEGIN:VEVENT') {
+      inEvent = true;
+      currentEvent = {};
+      continue;
+    }
+
+    if (trimmedLine === 'END:VEVENT') {
+      if (inEvent && currentEvent.uid && currentEvent.title && currentEvent.startDate) {
+        events.push({
+          id: currentEvent.uid,
+          title: currentEvent.title,
+          description: currentEvent.description,
+          location: currentEvent.location,
+          startDate: currentEvent.startDate,
+          endDate: currentEvent.endDate,
+          allDay: currentEvent.allDay,
+          recurrenceRule: currentEvent.recurrenceRule,
+          organizer: currentEvent.organizer,
+          attendees: currentEvent.attendees,
+          createdAt: currentEvent.createdAt,
+          updatedAt: currentEvent.updatedAt,
+        });
+      }
+      inEvent = false;
+      currentEvent = {};
+      continue;
+    }
+
+    if (!inEvent) continue;
+
+    // Parse property:value or property;params:value
+    const colonIndex = trimmedLine.indexOf(':');
+    if (colonIndex === -1) continue;
+
+    const propertyPart = trimmedLine.substring(0, colonIndex);
+    const valuePart = trimmedLine.substring(colonIndex + 1);
+
+    // Extract property name and parameters
+    const semicolonIndex = propertyPart.indexOf(';');
+    const propertyName = semicolonIndex === -1
+      ? propertyPart.toUpperCase()
+      : propertyPart.substring(0, semicolonIndex).toUpperCase();
+    const params = semicolonIndex === -1
+      ? ''
+      : propertyPart.substring(semicolonIndex + 1);
+
+    // Unescape value
+    const value = unescapeICalText(valuePart);
+
+    switch (propertyName) {
+      case 'UID':
+        currentEvent.uid = value;
+        break;
+
+      case 'SUMMARY':
+        currentEvent.title = value;
+        break;
+
+      case 'DESCRIPTION':
+        currentEvent.description = value;
+        break;
+
+      case 'LOCATION':
+        currentEvent.location = value;
+        break;
+
+      case 'DTSTART':
+        {
+          const { date, isAllDay } = parseICalDateTime(value, params);
+          currentEvent.startDate = date;
+          currentEvent.allDay = isAllDay;
+        }
+        break;
+
+      case 'DTEND':
+        {
+          const { date } = parseICalDateTime(value, params);
+          currentEvent.endDate = date;
+        }
+        break;
+
+      case 'RRULE':
+        currentEvent.recurrenceRule = value;
+        break;
+
+      case 'CREATED':
+        {
+          const { date } = parseICalDateTime(value, params);
+          currentEvent.createdAt = date;
+        }
+        break;
+
+      case 'LAST-MODIFIED':
+        {
+          const { date } = parseICalDateTime(value, params);
+          currentEvent.updatedAt = date;
+        }
+        break;
+
+      case 'ORGANIZER':
+        {
+          const organizer = parseOrganizer(value, params);
+          if (organizer) {
+            currentEvent.organizer = organizer;
+          }
+        }
+        break;
+
+      case 'ATTENDEE':
+        {
+          const attendee = parseAttendee(value, params);
+          if (attendee) {
+            if (!currentEvent.attendees) {
+              currentEvent.attendees = [];
+            }
+            currentEvent.attendees.push(attendee);
+          }
+        }
+        break;
+    }
+  }
+
+  return events;
+}
+
+/**
+ * Parse iCalendar date/time value
+ * Handles:
+ * - DATE format: YYYYMMDD (all-day)
+ * - DATE-TIME format: YYYYMMDDTHHmmss (local)
+ * - DATE-TIME with Z suffix: YYYYMMDDTHHmmssZ (UTC)
+ * - TZID parameter for timezone-aware parsing
+ */
+function parseICalDateTime(value: string, params: string): { date: Date; isAllDay: boolean } {
+  // Check if it's a date-only value (all-day event)
+  const isAllDay = params.toUpperCase().includes('VALUE=DATE') && !params.toUpperCase().includes('VALUE=DATE-TIME');
+
+  // Remove any whitespace
+  const cleanValue = value.trim();
+
+  if (isAllDay || cleanValue.length === 8) {
+    // Format: YYYYMMDD
+    const year = parseInt(cleanValue.substring(0, 4), 10);
+    const month = parseInt(cleanValue.substring(4, 6), 10) - 1; // JS months are 0-indexed
+    const day = parseInt(cleanValue.substring(6, 8), 10);
+    return { date: new Date(year, month, day), isAllDay: true };
+  }
+
+  // Format: YYYYMMDDTHHmmss or YYYYMMDDTHHmmssZ
+  const isUtc = cleanValue.endsWith('Z');
+  const dateTimePart = isUtc ? cleanValue.slice(0, -1) : cleanValue;
+
+  const year = parseInt(dateTimePart.substring(0, 4), 10);
+  const month = parseInt(dateTimePart.substring(4, 6), 10) - 1;
+  const day = parseInt(dateTimePart.substring(6, 8), 10);
+
+  // Check for time component (T separator at position 8)
+  if (dateTimePart.length >= 15 && dateTimePart[8] === 'T') {
+    const hour = parseInt(dateTimePart.substring(9, 11), 10);
+    const minute = parseInt(dateTimePart.substring(11, 13), 10);
+    const second = parseInt(dateTimePart.substring(13, 15), 10);
+
+    if (isUtc) {
+      return { date: new Date(Date.UTC(year, month, day, hour, minute, second)), isAllDay: false };
+    } else {
+      // Local time - create date in local timezone
+      // Note: If TZID is present, ideally we'd convert, but for simplicity we use local time
+      return { date: new Date(year, month, day, hour, minute, second), isAllDay: false };
+    }
+  }
+
+  // Fallback: treat as date-only
+  return { date: new Date(year, month, day), isAllDay: true };
+}
+
+/**
+ * Unescape iCalendar text value
+ * Reverses the escaping done by escapeText in ical.ts
+ */
+function unescapeICalText(text: string): string {
+  return text
+    .replace(/\\n/gi, '\n')      // Newline
+    .replace(/\\;/g, ';')        // Semicolon
+    .replace(/\\,/g, ',')        // Comma
+    .replace(/\\\\/g, '\\');     // Backslash (must be last)
+}
+
+/**
+ * Parse ORGANIZER property
+ * Format: ORGANIZER;CN=Name:MAILTO:email@example.com
+ */
+function parseOrganizer(value: string, params: string): { name: string; email?: string } | null {
+  const cnMatch = params.match(/CN=([^;]+)/i);
+  const name = cnMatch && cnMatch[1] ? unescapeICalText(cnMatch[1]) : 'Unknown';
+
+  let email: string | undefined;
+  if (value.toUpperCase().startsWith('MAILTO:')) {
+    email = value.substring(7);
+  }
+
+  return { name, email };
+}
+
+/**
+ * Parse ATTENDEE property
+ * Format: ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=Name:MAILTO:email@example.com
+ */
+function parseAttendee(value: string, params: string): { name: string; email?: string; status?: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE' | 'NEEDS-ACTION' } | null {
+  const cnMatch = params.match(/CN=([^;]+)/i);
+  const name = cnMatch && cnMatch[1] ? unescapeICalText(cnMatch[1]) : 'Unknown';
+
+  let email: string | undefined;
+  if (value.toUpperCase().startsWith('MAILTO:')) {
+    email = value.substring(7);
+  }
+
+  let status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE' | 'NEEDS-ACTION' | undefined;
+  const statusMatch = params.match(/PARTSTAT=([^;]+)/i);
+  if (statusMatch && statusMatch[1]) {
+    const statusValue = statusMatch[1].toUpperCase();
+    if (statusValue === 'ACCEPTED' || statusValue === 'DECLINED' || statusValue === 'TENTATIVE' || statusValue === 'NEEDS-ACTION') {
+      status = statusValue;
+    }
+  }
+
+  return { name, email, status };
+}
+
+/**
+ * Parse a single VEVENT from iCalendar data
+ * Convenience function when you expect exactly one event
+ */
+export function parseICalendarSingle(icalData: string): ICalEvent | null {
+  const events = parseICalendar(icalData);
+  return events[0] ?? null;
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -157,20 +439,30 @@ export class CalDAVClient {
       const etag = response.headers.get('ETag') || '';
       const icalData = await response.text();
 
-      // TODO: Implement parseICalendar or use a library
-      // For now, create a placeholder event
-      const eventId = eventUrl.split('/').pop()?.replace('.ics', '') || 'unknown';
-      const placeholderEvent: ICalEvent = {
-        id: eventId,
-        title: 'CalDAV Event',
-        startDate: new Date(),
-      };
+      // Parse the iCalendar data
+      const parsedEvent = parseICalendarSingle(icalData);
+
+      if (!parsedEvent) {
+        // Fallback if parsing fails - extract ID from URL
+        const eventId = eventUrl.split('/').pop()?.replace('.ics', '') || 'unknown';
+        const fallbackEvent: ICalEvent = {
+          id: eventId,
+          title: 'CalDAV Event',
+          startDate: new Date(),
+        };
+        return {
+          url: eventUrl,
+          etag,
+          icalData,
+          event: fallbackEvent,
+        };
+      }
 
       return {
         url: eventUrl,
         etag,
         icalData,
-        event: placeholderEvent,
+        event: parsedEvent,
       };
     } catch (error) {
       console.error('Error fetching event:', error);
@@ -382,21 +674,33 @@ export class CalDAVClient {
 
       if (hrefMatch && hrefMatch[1] && etagMatch && etagMatch[1] && dataMatch && dataMatch[1]) {
         const icalData = dataMatch[1].trim();
+        const eventUrl = hrefMatch[1];
 
-        // TODO: Implement parseICalendar or use a library
-        // For now, create a placeholder event
-        const placeholderEvent: ICalEvent = {
-          id: hrefMatch[1].split('/').pop()?.replace('.ics', '') || 'unknown',
-          title: 'CalDAV Event',
-          startDate: new Date(),
-        };
+        // Parse the iCalendar data
+        const parsedEvent = parseICalendarSingle(icalData);
 
-        events.push({
-          url: this.resolveUrl(hrefMatch[1]),
-          etag: etagMatch[1],
-          icalData,
-          event: placeholderEvent,
-        });
+        if (parsedEvent) {
+          events.push({
+            url: this.resolveUrl(eventUrl),
+            etag: etagMatch[1],
+            icalData,
+            event: parsedEvent,
+          });
+        } else {
+          // Fallback if parsing fails - create a placeholder with URL-derived ID
+          const fallbackEvent: ICalEvent = {
+            id: eventUrl.split('/').pop()?.replace('.ics', '') || 'unknown',
+            title: 'CalDAV Event',
+            startDate: new Date(),
+          };
+
+          events.push({
+            url: this.resolveUrl(eventUrl),
+            etag: etagMatch[1],
+            icalData,
+            event: fallbackEvent,
+          });
+        }
       }
     }
 

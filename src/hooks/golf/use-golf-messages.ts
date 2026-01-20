@@ -322,6 +322,7 @@ export function useGolfConversations() {
       participant_names: string[];
       is_group?: boolean;
       title?: string | null;
+      participant_count?: number;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -363,7 +364,7 @@ export function useGolfConversations() {
 
         if (conv && conv.is_team_chat && !existingIds.has(conv.id)) {
           // Fetch participant count and last message for team chat
-          const [{ count: _participantCount }, { data: lastMsg }] = await Promise.all([
+          const [{ count: participantCount }, { data: lastMsg }] = await Promise.all([
             supabase
               .from('golf_conversation_participants')
               .select('*', { count: 'exact', head: true })
@@ -417,6 +418,7 @@ export function useGolfConversations() {
             participant_names: [],
             is_group: true,
             title: conv.title,
+            participant_count: participantCount || 0,
           });
         }
       }
@@ -511,7 +513,7 @@ export function useGolfConversations() {
           unread_count: conv.unread_count || 0,
           is_group: true,
           title: conv.title,
-          participant_count: conv.participant_ids?.length || 0,
+          participant_count: conv.participant_count || conv.participant_ids?.length || 0,
         } as GolfConversationWithMeta;
       }
 

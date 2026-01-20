@@ -89,6 +89,8 @@ export function MobileCalendarWrapper({
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_isSaving, setIsSaving] = useState(false);
+  // Track initial event type for pre-filling from quick-add FAB
+  const [initialEventType, setInitialEventType] = useState<string | undefined>(undefined);
 
   // If not mobile, don't render this component - let parent handle desktop view
   if (!showMobileUI) {
@@ -103,11 +105,11 @@ export function MobileCalendarWrapper({
   }, []);
 
   // Add event handler (for FAB)
-  const handleAddEvent = useCallback((_eventType?: string) => {
+  const handleAddEvent = useCallback((eventType?: string) => {
     setSelectedEvent(null);
     setIsCreatingEvent(true);
+    setInitialEventType(eventType);
     setIsSheetOpen(true);
-    // TODO: Pre-fill event type if provided
   }, []);
 
   // Save event handler
@@ -261,6 +263,7 @@ export function MobileCalendarWrapper({
         onClose={() => {
           setIsSheetOpen(false);
           setSelectedEvent(null);
+          setInitialEventType(undefined);
         }}
         event={selectedEvent}
         isCreating={isCreatingEvent}
@@ -270,6 +273,7 @@ export function MobileCalendarWrapper({
         userRsvpStatus={selectedEventRsvpStatus}
         onRsvp={!isCoach ? handleSheetRsvp : undefined}
         rsvpSummary={isCoach ? selectedEventRsvpSummary : null}
+        initialEventType={initialEventType as 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | undefined}
       />
     </div>
   );

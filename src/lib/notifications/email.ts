@@ -29,29 +29,76 @@ async function getResendClient() {
 
 /**
  * Get user's notification preferences
- * NOTE: notification_preferences column does not exist on users table yet.
- * Returns default preferences until the column is added via migration.
+ * Reads from users.notification_preferences JSONB column.
+ * Falls back to defaults if preferences not set or column missing.
  */
 export async function getUserNotificationPreferences(
-  _userId: string
+  userId: string
 ): Promise<NotificationPreferences> {
-  // TODO: Add notification_preferences JSONB column to users table
-  // and uncomment this query:
-  // const supabase = await createClient();
-  // const { data } = await supabase
-  //   .from('users')
-  //   .select('notification_preferences')
-  //   .eq('id', userId)
-  //   .single();
-  //
-  // if (data?.notification_preferences && typeof data.notification_preferences === 'object') {
-  //   return {
-  //     ...DEFAULT_NOTIFICATION_PREFERENCES,
-  //     ...(data.notification_preferences as Partial<NotificationPreferences>),
-  //   };
-  // }
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('users')
+      .select('notification_preferences')
+      .eq('id', userId)
+      .single();
 
-  return DEFAULT_NOTIFICATION_PREFERENCES;
+    if (error) {
+      // Column might not exist yet or user not found - use defaults
+      console.warn('Failed to fetch notification preferences:', error.message);
+      return DEFAULT_NOTIFICATION_PREFERENCES;
+    }
+
+    if (data?.notification_preferences && typeof data.notification_preferences === 'object') {
+      // Merge with defaults to ensure all required fields exist
+      return {
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        ...(data.notification_preferences as Partial<NotificationPreferences>),
+      };
+    }
+
+    return DEFAULT_NOTIFICATION_PREFERENCES;
+  } catch (error) {
+    console.error('Error fetching notification preferences:', error);
+    return DEFAULT_NOTIFICATION_PREFERENCES;
+  }
+}
+
+/**
+ * Update user's notification preferences
+ */
+export async function updateUserNotificationPreferences(
+  userId: string,
+  preferences: Partial<NotificationPreferences>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+
+    // Get current preferences and merge with updates
+    const currentPrefs = await getUserNotificationPreferences(userId);
+    const updatedPrefs = {
+      ...currentPrefs,
+      ...preferences,
+    };
+
+    const { error } = await supabase
+      .from('users')
+      .update({ notification_preferences: updatedPrefs })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Failed to update notification preferences:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating notification preferences:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }
 
 // Database notification types (from notifications table enum)
@@ -88,23 +135,38 @@ function shouldSendEmail(
   prefs: NotificationPreferences
 ): boolean {
   switch (type) {
+    // Messages
     case 'new_message':
       return prefs.email_messages;
+
+    // Pipeline/Recruiting
     case 'watchlist_add':
     case 'pipeline_stage_change':
       return prefs.email_pipeline_updates;
+
+    // Events
     case 'camp_registration':
     case 'event_rsvp_reminder':
     case 'qualifier_created':
     case 'qualifier_updated':
       return prefs.email_event_reminders;
+
+    // Profile activity
     case 'profile_view':
       return prefs.email_profile_views;
+
+    // Announcements
     case 'team_announcement':
     case 'coachhelm_insight':
-      return prefs.email_announcements;
     case 'round_submitted':
       return prefs.email_announcements;
+
+    // Tasks
+    case 'task_reminder':
+    case 'task_assigned':
+    case 'task_completed':
+      return prefs.email_task_reminders;
+
     default:
       return true;
   }

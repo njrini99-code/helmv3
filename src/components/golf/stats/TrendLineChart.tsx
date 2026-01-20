@@ -32,6 +32,7 @@ export function TrendLineChart({
   data,
   analysis,
   title,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   metric: _metric, // prefixed to indicate intentionally unused
   color = '#22c55e',
   height = 200,

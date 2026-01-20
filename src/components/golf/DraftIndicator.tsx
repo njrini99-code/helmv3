@@ -25,6 +25,7 @@ interface DraftIndicatorProps {
  */
 export function DraftIndicator({
   saveStatus,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isOnline: _isOnline, // Currently unused, but kept for future use
   getTimeSinceLastSave,
   className,

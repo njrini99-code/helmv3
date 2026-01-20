@@ -205,7 +205,9 @@ export class InsightPersistenceService {
    */
   async dismissInsight(
     insightId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _userId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _reason?: string
   ): Promise<PersistedInsight | null> {
     const { data, error } = await this.supabase
@@ -233,6 +235,7 @@ export class InsightPersistenceService {
    */
   async acknowledgeInsight(
     insightId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _userId: string
   ): Promise<PersistedInsight | null> {
     const { data, error } = await this.supabase
@@ -261,6 +264,7 @@ export class InsightPersistenceService {
     insightId: string,
     _userId: string,
     actionType: InsightActionType,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _options?: {
       notes?: string;
       linkedFocusAreaId?: string;

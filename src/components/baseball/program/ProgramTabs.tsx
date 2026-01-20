@@ -12,6 +12,7 @@ interface ProgramTabsProps {
 
 type TabType = 'overview' | 'roster';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function ProgramTabs({ overviewContent, rosterContent, coachType: _coachType }: ProgramTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 

@@ -4,6 +4,24 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { ReminderType, TaskReminderWithTask, GolfTask } from '@/lib/types/golf';
 
+// Email service configuration
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const FROM_EMAIL = process.env.FROM_EMAIL || 'Helm Sports <notifications@helmsportslabs.com>';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+
+// VAPID keys for Web Push (must match the service worker)
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:support@helmsportslabs.com';
+
+/**
+ * Extended task type with user relations for notifications
+ */
+interface TaskWithUsers extends GolfTask {
+  assignee?: { id: string; full_name: string; email: string } | null;
+  creator?: { id: string; full_name: string; email: string } | null;
+}
+
 /**
  * Set a reminder on a task
  */
@@ -349,39 +367,314 @@ async function sendInAppNotification(task: GolfTask): Promise<void> {
 }
 
 /**
- * Send email notification
- * Note: In production, integrate with your email service (Resend, SendGrid, etc.)
+ * Send email notification using Resend
+ * Sends task reminder emails to assignee and optionally creator
  */
 async function sendEmailNotification(task: GolfTask): Promise<void> {
-  // TODO: Implement email sending with your preferred email service
-  // Example with Resend:
-  // const { data, error } = await resend.emails.send({
-  //   from: 'Helm Sports <notifications@helmsports.com>',
-  //   to: [assigneeEmail],
-  //   subject: `Task Reminder: ${task.title}`,
-  //   html: `<p>This is a reminder that "${task.title}" is due...</p>`,
-  // });
+  if (!RESEND_API_KEY) {
+    console.log('[TaskReminders] Email skipped: RESEND_API_KEY not configured');
+    return;
+  }
 
-  console.log(`Email notification would be sent for task: ${task.id}`);
+  // Get full task with user details
+  const supabase = await createClient();
+  const { data: taskWithUsers } = await supabase
+    .from('golf_tasks')
+    .select(`
+      *,
+      assignee:users!assigned_to(id, full_name, email),
+      creator:users!assigned_by(id, full_name, email)
+    `)
+    .eq('id', task.id)
+    .single();
+
+  const fullTask = taskWithUsers as TaskWithUsers | null;
+  if (!fullTask) {
+    console.log('[TaskReminders] Email skipped: Could not fetch task details');
+    return;
+  }
+
+  // Collect email recipients
+  const recipients: string[] = [];
+  if (fullTask.assignee?.email) {
+    recipients.push(fullTask.assignee.email);
+  }
+  if (fullTask.creator?.email && fullTask.creator.email !== fullTask.assignee?.email) {
+    recipients.push(fullTask.creator.email);
+  }
+
+  if (recipients.length === 0) {
+    console.log('[TaskReminders] Email skipped: No recipients found');
+    return;
+  }
+
+  const dueText = task.due_date
+    ? new Date(task.due_date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : 'soon';
+
+  const taskUrl = `${APP_URL}/golf/dashboard/tasks?task=${task.id}`;
+
+  // Send email to each recipient using Resend API
+  for (const email of recipients) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: FROM_EMAIL,
+          to: email,
+          subject: `Task Reminder: ${task.title}`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="text-align: center; margin-bottom: 32px;">
+                <h1 style="color: #16A34A; margin: 0; font-size: 24px;">Helm Sports</h1>
+              </div>
+
+              <h2 style="color: #1c1917; margin-bottom: 16px; font-size: 20px;">Task Reminder</h2>
+
+              <div style="background-color: #FFFEFA; border: 1px solid #E2E8F0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                <h3 style="color: #16A34A; margin: 0 0 12px 0; font-size: 18px;">${escapeHtml(task.title)}</h3>
+                ${task.description ? `<p style="color: #525252; margin: 0 0 12px 0; font-size: 14px; line-height: 1.5;">${escapeHtml(task.description)}</p>` : ''}
+                <p style="color: #78716c; margin: 0; font-size: 14px;">
+                  <strong>Due:</strong> ${dueText}
+                </p>
+                ${task.priority && task.priority !== 'normal' ? `
+                <p style="color: ${task.priority === 'urgent' ? '#DC2626' : task.priority === 'high' ? '#F59E0B' : '#78716c'}; margin: 8px 0 0 0; font-size: 14px;">
+                  <strong>Priority:</strong> ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                </p>` : ''}
+              </div>
+
+              <a href="${taskUrl}"
+                 style="display: inline-block; background-color: #16A34A; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 14px;">
+                View Task
+              </a>
+
+              <p style="color: #94A3B8; font-size: 12px; margin-top: 32px; line-height: 1.5;">
+                This is an automated reminder from Helm Sports Labs.<br>
+                You can manage your notification preferences in your account settings.
+              </p>
+            </div>
+          `,
+          text: `Task Reminder: ${task.title}\n\n${task.description || ''}\n\nDue: ${dueText}\n\nView task: ${taskUrl}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[TaskReminders] Failed to send email to ${email}:`, errorText);
+        throw new Error(`Email send failed: ${errorText}`);
+      }
+
+      console.log(`[TaskReminders] Email sent successfully to ${email}`);
+    } catch (err) {
+      console.error(`[TaskReminders] Error sending email to ${email}:`, err);
+      throw err;
+    }
+  }
 }
 
 /**
- * Send push notification
- * Note: In production, integrate with your push notification service (Firebase, OneSignal, etc.)
+ * Escape HTML special characters to prevent XSS in emails
+ */
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m] || m);
+}
+
+/**
+ * Send push notification using Web Push API
+ *
+ * This uses the web-push protocol to send notifications directly to subscribed browsers.
+ * Push subscriptions are stored in the push_subscriptions table.
+ *
+ * If VAPID keys are not configured, falls back to logging only.
+ * Note: The push_subscriptions table needs to be created via migration:
+ *
+ * CREATE TABLE push_subscriptions (
+ *   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ *   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ *   endpoint TEXT NOT NULL UNIQUE,
+ *   keys JSONB NOT NULL,
+ *   created_at TIMESTAMPTZ DEFAULT NOW()
+ * );
  */
 async function sendPushNotification(task: GolfTask): Promise<void> {
-  // TODO: Implement push notification with your preferred service
-  // Example with Firebase Cloud Messaging:
-  // const message = {
-  //   notification: {
-  //     title: 'Task Reminder',
-  //     body: `Reminder: "${task.title}" is due soon`,
-  //   },
-  //   token: userDeviceToken,
-  // };
-  // await admin.messaging().send(message);
+  // Check if VAPID keys are configured
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    console.log('[TaskReminders] Push notification skipped: VAPID keys not configured');
+    return;
+  }
 
-  console.log(`Push notification would be sent for task: ${task.id}`);
+  const supabase = await createClient();
+
+  // Get users who should receive the notification
+  const userIds: string[] = [];
+  if (task.assigned_to) userIds.push(task.assigned_to);
+  if (task.assigned_by && task.assigned_by !== task.assigned_to) {
+    userIds.push(task.assigned_by);
+  }
+
+  if (userIds.length === 0) {
+    console.log('[TaskReminders] Push notification skipped: No recipients');
+    return;
+  }
+
+  // Try to get push subscriptions from the database
+  // Note: This table may not exist yet - if so, we gracefully handle it
+  let subscriptions: Array<{
+    id: string;
+    user_id: string;
+    endpoint: string;
+    keys: { p256dh: string; auth: string };
+  }> = [];
+
+  try {
+    // Use type assertion for table that may not be in generated types yet
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('push_subscriptions')
+      .select('id, user_id, endpoint, keys')
+      .in('user_id', userIds);
+
+    if (error) {
+      // Table might not exist yet
+      if (error.code === '42P01') {
+        console.log('[TaskReminders] Push notification skipped: push_subscriptions table does not exist');
+        console.log('[TaskReminders] To enable push notifications, run migration to create push_subscriptions table');
+        return;
+      }
+      throw error;
+    }
+
+    subscriptions = (data as typeof subscriptions) || [];
+  } catch (err) {
+    console.log('[TaskReminders] Push notification skipped: Could not fetch subscriptions', err);
+    return;
+  }
+
+  if (subscriptions.length === 0) {
+    console.log('[TaskReminders] Push notification skipped: No push subscriptions found for users');
+    return;
+  }
+
+  const dueText = task.due_date
+    ? new Date(task.due_date).toLocaleDateString()
+    : 'soon';
+
+  const payload = JSON.stringify({
+    title: 'Task Reminder',
+    body: `Reminder: "${task.title}" is due ${dueText}`,
+    tag: `task-reminder-${task.id}`,
+    data: {
+      url: `/golf/dashboard/tasks?task=${task.id}`,
+      taskId: task.id,
+      type: 'task_reminder',
+    },
+    requireInteraction: true,
+  });
+
+  // Send to each subscription
+  let sentCount = 0;
+  let failedCount = 0;
+
+  for (const subscription of subscriptions) {
+    try {
+      const pushResult = await sendWebPush(
+        {
+          endpoint: subscription.endpoint,
+          keys: subscription.keys,
+        },
+        payload
+      );
+
+      if (pushResult.success) {
+        sentCount++;
+        console.log(`[TaskReminders] Push sent to subscription ${subscription.id}`);
+      } else {
+        failedCount++;
+        console.error(`[TaskReminders] Push failed for subscription ${subscription.id}:`, pushResult.error);
+
+        // If subscription is expired/invalid, remove it
+        if (pushResult.statusCode === 404 || pushResult.statusCode === 410) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('push_subscriptions').delete().eq('id', subscription.id);
+          console.log(`[TaskReminders] Removed expired subscription ${subscription.id}`);
+        }
+      }
+    } catch (err) {
+      failedCount++;
+      console.error(`[TaskReminders] Error sending push to ${subscription.id}:`, err);
+    }
+  }
+
+  console.log(`[TaskReminders] Push notifications: ${sentCount} sent, ${failedCount} failed`);
+}
+
+/**
+ * Send a Web Push notification using the Web Push protocol
+ * This is a simplified implementation - for production, consider using the 'web-push' npm package
+ */
+async function sendWebPush(
+  subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
+  payload: string
+): Promise<{ success: boolean; statusCode?: number; error?: string }> {
+  try {
+    // For now, we'll use a simple approach that requires the web-push library
+    // In a production environment, you would either:
+    // 1. Install and use the 'web-push' npm package
+    // 2. Use a push notification service like OneSignal, Firebase, or Pusher
+
+    // Check if we're in a Node.js environment that supports the web-push library
+    // The import will fail gracefully if web-push is not installed
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // @ts-expect-error - web-push may not be installed, handled by .catch()
+    const webpush: any = await import('web-push').catch(() => null);
+
+    if (webpush) {
+      // Configure web-push with VAPID credentials
+      webpush.setVapidDetails(
+        VAPID_SUBJECT,
+        VAPID_PUBLIC_KEY!,
+        VAPID_PRIVATE_KEY!
+      );
+
+      await webpush.sendNotification(
+        {
+          endpoint: subscription.endpoint,
+          keys: subscription.keys,
+        },
+        payload
+      );
+
+      return { success: true };
+    }
+
+    // Fallback: If web-push is not installed, log and return
+    console.log('[TaskReminders] web-push package not installed. Install it with: npm install web-push');
+    console.log('[TaskReminders] Would send push to:', subscription.endpoint);
+    return { success: false, error: 'web-push package not installed' };
+  } catch (err) {
+    const error = err as { statusCode?: number; message?: string };
+    return {
+      success: false,
+      statusCode: error.statusCode,
+      error: error.message || 'Unknown error',
+    };
+  }
 }
 
 /**

@@ -116,7 +116,7 @@ export function TemplateForm({
             onSuccess(data);
           }
         }
-      } catch (err) {
+      } catch {
         setError('An unexpected error occurred');
       }
     });

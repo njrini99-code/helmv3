@@ -67,6 +67,8 @@ interface MobileEventSheetProps {
     pending: number;
     total: number;
   } | null;
+  /** Pre-fill event type when creating a new event (from quick-add FAB) */
+  initialEventType?: GolfEventType;
 }
 
 // Helper to get today's date in YYYY-MM-DD format
@@ -95,6 +97,7 @@ export function MobileEventSheet({
   userRsvpStatus,
   onRsvp,
   rsvpSummary,
+  initialEventType,
 }: MobileEventSheetProps) {
   const [formData, setFormData] = useState<MobileEventFormData>({
     title: '',
@@ -145,9 +148,10 @@ export function MobileEventSheet({
           description: event.description || null,
         });
       } else {
+        // When creating, use initialEventType if provided (from quick-add FAB)
         setFormData({
           title: '',
-          eventType: 'practice',
+          eventType: initialEventType || 'practice',
           startDate: getTodayDate(),
           endDate: null,
           startTime: '09:00',
@@ -160,7 +164,7 @@ export function MobileEventSheet({
       setError(null);
       setShowDeleteConfirm(false);
     }
-  }, [isOpen, event, isCreating]);
+  }, [isOpen, event, isCreating, initialEventType]);
 
   // Prevent body scroll when sheet is open
   useEffect(() => {

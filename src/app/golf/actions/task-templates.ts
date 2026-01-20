@@ -213,6 +213,7 @@ export async function permanentlyDeleteTemplate(
  */
 export async function getTeamTemplates(
   teamId: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _includeInactive: boolean = false // param kept for API compat but unused (no is_active column)
 ): Promise<{ data: TaskTemplate[] | null; error?: string }> {
   try {

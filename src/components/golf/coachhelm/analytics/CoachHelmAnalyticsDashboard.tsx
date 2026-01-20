@@ -64,6 +64,7 @@ const dateRanges: { id: DateRangeType; label: string; days: number }[] = [
 
 export function CoachHelmAnalyticsDashboard({
   teamId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   coachId: _coachId,
   initialOverview,
   initialEffectiveness,

@@ -130,7 +130,7 @@ export function ExpenseForm({
 
       onOpenChange(false);
       onSuccess?.();
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setIsSubmitting(false);

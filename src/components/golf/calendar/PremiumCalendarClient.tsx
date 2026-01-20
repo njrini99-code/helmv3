@@ -91,6 +91,8 @@ export function PremiumCalendarClient({
 
   // Mobile Sheet State
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+  // Track initial event type for pre-filling from quick-add FAB
+  const [initialEventType, setInitialEventType] = useState<string | undefined>(undefined);
 
   // RSVP State - Track user's RSVP status for all events
   const [userRsvpStatuses, setUserRsvpStatuses] = useState<Map<string, RSVPResponse>>(new Map());
@@ -679,6 +681,7 @@ export function PremiumCalendarClient({
         onClose={() => {
           setIsMobileSheetOpen(false);
           setSelectedEvent(null);
+          setInitialEventType(undefined);
         }}
         event={selectedEvent}
         isCreating={isCreatingEvent}
@@ -719,6 +722,7 @@ export function PremiumCalendarClient({
             }
             setIsMobileSheetOpen(false);
             setSelectedEvent(null);
+            setInitialEventType(undefined);
             router.refresh();
           } finally {
             setIsSavingEvent(false);
@@ -733,6 +737,7 @@ export function PremiumCalendarClient({
             }
             setIsMobileSheetOpen(false);
             setSelectedEvent(null);
+            setInitialEventType(undefined);
             router.refresh();
           } finally {
             setIsSavingEvent(false);
@@ -741,15 +746,17 @@ export function PremiumCalendarClient({
         userRsvpStatus={selectedEventRsvpStatus as RSVPResponse | null}
         onRsvp={!isCoach ? handleMobileSheetRsvp : undefined}
         rsvpSummary={isCoach ? selectedEventRsvpSummary : null}
+        initialEventType={initialEventType as 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | undefined}
       />
 
       {/* Mobile FAB for quick event creation (coaches only) */}
       {showMobileUI && isCoach && (
         <QuickAddEventFAB
-          onAddEvent={(_eventType) => {
-            handleAddEvent();
-            // If eventType is provided, we could pre-fill the form
-            // This would require passing the eventType to the modal/sheet
+          onAddEvent={(eventType) => {
+            setSelectedEvent(null);
+            setIsCreatingEvent(true);
+            setInitialEventType(eventType);
+            setIsMobileSheetOpen(true);
           }}
         />
       )}
