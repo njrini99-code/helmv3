@@ -37,6 +37,11 @@ const MIN_SAMPLE_SIZE = 5;
 /** Minimum frequency for a miss direction to be considered a "tendency" */
 const MIN_TENDENCY_FREQUENCY = 0.25;
 
+function toYards(distance: number | null, unit: string | null): number | null {
+  if (distance == null) return null;
+  return unit === 'feet' ? distance / 3 : distance;
+}
+
 interface RawShot {
   id: string;
   round_id: string;
@@ -46,7 +51,9 @@ interface RawShot {
   club_type: string;
   lie_before: string | null;
   distance_to_hole_before: number | null;
+  distance_unit_before: string | null;
   distance_to_hole_after: number | null;
+  distance_unit_after: string | null;
   miss_direction: string | null;
   shot_distance: number | null;
   result: string;
@@ -147,8 +154,8 @@ export class ShotPatternMiner {
     for (const range of DISTANCE_RANGES) {
       // Filter shots in this distance range (excluding putts)
       const rangeShots = this.shots.filter((shot) => {
-        const distance = shot.distance_to_hole_before;
-        if (!distance || shot.shot_type === 'putt') return false;
+        const distance = toYards(shot.distance_to_hole_before, shot.distance_unit_before);
+        if (!distance || shot.shot_type === 'putt' || shot.shot_type === 'putting') return false;
         return distance >= range.min && distance < range.max;
       });
 
@@ -164,7 +171,7 @@ export class ShotPatternMiner {
       const avgProximity =
         validProximityShots.length > 0
           ? validProximityShots.reduce(
-              (sum, s) => sum + (s.distance_to_hole_after ?? 0),
+              (sum, s) => sum + (toYards(s.distance_to_hole_after, s.distance_unit_after) ?? 0),
               0
             ) / validProximityShots.length
           : 0;
@@ -178,7 +185,9 @@ export class ShotPatternMiner {
         : 0;
 
       // Calculate fairway hit rate (for drives)
-      const driveShots = rangeShots.filter((s) => s.shot_type === 'drive');
+      const driveShots = rangeShots.filter(
+        (s) => s.shot_type === 'drive' || s.shot_type === 'tee'
+      );
       const fairwayHits = driveShots.filter(
         (s) => s.result === 'fairway' || s.result === 'green'
       );
@@ -192,7 +201,7 @@ export class ShotPatternMiner {
       const avgMissDistance =
         missShots.length > 0
           ? missShots.reduce(
-              (sum, s) => sum + (s.distance_to_hole_after ?? 0),
+              (sum, s) => sum + (toYards(s.distance_to_hole_after, s.distance_unit_after) ?? 0),
               0
             ) / missShots.length
           : 0;
@@ -271,7 +280,7 @@ export class ShotPatternMiner {
       const avgProximity =
         validProximityShots.length > 0
           ? validProximityShots.reduce(
-              (sum, s) => sum + (s.distance_to_hole_after ?? 0),
+              (sum, s) => sum + (toYards(s.distance_to_hole_after, s.distance_unit_after) ?? 0),
               0
             ) / validProximityShots.length
           : 0;
@@ -413,8 +422,9 @@ export class ShotPatternMiner {
 
     const [topDir, topFreq] = entries[0] ?? ['', 0];
 
-    // If one direction dominates (>50%), it's one-way
-    if (topFreq > 0.5) {
+    // If one direction dominates (>35%), it's a one-way miss tendency
+    // Lower threshold than before (was 50%) to catch actionable tendencies
+    if (topFreq > 0.35) {
       if (topDir.includes('left')) return 'one_way_left';
       if (topDir.includes('right')) return 'one_way_right';
       if (topDir === 'short') return 'one_way_short';
@@ -422,7 +432,7 @@ export class ShotPatternMiner {
     }
 
     // If misses are spread across many directions evenly, it's scattered
-    if (entries.length >= 4 && topFreq < 0.35) {
+    if (entries.length >= 4 && topFreq < 0.25) {
       return 'scattered';
     }
 

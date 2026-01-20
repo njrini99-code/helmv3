@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      approach_miss_details: {
+        Row: {
+          created_at: string | null
+          distance_from_green_yards: number | null
+          id: string
+          lie_type: string | null
+          miss_direction: string | null
+          shot_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          distance_from_green_yards?: number | null
+          id?: string
+          lie_type?: string | null
+          miss_direction?: string | null
+          shot_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          distance_from_green_yards?: number | null
+          id?: string
+          lie_type?: string | null
+          miss_direction?: string | null
+          shot_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approach_miss_details_shot_id_fkey"
+            columns: ["shot_id"]
+            isOneToOne: true
+            referencedRelation: "golf_shots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -7030,6 +7068,50 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "baseball_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      putt_details: {
+        Row: {
+          break_direction: string | null
+          created_at: string | null
+          distance_feet: number | null
+          estimated_break_inches: number | null
+          id: string
+          made: boolean
+          miss_tags: string[] | null
+          shot_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          break_direction?: string | null
+          created_at?: string | null
+          distance_feet?: number | null
+          estimated_break_inches?: number | null
+          id?: string
+          made?: boolean
+          miss_tags?: string[] | null
+          shot_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          break_direction?: string | null
+          created_at?: string | null
+          distance_feet?: number | null
+          estimated_break_inches?: number | null
+          id?: string
+          made?: boolean
+          miss_tags?: string[] | null
+          shot_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "putt_details_shot_id_fkey"
+            columns: ["shot_id"]
+            isOneToOne: true
+            referencedRelation: "golf_shots"
             referencedColumns: ["id"]
           },
         ]

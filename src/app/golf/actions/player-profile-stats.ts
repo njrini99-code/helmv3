@@ -17,6 +17,7 @@ import {
   type HoleInfo,
   type RoundInfo,
 } from '@/lib/utils/golf-stats-calculator-shots';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 
 // ============================================================================
 // TYPES
@@ -63,8 +64,7 @@ export async function getPlayerProfileStats(
         round_type,
         total_score,
         score_to_par,
-        holes_played,
-        course_par
+        holes_played
       `)
       .eq('player_id', playerId)
       .eq('status', 'completed')
@@ -124,7 +124,7 @@ export async function getPlayerProfileStats(
     // 4. Fetch hole info for the rounds
     const { data: holesData } = await supabase
       .from('golf_holes')
-      .select('round_id, hole_number, par, yardage')
+      .select('round_id, hole_number, par')
       .in('round_id', roundIdsToFetch);
 
     // 5. Build data structures for calculator
@@ -136,8 +136,7 @@ export async function getPlayerProfileStats(
       id: r.id,
       round_date: r.round_date,
       course_name: r.course_name,
-      round_type: r.round_type as 'practice' | 'qualifying' | 'tournament' | null,
-      course_par: r.course_par,
+      round_type: r.round_type ? roundTypeFromDb(r.round_type) : null,
       holes_played: r.holes_played,
     }));
 
@@ -146,28 +145,61 @@ export async function getPlayerProfileStats(
       round_id: h.round_id,
       hole_number: h.hole_number,
       par: h.par,
-      yardage: h.yardage,
+      yardage: null,
     }));
 
+    const filteredShots = shotsData.filter(s =>
+      s.distance_to_hole_before !== null &&
+      s.distance_to_hole_after !== null
+    );
+
+    if (filteredShots.length === 0) {
+      return {
+        success: true,
+        stats: null,
+        rounds,
+      };
+    }
+
     // Transform shots to RawShot format
-    const rawShots: RawShot[] = shotsData.map(s => ({
-      id: s.id,
-      round_id: s.round_id,
-      hole_number: s.hole_number,
-      shot_number: s.shot_number,
-      shot_type: s.shot_type,
-      club_used: s.club_used,
-      club_type: s.club_type,
-      lie_before: s.lie_before,
-      lie_after: s.lie_after,
-      distance_to_hole_before: s.distance_to_hole_before,
-      distance_to_hole_after: s.distance_to_hole_after,
-      result: s.result,
-      miss_direction: s.miss_direction,
-      putt_break: s.putt_break,
-      putt_distance_feet: s.putt_distance_feet,
-      penalty_strokes: s.penalty_strokes,
-    }));
+    // Calculate shot_distance from before/after if not stored
+    const rawShots: RawShot[] = filteredShots.map(s => {
+      // Calculate shot_distance from before/after if missing
+      // Normalize both to yards for calculation
+      const beforeYards = s.distance_unit_before === 'feet'
+        ? (s.distance_to_hole_before ?? 0) / 3
+        : (s.distance_to_hole_before ?? 0);
+      const afterYards = s.distance_unit_after === 'feet'
+        ? (s.distance_to_hole_after ?? 0) / 3
+        : (s.distance_to_hole_after ?? 0);
+      // Simple calculation: difference between before and after
+      const calculatedShotDistance = Math.max(0, Math.round(beforeYards - afterYards));
+      const shotDistance = s.shot_distance ?? calculatedShotDistance;
+
+      return {
+        id: s.id,
+        round_id: s.round_id,
+        hole_number: s.hole_number,
+        shot_number: s.shot_number,
+        shot_type: s.shot_type,
+        club_used: s.club_used,
+        club_type: s.club_type,
+        lie_before: s.lie_before,
+        lie_after: s.lie_after,
+        distance_to_hole_before: s.distance_to_hole_before,
+        distance_unit_before: s.distance_unit_before,
+        distance_to_hole_after: s.distance_to_hole_after,
+        distance_unit_after: s.distance_unit_after,
+        shot_distance: shotDistance,
+        result: s.result,
+        miss_direction: s.miss_direction,
+        putt_break: s.putt_break,
+        putt_distance_feet: s.putt_distance_feet,
+        putt_slope: s.putt_slope,
+        is_penalty: s.is_penalty,
+        penalty_type: s.penalty_type,
+      };
+    });
 
     // 6. Calculate comprehensive stats
     const stats = calculateStatsFromShots(rawShots, holesInfo, roundsInfo);

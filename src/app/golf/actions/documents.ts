@@ -143,10 +143,9 @@ export async function createDocument(
         file_type: file.type,
         file_size: file.size,
         category: options.category || 'other',
-        player_visible: options.playerVisible ?? true,
+        is_public: options.playerVisible ?? true,
         uploaded_by: user.id,
-        current_version: 1,
-        original_file_name: file.name,
+        version_count: 1,
       })
       .select()
       .single();
@@ -194,8 +193,7 @@ export async function updateDocument(
         title: updates.title,
         description: updates.description,
         category: updates.category,
-        player_visible: updates.playerVisible,
-        updated_at: new Date().toISOString(),
+        is_public: updates.playerVisible,
       })
       .eq('id', documentId)
       .select()
@@ -272,13 +270,13 @@ export async function uploadNewVersion(
     // Get current document
     const { data: document, error: docError } = await supabase
       .from('golf_documents')
-      .select('team_id, current_version')
+      .select('team_id, version_count')
       .eq('id', documentId)
       .single();
 
     if (docError) throw docError;
 
-    const newVersionNumber = (document.current_version || 1) + 1;
+    const newVersionNumber = (document.version_count || 1) + 1;
 
     // Upload new file
     const fileExt = file.name.split('.').pop();
@@ -327,8 +325,7 @@ export async function uploadNewVersion(
         file_url: urlData.publicUrl,
         file_type: file.type,
         file_size: file.size,
-        current_version: newVersionNumber,
-        updated_at: new Date().toISOString(),
+        version_count: newVersionNumber,
       })
       .eq('id', documentId);
 
@@ -412,13 +409,13 @@ export async function revertToVersion(
     // Get current document version number
     const { data: document, error: docError } = await supabase
       .from('golf_documents')
-      .select('current_version, team_id')
+      .select('version_count, team_id')
       .eq('id', documentId)
       .single();
 
     if (docError) throw docError;
 
-    const newVersionNumber = (document.current_version || 1) + 1;
+    const newVersionNumber = (document.version_count || 1) + 1;
 
     // Get public URL for the old version file
     const { data: urlData } = supabase.storage
@@ -448,8 +445,7 @@ export async function revertToVersion(
         file_url: urlData.publicUrl,
         file_type: version.mime_type,
         file_size: version.file_size,
-        current_version: newVersionNumber,
-        updated_at: new Date().toISOString(),
+        version_count: newVersionNumber,
       })
       .eq('id', documentId);
 
@@ -627,9 +623,9 @@ export async function createGolfDocument(data: {
         file_type: data.file_type,
         file_size: data.file_size,
         category: data.category || 'other',
-        player_visible: data.player_visible,
+        is_public: data.player_visible,
         uploaded_by: data.uploaded_by,
-        current_version: 1,
+        version_count: 1,
       })
       .select()
       .single();
@@ -736,14 +732,14 @@ export async function deleteVersion(
     // Get current document version
     const { data: document, error: docError } = await supabase
       .from('golf_documents')
-      .select('current_version')
+      .select('version_count')
       .eq('id', documentId)
       .single();
 
     if (docError) throw docError;
 
     // Cannot delete current version
-    if (document.current_version === version.version_number) {
+    if (document.version_count === version.version_number) {
       throw new Error('Cannot delete the current version');
     }
 
@@ -769,7 +765,6 @@ export async function deleteVersion(
 }
 
 // Re-export type for backwards compatibility
-export type { DocumentVersion, VersionComparison } from '@/lib/types/golf';
 
 export async function getTextFileContent(
   documentId: string,
@@ -795,7 +790,7 @@ export async function getTextFileContent(
       // Get latest version
       const { data: document, error } = await supabase
         .from('golf_documents')
-        .select('current_version')
+        .select('version_count')
         .eq('id', documentId)
         .single();
 
@@ -805,7 +800,7 @@ export async function getTextFileContent(
         .from('golf_document_versions' as any)
         .select('storage_path')
         .eq('document_id', documentId)
-        .eq('version_number', document.current_version)
+        .eq('version_number', document.version_count)
         .single();
 
       if (vError) throw vError;

@@ -323,9 +323,8 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                                     icon={<IconSparkles size={14} />}
                                     action={{ label: 'Settings', href: '/golf/dashboard/settings/coaching-intelligence' }}
                                 />
-                                <PremiumGlassCard glow>
-                                    <V2InsightsFeed teamId={team.id} coachId={coach.id} />
-                                </PremiumGlassCard>
+                                {/* V2InsightsFeed has its own glass styling - no wrapper needed */}
+                                <V2InsightsFeed teamId={team.id} coachId={coach.id} />
                             </div>
                         )}
 

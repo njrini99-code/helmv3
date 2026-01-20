@@ -215,18 +215,14 @@ interface HoleWithShots {
   round_id: string;
   hole_number: number;
   par: number;
-  yardage: number | null;
   score: number | null;
   putts: number | null;
   fairway_hit: boolean | null;
-  green_in_regulation: boolean | null;
   penalty_strokes: number | null;
-  driving_distance: number | null;
-  used_driver: boolean | null;
-  drive_miss_direction: string | null;
-  approach_distance: number | null;
-  approach_lie: string | null;
-  approach_club: string | null;
+  gir: boolean | null;
+  sand_save: boolean | null;
+  up_and_down: boolean | null;
+  notes: string | null;
   shots: ShotData[];
 }
 
@@ -234,24 +230,30 @@ interface HoleWithShots {
 interface RoundRecord {
   id: string;
   player_id: string;
+  team_id: string | null;
+  course_id: string | null;
   course_name: string;
   course_city: string | null;
   course_state: string | null;
   round_date: string;
   round_type: string | null;
-  holes_to_play: number | null;
+  holes_played: number | null;
   current_hole: number | null;
   status: string | null;
   course_rating: number | null;
   course_slope: number | null;
   tees_played: string | null;
   total_score: number | null;
-  total_to_par: number | null;
+  score_to_par: number | null;
   total_putts: number | null;
-  fairways_hit: number | null;
-  fairways_total: number | null;
-  greens_in_regulation: number | null;
-  greens_total: number | null;
+  total_fairways_hit: number | null;
+  total_fairways: number | null;
+  total_gir: number | null;
+  total_gir_possible: number | null;
+  front_nine: number | null;
+  back_nine: number | null;
+  notes: string | null;
+  weather_conditions: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -367,6 +369,7 @@ async function getPlayerTeamId(
     .from('golf_team_members')
     .select('team_id')
     .eq('player_id', playerId)
+    .eq('status', 'active')
     .maybeSingle();
 
   return membership?.team_id ?? null;
@@ -456,6 +459,7 @@ interface GolfShotInsert {
   shot_type: string;
   club_type: string;
   lie_before: string;
+  lie_after: string | null;
   distance_to_hole_before: number;
   distance_unit_before: string;
   result: string;
@@ -465,8 +469,60 @@ interface GolfShotInsert {
   miss_direction: string | null;
   putt_break: string | null;
   putt_slope: string | null;
+  putt_distance_feet: number | null;
+  putt_made: boolean | null;
   is_penalty: boolean;
   penalty_type: string | null;
+}
+
+function deriveLieAfterFromResult(result: string | null | undefined): string | null {
+  if (!result) return null;
+  switch (result) {
+    case 'fairway':
+      return 'fairway';
+    case 'rough':
+      return 'rough';
+    case 'sand':
+      return 'sand';
+    case 'green':
+    case 'hole':
+      return 'green';
+    case 'penalty':
+      return 'penalty';
+    case 'other':
+      return 'recovery';
+    default:
+      return null;
+  }
+}
+
+function normalizeApproachMissLieType(
+  lieType: ShotRecord['approachMissLieType']
+): string | null {
+  if (!lieType) return null;
+  if (lieType === 'bunker') return 'sand';
+  if (lieType === 'hazard') return 'recovery';
+  return lieType;
+}
+
+function deriveLieAfter(shot: ShotRecord): string | null {
+  if (shot.isPenalty || shot.result === 'penalty') return 'penalty';
+  const approachLie = normalizeApproachMissLieType(shot.approachMissLieType);
+  if (approachLie) return approachLie;
+  return deriveLieAfterFromResult(shot.result);
+}
+
+function derivePuttDistanceFeet(shot: ShotRecord): number | null {
+  if (shot.shotType !== 'putting') return null;
+  if (shot.puttDistanceFeet !== undefined) return shot.puttDistanceFeet ?? null;
+  const distance = shot.distanceToHoleBefore;
+  if (!Number.isFinite(distance)) return null;
+  return shot.distanceUnitBefore === 'yards' ? distance * 3 : distance;
+}
+
+function derivePuttMade(shot: ShotRecord): boolean | null {
+  if (shot.shotType !== 'putting') return null;
+  return shot.result === 'hole';
 }
 
 type GolfEventUpdateData = {
@@ -552,179 +608,92 @@ export async function submitGolfRoundComprehensive(
       }
     }
 
-    // Calculate round totals from holes
-  const totalScore = data.holes.reduce((sum, h) => sum + h.score, 0);
-  const totalPar = data.holes.reduce((sum, h) => sum + h.par, 0);
-  const totalToPar = totalScore - totalPar;
-  const totalPutts = data.holes.reduce((sum, h) => sum + h.putts, 0);
-  const fairwaysHit = data.holes.filter(h => h.fairwayHit === true).length;
-  const fairwaysTotal = data.holes.filter(h => h.par >= 4).length;
-  const greensInReg = data.holes.filter(h => h.greenInRegulation).length;
-  const totalPenalties = data.holes.reduce((sum, h) => sum + h.penaltyStrokes, 0);
-  
-  // Aggregate stats for round
-  const scrambleAttempts = data.holes.filter(h => h.scrambleAttempt).length;
-  const scramblesMade = data.holes.filter(h => h.scrambleMade).length;
-  const sandSaveAttempts = data.holes.filter(h => h.sandSaveAttempt).length;
-  const sandSavesMade = data.holes.filter(h => h.sandSaveMade).length;
-  const threePutts = data.holes.filter(h => h.putts >= 3).length;
-  const birdies = data.holes.filter(h => h.score - h.par === -1).length;
-  const eagles = data.holes.filter(h => h.score - h.par <= -2).length;
-  const pars = data.holes.filter(h => h.score === h.par).length;
-  const bogeys = data.holes.filter(h => h.score - h.par === 1).length;
-  const doublePlus = data.holes.filter(h => h.score - h.par >= 2).length;
-  
-  // Driving stats
-  const drivingDistances = data.holes
-    .filter(h => h.drivingDistance && h.drivingDistance > 0)
-    .map(h => h.drivingDistance!);
-  const drivingDistanceAvg = drivingDistances.length > 0
-    ? Math.round(drivingDistances.reduce((a, b) => a + b, 0) / drivingDistances.length)
-    : null;
-  const longestDrive = drivingDistances.length > 0 ? Math.max(...drivingDistances) : null;
-  
-  // Putting stats
-  const puttsMade = data.holes.filter(h => h.putts === 1 && h.firstPuttDistance);
-  const longestPuttMade = puttsMade.length > 0
-    ? Math.max(...puttsMade.map(h => h.firstPuttDistance!))
-    : null;
-  
-  // Longest hole out
-  const holeOuts = data.holes.filter(h => h.holedOutDistance && h.holedOutDistance > 0);
-  const longestHoleOut = holeOuts.length > 0
-    ? Math.max(...holeOuts.map(h => h.holedOutDistance!))
-    : null;
-  
-  // Putts per GIR
-  const girHoles = data.holes.filter(h => h.greenInRegulation);
-  const puttsOnGir = girHoles.reduce((sum, h) => sum + h.putts, 0);
-  const puttsPerGir = girHoles.length > 0 
-    ? Math.round((puttsOnGir / girHoles.length) * 100) / 100
-    : null;
-  
-  // Driving accuracy
-  const drivingAccuracy = fairwaysTotal > 0
-    ? Math.round((fairwaysHit / fairwaysTotal) * 1000) / 10
-    : null;
+    // Calculate round totals from holes (schema-aligned)
+    const totalScore = data.holes.reduce((sum, h) => sum + h.score, 0);
+    const totalPar = data.holes.reduce((sum, h) => sum + h.par, 0);
+    const totalToPar = totalScore - totalPar;
+    const totalPutts = data.holes.reduce((sum, h) => sum + h.putts, 0);
+    const fairwaysHit = data.holes.filter(h => h.fairwayHit === true).length;
+    const fairwaysTotal = data.holes.filter(h => h.par >= 4).length;
+    const greensInReg = data.holes.filter(h => h.greenInRegulation).length;
 
-  // Convert frontend round type to database format
-  const roundTypeDb = roundTypeToDb(data.roundType);
+    // Convert frontend round type to database format
+    const roundTypeDb = roundTypeToDb(data.roundType);
 
-  // Prepare round data
-  const roundData = {
-    player_id: player.id,
-    course_name: data.courseName,
-    course_city: data.courseCity || null,
-    course_state: data.courseState || null,
-    course_rating: data.courseRating || null,
-    course_slope: data.courseSlope || null,
-    tees_played: data.teesPlayed || null,
-    // Note: course_id column doesn't exist in golf_rounds table
-    round_type: roundTypeDb,
-    round_date: data.roundDate,
-    total_score: totalScore,
-    total_to_par: totalToPar,
-    total_putts: totalPutts,
-    fairways_hit: fairwaysHit,
-    fairways_total: fairwaysTotal,
-    greens_in_regulation: greensInReg,
-    greens_total: data.holes.length,
-    is_verified: false,
-    status: 'completed' as const, // Mark as completed when all holes are done
-    // New comprehensive stats columns
-    driving_distance_avg: drivingDistanceAvg,
-    driving_accuracy: drivingAccuracy,
-    putts_per_gir: puttsPerGir,
-    scrambling_attempts: scrambleAttempts,
-    scrambles_made: scramblesMade,
-    sand_save_attempts: sandSaveAttempts,
-    sand_saves_made: sandSavesMade,
-    penalty_strokes: totalPenalties,
-    three_putts: threePutts,
-    birdies: birdies,
-    pars: pars,
-    bogeys: bogeys,
-    double_bogeys_plus: doublePlus,
-    eagles: eagles,
-    longest_drive: longestDrive,
-    longest_putt_made: longestPuttMade,
-    longest_hole_out: longestHoleOut,
-    // Qualifier fields (null if not a qualifier round)
-    qualifier_id: data.qualifierId || null,
-    qualifier_round_number: data.qualifierRoundNumber || null,
-  };
+    // Prepare round data
+    const teamId = await getPlayerTeamId(supabase, player.id);
+    const roundData = {
+      player_id: player.id,
+      team_id: teamId,
+      course_id: data.courseId || null,
+      course_name: data.courseName,
+      course_city: data.courseCity || null,
+      course_state: data.courseState || null,
+      course_rating: data.courseRating || null,
+      course_slope: data.courseSlope || null,
+      tees_played: data.teesPlayed || null,
+      round_type: roundTypeDb,
+      round_date: data.roundDate,
+      holes_played: data.holes.length,
+      total_score: totalScore,
+      score_to_par: totalToPar,
+      total_putts: totalPutts,
+      total_fairways_hit: fairwaysHit,
+      total_fairways: fairwaysTotal,
+      total_gir: greensInReg,
+      total_gir_possible: data.holes.length,
+      status: 'completed' as const, // Mark as completed when all holes are done
+    };
 
-  // Insert or update round
-  let round;
-  let roundError;
+    // Insert or update round
+    let round;
+    let roundError;
 
-  if (existingRoundId) {
-    // Update existing round
-    const result = await supabase
-      .from('golf_rounds')
-      .update(roundData)
-      .eq('id', existingRoundId)
-      .eq('player_id', player.id) // Security: ensure player owns this round
-      .select()
-      .single();
+    if (existingRoundId) {
+      // Update existing round
+      const result = await supabase
+        .from('golf_rounds')
+        .update(roundData)
+        .eq('id', existingRoundId)
+        .eq('player_id', player.id) // Security: ensure player owns this round
+        .select()
+        .single();
 
-    round = result.data;
-    roundError = result.error;
+      round = result.data;
+      roundError = result.error;
 
-    if (roundError || !round) {
-      return { success: false, error: 'Failed to update round. Please try again.' };
+      if (roundError || !round) {
+        return { success: false, error: 'Failed to update round. Please try again.' };
+      }
+    } else {
+      // Insert new round
+      const result = await supabase
+        .from('golf_rounds')
+        .insert(roundData)
+        .select()
+        .single();
+
+      round = result.data;
+      roundError = result.error;
+
+      if (roundError || !round) {
+        return { success: false, error: 'Failed to save round. Please try again.' };
+      }
     }
-  } else {
-    // Insert new round
-    const result = await supabase
-      .from('golf_rounds')
-      .insert(roundData)
-      .select()
-      .single();
 
-    round = result.data;
-    roundError = result.error;
-
-    if (roundError || !round) {
-      return { success: false, error: 'Failed to save round. Please try again.' };
-    }
-  }
-
-    // Insert holes with comprehensive stats
-  const holesData = data.holes.map(hole => ({
-    round_id: round.id,
-    hole_number: hole.holeNumber,
-    par: hole.par,
-    yardage: hole.yardage || null,
-    score: hole.score,
-    score_to_par: hole.score - hole.par,
-    putts: hole.putts,
-    fairway_hit: hole.fairwayHit,
-    green_in_regulation: hole.greenInRegulation,
-    // New comprehensive stats columns
-    driving_distance: hole.drivingDistance,
-    used_driver: hole.usedDriver,
-    drive_miss_direction: hole.driveMissDirection,
-    approach_distance: hole.approachDistance,
-    approach_lie: hole.approachLie,
-    approach_result: null, // Not tracked separately
-    approach_miss_direction: hole.approachMissDirection,
-    approach_proximity: hole.approachProximity,
-    scramble_attempt: hole.scrambleAttempt,
-    scramble_made: hole.scrambleMade,
-    sand_save_attempt: hole.sandSaveAttempt,
-    sand_save_made: hole.sandSaveMade,
-    up_and_down_attempt: hole.scrambleAttempt, // Same as scramble
-    up_and_down_made: hole.scrambleMade,
-    penalty_strokes: hole.penaltyStrokes,
-    first_putt_distance: hole.firstPuttDistance,
-    first_putt_leave: hole.firstPuttLeave,
-    first_putt_break: hole.firstPuttBreak,
-    first_putt_slope: hole.firstPuttSlope,
-    first_putt_miss_direction: hole.firstPuttMissDirection,
-    holed_out_distance: hole.holedOutDistance,
-    holed_out_type: hole.holedOutType,
-  }));
+    // Insert holes (schema-aligned)
+    const holesData = data.holes.map(hole => ({
+      round_id: round.id,
+      hole_number: hole.holeNumber,
+      par: hole.par,
+      score: hole.score,
+      putts: hole.putts,
+      fairway_hit: hole.fairwayHit ?? null,
+      gir: hole.greenInRegulation ?? null,
+      penalty_strokes: hole.penaltyStrokes ?? null,
+      up_and_down: hole.scrambleAttempt ? hole.scrambleMade : null,
+      sand_save: hole.sandSaveAttempt ? hole.sandSaveMade : null,
+    }));
 
     const { data: insertedHoles, error: holesError } = await supabase
       .from('golf_holes')
@@ -735,104 +704,107 @@ export async function submitGolfRoundComprehensive(
       return { success: false, error: 'Failed to save hole data. Please try again.' };
     }
 
-  // Create a map of hole_number to hole_id
-  const holeIdMap = new Map(insertedHoles?.map(h => [h.hole_number, h.id]) || []);
+    // Create a map of hole_number to hole_id
+    const holeIdMap = new Map(insertedHoles?.map(h => [h.hole_number, h.id]) || []);
 
-  // Insert individual shots
-  const allShots: GolfShotInsert[] = [];
-  for (const hole of data.holes) {
-    const holeId = holeIdMap.get(hole.holeNumber);
-    for (const shot of hole.shots) {
-      allShots.push({
-        round_id: round.id,
-        hole_id: holeId,
-        hole_number: hole.holeNumber,
-        shot_number: shot.shotNumber,
-        shot_type: shot.shotType,
-        club_type: shot.clubType,
-        lie_before: shot.lieBefore,
-        distance_to_hole_before: shot.distanceToHoleBefore,
-        distance_unit_before: shot.distanceUnitBefore,
-        result: shot.result,
-        distance_to_hole_after: shot.distanceToHoleAfter,
-        distance_unit_after: shot.distanceUnitAfter,
-        shot_distance: shot.shotDistance,
-        miss_direction: shot.missDirection || null,
-        putt_break: shot.puttBreak || null,
-        putt_slope: shot.puttSlope || null,
-        is_penalty: shot.isPenalty,
-        penalty_type: shot.penaltyType || null,
-      });
-    }
-  }
-
-  if (allShots.length > 0) {
-    const { data: insertedShots, error: shotsError } = await supabase
-      .from('golf_shots')
-      .insert(allShots)
-      .select('id, hole_number, shot_number, shot_type');
-
-    if (shotsError) {
-      // Don't throw - shots are supplementary data
-    } else if (insertedShots) {
-      // Create maps to find shot IDs for putt and approach miss details
-      const shotIdMap = new Map<string, string>();
-      for (const shot of insertedShots) {
-        const key = `${shot.hole_number}-${shot.shot_number}`;
-        shotIdMap.set(key, shot.id);
+    // Insert individual shots
+    const allShots: GolfShotInsert[] = [];
+    for (const hole of data.holes) {
+      const holeId = holeIdMap.get(hole.holeNumber);
+      for (const shot of hole.shots) {
+        allShots.push({
+          round_id: round.id,
+          hole_id: holeId,
+          hole_number: hole.holeNumber,
+          shot_number: shot.shotNumber,
+          shot_type: shot.shotType,
+          club_type: shot.clubType,
+          lie_before: shot.lieBefore,
+          lie_after: deriveLieAfter(shot),
+          distance_to_hole_before: shot.distanceToHoleBefore,
+          distance_unit_before: shot.distanceUnitBefore,
+          result: shot.result,
+          distance_to_hole_after: shot.distanceToHoleAfter,
+          distance_unit_after: shot.distanceUnitAfter,
+          shot_distance: shot.shotDistance,
+          miss_direction: shot.missDirection || null,
+          putt_break: shot.puttBreak || null,
+          putt_slope: shot.puttSlope || null,
+          putt_distance_feet: derivePuttDistanceFeet(shot),
+          putt_made: derivePuttMade(shot),
+          is_penalty: shot.isPenalty,
+          penalty_type: shot.penaltyType || null,
+        });
       }
+    }
 
-      // Save putt details and approach miss details
-      const puttDetails: PuttDetail[] = [];
-      const approachMissDetails: ApproachMissDetail[] = [];
+    if (allShots.length > 0) {
+      const { data: insertedShots, error: shotsError } = await supabase
+        .from('golf_shots')
+        .insert(allShots)
+        .select('id, hole_number, shot_number, shot_type');
 
-      for (const hole of data.holes) {
-        for (const shot of hole.shots) {
-          const key = `${hole.holeNumber}-${shot.shotNumber}`;
-          const shotId = shotIdMap.get(key);
-          
-          if (!shotId) continue;
+      if (shotsError) {
+        // Don't throw - shots are supplementary data
+      } else if (insertedShots) {
+        // Create maps to find shot IDs for putt and approach miss details
+        const shotIdMap = new Map<string, string>();
+        for (const shot of insertedShots) {
+          const key = `${shot.hole_number}-${shot.shot_number}`;
+          shotIdMap.set(key, shot.id);
+        }
 
-          // Save putt details if this is a putt with miss tags
-          if (shot.shotType === 'putting' && shot.puttMissTags && shot.puttMissTags.length > 0) {
-            puttDetails.push({
-              shot_id: shotId,
-              miss_tags: shot.puttMissTags,
-              break_direction: shot.puttBreak || null,
-              distance_feet: shot.puttDistanceFeet || null,
-              made: shot.result === 'hole',
-            });
-          }
+        // Save putt details and approach miss details
+        const puttDetails: PuttDetail[] = [];
+        const approachMissDetails: ApproachMissDetail[] = [];
 
-          // Save approach miss details if this is an approach shot with miss direction
-          if ((shot.shotType === 'approach' || shot.shotType === 'around_green') && 
-              shot.approachMissDirection && 
-              shot.result !== 'green' && shot.result !== 'hole') {
-            approachMissDetails.push({
-              shot_id: shotId,
-              miss_direction: shot.approachMissDirection,
-              lie_type: shot.approachMissLieType || null,
-              distance_from_green_yards: shot.distanceUnitAfter === 'feet' 
-                ? Math.round((shot.distanceToHoleAfter || 0) / 3)
-                : shot.distanceToHoleAfter || null,
-            });
+        for (const hole of data.holes) {
+          for (const shot of hole.shots) {
+            const key = `${hole.holeNumber}-${shot.shotNumber}`;
+            const shotId = shotIdMap.get(key);
+            
+            if (!shotId) continue;
+
+            // Save putt details if this is a putt with miss tags
+            if (shot.shotType === 'putting' && shot.puttMissTags && shot.puttMissTags.length > 0) {
+              puttDetails.push({
+                shot_id: shotId,
+                miss_tags: shot.puttMissTags,
+                break_direction: shot.puttBreak || null,
+                distance_feet: shot.puttDistanceFeet || null,
+                made: shot.result === 'hole',
+              });
+            }
+
+            // Save approach miss details if this is an approach shot with miss direction
+            if ((shot.shotType === 'approach' || shot.shotType === 'around_green') && 
+                shot.approachMissDirection && 
+                shot.result !== 'green' && shot.result !== 'hole') {
+              approachMissDetails.push({
+                shot_id: shotId,
+                miss_direction: shot.approachMissDirection,
+                lie_type: shot.approachMissLieType || null,
+                distance_from_green_yards: shot.distanceUnitAfter === 'feet' 
+                  ? Math.round((shot.distanceToHoleAfter || 0) / 3)
+                  : shot.distanceToHoleAfter || null,
+              });
+            }
           }
         }
-      }
 
-      // Insert putt details (table may not be in types)
-      if (puttDetails.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('putt_details').insert(puttDetails);
-      }
+        // Insert putt details (table may not be in types)
+        if (puttDetails.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('putt_details').insert(puttDetails);
+        }
 
-      // Insert approach miss details (table may not be in types)
-      if (approachMissDetails.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('approach_miss_details').insert(approachMissDetails);
+        // Insert approach miss details (table may not be in types)
+        if (approachMissDetails.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('approach_miss_details').insert(approachMissDetails);
+        }
       }
     }
-  }
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/rounds');
@@ -884,35 +856,33 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
   const fairwaysHit = validatedData.holes.filter(h => h.fairwayHit).length;
   const fairwaysTotal = validatedData.holes.filter(h => h.par > 3).length;
   const greensInReg = validatedData.holes.filter(h => h.greenInRegulation).length;
-  const totalPenalties = validatedData.holes.reduce((sum, h) => sum + (h.penalties || 0), 0);
 
   // Convert frontend round type to database format
   const roundTypeDb = roundTypeToDb(validatedData.roundType);
+  const teamId = await getPlayerTeamId(supabase, player.id);
 
   // Insert round
   const { data: round, error: roundError } = await supabase
     .from('golf_rounds')
     .insert({
       player_id: player.id,
-      qualifier_id: validatedData.qualifierId || null,
       course_name: validatedData.courseName,
       course_city: validatedData.courseCity || null,
       course_state: validatedData.courseState || null,
       course_rating: validatedData.courseRating || null,
       course_slope: validatedData.courseSlope || null,
       tees_played: validatedData.teesPlayed || null,
-      // Note: course_id column doesn't exist in golf_rounds table
+      team_id: teamId,
+      course_id: validatedData.courseId || null,
       round_type: roundTypeDb,
       round_date: validatedData.roundDate,
       total_score: totalScore,
-      total_to_par: totalToPar,
+      score_to_par: totalToPar,
       total_putts: totalPutts,
-      fairways_hit: fairwaysHit,
-      fairways_total: fairwaysTotal,
-      greens_in_regulation: greensInReg,
-      greens_total: validatedData.holes.length,
-      total_penalties: totalPenalties,
-      is_verified: false,
+      total_fairways_hit: fairwaysHit,
+      total_fairways: fairwaysTotal,
+      total_gir: greensInReg,
+      total_gir_possible: validatedData.holes.length,
     })
     .select()
     .single();
@@ -923,17 +893,18 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
 
     // Insert holes
     const holesData = validatedData.holes.map(hole => ({
-    round_id: round.id,
-    hole_number: hole.holeNumber,
-    par: hole.par,
-    score: hole.score,
-    score_to_par: hole.score - hole.par,
-    putts: hole.putts || null,
-    fairway_hit: hole.fairwayHit || null,
-    green_in_regulation: hole.greenInRegulation || null,
-    penalties: hole.penalties || null,
-    notes: hole.notes || null,
-  }));
+      round_id: round.id,
+      hole_number: hole.holeNumber,
+      par: hole.par,
+      score: hole.score,
+      putts: hole.putts || null,
+      fairway_hit: hole.fairwayHit || null,
+      gir: hole.greenInRegulation || null,
+      penalty_strokes: hole.penalties || null,
+      notes: hole.notes || null,
+      up_and_down: null,
+      sand_save: null,
+    }));
 
     const { error: holesError } = await supabase
       .from('golf_holes')
@@ -2436,29 +2407,31 @@ export async function savePartialRound(
 
     // Convert frontend round type to database format
     const roundTypeDb = roundTypeToDb(data.roundType);
+    const teamId = await getPlayerTeamId(supabase, player.id);
 
     const roundData = {
       player_id: player.id,
+      team_id: teamId,
+      course_id: data.courseId || null,
       course_name: data.courseName,
       course_city: data.courseCity || null,
       course_state: data.courseState || null,
       course_rating: data.courseRating || null,
       course_slope: data.courseSlope || null,
       tees_played: data.teesPlayed || null,
-      // Note: course_id column doesn't exist in golf_rounds table
       round_type: roundTypeDb,
       round_date: data.roundDate,
       status: 'in_progress' as const,
       current_hole: data.currentHole || null,
-      holes_to_play: data.holesToPlay || 18,
+      holes_played: data.holesToPlay || 18,
       // Leave stats null for incomplete rounds
       total_score: null,
-      total_to_par: null,
+      score_to_par: null,
       total_putts: null,
-      fairways_hit: null,
-      fairways_total: null,
-      greens_in_regulation: null,
-      greens_total: null,
+      total_fairways_hit: null,
+      total_fairways: null,
+      total_gir: null,
+      total_gir_possible: null,
     };
 
     let roundId: string;
@@ -2536,7 +2509,6 @@ export async function savePartialRound(
       : completedHoles.map(hole => ({
         holeNumber: hole.holeNumber,
         par: hole.par,
-        yardage: hole.yardage || null,
       }));
 
     const completedHolesByNumber = new Map<number, HoleStats>(
@@ -2552,30 +2524,14 @@ export async function savePartialRound(
             round_id: roundId,
             hole_number: completed.holeNumber,
             par: completed.par,
-            yardage: completed.yardage || null,
             score: completed.score,
             putts: completed.putts,
-            fairway_hit: completed.fairwayHit,
-            green_in_regulation: completed.greenInRegulation,
-            penalty_strokes: completed.penaltyStrokes,
-            driving_distance: completed.drivingDistance,
-            used_driver: completed.usedDriver,
-            drive_miss_direction: completed.driveMissDirection,
-            approach_distance: completed.approachDistance,
-            approach_lie: completed.approachLie,
-            approach_proximity: completed.approachProximity,
-            approach_miss_direction: completed.approachMissDirection,
-            scramble_attempt: completed.scrambleAttempt,
-            scramble_made: completed.scrambleMade,
-            sand_save_attempt: completed.sandSaveAttempt,
-            sand_save_made: completed.sandSaveMade,
-            first_putt_distance: completed.firstPuttDistance,
-            first_putt_leave: completed.firstPuttLeave,
-            first_putt_break: completed.firstPuttBreak,
-            first_putt_slope: completed.firstPuttSlope,
-            first_putt_miss_direction: completed.firstPuttMissDirection,
-            holed_out_distance: completed.holedOutDistance,
-            holed_out_type: completed.holedOutType,
+            fairway_hit: completed.fairwayHit ?? null,
+            gir: completed.greenInRegulation ?? null,
+            penalty_strokes: completed.penaltyStrokes ?? null,
+            up_and_down: completed.scrambleAttempt ? completed.scrambleMade : null,
+            sand_save: completed.sandSaveAttempt ? completed.sandSaveMade : null,
+            notes: null,
           };
         }
 
@@ -2583,8 +2539,14 @@ export async function savePartialRound(
           round_id: roundId,
           hole_number: config.holeNumber,
           par: config.par,
-          yardage: config.yardage ?? null,
           score: null,
+          putts: null,
+          fairway_hit: null,
+          gir: null,
+          penalty_strokes: null,
+          up_and_down: null,
+          sand_save: null,
+          notes: null,
         };
       });
 
@@ -2632,6 +2594,7 @@ export async function savePartialRound(
             shot_type: shot.shotType,
             club_type: shot.clubType,
             lie_before: shot.lieBefore,
+            lie_after: deriveLieAfter(shot),
             distance_to_hole_before: shot.distanceToHoleBefore,
             distance_unit_before: shot.distanceUnitBefore,
             result: shot.result,
@@ -2641,6 +2604,8 @@ export async function savePartialRound(
             miss_direction: shot.missDirection,
             putt_break: shot.puttBreak,
             putt_slope: shot.puttSlope,
+            putt_distance_feet: derivePuttDistanceFeet(shot),
+            putt_made: derivePuttMade(shot),
             is_penalty: shot.isPenalty,
             penalty_type: shot.penaltyType,
           }));
@@ -3646,6 +3611,7 @@ export interface ShotUpdateData {
   shot_type?: string;
   club_type?: string;
   lie_before?: string;
+  lie_after?: string | null;
   distance_to_hole_before?: number;
   distance_unit_before?: string;
   result?: string;
@@ -3655,6 +3621,8 @@ export interface ShotUpdateData {
   miss_direction?: string | null;
   putt_break?: string | null;
   putt_slope?: string | null;
+  putt_distance_feet?: number | null;
+  putt_made?: boolean | null;
   is_penalty?: boolean;
   penalty_type?: string | null;
 }
@@ -3716,6 +3684,7 @@ export async function updateShot(
     if (data.shot_type !== undefined) updateData.shot_type = data.shot_type;
     if (data.club_type !== undefined) updateData.club_type = data.club_type;
     if (data.lie_before !== undefined) updateData.lie_before = data.lie_before;
+    if (data.lie_after !== undefined) updateData.lie_after = data.lie_after;
     if (data.distance_to_hole_before !== undefined) updateData.distance_to_hole_before = data.distance_to_hole_before;
     if (data.distance_unit_before !== undefined) updateData.distance_unit_before = data.distance_unit_before;
     if (data.result !== undefined) updateData.result = data.result;
@@ -3725,8 +3694,14 @@ export async function updateShot(
     if (data.miss_direction !== undefined) updateData.miss_direction = data.miss_direction;
     if (data.putt_break !== undefined) updateData.putt_break = data.putt_break;
     if (data.putt_slope !== undefined) updateData.putt_slope = data.putt_slope;
+    if (data.putt_distance_feet !== undefined) updateData.putt_distance_feet = data.putt_distance_feet;
+    if (data.putt_made !== undefined) updateData.putt_made = data.putt_made;
     if (data.is_penalty !== undefined) updateData.is_penalty = data.is_penalty;
     if (data.penalty_type !== undefined) updateData.penalty_type = data.penalty_type;
+
+    if (data.result !== undefined && data.lie_after === undefined) {
+      updateData.lie_after = deriveLieAfterFromResult(data.result);
+    }
 
     // Update the shot
     const { error: updateError } = await supabase
@@ -3889,24 +3864,29 @@ export async function getRoundShotDetails(
         id,
         hole_number,
         par,
-        yardage,
         score,
-        score_to_par,
         putts,
         fairway_hit,
-        green_in_regulation,
+        gir,
         penalty_strokes,
-        driving_distance,
-        approach_distance,
-        approach_proximity,
-        first_putt_distance,
-        scramble_attempt,
-        scramble_made,
-        sand_save_attempt,
-        sand_save_made
+        sand_save,
+        up_and_down,
+        notes
       `)
       .eq('round_id', roundId)
-      .order('hole_number', { ascending: true }) as { data: HoleReviewData[] | null; error: unknown };
+      .order('hole_number', { ascending: true }) as { data: Array<{
+        id: string;
+        hole_number: number;
+        par: number;
+        score: number | null;
+        putts: number | null;
+        fairway_hit: boolean | null;
+        gir: boolean | null;
+        penalty_strokes: number | null;
+        sand_save: boolean | null;
+        up_and_down: boolean | null;
+        notes: string | null;
+      }> | null; error: unknown };
 
     if (holesError) {
       return { success: false, error: 'Failed to fetch holes' };
@@ -3972,27 +3952,40 @@ export async function getRoundShotDetails(
     }
 
     // Combine holes with their shots
-    const holesWithShots: HoleReviewData[] = (holes || []).map((hole) => ({
-      id: hole.id,
-      hole_number: hole.hole_number,
-      par: hole.par,
-      yardage: hole.yardage,
-      score: hole.score,
-      score_to_par: hole.score_to_par,
-      putts: hole.putts,
-      fairway_hit: hole.fairway_hit,
-      green_in_regulation: hole.green_in_regulation,
-      penalty_strokes: hole.penalty_strokes,
-      driving_distance: hole.driving_distance,
-      approach_distance: hole.approach_distance,
-      approach_proximity: hole.approach_proximity,
-      first_putt_distance: hole.first_putt_distance,
-      scramble_attempt: hole.scramble_attempt,
-      scramble_made: hole.scramble_made,
-      sand_save_attempt: hole.sand_save_attempt,
-      sand_save_made: hole.sand_save_made,
-      shots: shotsByHole[hole.hole_number] || [],
-    }));
+    const holesWithShots: HoleReviewData[] = (holes || []).map((hole) => {
+      const holeShots = shotsByHole[hole.hole_number] || [];
+      const teeShot = holeShots.find(shot => shot.shot_type === 'tee');
+      const firstPutt = holeShots.find(shot => shot.shot_type === 'putting');
+
+      let firstPuttDistance: number | null = null;
+      if (firstPutt?.distance_to_hole_before !== null && firstPutt?.distance_unit_before) {
+        firstPuttDistance = firstPutt.distance_unit_before === 'yards'
+          ? Math.round(firstPutt.distance_to_hole_before * 3)
+          : firstPutt.distance_to_hole_before;
+      }
+
+      return {
+        id: hole.id,
+        hole_number: hole.hole_number,
+        par: hole.par,
+        yardage: null,
+        score: hole.score,
+        score_to_par: hole.score !== null ? hole.score - hole.par : null,
+        putts: hole.putts,
+        fairway_hit: hole.fairway_hit,
+        green_in_regulation: hole.gir,
+        penalty_strokes: hole.penalty_strokes,
+        driving_distance: teeShot?.shot_distance ?? null,
+        approach_distance: null,
+        approach_proximity: null,
+        first_putt_distance: firstPuttDistance,
+        scramble_attempt: hole.up_and_down !== null,
+        scramble_made: hole.up_and_down === true,
+        sand_save_attempt: hole.sand_save !== null,
+        sand_save_made: hole.sand_save === true,
+        shots: holeShots,
+      };
+    });
 
     const hasShotData = (shots || []).length > 0;
 

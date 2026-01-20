@@ -25,6 +25,11 @@ const THRESHOLDS = {
   minStrokeImpact: 0.3,
 };
 
+function normalizeRoundType(roundType?: string | null): string | null {
+  if (!roundType) return roundType ?? null;
+  return roundType === 'qualifying' ? 'qualifier' : roundType;
+}
+
 interface RoundData {
   id: string;
   score_to_par: number;
@@ -74,7 +79,7 @@ export class PatternMiner {
       id: r.id,
       score_to_par: r.score_to_par ?? 0,
       round_date: r.round_date,
-      round_type: r.round_type,
+      round_type: normalizeRoundType(r.round_type),
       putts: r.total_putts ?? undefined,
       total_fairways_hit: r.total_fairways_hit ?? undefined,
       total_gir: r.total_gir ?? undefined,
@@ -174,10 +179,10 @@ export class PatternMiner {
         condition: {
           field: 'round_type',
           operator: 'eq',
-          value: 'qualifying',
-          label: 'In qualifying',
+          value: 'qualifier',
+          label: 'In qualifier',
         },
-        test: (r) => r.round_type === 'qualifying',
+        test: (r) => r.round_type === 'qualifier',
       },
     ];
 

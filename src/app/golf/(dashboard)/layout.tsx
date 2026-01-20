@@ -119,9 +119,13 @@ export default function GolfDashboardLayout({
         return;
       }
 
-      // OPTIMIZATION: Query both coach and player in parallel
-      // Include onboarding_completed to check if they need to finish onboarding
-      const [coachResult, playerResult] = await Promise.all([
+      // Query role and profiles in parallel to resolve correct destination
+      const [userResult, coachResult, playerResult] = await Promise.all([
+        supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle(),
         supabase
           .from('golf_coaches')
           .select('id, full_name, avatar_url, organization_id, onboarding_completed')
@@ -134,12 +138,21 @@ export default function GolfDashboardLayout({
           .maybeSingle(),
       ]);
 
+      const userRole = userResult.data?.role;
       const coach = coachResult.data;
       const player = playerResult.data;
 
-      if (coach) {
-        // Check if onboarding is complete - redirect to onboarding if not
-        if (!coach.onboarding_completed) {
+      const declaredRole = (userRole === 'coach' || userRole === 'player') ? userRole : null;
+      const resolvedRole = coach && player
+        ? (declaredRole || 'coach')
+        : coach
+          ? 'coach'
+          : player
+            ? 'player'
+            : declaredRole;
+
+      if (resolvedRole === 'coach') {
+        if (!coach || !coach.onboarding_completed) {
           router.push('/golf/coach');
           return;
         }
@@ -165,9 +178,8 @@ export default function GolfDashboardLayout({
         return;
       }
 
-      if (player) {
-        // Check if onboarding is complete - redirect to onboarding if not
-        if (!player.onboarding_completed) {
+      if (resolvedRole === 'player') {
+        if (!player || !player.onboarding_completed) {
           router.push('/golf/player');
           return;
         }
@@ -178,6 +190,7 @@ export default function GolfDashboardLayout({
           .from('golf_team_members')
           .select('team_id')
           .eq('player_id', player.id)
+          .eq('status', 'active')
           .maybeSingle();
 
         if (teamMember?.team_id) {
@@ -199,22 +212,8 @@ export default function GolfDashboardLayout({
         return;
       }
 
-      // No profile at all - check users table to determine where to send them
-      // This handles edge cases where the trigger failed to create a profile
-      const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (userData?.role === 'coach') {
-        router.push('/golf/coach');
-      } else if (userData?.role === 'player') {
-        router.push('/golf/player');
-      } else {
-        // Truly unknown state - go to signup
-        router.push('/golf/signup');
-      }
+      // Truly unknown state - go to signup
+      router.push('/golf/signup');
     }
 
     loadUser();

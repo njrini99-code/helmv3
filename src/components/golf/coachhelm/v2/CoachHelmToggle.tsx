@@ -7,12 +7,12 @@ import { IconSparkles, IconCheck, IconX } from '@/components/icons';
 import { useCoachHelmSettings } from '@/hooks/coachhelm/useCoachHelmSettings';
 
 interface CoachHelmToggleProps {
-  userId: string;
+  coachId: string;
   onToggle?: (enabled: boolean) => void;
 }
 
-export function CoachHelmToggle({ userId, onToggle }: CoachHelmToggleProps) {
-  const { settings, loading, saving, enable, disable } = useCoachHelmSettings(userId);
+export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
+  const { settings, loading, saving, enable, disable } = useCoachHelmSettings(coachId);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleToggle = async () => {
@@ -54,61 +54,77 @@ export function CoachHelmToggle({ userId, onToggle }: CoachHelmToggleProps) {
   const enabled = settings?.enabled ?? true;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div
         className={cn(
-          'flex items-center gap-4 p-4 rounded-xl border transition-all',
-          enabled
-            ? 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-100'
-            : 'bg-slate-50 border-slate-200'
+          'relative overflow-hidden rounded-2xl border bg-white/70 p-5 backdrop-blur-xl shadow-glass transition-all',
+          enabled ? 'border-primary-100/70 ring-1 ring-primary-200/60' : 'border-white/60 ring-1 ring-slate-200/60'
         )}
       >
-        {/* Icon */}
-        <div
-          className={cn(
-            'w-10 h-10 rounded-lg flex items-center justify-center',
-            enabled
-              ? 'bg-gradient-to-br from-purple-500 to-blue-500'
-              : 'bg-slate-300'
-          )}
-        >
-          <IconSparkles size={20} className="text-white" />
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-white/0 to-emerald-400/10 pointer-events-none" />
+        <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-primary-500/12 blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-12 -left-10 h-24 w-24 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
 
-        {/* Content */}
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="font-medium text-slate-900">CoachHelm AI</h3>
-            {enabled && (
-              <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
-                Active
-              </span>
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
+          {/* Icon */}
+          <div
+            className={cn(
+              'w-11 h-11 rounded-xl flex items-center justify-center shadow-glass-sm ring-1 ring-white/70',
+              enabled
+                ? 'bg-gradient-green text-white'
+                : 'bg-slate-200 text-slate-500'
             )}
+          >
+            <IconSparkles size={20} />
           </div>
-          <p className="text-sm text-slate-500">
-            {enabled
-              ? 'AI insights, patterns & predictions enabled'
-              : 'AI features are disabled'}
-          </p>
-        </div>
 
-        {/* Toggle */}
-        <button
-          onClick={handleToggle}
-          disabled={saving}
-          className={cn(
-            'relative w-14 h-7 rounded-full transition-colors',
-            enabled ? 'bg-green-500' : 'bg-slate-300',
-            saving && 'opacity-50 cursor-not-allowed'
-          )}
-        >
-          <motion.div
-            initial={false}
-            animate={{ x: enabled ? 28 : 4 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            className="absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm"
-          />
-        </button>
+          {/* Content */}
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-semibold text-slate-900">CoachHelm AI</h3>
+              {enabled ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary-100/80 px-2 py-0.5 text-[11px] font-semibold text-primary-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
+                  Active
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                  Off
+                </span>
+              )}
+              <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400">
+                Premium Insights
+              </span>
+            </div>
+            <p className="text-sm text-slate-500">
+              {enabled
+                ? 'AI insights, patterns, and predictions tailored to your roster.'
+                : 'Enable CoachHelm to unlock team-level intelligence.'}
+            </p>
+          </div>
+
+          {/* Toggle */}
+          <button
+            onClick={handleToggle}
+            disabled={saving}
+            className={cn(
+              'relative h-8 w-16 rounded-full border transition-all',
+              enabled
+                ? 'border-primary-400/40 bg-gradient-to-r from-primary-500 to-emerald-500 shadow-glass-sm'
+                : 'border-slate-200 bg-slate-200',
+              saving && 'opacity-60 cursor-not-allowed'
+            )}
+            aria-label="Toggle CoachHelm AI"
+          >
+            <motion.div
+              initial={false}
+              animate={{ x: enabled ? 32 : 4 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-glass-sm"
+            />
+          </button>
+        </div>
       </div>
 
       {/* Disable Confirmation */}
@@ -147,34 +163,59 @@ export function CoachHelmToggle({ userId, onToggle }: CoachHelmToggleProps) {
 
       {/* Feature List */}
       {enabled && (
-        <div className="grid grid-cols-2 gap-2">
-          <FeaturePill label="Pattern Mining" enabled={settings?.showPatterns ?? true} />
-          <FeaturePill label="Predictions" enabled={settings?.showPredictions ?? true} />
-          <FeaturePill label="AI Insights" enabled={settings?.showInsights ?? true} />
-          <FeaturePill label="Learning" enabled />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FeaturePill
+            label="Pattern Mining"
+            detail="Repeatable scoring leaks & trends"
+            enabled={settings?.showPatterns ?? true}
+          />
+          <FeaturePill
+            label="Predictions"
+            detail="Forward-looking scoring outlooks"
+            enabled={settings?.showPredictions ?? true}
+          />
+          <FeaturePill
+            label="AI Insights"
+            detail="Actionable coaching narratives"
+            enabled={settings?.showInsights ?? true}
+          />
+          <FeaturePill
+            label="Learning"
+            detail="Adapts to coach feedback loops"
+            enabled
+          />
         </div>
       )}
     </div>
   );
 }
 
-function FeaturePill({ label, enabled }: { label: string; enabled: boolean }) {
+function FeaturePill({ label, detail, enabled }: { label: string; detail: string; enabled: boolean }) {
   return (
     <div
       className={cn(
-        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium',
+        'flex items-start gap-3 rounded-xl border px-3 py-2 text-xs font-medium shadow-glass-sm',
         enabled
-          ? 'bg-white border border-slate-200 text-slate-700'
-          : 'bg-slate-100 text-slate-400'
+          ? 'border-white/70 bg-white/70 text-slate-700'
+          : 'border-white/40 bg-white/50 text-slate-400'
       )}
     >
       <div
         className={cn(
-          'w-1.5 h-1.5 rounded-full',
-          enabled ? 'bg-green-500' : 'bg-slate-300'
+          'mt-0.5 flex h-6 w-6 items-center justify-center rounded-full',
+          enabled ? 'bg-primary-100 text-primary-600' : 'bg-slate-100 text-slate-400'
         )}
-      />
-      {label}
+      >
+        {enabled ? <IconCheck size={12} /> : <IconX size={12} />}
+      </div>
+      <div>
+        <p className={cn('text-xs font-semibold', enabled ? 'text-slate-700' : 'text-slate-400')}>
+          {label}
+        </p>
+        <p className={cn('text-[11px] leading-snug', enabled ? 'text-slate-500' : 'text-slate-400')}>
+          {detail}
+        </p>
+      </div>
     </div>
   );
 }

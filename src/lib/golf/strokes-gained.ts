@@ -81,7 +81,7 @@ export function convertDbShot(shot: DbGolfShot): SGShot {
     starting_distance_yards: shot.distance_to_hole_before ?? 0,
     ending_lie: mapLieType(shot.lie_after),
     ending_distance_yards: shot.distance_to_hole_after ?? 0,
-    is_holed: shot.putt_made === true || shot.result === 'holed',
+    is_holed: shot.putt_made === true || shot.result === 'holed' || shot.result === 'hole',
     is_penalty: shot.is_penalty === true,
   };
 }

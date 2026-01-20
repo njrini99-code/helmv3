@@ -150,16 +150,30 @@ export async function loginAction(
     ip,
   });
 
-  // Get user role and onboarding status to determine redirect
+  // Get user role and profile status to determine redirect
   const { data: userData } = await supabase
     .from('users')
     .select('role')
     .eq('id', data.user.id)
     .single();
 
-  // For LOGIN (not signup), always redirect to dashboard
-  // Onboarding is handled separately and is optional for existing users
-  // The dashboard will show a banner to complete onboarding if needed
+  const [coachResult, playerResult] = await Promise.all([
+    supabase
+      .from('baseball_coaches')
+      .select('id, onboarding_completed')
+      .eq('user_id', data.user.id)
+      .maybeSingle(),
+    supabase
+      .from('baseball_players')
+      .select('id, onboarding_completed')
+      .eq('user_id', data.user.id)
+      .maybeSingle(),
+  ]);
+
+  const coachProfile = coachResult.data;
+  const playerProfile = playerResult.data;
+
+  // Default to dashboard, but redirect to onboarding if profile is missing/incomplete
   const adminAllowlist = (process.env.ADMIN_EMAILS || '')
     .split(',')
     .map((email) => email.trim().toLowerCase())
@@ -175,33 +189,24 @@ export async function loginAction(
     };
   }
 
-  // Check if user has a profile record and if onboarding is complete
-  if (userData?.role === 'coach') {
-    const { data: coachData, error: coachError } = await supabase
-      .from('baseball_coaches')
-      .select('id, onboarding_completed')
-      .eq('user_id', data.user.id)
-      .single();
+  // Resolve role using profile presence to avoid misrouting
+  const declaredRole = (userData?.role === 'coach' || userData?.role === 'player')
+    ? userData.role
+    : null;
+  const resolvedRole = coachProfile && playerProfile
+    ? (declaredRole || 'coach')
+    : coachProfile
+      ? 'coach'
+      : playerProfile
+        ? 'player'
+        : declaredRole;
 
-    if (coachError && coachError.code === 'PGRST116') {
-      // No record found - need onboarding
-      redirectTo = '/baseball/coach-onboarding';
-    } else if (coachData && !coachData.onboarding_completed) {
-      // Profile exists but onboarding not complete - redirect to finish it
+  if (resolvedRole === 'coach') {
+    if (!coachProfile || !coachProfile.onboarding_completed) {
       redirectTo = '/baseball/coach-onboarding';
     }
-  } else if (userData?.role === 'player') {
-    const { data: playerData, error: playerError } = await supabase
-      .from('baseball_players')
-      .select('id, onboarding_completed')
-      .eq('user_id', data.user.id)
-      .single();
-
-    if (playerError && playerError.code === 'PGRST116') {
-      // No record found - need onboarding
-      redirectTo = '/baseball/player';
-    } else if (playerData && !playerData.onboarding_completed) {
-      // Profile exists but onboarding not complete - redirect to finish it
+  } else if (resolvedRole === 'player') {
+    if (!playerProfile || !playerProfile.onboarding_completed) {
       redirectTo = '/baseball/player';
     }
   }

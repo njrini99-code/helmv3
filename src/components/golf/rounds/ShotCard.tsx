@@ -95,9 +95,11 @@ const SYNC_STATUS_DISPLAY: Record<SyncStatus, { icon: React.ReactNode; label: st
 const SHOT_TYPE_LABELS: Record<string, string> = {
   tee: 'Tee Shot',
   approach: 'Approach',
+  around_green: 'Around Green',
   chip: 'Chip',
   pitch: 'Pitch',
   putt: 'Putt',
+  putting: 'Putt',
   bunker: 'Bunker Shot',
   recovery: 'Recovery',
   layup: 'Layup',
@@ -167,7 +169,7 @@ function SyncingIcon({ className }: { className?: string }) {
 export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false }: ShotCardProps) {
   const clubDisplay = getClubDisplay(shot.club_type || '');
   const resultDisplay = getResultDisplay(shot.result || '');
-  const isPutt = shot.shot_type === 'putt';
+  const isPutt = shot.shot_type === 'putt' || shot.shot_type === 'putting';
   const isPenalty = shot.is_penalty === true;
 
   // Get offline sync status if available

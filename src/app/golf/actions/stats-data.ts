@@ -8,6 +8,7 @@ import {
   type HoleInfo,
   type RoundInfo
 } from '@/lib/utils/golf-stats-calculator-shots';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 
 // ============================================================================
 // TYPES
@@ -28,7 +29,7 @@ export interface StatsFilter {
   courseName?: string;
 
   // Round type filter
-  roundType?: 'practice' | 'qualifying' | 'tournament';
+  roundType?: 'practice' | 'qualifier' | 'tournament';
 
   // Season/year filter (for historical comparison)
   season?: number; // e.g., 2024, 2025
@@ -119,6 +120,18 @@ function getFilterConditions(filter?: StatsFilter): {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyRoundTypeFilter<T extends { in: any; eq: any }>(
+  query: T,
+  roundType: string | null
+): T {
+  if (!roundType) return query;
+  if (roundType === 'qualifier') {
+    return query.in('round_type', ['qualifier', 'qualifying']) as T;
+  }
+  return query.eq('round_type', roundType) as T;
+}
+
 /**
  * Apply preset limit after fetching
  */
@@ -180,9 +193,7 @@ export async function getStatsSummary(
   if (conditions.endDate) {
     query = query.lte('round_date', conditions.endDate);
   }
-  if (conditions.roundType) {
-    query = query.eq('round_type', conditions.roundType);
-  }
+  query = applyRoundTypeFilter(query, conditions.roundType);
   if (conditions.courseName) {
     query = query.eq('course_name', conditions.courseName);
   }
@@ -305,9 +316,7 @@ export async function getDetailedStats(
   if (conditions.endDate) {
     query = query.lte('round_date', conditions.endDate);
   }
-  if (conditions.roundType) {
-    query = query.eq('round_type', conditions.roundType);
-  }
+  query = applyRoundTypeFilter(query, conditions.roundType);
   if (conditions.courseName) {
     query = query.eq('course_name', conditions.courseName);
   }
@@ -351,7 +360,7 @@ export async function getDetailedStats(
     id: r.id,
     round_date: r.round_date,
     course_name: r.course_name || 'Unknown Course',
-    round_type: r.round_type as 'practice' | 'qualifying' | 'tournament',
+    round_type: r.round_type ? roundTypeFromDb(r.round_type) : null,
   }));
 
   const holesInfo: HoleInfo[] = (holesData || []).map(h => ({
@@ -365,30 +374,43 @@ export async function getDetailedStats(
   const shots: RawShot[] = (shotsData || [])
     .filter(s =>
       s.distance_to_hole_before !== null &&
-      s.distance_to_hole_after !== null &&
-      s.shot_distance !== null
+      s.distance_to_hole_after !== null
     )
-    .map(s => ({
-      id: s.id,
-      round_id: s.round_id,
-      hole_id: s.hole_id,
-      hole_number: s.hole_number,
-      shot_number: s.shot_number,
-      shot_type: s.shot_type as 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty',
-      club_type: s.club_type as 'driver' | 'non_driver' | 'putter',
-      lie_before: s.lie_before as 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other',
-      distance_to_hole_before: s.distance_to_hole_before!,
-      distance_unit_before: s.distance_unit_before as 'yards' | 'feet',
-      result: s.result as 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty',
-      distance_to_hole_after: s.distance_to_hole_after!,
-      distance_unit_after: s.distance_unit_after as 'yards' | 'feet',
-      shot_distance: s.shot_distance!,
-      miss_direction: s.miss_direction,
-      putt_break: s.putt_break,
-      putt_slope: s.putt_slope,
-      is_penalty: s.is_penalty ?? false,
-      penalty_type: s.penalty_type,
-    }));
+    .map(s => {
+      // Calculate shot_distance from before/after if not stored
+      // Normalize both to yards for calculation
+      const beforeYards = s.distance_unit_before === 'feet'
+        ? (s.distance_to_hole_before ?? 0) / 3
+        : (s.distance_to_hole_before ?? 0);
+      const afterYards = s.distance_unit_after === 'feet'
+        ? (s.distance_to_hole_after ?? 0) / 3
+        : (s.distance_to_hole_after ?? 0);
+      // Simple calculation: difference between before and after (assumes ball moved toward hole)
+      const calculatedShotDistance = Math.max(0, Math.round(beforeYards - afterYards));
+      const shotDistance = s.shot_distance ?? calculatedShotDistance;
+
+      return {
+        id: s.id,
+        round_id: s.round_id,
+        hole_id: s.hole_id,
+        hole_number: s.hole_number,
+        shot_number: s.shot_number,
+        shot_type: s.shot_type as 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty',
+        club_type: s.club_type as 'driver' | 'non_driver' | 'putter',
+        lie_before: s.lie_before as 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other',
+        distance_to_hole_before: s.distance_to_hole_before!,
+        distance_unit_before: s.distance_unit_before as 'yards' | 'feet',
+        result: s.result as 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty',
+        distance_to_hole_after: s.distance_to_hole_after!,
+        distance_unit_after: s.distance_unit_after as 'yards' | 'feet',
+        shot_distance: shotDistance,
+        miss_direction: s.miss_direction,
+        putt_break: s.putt_break,
+        putt_slope: s.putt_slope,
+        is_penalty: s.is_penalty ?? false,
+        penalty_type: s.penalty_type,
+      };
+    });
 
   return calculateStatsFromShots(shots, holesInfo, roundsInfo);
 }
@@ -502,7 +524,7 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
     score: r.total_score!,
     toPar: r.score_to_par ?? 0,
     courseName: r.course_name || 'Unknown Course',
-    roundType: r.round_type,
+    roundType: r.round_type ? roundTypeFromDb(r.round_type) : null,
     girPct: r.total_gir !== null && r.total_gir_possible !== null && r.total_gir_possible > 0
       ? Math.round((r.total_gir / r.total_gir_possible) * 100)
       : null,
@@ -664,7 +686,8 @@ export async function getTeamComparison(
   const { data: teamMembers } = await supabase
     .from('golf_team_members')
     .select('player_id')
-    .eq('team_id', teamId);
+    .eq('team_id', teamId)
+    .eq('status', 'active');
 
   if (!teamMembers || teamMembers.length === 0) {
     return {
@@ -858,10 +881,10 @@ export async function getFilterOptions(playerId: string): Promise<FilterOptions>
   )].sort((a, b) => b - a);
 
   // Extract unique round types
-  const roundTypes = [...new Set(
+  const roundTypes: string[] = [...new Set(
     roundsData
-      .map(r => r.round_type)
-      .filter((t): t is string => t !== null)
+      .map(r => r.round_type ? roundTypeFromDb(r.round_type) : null)
+      .filter((t): t is 'practice' | 'tournament' | 'qualifier' => t !== null)
   )].sort();
 
   return { courses, seasons, roundTypes };

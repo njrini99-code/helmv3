@@ -86,18 +86,25 @@ export class CrossLearner {
       .gte('confidence', 0.6);
 
     if (this.teamId) {
-      // Get players from this team
-      const { data: players } = await supabase
-        .from('golf_players')
-        .select('id')
+      // Get players from this team via membership table
+      const { data: teamMembers, error: teamMembersError } = await supabase
+        .from('golf_team_members')
+        .select('player_id')
         .eq('team_id', this.teamId);
 
-      if (players && players.length > 0) {
-        query = query.in(
-          'player_id',
-          players.map((p) => p.id)
-        );
+      if (teamMembersError) {
+        return [];
       }
+
+      const teamPlayerIds = (teamMembers ?? [])
+        .map((member) => member.player_id)
+        .filter(Boolean);
+
+      if (teamPlayerIds.length === 0) {
+        return [];
+      }
+
+      query = query.in('player_id', teamPlayerIds);
     }
 
     const { data: patterns, error } = await query as { data: PatternRow[] | null; error: Error | null };
@@ -183,7 +190,20 @@ export class CrossLearner {
     let query = supabase.from('golf_players').select('id').neq('id', playerId);
 
     if (this.teamId) {
-      query = query.eq('team_id', this.teamId);
+      const { data: teamMembers, error: teamMembersError } = await supabase
+        .from('golf_team_members')
+        .select('player_id')
+        .eq('team_id', this.teamId);
+
+      if (teamMembersError) return [];
+
+      const teamPlayerIds = (teamMembers ?? [])
+        .map((member) => member.player_id)
+        .filter(Boolean);
+
+      if (teamPlayerIds.length === 0) return [];
+
+      query = query.in('id', teamPlayerIds);
     }
 
     const { data: players } = await query.limit(100);

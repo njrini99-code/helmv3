@@ -95,77 +95,90 @@ export function InsightsFeed({
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg">
-            <IconSparkles size={16} className="text-white" />
-          </div>
-          <span className="text-sm font-medium text-slate-700">
-            CoachHelm AI
-          </span>
-          <span className="text-xs px-2 py-0.5 bg-primary-100 text-primary-600 rounded-full font-medium">
-            Powered by AI
-          </span>
-        </div>
+    <div className="space-y-3 overflow-hidden">
+      {/* Header - Compact for narrow dashboard column */}
+      <div className="relative overflow-hidden rounded-xl border border-white/70 bg-white/70 px-3 py-3 shadow-glass-sm backdrop-blur-xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-white/0 to-emerald-400/10 pointer-events-none" />
+        <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-primary-500/10 blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-8 -left-6 h-16 w-16 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
 
-        <button
-          onClick={handleGenerate}
-          disabled={isPending}
-          className={cn(
-            'flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all',
-            isPending
-              ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-              : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'
-          )}
-        >
-          {isPending ? (
-            <>
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              >
-                <IconRefresh size={14} />
-              </motion.div>
-              Analyzing...
-            </>
-          ) : (
-            <>
-              <IconSparkles size={14} />
-              Analyze Team
-            </>
-          )}
-        </button>
+        <div className="relative flex flex-col gap-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-green text-white shadow-glass-sm">
+              <IconSparkles size={16} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] uppercase tracking-[0.15em] text-slate-400">
+                Intelligence Feed
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-sm font-semibold text-slate-900">
+                  CoachHelm AI
+                </span>
+                <span className="text-[10px] font-medium text-primary-700 bg-primary-100/70 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                  AI-Powered
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleGenerate}
+            disabled={isPending}
+            className={cn(
+              'w-full inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wide transition-all',
+              isPending
+                ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-primary-500 to-emerald-500 text-white shadow-glass hover:shadow-glass-hover'
+            )}
+          >
+            {isPending ? (
+              <>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  <IconRefresh size={14} />
+                </motion.div>
+                Analyzing
+              </>
+            ) : (
+              <>
+                <IconSparkles size={14} />
+                Analyze Team
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Error State */}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600">
+        <div className="rounded-xl border border-red-100 bg-red-50/80 px-3 py-2 text-sm text-red-600 shadow-glass-sm">
           {error}
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
+      {/* Tabs - Compact */}
+      <div className="flex gap-0.5 rounded-lg border border-white/70 bg-white/70 p-0.5 shadow-glass-sm overflow-hidden">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all',
+              'flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-semibold rounded-md transition-all truncate',
               activeTab === tab.id
-                ? 'bg-white text-slate-900 shadow-sm'
+                ? 'bg-white text-slate-900 shadow-glass-sm'
                 : 'text-slate-500 hover:text-slate-700'
             )}
           >
-            {tab.label}
+            <span className="truncate">{tab.label}</span>
             {tab.count > 0 && (
               <span
                 className={cn(
-                  'text-xs px-1.5 py-0.5 rounded-full',
+                  'text-[9px] px-1 py-0.5 rounded-full flex-shrink-0',
                   activeTab === tab.id
-                    ? 'bg-green-100 text-green-700'
+                    ? 'bg-primary-100 text-primary-700'
                     : 'bg-slate-200 text-slate-600'
                 )}
               >
@@ -177,7 +190,7 @@ export function InsightsFeed({
       </div>
 
       {/* Content */}
-      <GlassCard className="p-4" glow="subtle">
+      <GlassCard className="p-3" glow="subtle" variant="secondary">
         <AnimatePresence mode="wait">
           {activeTab === 'insights' && (
             <motion.div
@@ -257,7 +270,7 @@ export function InsightsFeed({
 
       {/* Last Generated */}
       {lastGenerated && (
-        <p className="text-xs text-slate-400 text-center">
+        <p className="text-[11px] uppercase tracking-wide text-slate-400 text-center">
           Last analyzed: {lastGenerated.toLocaleTimeString()}
         </p>
       )}
@@ -275,10 +288,15 @@ function EmptyState({
   description: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-8 text-center">
-      <div className="mb-3">{icon}</div>
-      <h4 className="text-sm font-medium text-slate-600 mb-1">{title}</h4>
-      <p className="text-xs text-slate-400 max-w-[200px]">{description}</p>
+    <div className="relative overflow-hidden rounded-xl border border-white/70 bg-white/70 px-3 py-6 text-center shadow-glass-sm">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-500/8 via-white/0 to-emerald-400/8 pointer-events-none" />
+      <div className="relative flex flex-col items-center">
+        <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-glass-sm text-primary-600">
+          {icon}
+        </div>
+        <h4 className="text-sm font-semibold text-slate-700 mb-0.5">{title}</h4>
+        <p className="text-[11px] text-slate-500 max-w-[200px] leading-relaxed">{description}</p>
+      </div>
     </div>
   );
 }

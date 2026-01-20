@@ -6,16 +6,17 @@ import { createClient } from '@/lib/supabase/client';
 // Database row type for golf_coachhelm_settings (table created in migration)
 interface CoachHelmSettingsRow {
   id: string;
-  user_id: string;
-  enabled: boolean;
-  show_insights: boolean;
-  show_predictions: boolean;
-  show_patterns: boolean;
-  notification_level: 'all' | 'important' | 'critical' | 'none';
-  disabled_at: string | null;
-  disabled_reason: string | null;
-  created_at: string;
-  updated_at: string;
+  coach_id: string;
+  team_id: string | null;
+  enabled: boolean | null;
+  auto_insights: boolean | null;
+  weekly_summary: boolean | null;
+  trend_alerts: boolean | null;
+  insight_frequency: string | null;
+  min_rounds_for_insights: number | null;
+  focus_areas: string[] | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 interface CoachHelmUserSettings {
@@ -23,7 +24,9 @@ interface CoachHelmUserSettings {
   showInsights: boolean;
   showPredictions: boolean;
   showPatterns: boolean;
-  notificationLevel: 'all' | 'important' | 'critical' | 'none';
+  insightFrequency: string | null;
+  minRoundsForInsights: number | null;
+  focusAreas: string[];
   disabledAt: string | null;
   disabledReason: string | null;
 }
@@ -43,18 +46,34 @@ const DEFAULT_SETTINGS: CoachHelmUserSettings = {
   showInsights: true,
   showPredictions: true,
   showPatterns: true,
-  notificationLevel: 'all',
+  insightFrequency: null,
+  minRoundsForInsights: null,
+  focusAreas: [],
   disabledAt: null,
   disabledReason: null,
 };
 
+function mapRowToSettings(row: CoachHelmSettingsRow): CoachHelmUserSettings {
+  return {
+    enabled: row.enabled ?? true,
+    showInsights: row.auto_insights ?? true,
+    showPredictions: row.weekly_summary ?? true,
+    showPatterns: row.trend_alerts ?? true,
+    insightFrequency: row.insight_frequency ?? null,
+    minRoundsForInsights: row.min_rounds_for_insights ?? null,
+    focusAreas: row.focus_areas ?? [],
+    disabledAt: null,
+    disabledReason: null,
+  };
+}
+
 /**
- * Hook to manage CoachHelm user settings
+ * Hook to manage CoachHelm coach settings
  *
- * @param userId - The user's UUID
+ * @param coachId - The coach's UUID
  */
 export function useCoachHelmSettings(
-  userId: string | null
+  coachId: string | null
 ): UseCoachHelmSettingsReturn {
   const [settings, setSettings] = useState<CoachHelmUserSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,12 +84,12 @@ export function useCoachHelmSettings(
 
   // Fetch settings on mount
   useEffect(() => {
-    if (!userId) {
+    if (!coachId) {
       setLoading(false);
       return;
     }
 
-    const currentUserId = userId;
+    const currentCoachId = coachId;
 
     async function fetchSettings() {
       setLoading(true);
@@ -80,7 +99,7 @@ export function useCoachHelmSettings(
       const { data, error: fetchError } = await (supabase
         .from('golf_coachhelm_settings' as 'users') // Type hack for new table
         .select('*')
-        .eq('user_id', currentUserId)
+        .eq('coach_id', currentCoachId)
         .maybeSingle() as unknown as Promise<{ data: CoachHelmSettingsRow | null; error: Error | null }>);
 
       if (fetchError) {
@@ -90,27 +109,18 @@ export function useCoachHelmSettings(
       }
 
       if (data) {
-        setSettings({
-          enabled: data.enabled,
-          showInsights: data.show_insights,
-          showPredictions: data.show_predictions,
-          showPatterns: data.show_patterns,
-          notificationLevel: data.notification_level,
-          disabledAt: data.disabled_at,
-          disabledReason: data.disabled_reason,
-        });
+        setSettings(mapRowToSettings(data));
       } else {
         // Create default settings if none exist
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const table = supabase.from('golf_coachhelm_settings' as any) as any;
         const { data: newData, error: createError } = await table
           .insert({
-            user_id: currentUserId,
+            coach_id: currentCoachId,
             enabled: true,
-            show_insights: true,
-            show_predictions: true,
-            show_patterns: true,
-            notification_level: 'all',
+            auto_insights: true,
+            weekly_summary: true,
+            trend_alerts: true,
           })
           .select()
           .single() as { data: CoachHelmSettingsRow | null; error: Error | null };
@@ -119,15 +129,7 @@ export function useCoachHelmSettings(
           // Settings don't exist yet, use defaults
           setSettings(DEFAULT_SETTINGS);
         } else if (newData) {
-          setSettings({
-            enabled: newData.enabled,
-            showInsights: newData.show_insights,
-            showPredictions: newData.show_predictions,
-            showPatterns: newData.show_patterns,
-            notificationLevel: newData.notification_level,
-            disabledAt: newData.disabled_at,
-            disabledReason: newData.disabled_reason,
-          });
+          setSettings(mapRowToSettings(newData));
         }
       }
 
@@ -135,12 +137,12 @@ export function useCoachHelmSettings(
     }
 
     fetchSettings();
-  }, [userId, supabase]);
+  }, [coachId, supabase]);
 
   // Update settings
   const updateSettings = useCallback(
     async (updates: Partial<CoachHelmUserSettings>): Promise<boolean> => {
-      if (!userId) return false;
+      if (!coachId) return false;
 
       setSaving(true);
       setError(null);
@@ -149,23 +151,23 @@ export function useCoachHelmSettings(
       const dbUpdates: Record<string, unknown> = {};
       if (updates.enabled !== undefined) dbUpdates.enabled = updates.enabled;
       if (updates.showInsights !== undefined)
-        dbUpdates.show_insights = updates.showInsights;
+        dbUpdates.auto_insights = updates.showInsights;
       if (updates.showPredictions !== undefined)
-        dbUpdates.show_predictions = updates.showPredictions;
+        dbUpdates.weekly_summary = updates.showPredictions;
       if (updates.showPatterns !== undefined)
-        dbUpdates.show_patterns = updates.showPatterns;
-      if (updates.notificationLevel !== undefined)
-        dbUpdates.notification_level = updates.notificationLevel;
-      if (updates.disabledAt !== undefined)
-        dbUpdates.disabled_at = updates.disabledAt;
-      if (updates.disabledReason !== undefined)
-        dbUpdates.disabled_reason = updates.disabledReason;
+        dbUpdates.trend_alerts = updates.showPatterns;
+      if (updates.insightFrequency !== undefined)
+        dbUpdates.insight_frequency = updates.insightFrequency;
+      if (updates.minRoundsForInsights !== undefined)
+        dbUpdates.min_rounds_for_insights = updates.minRoundsForInsights;
+      if (updates.focusAreas !== undefined)
+        dbUpdates.focus_areas = updates.focusAreas;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const table = supabase.from('golf_coachhelm_settings' as any) as any;
       const { data, error: updateError } = await table
         .upsert({
-          user_id: userId,
+          coach_id: coachId,
           ...dbUpdates,
         })
         .select()
@@ -178,21 +180,21 @@ export function useCoachHelmSettings(
       }
 
       if (data) {
-        setSettings({
-          enabled: data.enabled,
-          showInsights: data.show_insights,
-          showPredictions: data.show_predictions,
-          showPatterns: data.show_patterns,
-          notificationLevel: data.notification_level,
-          disabledAt: data.disabled_at,
-          disabledReason: data.disabled_reason,
+        setSettings((prev) => {
+          const base = mapRowToSettings(data);
+          return {
+            ...base,
+            disabledAt: updates.disabledAt ?? prev?.disabledAt ?? base.disabledAt,
+            disabledReason:
+              updates.disabledReason ?? prev?.disabledReason ?? base.disabledReason,
+          };
         });
       }
 
       setSaving(false);
       return true;
     },
-    [userId, supabase]
+    [coachId, supabase]
   );
 
   // Enable CoachHelm

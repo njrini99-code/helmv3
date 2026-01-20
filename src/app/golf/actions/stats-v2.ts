@@ -528,7 +528,8 @@ export async function getTeamStats(
   const { data: members, error } = await supabase
     .from('golf_team_members')
     .select('player_id')
-    .eq('team_id', teamId);
+    .eq('team_id', teamId)
+    .eq('status', 'active');
 
   if (error || !members || members.length === 0) {
     return null;

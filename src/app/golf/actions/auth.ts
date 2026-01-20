@@ -105,16 +105,30 @@ export async function loginAction(
   resetRateLimit(`login:ip:${ip}`);
   await resetLoginAttempts(normalizedEmail);
 
-  // Get user role for golf
+  // Get user role and profile status to determine redirect
   const { data: userData } = await supabase
     .from('users')
     .select('role')
     .eq('id', data.user.id)
     .single();
 
-  // For LOGIN (not signup), always redirect to dashboard
-  // Onboarding is handled separately and is optional for existing users
-  // The dashboard will show a banner to complete onboarding if needed
+  const [coachResult, playerResult] = await Promise.all([
+    supabase
+      .from('golf_coaches')
+      .select('id, onboarding_completed')
+      .eq('user_id', data.user.id)
+      .maybeSingle(),
+    supabase
+      .from('golf_players')
+      .select('id, onboarding_completed')
+      .eq('user_id', data.user.id)
+      .maybeSingle(),
+  ]);
+
+  const coachProfile = coachResult.data;
+  const playerProfile = playerResult.data;
+
+  // Default to dashboard, but redirect to onboarding if profile is missing/incomplete
   const adminAllowlist = (process.env.ADMIN_EMAILS || '')
     .split(',')
     .map((email) => email.trim().toLowerCase())
@@ -131,34 +145,26 @@ export async function loginAction(
     };
   }
 
-  // Check if user has a profile record - if not, they need onboarding
-  if (userData?.role === 'coach') {
-    const { error: coachError } = await supabase
-      .from('golf_coaches')
-      .select('id, onboarding_completed')
-      .eq('user_id', data.user.id)
-      .single();
+  // Resolve role using profile presence to avoid misrouting
+  const declaredRole = (userData?.role === 'coach' || userData?.role === 'player')
+    ? userData.role
+    : null;
+  const resolvedRole = coachProfile && playerProfile
+    ? (declaredRole || 'coach')
+    : coachProfile
+      ? 'coach'
+      : playerProfile
+        ? 'player'
+        : declaredRole;
 
-    // Only redirect to onboarding if NO profile exists at all
-    // (this handles edge case of trigger failure)
-    if (coachError && coachError.code === 'PGRST116') {
-      // No record found - need onboarding
+  if (resolvedRole === 'coach') {
+    if (!coachProfile || !coachProfile.onboarding_completed) {
       redirectTo = '/golf/coach';
     }
-    // If record exists (even with onboarding_completed=false), go to dashboard
-  } else if (userData?.role === 'player') {
-    const { error: playerError } = await supabase
-      .from('golf_players')
-      .select('id, onboarding_completed')
-      .eq('user_id', data.user.id)
-      .single();
-
-    // Only redirect to onboarding if NO profile exists at all
-    if (playerError && playerError.code === 'PGRST116') {
-      // No record found - need onboarding
+  } else if (resolvedRole === 'player') {
+    if (!playerProfile || !playerProfile.onboarding_completed) {
       redirectTo = '/golf/player';
     }
-    // If record exists (even with onboarding_completed=false), go to dashboard
   }
 
   revalidatePath('/golf/dashboard');

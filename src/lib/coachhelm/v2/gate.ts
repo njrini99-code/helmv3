@@ -276,44 +276,40 @@ export async function isCoachHelmEnabledForPlayer(
 }
 
 /**
- * Enables CoachHelm for a user
+ * Enables CoachHelm for a coach
  *
- * @param userId - The user's UUID
+ * @param coachId - The coach's UUID
  */
-export async function enableCoachHelm(userId: string): Promise<boolean> {
+export async function enableCoachHelm(coachId: string): Promise<boolean> {
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const table = supabase.from('golf_coachhelm_settings' as any) as any;
   const { error } = await table.upsert({
-    user_id: userId,
+    coach_id: coachId,
     enabled: true,
-    disabled_at: null,
-    disabled_reason: null,
   });
 
   return !error;
 }
 
 /**
- * Disables CoachHelm for a user
+ * Disables CoachHelm for a coach
  *
- * @param userId - The user's UUID
+ * @param coachId - The coach's UUID
  * @param reason - Optional reason for disabling
  */
 export async function disableCoachHelm(
-  userId: string,
-  reason?: string
+  coachId: string,
+  _reason?: string
 ): Promise<boolean> {
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const table = supabase.from('golf_coachhelm_settings' as any) as any;
   const { error } = await table.upsert({
-    user_id: userId,
+    coach_id: coachId,
     enabled: false,
-    disabled_at: new Date().toISOString(),
-    disabled_reason: reason ?? null,
   });
 
   return !error;

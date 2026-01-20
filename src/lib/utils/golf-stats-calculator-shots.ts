@@ -50,7 +50,7 @@ export interface RoundInfo {
   id: string;
   round_date: string;
   course_name: string | null;
-  round_type: 'practice' | 'qualifying' | 'tournament' | null;
+  round_type: 'practice' | 'qualifier' | 'qualifying' | 'tournament' | null;
   course_par?: number | null;
   holes_played?: number | null;
 }
@@ -322,6 +322,22 @@ function normalizeToFeet(distance: number | null | undefined, unit: string | nul
   return unit === 'yards' ? distance * 3 : distance;
 }
 
+function normalizeShotType(shotType: string | null | undefined): string | null {
+  if (!shotType) return shotType ?? null;
+  if (shotType === 'putt') return 'putting';
+  if (shotType === 'drive') return 'tee';
+  if (shotType === 'chip' || shotType === 'pitch') return 'around_green';
+  if (shotType === 'iron') return 'approach';
+  return shotType;
+}
+
+function normalizeRoundType(
+  roundType: RoundInfo['round_type']
+): 'practice' | 'qualifier' | 'tournament' | null {
+  if (roundType === 'qualifying') return 'qualifier';
+  return roundType;
+}
+
 function safePercent(made: number, attempts: number): number | null {
   if (attempts === 0) return null;
   return Math.round((made / attempts) * 1000) / 10;
@@ -460,9 +476,10 @@ function calculateStrokesGainedForShot(shot: RawShot): number {
 
 // Categorize SG by shot type
 function getStrokesGainedCategory(shot: RawShot): 'tee' | 'approach' | 'around_green' | 'putting' {
-  if (shot.shot_type === 'putting') return 'putting';
-  if (shot.shot_type === 'tee') return 'tee';
-  if (shot.shot_type === 'around_green') return 'around_green';
+  const shotType = normalizeShotType(shot.shot_type);
+  if (shotType === 'putting') return 'putting';
+  if (shotType === 'tee') return 'tee';
+  if (shotType === 'around_green') return 'around_green';
   return 'approach';
 }
 
@@ -504,27 +521,30 @@ interface CalculatedHoleStats {
 function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedHoleStats {
   // Sort shots by shot number
   const sortedShots = [...shots].sort((a, b) => a.shot_number - b.shot_number);
+  const normalizedShots = sortedShots.map((shot) => ({
+    ...shot,
+    shot_type: normalizeShotType(shot.shot_type),
+  }));
 
   // Score = number of shots
-  const score = sortedShots.length;
+  const score = normalizedShots.length;
 
   // Putts = shots where shot_type is 'putting'
-  const puttingShots = sortedShots.filter(s => s.shot_type === 'putting');
+  const puttingShots = normalizedShots.filter(s => s.shot_type === 'putting');
   const putts = puttingShots.length;
 
   // Tee shot analysis
-  const teeShot = sortedShots.find(s => s.shot_type === 'tee');
+  const teeShot = normalizedShots.find(s => s.shot_type === 'tee');
   const fairwayHit = teeShot ? teeShot.result === 'fairway' : null;
   const usedDriver = teeShot ? teeShot.club_type === 'driver' : null;
-  const drivingDistance = teeShot
-    ? normalizeToYards(teeShot.shot_distance, teeShot.distance_unit_before)
-    : null;
+  // shot_distance is already stored in yards, no conversion needed
+  const drivingDistance = teeShot?.shot_distance ?? null;
   const driveMissDirection = teeShot && teeShot.result !== 'fairway'
     ? teeShot.miss_direction
     : null;
 
   // GIR = shot that lands on green has shot_number <= par - 2
-  const shotToGreen = sortedShots.find(s => s.result === 'green');
+  const shotToGreen = normalizedShots.find(s => s.result === 'green');
   const greenInRegulation = shotToGreen
     ? shotToGreen.shot_number <= (par - 2)
     : false;
@@ -547,7 +567,7 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
   const approachMissDirection = !greenInRegulation
     ? (() => {
         // Find approach/around-green shots that missed the green
-        const missedApproachShots = sortedShots.filter(
+        const missedApproachShots = normalizedShots.filter(
           s => (s.shot_type === 'approach' || s.shot_type === 'around_green') &&
                s.result !== 'green' && s.result !== 'hole'
         );
@@ -573,7 +593,7 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
   const scrambleMade = scrambleAttempt && (score <= par);
 
   // Sand save = missed GIR from sand, made par or better
-  const lastShotBeforeGreen = sortedShots
+  const lastShotBeforeGreen = normalizedShots
     .filter(s => s.result !== 'green' && s.shot_number < (shotToGreen?.shot_number || 999))
     .sort((a, b) => b.shot_number - a.shot_number)[0];
 
@@ -581,7 +601,7 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
   const sandSaveMade = sandSaveAttempt && (score <= par);
 
   // Penalties
-  const penalties = sortedShots.filter(s => s.is_penalty).length;
+  const penalties = normalizedShots.filter(s => s.is_penalty).length;
 
   // 3-putts
   const threePutts = putts >= 3;
@@ -610,7 +630,7 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
     sandSaveMade,
     penalties,
     threePutts,
-    shots: sortedShots,
+    shots: normalizedShots,
   };
 }
 
@@ -671,6 +691,10 @@ export function calculateStatsFromShots(
         const stats = calculateHoleStatsFromShots(holeShots, hole.par);
         holeStats.push(stats);
       }
+    }
+
+    if (holeStats.length === 0) {
+      continue;
     }
 
     const totalScore = holeStats.reduce((sum, h) => sum + h.score, 0);
@@ -1057,13 +1081,14 @@ function aggregateRoundStats(rounds: Array<{
     }
 
     // Round type scoring
-    if (round.roundInfo.round_type === 'practice') {
+    const roundType = normalizeRoundType(round.roundInfo.round_type);
+    if (roundType === 'practice') {
       practiceScore += round.totalScore;
       stats.practiceRounds++;
-    } else if (round.roundInfo.round_type === 'qualifying') {
+    } else if (roundType === 'qualifier') {
       qualifyingScore += round.totalScore;
       stats.qualifyingRounds++;
-    } else if (round.roundInfo.round_type === 'tournament') {
+    } else if (roundType === 'tournament') {
       tournamentScore += round.totalScore;
       stats.tournamentRounds++;
     }

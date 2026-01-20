@@ -171,6 +171,27 @@ function calculateShotDistanceWithDirection(
   }
 }
 
+function deriveLieAfterFromResult(result: ShotRecord['result'] | null | undefined): string | null {
+  if (!result) return null;
+  switch (result) {
+    case 'fairway':
+      return 'fairway';
+    case 'rough':
+      return 'rough';
+    case 'sand':
+      return 'sand';
+    case 'green':
+    case 'hole':
+      return 'green';
+    case 'penalty':
+      return 'penalty';
+    case 'other':
+      return 'recovery';
+    default:
+      return null;
+  }
+}
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -620,6 +641,11 @@ export default function ShotTrackingComprehensive({
         afterInYards,
         editFormData.missDirection
       ));
+      const isPuttingShot = editingShot.shotType === 'putting';
+      const distanceBeforeValue = parseFloat(editFormData.distanceToHoleBefore);
+      const puttDistanceFeet = isPuttingShot && Number.isFinite(distanceBeforeValue)
+        ? (editFormData.distanceUnitBefore === 'yards' ? distanceBeforeValue * 3 : distanceBeforeValue)
+        : undefined;
 
       // Create the updated shot record (for local state)
       const updatedShot: ShotRecord = {
@@ -635,6 +661,7 @@ export default function ShotTrackingComprehensive({
         missDirection: editFormData.missDirection || undefined,
         puttBreak: editFormData.puttBreak || undefined,
         puttSlope: editFormData.puttSlope || undefined,
+        puttDistanceFeet: isPuttingShot ? puttDistanceFeet : editingShot.puttDistanceFeet,
         isPenalty: editFormData.isPenalty,
         penaltyType: editFormData.isPenalty ? (editFormData.penaltyType as ShotRecord['penaltyType']) : undefined,
       };
@@ -653,6 +680,9 @@ export default function ShotTrackingComprehensive({
           miss_direction: editFormData.missDirection,
           putt_break: editFormData.puttBreak,
           putt_slope: editFormData.puttSlope,
+          putt_distance_feet: isPuttingShot ? puttDistanceFeet ?? null : null,
+          putt_made: isPuttingShot ? editFormData.result === 'hole' : null,
+          lie_after: deriveLieAfterFromResult(editFormData.result),
           is_penalty: editFormData.isPenalty,
           penalty_type: editFormData.isPenalty ? editFormData.penaltyType : null,
         };
@@ -896,7 +926,7 @@ export default function ShotTrackingComprehensive({
     // GREEN IN REGULATION
     // -------------------------------------------------------------------------
     const shotsToGreen = currentHole.par - 2; // Par 4 = 2 shots, Par 5 = 3 shots, Par 3 = 1 shot
-    const shotsTakenToGreen = nonPenaltyShots.findIndex(s => s.result === 'green' || s.result === 'hole');
+    const shotsTakenToGreen = shots.findIndex(s => s.result === 'green' || s.result === 'hole');
     const greenInRegulation = shotsTakenToGreen !== -1 && (shotsTakenToGreen + 1) <= shotsToGreen;
 
     // -------------------------------------------------------------------------

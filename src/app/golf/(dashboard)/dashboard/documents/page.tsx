@@ -66,13 +66,14 @@ export default async function GolfDocumentsPage() {
   // but the generated types may still have 'is_public'. Cast to match actual schema.
   type DocumentRow = {
     id: string;
+    team_id: string;
     title: string;
     description: string | null;
     file_url: string;
     file_type: string | null;
     file_size: number | null;
     category: string | null;
-    player_visible: boolean | null;
+    is_public: boolean | null;
     created_at: string | null;
     uploaded_by: string | null;
     current_version_id: string | null;
@@ -84,13 +85,14 @@ export default async function GolfDocumentsPage() {
     .from('golf_documents')
     .select(`
       id,
+      team_id,
       title,
       description,
       file_url,
       file_type,
       file_size,
       category,
-      player_visible,
+      is_public,
       created_at,
       uploaded_by,
       current_version_id,
@@ -102,9 +104,9 @@ export default async function GolfDocumentsPage() {
     .eq('team_id', teamId)
     .order('created_at', { ascending: false });
 
-  // Players can only see player-visible documents
+  // Players can only see public documents
   const { data: rawDocuments } = !isCoach
-    ? await baseQuery.eq('player_visible', true)
+    ? await baseQuery.eq('is_public', true)
     : await baseQuery;
 
   // Cast to correct type (database has player_visible, not is_public)

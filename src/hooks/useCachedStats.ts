@@ -5,16 +5,20 @@
  *
  * React hook for accessing cached player stats with automatic
  * refresh on stale data. Provides instant dashboard loads.
+ *
+ * Includes deduplication to prevent multiple concurrent refresh attempts.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getPlayerStatsSummaryAction,
   getFullPlayerStatsAction,
   refreshStatsCacheAction,
-  type PlayerStatsSummary,
-  type PlayerStatsCache,
 } from '@/app/golf/actions/stats';
+import type { PlayerStatsSummary, PlayerStatsCache } from '@/lib/cache/golf-stats-calculator';
+
+// Minimum interval between refresh attempts (prevents race conditions)
+const MIN_REFRESH_INTERVAL_MS = 5000;
 
 interface UseCachedStatsOptions {
   /**
@@ -77,6 +81,10 @@ export function useCachedStats(options: UseCachedStatsOptions = {}): UseCachedSt
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Refs for deduplication - prevent race conditions
+  const refreshInProgress = useRef(false);
+  const lastRefreshTime = useRef(0);
+
   const fetchStats = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -93,17 +101,35 @@ export function useCachedStats(options: UseCachedStatsOptions = {}): UseCachedSt
   }, [playerId]);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    // Prevent concurrent refreshes
+    if (refreshInProgress.current) {
+      return;
+    }
 
-    const result = await refreshStatsCacheAction(playerId);
+    // Debounce rapid refresh attempts
+    const now = Date.now();
+    if (now - lastRefreshTime.current < MIN_REFRESH_INTERVAL_MS) {
+      return;
+    }
 
-    if (result.success) {
-      // Re-fetch after refresh
-      await fetchStats();
-    } else {
-      setError(result.error);
-      setLoading(false);
+    refreshInProgress.current = true;
+    lastRefreshTime.current = now;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const result = await refreshStatsCacheAction(playerId);
+
+      if (result.success) {
+        // Re-fetch after refresh
+        await fetchStats();
+      } else {
+        setError(result.error);
+        setLoading(false);
+      }
+    } finally {
+      refreshInProgress.current = false;
     }
   }, [playerId, fetchStats]);
 
@@ -112,9 +138,9 @@ export function useCachedStats(options: UseCachedStatsOptions = {}): UseCachedSt
     fetchStats();
   }, [fetchStats]);
 
-  // Auto-refresh when stale
+  // Auto-refresh when stale (with deduplication check)
   useEffect(() => {
-    if (!autoRefresh || !stats?.isStale) return;
+    if (!autoRefresh || !stats?.isStale || refreshInProgress.current) return;
 
     // Refresh stale data in background
     refresh().catch(() => {
@@ -122,12 +148,15 @@ export function useCachedStats(options: UseCachedStatsOptions = {}): UseCachedSt
     });
   }, [autoRefresh, stats?.isStale, refresh]);
 
-  // Periodic refresh check
+  // Periodic refresh check (with deduplication)
   useEffect(() => {
     if (!autoRefresh || refreshInterval <= 0) return;
 
     const interval = setInterval(() => {
-      fetchStats();
+      // Only fetch if not already refreshing
+      if (!refreshInProgress.current) {
+        fetchStats();
+      }
     }, refreshInterval);
 
     return () => clearInterval(interval);

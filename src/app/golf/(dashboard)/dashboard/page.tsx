@@ -60,7 +60,7 @@ interface PlayerRound {
     id: string;
     course_name: string;
     total_score: number | null;
-    total_to_par: number | null;
+    score_to_par: number | null;
     round_date: string;
 }
 
@@ -131,7 +131,7 @@ export default function GolfDashboardPage() {
                             playersResult
                         ] = await Promise.all([
                             supabase.from('golf_teams').select('id, name, season, join_code, created_at').eq('id', teamId).single(),
-                            supabase.from('golf_team_members').select('id', { count: 'exact', head: true }).eq('team_id', teamId),
+                            supabase.from('golf_team_members').select('id', { count: 'exact', head: true }).eq('team_id', teamId).eq('status', 'active'),
                             supabase
                                 .from('golf_events')
                                 .select('id, title, event_type, start_time, end_time, location, created_at, updated_at', { count: 'exact' })
@@ -147,6 +147,7 @@ export default function GolfDashboardPage() {
                             supabase.from('golf_team_members')
                                 .select('player:golf_players(id, first_name, last_name)')
                                 .eq('team_id', teamId)
+                                .eq('status', 'active')
                         ]);
 
                         team = teamResult.data as GolfTeam | null;
@@ -283,6 +284,7 @@ export default function GolfDashboardPage() {
                         .from('golf_team_members')
                         .select('team_id')
                         .eq('player_id', player.id)
+                        .eq('status', 'active')
                         .maybeSingle();
 
                     const playerTeamId = teamMembership?.team_id;
@@ -290,11 +292,11 @@ export default function GolfDashboardPage() {
                     // OPTIMIZATION: Fetch team and rounds in parallel
                     const [teamResult, roundsResult] = await Promise.all([
                         playerTeamId
-                            ? supabase.from('golf_teams').select('id, name, season, invite_code, created_at').eq('id', playerTeamId).single()
+                            ? supabase.from('golf_teams').select('id, name, season, join_code, created_at').eq('id', playerTeamId).single()
                             : Promise.resolve({ data: null }),
                         supabase
                             .from('golf_rounds')
-                            .select('id, course_name, total_score, total_to_par, round_date')
+                            .select('id, course_name, total_score, score_to_par, round_date')
                             .eq('player_id', player.id)
                             .eq('status', 'completed')
                             .not('total_score', 'is', null)
@@ -332,7 +334,7 @@ export default function GolfDashboardPage() {
                                 id: r.id,
                                 course_name: r.course_name,
                                 total_score: r.total_score || 0,
-                                total_to_par: r.total_to_par || 0,
+                                total_to_par: r.score_to_par || 0,
                                 round_date: r.round_date,
                             }))
                         });

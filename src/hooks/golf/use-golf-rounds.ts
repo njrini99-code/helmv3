@@ -70,8 +70,21 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
         // Calculate score distribution from holes
         let totalPutts = 0, fairwaysHit = 0, fairwaysTotal = 0, greensInReg = 0, greensTotal = 0;
 
-        type RoundData = { holes?: HoleData[]; total_putts?: number | null; fairways_hit?: number | null; fairways_total?: number | null; greens_in_regulation?: number | null; greens_total?: number | null };
-        type HoleData = { score_to_par: number | null; par: number | null; score: number | null; putts?: number | null; fairway_hit?: boolean | null; green_in_regulation?: boolean | null };
+        type RoundData = {
+          holes?: HoleData[];
+          total_putts?: number | null;
+          total_fairways_hit?: number | null;
+          total_fairways?: number | null;
+          total_gir?: number | null;
+          total_gir_possible?: number | null;
+        };
+        type HoleData = {
+          par: number | null;
+          score: number | null;
+          putts?: number | null;
+          fairway_hit?: boolean | null;
+          gir?: boolean | null;
+        };
         (roundsData as unknown as RoundData[]).forEach((round: RoundData) => {
           if (round.holes) {
             round.holes.forEach((hole: HoleData) => {
@@ -86,16 +99,16 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
 
               // Greens
               greensTotal++;
-              if (hole.green_in_regulation) greensInReg++;
+              if (hole.gir) greensInReg++;
             });
           }
 
           // Also use round totals if available
-          if (round.total_putts) totalPutts = round.total_putts;
-          if (round.fairways_hit) fairwaysHit = round.fairways_hit;
-          if (round.fairways_total) fairwaysTotal = round.fairways_total;
-          if (round.greens_in_regulation) greensInReg = round.greens_in_regulation;
-          if (round.greens_total) greensTotal = round.greens_total;
+          if (round.total_putts !== null && round.total_putts !== undefined) totalPutts = round.total_putts;
+          if (round.total_fairways_hit !== null && round.total_fairways_hit !== undefined) fairwaysHit = round.total_fairways_hit;
+          if (round.total_fairways !== null && round.total_fairways !== undefined) fairwaysTotal = round.total_fairways;
+          if (round.total_gir !== null && round.total_gir !== undefined) greensInReg = round.total_gir;
+          if (round.total_gir_possible !== null && round.total_gir_possible !== undefined) greensTotal = round.total_gir_possible;
         });
 
         const puttsPerRound = totalPutts > 0 ? totalPutts / roundsPlayed : 0;

@@ -5,7 +5,7 @@ import { useCoachHelmSettings } from '@/hooks/coachhelm/useCoachHelmSettings';
 import { Brain, AlertCircle, Check, Loader2 } from 'lucide-react';
 
 interface CoachHelmToggleProps {
-  userId: string;
+  coachId: string;
   showDetails?: boolean;
   onStatusChange?: (enabled: boolean) => void;
 }
@@ -17,12 +17,12 @@ interface CoachHelmToggleProps {
  * what CoachHelm provides when enabled.
  */
 export function CoachHelmToggle({
-  userId,
+  coachId,
   showDetails = true,
   onStatusChange,
 }: CoachHelmToggleProps) {
   const { settings, loading, saving, error, enable, disable } =
-    useCoachHelmSettings(userId);
+    useCoachHelmSettings(coachId);
   const [disableReason, setDisableReason] = useState('');
   const [showReasonInput, setShowReasonInput] = useState(false);
 
@@ -209,11 +209,11 @@ export function CoachHelmToggle({
  * Compact toggle for use in sidebars or smaller spaces
  */
 export function CoachHelmToggleCompact({
-  userId,
+  coachId,
   onStatusChange,
 }: Omit<CoachHelmToggleProps, 'showDetails'>) {
   const { settings, loading, saving, enable, disable } =
-    useCoachHelmSettings(userId);
+    useCoachHelmSettings(coachId);
 
   const isEnabled = settings?.enabled ?? true;
 

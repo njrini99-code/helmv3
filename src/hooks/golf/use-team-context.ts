@@ -106,6 +106,7 @@ export function useTeamContext(): TeamContext {
           .from('golf_team_members')
           .select('team_id, team:golf_teams(name)')
           .eq('player_id', player.id)
+          .eq('status', 'active')
           .maybeSingle();
 
         if (membership) {

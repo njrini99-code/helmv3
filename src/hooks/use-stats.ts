@@ -20,10 +20,8 @@ import type {
   RoundType,
   DataQuality,
 } from '@/lib/types/golf';
-import {
-  getPlayerStatsSummaryAction,
-  type PlayerStatsSummary,
-} from '@/app/golf/actions/stats';
+import { getPlayerStatsSummaryAction } from '@/app/golf/actions/stats';
+import type { PlayerStatsSummary } from '@/lib/cache/golf-stats-calculator';
 
 // Local type for strokes gained trend data
 interface StrokesGainedTrend {

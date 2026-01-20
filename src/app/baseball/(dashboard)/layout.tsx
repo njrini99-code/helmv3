@@ -85,41 +85,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
 
       // Check if user has completed onboarding
-      const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (userData?.role === 'coach') {
-        const { data: coachData } = await supabase
+      const [userResult, coachResult, playerResult] = await Promise.all([
+        supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle(),
+        supabase
           .from('baseball_coaches')
           .select('id, onboarding_completed')
           .eq('user_id', user.id)
-          .single();
-
-        if (!coachData) {
-          router.push('/baseball/coach-onboarding');
-          return;
-        }
-
-        if (!coachData.onboarding_completed) {
-          router.push('/baseball/coach-onboarding');
-          return;
-        }
-      } else if (userData?.role === 'player') {
-        const { data: playerData } = await supabase
+          .maybeSingle(),
+        supabase
           .from('baseball_players')
           .select('id, onboarding_completed')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle(),
+      ]);
 
-        if (!playerData) {
-          router.push('/baseball/player');
+      const userRole = userResult.data?.role;
+      const coachProfile = coachResult.data;
+      const playerProfile = playerResult.data;
+
+      const declaredRole = (userRole === 'coach' || userRole === 'player') ? userRole : null;
+      const resolvedRole = coachProfile && playerProfile
+        ? (declaredRole || 'coach')
+        : coachProfile
+          ? 'coach'
+          : playerProfile
+            ? 'player'
+            : declaredRole;
+
+      if (resolvedRole === 'coach') {
+        if (!coachProfile || !coachProfile.onboarding_completed) {
+          router.push('/baseball/coach-onboarding');
           return;
         }
-
-        if (!playerData.onboarding_completed) {
+      } else if (resolvedRole === 'player') {
+        if (!playerProfile || !playerProfile.onboarding_completed) {
           router.push('/baseball/player');
           return;
         }

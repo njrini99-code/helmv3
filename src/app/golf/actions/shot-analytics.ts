@@ -8,6 +8,76 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+
+// ============================================================================
+// INPUT VALIDATION
+// ============================================================================
+
+const shotAnalyticsSchema = z.object({
+  playerId: z.string().uuid('Invalid player ID format'),
+  periodDays: z.number().int().min(1).max(365).default(30),
+});
+
+// ============================================================================
+// AUTH HELPERS
+// ============================================================================
+
+/**
+ * Verifies that the current user has access to a player's shot analytics.
+ */
+async function verifyPlayerAccess(
+  playerId: string
+): Promise<{ authorized: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { authorized: false, error: 'Not authenticated' };
+  }
+
+  // Check if user is the player
+  // Type assertion: team_id exists in DB but not in generated Supabase types
+  const { data: playerRecordData } = await supabase
+    .from('golf_players')
+    .select('id, team_id')
+    .eq('id', playerId)
+    .eq('user_id', user.id)
+    .single();
+
+  const playerRecord = playerRecordData as { id: string; team_id: string | null } | null;
+
+  if (playerRecord) {
+    return { authorized: true };
+  }
+
+  // Check if user is a coach with access to this player
+  // Type assertion: team_id exists in DB but not in generated Supabase types
+  const { data: coachData } = await supabase
+    .from('golf_coaches')
+    .select('id, team_id')
+    .eq('user_id', user.id)
+    .single();
+
+  const coach = coachData as { id: string; team_id: string | null } | null;
+
+  if (coach?.team_id) {
+    // Verify player is on the coach's team
+    const { data: teamMember } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('team_id', coach.team_id)
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .single();
+
+    if (teamMember) {
+      return { authorized: true };
+    }
+  }
+
+  return { authorized: false, error: 'Not authorized to access this player' };
+}
 
 // ============================================================================
 // TYPES
@@ -152,7 +222,10 @@ interface ShotRow {
   club_type: string | null;
   lie_before: string | null;
   distance_to_hole_before: number | null;
+  distance_unit_before: string | null;
   distance_to_hole_after: number | null;
+  distance_unit_after: string | null;
+  shot_distance: number | null;
   miss_direction: string | null;
   result: string | null;
   putt_distance_feet: number | null;
@@ -166,6 +239,16 @@ interface ShotRow {
 function calculatePercentage(part: number, total: number): number {
   if (total === 0) return 0;
   return Math.round((part / total) * 1000) / 10; // One decimal place
+}
+
+function toYards(distance: number | null, unit: string | null): number | null {
+  if (distance == null) return null;
+  return unit === 'feet' ? distance / 3 : distance;
+}
+
+function toFeet(distance: number | null, unit: string | null): number | null {
+  if (distance == null) return null;
+  return unit === 'yards' ? distance * 3 : distance;
 }
 
 function determineTrend(current: number, previous: number, _higherIsBetter: boolean): TrendData['direction'] {
@@ -190,19 +273,25 @@ export async function getPlayerShotAnalytics(
   periodDays: number = 30
 ): Promise<{ success: true; data: PlayerShotAnalytics } | { success: false; error: string }> {
   try {
-    const supabase = await createClient();
-
-    // Get current user for authorization
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
+    // Validate input
+    const validated = shotAnalyticsSchema.safeParse({ playerId, periodDays });
+    if (!validated.success) {
+      return { success: false, error: validated.error.issues[0]?.message || 'Invalid input' };
     }
+
+    // Verify user has access to this player
+    const access = await verifyPlayerAccess(validated.data.playerId);
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized' };
+    }
+
+    const supabase = await createClient();
 
     // Get player info
     const { data: player } = await supabase
       .from('golf_players')
       .select('id, first_name, last_name')
-      .eq('id', playerId)
+      .eq('id', validated.data.playerId)
       .single();
 
     if (!player) {
@@ -260,7 +349,8 @@ export async function getPlayerShotAnalytics(
       .from('golf_shots')
       .select(`
         id, round_id, hole_number, shot_number, shot_type, club_type,
-        lie_before, distance_to_hole_before, distance_to_hole_after,
+        lie_before, distance_to_hole_before, distance_unit_before,
+        distance_to_hole_after, distance_unit_after, shot_distance,
         miss_direction, result, putt_distance_feet, putt_made
       `)
       .in('round_id', roundIds);
@@ -282,9 +372,14 @@ export async function getPlayerShotAnalytics(
 
     // Get driving distances from shots
     const drivingDistances = driveShots
-      .filter(s => s.distance_to_hole_before != null && s.distance_to_hole_after != null)
-      .map(s => (s.distance_to_hole_before! - s.distance_to_hole_after!))
-      .filter(d => d > 0);
+      .map((shot) => {
+        if (shot.shot_distance != null) return shot.shot_distance;
+        const before = toYards(shot.distance_to_hole_before, shot.distance_unit_before);
+        const after = toYards(shot.distance_to_hole_after, shot.distance_unit_after);
+        if (before == null || after == null) return null;
+        return Math.max(0, before - after);
+      })
+      .filter((distance): distance is number => distance != null && distance > 0);
 
     const teeStats: TeeStats = {
       totalDrives,
@@ -324,8 +419,8 @@ export async function getPlayerShotAnalytics(
     const totalApproachMisses = allApproachMisses.length || 1;
 
     const approachProximities = approachShots
-      .filter(s => s.distance_to_hole_after != null && s.distance_to_hole_after > 0)
-      .map(s => s.distance_to_hole_after!);
+      .map(s => toFeet(s.distance_to_hole_after, s.distance_unit_after))
+      .filter((distance): distance is number => distance != null && distance > 0);
 
     const approachStats: ApproachStats = {
       totalApproaches,
@@ -400,24 +495,25 @@ export async function getPlayerShotAnalytics(
     const puttShots = shots.filter(s => s.shot_type === 'putt' || s.shot_type === 'putting');
 
     puttShots.forEach(p => {
-      const dist = p.putt_distance_feet;
+      const dist = p.putt_distance_feet ?? toFeet(p.distance_to_hole_before, p.distance_unit_before);
+      const made = p.putt_made ?? p.result === 'hole';
       if (dist != null) {
         if (dist <= 5) {
           puttsByDistance.inside5ft.attempts++;
-          if (p.putt_made) puttsByDistance.inside5ft.made++;
+          if (made) puttsByDistance.inside5ft.made++;
         } else if (dist <= 10) {
           puttsByDistance.fiveTo10ft.attempts++;
-          if (p.putt_made) puttsByDistance.fiveTo10ft.made++;
+          if (made) puttsByDistance.fiveTo10ft.made++;
         } else {
           puttsByDistance.outside10ft.attempts++;
-          if (p.putt_made) puttsByDistance.outside10ft.made++;
+          if (made) puttsByDistance.outside10ft.made++;
         }
       }
     });
 
     // Putt miss tendencies from shots
     const puttMissTendencies = { low: 0, high: 0, short: 0 };
-    const missedPuttShots = puttShots.filter(p => p.putt_made === false);
+    const missedPuttShots = puttShots.filter(p => (p.putt_made ?? p.result === 'hole') === false);
 
     missedPuttShots.forEach(p => {
       if (p.miss_direction) {
@@ -475,14 +571,14 @@ export async function getPlayerShotAnalytics(
 
     const distanceRangeAnalytics: DistanceRangeAnalytics[] = distanceRanges.map(range => {
       const rangeShots = shots.filter(s => {
-        const dist = s.distance_to_hole_before;
+        const dist = toYards(s.distance_to_hole_before, s.distance_unit_before);
         return dist != null && dist >= range.min && dist < range.max && s.shot_type !== 'putting' && s.shot_type !== 'putt' && s.shot_type !== 'drive' && s.shot_type !== 'tee';
       });
 
       const greenHits = rangeShots.filter(s => s.result === 'green' || s.result === 'hole' || s.result === 'gir').length;
       const proximities = rangeShots
-        .filter(s => s.distance_to_hole_after != null)
-        .map(s => s.distance_to_hole_after!);
+        .map(s => toFeet(s.distance_to_hole_after, s.distance_unit_after))
+        .filter((distance): distance is number => distance != null);
 
       const missBreakdown: Record<string, number> = {};
       rangeShots.forEach(s => {
@@ -683,7 +779,8 @@ export async function getTeamShotAnalytics(
     const { data: members } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('status', 'active');
 
     if (!members || members.length === 0) {
       return { success: false, error: 'No players found on team' };

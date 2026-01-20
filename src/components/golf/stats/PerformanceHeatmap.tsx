@@ -13,7 +13,7 @@ export interface RoundData {
   score: number;
   toPar: number;
   courseName?: string;
-  roundType?: 'practice' | 'qualifying' | 'tournament';
+  roundType?: 'practice' | 'qualifier' | 'tournament';
 }
 
 interface PerformanceHeatmapProps {

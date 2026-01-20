@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconUsers, IconCheck, IconAlertCircle, IconLogout } from '@/components/icons';
@@ -74,16 +75,10 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
         return;
       }
 
-      // Join the team via golf_team_members
-      const { error: insertError } = await supabase
-        .from('golf_team_members')
-        .insert({
-          team_id: team.id,
-          player_id: playerId
-        });
-
-      if (insertError) {
-        setError('Failed to join team. Please try again.');
+      // Join via server action to ensure status is set correctly
+      const joinResult = await processGolfTeamInvitation(inviteCode.trim().toUpperCase(), playerId);
+      if (!joinResult.success) {
+        setError(joinResult.error || 'Failed to join team. Please try again.');
         setLoading(false);
         return;
       }

@@ -120,13 +120,14 @@ interface GlassStatCardProps {
   label: string;
   value: string | number;
   icon?: React.ReactNode;
+  suffix?: string;
   trend?: {
     value: number;
     direction: 'up' | 'down' | 'neutral';
   };
 }
 
-export function GlassStatCard({ label, value, icon, trend }: GlassStatCardProps) {
+export function GlassStatCard({ label, value, icon, suffix, trend }: GlassStatCardProps) {
   return (
     <GlassCard className="group" variant="primary">
       <div className="flex items-start justify-between">
@@ -134,6 +135,7 @@ export function GlassStatCard({ label, value, icon, trend }: GlassStatCardProps)
           <p className="text-sm font-medium text-slate-500">{label}</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900 tabular-nums tracking-tight">
             {typeof value === 'number' ? value.toLocaleString() : value}
+            {suffix && <span className="text-lg font-normal text-slate-400 ml-1">{suffix}</span>}
           </p>
           {trend && (
             <p

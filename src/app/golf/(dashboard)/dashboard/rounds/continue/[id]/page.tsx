@@ -4,10 +4,104 @@ import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
 import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 import type { Tables } from '@/lib/types/database';
+import type { ApproachMissDirection, PuttMissTag } from '@/lib/types/golf';
 
 type GolfShot = Tables<'golf_shots'>;
 // The golf_holes table schema - penalty_strokes is now part of the schema
 type GolfHoleRow = Tables<'golf_holes'>;
+
+const PUTT_MISS_TAGS = new Set<PuttMissTag>(['low', 'high', 'short']);
+const APPROACH_MISS_DIRECTIONS = new Set<ApproachMissDirection>([
+  'short',
+  'long',
+  'left',
+  'right',
+  'short_left',
+  'short_right',
+  'long_left',
+  'long_right',
+]);
+
+function parsePuttMissTags(shot: GolfShot): PuttMissTag[] | undefined {
+  const shotType = shot.shot_type ?? '';
+  if (shotType !== 'putting' && shotType !== 'putt') return undefined;
+  if (!shot.miss_direction) return undefined;
+  const tags = shot.miss_direction
+    .toLowerCase()
+    .split('_')
+    .filter(tag => PUTT_MISS_TAGS.has(tag as PuttMissTag)) as PuttMissTag[];
+  return tags.length > 0 ? tags : undefined;
+}
+
+function parseApproachMissDirection(shot: GolfShot): ApproachMissDirection | undefined {
+  const shotType = shot.shot_type ?? '';
+  if (shotType !== 'approach' && shotType !== 'around_green') return undefined;
+  if (!shot.miss_direction) return undefined;
+  const normalized = shot.miss_direction.toLowerCase().replace('-', '_') as ApproachMissDirection;
+  return APPROACH_MISS_DIRECTIONS.has(normalized) ? normalized : undefined;
+}
+
+function parseApproachMissLieType(shot: GolfShot): ShotRecord['approachMissLieType'] | undefined {
+  const source = shot.lie_after ?? shot.result;
+  if (!source) return undefined;
+  switch (source) {
+    case 'fairway':
+      return 'fairway';
+    case 'rough':
+      return 'rough';
+    case 'sand':
+      return 'bunker';
+    case 'hazard':
+    case 'recovery':
+    case 'penalty':
+      return 'hazard';
+    case 'other':
+      return 'hazard';
+    default:
+      return undefined;
+  }
+}
+
+function derivePuttDistanceFeet(shot: GolfShot): number | undefined {
+  const shotType = shot.shot_type ?? '';
+  if (shotType !== 'putting' && shotType !== 'putt') return undefined;
+  if (shot.putt_distance_feet != null) return shot.putt_distance_feet;
+  if (shot.distance_to_hole_before == null) return undefined;
+  return shot.distance_unit_before === 'yards'
+    ? shot.distance_to_hole_before * 3
+    : shot.distance_to_hole_before;
+}
+
+function mapShotToRecord(shot: GolfShot): ShotRecord {
+  const shotType = (shot.shot_type ?? 'approach') as ShotRecord['shotType'];
+  const distanceUnitBefore = (shot.distance_unit_before ??
+    (shotType === 'putting' ? 'feet' : 'yards')) as ShotRecord['distanceUnitBefore'];
+  const distanceUnitAfter = (shot.distance_unit_after ??
+    (shot.result === 'green' || shot.result === 'hole' ? 'feet' : 'yards')) as ShotRecord['distanceUnitAfter'];
+
+  return {
+    id: shot.id,
+    shotNumber: shot.shot_number,
+    shotType,
+    clubType: shot.club_type as ShotRecord['clubType'],
+    lieBefore: shot.lie_before as ShotRecord['lieBefore'],
+    distanceToHoleBefore: shot.distance_to_hole_before ?? 0,
+    distanceUnitBefore,
+    result: shot.result as ShotRecord['result'],
+    distanceToHoleAfter: shot.distance_to_hole_after ?? 0,
+    distanceUnitAfter,
+    shotDistance: shot.shot_distance ?? 0,
+    missDirection: shot.miss_direction ?? undefined,
+    puttBreak: shot.putt_break as ShotRecord['puttBreak'],
+    puttSlope: shot.putt_slope as ShotRecord['puttSlope'],
+    isPenalty: shot.is_penalty ?? false,
+    penaltyType: shot.penalty_type as ShotRecord['penaltyType'],
+    puttMissTags: parsePuttMissTags(shot),
+    puttDistanceFeet: derivePuttDistanceFeet(shot),
+    approachMissDirection: parseApproachMissDirection(shot),
+    approachMissLieType: parseApproachMissLieType(shot),
+  };
+}
 
 export default async function ContinueRoundPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -105,23 +199,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
         firstPuttMissDirection: null,
         holedOutDistance: null,
         holedOutType: null,
-        shots: shots.map((shot) => ({
-          shotNumber: shot.shot_number,
-          shotType: shot.shot_type as ShotRecord['shotType'],
-          clubType: shot.club_type as ShotRecord['clubType'],
-          lieBefore: shot.lie_before as ShotRecord['lieBefore'],
-          distanceToHoleBefore: shot.distance_to_hole_before ?? 0,
-          distanceUnitBefore: shot.distance_unit_before as ShotRecord['distanceUnitBefore'],
-          result: shot.result as ShotRecord['result'],
-          distanceToHoleAfter: shot.distance_to_hole_after ?? 0,
-          distanceUnitAfter: shot.distance_unit_after as ShotRecord['distanceUnitAfter'],
-          shotDistance: shot.shot_distance ?? 0,
-          missDirection: shot.miss_direction ?? undefined,
-          puttBreak: shot.putt_break as ShotRecord['puttBreak'],
-          puttSlope: shot.putt_slope as ShotRecord['puttSlope'],
-          isPenalty: shot.is_penalty ?? false,
-          penaltyType: shot.penalty_type as ShotRecord['penaltyType'],
-        })),
+        shots: shots.map(mapShotToRecord),
       };
     });
 
@@ -183,23 +261,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   const startShotNumber = sortedStartHoleShots.length > 0 ? sortedStartHoleShots.length + 1 : 1;
 
   // Transform shots to ShotRecord format for the component
-  const initialShots: ShotRecord[] = sortedStartHoleShots.map((shot) => ({
-    shotNumber: shot.shot_number,
-    shotType: shot.shot_type as ShotRecord['shotType'],
-    clubType: shot.club_type as ShotRecord['clubType'],
-    lieBefore: shot.lie_before as ShotRecord['lieBefore'],
-    distanceToHoleBefore: shot.distance_to_hole_before ?? 0,
-    distanceUnitBefore: shot.distance_unit_before as ShotRecord['distanceUnitBefore'],
-    result: shot.result as ShotRecord['result'],
-    distanceToHoleAfter: shot.distance_to_hole_after ?? 0,
-    distanceUnitAfter: shot.distance_unit_after as ShotRecord['distanceUnitAfter'],
-    shotDistance: shot.shot_distance ?? 0,
-    missDirection: shot.miss_direction ?? undefined,
-    puttBreak: shot.putt_break as ShotRecord['puttBreak'],
-    puttSlope: shot.putt_slope as ShotRecord['puttSlope'],
-    isPenalty: shot.is_penalty ?? false,
-    penaltyType: shot.penalty_type as ShotRecord['penaltyType'],
-  }));
+  const initialShots: ShotRecord[] = sortedStartHoleShots.map(mapShotToRecord);
 
   return (
     <ContinueRoundClient

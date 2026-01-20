@@ -2183,7 +2183,7 @@ body {
   /* Hide non-essential elements */
   nav,
   aside,
-  .print\\:hidden,
+  .print\:hidden,
   [data-sidebar],
   .toast-container,
   button:not([data-print-visible]) {

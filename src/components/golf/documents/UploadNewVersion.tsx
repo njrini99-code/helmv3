@@ -44,7 +44,7 @@ export function UploadNewVersion({
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const nextVersion = (document.current_version || 1) + 1;
+  const nextVersion = (document.version_count || 1) + 1;
 
   const resetState = useCallback(() => {
     setFile(null);
@@ -152,7 +152,7 @@ export function UploadNewVersion({
           <div className="p-3 bg-muted/50 rounded-lg text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Current version:</span>
-              <span className="font-medium">v{document.current_version}</span>
+              <span className="font-medium">v{document.version_count}</span>
             </div>
             <div className="flex items-center justify-between mt-1">
               <span className="text-muted-foreground">File type:</span>

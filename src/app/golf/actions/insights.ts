@@ -34,9 +34,6 @@ import type { InsightType, InsightPriority } from '@/lib/coachhelm/insight-types
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 
-// Re-export types for consumers
-export type { ComposedInsight, MinedPattern, PerformancePrediction, PlayerAnalysis };
-
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -53,6 +50,27 @@ interface InsightRecord {
   metadata: Record<string, unknown>;
   status: 'active';
   expires_at: string | null;
+}
+
+interface TeamPlayerRow {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+}
+
+interface PlayerStatsCacheRow {
+  player_id: string;
+  rounds_in_calculation: number | null;
+  strokes_gained_total: number | null;
+  strokes_gained_tee: number | null;
+  strokes_gained_approach: number | null;
+  strokes_gained_around_green: number | null;
+  strokes_gained_putting: number | null;
+  gir_percentage: number | null;
+  driving_accuracy_percentage: number | null;
+  scrambling_percentage: number | null;
+  putts_per_round: number | null;
+  approach_proximity_average: number | null;
 }
 
 // ============================================================================
@@ -258,6 +276,133 @@ function getConfidenceThreshold(sensitivity: CoachPhilosophy['alertSensitivity']
   }
 }
 
+// ============================================================================
+// AUTH HELPERS - Player/Team Access Verification
+// ============================================================================
+
+/**
+ * Verifies that the current user has access to a specific player's data.
+ * Access is granted if:
+ * 1. The user IS the player (player accessing their own data)
+ * 2. The user is a coach whose team includes this player
+ */
+async function verifyPlayerAccess(
+  playerId: string
+): Promise<{ authorized: boolean; userId?: string; coachId?: string; teamId?: string; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { authorized: false, error: 'Not authenticated' };
+  }
+
+  // Check if user is the player themselves
+  // Type assertion: team_id exists in DB but not in generated Supabase types
+  const { data: playerRecordData } = await supabase
+    .from('golf_players')
+    .select('id, team_id')
+    .eq('id', playerId)
+    .eq('user_id', user.id)
+    .single();
+
+  const playerRecord = playerRecordData as { id: string; team_id: string | null } | null;
+
+  if (playerRecord) {
+    return { authorized: true, userId: user.id, teamId: playerRecord.team_id ?? undefined };
+  }
+
+  // Check if user is a coach with access to this player
+  // Type assertion: team_id exists in DB but not in generated Supabase types
+  const { data: coachData } = await supabase
+    .from('golf_coaches')
+    .select('id, team_id')
+    .eq('user_id', user.id)
+    .single();
+
+  const coach = coachData as { id: string; team_id: string | null } | null;
+
+  if (coach?.team_id) {
+    // Verify player is on the coach's team
+    const { data: teamMember } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('team_id', coach.team_id)
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .single();
+
+    if (teamMember) {
+      return { authorized: true, userId: user.id, coachId: coach.id, teamId: coach.team_id };
+    }
+  }
+
+  return { authorized: false, error: 'Not authorized to access this player' };
+}
+
+/**
+ * Verifies that the current user has access to a specific round.
+ * Uses player ownership chain: round -> player -> user
+ */
+async function verifyRoundAccess(
+  roundId: string
+): Promise<{ authorized: boolean; userId?: string; playerId?: string; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { authorized: false, error: 'Not authenticated' };
+  }
+
+  // Get round and verify ownership
+  const { data: round } = await supabase
+    .from('golf_rounds')
+    .select('player_id')
+    .eq('id', roundId)
+    .single();
+
+  if (!round) {
+    return { authorized: false, error: 'Round not found' };
+  }
+
+  // Check if user owns the round via player
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('id', round.player_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (player) {
+    return { authorized: true, userId: user.id, playerId: player.id };
+  }
+
+  // Check if user is coach with access to the player
+  // Type assertion: team_id exists in DB but not in generated Supabase types
+  const { data: coachData } = await supabase
+    .from('golf_coaches')
+    .select('id, team_id')
+    .eq('user_id', user.id)
+    .single();
+
+  const coach = coachData as { id: string; team_id: string | null } | null;
+
+  if (coach?.team_id) {
+    const { data: teamMember } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('team_id', coach.team_id)
+      .eq('player_id', round.player_id)
+      .eq('status', 'active')
+      .single();
+
+    if (teamMember) {
+      return { authorized: true, userId: user.id, playerId: round.player_id };
+    }
+  }
+
+  return { authorized: false, error: 'Not authorized to access this round' };
+}
+
 /**
  * Converts V2 ComposedInsight to V1 InsightRecord format for database storage
  */
@@ -352,7 +497,8 @@ export async function generateTeamInsights() {
     const { data: teamMembers, error: membersError } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('status', 'active');
 
     if (membersError || !teamMembers || teamMembers.length === 0) {
       return { success: false, error: 'No players found' };
@@ -383,24 +529,31 @@ export async function generateTeamInsights() {
       )
     );
 
-    // 5. Analyze each player with V2 engine (parallelized)
-    const analysisPromises = players.map(async (player) => {
-      try {
-        const analysis = await coachHelmIntelligence.analyzePlayer(player.id, {
-          includePatterns: true,
-          includeCausal: true,
-          includePredictions: true,
-          includeShotPatterns: true,
-          depth: 'standard',
-        });
-        return { player, analysis, success: true };
-      } catch (err) {
-        console.error(`Error analyzing player ${player.id}:`, err);
-        return { player, analysis: null, success: false };
-      }
-    });
+    // 5. Analyze each player with V2 engine (batched to avoid connection pool exhaustion)
+    const BATCH_SIZE = 3;
+    const analysisResults: Array<{ player: TeamPlayerRow; analysis: PlayerAnalysis | null; success: boolean }> = [];
 
-    const analysisResults = await Promise.all(analysisPromises);
+    for (let i = 0; i < players.length; i += BATCH_SIZE) {
+      const batch = players.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async (player) => {
+          try {
+            const analysis = await coachHelmIntelligence.analyzePlayer(player.id, {
+              includePatterns: true,
+              includeCausal: true,
+              includePredictions: true,
+              includeShotPatterns: true,
+              depth: 'standard',
+            });
+            return { player, analysis, success: true };
+          } catch (err) {
+            console.error(`Error analyzing player ${player.id}:`, err);
+            return { player, analysis: null, success: false };
+          }
+        })
+      );
+      analysisResults.push(...batchResults);
+    }
 
     // 6. Convert V2 insights to InsightRecords
     let totalInsightsCreated = 0;
@@ -708,6 +861,12 @@ export async function analyzePlayer(
   }
 ): Promise<{ success: boolean; analysis?: PlayerAnalysis; error?: string }> {
   try {
+    // Verify user has access to this player
+    const access = await verifyPlayerAccess(playerId);
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized' };
+    }
+
     // Check if CoachHelm is enabled for this player
     const status = await isCoachHelmEnabledForPlayer(playerId);
     if (!status.effectivelyEnabled) {
@@ -745,6 +904,12 @@ export async function generatePlayerInsight(playerId: string): Promise<{
   error?: string;
 }> {
   try {
+    // Verify user has access to this player
+    const access = await verifyPlayerAccess(playerId);
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized' };
+    }
+
     const status = await isCoachHelmEnabledForPlayer(playerId);
     if (!status.effectivelyEnabled) {
       return { success: false, error: status.disabledReason || 'CoachHelm is disabled' };
@@ -833,9 +998,13 @@ export async function generateTeamInsight(): Promise<{
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('status', 'active');
 
     const playerIds = (teamMembers || []).map(m => m.player_id);
+    if (playerIds.length === 0) {
+      return { success: false, error: 'No players found' };
+    }
 
     const { data: players, error: playersError } = await supabase
       .from('golf_players')
@@ -846,35 +1015,52 @@ export async function generateTeamInsight(): Promise<{
       return { success: false, error: 'No players found' };
     }
 
-    // 4. Analyze each player with V2 engine - PARALLELIZED for performance
+    // Fetch stats cache for stat insights
+    const { data: statsRows } = await supabase
+      .from('golf_player_stats_cache')
+      .select(
+        'player_id, rounds_in_calculation, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting, gir_percentage, driving_accuracy_percentage, scrambling_percentage, putts_per_round, approach_proximity_average'
+      )
+      .in('player_id', playerIds);
+
+    // Fetch coach philosophy using helper that properly maps DB fields
+    const philosophy = await getCoachPhilosophy(coach.id);
+
+    // 4. Analyze each player with V2 engine - BATCHED to avoid connection pool exhaustion
     const allInsights: ComposedInsight[] = [];
     const allPatterns: MinedPattern[] = [];
     const allPredictions: Array<PerformancePrediction & { playerName?: string }> = [];
 
-    // Prepare player analysis tasks
-    const analysisPromises = players.map(async (player) => {
-      try {
-        const playerName = [player.first_name, player.last_name]
-          .filter(Boolean)
-          .join(' ')
-          .trim();
+    // Process players in batches of 3
+    const BATCH_SIZE = 3;
+    const analysisResults: Array<{ player: TeamPlayerRow; playerName: string; analysis: PlayerAnalysis | null; success: boolean }> = [];
 
-        const analysis = await coachHelmIntelligence.analyzePlayer(player.id, {
-          includePatterns: true,
-          includeCausal: true,
-          includePredictions: true,
-          depth: 'standard',
-        });
+    for (let i = 0; i < players.length; i += BATCH_SIZE) {
+      const batch = players.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async (player) => {
+          try {
+            const playerName = [player.first_name, player.last_name]
+              .filter(Boolean)
+              .join(' ')
+              .trim();
 
-        return { player, playerName, analysis, success: true };
-      } catch (playerError) {
-        console.error('Error analyzing player:', playerError);
-        return { player, playerName: '', analysis: null, success: false };
-      }
-    });
+            const analysis = await coachHelmIntelligence.analyzePlayer(player.id, {
+              includePatterns: true,
+              includeCausal: true,
+              includePredictions: true,
+              depth: 'standard',
+            });
 
-    // Execute all analyses in parallel
-    const analysisResults = await Promise.all(analysisPromises);
+            return { player, playerName, analysis, success: true };
+          } catch (playerError) {
+            console.error('Error analyzing player:', playerError);
+            return { player, playerName: '', analysis: null, success: false };
+          }
+        })
+      );
+      analysisResults.push(...batchResults);
+    }
 
     // Aggregate results
     let playersAnalyzed = 0;
@@ -922,6 +1108,15 @@ export async function generateTeamInsight(): Promise<{
       };
     }
 
+    const statInsights = buildStatInsightsForTeam(
+      players as TeamPlayerRow[],
+      statsRows ?? [],
+      philosophy
+    );
+    if (statInsights.length > 0) {
+      allInsights.push(...statInsights);
+    }
+
     // 5. Generate team-level alerts
     const teamAlerts = await coachHelmIntelligence.generateAlerts(coach.id, teamId);
     if (teamAlerts.length > 0) {
@@ -933,7 +1128,7 @@ export async function generateTeamInsight(): Promise<{
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const logTable = supabase.from('golf_insight_generation_log' as any) as any;
-    await logTable.insert({
+    const { error: logError } = await logTable.insert({
       coach_id: coach.id,
       generation_type: 'team_insight',
       insights_created: allInsights.length,
@@ -944,7 +1139,10 @@ export async function generateTeamInsight(): Promise<{
         patterns_found: allPatterns.length,
         engine_version: 'coachhelm',
       },
-    }).catch(() => { /* Table may not exist */ });
+    });
+    if (logError && process.env.NODE_ENV === 'development') {
+      console.warn('Insight generation log skipped:', logError.message);
+    }
 
     // 7. Revalidate dashboard
     revalidatePath('/golf/dashboard');
@@ -980,6 +1178,12 @@ export async function generatePracticeRecommendations(playerId: string): Promise
   error?: string;
 }> {
   try {
+    // Verify user has access to this player
+    const access = await verifyPlayerAccess(playerId);
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized' };
+    }
+
     const status = await isCoachHelmEnabledForPlayer(playerId);
     if (!status.effectivelyEnabled) {
       return { success: false, error: status.disabledReason || 'CoachHelm is disabled' };
@@ -1022,6 +1226,12 @@ export async function generateTournamentPrep(playerId: string): Promise<{
   error?: string;
 }> {
   try {
+    // Verify user has access to this player
+    const access = await verifyPlayerAccess(playerId);
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized' };
+    }
+
     const status = await isCoachHelmEnabledForPlayer(playerId);
     if (!status.effectivelyEnabled) {
       return { success: false, error: status.disabledReason || 'CoachHelm is disabled' };
@@ -1066,6 +1276,12 @@ export async function getPlayerPatterns(playerId: string): Promise<{
   const supabase = await createClient();
 
   try {
+    // Verify user has access to this player
+    const access = await verifyPlayerAccess(playerId);
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized' };
+    }
+
     // Check if enabled
     const status = await isCoachHelmEnabledForPlayer(playerId);
     if (!status.effectivelyEnabled) {
@@ -1131,6 +1347,12 @@ export async function generateRoundReview(
   error?: string;
 }> {
   try {
+    // Verify user has access to this round
+    const access = await verifyRoundAccess(roundId);
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized' };
+    }
+
     // Check if enabled
     const status = await isCoachHelmEnabledForPlayer(playerId);
     if (!status.effectivelyEnabled) {
@@ -1250,6 +1472,12 @@ export async function getPlayerCoachHelmDashboard(
   const supabase = await createClient();
 
   try {
+    // Verify user has access to this player
+    const access = await verifyPlayerAccess(playerId);
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized' };
+    }
+
     // Check if CoachHelm is enabled for this player
     const status = await isCoachHelmEnabledForPlayer(playerId);
     if (!status.effectivelyEnabled) {
@@ -1398,4 +1626,270 @@ function buildFocusAreasFromAnalysis(analysis: PlayerAnalysis | null): PlayerCoa
   }
 
   return focusAreas.slice(0, 5); // Return top 5 focus areas
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function averageNumber(values: Array<number | null | undefined>): number | null {
+  const filtered = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+  if (filtered.length === 0) return null;
+  return filtered.reduce((sum, value) => sum + value, 0) / filtered.length;
+}
+
+function formatSigned(value: number, decimals = 2): string {
+  const formatted = value.toFixed(decimals);
+  return value > 0 ? `+${formatted}` : formatted;
+}
+
+function formatPercent(value: number): string {
+  return `${value.toFixed(0)}%`;
+}
+
+function computeInsightConfidence(rounds: number | null | undefined): number {
+  const roundsCount = rounds ?? 0;
+  const normalized = clampNumber(roundsCount / 20, 0, 1);
+  return clampNumber(0.45 + normalized * 0.4, 0.45, 0.85);
+}
+
+function buildStatInsightsForTeam(
+  players: TeamPlayerRow[],
+  statsRows: PlayerStatsCacheRow[],
+  philosophy: CoachPhilosophy
+): ComposedInsight[] {
+  if (!statsRows || statsRows.length === 0) return [];
+
+  const playerNameById = new Map<string, string>();
+  for (const player of players) {
+    const name = [player.first_name, player.last_name].filter(Boolean).join(' ').trim() || 'Player';
+    playerNameById.set(player.id, name);
+  }
+
+  const statsByPlayer = new Map(
+    statsRows.map((row) => [row.player_id, row])
+  );
+
+  const teamAverages = {
+    sgTotal: averageNumber(statsRows.map((row) => row.strokes_gained_total)),
+    sgTee: averageNumber(statsRows.map((row) => row.strokes_gained_tee)),
+    sgApproach: averageNumber(statsRows.map((row) => row.strokes_gained_approach)),
+    sgAround: averageNumber(statsRows.map((row) => row.strokes_gained_around_green)),
+    sgPutting: averageNumber(statsRows.map((row) => row.strokes_gained_putting)),
+    gir: averageNumber(statsRows.map((row) => row.gir_percentage)),
+    fairway: averageNumber(statsRows.map((row) => row.driving_accuracy_percentage)),
+    scrambling: averageNumber(statsRows.map((row) => row.scrambling_percentage)),
+    putts: averageNumber(statsRows.map((row) => row.putts_per_round)),
+  };
+
+  const insightsWithSeverity: Array<{ insight: ComposedInsight; severity: number }> = [];
+
+  if (philosophy.showStrokesGained) {
+    const teamSgEntries = [
+      { key: 'sgTee', label: 'Off the Tee', value: teamAverages.sgTee },
+      { key: 'sgApproach', label: 'Approach', value: teamAverages.sgApproach },
+      { key: 'sgAround', label: 'Around the Green', value: teamAverages.sgAround },
+      { key: 'sgPutting', label: 'Putting', value: teamAverages.sgPutting },
+    ].filter((entry) => entry.value !== null);
+
+    if (teamSgEntries.length > 0) {
+      const teamWeakness = teamSgEntries.reduce((worst, entry) =>
+        (entry.value as number) < (worst.value as number) ? entry : worst
+      );
+      if ((teamWeakness.value as number) < -0.3) {
+        insightsWithSeverity.push({
+          insight: {
+            headline: `Team focus: ${teamWeakness.label} is the biggest drag`,
+            body: `Team SG ${teamWeakness.label} averages ${formatSigned(teamWeakness.value as number)} per round, the lowest category on the roster.`,
+            callToAction: `Prioritize practice plans that lift ${teamWeakness.label.toLowerCase()} performance.`,
+            tone: 'cautionary',
+            confidence: 0.7,
+          },
+          severity: Math.abs(teamWeakness.value as number),
+        });
+      }
+    }
+  }
+
+  for (const player of players) {
+    const stats = statsByPlayer.get(player.id);
+    if (!stats) continue;
+
+    const rounds = stats.rounds_in_calculation ?? 0;
+    if (rounds < 5) continue;
+
+    const playerName = playerNameById.get(player.id) ?? 'Player';
+    const confidence = computeInsightConfidence(rounds);
+
+    const playerInsights: Array<{ insight: ComposedInsight; severity: number }> = [];
+
+    if (philosophy.showStrokesGained) {
+      const sgMetrics = [
+        {
+          key: 'strokes_gained_tee',
+          label: 'Off the Tee',
+          value: stats.strokes_gained_tee,
+          action: 'Emphasize fairway-finding lines and tee shot dispersion control.',
+          teamAvg: teamAverages.sgTee,
+        },
+        {
+          key: 'strokes_gained_approach',
+          label: 'Approach',
+          value: stats.strokes_gained_approach,
+          action: 'Focus on approach proximity and GIR conversion.',
+          teamAvg: teamAverages.sgApproach,
+        },
+        {
+          key: 'strokes_gained_around_green',
+          label: 'Around the Green',
+          value: stats.strokes_gained_around_green,
+          action: 'Sharpen short game reps and up-and-down efficiency.',
+          teamAvg: teamAverages.sgAround,
+        },
+        {
+          key: 'strokes_gained_putting',
+          label: 'Putting',
+          value: stats.strokes_gained_putting,
+          action: 'Reduce three-putts with speed control and start-line work.',
+          teamAvg: teamAverages.sgPutting,
+        },
+      ].filter((metric) => metric.value !== null);
+
+      if (sgMetrics.length > 0) {
+        const worst = sgMetrics.reduce((a, b) =>
+          (a.value as number) < (b.value as number) ? a : b
+        );
+        const best = sgMetrics.reduce((a, b) =>
+          (a.value as number) > (b.value as number) ? a : b
+        );
+
+        if ((worst.value as number) <= -0.5) {
+          const delta =
+            worst.teamAvg != null
+              ? ` (${formatSigned((worst.value as number) - worst.teamAvg)} vs team avg ${formatSigned(worst.teamAvg)})`
+              : '';
+          playerInsights.push({
+            insight: {
+              headline: `${playerName}: ${worst.label} is costing strokes`,
+              body: `SG ${worst.label} is ${formatSigned(worst.value as number)} per round${delta}.`,
+              callToAction: worst.action,
+              tone: 'cautionary',
+              confidence,
+            },
+            severity: Math.abs(worst.value as number),
+          });
+        }
+
+        if ((best.value as number) >= 0.5) {
+          const delta =
+            best.teamAvg != null
+              ? ` (${formatSigned((best.value as number) - best.teamAvg)} vs team avg ${formatSigned(best.teamAvg)})`
+              : '';
+          playerInsights.push({
+            insight: {
+              headline: `${playerName}: ${best.label} is a clear strength`,
+              body: `SG ${best.label} is ${formatSigned(best.value as number)} per round${delta}.`,
+              callToAction: `Keep reinforcing ${best.label.toLowerCase()} strengths in practice plans.`,
+              tone: 'celebratory',
+              confidence,
+            },
+            severity: Math.abs(best.value as number),
+          });
+        }
+      }
+    }
+
+    if (philosophy.showAdvancedStats) {
+      const advancedMetrics = [
+        {
+          key: 'gir_percentage',
+          label: 'GIR%',
+          value: stats.gir_percentage,
+          teamAvg: teamAverages.gir,
+          thresholdDiff: 8,
+          thresholdAbsolute: 50,
+          higherIsBetter: true,
+          action: 'Dial in approach targets to raise greens-in-regulation.',
+        },
+        {
+          key: 'driving_accuracy_percentage',
+          label: 'Fairway%',
+          value: stats.driving_accuracy_percentage,
+          teamAvg: teamAverages.fairway,
+          thresholdDiff: 8,
+          thresholdAbsolute: 50,
+          higherIsBetter: true,
+          action: 'Prioritize tee shot accuracy to set up scoring chances.',
+        },
+        {
+          key: 'scrambling_percentage',
+          label: 'Scrambling%',
+          value: stats.scrambling_percentage,
+          teamAvg: teamAverages.scrambling,
+          thresholdDiff: 8,
+          thresholdAbsolute: 45,
+          higherIsBetter: true,
+          action: 'Work on up-and-down conversion from inside 40 yards.',
+        },
+        {
+          key: 'putts_per_round',
+          label: 'Putts per round',
+          value: stats.putts_per_round,
+          teamAvg: teamAverages.putts,
+          thresholdDiff: 1,
+          thresholdAbsolute: 33.5,
+          higherIsBetter: false,
+          action: 'Focus on lag putting and three-putt avoidance.',
+        },
+      ].filter((metric) => metric.value !== null);
+
+      for (const metric of advancedMetrics) {
+        const value = metric.value as number;
+        const teamAvg = metric.teamAvg;
+        const delta = teamAvg != null
+          ? metric.higherIsBetter
+            ? teamAvg - value
+            : value - teamAvg
+          : null;
+        const diffTrigger = delta != null && delta >= metric.thresholdDiff;
+        const absoluteTrigger = metric.higherIsBetter
+          ? value <= metric.thresholdAbsolute
+          : value >= metric.thresholdAbsolute;
+
+        if (diffTrigger || absoluteTrigger) {
+          const detail = teamAvg != null
+            ? ` vs team avg ${metric.higherIsBetter ? formatPercent(teamAvg) : teamAvg.toFixed(1)}`
+            : '';
+          const formattedValue = metric.higherIsBetter
+            ? formatPercent(value)
+            : value.toFixed(1);
+
+          const severity = delta != null
+            ? Math.abs(delta)
+            : Math.abs(value - metric.thresholdAbsolute);
+
+          playerInsights.push({
+            insight: {
+              headline: `${playerName}: ${metric.label} is lagging`,
+              body: `${metric.label} is ${formattedValue}${detail}.`,
+              callToAction: metric.action,
+              tone: 'cautionary',
+              confidence,
+            },
+            severity,
+          });
+        }
+      }
+    }
+
+    if (playerInsights.length > 0) {
+      playerInsights.sort((a, b) => b.severity - a.severity);
+      insightsWithSeverity.push(...playerInsights.slice(0, 2));
+    }
+  }
+
+  return insightsWithSeverity
+    .sort((a, b) => b.severity - a.severity)
+    .slice(0, 8)
+    .map((entry) => entry.insight);
 }

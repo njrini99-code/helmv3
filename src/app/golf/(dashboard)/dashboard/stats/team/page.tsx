@@ -77,7 +77,8 @@ export default async function TeamStatsPage() {
   const { data: teamMembers } = await supabase
     .from('golf_team_members')
     .select('player_id')
-    .eq('team_id', teamId);
+    .eq('team_id', teamId)
+    .eq('status', 'active');
 
   const playerIds = (teamMembers || []).map(tm => tm.player_id);
 

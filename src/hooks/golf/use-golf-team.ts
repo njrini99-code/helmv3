@@ -67,6 +67,7 @@ export function useGolfTeam(teamId?: string): UseGolfTeamResult {
               .from('golf_team_members')
               .select('team_id')
               .eq('player_id', player.id)
+              .eq('status', 'active')
               .maybeSingle();
             if (membership?.team_id) {
               targetTeamId = membership.team_id;
@@ -94,7 +95,8 @@ export function useGolfTeam(teamId?: string): UseGolfTeamResult {
       const { data: memberships, error: membershipsError } = await supabase
         .from('golf_team_members')
         .select('player_id')
-        .eq('team_id', targetTeamId);
+        .eq('team_id', targetTeamId)
+        .eq('status', 'active');
 
       if (membershipsError) throw membershipsError;
 

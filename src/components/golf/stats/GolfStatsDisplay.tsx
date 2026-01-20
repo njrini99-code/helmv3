@@ -231,7 +231,7 @@ interface StatsFilter {
   startDate?: string;
   endDate?: string;
   courseName?: string;
-  roundType?: 'practice' | 'qualifying' | 'tournament';
+  roundType?: 'practice' | 'qualifier' | 'tournament';
   season?: number;
 }
 

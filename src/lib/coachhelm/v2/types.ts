@@ -16,7 +16,9 @@ export type PatternType =
   | 'anomaly'      // Unusual situation with unusual outcome
   | 'regression'   // Predictive correlation
   | 'sequence'     // Order-based patterns
-  | 'temporal';    // Time-based patterns
+  | 'temporal'     // Time-based patterns
+  | 'contextual'   // Context-driven patterns (event, setting, etc.)
+  | 'cluster';     // Player similarity/cluster patterns
 
 /** Operators for pattern conditions */
 export type ConditionOperator =

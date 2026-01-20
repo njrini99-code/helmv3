@@ -11,6 +11,11 @@
 import { createClient } from '@/lib/supabase/server';
 import type { ContextualFeatures, TemporalFeatures, SequenceFeatures } from '../types';
 
+function normalizeRoundType(roundType?: string | null): string | null {
+  if (!roundType) return roundType ?? null;
+  return roundType === 'qualifying' ? 'qualifier' : roundType;
+}
+
 /**
  * Extracts contextual features for a player
  *
@@ -183,18 +188,20 @@ function calculatePressureMetrics(
 ): { pressureExposure: number; clutchFactor: number } {
   // Identify pressure rounds (tournaments, qualifying, etc.)
   const pressureRounds = rounds.filter((r) => {
+    const roundType = normalizeRoundType(r.round_type);
     return (
-      r.round_type === 'tournament' ||
-      r.round_type === 'qualifying' ||
-      r.round_type === 'competition'
+      roundType === 'tournament' ||
+      roundType === 'qualifier' ||
+      roundType === 'competition'
     );
   });
 
   const nonPressureRounds = rounds.filter((r) => {
+    const roundType = normalizeRoundType(r.round_type);
     return (
-      r.round_type !== 'tournament' &&
-      r.round_type !== 'qualifying' &&
-      r.round_type !== 'competition'
+      roundType !== 'tournament' &&
+      roundType !== 'qualifier' &&
+      roundType !== 'competition'
     );
   });
 
@@ -236,11 +243,12 @@ function calculateCompetitiveIndex(
   if (rounds.length === 0) return 0;
 
   const competitiveRounds = rounds.filter((r) => {
+    const roundType = normalizeRoundType(r.round_type);
     return (
-      r.round_type === 'tournament' ||
-      r.round_type === 'qualifying' ||
-      r.round_type === 'competition' ||
-      r.round_type === 'match'
+      roundType === 'tournament' ||
+      roundType === 'qualifier' ||
+      roundType === 'competition' ||
+      roundType === 'match'
     );
   });
 
@@ -256,11 +264,13 @@ function calculatePracticeVsTournament(
   }>
 ): number {
   const practiceRounds = rounds.filter((r) => {
-    return r.round_type === 'practice' || !r.round_type;
+    const roundType = normalizeRoundType(r.round_type);
+    return roundType === 'practice' || !roundType;
   });
 
   const tournamentRounds = rounds.filter((r) => {
-    return r.round_type === 'tournament';
+    const roundType = normalizeRoundType(r.round_type);
+    return roundType === 'tournament';
   });
 
   if (tournamentRounds.length === 0) {

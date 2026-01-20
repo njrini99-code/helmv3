@@ -19,6 +19,50 @@ import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
  * The table schema should include: id, feed_token, feed_type, team_id, name, is_active, last_synced_at
  */
 
+// ============================================================================
+// RATE LIMITING
+// ============================================================================
+
+// Simple in-memory rate limiting (resets on server restart)
+// For production, consider using Redis or a similar persistent store
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 60; // requests per minute per token
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+
+/**
+ * Check if request should be rate limited
+ * @param token - The feed token being requested
+ * @returns true if request is allowed, false if rate limited
+ */
+function checkRateLimit(token: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(token);
+
+  // Clean up old entries periodically (every 100th check)
+  if (Math.random() < 0.01) {
+    for (const [key, value] of rateLimitMap.entries()) {
+      if (now > value.resetAt) {
+        rateLimitMap.delete(key);
+      }
+    }
+  }
+
+  // New token or expired window - allow and start fresh
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(token, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  // Check if over limit
+  if (entry.count >= RATE_LIMIT) {
+    return false;
+  }
+
+  // Increment and allow
+  entry.count++;
+  return true;
+}
+
 // Type for calendar feed (not yet in database types)
 interface CalendarFeed {
   id: string;
@@ -128,6 +172,14 @@ export async function GET(
 
     if (!token) {
       return NextResponse.json({ error: 'Feed token required' }, { status: 400 });
+    }
+
+    // Rate limit check
+    if (!checkRateLimit(token)) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429 }
+      );
     }
 
     const supabase = await createClient();

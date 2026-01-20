@@ -12,21 +12,21 @@ import {
   uploadNewVersion,
   getVersionHistory,
 } from '@/app/golf/actions/documents';
-import type { DocumentVersion } from '@/app/golf/actions/documents';
-import type { GolfDocument } from '@/lib/types/golf';
+import type { DocumentVersion, GolfDocument } from '@/lib/types/golf';
 import { DocumentPreview } from '@/components/golf/documents/DocumentPreview';
 import { VersionHistory } from '@/components/golf/documents/VersionHistory';
 import { UploadNewVersionModal } from '@/components/golf/documents/UploadNewVersionModal';
 
 interface Document {
   id: string;
+  team_id: string;
   title: string;
   description: string | null;
   file_url: string;
   file_type: string | null;
   file_size: number | null;
   category: string | null;
-  player_visible: boolean | null;
+  is_public: boolean | null;
   created_at: string | null;
   uploaded_by: string | null;
   current_version_id?: string | null;
@@ -54,7 +54,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     title: '',
     description: '',
     category: '',
-    player_visible: true,
+    is_public: true,
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +70,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     title: '',
     description: '',
     category: '',
-    player_visible: true,
+    is_public: true,
   });
   const [updating, setUpdating] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -159,7 +159,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         file_type: selectedFile.type,
         file_size: selectedFile.size,
         category: uploadForm.category || undefined,
-        player_visible: uploadForm.player_visible,
+        player_visible: uploadForm.is_public,
         uploaded_by: coachId,
       });
 
@@ -174,7 +174,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         title: '',
         description: '',
         category: '',
-        player_visible: true,
+        is_public: true,
       });
       setSelectedFile(null);
       setShowUploadModal(false);
@@ -205,7 +205,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       title: doc.title,
       description: doc.description || '',
       category: doc.category || '',
-      player_visible: doc.player_visible ?? true,
+      is_public: doc.is_public ?? true,
     });
     setEditError(null);
     setShowEditModal(true);
@@ -228,7 +228,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         title: editForm.title,
         description: editForm.description || undefined,
         category: editForm.category || undefined,
-        player_visible: editForm.player_visible,
+        player_visible: editForm.is_public,
       });
 
       if (!result.success) {
@@ -246,7 +246,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 title: editForm.title,
                 description: editForm.description || null,
                 category: editForm.category || null,
-                player_visible: editForm.player_visible,
+                is_public: editForm.is_public,
               }
             : d
         )
@@ -509,7 +509,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                         {doc.category}
                       </span>
                     )}
-                    {isCoach && doc.player_visible === false && (
+                    {isCoach && doc.is_public === false && (
                       <span className="inline-block px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600">
                         Coach only
                       </span>
@@ -633,12 +633,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  id="player_visible"
-                  checked={uploadForm.player_visible}
-                  onChange={(e) => setUploadForm(prev => ({ ...prev, player_visible: e.target.checked }))}
+                  id="is_public"
+                  checked={uploadForm.is_public}
+                  onChange={(e) => setUploadForm(prev => ({ ...prev, is_public: e.target.checked }))}
                   className="rounded border-slate-300"
                 />
-                <label htmlFor="player_visible" className="text-sm text-slate-700">
+                <label htmlFor="is_public" className="text-sm text-slate-700">
                   Visible to players
                 </label>
               </div>
@@ -737,12 +737,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  id="edit_player_visible"
-                  checked={editForm.player_visible}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, player_visible: e.target.checked }))}
+                  id="edit_is_public"
+                  checked={editForm.is_public}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, is_public: e.target.checked }))}
                   className="rounded border-slate-300"
                 />
-                <label htmlFor="edit_player_visible" className="text-sm text-slate-700">
+                <label htmlFor="edit_is_public" className="text-sm text-slate-700">
                   Visible to players
                 </label>
               </div>

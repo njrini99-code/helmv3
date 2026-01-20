@@ -9,9 +9,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { PatternCondition, InsightTone } from '@/lib/coachhelm/v2/types';
 
-// Re-export InsightTone for consumers (type-only re-export)
-export type { InsightTone };
-
 interface EvidenceMetadata {
   patternId?: string;
   patternConditions?: PatternCondition[];

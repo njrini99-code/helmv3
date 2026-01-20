@@ -826,7 +826,7 @@ export type GolfRoundWithDraft = GolfRound & GolfRoundDraftFields;
 // ADVANCED STATISTICS TYPES
 // ============================================================================
 
-export type RoundType = 'practice' | 'qualifying' | 'tournament' | 'all';
+export type RoundType = 'practice' | 'qualifier' | 'tournament' | 'all';
 
 export type ComparisonBaseline = 'pga' | 'scratch' | 'team' | 'personal_best';
 

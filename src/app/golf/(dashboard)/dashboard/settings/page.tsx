@@ -34,6 +34,7 @@ import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
 
 interface UserProfile {
   userId: string;
+  coachId?: string;
   name: string;
   email: string;
   avatarUrl?: string | null;
@@ -79,7 +80,7 @@ export default function GolfSettingsPage() {
     // Check if coach
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('full_name, organization_id, avatar_url')
+      .select('id, full_name, organization_id, avatar_url')
       .eq('user_id', user.id)
       .single();
 
@@ -97,6 +98,7 @@ export default function GolfSettingsPage() {
 
       setProfile({
         userId: user.id,
+        coachId: coach.id,
         name: coach.full_name || 'Coach',
         email: user.email || '',
         avatarUrl: coach.avatar_url,
@@ -301,12 +303,12 @@ export default function GolfSettingsPage() {
         </div>
 
         {/* CoachHelm AI Section */}
-        {profile && (
+        {profile?.role === 'coach' && profile.coachId && (
           <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '125ms', opacity: 0 }}>
             <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">AI Features</h3>
             <div className="relative glass-standard rounded-2xl overflow-hidden p-4">
               <ShineEffect />
-              <CoachHelmToggle userId={profile.userId} />
+              <CoachHelmToggle coachId={profile.coachId} />
             </div>
           </div>
         )}
