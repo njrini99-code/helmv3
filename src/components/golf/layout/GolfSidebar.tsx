@@ -39,6 +39,7 @@ interface NavItem {
 // Coach navigation
 const coachNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
+  { name: 'CoachHelm AI', href: '/golf/dashboard/intelligence', icon: IconSparkles },
   { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
   { name: 'Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
   { name: 'Development', href: '/golf/dashboard/development', icon: IconTarget },
