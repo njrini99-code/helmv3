@@ -30,15 +30,14 @@ export default async function IntelligenceDashboardPage() {
     redirect('/golf/login');
   }
 
-  // Get coach record - cast to bypass Supabase types not being regenerated
+  // Get coach record - golf_coaches doesn't have team_id, we look it up via organization_id
   const { data: coachData } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
-  // Type assertion since team_id exists in DB but not in generated types
-  const coach = coachData as { id: string; team_id: string | null } | null;
+  const coach = coachData as { id: string; organization_id: string | null } | null;
 
   if (!coach) {
     // Check if player
@@ -56,7 +55,18 @@ export default async function IntelligenceDashboardPage() {
     redirect('/golf/login');
   }
 
-  if (!coach.team_id) {
+  // Look up team_id via organization_id (golf_coaches doesn't have team_id directly)
+  let teamId: string | null = null;
+  if (coach.organization_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+    teamId = team?.id ?? null;
+  }
+
+  if (!teamId) {
     redirect('/golf/dashboard');
   }
 
@@ -68,7 +78,7 @@ export default async function IntelligenceDashboardPage() {
   };
 
   try {
-    const summaryResult = await getTeamInsightsSummary(coach.team_id);
+    const summaryResult = await getTeamInsightsSummary(teamId);
     if (summaryResult.success && summaryResult.data) {
       initialData = summaryResult.data;
     }
@@ -79,7 +89,7 @@ export default async function IntelligenceDashboardPage() {
   return (
     <Suspense fallback={<PageLoading />}>
       <CoachHelmIntelligenceDashboard
-        teamId={coach.team_id}
+        teamId={teamId}
         coachId={coach.id}
         initialInsights={initialData.insights}
         initialPlayerSummaries={initialData.playerSummaries}
