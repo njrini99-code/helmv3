@@ -108,36 +108,35 @@ function mapToneToPriority(tone: ComposedInsight['tone'], confidence: number): I
 
 /**
  * Determines insight type from V2 analysis data
+ * Maps to allowed InsightType values defined in @/lib/coachhelm/insight-types:
+ * 'scoring_decline' | 'stat_regression' | 'tournament_pressure' | 'plateau' |
+ * 'bubble_player' | 'surge_player' | 'streak' | 'recurring_weakness' |
+ * 'closing_holes' | 'par_3_issues' | 'team_trend' | 'roster_recommendation'
  */
 function determineInsightType(
   insight: ComposedInsight,
   pattern?: MinedPattern,
   prediction?: PerformancePrediction
 ): InsightType {
-  // Map to allowed DB types:
-  // 'performance_decline', 'performance_improvement', 'pattern_detected',
-  // 'practice_recommendation', 'roster_alert', 'qualifying_watch',
-  // 'attendance_concern', 'milestone_reached', 'comparison_insight'
-
   // Pattern-based insights
   if (pattern) {
-    if (pattern.patternType === 'temporal') return 'performance_decline';
-    if (pattern.strokeImpact > 1.5) return 'pattern_detected';  // was 'recurring_weakness'
-    if (pattern.outcome?.metric === 'tournament_score') return 'qualifying_watch';  // was 'tournament_pressure'
+    if (pattern.patternType === 'temporal') return 'scoring_decline';
+    if (pattern.strokeImpact > 1.5) return 'recurring_weakness';
+    if (pattern.outcome?.metric === 'tournament_score') return 'tournament_pressure';
   }
 
   // Prediction-based insights
   if (prediction) {
-    if (prediction.trend === 'improving') return 'performance_improvement';  // was 'surge_player'
-    if (prediction.trend === 'declining') return 'performance_decline';  // was 'scoring_decline'
+    if (prediction.trend === 'improving') return 'surge_player';
+    if (prediction.trend === 'declining') return 'scoring_decline';
   }
 
   // Tone-based fallbacks
-  if (insight.tone === 'celebratory') return 'milestone_reached';  // was 'surge_player'
-  if (insight.tone === 'urgent') return 'roster_alert';  // was 'bubble_player'
-  if (insight.tone === 'cautionary') return 'performance_decline';  // was 'scoring_decline'
+  if (insight.tone === 'celebratory') return 'surge_player';
+  if (insight.tone === 'urgent') return 'bubble_player';
+  if (insight.tone === 'cautionary') return 'scoring_decline';
 
-  return 'pattern_detected';  // was 'team_trend'
+  return 'team_trend';
 }
 
 // ============================================================================
@@ -525,7 +524,7 @@ function getTopPriorityInsights(
  * Gets insights sorted by stroke impact (highest first)
  * For the "Top Insights by Stroke Impact" section
  */
-function getTopInsightsByStrokeImpact(
+export function getTopInsightsByStrokeImpact(
   weightedInsights: WeightedInsight[],
   limit: number = 5
 ): WeightedInsight[] {
