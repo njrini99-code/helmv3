@@ -7269,6 +7269,8 @@ export type Database = {
           worst_round: number
         }[]
       }
+      get_user_golf_organization_id: { Args: never; Returns: string }
+      get_user_golf_team_ids: { Args: never; Returns: string[] }
       is_baseball_team_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_coach: { Args: { team_uuid: string }; Returns: boolean }
