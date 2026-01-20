@@ -457,7 +457,7 @@ function calculatePhilosophyScore(
  * Weights and ranks insights based on coach philosophy settings
  * Returns insights sorted by philosophy score (highest first)
  */
-export function weightInsightsByPhilosophy(
+function weightInsightsByPhilosophy(
   insights: InsightRecord[],
   philosophy: CoachPhilosophy
 ): WeightedInsight[] {
@@ -501,7 +501,7 @@ export function weightInsightsByPhilosophy(
  * Gets insights matching coach's top priorities
  * Returns only insights from the top 2 priority categories
  */
-export function getTopPriorityInsights(
+function getTopPriorityInsights(
   weightedInsights: WeightedInsight[],
   philosophy: CoachPhilosophy,
   limit: number = 5
@@ -525,7 +525,7 @@ export function getTopPriorityInsights(
  * Gets insights sorted by stroke impact (highest first)
  * For the "Top Insights by Stroke Impact" section
  */
-export function getTopInsightsByStrokeImpact(
+function getTopInsightsByStrokeImpact(
   weightedInsights: WeightedInsight[],
   limit: number = 5
 ): WeightedInsight[] {
