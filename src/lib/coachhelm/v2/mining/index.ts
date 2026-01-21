@@ -27,6 +27,20 @@ export type {
   LieCrossComparison,
   RootCauseInsight,
   LieMissAnalysis,
+  // V2: Shot Category Analysis
+  ShotCategory,
+  ApproachBracket,
+  DrivingAnalysis,
+  ApproachBracketAnalysis,
+  AroundGreenAnalysis,
+  ShotCategoryAnalysis,
+  ShotCategoryInsight,
+  // V2: Dispersion Analysis
+  // Note: DispersionPattern not exported here to avoid conflict with types.ts
+  // Access it via DispersionAnalysis interface instead
+  MissSeverityBreakdown,
+  DispersionAnalysis,
+  DispersionInsight,
 } from './lie-specific-analysis';
 export type {
   ResilienceMetrics,

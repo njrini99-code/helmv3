@@ -5,6 +5,11 @@
  * prediction, learning, reasoning, and NLG systems.
  */
 
+import type { LieMissAnalysis } from './mining/lie-specific-analysis';
+
+// Re-export for convenience
+export type { LieMissAnalysis };
+
 // ============================================================================
 // PATTERN TYPES
 // ============================================================================
@@ -544,6 +549,7 @@ export interface AnalysisOptions {
   includePredictions?: boolean;
   includeTrajectory?: boolean;
   includeShotPatterns?: boolean;
+  includeLieAnalysis?: boolean;
   depth?: 'quick' | 'standard' | 'deep';
 }
 
@@ -559,6 +565,7 @@ export interface PlayerAnalysis {
   predictions: PerformancePrediction[];
   trajectory?: TrajectoryForecast;
   shotPatterns?: ShotPatternAnalysis;
+  lieAnalysis?: LieMissAnalysis;
 
   insights: ComposedInsight[];
   primaryInsight: ComposedInsight;

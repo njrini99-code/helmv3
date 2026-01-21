@@ -12,8 +12,8 @@
  */
 
 import { extractAllFeatures } from './features';
-import { PatternMiner, CausalEngine, ShotPatternMiner, StatsInsightGenerator, CorrelationDiscovery } from './mining';
-import type { StatsInsight, MetricCorrelation } from './mining';
+import { PatternMiner, CausalEngine, ShotPatternMiner, StatsInsightGenerator, CorrelationDiscovery, analyzeLieSpecificMissPatterns } from './mining';
+import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
 import { BehaviorLearner, OutcomeValidator, CrossLearner } from './learning';
 import { ReasoningEngine, ConfidenceCalibrator } from './reasoning';
@@ -69,6 +69,7 @@ export class CoachHelmIntelligence {
       includePredictions = true,
       includeTrajectory = false,
       includeShotPatterns = true,
+      includeLieAnalysis = true,
       depth = 'standard',
     } = options;
 
@@ -90,6 +91,12 @@ export class CoachHelmIntelligence {
     if (includeShotPatterns || depth === 'deep') {
       const shotMiner = new ShotPatternMiner(playerId);
       shotPatterns = (await shotMiner.analyzeShotPatterns()) ?? undefined;
+    }
+
+    // Lie-specific analysis (shot category & dispersion)
+    let lieAnalysis: LieMissAnalysis | undefined;
+    if (includeLieAnalysis || depth === 'deep') {
+      lieAnalysis = (await analyzeLieSpecificMissPatterns(playerId)) ?? undefined;
     }
 
     // Discover causal relationships
@@ -123,7 +130,7 @@ export class CoachHelmIntelligence {
     // Fetch comprehensive stats for stats-based insights
     const stats = await this.fetchPlayerStats(playerId);
 
-    // Generate insights (including shot patterns and stats-based)
+    // Generate insights (including shot patterns, stats-based, and lie-specific)
     const insights = await this.generateInsights(
       playerId,
       features,
@@ -131,7 +138,8 @@ export class CoachHelmIntelligence {
       causalRelationships,
       predictions,
       shotPatterns,
-      stats
+      stats,
+      lieAnalysis
     );
 
     // Determine alert level
@@ -163,6 +171,7 @@ export class CoachHelmIntelligence {
       predictions,
       trajectory,
       shotPatterns,
+      lieAnalysis,
       insights,
       primaryInsight,
       recommendations,
@@ -319,7 +328,8 @@ export class CoachHelmIntelligence {
     causal: CausalRelationship[],
     predictions: PerformancePrediction[],
     shotPatterns?: ShotPatternAnalysis,
-    stats?: GolfStats
+    stats?: GolfStats,
+    lieAnalysis?: LieMissAnalysis
   ): Promise<ComposedInsight[]> {
     const insights: ComposedInsight[] = [];
 
@@ -340,6 +350,12 @@ export class CoachHelmIntelligence {
     // Cross-metric correlation insights (pressure, scoring patterns)
     const correlationInsights = await this.generateCorrelationInsights(playerId, context);
     insights.push(...correlationInsights);
+
+    // Lie-specific analysis insights (shot category & dispersion)
+    if (lieAnalysis) {
+      const lieInsights = this.generateLieAnalysisInsights(lieAnalysis, context);
+      insights.push(...lieInsights);
+    }
 
     // Pattern insights
     for (const pattern of patterns.filter((p) => p.isActive).slice(0, 3)) {
@@ -983,6 +999,280 @@ export class CoachHelmIntelligence {
         sensitivities: [],
       },
     };
+  }
+
+  /**
+   * Generates insights from lie-specific analysis (shot category & dispersion)
+   * Converts ShotCategoryInsight[] and DispersionInsight[] to ComposedInsight[]
+   */
+  private generateLieAnalysisInsights(
+    lieAnalysis: LieMissAnalysis,
+    _context: InsightContext
+  ): ComposedInsight[] {
+    const insights: ComposedInsight[] = [];
+
+    // Convert shot category insights
+    if (lieAnalysis.shotCategoryAnalysis?.insights) {
+      for (const insight of lieAnalysis.shotCategoryAnalysis.insights) {
+        insights.push(this.convertShotCategoryInsightToComposed(insight));
+      }
+    }
+
+    // Convert dispersion insights
+    if (lieAnalysis.dispersionAnalysis?.insights) {
+      for (const insight of lieAnalysis.dispersionAnalysis.insights) {
+        insights.push(this.convertDispersionInsightToComposed(insight));
+      }
+    }
+
+    // Also convert root cause insights if available
+    if (lieAnalysis.rootCauseInsights) {
+      for (const insight of lieAnalysis.rootCauseInsights.slice(0, 2)) {
+        insights.push(this.convertRootCauseInsightToComposed(insight));
+      }
+    }
+
+    return insights;
+  }
+
+  /**
+   * Converts a ShotCategoryInsight to ComposedInsight format
+   */
+  private convertShotCategoryInsightToComposed(insight: ShotCategoryInsight): ComposedInsight {
+    // Map severity to tone
+    const toneMap: Record<string, ComposedInsight['tone']> = {
+      critical: 'urgent',
+      warning: 'cautionary',
+      info: 'neutral',
+    };
+
+    // Build reasoning chain from evidence
+    type ReasoningType = 'inductive' | 'deductive' | 'abductive';
+    const reasoningChain: Array<{
+      stepNumber: number;
+      type: ReasoningType;
+      premise: string;
+      inference: string;
+      conclusion: string;
+      confidence: number;
+      evidence: string[];
+    }> = [
+      {
+        stepNumber: 1,
+        type: 'inductive' as ReasoningType,
+        premise: `Analyzed ${insight.category}${insight.bracket ? ` (${insight.bracket.label})` : ''} shot patterns`,
+        inference: insight.evidence[0] ?? 'Pattern identified from shot data',
+        conclusion: insight.headline,
+        confidence: insight.severity === 'critical' ? 0.9 : insight.severity === 'warning' ? 0.75 : 0.6,
+        evidence: insight.evidence,
+      },
+    ];
+
+    // Add stroke impact step if significant
+    if (insight.strokeImpact > 0.3) {
+      reasoningChain.push({
+        stepNumber: 2,
+        type: 'deductive' as ReasoningType,
+        premise: `Estimated stroke impact: ${insight.strokeImpact.toFixed(1)} strokes/round`,
+        inference: insight.strokeImpact > 1
+          ? 'This is a high-priority improvement area'
+          : 'Addressing this provides measurable improvement',
+        conclusion: `Potential savings: ${insight.strokeImpact.toFixed(1)} strokes per round`,
+        confidence: 0.8,
+        evidence: [`Stroke impact: ${insight.strokeImpact.toFixed(2)}`],
+      });
+    }
+
+    const confidence = insight.severity === 'critical' ? 0.9 : insight.severity === 'warning' ? 0.75 : 0.6;
+
+    return {
+      headline: this.formatCategoryHeadline(insight),
+      body: insight.body,
+      callToAction: insight.recommendation,
+      tone: toneMap[insight.severity] ?? 'neutral',
+      confidence,
+      reasoning: {
+        conclusion: insight.body,
+        confidence,
+        calibratedConfidence: confidence,
+        reasoningChain,
+        alternatives: [],
+        sensitivities: [
+          {
+            assumption: 'Shot data accurately reflects typical performance',
+            ifChanged: 'If data includes unusual rounds or conditions',
+            impactOnConclusion: 'Pattern reliability may vary',
+          },
+        ],
+      },
+    };
+  }
+
+  /**
+   * Converts a DispersionInsight to ComposedInsight format
+   */
+  private convertDispersionInsightToComposed(insight: DispersionInsight): ComposedInsight {
+    // Dispersion insights are typically warning-level as they identify scatter patterns
+    const tone: ComposedInsight['tone'] = insight.strokeImpact > 1 ? 'cautionary' : 'neutral';
+
+    // Build reasoning chain
+    type ReasoningType = 'inductive' | 'deductive' | 'abductive';
+    const reasoningChain: Array<{
+      stepNumber: number;
+      type: ReasoningType;
+      premise: string;
+      inference: string;
+      conclusion: string;
+      confidence: number;
+      evidence: string[];
+    }> = [
+      {
+        stepNumber: 1,
+        type: 'inductive' as ReasoningType,
+        premise: `Analyzed dispersion pattern for ${insight.category}${insight.bracket ? ` (${insight.bracket.label})` : ''}`,
+        inference: insight.evidence[0] ?? 'Dispersion pattern analyzed',
+        conclusion: insight.headline,
+        confidence: 0.8,
+        evidence: insight.evidence,
+      },
+    ];
+
+    if (insight.strokeImpact > 0) {
+      reasoningChain.push({
+        stepNumber: 2,
+        type: 'deductive' as ReasoningType,
+        premise: `Dispersion inefficiency costs ~${insight.strokeImpact.toFixed(1)} strokes/round`,
+        inference: 'Tightening dispersion would reduce bogey/worse outcomes',
+        conclusion: `Improving consistency could save ${insight.strokeImpact.toFixed(1)} strokes`,
+        confidence: 0.75,
+        evidence: [`Stroke impact: ${insight.strokeImpact.toFixed(2)}`],
+      });
+    }
+
+    return {
+      headline: this.formatDispersionHeadline(insight),
+      body: insight.body,
+      callToAction: insight.recommendation,
+      tone,
+      confidence: 0.8,
+      reasoning: {
+        conclusion: insight.body,
+        confidence: 0.8,
+        calibratedConfidence: 0.8,
+        reasoningChain,
+        alternatives: [
+          {
+            explanation: 'Equipment or ball flight characteristics',
+            probability: 0.15,
+            whyLessLikely: 'Pattern persists across multiple rounds',
+          },
+        ],
+        sensitivities: [
+          {
+            assumption: 'Dispersion measured from target line',
+            ifChanged: 'If course setup varies significantly',
+            impactOnConclusion: 'Absolute values may shift',
+          },
+        ],
+      },
+    };
+  }
+
+  /**
+   * Converts a RootCauseInsight to ComposedInsight format
+   */
+  private convertRootCauseInsightToComposed(insight: RootCauseInsight): ComposedInsight {
+    // Map confidence to tone
+    const tone: ComposedInsight['tone'] = insight.confidence > 0.8 ? 'cautionary' :
+      insight.confidence > 0.6 ? 'neutral' : 'encouraging';
+
+    // Build reasoning chain
+    type ReasoningType = 'inductive' | 'deductive' | 'abductive';
+    const reasoningChain: Array<{
+      stepNumber: number;
+      type: ReasoningType;
+      premise: string;
+      inference: string;
+      conclusion: string;
+      confidence: number;
+      evidence: string[];
+    }> = [
+      {
+        stepNumber: 1,
+        type: 'abductive' as ReasoningType,
+        premise: `Observed consistent pattern across ${insight.affectedLies.join(', ')} lies`,
+        inference: `Root cause likely related to ${insight.category.replace('_', ' ')}`,
+        conclusion: insight.headline,
+        confidence: insight.confidence,
+        evidence: insight.evidence,
+      },
+    ];
+
+    if (insight.strokeImpact > 0) {
+      reasoningChain.push({
+        stepNumber: 2,
+        type: 'deductive' as ReasoningType,
+        premise: `This pattern affects scoring by ~${insight.strokeImpact.toFixed(1)} strokes/round`,
+        inference: 'Addressing root cause would improve multiple shot types',
+        conclusion: insight.recommendation,
+        confidence: insight.confidence,
+        evidence: [`Stroke impact: ${insight.strokeImpact.toFixed(2)}`],
+      });
+    }
+
+    return {
+      headline: `Root Cause: ${insight.headline}`,
+      body: insight.body,
+      callToAction: insight.recommendation,
+      tone,
+      confidence: insight.confidence,
+      reasoning: {
+        conclusion: insight.body,
+        confidence: insight.confidence,
+        calibratedConfidence: insight.confidence,
+        reasoningChain,
+        alternatives: [],
+        sensitivities: [],
+      },
+    };
+  }
+
+  /**
+   * Formats a headline for shot category insights
+   */
+  private formatCategoryHeadline(insight: ShotCategoryInsight): string {
+    const categoryNames: Record<string, string> = {
+      driving: 'Driving',
+      approach: 'Approach',
+      around_green: 'Short Game',
+    };
+
+    const category = categoryNames[insight.category] ?? insight.category;
+
+    if (insight.bracket) {
+      return `${category} (${insight.bracket.label}): ${insight.headline}`;
+    }
+
+    return `${category}: ${insight.headline}`;
+  }
+
+  /**
+   * Formats a headline for dispersion insights
+   */
+  private formatDispersionHeadline(insight: DispersionInsight): string {
+    const categoryNames: Record<string, string> = {
+      driving: 'Driving Dispersion',
+      approach: 'Approach Dispersion',
+      around_green: 'Short Game Dispersion',
+    };
+
+    const category = categoryNames[insight.category] ?? `${insight.category} Dispersion`;
+
+    if (insight.bracket) {
+      return `${insight.bracket.label}: ${insight.headline}`;
+    }
+
+    return `${category}: ${insight.headline}`;
   }
 }
 
