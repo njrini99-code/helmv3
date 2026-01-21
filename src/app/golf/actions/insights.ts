@@ -524,10 +524,10 @@ function getTopPriorityInsights(
  * Gets insights sorted by stroke impact (highest first)
  * For the "Top Insights by Stroke Impact" section
  */
-export function getTopInsightsByStrokeImpact(
+export async function getTopInsightsByStrokeImpact(
   weightedInsights: WeightedInsight[],
   limit: number = 5
-): WeightedInsight[] {
+): Promise<WeightedInsight[]> {
   return [...weightedInsights]
     .sort((a, b) => b.strokeImpactScore - a.strokeImpactScore)
     .slice(0, limit);
