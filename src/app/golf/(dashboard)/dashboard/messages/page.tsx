@@ -93,7 +93,7 @@ export default function GolfMessagesPage() {
       } else {
         // No existing conversation, create one using the user_id
         try {
-          const result = await createGolfConversation([playerUserId]);
+          const result = await createGolfConversation([playerUserId], teamId || undefined);
           if (result.conversationId) {
             await refetch();
             setSelectedConversationId(result.conversationId);
@@ -110,7 +110,7 @@ export default function GolfMessagesPage() {
     };
 
     handlePlayerParam();
-  }, [conversations, conversationsLoading, playerIdFromUrl, handledPlayerParam, router, refetch, showToast]);
+  }, [conversations, conversationsLoading, playerIdFromUrl, handledPlayerParam, router, refetch, showToast, teamId]);
 
   // Auto-select first conversation (only if no player param was provided)
   useEffect(() => {
@@ -139,14 +139,26 @@ export default function GolfMessagesPage() {
 
   // Handle new conversation creation
   const handleNewConversation = async (userId: string) => {
+    console.log('[MessagesPage] handleNewConversation called', {
+      userId,
+      teamId,
+      userRole,
+    });
     try {
-      const result = await createGolfConversation([userId]);
+      console.log('[MessagesPage] Calling createGolfConversation...', { participantUserIds: [userId], teamId });
+      const result = await createGolfConversation([userId], teamId || undefined);
+      console.log('[MessagesPage] createGolfConversation result:', result);
       if (result.conversationId) {
+        console.log('[MessagesPage] Conversation created, refetching...');
         await refetch();
         handleSelectConversation(result.conversationId);
         showToast('Conversation started', 'success');
+      } else if ('error' in result) {
+        console.error('[MessagesPage] createGolfConversation returned error:', result.error);
+        showToast(String(result.error) || 'Failed to start conversation', 'error');
       }
-    } catch {
+    } catch (err) {
+      console.error('[MessagesPage] handleNewConversation error:', err);
       showToast('Failed to start conversation', 'error');
     }
   };

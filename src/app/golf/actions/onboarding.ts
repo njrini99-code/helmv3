@@ -258,14 +258,14 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     const playerData = {
       first_name: validatedData.firstName,
       last_name: validatedData.lastName,
       email: validatedData.email || null,
       phone: validatedData.phone || null,
-      grad_year: validatedData.gradYear || null,
+      graduation_year: validatedData.gradYear || null,
       handicap: validatedData.handicap || null,
       onboarding_completed: true,
       updated_at: new Date().toISOString(),

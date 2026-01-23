@@ -462,7 +462,7 @@ export function useGolfConversations() {
       otherUserIds.size > 0
         ? supabase
             .from('golf_players')
-            .select('id, user_id, first_name, last_name, grad_year, avatar_url')
+            .select('id, user_id, first_name, last_name, graduation_year, avatar_url')
             .in('user_id', Array.from(otherUserIds))
         : Promise.resolve({ data: [] }),
     ]);
@@ -480,7 +480,7 @@ export function useGolfConversations() {
       user_id: string | null;
       first_name: string | null;
       last_name: string | null;
-      grad_year: number | null;
+      graduation_year: number | null;
       avatar_url: string | null;
     }
 
@@ -538,7 +538,7 @@ export function useGolfConversations() {
           otherParticipant = {
             id: player.id,
             name: [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Player',
-            subtitle: player.grad_year ? `Class of ${player.grad_year}` : 'Golf Player',
+            subtitle: player.graduation_year ? `Class of ${player.graduation_year}` : 'Golf Player',
             avatar: player.avatar_url,
             type: 'player',
           };

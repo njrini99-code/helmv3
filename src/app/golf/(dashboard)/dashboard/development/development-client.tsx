@@ -19,7 +19,7 @@ interface Player {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  grad_year: number | null;
+  graduation_year: number | null;
   handicap: number | null;
 }
 

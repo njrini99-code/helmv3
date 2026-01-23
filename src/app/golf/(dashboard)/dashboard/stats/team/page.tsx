@@ -16,7 +16,7 @@ export interface TeamPlayerStats {
   first_name: string;
   last_name: string;
   avatar_url: string | null;
-  grad_year: number | null;
+  graduation_year: number | null;
   handicap: number | null;
   rounds_played: number;
   scoring_average: number | null;
@@ -82,11 +82,11 @@ export default async function TeamStatsPage() {
 
   const playerIds = (teamMembers || []).map(tm => tm.player_id);
 
-  // Get player data - use grad_year instead of year
+  // Get player data - use graduation_year (actual DB column name)
   const { data: players } = playerIds.length > 0
     ? await supabase
         .from('golf_players')
-        .select('id, first_name, last_name, avatar_url, grad_year, handicap')
+        .select('id, first_name, last_name, avatar_url, graduation_year, handicap')
         .in('id', playerIds)
         .order('last_name')
     : { data: [] };
@@ -225,7 +225,7 @@ export default async function TeamStatsPage() {
       first_name: player.first_name || '',
       last_name: player.last_name || '',
       avatar_url: player.avatar_url,
-      grad_year: player.grad_year,
+      graduation_year: player.graduation_year,
       handicap: player.handicap,
       rounds_played: roundsPlayed,
       scoring_average: scoringAverage,

@@ -25,9 +25,9 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
   // Get golf player record
   const { data: player } = await supabase
     .from('golf_players')
-    .select('id, first_name, last_name, grad_year')
+    .select('id, first_name, last_name, graduation_year')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!player) {
     redirect('/golf/signup');
@@ -83,7 +83,7 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
       inviteCode={code}
       playerId={player.id}
       playerName={`${player.first_name} ${player.last_name}`}
-      playerYear={player.grad_year ? String(player.grad_year) : 'freshman'}
+      playerYear={player.graduation_year ? String(player.graduation_year) : 'freshman'}
       team={{
         id: team.id,
         name: team.name,

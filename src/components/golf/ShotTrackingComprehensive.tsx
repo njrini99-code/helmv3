@@ -115,60 +115,33 @@ function calculateShotDistanceWithDirection(
     return distanceBeforeYards;
   }
 
-  // If no miss direction, assume linear (short) - ball didn't reach target
+  // Golf distance calculation: "distance to hole" is always measured from ball to hole.
+  // Shot distance = how much closer you got to the hole = before - after
+  // The only exception is when the ball goes PAST the hole (long miss).
+
+  // For most cases (including left/right misses), the shot distance is simply
+  // how much closer you got to the hole.
   if (!missDirection) {
     return Math.max(0, distanceBeforeYards - distanceAfterYards);
   }
 
-  switch (missDirection.toLowerCase()) {
-    // SHORT: Ball is between you and the hole
-    case 'short':
-      return Math.max(0, distanceBeforeYards - distanceAfterYards);
+  const direction = missDirection.toLowerCase();
 
-    // LONG: Ball went past the hole
-    case 'long':
-      return distanceBeforeYards + distanceAfterYards;
-
-    // LEFT/RIGHT: Pure lateral miss - ball traveled approximately to hole depth
-    // then ended up sideways. Shot distance ≈ original distance since ball
-    // traveled to the target depth, just missed sideways.
-    case 'left':
-    case 'right':
-      // If the ball is truly lateral at hole's depth, shot distance ≈ before
-      // For a more geometric approach: sqrt(before² - after²) if after < before
-      // But in practice, lateral misses mean you reached the target zone
-      if (distanceAfterYards >= distanceBeforeYards) {
-        // This shouldn't happen for a true lateral miss, but handle it
-        return distanceBeforeYards;
-      }
-      // Use Pythagorean: if ball reached hole depth but is 'after' yards off to side
-      // shot distance = sqrt(before² + lateral_offset²) but since lateral_offset ≈ after for pure lateral
-      // Actually, for pure lateral at same depth: shot ≈ before
-      return distanceBeforeYards;
-
-    // DIAGONAL SHORT: Ball is short AND to the side
-    // Using 45-degree approximation: forward component ≈ after * 0.707
-    case 'short_left':
-    case 'short_right':
-      return Math.max(0, distanceBeforeYards - (distanceAfterYards * 0.707));
-
-    // DIAGONAL LONG: Ball went past AND to the side
-    case 'long_left':
-    case 'long_right':
-      return distanceBeforeYards + (distanceAfterYards * 0.707);
-
-    // PUTTING MISSES
-    case 'high':
-    case 'low':
-      // High/low means the ball broke too much or not enough - treat as short miss
-      // since the ball didn't go in, it likely went past or stopped near the hole
-      // For putting, we typically assume linear distance
-      return Math.max(0, distanceBeforeYards - distanceAfterYards);
-
-    default:
-      // Unknown direction, assume linear
-      return Math.max(0, distanceBeforeYards - distanceAfterYards);
+  // LONG: Ball went past the hole - you traveled MORE than the before distance
+  if (direction === 'long') {
+    return distanceBeforeYards + distanceAfterYards;
   }
+
+  // DIAGONAL LONG: Ball went past and to the side
+  if (direction === 'long_left' || direction === 'long_right') {
+    // Estimate: ball went past, so add the distances, but discount the after distance
+    // since some of it is lateral offset
+    return distanceBeforeYards + Math.round(distanceAfterYards * 0.7);
+  }
+
+  // All other cases: SHORT, LEFT, RIGHT, SHORT_LEFT, SHORT_RIGHT, HIGH, LOW, etc.
+  // The ball is closer to the hole than before, so shot distance = before - after
+  return Math.max(0, distanceBeforeYards - distanceAfterYards);
 }
 
 function deriveLieAfterFromResult(result: ShotRecord['result'] | null | undefined): string | null {
@@ -327,7 +300,7 @@ export default function ShotTrackingComprehensive({
   
   const hydratedHoleIndexRef = useRef<number | null>(null);
   const [selectedShotNumber, setSelectedShotNumber] = useState<number | null>(null);
-  const shotHistoryRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const shotHistoryRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   
   useEffect(() => {
     if (hydratedHoleIndexRef.current === currentHoleIndex) {
@@ -539,24 +512,33 @@ export default function ShotTrackingComprehensive({
   const isReadyForNextShot = (): boolean => {
     // Must have a result
     if (!resultOfShot) return false;
-    
+
     // Tee shot on par 4/5 needs driver selection
     if (isTeeShot && currentHole.par !== 3 && usedDriver === null) return false;
-    
-    // Non-hole results need distance after (unless holed out)
+
+    // Non-hole results need valid distance after
     if (resultOfShot !== 'hole') {
-      if (!distanceAfterShot || parseInt(distanceAfterShot) < 0) return false;
+      const trimmed = distanceAfterShot.trim();
+      if (!trimmed) return false;
+
+      const parsed = parseFloat(trimmed);
+      if (!Number.isFinite(parsed) || parsed < 0) return false;
+
+      // Validate distance after is less than distance before (can't be further from hole)
+      const beforeInYards = distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole;
+      const afterInYards = distanceAfterUnit === 'feet' ? parsed / 3 : parsed;
+      if (afterInYards >= beforeInYards) return false;
     }
-    
+
     // Putting always needs break (filled before result)
     if (isPutting) {
       if (!puttBreak) return false;
     }
-    
+
     // Miss direction required for tee shot misses
     if (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot) && !missDirection) return false;
     // Approach and putt miss classification are optional but encouraged
-    
+
     return true;
   };
 
@@ -774,13 +756,32 @@ export default function ShotTrackingComprehensive({
     // Calculate distances
     let distanceAfter: number;
     let unitAfter: 'yards' | 'feet';
-    
+
     if (resultOfShot === 'hole') {
       distanceAfter = 0;
       unitAfter = 'feet';
     } else {
-      distanceAfter = parseInt(distanceAfterShot) || 0;
+      // Parse the distance, handling potential whitespace and ensuring valid number
+      const parsedDistance = parseFloat(distanceAfterShot.trim());
+      distanceAfter = Number.isFinite(parsedDistance) && parsedDistance >= 0 ? Math.round(parsedDistance) : 0;
       unitAfter = distanceAfterUnit;
+
+      // Validate: distance after should be less than distance before (can't go further from hole)
+      const beforeInYardsForValidation = distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole;
+      const afterInYardsForValidation = unitAfter === 'feet' ? distanceAfter / 3 : distanceAfter;
+
+      if (distanceAfter === 0 || afterInYardsForValidation >= beforeInYardsForValidation) {
+        console.warn('[ShotTracking] Invalid distance after shot:', {
+          entered: distanceAfterShot,
+          parsed: distanceAfter,
+          distanceBefore: distanceToHole,
+          unitBefore: distanceUnit
+        });
+        // If distance after is 0 or invalid, don't record the shot
+        if (distanceAfter === 0) {
+          return;
+        }
+      }
     }
     
     // Calculate shot distance using geometry based on miss direction
@@ -1400,438 +1401,372 @@ export default function ShotTrackingComprehensive({
             </div>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-2">
-            <div className="space-y-5">
+          <div className="space-y-5">
               {/* Club Selection (Tee Shot Par 4/5) - Segmented Control */}
-          {isTeeShot && currentHole.par !== 3 && (
-            <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
-              {/* Shine effect */}
-              <div
-                className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-                }}
-              />
-              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Club Off Tee</p>
-              <div className="inline-flex bg-slate-100 rounded-lg p-1 w-full">
-                <button onClick={() => setUsedDriver(true)}
-                  className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
-                    usedDriver === true
-                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                      : 'text-slate-600 hover:text-slate-900'}`}>
-                  Driver
-                </button>
-                <button onClick={() => setUsedDriver(false)}
-                  className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
-                    usedDriver === false
-                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                      : 'text-slate-600 hover:text-slate-900'}`}>
-                  Non-Driver
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Putt Details (FIRST - when putting) */}
-          {isPutting && (
-            <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 border-2 border-emerald-200 shadow-lg shadow-emerald-950/5">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-bold text-emerald-900 uppercase tracking-wide">⛳ Putting Details</p>
-                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md">Fill First</span>
-              </div>
-              <p className="text-xs text-slate-600 mb-4">Describe your putt before selecting the result</p>
-              <div className="mb-6">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Break</p>
-                <div className="inline-flex bg-white rounded-lg p-1 w-full border border-emerald-200">
-                  {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
-                    <button key={b.v} onClick={() => setPuttBreak(b.v as ShotRecord['puttBreak'])}
-                      className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
-                        puttBreak === b.v
-                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                          : 'text-slate-600 hover:text-slate-900'}`}>
-                      {b.l}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="mb-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Slope</p>
-                <div className="inline-flex bg-white rounded-lg p-1 w-full border border-emerald-200">
-                  {[{v: 'uphill', l: 'Uphill'}, {v: 'level', l: 'Level'}, {v: 'downhill', l: 'Downhill'}, {v: 'severe', l: 'Severe'}].map(s => (
-                    <button key={s.v} onClick={() => setPuttSlope(s.v as ShotRecord['puttSlope'])}
-                      className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
-                        puttSlope === s.v
-                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                          : 'text-slate-600 hover:text-slate-900'}`}>
-                      {s.l}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Shot Result - Context-Aware */}
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
-            {/* Shine effect */}
-            <div
-              className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-              }}
-            />
-            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">
-              {isPutting ? 'Putt Result' : 'Shot Result'}
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {(() => {
-                // Smart result options based on shot type
-                let options: string[];
-
-                if (isPutting) {
-                  options = ['Hole', 'Green'];
-                } else if (isTeeShot && currentHole.par !== 3) {
-                  // Par 4/5 tee shot - can't hit green from tee
-                  options = ['Fairway', 'Rough', 'Sand', 'Other'];
-                } else if (isTeeShot && currentHole.par === 3) {
-                  // Par 3 tee shot - aiming for green
-                  options = ['Green', 'Rough', 'Sand', 'Other'];
-                } else {
-                  // All other shots (approach, around green) - show all options
-                  options = ['Fairway', 'Rough', 'Sand', 'Green', 'Hole', 'Other'];
-                }
-
-                return options.map(r => (
-                  <button key={r} onClick={() => handleResultSelect(r.toLowerCase())}
-                    className={`py-3 rounded-lg font-semibold text-sm transition-all ${
-                      resultOfShot === r.toLowerCase()
-                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                        : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100'}`}>
-                    {r}
-                  </button>
-                ));
-              })()}
-            </div>
-          </div>
-
-          {/* Miss Direction */}
-          {((isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
-            (isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot)) ||
-            (isPutting && resultOfShot && resultOfShot !== 'hole')) && (
-            <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
-              {/* Shine effect */}
-              <div
-                className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-                }}
-              />
-              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Miss Direction</p>
-              {isTeeShot && (
-                <div className="inline-flex bg-slate-100 rounded-lg p-1 w-full">
-                  {['left', 'right'].map(d => (
-                    <button key={d} onClick={() => setMissDirection(d)}
-                      className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
-                        missDirection === d
-                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                          : 'text-slate-600 hover:text-slate-900'}`}>
-                      {d === 'left' ? '←' : ''} {d.charAt(0).toUpperCase() + d.slice(1)} {d === 'right' ? '→' : ''}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot) && (
+              {isTeeShot && currentHole.par !== 3 && (
                 <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
-                  <ApproachMissSelector
-                    selectedDirection={approachMissDirection}
-                    onDirectionChange={setApproachMissDirection}
-                  />
-                  {/* Lie type selector for approach misses */}
-                  {approachMissDirection && (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">Lie Type</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(['fairway', 'rough', 'bunker', 'hazard'] as const).map((lie) => (
-                          <button
-                            key={lie}
-                            onClick={() => setApproachMissLieType(lie)}
-                            className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                              approachMissLieType === lie
-                                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                                : 'bg-white/70 backdrop-blur-sm border border-slate-200 text-slate-700 hover:border-emerald-300 hover:bg-emerald-50'
-                            }`}
-                          >
-                            {lie.charAt(0).toUpperCase() + lie.slice(1)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              {isPutting && resultOfShot && resultOfShot !== 'hole' && (
-                <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
-                  <PuttMissTagSelector
-                    selectedTags={puttMissTags}
-                    onTagsChange={setPuttMissTags}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Distance Remaining - Final Step (if not holed) */}
-          {resultOfShot && resultOfShot !== 'hole' && (
-            <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 border-2 border-emerald-200 shadow-lg shadow-emerald-950/5">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-bold text-emerald-900 uppercase tracking-wide">
-                  {isPutting ? '📏 Leave Distance' : '📏 Final Step: Distance Remaining'}
-                </p>
-                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md">Required</span>
-              </div>
-              <p className="text-xs text-slate-600 mb-4">
-                {isPutting
-                  ? 'Enter how many feet were left after the putt'
-                  : 'Enter the distance to the hole after this shot'}
-              </p>
-              <div className="flex items-center gap-3 mb-3">
-                <input
-                  ref={distanceInputRef}
-                  type="number"
-                  inputMode="numeric"
-                  value={distanceAfterShot}
-                  onChange={(e) => setDistanceAfterShot(e.target.value)}
-                  placeholder="Enter distance"
-                  className="flex-1 h-14 px-5 rounded-xl text-3xl font-bold text-emerald-900 text-center bg-white border-2 border-emerald-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 focus:outline-none transition-all placeholder:text-slate-300"
-                />
-                <div className="inline-flex bg-white rounded-lg p-1 border-2 border-emerald-300">
-                  <button
-                    onClick={() => setDistanceAfterUnit('yards')}
-                    className={`px-4 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
-                      distanceAfterUnit === 'yards'
-                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
-                  >
-                    Yards
-                  </button>
-                  <button
-                    onClick={() => setDistanceAfterUnit('feet')}
-                    className={`px-4 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
-                      distanceAfterUnit === 'feet'
-                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
-                  >
-                    Feet
-                  </button>
-                </div>
-              </div>
-              {distanceAfterShot && (
-                <div className="flex items-center justify-between bg-white/60 rounded-lg px-4 py-2.5 border border-emerald-200">
-                  <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Shot Distance</span>
-                  <span className="text-lg font-bold text-emerald-700">
-                    ~{Math.round(calculateShotDistanceWithDirection(
-                      distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole,
-                      distanceAfterUnit === 'feet' ? parseInt(distanceAfterShot) / 3 : parseInt(distanceAfterShot),
-                      isApproachOrAroundGreen ? (approachMissDirection || missDirection) : missDirection
-                    ))} yards
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Next Shot Button */}
-          <button
-            onClick={handleNextShot}
-            disabled={!isReadyForNextShot()}
-            aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}
-            className={`w-full py-4 rounded-lg font-bold text-base transition-all ${
-              isReadyForNextShot()
-                ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed ring-1 ring-slate-200'}`}>
-            {resultOfShot === 'hole' ? `Complete Hole - Score: ${currentShot}` : 'Next Shot →'}
-          </button>
-
-          {/* Penalty Button */}
-          <button
-            onClick={handleAddPenalty}
-            aria-label="Add penalty stroke"
-            className="w-full py-3 rounded-lg font-semibold text-sm text-red-600 bg-red-50 ring-1 ring-red-200 hover:bg-red-100 hover:ring-red-300 transition-all">
-            ⚠️ Add Penalty Stroke
-          </button>
-
-            </div>
-            <div className="space-y-5">
-              {/* Shot History */}
-              {shotHistory.length > 0 ? (
-                <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300 lg:sticky lg:top-28">
-                  {/* Shine effect */}
                   <div
                     className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
                     style={{
                       background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
                     }}
                   />
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-                      Shot History
-                    </p>
-                    <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
-                      Score: {currentShot}
-                    </p>
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Club Off Tee</p>
+                  <div className="inline-flex bg-slate-100 rounded-lg p-1 w-full">
+                    <button onClick={() => setUsedDriver(true)}
+                      className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
+                        usedDriver === true
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                          : 'text-slate-600 hover:text-slate-900'}`}>
+                      Driver
+                    </button>
+                    <button onClick={() => setUsedDriver(false)}
+                      className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
+                        usedDriver === false
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                          : 'text-slate-600 hover:text-slate-900'}`}>
+                      Non-Driver
+                    </button>
                   </div>
-                  <div className="space-y-2 lg:max-h-[50vh] lg:overflow-y-auto lg:pr-1">
-                    {shotHistory.map((shot, idx) => {
-                      const isSelected = selectedShotNumber === shot.shotNumber;
-                      // Determine icon and colors based on shot type
-                      const getShotIcon = () => {
-                        if (shot.isPenalty) return '⚠️';
-                        if (shot.shotType === 'tee') return '⛳';
-                        if (shot.shotType === 'putting') return '⛳';
-                        if (shot.result === 'green') return '🎯';
-                        if (shot.result === 'hole') return '🏆';
-                        return '🏌️';
-                      };
-
-                      const getIconBgColor = () => {
-                        if (shot.isPenalty) return 'bg-red-50 ring-red-200';
-                        if (shot.shotType === 'tee') return 'bg-blue-50 ring-blue-200';
-                        if (shot.shotType === 'putting') return 'bg-emerald-50 ring-emerald-200';
-                        if (shot.result === 'green') return 'bg-emerald-50 ring-emerald-200';
-                        return 'bg-slate-50 ring-slate-200';
-                      };
-
-                      return (
-                        <div
-                          key={idx}
-                          ref={(node) => {
-                            shotHistoryRefs.current[shot.shotNumber] = node;
-                          }}
-                          onClick={() => setSelectedShotNumber(shot.shotNumber)}
-                          className={`flex justify-between items-center p-3 rounded-lg transition-all cursor-pointer
-                            ${isSelected ? 'bg-emerald-50/70 ring-2 ring-emerald-400' : 'bg-slate-50 ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100'}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            {/* Shot Icon */}
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-base ring-1 flex-shrink-0 ${getIconBgColor()}`}>
-                              {getShotIcon()}
-                            </div>
-
-                            {/* Shot Details */}
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-xs font-bold ${shot.isPenalty ? 'text-red-600' : 'text-emerald-600'}`}>
-                                  Shot {shot.shotNumber}
-                                </span>
-                                <span className="text-xs px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-semibold uppercase tracking-wide">
-                                  {shot.isPenalty ? 'Penalty' : shot.shotType.replace('_', ' ')}
-                                </span>
-                              </div>
-                              {!shot.isPenalty && (
-                                <span className="text-xs text-slate-600 capitalize mt-0.5 font-medium">
-                                  {shot.lieBefore} → {shot.result}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Distance/Result + Edit Button */}
-                          <div className="flex items-center gap-2">
-                            <div className="text-right">
-                              {shot.result === 'hole' ? (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-base">🏆</span>
-                                  <span className="font-bold text-xs text-emerald-600 uppercase tracking-wide">Holed</span>
-                                </div>
-                              ) : !shot.isPenalty && shot.shotDistance > 0 ? (
-                                <div className="flex flex-col items-end">
-                                  <span className="font-bold text-sm text-slate-900">{shot.shotDistance}<span className="text-xs text-slate-500 ml-0.5 font-semibold">yds</span></span>
-                                  <span className="text-xs text-slate-500 font-medium">{shot.distanceToHoleAfter}{shot.distanceUnitAfter === 'yards' ? 'y' : 'ft'} left</span>
-                                </div>
-                              ) : shot.isPenalty ? (
-                                <div className="px-2 py-0.5 bg-red-100 rounded ring-1 ring-red-200">
-                                  <span className="text-xs font-bold text-red-700 uppercase tracking-wide">{shot.penaltyType}</span>
-                                </div>
-                              ) : null}
-                            </div>
-                            {/* Edit Button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditShot(shot);
-                              }}
-                              className="p-1.5 rounded-md text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
-                              aria-label={`Edit shot ${shot.shotNumber}`}
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-6 text-center text-xs text-slate-500">
-                  Shot history will appear here after you record your first shot.
                 </div>
               )}
-            </div>
+
+              {/* Putt Details (FIRST - when putting) */}
+              {isPutting && (
+                <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 border-2 border-emerald-200 shadow-lg shadow-emerald-950/5">
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-sm font-bold text-emerald-900 uppercase tracking-wide">Putting Details</p>
+                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md">Fill First</span>
+                  </div>
+                  <p className="text-xs text-slate-600 mb-4">Describe your putt before selecting the result</p>
+                  <div className="mb-6">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Break</p>
+                    <div className="inline-flex bg-white rounded-lg p-1 w-full border border-emerald-200">
+                      {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
+                        <button key={b.v} onClick={() => setPuttBreak(b.v as ShotRecord['puttBreak'])}
+                          className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                            puttBreak === b.v
+                              ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                              : 'text-slate-600 hover:text-slate-900'}`}>
+                          {b.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mb-2">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Slope</p>
+                    <div className="inline-flex bg-white rounded-lg p-1 w-full border border-emerald-200">
+                      {[{v: 'uphill', l: 'Uphill'}, {v: 'level', l: 'Level'}, {v: 'downhill', l: 'Downhill'}, {v: 'severe', l: 'Severe'}].map(s => (
+                        <button key={s.v} onClick={() => setPuttSlope(s.v as ShotRecord['puttSlope'])}
+                          className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                            puttSlope === s.v
+                              ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                              : 'text-slate-600 hover:text-slate-900'}`}>
+                          {s.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Shot Result - Context-Aware */}
+              <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
+                <div
+                  className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                  }}
+                />
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">
+                  {isPutting ? 'Putt Result' : 'Shot Result'}
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {(() => {
+                    let options: string[];
+                    if (isPutting) {
+                      options = ['Hole', 'Green'];
+                    } else if (isTeeShot && currentHole.par !== 3) {
+                      options = ['Fairway', 'Rough', 'Sand', 'Other'];
+                    } else if (isTeeShot && currentHole.par === 3) {
+                      options = ['Green', 'Rough', 'Sand', 'Other'];
+                    } else {
+                      options = ['Fairway', 'Rough', 'Sand', 'Green', 'Hole', 'Other'];
+                    }
+                    return options.map(r => (
+                      <button key={r} onClick={() => handleResultSelect(r.toLowerCase())}
+                        className={`py-3 rounded-lg font-semibold text-sm transition-all ${
+                          resultOfShot === r.toLowerCase()
+                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                            : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100'}`}>
+                        {r}
+                      </button>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              {/* Miss Direction */}
+              {((isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
+                (isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot)) ||
+                (isPutting && resultOfShot && resultOfShot !== 'hole')) && (
+                <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
+                  <div
+                    className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+                    style={{
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                    }}
+                  />
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">Miss Direction</p>
+                  {isTeeShot && (
+                    <div className="inline-flex bg-slate-100 rounded-lg p-1 w-full">
+                      {['left', 'right'].map(d => (
+                        <button key={d} onClick={() => setMissDirection(d)}
+                          className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                            missDirection === d
+                              ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                              : 'text-slate-600 hover:text-slate-900'}`}>
+                          {d === 'left' ? '←' : ''} {d.charAt(0).toUpperCase() + d.slice(1)} {d === 'right' ? '→' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot) && (
+                    <ApproachMissSelector
+                      selectedDirection={approachMissDirection}
+                      onDirectionChange={setApproachMissDirection}
+                    />
+                  )}
+                  {isPutting && resultOfShot && resultOfShot !== 'hole' && (
+                    <PuttMissTagSelector
+                      selectedTags={puttMissTags}
+                      onTagsChange={setPuttMissTags}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Distance Remaining - Final Step (if not holed) */}
+              {resultOfShot && resultOfShot !== 'hole' && (
+                <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 border-2 border-emerald-200 shadow-lg shadow-emerald-950/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-bold text-emerald-900 uppercase tracking-wide">
+                      {isPutting ? 'Leave Distance' : 'Distance Remaining'}
+                    </p>
+                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md">Required</span>
+                  </div>
+                  <p className="text-xs text-slate-600 mb-4">
+                    {isPutting
+                      ? 'Enter how many feet were left after the putt'
+                      : 'Enter the distance to the hole after this shot'}
+                  </p>
+                  <div className="space-y-3 mb-3">
+                    <input
+                      ref={distanceInputRef}
+                      type="number"
+                      inputMode="numeric"
+                      value={distanceAfterShot}
+                      onChange={(e) => setDistanceAfterShot(e.target.value)}
+                      placeholder="Enter distance"
+                      className="w-full h-14 px-5 rounded-xl text-3xl font-bold text-emerald-900 text-center bg-white border-2 border-emerald-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 focus:outline-none transition-all placeholder:text-slate-300"
+                    />
+                    <div className="inline-flex bg-white rounded-lg p-1 border-2 border-emerald-300 w-full">
+                      <button
+                        onClick={() => setDistanceAfterUnit('yards')}
+                        className={`flex-1 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
+                          distanceAfterUnit === 'yards'
+                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        }`}
+                      >
+                        Yards
+                      </button>
+                      <button
+                        onClick={() => setDistanceAfterUnit('feet')}
+                        className={`flex-1 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
+                          distanceAfterUnit === 'feet'
+                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        }`}
+                      >
+                        Feet
+                      </button>
+                    </div>
+                  </div>
+                  {distanceAfterShot && (
+                    <div className="flex items-center justify-between bg-white/60 rounded-lg px-4 py-2.5 border border-emerald-200">
+                      <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Shot Distance</span>
+                      <span className="text-lg font-bold text-emerald-700">
+                        ~{Math.round(calculateShotDistanceWithDirection(
+                          distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole,
+                          distanceAfterUnit === 'feet' ? parseInt(distanceAfterShot) / 3 : parseInt(distanceAfterShot),
+                          isApproachOrAroundGreen ? (approachMissDirection || missDirection) : missDirection
+                        ))} yards
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Next Shot Button */}
+              <button
+                onClick={handleNextShot}
+                disabled={!isReadyForNextShot()}
+                aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}
+                className={`w-full py-4 rounded-lg font-bold text-base transition-all ${
+                  isReadyForNextShot()
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed ring-1 ring-slate-200'}`}>
+                {resultOfShot === 'hole' ? `Complete Hole - Score: ${currentShot}` : 'Next Shot →'}
+              </button>
+
+              {/* Penalty Button */}
+              <button
+                onClick={handleAddPenalty}
+                aria-label="Add penalty stroke"
+                className="w-full py-3 rounded-lg font-semibold text-sm text-red-600 bg-red-50 ring-1 ring-red-200 hover:bg-red-100 hover:ring-red-300 transition-all">
+                Add Penalty Stroke
+              </button>
           </div>
         </div>
 
-        {/* Right Sidebar - Mini Golf Course Visualization */}
+        {/* Right Sidebar - Overhead Course View */}
         <div className="hidden xl:block w-44 p-4">
-          <div className="relative sticky top-32 glass-standard rounded-2xl overflow-hidden p-5 transition-all duration-300">
-            {/* Shine effect */}
-            <div
-              className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-              }}
-            />
+          <div className="relative sticky top-32 glass-standard rounded-2xl overflow-hidden p-4 transition-all duration-300">
             {/* Header */}
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Hole {currentHole.number}</p>
-            <p className="text-2xl font-bold text-emerald-600 text-center mt-1">{currentShot} shot{currentShot > 1 ? 's' : ''}</p>
-
-            {/* Golf Course Visualization */}
-            <div className="my-6 flex flex-col items-center h-48 relative">
-              {/* The Hole (top) - emerald filled circle */}
-              <div className="w-4 h-4 rounded-full bg-emerald-600 z-10 flex-shrink-0 shadow-sm shadow-emerald-950/10"></div>
-
-              {/* Track line container */}
-              <div className="flex-1 w-0.5 relative my-1">
-                {/* Background gray line */}
-                <div className="absolute inset-0 bg-slate-200 rounded-full"></div>
-
-                {/* Emerald progress line (from top = distance covered) */}
-                <div
-                  className="absolute top-0 left-0 right-0 bg-emerald-600 transition-all duration-500 rounded-full"
-                  style={{ height: `${progressPercent}%` }}
-                ></div>
-
-                {/* Ball position marker - larger emerald dot */}
-                <div
-                  className="absolute w-3.5 h-3.5 rounded-full bg-emerald-600 z-10 shadow-sm shadow-emerald-950/10 ring-2 ring-white transition-all duration-500"
-                  style={{
-                    top: `${Math.min(95, progressPercent)}%`,
-                    left: '50%',
-                    transform: 'translateX(-50%)'
-                  }}
-                ></div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hole {currentHole.number}</p>
+                <p className="text-lg font-bold text-slate-800">Par {currentHole.par}</p>
               </div>
-
-              {/* The Tee (bottom) - small outlined circle */}
-              <div className="w-3 h-3 rounded-full border-2 border-slate-300 bg-white z-10 flex-shrink-0"></div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shot</p>
+                <p className="text-lg font-bold text-emerald-600">{currentShot}</p>
+              </div>
             </div>
 
-            {/* Distance remaining */}
-            <p className="text-3xl font-bold text-emerald-600 text-center">{displayDistance}</p>
-            <p className="text-xs text-slate-500 font-semibold text-center mt-1 uppercase tracking-wide">{displayUnit} left</p>
+            {/* Overhead Course View */}
+            <div className="relative bg-emerald-800 rounded-xl h-56 overflow-hidden">
+              {/* Rough (background) */}
+              <div className="absolute inset-0 bg-emerald-700" />
+
+              {/* Fairway - center strip */}
+              <div className="absolute top-8 bottom-8 left-1/2 -translate-x-1/2 w-12 bg-emerald-500 rounded-full" />
+
+              {/* Green at top */}
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-14 h-10 bg-emerald-400 rounded-full" />
+
+              {/* Hole/Flag */}
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
+                <div className="w-0.5 h-6 bg-white" />
+                <div className="w-2 h-2 rounded-full bg-slate-900 -mt-0.5" />
+              </div>
+
+              {/* Tee box at bottom */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-8 h-4 bg-amber-200 rounded-sm" />
+
+              {/* Ball Position - calculated from distance and miss direction */}
+              {(() => {
+                // Calculate Y position (0 = hole, 100 = tee)
+                const yPercent = 100 - progressPercent;
+                // Map to visual range (top 12% is green, bottom 8% is tee)
+                const visualY = 12 + (yPercent * 0.76); // 12-88% range
+
+                // Calculate X offset based on miss direction and lie
+                let xOffset = 0; // pixels from center
+                const lastMiss = missDirection?.toLowerCase();
+                const isOffFairway = ['rough', 'sand', 'other'].includes(currentLie);
+
+                if (isOffFairway && lastMiss) {
+                  if (lastMiss.includes('left')) xOffset = -20;
+                  else if (lastMiss.includes('right')) xOffset = 20;
+                }
+
+                // Lie color indicator
+                const lieColors: Record<string, string> = {
+                  tee: 'bg-amber-300 ring-amber-400',
+                  fairway: 'bg-white ring-emerald-400',
+                  rough: 'bg-white ring-amber-500',
+                  sand: 'bg-white ring-yellow-500',
+                  green: 'bg-white ring-emerald-300',
+                  other: 'bg-white ring-red-400',
+                };
+                const ballStyle = lieColors[currentLie] || 'bg-white ring-slate-300';
+
+                return (
+                  <div
+                    className="absolute z-30 transition-all duration-500 ease-out"
+                    style={{
+                      top: `${visualY}%`,
+                      left: `calc(50% + ${xOffset}px)`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    {/* Ball shadow */}
+                    <div className="absolute top-1 left-1/2 -translate-x-1/2 w-3 h-1 bg-black/30 rounded-full blur-sm" />
+                    {/* Ball */}
+                    <div className={`w-4 h-4 rounded-full ${ballStyle} ring-2 shadow-md`} />
+                  </div>
+                );
+              })()}
+
+              {/* Distance markers */}
+              <div className="absolute right-1 top-12 bottom-12 flex flex-col justify-between text-[8px] font-bold text-white/60">
+                <span>0</span>
+                <span>{Math.round(currentHole.yardage / 2)}</span>
+                <span>{currentHole.yardage}</span>
+              </div>
+            </div>
+
+            {/* Current Status */}
+            <div className="mt-3 p-3 bg-slate-100 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase">Lie</p>
+                  <p className="text-sm font-bold text-slate-700 capitalize">{currentLie}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase">To Hole</p>
+                  <p className="text-sm font-bold text-emerald-600">{displayDistance} {displayUnit === 'yards' ? 'yds' : 'ft'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Shot History */}
+            {shotHistory.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-slate-200">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-2">Shots</p>
+                <div className="space-y-1 max-h-24 overflow-y-auto">
+                  {shotHistory.map((shot, idx) => {
+                    const isSelected = selectedShotNumber === shot.shotNumber;
+                    return (
+                      <button
+                        key={idx}
+                        ref={(node) => { shotHistoryRefs.current[shot.shotNumber] = node; }}
+                        onClick={() => {
+                          setSelectedShotNumber(shot.shotNumber);
+                          handleEditShot(shot);
+                        }}
+                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded text-[11px] transition-all ${
+                          isSelected
+                            ? 'bg-emerald-100 ring-1 ring-emerald-400'
+                            : shot.isPenalty
+                              ? 'bg-red-50 hover:bg-red-100'
+                              : 'bg-slate-50 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className={`font-bold ${shot.isPenalty ? 'text-red-600' : 'text-slate-600'}`}>
+                          {shot.isPenalty ? 'P' : shot.shotNumber}
+                        </span>
+                        <span className={`font-bold ${shot.isPenalty ? 'text-red-500' : 'text-emerald-600'}`}>
+                          {shot.isPenalty ? '+1' : `${shot.shotDistance}y`}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

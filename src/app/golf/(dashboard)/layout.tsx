@@ -112,12 +112,20 @@ export default function GolfDashboardLayout({
 
   useEffect(() => {
     async function loadUser() {
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('[Dashboard Layout] Loading user...');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError) {
+        console.error('[Dashboard Layout] Auth error:', authError);
+      }
 
       if (!user) {
+        console.log('[Dashboard Layout] No user found, redirecting to login');
         router.push('/golf/login');
         return;
       }
+
+      console.log('[Dashboard Layout] User found:', { id: user.id, email: user.email });
 
       // Query role and profiles in parallel to resolve correct destination
       const [userResult, coachResult, playerResult] = await Promise.all([
@@ -138,6 +146,12 @@ export default function GolfDashboardLayout({
           .maybeSingle(),
       ]);
 
+      console.log('[Dashboard Layout] Query results:', {
+        userResult: { data: userResult.data, error: userResult.error },
+        coachResult: { data: coachResult.data, error: coachResult.error },
+        playerResult: { data: playerResult.data, error: playerResult.error },
+      });
+
       const userRole = userResult.data?.role;
       const coach = coachResult.data;
       const player = playerResult.data;
@@ -151,8 +165,19 @@ export default function GolfDashboardLayout({
             ? 'player'
             : declaredRole;
 
+      console.log('[Dashboard Layout] Role resolution:', {
+        userRole,
+        declaredRole,
+        resolvedRole,
+        hasCoach: !!coach,
+        hasPlayer: !!player,
+        playerOnboardingCompleted: player?.onboarding_completed,
+        coachOnboardingCompleted: coach?.onboarding_completed,
+      });
+
       if (resolvedRole === 'coach') {
         if (!coach || !coach.onboarding_completed) {
+          console.log('[Dashboard Layout] Coach not onboarded, redirecting to /golf/coach');
           router.push('/golf/coach');
           return;
         }
@@ -180,9 +205,14 @@ export default function GolfDashboardLayout({
 
       if (resolvedRole === 'player') {
         if (!player || !player.onboarding_completed) {
+          console.log('[Dashboard Layout] Player not onboarded, redirecting to /golf/player', {
+            hasPlayer: !!player,
+            onboarding_completed: player?.onboarding_completed,
+          });
           router.push('/golf/player');
           return;
         }
+        console.log('[Dashboard Layout] Player onboarded, loading dashboard');
 
         // Get team name via golf_team_members
         let teamName: string | undefined;
@@ -198,7 +228,7 @@ export default function GolfDashboardLayout({
             .from('golf_teams')
             .select('name')
             .eq('id', teamMember.team_id)
-            .single();
+            .maybeSingle();
           teamName = team?.name;
         }
 

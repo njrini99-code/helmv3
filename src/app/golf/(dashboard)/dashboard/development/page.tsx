@@ -32,7 +32,7 @@ interface Player {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  grad_year: number | null;
+  graduation_year: number | null;
   handicap: number | null;
 }
 
@@ -77,7 +77,7 @@ export default async function DevelopmentPlansPage() {
   // Fetch team players
   const { data: players } = await supabase
     .from('golf_players')
-    .select('id, first_name, last_name, avatar_url, grad_year, handicap')
+    .select('id, first_name, last_name, avatar_url, graduation_year, handicap')
     .eq('team_id', teamId)
     .order('last_name');
 

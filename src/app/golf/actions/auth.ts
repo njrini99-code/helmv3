@@ -110,7 +110,7 @@ export async function loginAction(
     .from('users')
     .select('role')
     .eq('id', data.user.id)
-    .single();
+    .maybeSingle();
 
   const [coachResult, playerResult] = await Promise.all([
     supabase
@@ -268,14 +268,10 @@ export async function signupAction(
     };
   }
 
-  // Check if email confirmation is required (session will be null)
-  // If no session, user needs to confirm email first
+  // Note: If no session is returned, email confirmation might be enabled in Supabase.
+  // To disable: Supabase Dashboard > Authentication > Providers > Email > Confirm email = OFF
   if (!data.session) {
-    // For demo/development: Log this so we know email confirmation is the issue
-    console.warn('[Golf Auth] No session after signup - email confirmation may be required. Disable in Supabase Dashboard: Authentication > Providers > Email > Confirm email = OFF');
-
-    // Still return success but note that email confirmation might be needed
-    // The onboarding page will handle the auth check
+    console.warn('[Golf Auth] No session after signup - email confirmation may be enabled. Disable in Supabase Dashboard > Authentication > Providers > Email');
   }
 
   // Redirect based on role - coaches go to coach onboarding, players go to player onboarding

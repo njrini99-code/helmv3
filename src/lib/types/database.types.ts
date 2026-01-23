@@ -4294,61 +4294,73 @@ export type Database = {
       }
       golf_players: {
         Row: {
-          avatar_url: string | null
-          city: string | null
-          created_at: string | null
-          email: string | null
-          first_name: string | null
-          gpa: number | null
-          grad_year: number | null
-          handicap: number | null
-          handicap_index: number | null
-          high_school_name: string | null
           id: string
-          last_name: string | null
-          onboarding_completed: boolean | null
-          phone: string | null
-          state: string | null
-          updated_at: string | null
           user_id: string
+          team_id: string | null
+          first_name: string | null
+          last_name: string | null
+          email: string | null
+          phone: string | null
+          avatar_url: string | null
+          year: string | null
+          graduation_year: number | null
+          major: string | null
+          hometown: string | null
+          state: string | null
+          handicap: number | null
+          scholarship_percentage: number | null
+          gpa: number | null
+          status: string | null
+          onboarding_completed: boolean | null
+          profile_complete: boolean | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
-          avatar_url?: string | null
-          city?: string | null
-          created_at?: string | null
-          email?: string | null
-          first_name?: string | null
-          gpa?: number | null
-          grad_year?: number | null
-          handicap?: number | null
-          handicap_index?: number | null
-          high_school_name?: string | null
           id?: string
-          last_name?: string | null
-          onboarding_completed?: boolean | null
-          phone?: string | null
-          state?: string | null
-          updated_at?: string | null
           user_id: string
+          team_id?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          email?: string | null
+          phone?: string | null
+          avatar_url?: string | null
+          year?: string | null
+          graduation_year?: number | null
+          major?: string | null
+          hometown?: string | null
+          state?: string | null
+          handicap?: number | null
+          scholarship_percentage?: number | null
+          gpa?: number | null
+          status?: string | null
+          onboarding_completed?: boolean | null
+          profile_complete?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
-          avatar_url?: string | null
-          city?: string | null
-          created_at?: string | null
-          email?: string | null
-          first_name?: string | null
-          gpa?: number | null
-          grad_year?: number | null
-          handicap?: number | null
-          handicap_index?: number | null
-          high_school_name?: string | null
           id?: string
-          last_name?: string | null
-          onboarding_completed?: boolean | null
-          phone?: string | null
-          state?: string | null
-          updated_at?: string | null
           user_id?: string
+          team_id?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          email?: string | null
+          phone?: string | null
+          avatar_url?: string | null
+          year?: string | null
+          graduation_year?: number | null
+          major?: string | null
+          hometown?: string | null
+          state?: string | null
+          handicap?: number | null
+          scholarship_percentage?: number | null
+          gpa?: number | null
+          status?: string | null
+          onboarding_completed?: boolean | null
+          profile_complete?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -4356,6 +4368,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
             referencedColumns: ["id"]
           },
         ]

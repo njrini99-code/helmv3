@@ -89,9 +89,15 @@ export default function GolfCoachOnboarding() {
         return;
       }
 
-      // Success - redirect to dashboard
-      router.push('/golf/dashboard');
+      // CRITICAL: Call router.refresh() FIRST to invalidate cache and propagate
+      // the session cookies, THEN navigate. This matches the pattern used in signup.
       router.refresh();
+
+      // Wait for cache to invalidate and database write to commit
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Now navigate to dashboard
+      router.push('/golf/dashboard');
     } catch (err) {
       // Show error to user
       console.error('[Onboarding] Error:', err);

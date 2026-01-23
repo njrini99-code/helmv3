@@ -26,9 +26,9 @@ interface PlayerWithStats {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  city: string | null;
+  hometown: string | null;
   state: string | null;
-  grad_year: number | null;
+  graduation_year: number | null;
   handicap: number | null;
   status: string | null;
   rounds_count?: number;
@@ -150,9 +150,9 @@ export default async function GolfRosterPage() {
         first_name,
         last_name,
         avatar_url,
-        city,
+        hometown,
         state,
-        grad_year,
+        graduation_year,
         handicap
       )
     `)
@@ -305,13 +305,13 @@ export default async function GolfRosterPage() {
                       <p className="font-semibold text-slate-900">
                         {player.first_name} {player.last_name}
                       </p>
-                      <YearBadge year={player.grad_year} />
+                      <YearBadge year={player.graduation_year} />
                       <PlayerStatusBadge playerId={player.id} currentStatus={player.status} />
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      {player.city && player.state && (
+                      {player.hometown && player.state && (
                         <span className="text-sm text-slate-500">
-                          {player.city}, {player.state}
+                          {player.hometown}, {player.state}
                         </span>
                       )}
                     </div>

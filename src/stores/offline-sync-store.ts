@@ -19,6 +19,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { useShallow } from 'zustand/shallow';
 
 import {
   getSyncEngine,
@@ -681,28 +682,32 @@ export function useInitializeOfflineSync() {
  * Hook for offline sync status
  */
 export function useOfflineSyncStatus() {
-  return useOfflineSyncStore((state) => ({
-    isOnline: state.isOnline,
-    isSyncing: state.isSyncing,
-    syncStatus: state.syncStatus,
-    pendingCount: state.pendingCount,
-    lastSuccessfulSync: state.lastSuccessfulSync,
-    syncError: state.syncError,
-    isReady: state.isReady,
-  }));
+  return useOfflineSyncStore(
+    useShallow((state) => ({
+      isOnline: state.isOnline,
+      isSyncing: state.isSyncing,
+      syncStatus: state.syncStatus,
+      pendingCount: state.pendingCount,
+      lastSuccessfulSync: state.lastSuccessfulSync,
+      syncError: state.syncError,
+      isReady: state.isReady,
+    }))
+  );
 }
 
 /**
  * Hook for offline sync actions
  */
 export function useOfflineSyncActions() {
-  return useOfflineSyncStore((state) => ({
-    startSync: state.startSync,
-    retrySync: state.retrySync,
-    cancelSync: state.cancelSync,
-    clearSyncError: state.clearSyncError,
-    hideBanner: state.hideBanner,
-    updatePendingCount: state.updatePendingCount,
-    refreshPendingCounts: state.refreshPendingCounts,
-  }));
+  return useOfflineSyncStore(
+    useShallow((state) => ({
+      startSync: state.startSync,
+      retrySync: state.retrySync,
+      cancelSync: state.cancelSync,
+      clearSyncError: state.clearSyncError,
+      hideBanner: state.hideBanner,
+      updatePendingCount: state.updatePendingCount,
+      refreshPendingCounts: state.refreshPendingCounts,
+    }))
+  );
 }

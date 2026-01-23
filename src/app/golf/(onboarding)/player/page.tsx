@@ -97,12 +97,12 @@ export default function GolfPlayerOnboarding() {
       setUserId(user.id);
       setEmail(user.email || '');
 
-      // Check for existing player record
+      // Check for existing player record (use maybeSingle since record may not exist yet)
       const { data: player } = await supabase
         .from('golf_players')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (player) {
         setPlayerId(player.id);
@@ -110,14 +110,14 @@ export default function GolfPlayerOnboarding() {
           router.push('/golf/dashboard');
           return;
         }
-        // Pre-fill existing data
+        // Pre-fill existing data (use correct column names from golf_players schema)
         setFirstName(player.first_name || '');
         setLastName(player.last_name || '');
         setPhone(player.phone || '');
-        setHometown(player.city || '');
+        setHometown(player.hometown || '');  // Column is 'hometown', not 'city'
         setState(player.state || '');
         setYear('freshman'); // Year is not stored in DB, use default
-        setGraduationYear(player.grad_year || graduationYears[3] || new Date().getFullYear() + 3);
+        setGraduationYear(player.graduation_year || graduationYears[3] || new Date().getFullYear() + 3);  // Column is 'graduation_year', not 'grad_year'
         setHandicap(player.handicap?.toString() || '');
         setMajor(''); // Major is not stored in golf_players
         setGpa(player.gpa?.toString() || '');
@@ -230,110 +230,175 @@ export default function GolfPlayerOnboarding() {
   };
 
   const handleComplete = async () => {
-    if (!userId) return;
+    if (!userId) {
+      console.error('[Player Onboarding] No userId available');
+      return;
+    }
 
+    console.log('[Player Onboarding] Starting completion...', { userId, playerId });
     setLoading(true);
     setError('');
 
     try {
       // Get current user for email
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError) {
+        console.error('[Player Onboarding] Auth error:', authError);
+        throw new Error('Authentication error: ' + authError.message);
+      }
+
+      if (!user) {
+        console.error('[Player Onboarding] No user found in session');
+        throw new Error('No authenticated user found. Please log in again.');
+      }
+
+      console.log('[Player Onboarding] Auth user:', { id: user.id, email: user.email });
 
       // IMPORTANT: Ensure the users table record exists
       // The trigger should create it, but let's make sure
       // Note: users table only has: id, email, role, created_at, updated_at (no sport column)
-      if (user) {
-        const { error: usersError } = await supabase
-          .from('users')
-          .upsert({
-            id: user.id,
-            email: user.email || '',
-            role: 'player',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'id',
-            ignoreDuplicates: true,
-          });
+      const { error: usersError } = await supabase
+        .from('users')
+        .upsert({
+          id: user.id,
+          email: user.email || '',
+          role: 'player',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'id',
+          ignoreDuplicates: true,
+        });
 
-        if (usersError) {
-          console.warn('[Player Onboarding] Users upsert warning:', usersError);
-          // Continue anyway - the record might already exist
-        }
+      if (usersError) {
+        console.warn('[Player Onboarding] Users upsert warning:', usersError);
+        // Continue anyway - the record might already exist
+      } else {
+        console.log('[Player Onboarding] Users table upsert successful');
       }
 
       // Calculate profile completion percentage
       const profileCompletionPercent = calculateProfileCompletion();
+      console.log('[Player Onboarding] Profile completion:', profileCompletionPercent);
 
-      // Note: golf_players uses 'city' instead of 'hometown', 'grad_year' instead of 'graduation_year'
-      // 'year' (freshman/sophomore/etc) and 'major' are not stored in the golf_players table
+      // Note: golf_players table has:
+      // - graduation_year (not grad_year)
+      // - hometown (not city)
+      // - profile_complete (boolean, not profile_completion_percent)
       const updateData = {
         first_name: firstName,
         last_name: lastName,
         email: email || null,
         phone: phone || null,
-        city: hometown || null,
+        hometown: hometown || null,
         state: state || null,
-        grad_year: graduationYear,
+        graduation_year: graduationYear,
         handicap: handicap ? parseFloat(handicap) : null,
         gpa: gpa ? parseFloat(gpa) : null,
         onboarding_completed: true,
-        profile_completion_percent: profileCompletionPercent,
+        profile_complete: profileCompletionPercent >= 80, // Boolean based on completion threshold
       };
+
+      console.log('[Player Onboarding] Update data:', updateData);
 
       if (playerId) {
         // Update existing player by ID
-        const { error: updateError } = await supabase
+        console.log('[Player Onboarding] Updating existing player:', playerId);
+        const { data: updateResult, error: updateError } = await supabase
           .from('golf_players')
           .update(updateData)
-          .eq('id', playerId);
+          .eq('id', playerId)
+          .select();
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('[Player Onboarding] Update error:', updateError);
+          throw updateError;
+        }
+        console.log('[Player Onboarding] Update successful:', updateResult);
       } else {
         // Check if a player record already exists for this user (trigger might have created it)
-        const { data: existingPlayer } = await supabase
+        console.log('[Player Onboarding] Checking for existing player record...');
+        const { data: existingPlayer, error: checkError } = await supabase
           .from('golf_players')
           .select('id')
           .eq('user_id', userId)
           .single();
 
+        if (checkError && checkError.code !== 'PGRST116') {
+          console.error('[Player Onboarding] Error checking existing player:', checkError);
+        }
+
         if (existingPlayer) {
           // Update existing record
-          const { error: updateError } = await supabase
+          console.log('[Player Onboarding] Found existing player, updating:', existingPlayer.id);
+          const { data: updateResult, error: updateError } = await supabase
             .from('golf_players')
             .update({
               ...updateData,
-              status: 'active',
-              onboarding_completed: true,
-              profile_completion_percent: profileCompletionPercent,
               updated_at: new Date().toISOString(),
             })
-            .eq('id', existingPlayer.id);
+            .eq('id', existingPlayer.id)
+            .select();
 
           if (updateError) {
+            console.error('[Player Onboarding] Update error:', updateError);
             throw updateError;
           }
+          console.log('[Player Onboarding] Update successful:', updateResult);
         } else {
           // Insert new record
-          const { error: insertError } = await supabase
+          console.log('[Player Onboarding] No existing player, inserting new record...');
+          const { data: insertResult, error: insertError } = await supabase
             .from('golf_players')
             .insert({
               user_id: userId,
               ...updateData,
-              status: 'active',
-              onboarding_completed: true,
-              profile_completion_percent: profileCompletionPercent,
-            });
+            })
+            .select();
 
           if (insertError) {
-            throw insertError;
+            console.error('[Player Onboarding] Insert error:', {
+              message: insertError.message,
+              code: insertError.code,
+              details: insertError.details,
+              hint: insertError.hint,
+              full: JSON.stringify(insertError),
+            });
+            throw new Error(insertError.message || 'Failed to create player record');
           }
+          console.log('[Player Onboarding] Insert successful:', insertResult);
         }
       }
 
-      router.push('/golf/dashboard');
+      // Verify the record was saved correctly
+      console.log('[Player Onboarding] Verifying saved record...');
+      const { data: verifyPlayer, error: verifyError } = await supabase
+        .from('golf_players')
+        .select('id, user_id, onboarding_completed, first_name, last_name')
+        .eq('user_id', userId)
+        .single();
+
+      if (verifyError) {
+        console.error('[Player Onboarding] Verification error:', verifyError);
+      } else {
+        console.log('[Player Onboarding] Verified player record:', verifyPlayer);
+      }
+
+      // CRITICAL: Call router.refresh() FIRST to invalidate cache and propagate
+      // the session cookies, THEN navigate. This matches the pattern used in signup.
+      console.log('[Player Onboarding] Calling router.refresh()...');
       router.refresh();
+
+      // Wait for cache to invalidate and database write to commit
+      console.log('[Player Onboarding] Waiting 150ms for cache invalidation...');
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Now navigate to dashboard
+      console.log('[Player Onboarding] Navigating to /golf/dashboard...');
+      router.push('/golf/dashboard');
     } catch (err: unknown) {
+      console.error('[Player Onboarding] Caught error:', err);
       const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
       setError(errorMessage);
       setLoading(false);

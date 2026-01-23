@@ -33,7 +33,7 @@ interface Player {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  grad_year: number | null;
+  graduation_year: number | null;
   handicap: number | null;
 }
 
@@ -185,7 +185,7 @@ export default function StatsClient({
 
     const { data: teamPlayers } = await supabase
       .from('golf_players')
-      .select('id, first_name, last_name, avatar_url, grad_year, handicap')
+      .select('id, first_name, last_name, avatar_url, graduation_year, handicap')
       .in('id', playerIds)
       .order('last_name');
 
@@ -539,7 +539,7 @@ export default function StatsClient({
                         {player.first_name} {player.last_name}
                       </p>
                       <p className="text-sm text-slate-500 capitalize">
-                        {player.grad_year ? `Class of ${player.grad_year}` : 'Player'}
+                        {player.graduation_year ? `Class of ${player.graduation_year}` : 'Player'}
                         {player.handicap !== null && ` | ${player.handicap > 0 ? '+' : ''}${player.handicap} HCP`}
                       </p>
                     </div>
@@ -616,7 +616,7 @@ export default function StatsClient({
           // Player profile (for coach view)
           playerProfile={userRole === 'coach' && selectedPlayer ? {
             avatarUrl: selectedPlayer.avatar_url,
-            gradYear: selectedPlayer.grad_year,
+            gradYear: selectedPlayer.graduation_year,
             handicap: selectedPlayer.handicap,
             roundsPlayed: selectedPlayer.stats?.rounds_played,
             scoringAverage: selectedPlayer.stats?.scoring_average,

@@ -110,9 +110,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       first_name,
       last_name,
       avatar_url,
-      city,
+      hometown,
       state,
-      grad_year,
+      graduation_year,
       handicap,
       phone,
       email,
@@ -221,14 +221,14 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                       {player.first_name} {player.last_name}
                     </h1>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <YearBadge year={player.grad_year} />
+                      <YearBadge year={player.graduation_year} />
                       <PlayerStatusBadge playerId={player.id} currentStatus={membership.status} />
                     </div>
-                    {(player.city || player.state) && (
+                    {(player.hometown || player.state) && (
                       <div className="flex items-center gap-1.5 mt-2 text-slate-500">
                         <IconMapPin size={14} />
                         <span className="text-sm">
-                          {[player.city, player.state].filter(Boolean).join(', ')}
+                          {[player.hometown, player.state].filter(Boolean).join(', ')}
                         </span>
                       </div>
                     )}

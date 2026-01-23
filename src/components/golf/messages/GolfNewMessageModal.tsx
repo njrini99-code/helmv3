@@ -71,7 +71,7 @@ export function GolfNewMessageModal({
 
         let playerQuery = supabase
           .from('golf_players')
-          .select('id, user_id, first_name, last_name, grad_year, avatar_url')
+          .select('id, user_id, first_name, last_name, graduation_year, avatar_url')
           .in('id', playerIds);  // ENFORCED team filter via join table
 
         if (query.trim()) {
@@ -91,7 +91,7 @@ export function GolfNewMessageModal({
             id: p.id,
             userId: p.user_id!,
             name: [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown Player',
-            subtitle: p.grad_year ? `Class of ${p.grad_year}` : 'Player',
+            subtitle: p.graduation_year ? `Class of ${p.graduation_year}` : 'Player',
             avatar: p.avatar_url,
             type: 'player' as const,
           }));
@@ -169,9 +169,17 @@ export function GolfNewMessageModal({
   };
 
   const handleStartConversation = () => {
+    console.log('[GolfNewMessageModal] Start Conversation clicked', {
+      selectedId,
+      teamId,
+      currentUserRole,
+    });
     if (selectedId) {
+      console.log('[GolfNewMessageModal] Calling onSelect with userId:', selectedId);
       onSelect(selectedId);
       onClose();
+    } else {
+      console.log('[GolfNewMessageModal] No selectedId - button should be disabled');
     }
   };
 

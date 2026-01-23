@@ -164,22 +164,29 @@ export async function sendMessage({
 interface CreateConversationOptions {
   participantUserIds: string[];
   sport?: Sport;
+  teamId?: string; // Required for golf conversations
 }
 
 /**
  * Create a new conversation or return existing one
  * @param participantUserIds - Array of user IDs to include in conversation
  * @param sport - The sport context (for revalidation paths)
+ * @param teamId - Team ID (required for golf conversations)
  */
 export async function createConversation({
   participantUserIds,
   sport = 'baseball',
+  teamId,
 }: CreateConversationOptions) {
+  console.log('[createConversation] Called with:', { participantUserIds, sport, teamId });
+
   const supabase = await createClient();
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
+  console.log('[createConversation] Current user:', user?.id);
   if (!user) {
+    console.error('[createConversation] No authenticated user');
     throw new Error('Unauthorized');
   }
 
@@ -208,36 +215,58 @@ export async function createConversation({
 
       if (sharedConversations && sharedConversations.length > 0 && sharedConversations[0]) {
         // Found existing conversation
+        console.log('[createConversation] Found existing conversation:', sharedConversations[0].conversation_id);
         return { conversationId: sharedConversations[0].conversation_id };
       }
     }
   }
 
   // Create new conversation
+  console.log('[createConversation] Creating new conversation...');
   const conversationsTable = sport === 'golf' ? 'golf_conversations' : 'baseball_conversations';
+
+  // Build insert data - golf requires team_id
+  const insertData: Record<string, unknown> = {
+    created_by: user.id,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  // Golf conversations require team_id
+  if (sport === 'golf') {
+    if (!teamId) {
+      console.error('[createConversation] Missing teamId for golf conversation');
+      throw new Error('Team ID is required for golf conversations');
+    }
+    insertData.team_id = teamId;
+  }
+
+  console.log('[createConversation] Insert data:', insertData);
+  console.log('[createConversation] Table:', conversationsTable);
+
   const { data: newConversation, error: convError } = await supabase
     .from(conversationsTable as any)
-    .insert({
-      created_by: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+    .insert(insertData)
     .select('id')
     .single() as { data: { id: string } | null; error: SupabaseError | null };
 
+  console.log('[createConversation] Insert result:', { newConversation, convError });
+
   if (convError || !newConversation) {
-    console.error('[Security] Conversation create error:', {
+    console.error('[createConversation] Conversation create error:', {
       error: convError?.message,
       code: convError?.code,
       details: convError?.details,
       hint: convError?.hint,
       userId: user.id,
       participantUserIds,
+      insertData,
     });
     throw new Error(`Failed to create conversation: ${convError?.message || 'Unknown error'}`);
   }
 
   const conversationId = newConversation.id;
+  console.log('[createConversation] Conversation created with id:', conversationId);
 
   // Add all participants (including current user)
   const allParticipantIds = [...new Set([user.id, ...participantUserIds].filter(Boolean))];
@@ -247,13 +276,17 @@ export async function createConversation({
     joined_at: new Date().toISOString(),
   }));
 
+  console.log('[createConversation] Adding participants:', participantInserts);
+
   const { error: participantsError } = await supabase
     .from(participantsTable as any)
     .insert(participantInserts);
 
   if (participantsError) {
-    console.error('[Security] Participants insert error:', {
+    console.error('[createConversation] Participants insert error:', {
       error: participantsError.message,
+      code: (participantsError as any).code,
+      details: (participantsError as any).details,
       conversationId,
       userId: user.id,
     });
@@ -261,6 +294,7 @@ export async function createConversation({
     throw new Error(`Failed to add participants: ${participantsError.message}`);
   }
 
+  console.log('[createConversation] Success! Returning conversationId:', conversationId);
   revalidatePath(`/${sport}/dashboard/messages`);
 
   return { conversationId };
@@ -341,8 +375,8 @@ export async function sendGolfMessage(conversationId: string, content: string) {
   return sendMessage({ conversationId, content, sport: 'golf', createNotifications: false });
 }
 
-export async function createGolfConversation(participantUserIds: string[]) {
-  return createConversation({ participantUserIds, sport: 'golf' });
+export async function createGolfConversation(participantUserIds: string[], teamId?: string) {
+  return createConversation({ participantUserIds, sport: 'golf', teamId });
 }
 
 export async function markGolfMessagesAsRead(conversationId: string) {
@@ -435,7 +469,7 @@ export async function createGolfTeamBroadcast({
       .from('golf_conversations')
       .select('id')
       .eq('team_id', teamId)
-      .eq('is_group', true)
+      .eq('is_team_chat', true)
       .eq('title', title)
       .single();
 
@@ -450,7 +484,7 @@ export async function createGolfTeamBroadcast({
       .insert({
         team_id: teamId,
         title: title,
-        is_group: true,
+        is_team_chat: true,
         created_by: user.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -546,7 +580,7 @@ export async function getGolfTeamPlayersForBroadcast(teamId: string): Promise<{
     // Get all team players
     const { data: teamMembers, error: membersError } = await supabase
       .from('golf_team_members')
-      .select('player_id, player:golf_players(id, user_id, first_name, last_name, grad_year, avatar_url)')
+      .select('player_id, player:golf_players(id, user_id, first_name, last_name, graduation_year, avatar_url)')
       .eq('team_id', teamId);
 
     if (membersError) {
@@ -560,7 +594,7 @@ export async function getGolfTeamPlayersForBroadcast(teamId: string): Promise<{
           user_id: string | null;
           first_name: string | null;
           last_name: string | null;
-          grad_year: number | null;
+          graduation_year: number | null;
           avatar_url: string | null;
         } | null;
 
@@ -570,7 +604,7 @@ export async function getGolfTeamPlayersForBroadcast(teamId: string): Promise<{
           id: player.id,
           userId: player.user_id,
           name: [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Unknown Player',
-          gradYear: player.grad_year,
+          gradYear: player.graduation_year,
           avatarUrl: player.avatar_url,
         };
       })

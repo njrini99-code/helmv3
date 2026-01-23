@@ -4444,6 +4444,7 @@ export type Database = {
           id: string
           notes: string | null
           player_id: string
+          priority: number | null
           progress_notes: Json | null
           review_context: string | null
           started_at: string | null
@@ -4466,6 +4467,7 @@ export type Database = {
           id?: string
           notes?: string | null
           player_id: string
+          priority?: number | null
           progress_notes?: Json | null
           review_context?: string | null
           started_at?: string | null
@@ -4488,6 +4490,7 @@ export type Database = {
           id?: string
           notes?: string | null
           player_id?: string
+          priority?: number | null
           progress_notes?: Json | null
           review_context?: string | null
           started_at?: string | null
@@ -4896,57 +4899,60 @@ export type Database = {
       golf_players: {
         Row: {
           avatar_url: string | null
-          city: string | null
           created_at: string | null
           email: string | null
           first_name: string | null
           gpa: number | null
-          grad_year: number | null
+          graduation_year: number | null
           handicap: number | null
           handicap_index: number | null
           high_school_name: string | null
+          hometown: string | null
           id: string
           last_name: string | null
           onboarding_completed: boolean | null
           phone: string | null
+          profile_complete: boolean | null
           state: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
-          city?: string | null
           created_at?: string | null
           email?: string | null
           first_name?: string | null
           gpa?: number | null
-          grad_year?: number | null
+          graduation_year?: number | null
           handicap?: number | null
           handicap_index?: number | null
           high_school_name?: string | null
+          hometown?: string | null
           id?: string
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          profile_complete?: boolean | null
           state?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           avatar_url?: string | null
-          city?: string | null
           created_at?: string | null
           email?: string | null
           first_name?: string | null
           gpa?: number | null
-          grad_year?: number | null
+          graduation_year?: number | null
           handicap?: number | null
           handicap_index?: number | null
           high_school_name?: string | null
+          hometown?: string | null
           id?: string
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          profile_complete?: boolean | null
           state?: string | null
           updated_at?: string | null
           user_id?: string
@@ -7267,11 +7273,14 @@ export type Database = {
           created_at: string
           creator_id: string
           id: string
+          is_group: boolean
           last_message_at: string
           last_message_content: string
           last_message_sender_id: string
+          participant_count: number
           participant_ids: string[]
           participant_names: string[]
+          title: string
           unread_count: number
           updated_at: string
         }[]
@@ -7333,6 +7342,7 @@ export type Database = {
         Returns: undefined
       }
       mark_task_reminder_sent: { Args: { p_task_id: string }; Returns: boolean }
+      user_conversation_ids: { Args: { p_user_id: string }; Returns: string[] }
     }
     Enums: {
       baseball_coach_type: "college" | "juco" | "high_school" | "showcase"

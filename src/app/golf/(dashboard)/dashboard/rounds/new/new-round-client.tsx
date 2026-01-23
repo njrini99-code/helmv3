@@ -19,7 +19,7 @@ import {
 } from '@/app/golf/actions/golf';
 import { checkForDraft, clearRoundDraft } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
-import { useOfflineSyncStore, useOfflineSyncStatus, useOfflineSyncActions } from '@/stores/offline-sync-store';
+import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { OfflineSyncStatus, OfflineWarningBanner } from '@/components/golf';
 import { IconBookmark, IconCheck, IconChevronDown, IconMapPin, IconPlus } from '@/components/icons';
@@ -27,7 +27,7 @@ import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
 import { ResumeDraftModal } from '@/components/golf/ResumeDraftModal';
-import { DraftIndicator } from '@/components/golf/DraftIndicator';
+// DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { useAutoSaveRound, type RoundDraftData } from '@/hooks/golf/use-auto-save-round';
 
@@ -77,11 +77,14 @@ export default function NewRoundClient() {
     saveNow: _saveNow, // Available for manual save if needed
     loadDraft,
     clearDraft,
-    saveStatus,
-    isOnline,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    saveStatus: _saveStatus, // Draft indicator removed
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    isOnline: _isOnline, // Using connectionStatus.isOnline instead
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     roundId: _draftRoundId, // Reserved for future offline storage integration
-    getTimeSinceLastSave,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getTimeSinceLastSave: _getTimeSinceLastSave, // Draft indicator removed
   } = useAutoSaveRound(null);
 
   // New connection status hook
@@ -89,7 +92,7 @@ export default function NewRoundClient() {
 
   // Zustand store for offline sync state
   const syncStatus = useOfflineSyncStatus();
-  const syncActions = useOfflineSyncActions();
+  // Note: We access store directly via useOfflineSyncStore.getState() to avoid dependency issues in useEffects
 
   // Track offline warning banner visibility
   const [showOfflineWarning, setShowOfflineWarning] = useState(false);
@@ -117,7 +120,8 @@ export default function NewRoundClient() {
 
         // Start the sync engine
         syncEngine.start();
-        await syncActions.updatePendingCount();
+        // Access store directly to avoid dependency issues
+        await useOfflineSyncStore.getState().updatePendingCount();
       } catch (error) {
         console.error('[NewRound] Failed to initialize sync engine:', error);
       }
@@ -130,7 +134,8 @@ export default function NewRoundClient() {
       syncEngine.unregisterCallback('new-round-client');
       syncEngine.stop();
     };
-  }, [syncActions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only on mount
 
   // Update connection status in store and show/hide warning
   useEffect(() => {
@@ -539,7 +544,7 @@ export default function NewRoundClient() {
     scheduleSave(draftDataForDb);
 
     // Update pending counts in case there are any offline items
-    await syncActions.updatePendingCount();
+    await useOfflineSyncStore.getState().updatePendingCount();
   }, [
     step,
     setupData,
@@ -548,7 +553,6 @@ export default function NewRoundClient() {
     selectedQualifierId,
     selectedRoundNumber,
     scheduleSave,
-    syncActions,
   ]);
 
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
@@ -1241,17 +1245,7 @@ export default function NewRoundClient() {
         />
       )}
 
-      {/* Draft Auto-Save Indicator - floating in top right (only when online) */}
-      {step === 'tracking' && connectionStatus.isOnline && (
-        <div className="fixed top-4 right-4 z-40">
-          <DraftIndicator
-            saveStatus={saveStatus}
-            isOnline={isOnline}
-            getTimeSinceLastSave={getTimeSinceLastSave}
-            className="shadow-lg backdrop-blur-sm"
-          />
-        </div>
-      )}
+      {/* Draft Auto-Save Indicator removed - was too noisy */}
 
       {/* Save Round Modal */}
       <SaveRoundModal
