@@ -2867,11 +2867,8 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
       `)
       .eq('player_id', player.id);
 
-    if (entriesError) {
-      return { success: false, error: 'Failed to fetch qualifiers' };
-    }
-
-    if (!entries || entries.length === 0) {
+    // If query error or no entries, return empty array (not an error state)
+    if (entriesError || !entries || entries.length === 0) {
       return { success: true, data: [] };
     }
 
@@ -2879,16 +2876,16 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
     const qualifierIds = entries.map(e => e.qualifier_id);
     const roundsResult = await supabase
       .from('golf_rounds')
-      .select('qualifier_id, qualifier_round_number, total_score, total_to_par')
+      .select('qualifier_id, qualifier_round_number, total_score, score_to_par')
       .eq('player_id', player.id)
       .in('qualifier_id', qualifierIds)
       .eq('status', 'completed');
-    
+
     const rounds = (roundsResult.data as unknown) as Array<{
       qualifier_id: string | null;
       qualifier_round_number: number | null;
       total_score: number | null;
-      total_to_par: number | null;
+      score_to_par: number | null;
     }> | null;
 
     // Build result with progress info
@@ -2917,7 +2914,7 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
           .sort((a, b) => a - b);
 
         const totalScore = qualifierRounds.reduce((sum: number, r: any) => sum + (r.total_score || 0), 0);
-        const totalToPar = qualifierRounds.reduce((sum: number, r: any) => sum + (r.total_to_par || 0), 0);
+        const totalToPar = qualifierRounds.reduce((sum: number, r: any) => sum + (r.score_to_par || 0), 0);
 
         return {
           id: q.id,
@@ -3143,15 +3140,15 @@ export async function getQualifierLeaderboard(
     // Get all rounds for this qualifier
     const roundsResult = await supabase
       .from('golf_rounds')
-      .select('player_id, qualifier_round_number, total_score, total_to_par')
+      .select('player_id, qualifier_round_number, total_score, score_to_par')
       .eq('qualifier_id', qualifierId)
       .eq('status', 'completed');
-    
+
     const rounds = (roundsResult.data as unknown) as Array<{
       player_id: string;
       qualifier_round_number: number | null;
       total_score: number | null;
-      total_to_par: number | null;
+      score_to_par: number | null;
     }> | null;
 
     // Build leaderboard
@@ -3170,14 +3167,14 @@ export async function getQualifierLeaderboard(
           .sort((a: any, b: any) => (a.qualifier_round_number || 0) - (b.qualifier_round_number || 0));
 
         const totalScore = playerRounds.reduce((sum: number, r: any) => sum + (r.total_score || 0), 0);
-        const totalToPar = playerRounds.reduce((sum: number, r: any) => sum + (r.total_to_par || 0), 0);
+        const totalToPar = playerRounds.reduce((sum: number, r: any) => sum + (r.score_to_par || 0), 0);
         const roundsCompleted = playerRounds.length;
         const averageScore = roundsCompleted > 0 ? totalScore / roundsCompleted : 0;
 
         const roundScores = playerRounds.map((r: any) => ({
           roundNumber: r.qualifier_round_number || 0,
           score: r.total_score || 0,
-          toPar: r.total_to_par || 0,
+          toPar: r.score_to_par || 0,
         }));
 
         return {
@@ -3268,14 +3265,14 @@ async function updateQualifierEntryStats(
     // Get all completed rounds for this player in this qualifier
     const roundsResult = await supabase
       .from('golf_rounds')
-      .select('total_score, total_to_par')
+      .select('total_score, score_to_par')
       .eq('qualifier_id', qualifierId)
       .eq('player_id', playerId)
       .eq('status', 'completed');
-    
+
     const rounds = (roundsResult.data as unknown) as Array<{
       total_score: number | null;
-      total_to_par: number | null;
+      score_to_par: number | null;
     }> | null;
 
     if (!rounds) return;

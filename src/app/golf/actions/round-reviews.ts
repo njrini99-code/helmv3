@@ -107,9 +107,11 @@ function calculateKeyStats(round: RoundDataForReview): ReviewKeyStats {
     ? Math.round((round.total_gir / round.total_gir_possible) * 100)
     : null;
 
-  const putts_per_gir = round.total_putts != null && round.total_gir && round.total_gir > 0
-    ? Math.round((round.total_putts / round.total_gir) * 100) / 100
-    : null;
+  // Note: putts_per_gir cannot be accurately calculated from round-level data alone.
+  // The correct calculation requires hole-level data (sum of putts ONLY on GIR holes / GIR count).
+  // Dividing total_putts by total_gir is incorrect and would give misleading numbers.
+  // This should be calculated by the shot-level stats calculator and stored in golf_round_stats_cache.
+  const putts_per_gir: number | null = null;
 
   return {
     scoring_avg: round.total_score,

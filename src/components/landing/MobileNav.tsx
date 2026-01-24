@@ -13,6 +13,7 @@ const navLinks = [
   { name: 'Home', href: '/', description: 'Back to homepage' },
   { name: 'About', href: '/about', description: 'Our story & mission' },
   { name: 'Products', href: '/products', description: 'BaseballHelm & GolfHelm' },
+  { name: 'Log in', href: '/golf/login', description: 'Sign in to GolfHelm' },
 ]
 
 export function MobileNav({ isProductsPage = false }: MobileNavProps) {

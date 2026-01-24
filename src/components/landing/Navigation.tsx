@@ -74,8 +74,20 @@ export function Navigation() {
           </Link>
         </div>
 
-        {/* Mobile Nav */}
-        <div className="flex items-center justify-self-end">
+        {/* Login Button + Mobile Nav */}
+        <div className="flex items-center gap-3 justify-self-end">
+          {/* Desktop Login Button */}
+          <Link
+            href="/golf/login"
+            className={`hidden md:block px-4 py-2 rounded-full text-[13px] font-medium tracking-[-0.01em]
+                       transition-all duration-200 ease-out ${
+                         isProductsPage
+                           ? 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 border border-neutral-200'
+                           : 'text-white/80 hover:text-white hover:bg-white/[0.08] border border-white/[0.15]'
+                       }`}
+          >
+            Log in
+          </Link>
           <MobileNav isProductsPage={isProductsPage} />
         </div>
       </div>
