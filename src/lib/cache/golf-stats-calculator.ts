@@ -295,12 +295,31 @@ export async function markStatsStale(playerId: string): Promise<void> {
  * Called from submitGolfRoundComprehensive action
  */
 export async function invalidateOnRoundComplete(playerId: string, roundId: string): Promise<void> {
-  // The database triggers handle cache population automatically
-  // We just need to invalidate the Redis layer
+  const supabase = await createClient();
+
+  // 1. Invalidate the Redis layer
   await invalidateGolf.playerStats(playerId);
 
+  // 2. Trigger strokes gained recalculation for the round (if function exists)
+  // The database trigger should handle this automatically when status='completed',
+  // but we call it explicitly to ensure SG is calculated for manual updates
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).rpc('recalculate_round_strokes_gained', { p_round_id: roundId });
+  } catch {
+    // Function may not exist yet if migration hasn't run - that's okay
+  }
+
+  // 3. Update player stats cache with aggregated SG values
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).rpc('update_player_stats_strokes_gained', { p_player_id: playerId });
+  } catch {
+    // Function may not exist yet if migration hasn't run - that's okay
+  }
+
   // Log for debugging
-  console.log(`[Stats Cache] Invalidated cache for player ${playerId} after round ${roundId}`);
+  console.log(`[Stats Cache] Invalidated and refreshed cache for player ${playerId} after round ${roundId}`);
 }
 
 // ============================================================================

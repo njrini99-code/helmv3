@@ -233,7 +233,6 @@ export default function StatsClient({
     const supabase = createClient();
 
     // Fast query - no shot data
-    // Note: scramble stats are only in golf_round_stats_cache, not in golf_rounds
     const { data: roundsData } = await supabase
       .from('golf_rounds')
       .select(`
@@ -270,6 +269,13 @@ export default function StatsClient({
       return;
     }
 
+    // Fetch scrambling data from golf_round_stats_cache for these rounds
+    const roundIds = roundsData.map(r => r.id);
+    const { data: statsCache } = await supabase
+      .from('golf_round_stats_cache')
+      .select('scramble_attempts, scrambles_converted')
+      .in('round_id', roundIds);
+
     // Calculate summary from rounds data
     const scores = roundsData.map(r => r.total_score).filter((s): s is number => s !== null);
     let totalFairwaysHit = 0, totalFairwayOpp = 0;
@@ -290,6 +296,23 @@ export default function StatsClient({
       }
     }
 
+    // Calculate scrambling percentage from stats cache
+    let totalScrambleAttempts = 0;
+    let totalScramblesMade = 0;
+    if (statsCache) {
+      for (const cache of statsCache) {
+        if (cache.scramble_attempts !== null) {
+          totalScrambleAttempts += cache.scramble_attempts;
+        }
+        if (cache.scrambles_converted !== null) {
+          totalScramblesMade += cache.scrambles_converted;
+        }
+      }
+    }
+    const scramblingPercentage = totalScrambleAttempts > 0
+      ? Math.round((totalScramblesMade / totalScrambleAttempts) * 1000) / 10
+      : null;
+
     setSummary({
       roundsPlayed: scores.length,
       holesPlayed: scores.length * 18,
@@ -307,8 +330,7 @@ export default function StatsClient({
       puttsPerRound: scores.length > 0
         ? Math.round((totalPutts / scores.length) * 10) / 10
         : null,
-      // Note: scramblingPercentage requires data from golf_round_stats_cache
-      scramblingPercentage: null,
+      scramblingPercentage,
     });
 
     setRounds(roundsData.map(r => ({

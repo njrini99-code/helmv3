@@ -75,7 +75,9 @@ function calculateTrend(data: number[]): { direction: 'up' | 'down' | 'stable'; 
   const olderAvg = olderHalf.reduce((a, b) => a + b, 0) / olderHalf.length;
 
   const diff = recentAvg - olderAvg;
-  const percentage = Math.abs((diff / olderAvg) * 100);
+  const percentage = olderAvg !== 0
+    ? Math.abs((diff / olderAvg) * 100)
+    : 0;
 
   // For golf scores, lower is better
   if (diff < -1) return { direction: 'up', percentage };

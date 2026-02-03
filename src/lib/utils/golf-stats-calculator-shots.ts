@@ -1459,7 +1459,8 @@ function aggregateRoundStats(rounds: Array<{
         else if (hole.approachLie === 'rough') approachProxRough.push(hole.approachProximity);
         else if (hole.approachLie === 'sand') approachProxSand.push(hole.approachProximity);
 
-        if (hole.approachDistance !== null) {
+        // Only push proximity if BOTH distance and proximity are known (prevents NaN from null in array)
+        if (hole.approachDistance !== null && hole.approachProximity !== null) {
           const bucket = getApproachDistanceBucket(hole.approachDistance);
           // Only track approach proximity for actual approach shots (> 30 yards)
           if (bucket) {
@@ -1692,9 +1693,13 @@ function aggregateRoundStats(rounds: Array<{
   );
 
   // Putt efficiency
+  // Combine 0_3 and 3_5 buckets for 0-5 feet range
+  const puttEff0_3 = puttEff['0_3'] || [];
+  const puttEff3_5 = puttEff['3_5'] || [];
+  const combinedPuttEff0_5 = [...puttEff0_3, ...puttEff3_5];
   stats.puttEff0_5 = safeAverage(
-    (puttEff['0_3'] || []).reduce((a, b) => a + b, 0),
-    (puttEff['0_3'] || []).length
+    combinedPuttEff0_5.reduce((a, b) => a + b, 0),
+    combinedPuttEff0_5.length
   );
   stats.puttEff5_10 = safeAverage(
     (puttEff['5_10'] || []).reduce((a, b) => a + b, 0),

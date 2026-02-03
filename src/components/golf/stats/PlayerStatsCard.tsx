@@ -51,7 +51,9 @@ export function PlayerStatsCard({
 
   const getTrendColor = (trend?: TrendDirection, isHigherBetter: boolean = false) => {
     if (!trend || trend === 'stable') return 'text-gray-500';
-    const isGood = isHigherBetter ? trend === 'improving' : trend === 'improving';
+    const isGood = isHigherBetter
+      ? trend === 'improving'   // Higher is better (GIR%, fairway%, SG)
+      : trend === 'declining';  // Lower is better (scoring avg, putts)
     return isGood ? 'text-green-500' : 'text-red-500';
   };
 

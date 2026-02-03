@@ -145,11 +145,11 @@ export function CachedStatsSummary({
         />
         <StatCard
           label="GIR %"
-          value={stats.girPercentage ? `${stats.girPercentage.toFixed(1)}%` : '-'}
+          value={stats.girPercentage != null ? `${stats.girPercentage.toFixed(1)}%` : '-'}
         />
         <StatCard
           label="Fairways %"
-          value={stats.fairwayPercentage ? `${stats.fairwayPercentage.toFixed(1)}%` : '-'}
+          value={stats.fairwayPercentage != null ? `${stats.fairwayPercentage.toFixed(1)}%` : '-'}
         />
         <StatCard
           label="Putts/Round"
@@ -157,7 +157,7 @@ export function CachedStatsSummary({
         />
         <StatCard
           label="Scrambling %"
-          value={stats.scramblingPercentage ? `${stats.scramblingPercentage.toFixed(1)}%` : '-'}
+          value={stats.scramblingPercentage != null ? `${stats.scramblingPercentage.toFixed(1)}%` : '-'}
         />
         <StatCard
           label="Trend"

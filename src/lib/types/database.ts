@@ -5889,6 +5889,11 @@ export type Database = {
           round_type: string | null
           score_to_par: number | null
           status: string | null
+          strokes_gained_approach: number | null
+          strokes_gained_around_green: number | null
+          strokes_gained_putting: number | null
+          strokes_gained_tee: number | null
+          strokes_gained_total: number | null
           team_id: string | null
           tees_played: string | null
           total_fairways: number | null
@@ -5919,6 +5924,11 @@ export type Database = {
           round_type?: string | null
           score_to_par?: number | null
           status?: string | null
+          strokes_gained_approach?: number | null
+          strokes_gained_around_green?: number | null
+          strokes_gained_putting?: number | null
+          strokes_gained_tee?: number | null
+          strokes_gained_total?: number | null
           team_id?: string | null
           tees_played?: string | null
           total_fairways?: number | null
@@ -5949,6 +5959,11 @@ export type Database = {
           round_type?: string | null
           score_to_par?: number | null
           status?: string | null
+          strokes_gained_approach?: number | null
+          strokes_gained_around_green?: number | null
+          strokes_gained_putting?: number | null
+          strokes_gained_tee?: number | null
+          strokes_gained_total?: number | null
           team_id?: string | null
           tees_played?: string | null
           total_fairways?: number | null
@@ -7252,6 +7267,16 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_round_strokes_gained: {
+        Args: { p_round_id: string }
+        Returns: {
+          sg_approach: number
+          sg_around_green: number
+          sg_putting: number
+          sg_tee: number
+          sg_total: number
+        }[]
+      }
       get_baseball_conversations_with_details: {
         Args: { p_user_id: string }
         Returns: {
@@ -7266,6 +7291,10 @@ export type Database = {
           unread_count: number
           updated_at: string
         }[]
+      }
+      get_expected_strokes: {
+        Args: { p_distance: number; p_is_putting?: boolean; p_lie: string }
+        Returns: number
       }
       get_golf_conversations_with_details: {
         Args: { p_user_id: string }
@@ -7342,6 +7371,20 @@ export type Database = {
         Returns: undefined
       }
       mark_task_reminder_sent: { Args: { p_task_id: string }; Returns: boolean }
+      recalculate_round_strokes_gained: {
+        Args: { p_round_id: string }
+        Returns: {
+          sg_approach: number
+          sg_around_green: number
+          sg_putting: number
+          sg_tee: number
+          sg_total: number
+        }[]
+      }
+      update_player_stats_strokes_gained: {
+        Args: { p_player_id: string }
+        Returns: undefined
+      }
       user_conversation_ids: { Args: { p_user_id: string }; Returns: string[] }
     }
     Enums: {
