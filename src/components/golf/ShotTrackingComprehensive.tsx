@@ -1348,6 +1348,11 @@ export default function ShotTrackingComprehensive({
                     if (!isRecorded) return;
                     setSelectedShotNumber(num);
                     shotHistoryRefs.current[num]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Open the edit modal for the selected shot
+                    const shot = shotHistory.find(s => s.shotNumber === num);
+                    if (shot) {
+                      handleEditShot(shot);
+                    }
                   }}
                   className={`flex-1 min-w-[44px] h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all
                     ${isActive ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-950/5' : ''}
