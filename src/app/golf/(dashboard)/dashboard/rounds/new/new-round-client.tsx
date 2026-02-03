@@ -22,7 +22,7 @@ import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { OfflineSyncStatus, OfflineWarningBanner } from '@/components/golf';
-import { IconBookmark, IconCheck, IconChevronDown, IconMapPin, IconPlus } from '@/components/icons';
+import { IconBookmark, IconCheck, IconChevronDown, IconChartBar, IconMapPin, IconPlus, IconTrophy } from '@/components/icons';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
@@ -1017,7 +1017,10 @@ export default function NewRoundClient() {
               {/* Qualifier Selection (shown when round type is qualifier) */}
               {setupData.roundType === 'qualifier' && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                  <h3 className="font-medium text-amber-800 mb-3">🏆 Qualifier Round</h3>
+                  <h3 className="font-medium text-amber-800 mb-3 flex items-center gap-2">
+                    <IconTrophy size={18} className="text-amber-600" />
+                    Qualifier Round
+                  </h3>
 
                   {loadingQualifiers ? (
                     <div className="flex items-center gap-2 text-sm text-amber-700">
@@ -1111,7 +1114,10 @@ export default function NewRoundClient() {
 
               {/* Stats Info Box */}
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                <h3 className="font-medium text-green-800 mb-2">📊 Comprehensive Stats Tracking</h3>
+                <h3 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+                  <IconChartBar size={18} className="text-green-600" />
+                  Comprehensive Stats Tracking
+                </h3>
                 <p className="text-sm text-green-700">
                   This round will track 50+ statistics including driving distance, approach proximity,
                   putting efficiency, scrambling, and more. Use your rangefinder for accurate distances.
