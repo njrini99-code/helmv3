@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { GolfSignInForm } from '@/components/auth/golf-sign-in-form';
@@ -124,12 +125,16 @@ function LoginContent() {
             transition={{ delay: 0.2, duration: 0.5 }}
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-emerald-500/30 rounded-2xl blur-xl scale-150" />
-              <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center mb-4 shadow-lg overflow-hidden">
-                <img
-                  src="/helm-golf-logo.png"
-                  alt="GolfHelm"
-                  className="w-full h-full object-cover"
+              <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-xl scale-150" />
+              <div className="relative w-14 h-14 flex items-center justify-center mb-4">
+                <Image
+                  src="/helm.transparent. golf-logo.png"
+                  alt="GolfHelm Logo"
+                  width={56}
+                  height={56}
+                  className="w-14 h-14 object-contain"
+                  priority
+                  unoptimized
                 />
               </div>
             </div>

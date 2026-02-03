@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -74,11 +75,15 @@ export default function SignupPage() {
         >
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 rounded-[12px] bg-primary-600 flex items-center justify-center mb-4 overflow-hidden">
-              <img
-                src="/helm-golf-logo.png"
-                alt="GolfHelm"
-                className="w-full h-full object-cover"
+            <div className="w-14 h-14 flex items-center justify-center mb-4">
+              <Image
+                src="/helm.transparent. golf-logo.png"
+                alt="GolfHelm Logo"
+                width={56}
+                height={56}
+                className="w-14 h-14 object-contain"
+                priority
+                unoptimized
               />
             </div>
             <h1 className="text-xl font-bold text-warm-900">GolfHelm</h1>
