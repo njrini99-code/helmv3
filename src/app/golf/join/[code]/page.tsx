@@ -25,12 +25,15 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
   // Get golf player record
   const { data: player } = await supabase
     .from('golf_players')
-    .select('id, first_name, last_name, graduation_year')
+    .select('id, first_name, last_name, graduation_year, onboarding_completed')
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (!player) {
-    redirect('/golf/signup');
+  if (!player || !player.onboarding_completed) {
+    // User is logged in but hasn't completed player onboarding
+    // Store the join code so they can auto-join after onboarding
+    // Redirect to player onboarding with the join code
+    redirect(`/golf/player?joinCode=${code}`);
   }
 
   // Find team by join code

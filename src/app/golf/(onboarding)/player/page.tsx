@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,7 @@ const staggerItem = {
 
 export default function GolfPlayerOnboarding() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [step, setStep] = useState<Step>('welcome');
@@ -66,6 +67,9 @@ export default function GolfPlayerOnboarding() {
   const [teamJoinError, setTeamJoinError] = useState('');
   const [teamJoined, setTeamJoined] = useState(false);
   const [hasExistingTeam, setHasExistingTeam] = useState(false);
+
+  // Pending join code from invite link (passed via URL or sessionStorage)
+  const [pendingJoinCode, setPendingJoinCode] = useState<string | null>(null);
 
   // Form data
   const [firstName, setFirstName] = useState('');
@@ -87,7 +91,19 @@ export default function GolfPlayerOnboarding() {
   // Check auth and player data on mount
   useEffect(() => {
     async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Try multiple times to get the session (handles propagation delays after signup)
+      let user = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const { data } = await supabase.auth.getUser();
+        if (data.user) {
+          user = data.user;
+          break;
+        }
+        // Wait between attempts
+        if (attempt < 4) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
 
       if (!user) {
         router.push('/golf/login');
@@ -96,6 +112,42 @@ export default function GolfPlayerOnboarding() {
 
       setUserId(user.id);
       setEmail(user.email || '');
+
+      // Check for pending join code from:
+      // 1. URL query param (from join page redirect)
+      // 2. sessionStorage (from signup flow with returnTo)
+      const urlJoinCode = searchParams.get('joinCode');
+      const storedReturnTo = typeof window !== 'undefined'
+        ? sessionStorage.getItem('golf_signup_returnTo')
+        : null;
+
+      // Extract join code from stored returnTo URL if present
+      let storedJoinCode: string | null = null;
+      if (storedReturnTo) {
+        const match = storedReturnTo.match(/\/golf\/join\/([^/]+)/);
+        if (match && match[1]) {
+          storedJoinCode = match[1];
+        }
+        // Clear the stored URL since we're handling it now
+        sessionStorage.removeItem('golf_signup_returnTo');
+      }
+
+      const joinCodeToUse = urlJoinCode || storedJoinCode;
+      if (joinCodeToUse) {
+        setPendingJoinCode(joinCodeToUse);
+        setInviteCode(joinCodeToUse);
+
+        // Fetch the team name from the join code to show in the welcome message
+        const { data: pendingTeam } = await supabase
+          .from('golf_teams')
+          .select('name')
+          .eq('join_code', joinCodeToUse)
+          .maybeSingle();
+
+        if (pendingTeam) {
+          setTeamName(pendingTeam.name);
+        }
+      }
 
       // Check for existing player record (use maybeSingle since record may not exist yet)
       const { data: player } = await supabase
@@ -107,6 +159,12 @@ export default function GolfPlayerOnboarding() {
       if (player) {
         setPlayerId(player.id);
         if (player.onboarding_completed) {
+          // If there's a pending join code and player completed onboarding,
+          // redirect to the join page to complete the join flow
+          if (joinCodeToUse) {
+            router.push(`/golf/join/${joinCodeToUse}`);
+            return;
+          }
           router.push('/golf/dashboard');
           return;
         }
@@ -147,7 +205,7 @@ export default function GolfPlayerOnboarding() {
     }
 
     checkAuth();
-  }, [router, supabase]);
+  }, [router, supabase, searchParams]);
 
   if (authLoading) return <PageLoading />;
 
@@ -393,6 +451,14 @@ export default function GolfPlayerOnboarding() {
       // Wait for cache to invalidate and database write to commit
       console.log('[Player Onboarding] Waiting 150ms for cache invalidation...');
       await new Promise(resolve => setTimeout(resolve, 150));
+
+      // If there's a pending join code and team wasn't joined during onboarding,
+      // redirect to the join page to complete the flow
+      if (pendingJoinCode && !teamJoined && !hasExistingTeam) {
+        console.log('[Player Onboarding] Redirecting to join page with pending code:', pendingJoinCode);
+        router.push(`/golf/join/${pendingJoinCode}`);
+        return;
+      }
 
       // Now navigate to dashboard
       console.log('[Player Onboarding] Navigating to /golf/dashboard...');

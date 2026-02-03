@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
+import { PageLoading } from '@/components/ui/loading';
 import { IconArrowRight, IconCheck, IconUser, IconUpload } from '@/components/icons';
 import { completeCoachOnboarding } from '@/app/golf/actions/onboarding';
 
@@ -36,9 +38,11 @@ const staggerItem = {
 
 export default function GolfCoachOnboarding() {
   const router = useRouter();
+  const supabase = createClient();
 
   const [step, setStep] = useState<Step>('welcome');
   const [loading, setLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState('');
 
   // Organization data
@@ -58,8 +62,54 @@ export default function GolfCoachOnboarding() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
 
+  // Check auth on mount - handle session propagation delays
+  useEffect(() => {
+    async function checkAuth() {
+      // Try multiple times to get the session (handles propagation delays after signup)
+      let user = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const { data } = await supabase.auth.getUser();
+        if (data.user) {
+          user = data.user;
+          break;
+        }
+        // Wait between attempts
+        if (attempt < 4) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      if (!user) {
+        // No session found after retries - redirect to login
+        router.push('/golf/login');
+        return;
+      }
+
+      // Check if coach has already completed onboarding
+      const { data: coach } = await supabase
+        .from('golf_coaches')
+        .select('id, onboarding_completed')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (coach?.onboarding_completed) {
+        // Already completed - go to dashboard
+        router.push('/golf/dashboard');
+        return;
+      }
+
+      setAuthLoading(false);
+    }
+
+    checkAuth();
+  }, [router, supabase]);
+
   const currentStepIndex = STEPS.indexOf(step);
   const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
+
+  if (authLoading) {
+    return <PageLoading />;
+  }
 
   const handleComplete = async () => {
     setLoading(true);

@@ -27,6 +27,23 @@ export async function getCoachAlerts(
 }> {
   const supabase = await createClient();
 
+  // Auth check: verify user owns this coach record
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id')
+    .eq('id', coachId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coach) {
+    return { success: false, error: 'Not authorized to view these alerts' };
+  }
+
   try {
     // Build query
     let query = supabase
@@ -112,6 +129,23 @@ export async function getAlertCounts(
 }> {
   const supabase = await createClient();
 
+  // Auth check: verify user owns this coach record
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id')
+    .eq('id', coachId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coach) {
+    return { success: false, error: 'Not authorized' };
+  }
+
   try {
     const { data, error } = await supabase
       .from('golf_coach_insights')
@@ -157,6 +191,23 @@ export async function dismissAlert(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
 
+  // Auth check: verify user owns the alert
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Check that alert belongs to a coach owned by this user
+  const { data: alert } = await supabase
+    .from('golf_coach_insights')
+    .select('id, coach_id, coach:golf_coaches!inner(user_id)')
+    .eq('id', alertId)
+    .single();
+
+  if (!alert || (alert.coach as { user_id: string })?.user_id !== user.id) {
+    return { success: false, error: 'Not authorized to dismiss this alert' };
+  }
+
   try {
     const { error } = await supabase
       .from('golf_coach_insights')
@@ -189,6 +240,23 @@ export async function acknowledgeAlert(
   alertId: string
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
+
+  // Auth check: verify user owns the alert
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Check that alert belongs to a coach owned by this user
+  const { data: alert } = await supabase
+    .from('golf_coach_insights')
+    .select('id, coach_id, coach:golf_coaches!inner(user_id)')
+    .eq('id', alertId)
+    .single();
+
+  if (!alert || (alert.coach as { user_id: string })?.user_id !== user.id) {
+    return { success: false, error: 'Not authorized to acknowledge this alert' };
+  }
 
   try {
     const { error } = await supabase
@@ -225,6 +293,23 @@ export async function generateAlerts(
   error?: string;
 }> {
   const supabase = await createClient();
+
+  // Auth check: verify user owns this coach record
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id')
+    .eq('id', coachId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coach) {
+    return { success: false, error: 'Not authorized to generate alerts for this coach' };
+  }
 
   try {
     // Get all players on the team
@@ -402,6 +487,23 @@ export async function dismissAllAlerts(
 ): Promise<{ success: boolean; dismissed?: number; error?: string }> {
   const supabase = await createClient();
 
+  // Auth check: verify user owns this coach record
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id')
+    .eq('id', coachId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coach) {
+    return { success: false, error: 'Not authorized' };
+  }
+
   try {
     let query = supabase
       .from('golf_coach_insights')
@@ -438,6 +540,23 @@ export async function acknowledgeAllAlerts(
   coachId: string
 ): Promise<{ success: boolean; acknowledged?: number; error?: string }> {
   const supabase = await createClient();
+
+  // Auth check: verify user owns this coach record
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id')
+    .eq('id', coachId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coach) {
+    return { success: false, error: 'Not authorized' };
+  }
 
   try {
     const { data, error } = await supabase

@@ -363,7 +363,9 @@ export function useTeamEventsAttendanceRealtime(
           fetchEvents();
         }
       )
-      // Listen for attendance changes (will refetch to update counts)
+      // Listen for attendance changes for team's events
+      // Note: We refetch when any attendance changes for events we're showing
+      // The fetchEvents function already filters by teamId
       .on(
         'postgres_changes',
         {
@@ -371,9 +373,21 @@ export function useTeamEventsAttendanceRealtime(
           schema: 'public',
           table: 'golf_event_attendance',
         },
-        () => {
-          // Refetch to update attendance counts
-          fetchEvents();
+        (payload) => {
+          // Only refetch if this attendance record is for one of our events
+          const newRecord = payload.new as Record<string, unknown> | undefined;
+          const oldRecord = payload.old as Record<string, unknown> | undefined;
+          const eventId = (newRecord?.event_id || oldRecord?.event_id) as string | undefined;
+          if (eventId) {
+            // Check if this event belongs to our team (by checking if it's in our list)
+            setEvents((prevEvents) => {
+              const isOurEvent = prevEvents.some(e => e.id === eventId);
+              if (isOurEvent) {
+                fetchEvents();
+              }
+              return prevEvents;
+            });
+          }
         }
       )
       .subscribe();

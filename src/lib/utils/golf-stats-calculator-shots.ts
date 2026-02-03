@@ -537,6 +537,8 @@ interface CalculatedHoleStats {
   approachLie: string | null;
   approachProximity: number | null;
   approachMissDirection: string | null; // Where approach missed when not GIR
+  chipLie: string | null;      // Lie of the chip/pitch shot (for scrambling stats)
+  chipDistance: number | null; // Distance of the chip/pitch shot (for scrambling by distance)
   firstPuttDistance: number | null;
   firstPuttLeave: number | null;
   firstPuttBreak: string | null;
@@ -649,12 +651,34 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
   const scrambleAttempt = !greenInRegulation;
   const scrambleMade = scrambleAttempt && (score <= par);
 
-  // Sand save = missed GIR from sand, made par or better
-  const lastShotBeforeGreen = normalizedShots
-    .filter(s => !isGreenHit(s.result) && s.shot_number < (shotToGreen?.shot_number || 999))
-    .sort((a, b) => b.shot_number - a.shot_number)[0];
+  // Find the around-green shot for scrambling stats
+  // This is the shot that actually tries to get up-and-down (chip/pitch), not the approach
+  // Detection: shot_type === 'around_green' OR (not on green, not putting, within 30 yards)
+  const aroundGreenShot = normalizedShots.find(s => {
+    // Explicit around_green type
+    if (s.shot_type === 'around_green') return true;
+    // Or: not on green, not a putt, not a tee shot, and within 30 yards
+    if (s.lie_before !== 'green' &&
+        s.shot_type !== 'putting' &&
+        s.shot_type !== 'tee' &&
+        !s.is_penalty &&
+        s.distance_to_hole_before !== null) {
+      const distYards = normalizeToYards(s.distance_to_hole_before, s.distance_unit_before);
+      return distYards <= 30;
+    }
+    return false;
+  });
 
-  const sandSaveAttempt = !greenInRegulation && lastShotBeforeGreen?.lie_before === 'sand';
+  // Chip lie and distance - where the chip/pitch was hit FROM (for scrambling by lie/distance)
+  const chipLie = aroundGreenShot?.lie_before ?? null;
+  const chipDistance = aroundGreenShot && aroundGreenShot.distance_to_hole_before !== null
+    ? normalizeToYards(aroundGreenShot.distance_to_hole_before, aroundGreenShot.distance_unit_before)
+    : null;
+
+  // Sand save = missed GIR AND the chip/pitch shot was FROM sand, made par or better
+  // FIXED: Previously checked lastShotBeforeGreen which could be the approach shot
+  // Now correctly checks if the actual chip shot (around_green) was from a bunker
+  const sandSaveAttempt = !greenInRegulation && aroundGreenShot?.lie_before === 'sand';
   const sandSaveMade = sandSaveAttempt && (score <= par);
 
   // Penalties
@@ -678,6 +702,8 @@ function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedH
     approachLie,
     approachProximity,
     approachMissDirection,
+    chipLie,
+    chipDistance,
     firstPuttDistance,
     firstPuttLeave,
     firstPuttBreak,
@@ -1467,27 +1493,30 @@ function aggregateRoundStats(rounds: Array<{
       }
 
       // Scrambling
+      // FIXED: Now uses chipLie/chipDistance (the actual chip/pitch shot) instead of
+      // approachLie/approachDistance (the GIR attempt shot)
       if (hole.scrambleAttempt) {
         stats.scrambleAttempts++;
         if (hole.scrambleMade) stats.scramblesMade++;
 
-        if (hole.approachLie === 'fairway') {
+        // Scrambling by lie - use chipLie (where the chip/pitch was FROM)
+        if (hole.chipLie === 'fairway') {
           scrambleFairway.total++;
           if (hole.scrambleMade) scrambleFairway.made++;
-        } else if (hole.approachLie === 'rough') {
+        } else if (hole.chipLie === 'rough') {
           scrambleRough.total++;
           if (hole.scrambleMade) scrambleRough.made++;
-        } else if (hole.approachLie === 'sand') {
+        } else if (hole.chipLie === 'sand') {
           scrambleSand.total++;
           if (hole.scrambleMade) scrambleSand.made++;
         }
 
-        if (hole.approachDistance !== null) {
-          const distYards = normalizeToYards(hole.approachDistance, 'yards');
-          if (distYards <= 10) {
+        // Scrambling by distance - use chipDistance (how far the chip/pitch was)
+        if (hole.chipDistance !== null) {
+          if (hole.chipDistance <= 10) {
             scramble0_10.total++;
             if (hole.scrambleMade) scramble0_10.made++;
-          } else if (distYards <= 20) {
+          } else if (hole.chipDistance <= 20) {
             scramble10_20.total++;
             if (hole.scrambleMade) scramble10_20.made++;
           } else {

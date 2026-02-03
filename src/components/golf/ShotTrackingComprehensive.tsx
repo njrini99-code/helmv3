@@ -528,6 +528,12 @@ export default function ShotTrackingComprehensive({
       const beforeInYards = distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole;
       const afterInYards = distanceAfterUnit === 'feet' ? parsed / 3 : parsed;
       if (afterInYards >= beforeInYards) return false;
+
+      // Validate reasonable distance for green shots (proximity should be < 150 feet)
+      if (resultOfShot === 'green') {
+        const afterInFeet = distanceAfterUnit === 'feet' ? parsed : parsed * 3;
+        if (afterInFeet > 150) return false; // Can't be 150+ feet from hole and "on the green"
+      }
     }
 
     // Putting always needs break (filled before result)
@@ -537,7 +543,12 @@ export default function ShotTrackingComprehensive({
 
     // Miss direction required for tee shot misses
     if (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot) && !missDirection) return false;
-    // Approach and putt miss classification are optional but encouraged
+
+    // Miss direction required for approach/around-green shots that miss the green
+    // This ensures we know WHERE they missed for scrambling analysis
+    if (isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot)) {
+      if (!approachMissDirection) return false;
+    }
 
     return true;
   };
@@ -1570,6 +1581,28 @@ export default function ShotTrackingComprehensive({
                       placeholder="Enter distance"
                       className="w-full h-14 px-5 rounded-xl text-3xl font-bold text-emerald-900 text-center bg-white border-2 border-emerald-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 focus:outline-none transition-all placeholder:text-slate-300"
                     />
+                    {/* Quick-select buttons for common putting distances */}
+                    {isPutting && (
+                      <div className="grid grid-cols-6 gap-1.5">
+                        {[5, 10, 15, 20, 30, 40].map((ft) => (
+                          <button
+                            key={ft}
+                            type="button"
+                            onClick={() => {
+                              setDistanceAfterShot(String(ft));
+                              setDistanceAfterUnit('feet');
+                            }}
+                            className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                              distanceAfterShot === String(ft) && distanceAfterUnit === 'feet'
+                                ? 'bg-emerald-600 text-white shadow-sm'
+                                : 'bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50'
+                            }`}
+                          >
+                            {ft}ft
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <div className="inline-flex bg-white rounded-lg p-1 border-2 border-emerald-300 w-full">
                       <button
                         onClick={() => setDistanceAfterUnit('yards')}

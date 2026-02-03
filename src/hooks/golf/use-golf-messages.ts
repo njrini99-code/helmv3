@@ -46,13 +46,17 @@ export function useGolfMessages(conversationId: string) {
 
   // Get current user ID on mount
   useEffect(() => {
+    let mounted = true;
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      if (user && mounted) {
         setCurrentUserId(user.id);
       }
     };
     getUser();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Fetch other participant's last_read_at for read receipts

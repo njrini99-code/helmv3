@@ -112,49 +112,52 @@ export default function GolfDashboardLayout({
 
   useEffect(() => {
     async function loadUser() {
-      console.log('[Dashboard Layout] Loading user...');
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-      if (authError) {
-        console.error('[Dashboard Layout] Auth error:', authError);
-      }
-
-      if (!user) {
-        console.log('[Dashboard Layout] No user found, redirecting to login');
+      if (authError || !user) {
         router.push('/golf/login');
         return;
       }
 
-      console.log('[Dashboard Layout] User found:', { id: user.id, email: user.email });
-
       // Query role and profiles in parallel to resolve correct destination
-      const [userResult, coachResult, playerResult] = await Promise.all([
-        supabase
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle(),
-        supabase
-          .from('golf_coaches')
-          .select('id, full_name, avatar_url, organization_id, onboarding_completed')
-          .eq('user_id', user.id)
-          .maybeSingle(),
-        supabase
-          .from('golf_players')
-          .select('id, first_name, last_name, avatar_url, onboarding_completed')
-          .eq('user_id', user.id)
-          .maybeSingle(),
-      ]);
+      // Use retry logic to handle database propagation delays after onboarding
+      let coach = null;
+      let player = null;
+      let userRole = null;
 
-      console.log('[Dashboard Layout] Query results:', {
-        userResult: { data: userResult.data, error: userResult.error },
-        coachResult: { data: coachResult.data, error: coachResult.error },
-        playerResult: { data: playerResult.data, error: playerResult.error },
-      });
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const [userResult, coachResult, playerResult] = await Promise.all([
+          supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('golf_coaches')
+            .select('id, full_name, avatar_url, organization_id, onboarding_completed')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('golf_players')
+            .select('id, first_name, last_name, avatar_url, onboarding_completed')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+        ]);
 
-      const userRole = userResult.data?.role;
-      const coach = coachResult.data;
-      const player = playerResult.data;
+        userRole = userResult.data?.role;
+        coach = coachResult.data;
+        player = playerResult.data;
+
+        // If we have a completed profile, break immediately
+        if ((coach && coach.onboarding_completed) || (player && player.onboarding_completed)) {
+          break;
+        }
+
+        // Wait before retry to allow database propagation
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
 
       const declaredRole = (userRole === 'coach' || userRole === 'player') ? userRole : null;
       const resolvedRole = coach && player
@@ -165,21 +168,36 @@ export default function GolfDashboardLayout({
             ? 'player'
             : declaredRole;
 
-      console.log('[Dashboard Layout] Role resolution:', {
-        userRole,
-        declaredRole,
-        resolvedRole,
-        hasCoach: !!coach,
-        hasPlayer: !!player,
-        playerOnboardingCompleted: player?.onboarding_completed,
-        coachOnboardingCompleted: coach?.onboarding_completed,
-      });
-
       if (resolvedRole === 'coach') {
-        if (!coach || !coach.onboarding_completed) {
-          console.log('[Dashboard Layout] Coach not onboarded, redirecting to /golf/coach');
+        // Only redirect to onboarding if coach record exists but onboarding is incomplete
+        // If no coach record at all, that's handled below in the "unknown state" branch
+        if (coach && !coach.onboarding_completed) {
           router.push('/golf/coach');
           return;
+        }
+
+        // If coach record doesn't exist at all, let them through to dashboard
+        // (this handles edge case where onboarding just completed but record isn't found yet)
+        if (!coach) {
+          // Check one more time with a longer delay
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const { data: retryCoach } = await supabase
+            .from('golf_coaches')
+            .select('id, full_name, avatar_url, organization_id, onboarding_completed')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (retryCoach) {
+            coach = retryCoach;
+            if (!coach.onboarding_completed) {
+              router.push('/golf/coach');
+              return;
+            }
+          } else {
+            // Still no coach record - redirect to onboarding
+            router.push('/golf/coach');
+            return;
+          }
         }
 
         // Get team name via organization_id
@@ -204,15 +222,33 @@ export default function GolfDashboardLayout({
       }
 
       if (resolvedRole === 'player') {
-        if (!player || !player.onboarding_completed) {
-          console.log('[Dashboard Layout] Player not onboarded, redirecting to /golf/player', {
-            hasPlayer: !!player,
-            onboarding_completed: player?.onboarding_completed,
-          });
+        // Only redirect to onboarding if player record exists but onboarding is incomplete
+        if (player && !player.onboarding_completed) {
           router.push('/golf/player');
           return;
         }
-        console.log('[Dashboard Layout] Player onboarded, loading dashboard');
+
+        // If player record doesn't exist at all, check again with delay
+        if (!player) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const { data: retryPlayer } = await supabase
+            .from('golf_players')
+            .select('id, first_name, last_name, avatar_url, onboarding_completed')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (retryPlayer) {
+            player = retryPlayer;
+            if (!player.onboarding_completed) {
+              router.push('/golf/player');
+              return;
+            }
+          } else {
+            // Still no player record - redirect to onboarding
+            router.push('/golf/player');
+            return;
+          }
+        }
 
         // Get team name via golf_team_members
         let teamName: string | undefined;
@@ -242,8 +278,15 @@ export default function GolfDashboardLayout({
         return;
       }
 
-      // Truly unknown state - go to signup
-      router.push('/golf/signup');
+      // Unknown state - check users table role to determine onboarding destination
+      if (declaredRole === 'coach') {
+        router.push('/golf/coach');
+      } else if (declaredRole === 'player') {
+        router.push('/golf/player');
+      } else {
+        // Truly unknown - go to signup
+        router.push('/golf/signup');
+      }
     }
 
     loadUser();

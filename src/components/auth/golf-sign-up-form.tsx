@@ -48,6 +48,7 @@ export function GolfSignUpForm() {
 
       if (!result.success) {
         setError(result.error || 'Signup failed');
+        setIsLoading(false);
         return;
       }
 
@@ -55,13 +56,11 @@ export function GolfSignUpForm() {
       // router cache doesn't know about them. We must call router.refresh()
       // FIRST to force a server-side revalidation that reads the new cookies,
       // THEN navigate to the destination page.
-      //
-      // router.refresh() is async but doesn't return a promise, so we add
-      // a small delay to ensure the refresh completes and cookies propagate.
       router.refresh();
 
       // Wait for cookies to propagate and cache to invalidate
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Using a slightly longer delay to ensure session is fully established
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       // Check for stored returnTo URL (from invite link flow)
       const storedReturnTo = sessionStorage.getItem('golf_signup_returnTo');
@@ -74,12 +73,16 @@ export function GolfSignUpForm() {
       } else if (result.redirectTo) {
         // Default: redirect to onboarding
         router.push(result.redirectTo);
+      } else {
+        // Fallback: redirect based on selected role
+        router.push(role === 'coach' ? '/golf/coach' : '/golf/player');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
-    } finally {
       setIsLoading(false);
     }
+    // Note: We don't set isLoading to false on success because
+    // we're navigating away and want to keep the loading state
   }
 
   return (

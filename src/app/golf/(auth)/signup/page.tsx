@@ -2,11 +2,28 @@
 
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
+
+// Component to render sign-in link with returnTo param preserved
+function SignInLink() {
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+  const loginHref = returnTo ? `/golf/login?returnTo=${encodeURIComponent(returnTo)}` : '/golf/login';
+
+  return (
+    <Link
+      href={loginHref}
+      className="text-white font-medium hover:underline transition-all"
+    >
+      Sign in
+    </Link>
+  );
+}
 
 export default function SignupPage() {
   return (
@@ -95,12 +112,9 @@ export default function SignupPage() {
         {/* Footer link outside card */}
         <p className="text-center mt-6 text-white/80 text-sm">
           Already have an account?{' '}
-          <Link
-            href="/golf/login"
-            className="text-white font-medium hover:underline transition-all"
-          >
-            Sign in
-          </Link>
+          <Suspense fallback={<Link href="/golf/login" className="text-white font-medium hover:underline transition-all">Sign in</Link>}>
+            <SignInLink />
+          </Suspense>
         </p>
 
         {/* Back to home */}

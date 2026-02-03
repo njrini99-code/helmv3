@@ -14,8 +14,8 @@ import type { CoachHelmSettings, CoachHelmStatus } from './types';
 // Internal types for database rows (tables created via migration)
 interface CoachHelmSettingsRow {
   enabled: boolean;
-  // Note: golf_coachhelm_settings uses coach_id, not user_id
-  // and doesn't have disabled_at/disabled_reason columns
+  disabled_at?: string | null;
+  disabled_reason?: string | null;
 }
 
 interface TeamCoachHelmSettingsRow {
@@ -35,22 +35,22 @@ export function isCoachHelmEnabled(): boolean {
 }
 
 /**
- * Gets CoachHelm settings for a coach
+ * Gets CoachHelm settings for a user (coach or player)
  *
- * @param coachId - The coach's UUID (from golf_coaches.id)
+ * @param userId - The user's UUID (from users.id / auth.uid)
  * @returns Settings or null if not found
  */
 export async function getCoachHelmSettings(
-  coachId: string
+  userId: string
 ): Promise<CoachHelmSettings | null> {
   const supabase = await createClient();
 
   try {
-    // Type assertion for new table - uses coach_id column
+    // Type assertion for new table - uses user_id column per migration schema
     const { data, error } = await (supabase
       .from('golf_coachhelm_settings' as 'users')
-      .select('enabled')
-      .eq('coach_id', coachId)
+      .select('enabled, disabled_at, disabled_reason')
+      .eq('user_id', userId)
       .maybeSingle() as unknown as Promise<{
       data: CoachHelmSettingsRow | null;
       error: Error | null;
@@ -62,8 +62,8 @@ export async function getCoachHelmSettings(
 
     return {
       enabled: data.enabled,
-      disabledAt: null,
-      disabledReason: null,
+      disabledAt: data.disabled_at ?? null,
+      disabledReason: data.disabled_reason ?? null,
     };
   } catch {
     // Table doesn't exist yet - return null to use defaults (enabled)
@@ -85,10 +85,10 @@ export async function getTeamCoachHelmSettings(
   try {
     const { data, error } = await (supabase
       .from('golf_team_coachhelm_settings' as 'users')
-      .select('enabled, disabled_reason')
+      .select('enabled, disabled_reason, disabled_at')
       .eq('team_id', teamId)
       .maybeSingle() as unknown as Promise<{
-      data: TeamCoachHelmSettingsRow | null;
+      data: TeamCoachHelmSettingsRow & { disabled_at?: string | null } | null;
       error: Error | null;
     }>);
 
@@ -148,8 +148,8 @@ export async function isCoachHelmEnabledForCoach(
     };
   }
 
-  // Check coach-level settings (using coach.id, not user_id)
-  const coachSettings = await getCoachHelmSettings(coachId);
+  // Check coach-level settings (using user_id from coach record)
+  const coachSettings = await getCoachHelmSettings(coach.user_id);
   const userEnabled = coachSettings?.enabled ?? true;
 
   if (!userEnabled) {
@@ -276,17 +276,17 @@ export async function isCoachHelmEnabledForPlayer(
 }
 
 /**
- * Enables CoachHelm for a coach
+ * Enables CoachHelm for a user
  *
- * @param coachId - The coach's UUID
+ * @param userId - The user's UUID (from auth)
  */
-export async function enableCoachHelm(coachId: string): Promise<boolean> {
+export async function enableCoachHelm(userId: string): Promise<boolean> {
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const table = supabase.from('golf_coachhelm_settings' as any) as any;
   const { error } = await table.upsert({
-    coach_id: coachId,
+    user_id: userId,
     enabled: true,
   });
 
@@ -294,23 +294,24 @@ export async function enableCoachHelm(coachId: string): Promise<boolean> {
 }
 
 /**
- * Disables CoachHelm for a coach
+ * Disables CoachHelm for a user
  *
- * @param coachId - The coach's UUID
+ * @param userId - The user's UUID (from auth)
  * @param reason - Optional reason for disabling
  */
 export async function disableCoachHelm(
-  coachId: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _reason?: string
+  userId: string,
+  reason?: string
 ): Promise<boolean> {
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const table = supabase.from('golf_coachhelm_settings' as any) as any;
   const { error } = await table.upsert({
-    coach_id: coachId,
+    user_id: userId,
     enabled: false,
+    disabled_at: new Date().toISOString(),
+    disabled_reason: reason ?? null,
   });
 
   return !error;

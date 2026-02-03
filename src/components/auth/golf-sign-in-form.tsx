@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/golf/actions/auth';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,17 @@ export function GolfSignInForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Get returnTo from URL params (e.g., /golf/login?returnTo=/golf/join/ABC123)
+  const returnTo = searchParams.get('returnTo');
+
+  // Store returnTo in sessionStorage so it persists through login
+  useEffect(() => {
+    if (returnTo) {
+      sessionStorage.setItem('golf_login_returnTo', returnTo);
+    }
+  }, [returnTo]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,12 +38,31 @@ export function GolfSignInForm() {
         return;
       }
 
-      router.push(result.redirectTo || '/golf/dashboard');
+      // CRITICAL: After login, refresh first to ensure the session cookies
+      // are recognized by the Next.js router cache before navigating.
       router.refresh();
+
+      // Wait for cookies to propagate and cache to invalidate
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check for stored returnTo URL (from invite link flow)
+      const storedReturnTo = sessionStorage.getItem('golf_login_returnTo');
+
+      if (storedReturnTo) {
+        // Clear the stored URL
+        sessionStorage.removeItem('golf_login_returnTo');
+        // Redirect to the invite join page
+        router.push(storedReturnTo);
+      } else {
+        // Navigate to the default destination
+        router.push(result.redirectTo || '/golf/dashboard');
+      }
     } catch {
       setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }
+    // Note: We don't set isLoading to false on success because
+    // we're navigating away and want to keep the loading state
   }
 
   return (

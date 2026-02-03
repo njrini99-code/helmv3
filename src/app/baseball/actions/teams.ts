@@ -226,6 +226,47 @@ export async function validatePlayerCanJoinTeam(
 export async function joinTeam(playerId: string, teamId: string) {
   const supabase = await createClient();
 
+  // SECURITY: Verify authentication
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return {
+      success: false,
+      error: 'Not authenticated',
+    };
+  }
+
+  // SECURITY: Verify the caller owns this player profile (IDOR protection)
+  const { data: player } = await supabase
+    .from('baseball_players')
+    .select('id, user_id')
+    .eq('id', playerId)
+    .single();
+
+  if (!player) {
+    return {
+      success: false,
+      error: 'Player not found',
+    };
+  }
+
+  if (player.user_id !== user.id) {
+    // Log security event for potential IDOR attack
+    await logSecurityEvent({
+      event: 'idor_attempt',
+      action: 'team_join',
+      userId: user.id,
+      metadata: {
+        attemptedPlayerId: playerId,
+        teamId,
+        actualPlayerUserId: player.user_id
+      },
+    });
+    return {
+      success: false,
+      error: 'You can only join teams with your own player profile',
+    };
+  }
+
   // Validate first
   const validation = await validatePlayerCanJoinTeam(playerId, teamId);
 
@@ -316,16 +357,45 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
       player_id: playerId
     });
 
-    // Log security event
+    // SECURITY: Verify authentication
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    if (!user) {
+      return {
+        success: false,
+        error: 'Not authenticated',
+      };
+    }
+
+    // SECURITY: Verify the caller owns this player profile (IDOR protection)
+    const { data: playerOwnership } = await supabase
+      .from('baseball_players')
+      .select('user_id')
+      .eq('id', validatedData.player_id)
+      .single();
+
+    if (!playerOwnership || playerOwnership.user_id !== user.id) {
       await logSecurityEvent({
-        event: 'team_join_attempt',
+        event: 'idor_attempt',
         action: 'team_invitation_process',
         userId: user.id,
-        metadata: { inviteCode: validatedData.invite_code, playerId: validatedData.player_id },
+        metadata: {
+          attemptedPlayerId: validatedData.player_id,
+          inviteCode: validatedData.invite_code
+        },
       });
+      return {
+        success: false,
+        error: 'You can only join teams with your own player profile',
+      };
     }
+
+    // Log security event
+    await logSecurityEvent({
+      event: 'team_join_attempt',
+      action: 'team_invitation_process',
+      userId: user.id,
+      metadata: { inviteCode: validatedData.invite_code, playerId: validatedData.player_id },
+    });
 
     // Find the invitation
     const { data: invitation, error: inviteError } = await supabase

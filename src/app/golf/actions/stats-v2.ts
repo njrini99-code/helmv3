@@ -204,6 +204,59 @@ export async function getPlayerRounds(
 ): Promise<GolfRoundLocal[]> {
   const supabase = await createClient();
 
+  // Auth check: verify user has access to this player's data
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return [];
+  }
+
+  // User can access if: they own this player record, or they're a coach of the player's team
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id, user_id')
+    .eq('id', playerId)
+    .single();
+
+  if (!player) {
+    return [];
+  }
+
+  // Check if user is the player themselves
+  const isOwnPlayer = player.user_id === user.id;
+
+  // Check if user is a coach of a team this player is on
+  let isCoach = false;
+  if (!isOwnPlayer) {
+    const { data: coachData } = await supabase
+      .from('golf_coaches')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (coachData?.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', coachData.organization_id)
+        .single();
+
+      if (team) {
+        const { data: membership } = await supabase
+          .from('golf_team_members')
+          .select('id')
+          .eq('team_id', team.id)
+          .eq('player_id', playerId)
+          .single();
+
+        isCoach = !!membership;
+      }
+    }
+  }
+
+  if (!isOwnPlayer && !isCoach) {
+    return [];
+  }
+
   let query = supabase
     .from('golf_rounds')
     .select('*')
@@ -298,6 +351,60 @@ export async function getPlayerRounds(
  */
 export async function getRoundDetails(roundId: string): Promise<GolfRoundLocal | null> {
   const supabase = await createClient();
+
+  // Auth check
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return null;
+  }
+
+  // Verify user has access to this round
+  const { data: roundCheck } = await supabase
+    .from('golf_rounds')
+    .select('player_id, player:golf_players!inner(user_id)')
+    .eq('id', roundId)
+    .single();
+
+  if (!roundCheck) {
+    return null;
+  }
+
+  const playerUserId = (roundCheck.player as { user_id: string })?.user_id;
+  const isOwnRound = playerUserId === user.id;
+
+  // Check if user is a coach with access to this player
+  if (!isOwnRound) {
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach?.organization_id) {
+      return null;
+    }
+
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .single();
+
+    if (!team) {
+      return null;
+    }
+
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('team_id', team.id)
+      .eq('player_id', roundCheck.player_id)
+      .single();
+
+    if (!membership) {
+      return null;
+    }
+  }
 
   const { data: round, error } = await supabase
     .from('golf_rounds')
@@ -538,6 +645,74 @@ export async function getTeamStats(
   options: LocalStatsOptions = { includeStrokesGained: true, includeTrends: false }
 ): Promise<LocalTeamStats | null> {
   const supabase = await createClient();
+
+  // Auth check: verify user has access to this team
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return null;
+  }
+
+  // Check if user is a coach of this team
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('organization_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (coach?.organization_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .eq('id', teamId)
+      .single();
+
+    if (!team) {
+      // Also check if user is a player on this team
+      const { data: player } = await supabase
+        .from('golf_players')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (player) {
+        const { data: membership } = await supabase
+          .from('golf_team_members')
+          .select('id')
+          .eq('team_id', teamId)
+          .eq('player_id', player.id)
+          .single();
+
+        if (!membership) {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }
+  } else {
+    // Check if user is a player on this team
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return null;
+    }
+
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('team_id', teamId)
+      .eq('player_id', player.id)
+      .single();
+
+    if (!membership) {
+      return null;
+    }
+  }
 
   // Get all players on the team via golf_team_members
   const { data: members, error } = await supabase

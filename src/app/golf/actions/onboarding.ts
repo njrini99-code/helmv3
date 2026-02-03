@@ -60,22 +60,20 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
 
     // Get current user - try multiple times with delay for session propagation
     let user = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 5; attempt++) {
       const { data } = await supabase.auth.getUser();
       if (data.user) {
         user = data.user;
         break;
       }
       // Wait 500ms between attempts for session to propagate
-      if (attempt < 2) {
+      if (attempt < 4) {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 
     if (!user) {
-      // DEMO MODE: If still no user, check if there's a recent unconfirmed user we can use
-      // This handles the case where email confirmation is blocking auth
-      console.error('[Onboarding] No authenticated user after 3 attempts');
+      console.error('[Onboarding] No authenticated user after 5 attempts');
       return { success: false, error: 'Session not found. Please try logging in again, or check if email confirmation is required in Supabase settings.' };
     }
 
@@ -229,10 +227,23 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
     // Validate input server-side
     const validatedData = playerOnboardingSchema.parse(input);
 
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
+    // Get current user - try multiple times with delay for session propagation
+    let user = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        user = data.user;
+        break;
+      }
+      // Wait 500ms between attempts for session to propagate
+      if (attempt < 4) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
     if (!user) {
-      return { success: false, error: 'You must be signed in to complete onboarding.' };
+      console.error('[Onboarding] No authenticated user after 5 attempts');
+      return { success: false, error: 'Session not found. Please try logging in again, or check if email confirmation is required in Supabase settings.' };
     }
 
     // Ensure users table record exists with correct role

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 import { getAppUrl } from '@/lib/utils/env';
 
 type FeedType = 'team' | 'personal';
@@ -185,6 +186,9 @@ export async function createCalendarFeed(
     return { success: false, error: 'Failed to create calendar feed' };
   }
 
+  revalidatePath('/golf/dashboard/calendar');
+  revalidatePath('/golf/dashboard/settings');
+
   return {
     success: true,
     data: {
@@ -275,6 +279,9 @@ export async function deleteCalendarFeed(type: FeedType): Promise<ActionResult<v
   if (error) {
     return { success: false, error: 'Failed to disable calendar feed' };
   }
+
+  revalidatePath('/golf/dashboard/calendar');
+  revalidatePath('/golf/dashboard/settings');
 
   return { success: true, data: undefined };
 }
@@ -384,6 +391,9 @@ export async function regenerateCalendarFeedToken(): Promise<ActionResult<{ url:
   if (createError || !newFeed?.feed_token) {
     return { success: false, error: 'Failed to create new calendar feed' };
   }
+
+  revalidatePath('/golf/dashboard/calendar');
+  revalidatePath('/golf/dashboard/settings');
 
   return {
     success: true,

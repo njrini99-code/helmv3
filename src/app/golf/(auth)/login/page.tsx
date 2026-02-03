@@ -9,6 +9,8 @@ import { GolfSignInForm } from '@/components/auth/golf-sign-in-form';
 function LoginContent() {
   const searchParams = useSearchParams();
   const successMessage = searchParams.get('message');
+  const returnTo = searchParams.get('returnTo');
+  const signupHref = returnTo ? `/golf/signup?returnTo=${encodeURIComponent(returnTo)}` : '/golf/signup';
 
   return (
     <div className="min-h-screen flex items-center justify-center relative p-4 bg-auth-golf">
@@ -155,7 +157,7 @@ function LoginContent() {
           <p className="text-center mt-6 text-warm-600 text-sm">
             Don&apos;t have an account?{' '}
             <Link
-              href="/golf/signup"
+              href={signupHref}
               className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
             >
               Sign up

@@ -293,8 +293,8 @@ function DiscoverContent() {
       if (!coach?.id) return;
 
       try {
-        // Use server action to avoid RLS issues
-        const watchlistIds = await getWatchlistIds(coach.id);
+        // Use server action to avoid RLS issues (gets coach ID from auth)
+        const watchlistIds = await getWatchlistIds();
         setWatchlistIds(watchlistIds);
       } catch (err) {
         console.error('Error fetching watchlist:', err);

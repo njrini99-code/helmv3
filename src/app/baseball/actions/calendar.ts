@@ -99,6 +99,17 @@ export async function updateBaseballEvent(eventId: string, input: UpdateEventInp
     return { success: false, error: 'Not authenticated' };
   }
 
+  // SECURITY: Get the current user's coach ID for ownership verification
+  const { data: coach } = await supabase
+    .from('baseball_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coach) {
+    return { success: false, error: 'Coach profile not found' };
+  }
+
   const updateData: Record<string, unknown> = {};
 
   if (input.title !== undefined) updateData.title = input.title;
@@ -124,14 +135,20 @@ export async function updateBaseballEvent(eventId: string, input: UpdateEventInp
     updateData.end_time = endDateTime;
   }
 
+  // SECURITY: Only update if user owns the event (created_by matches their coach ID)
   const { data, error } = await supabase
     .from('baseball_events')
     .update(updateData)
     .eq('id', eventId)
+    .eq('created_by', coach.id)
     .select()
     .single();
 
   if (error) {
+    // Check if it's a "no rows returned" error (PGRST116)
+    if (error.code === 'PGRST116') {
+      return { success: false, error: 'Event not found or you do not have permission to update it' };
+    }
     return { success: false, error: error.message };
   }
 
@@ -147,13 +164,30 @@ export async function deleteBaseballEvent(eventId: string) {
     return { success: false, error: 'Not authenticated' };
   }
 
-  const { error } = await supabase
+  // SECURITY: Get the current user's coach ID for ownership verification
+  const { data: coach } = await supabase
+    .from('baseball_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coach) {
+    return { success: false, error: 'Coach profile not found' };
+  }
+
+  // SECURITY: Only delete if user owns the event (created_by matches their coach ID)
+  const { error, count } = await supabase
     .from('baseball_events')
-    .delete()
-    .eq('id', eventId);
+    .delete({ count: 'exact' })
+    .eq('id', eventId)
+    .eq('created_by', coach.id);
 
   if (error) {
     return { success: false, error: error.message };
+  }
+
+  if (count === 0) {
+    return { success: false, error: 'Event not found or you do not have permission to delete it' };
   }
 
   revalidatePath('/baseball/dashboard/calendar');

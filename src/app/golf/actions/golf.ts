@@ -525,6 +525,26 @@ function derivePuttMade(shot: ShotRecord): boolean | null {
   return shot.result === 'hole';
 }
 
+/**
+ * Calculate GIR (Green in Regulation) from shot data
+ * GIR = reaching the green in (par - 2) strokes or fewer
+ * Par 3: 1 shot, Par 4: 2 shots, Par 5: 3 shots
+ */
+function calculateGirFromShots(
+  shots: Array<{ shotNumber: number; result: string | null }>,
+  par: number
+): boolean {
+  const greenHitResults = ['green', 'gir', 'hole'];
+  const shotToGreen = shots.find(s =>
+    greenHitResults.includes((s.result || '').toLowerCase())
+  );
+
+  if (!shotToGreen) return false;
+
+  // GIR means reaching green in (par - 2) strokes or fewer
+  return shotToGreen.shotNumber <= (par - 2);
+}
+
 type GolfEventUpdateData = {
   updated_at: string;
   title?: string;
@@ -615,7 +635,8 @@ export async function submitGolfRoundComprehensive(
     const totalPutts = data.holes.reduce((sum, h) => sum + h.putts, 0);
     const fairwaysHit = data.holes.filter(h => h.fairwayHit === true).length;
     const fairwaysTotal = data.holes.filter(h => h.par >= 4).length;
-    const greensInReg = data.holes.filter(h => h.greenInRegulation).length;
+    // Server-calculate GIR from shot data for accuracy
+    const greensInReg = data.holes.filter(h => calculateGirFromShots(h.shots, h.par)).length;
 
     // Convert frontend round type to database format
     const roundTypeDb = roundTypeToDb(data.roundType);
@@ -689,7 +710,7 @@ export async function submitGolfRoundComprehensive(
       score: hole.score,
       putts: hole.putts,
       fairway_hit: hole.fairwayHit ?? null,
-      gir: hole.greenInRegulation ?? null,
+      gir: calculateGirFromShots(hole.shots, hole.par),
       penalty_strokes: hole.penaltyStrokes ?? null,
       up_and_down: hole.scrambleAttempt ? hole.scrambleMade : null,
       sand_save: hole.sandSaveAttempt ? hole.sandSaveMade : null,

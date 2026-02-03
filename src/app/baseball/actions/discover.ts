@@ -410,16 +410,36 @@ export async function getDiscoverTeams(
 /**
  * Get watchlist IDs for a coach
  */
-export async function getWatchlistIds(coachId: string): Promise<string[]> {
+/**
+ * Get watchlist player IDs for the authenticated coach
+ * SECURITY: No coachId parameter - derives from authenticated user to prevent IDOR
+ */
+export async function getWatchlistIds(): Promise<string[]> {
   const supabase = await createClient();
+
+  // SECURITY: Get coach ID from authenticated user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return [];
+  }
+
+  const { data: coach } = await supabase
+    .from('baseball_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coach) {
+    return [];
+  }
 
   const { data: watchlist, error } = await supabase
     .from('baseball_watchlists')
     .select('player_id')
-    .eq('coach_id', coachId);
+    .eq('coach_id', coach.id);
 
   if (error) {
-    console.error('Error fetching watchlist:', error);
+    // Silent failure for read operations - return empty array
     return [];
   }
 

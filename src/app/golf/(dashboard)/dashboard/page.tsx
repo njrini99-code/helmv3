@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { PageLoading } from '@/components/ui/loading';
 import type { GolfCoach, GolfPlayer, GolfTeam } from '@/lib/types/golf';
+import type { CalendarEvent } from '@/lib/types/calendar';
 import { CoachDashboard, type CoachDashboardData } from './components/CoachDashboard';
 import { PlayerDashboard, type PlayerDashboardData } from './components/PlayerDashboard';
 
@@ -250,15 +251,13 @@ export default function GolfDashboardPage() {
                     }
 
                     if (mounted) {
-                        // Import CalendarEvent type for proper typing
-                        type CalendarEventType = import('@/lib/types/calendar').CalendarEvent;
                         setCoachData({
                             coach: coach as GolfCoach,
                             team,
                             stats,
                             recentRounds,
                             topPlayers,
-                            calendarEvents: calendarEvents as CalendarEventType[],
+                            calendarEvents: calendarEvents as CalendarEvent[],
                             teamScoringTrend: teamScoringTrend.length > 0 ? teamScoringTrend : undefined
                         });
                         setLoading(false);

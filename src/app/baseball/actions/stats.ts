@@ -36,6 +36,68 @@ export interface StatsFilter {
 }
 
 // ============================================================================
+// AUTH HELPERS
+// ============================================================================
+
+interface CoachAuthResult {
+  user: { id: string };
+  coach: { id: string; organization_id: string | null };
+  supabase: Awaited<ReturnType<typeof createClient>>;
+}
+
+/**
+ * SECURITY: Require authenticated coach for stats operations
+ */
+async function requireCoachAuth(): Promise<CoachAuthResult | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Not authenticated' };
+  }
+
+  const { data: coach } = await supabase
+    .from('baseball_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coach) {
+    return { error: 'Coach profile not found' };
+  }
+
+  return { user, coach, supabase };
+}
+
+/**
+ * SECURITY: Verify coach has access to a team
+ */
+async function verifyTeamAccess(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  coachId: string,
+  teamId: string
+): Promise<boolean> {
+  const { data: team } = await supabase
+    .from('baseball_teams')
+    .select('id')
+    .eq('id', teamId)
+    .or(`head_coach_id.eq.${coachId}`)
+    .single();
+
+  if (team) return true;
+
+  // Check if assistant coach
+  const { data: staffMember } = await supabase
+    .from('baseball_team_coach_staff')
+    .select('id')
+    .eq('team_id', teamId)
+    .eq('coach_id', coachId)
+    .single();
+
+  return !!staffMember;
+}
+
+// ============================================================================
 // STATS UPLOAD
 // ============================================================================
 
@@ -270,12 +332,24 @@ export async function resolveUnmatchedPlayers(
 
 /**
  * Recalculate aggregates for a player
+ * SECURITY: Requires authenticated coach with team access
  */
 export async function recalculatePlayerAggregates(
   playerId: string,
   teamId: string
-): Promise<void> {
-  const supabase = await createClient();
+): Promise<{ success: boolean; error?: string }> {
+  // SECURITY: Require authenticated coach
+  const authResult = await requireCoachAuth();
+  if ('error' in authResult) {
+    return { success: false, error: authResult.error };
+  }
+  const { coach, supabase } = authResult;
+
+  // SECURITY: Verify coach has access to this team
+  const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
+  if (!hasAccess) {
+    return { success: false, error: 'You do not have access to this team' };
+  }
 
   // Get all stats for this player on this team
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -294,7 +368,7 @@ export async function recalculatePlayerAggregates(
       .delete()
       .eq('player_id', playerId)
       .eq('team_id', teamId);
-    return;
+    return { success: true };
   }
 
   // Calculate totals
@@ -363,13 +437,27 @@ export async function recalculatePlayerAggregates(
   await (supabase as any)
     .from('baseball_player_aggregates')
     .upsert(aggregates, { onConflict: 'player_id' });
+
+  return { success: true };
 }
 
 /**
  * Recalculate aggregates for all players on a team
+ * SECURITY: Requires authenticated coach with team access
  */
-export async function recalculateTeamAggregates(teamId: string): Promise<void> {
-  const supabase = await createClient();
+export async function recalculateTeamAggregates(teamId: string): Promise<{ success: boolean; error?: string }> {
+  // SECURITY: Require authenticated coach
+  const authResult = await requireCoachAuth();
+  if ('error' in authResult) {
+    return { success: false, error: authResult.error };
+  }
+  const { coach, supabase } = authResult;
+
+  // SECURITY: Verify coach has access to this team
+  const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
+  if (!hasAccess) {
+    return { success: false, error: 'You do not have access to this team' };
+  }
 
   const { data: teamMembers } = await supabase
     .from('baseball_team_members')
@@ -381,6 +469,7 @@ export async function recalculateTeamAggregates(teamId: string): Promise<void> {
   }
 
   revalidatePath('/baseball/dashboard/command-center');
+  return { success: true };
 }
 
 // ============================================================================
@@ -389,12 +478,55 @@ export async function recalculateTeamAggregates(teamId: string): Promise<void> {
 
 /**
  * Get player stats with filtering
+ * SECURITY: Requires authenticated coach with access to view the player
  */
 export async function getPlayerStats(
   playerId: string,
   filters?: StatsFilter
 ): Promise<{ data: BaseballPlayerStats[] | null; error?: string }> {
-  const supabase = await createClient();
+  // SECURITY: Require authenticated coach
+  const authResult = await requireCoachAuth();
+  if ('error' in authResult) {
+    return { data: null, error: authResult.error };
+  }
+  const { coach, supabase } = authResult;
+
+  // SECURITY: Verify coach has access to view this player's stats
+  // Coach can view if: player is on their team OR player has recruiting_activated=true
+  const { data: player } = await supabase
+    .from('baseball_players')
+    .select('id, recruiting_activated')
+    .eq('id', playerId)
+    .single();
+
+  if (!player) {
+    return { data: null, error: 'Player not found' };
+  }
+
+  // Check if player is publicly discoverable (recruiting activated)
+  const isPubliclyDiscoverable = player.recruiting_activated === true;
+
+  // Check if player is on one of the coach's teams via baseball_team_members
+  const { data: teamMembership } = await supabase
+    .from('baseball_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .limit(10);
+
+  let isOnCoachTeam = false;
+  if (teamMembership && teamMembership.length > 0) {
+    // Check if coach has access to any of the player's teams
+    for (const membership of teamMembership) {
+      if (await verifyTeamAccess(supabase, coach.id, membership.team_id)) {
+        isOnCoachTeam = true;
+        break;
+      }
+    }
+  }
+
+  if (!isPubliclyDiscoverable && !isOnCoachTeam) {
+    return { data: null, error: 'You do not have permission to view this player\'s stats' };
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (supabase as any)
@@ -426,12 +558,24 @@ export async function getPlayerStats(
 
 /**
  * Get recent uploads for a team
+ * SECURITY: Requires authenticated coach with access to the team
  */
 export async function getRecentUploads(
   teamId: string,
   limit = 10
 ): Promise<{ data: BaseballStatUpload[] | null; error?: string }> {
-  const supabase = await createClient();
+  // SECURITY: Require authenticated coach
+  const authResult = await requireCoachAuth();
+  if ('error' in authResult) {
+    return { data: null, error: authResult.error };
+  }
+  const { coach, supabase } = authResult;
+
+  // SECURITY: Verify coach has access to this team
+  const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
+  if (!hasAccess) {
+    return { data: null, error: 'You do not have permission to view this team\'s uploads' };
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
