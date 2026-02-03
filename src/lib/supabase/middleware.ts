@@ -149,12 +149,6 @@ export async function updateSession(request: NextRequest) {
     });
   }
 
-  // Auth pages - need session handling for redirect logic
-  const isAuthPage = pathname === '/baseball/login' ||
-                     pathname === '/baseball/signup' ||
-                     pathname === '/golf/login' ||
-                     pathname === '/golf/signup';
-
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -222,12 +216,10 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // Redirect authenticated users from auth pages straight to dashboard
-  if (user && isAuthPage && sport) {
-    const url = request.nextUrl.clone();
-    url.pathname = `/${sport}/dashboard`;
-    return NextResponse.redirect(url);
-  }
+  // NOTE: We no longer redirect authenticated users from auth pages.
+  // The login page will detect if user is already logged in and show
+  // appropriate options (continue to dashboard or sign out).
+  // This allows users to access /login to switch accounts if needed.
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new response object with NextResponse.next() make sure to:

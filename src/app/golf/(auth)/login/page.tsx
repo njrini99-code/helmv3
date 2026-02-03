@@ -1,16 +1,40 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { GolfSignInForm } from '@/components/auth/golf-sign-in-form';
+import { createClient } from '@/lib/supabase/client';
 
 function LoginContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const successMessage = searchParams.get('message');
   const returnTo = searchParams.get('returnTo');
   const signupHref = returnTo ? `/golf/signup?returnTo=${encodeURIComponent(returnTo)}` : '/golf/signup';
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+      setCheckingAuth(false);
+    }
+    checkAuth();
+  }, [supabase.auth]);
+
+  async function handleSignOut() {
+    setIsLoggingOut(true);
+    await supabase.auth.signOut();
+    setIsLoggedIn(false);
+    setIsLoggingOut(false);
+    router.refresh();
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center relative p-4 bg-auth-golf">
@@ -138,13 +162,38 @@ function LoginContent() {
             </motion.div>
           )}
 
-          {/* Form */}
+          {/* Form or Already Logged In */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
           >
-            <GolfSignInForm />
+            {checkingAuth ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full" />
+              </div>
+            ) : isLoggedIn ? (
+              <div className="space-y-4">
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm text-center">
+                  You&apos;re already signed in
+                </div>
+                <button
+                  onClick={() => router.push('/golf/dashboard')}
+                  className="w-full py-3 bg-primary-600 text-white font-medium text-sm rounded-[10px] shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
+                >
+                  Continue to Dashboard
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  disabled={isLoggingOut}
+                  className="w-full py-3 bg-warm-100 text-warm-700 font-medium text-sm rounded-[10px] transition-all duration-200 hover:bg-warm-200 disabled:opacity-50"
+                >
+                  {isLoggingOut ? 'Signing out...' : 'Sign out & use a different account'}
+                </button>
+              </div>
+            ) : (
+              <GolfSignInForm />
+            )}
           </motion.div>
         </motion.div>
 
@@ -154,15 +203,17 @@ function LoginContent() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
         >
-          <p className="text-center mt-6 text-warm-600 text-sm">
-            Don&apos;t have an account?{' '}
-            <Link
-              href={signupHref}
-              className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
-            >
-              Sign up
-            </Link>
-          </p>
+          {!isLoggedIn && !checkingAuth && (
+            <p className="text-center mt-6 text-warm-600 text-sm">
+              Don&apos;t have an account?{' '}
+              <Link
+                href={signupHref}
+                className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
+              >
+                Sign up
+              </Link>
+            </p>
+          )}
 
           <p className="text-center mt-4 text-warm-500 text-sm">
             <Link href="/" className="hover:text-warm-700 transition-colors">
