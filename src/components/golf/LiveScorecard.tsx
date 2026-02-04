@@ -128,7 +128,7 @@ export function LiveScorecard({
         </div>
 
         {/* Mini Hole Grid */}
-        <div className="flex gap-1 overflow-x-auto pb-1">
+        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
           {holes.map(hole => {
             const score = scores.find(s => s.holeNumber === hole.holeNumber);
             const isCurrentHole = hole.holeNumber === currentHole;

@@ -360,8 +360,8 @@ export default async function GolfRosterPage() {
                           <IconChartBar size={16} className="text-slate-500" />
                         </button>
                       </Link>
-                      <Link href={`/golf/dashboard/roster/${player.id}`}>
-                        <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" aria-label="View Profile">
+                      <Link href={`/golf/dashboard/stats?player=${player.id}`}>
+                        <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" aria-label="View Stats">
                           <IconChevronRight size={16} className="text-slate-400" />
                         </button>
                       </Link>
@@ -375,7 +375,7 @@ export default async function GolfRosterPage() {
                 </div>
 
                 {/* Mobile Stats Row */}
-                <div className="md:hidden flex items-center justify-around px-4 py-3 border-t border-slate-100 bg-slate-50/50 rounded-b-xl">
+                <div className="md:hidden flex items-center justify-around px-4 py-3 border-t border-slate-100 bg-slate-50/50 rounded-b-xl overflow-hidden">
                   <div className="text-center">
                     <p className="text-[10px] text-slate-400 uppercase tracking-wide">Rounds</p>
                     <p className="font-semibold text-slate-900 text-sm">{player.rounds_count || 0}</p>

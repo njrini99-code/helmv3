@@ -113,12 +113,12 @@ export function PlayerStatusBadge({
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
           <div className={cn(
-            'absolute left-0 mt-2 w-40 z-20',
-            'bg-white rounded-xl',
+            'absolute left-0 mt-2 w-40 z-50',
+            'bg-white rounded-2xl',
             'border border-slate-200 shadow-lg shadow-slate-200/50',
             'overflow-hidden',
             'animate-in fade-in-0 zoom-in-95 duration-150'

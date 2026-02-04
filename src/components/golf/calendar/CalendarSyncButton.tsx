@@ -21,7 +21,6 @@ import {
   Copy,
   Check,
   RefreshCw,
-  ExternalLink,
   Shield,
   X,
   Loader2,
@@ -387,18 +386,7 @@ export function CalendarSyncButton({
             )}
           </div>
 
-          {/* Footer with Help Link */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-            <a
-              href="#"
-              onClick={(e) => e.preventDefault()}
-              className="flex items-center gap-2 text-sm text-slate-600 hover:text-emerald-600 transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>Need help subscribing?</span>
-            </a>
-          </div>
-        </DialogContent>
+                  </DialogContent>
       </Dialog>
     </>
   );
