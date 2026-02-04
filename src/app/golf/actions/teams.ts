@@ -240,7 +240,7 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
           read: false,
         }));
 
-        await supabase.from('notifications').insert(notifications);
+        await supabase.from('notifications').insert(notifications as any);
       }
     } catch (notifyError) {
       // Don't fail the join if notification fails - just log it
@@ -480,5 +480,610 @@ export async function regenerateJoinCode(
   return {
     success: true,
     data: { joinCode: newJoinCode }
+  };
+}
+
+// ============================================================================
+// TEAM JOIN REQUEST OPERATIONS (Request-based flow)
+// ============================================================================
+
+export interface JoinRequestData {
+  id: string;
+  team_id: string;
+  player_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  message: string | null;
+  created_at: string;
+  player?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    graduation_year: number | null;
+    handicap: number | null;
+    hometown: string | null;
+    state: string | null;
+  };
+}
+
+/**
+ * Create a join request for a team
+ * Player requests to join → Coach reviews → Accept/Reject
+ */
+export async function createTeamJoinRequest(
+  joinCode: string,
+  playerId: string,
+  message?: string
+): Promise<TeamActionResult<JoinRequestData>> {
+  const supabase = await createClient();
+
+  // Verify user is authenticated
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in to request to join a team' };
+  }
+
+  // Get player and verify ownership
+  const { data: player, error: playerError } = await supabase
+    .from('golf_players')
+    .select('id, user_id, first_name, last_name, onboarding_completed')
+    .eq('id', playerId)
+    .single();
+
+  if (playerError || !player) {
+    return { success: false, error: 'Player not found' };
+  }
+
+  if (player.user_id !== user.id) {
+    return { success: false, error: 'You can only request to join teams with your own player profile' };
+  }
+
+  if (!player.onboarding_completed) {
+    return { success: false, error: 'Please complete your player profile before requesting to join a team' };
+  }
+
+  // Find team by join code (case-insensitive)
+  const normalizedCode = joinCode.toUpperCase();
+  const { data: team, error: teamError } = await supabase
+    .from('golf_teams')
+    .select('id, name, organization_id')
+    .eq('join_code', normalizedCode)
+    .single();
+
+  if (teamError || !team) {
+    return { success: false, error: 'Invalid team code. Please check and try again.' };
+  }
+
+  // Check if already on any team
+  const { data: existingMembership } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .maybeSingle();
+
+  if (existingMembership) {
+    if (existingMembership.team_id === team.id) {
+      return { success: false, error: 'You are already a member of this team' };
+    }
+    return { success: false, error: 'You are already on a team. Leave your current team before requesting to join another.' };
+  }
+
+  // Check for existing pending request to this team
+  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
+  const { data: existingRequest } = await (supabase as any)
+    .from('golf_team_join_requests')
+    .select('id, status')
+    .eq('player_id', playerId)
+    .eq('team_id', team.id)
+    .eq('status', 'pending')
+    .maybeSingle();
+
+  if (existingRequest) {
+    return { success: false, error: 'You already have a pending request to join this team' };
+  }
+
+  // Create the join request
+  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
+  const { data: request, error: requestError } = await (supabase as any)
+    .from('golf_team_join_requests')
+    .insert({
+      team_id: team.id,
+      player_id: playerId,
+      status: 'pending',
+      message: message?.trim() || null,
+    })
+    .select('id, team_id, player_id, status, message, created_at')
+    .single();
+
+  if (requestError) {
+    console.error('Failed to create join request:', requestError);
+    return { success: false, error: 'Failed to submit request. Please try again.' };
+  }
+
+  // Notify coaches about the join request
+  if (team.organization_id) {
+    try {
+      const { data: coaches } = await supabase
+        .from('golf_coaches')
+        .select('id, user_id')
+        .eq('organization_id', team.organization_id);
+
+      if (coaches && coaches.length > 0) {
+        const playerName = `${player.first_name} ${player.last_name}`.trim();
+
+        const notifications = coaches.map((coach) => ({
+          user_id: coach.user_id,
+          type: 'team_join_request' as const,
+          title: 'New Join Request',
+          body: `${playerName} has requested to join ${team.name}`,
+          action_url: '/golf/dashboard/roster?tab=requests',
+          data: {
+            request_id: request.id,
+            player_id: playerId,
+            player_name: playerName,
+            team_id: team.id,
+            team_name: team.name,
+          },
+          read: false,
+        }));
+
+        await supabase.from('notifications').insert(notifications as any);
+      }
+    } catch (notifyError) {
+      console.error('Failed to notify coaches:', notifyError);
+    }
+  }
+
+  revalidatePath('/golf/dashboard');
+  revalidatePath('/golf/dashboard/roster');
+  revalidatePath('/golf/dashboard/settings');
+
+  return {
+    success: true,
+    data: request,
+  };
+}
+
+/**
+ * Get pending join requests for the coach's team
+ */
+export async function getTeamJoinRequests(): Promise<TeamActionResult<JoinRequestData[]>> {
+  const supabase = await createClient();
+
+  // Verify user is authenticated
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Get coach and their team
+  const { data: coach, error: coachError } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (coachError || !coach) {
+    return { success: false, error: 'Coach profile not found' };
+  }
+
+  const teamId = await getCoachTeamId(supabase, coach.organization_id);
+  if (!teamId) {
+    return { success: false, error: 'No team found' };
+  }
+
+  // Get pending requests with player details
+  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
+  const { data: requests, error: requestsError } = await (supabase as any)
+    .from('golf_team_join_requests')
+    .select(`
+      id,
+      team_id,
+      player_id,
+      status,
+      message,
+      created_at,
+      player:golf_players (
+        id,
+        first_name,
+        last_name,
+        graduation_year,
+        handicap,
+        hometown,
+        state
+      )
+    `)
+    .eq('team_id', teamId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (requestsError) {
+    console.error('Failed to fetch join requests:', requestsError);
+    return { success: false, error: 'Failed to fetch requests' };
+  }
+
+  return {
+    success: true,
+    data: requests as JoinRequestData[],
+  };
+}
+
+/**
+ * Accept a join request - adds player to the team
+ */
+export async function acceptJoinRequest(
+  requestId: string
+): Promise<TeamActionResult> {
+  const supabase = await createClient();
+
+  // Verify user is authenticated
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Get coach
+  const { data: coach, error: coachError } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (coachError || !coach) {
+    return { success: false, error: 'Coach profile not found' };
+  }
+
+  // Get the request with player and team details
+  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
+  const { data: request, error: requestError } = await (supabase as any)
+    .from('golf_team_join_requests')
+    .select(`
+      id,
+      team_id,
+      player_id,
+      status,
+      player:golf_players (
+        id,
+        first_name,
+        last_name,
+        user_id
+      ),
+      team:golf_teams (
+        id,
+        name,
+        organization_id
+      )
+    `)
+    .eq('id', requestId)
+    .single();
+
+  if (requestError || !request) {
+    return { success: false, error: 'Request not found' };
+  }
+
+  // Verify coach owns this team
+  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id);
+  if (coachTeamId !== request.team_id) {
+    return { success: false, error: 'You can only accept requests for your own team' };
+  }
+
+  if (request.status !== 'pending') {
+    return { success: false, error: 'This request has already been processed' };
+  }
+
+  // Check if player is already on a team (race condition protection)
+  const { data: existingMembership } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', request.player_id)
+    .maybeSingle();
+
+  if (existingMembership) {
+    // Update request to rejected since they're already on a team
+    await (supabase as any)
+      .from('golf_team_join_requests')
+      .update({
+        status: 'rejected',
+        rejection_reason: 'Player is already on another team',
+        reviewed_by: coach.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', requestId);
+
+    return { success: false, error: 'Player has already joined another team' };
+  }
+
+  // Add player to team
+  const { error: memberError } = await supabase
+    .from('golf_team_members')
+    .insert({
+      player_id: request.player_id,
+      team_id: request.team_id,
+      status: 'active',
+    });
+
+  if (memberError) {
+    console.error('Failed to add player to team:', memberError);
+    return { success: false, error: 'Failed to add player to team' };
+  }
+
+  // Update request status
+  const { error: updateError } = await (supabase as any)
+    .from('golf_team_join_requests')
+    .update({
+      status: 'approved',
+      reviewed_by: coach.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', requestId);
+
+  if (updateError) {
+    console.error('Failed to update request status:', updateError);
+  }
+
+  // Notify player of approval
+  const player = request.player as { id: string; first_name: string; last_name: string; user_id: string } | null;
+  const team = request.team as { id: string; name: string; organization_id: string } | null;
+
+  if (player?.user_id && team) {
+    try {
+      await supabase.from('notifications').insert({
+        user_id: player.user_id,
+        type: 'team_join_approved',
+        title: 'Request Approved!',
+        body: `Your request to join ${team.name} has been approved. Welcome to the team!`,
+        action_url: '/golf/dashboard',
+        metadata: {
+          team_id: team.id,
+          team_name: team.name,
+        },
+        read: false,
+      });
+    } catch (notifyError) {
+      console.error('Failed to notify player:', notifyError);
+    }
+  }
+
+  revalidatePath('/golf/dashboard');
+  revalidatePath('/golf/dashboard/roster');
+
+  return { success: true };
+}
+
+/**
+ * Reject a join request
+ */
+export async function rejectJoinRequest(
+  requestId: string,
+  reason?: string
+): Promise<TeamActionResult> {
+  const supabase = await createClient();
+
+  // Verify user is authenticated
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Get coach
+  const { data: coach, error: coachError } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (coachError || !coach) {
+    return { success: false, error: 'Coach profile not found' };
+  }
+
+  // Get the request
+  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
+  const { data: request, error: requestError } = await (supabase as any)
+    .from('golf_team_join_requests')
+    .select(`
+      id,
+      team_id,
+      player_id,
+      status,
+      player:golf_players (
+        id,
+        first_name,
+        last_name,
+        user_id
+      ),
+      team:golf_teams (
+        id,
+        name
+      )
+    `)
+    .eq('id', requestId)
+    .single();
+
+  if (requestError || !request) {
+    return { success: false, error: 'Request not found' };
+  }
+
+  // Verify coach owns this team
+  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id);
+  if (coachTeamId !== request.team_id) {
+    return { success: false, error: 'You can only reject requests for your own team' };
+  }
+
+  if (request.status !== 'pending') {
+    return { success: false, error: 'This request has already been processed' };
+  }
+
+  // Update request status
+  const { error: updateError } = await (supabase as any)
+    .from('golf_team_join_requests')
+    .update({
+      status: 'rejected',
+      rejection_reason: reason?.trim() || null,
+      reviewed_by: coach.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', requestId);
+
+  if (updateError) {
+    console.error('Failed to reject request:', updateError);
+    return { success: false, error: 'Failed to reject request' };
+  }
+
+  // Notify player of rejection
+  const player = request.player as { id: string; first_name: string; last_name: string; user_id: string } | null;
+  const team = request.team as { id: string; name: string } | null;
+
+  if (player?.user_id && team) {
+    try {
+      await supabase.from('notifications').insert({
+        user_id: player.user_id,
+        type: 'team_join_rejected' as any,
+        title: 'Request Not Approved',
+        body: reason
+          ? `Your request to join ${team.name} was not approved: ${reason}`
+          : `Your request to join ${team.name} was not approved at this time.`,
+        action_url: '/golf/dashboard/settings',
+        data: {
+          team_id: team.id,
+          team_name: team.name,
+          reason: reason || null,
+        },
+        read: false,
+      } as any);
+    } catch (notifyError) {
+      console.error('Failed to notify player:', notifyError);
+    }
+  }
+
+  revalidatePath('/golf/dashboard/roster');
+
+  return { success: true };
+}
+
+/**
+ * Cancel a pending join request (by the player)
+ */
+export async function cancelJoinRequest(
+  requestId: string
+): Promise<TeamActionResult> {
+  const supabase = await createClient();
+
+  // Verify user is authenticated
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Get the request
+  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
+  const { data: request, error: requestError } = await (supabase as any)
+    .from('golf_team_join_requests')
+    .select('id, player_id, status, player:golf_players(user_id)')
+    .eq('id', requestId)
+    .single();
+
+  if (requestError || !request) {
+    return { success: false, error: 'Request not found' };
+  }
+
+  // Verify user owns this request
+  const player = request.player as { user_id: string } | null;
+  if (player?.user_id !== user.id) {
+    return { success: false, error: 'You can only cancel your own requests' };
+  }
+
+  if (request.status !== 'pending') {
+    return { success: false, error: 'This request has already been processed' };
+  }
+
+  // Delete the request
+  const { error: deleteError } = await (supabase as any)
+    .from('golf_team_join_requests')
+    .delete()
+    .eq('id', requestId);
+
+  if (deleteError) {
+    console.error('Failed to cancel request:', deleteError);
+    return { success: false, error: 'Failed to cancel request' };
+  }
+
+  revalidatePath('/golf/dashboard/settings');
+
+  return { success: true };
+}
+
+/**
+ * Get player's pending join requests
+ */
+export async function getPlayerJoinRequests(
+  playerId: string
+): Promise<TeamActionResult<Array<{
+  id: string;
+  status: string;
+  message: string | null;
+  created_at: string;
+  team: {
+    id: string;
+    name: string;
+    organization?: { name: string } | null;
+  };
+}>>> {
+  const supabase = await createClient();
+
+  // Verify user is authenticated
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Verify ownership
+  const { data: player, error: playerError } = await supabase
+    .from('golf_players')
+    .select('id, user_id')
+    .eq('id', playerId)
+    .single();
+
+  if (playerError || !player || player.user_id !== user.id) {
+    return { success: false, error: 'Player not found' };
+  }
+
+  // Get requests with team details
+  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
+  const { data: requests, error: requestsError } = await (supabase as any)
+    .from('golf_team_join_requests')
+    .select(`
+      id,
+      status,
+      message,
+      created_at,
+      team:golf_teams (
+        id,
+        name,
+        organization:organizations (
+          name
+        )
+      )
+    `)
+    .eq('player_id', playerId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (requestsError) {
+    console.error('Failed to fetch requests:', requestsError);
+    return { success: false, error: 'Failed to fetch requests' };
+  }
+
+  return {
+    success: true,
+    data: requests as Array<{
+      id: string;
+      status: string;
+      message: string | null;
+      created_at: string;
+      team: {
+        id: string;
+        name: string;
+        organization?: { name: string } | null;
+      };
+    }>,
   };
 }

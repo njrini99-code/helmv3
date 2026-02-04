@@ -1,55 +1,22 @@
 import * as Sentry from '@sentry/nextjs';
 
-// Only initialize Sentry if DSN is configured
-if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+Sentry.init({
+  dsn: "https://17657b44b4ba82cae5ccd7d08669fd48@o4510780033794048.ingest.us.sentry.io/4510825486548992",
 
-    // Adjust this value in production, or use tracesSampler for greater control
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  // Enable debug mode to see what's happening
+  debug: true,
 
-    // Setting this option to true will print useful information to the console while you're setting up Sentry.
-    debug: false,
+  tracesSampleRate: 1.0,
 
-    replaysOnErrorSampleRate: 1.0,
+  replaysOnErrorSampleRate: 1.0,
+  replaysSessionSampleRate: 1.0,
 
-    // This sets the sample rate to be 10%. You may want this to be 100% while
-    // in development and sample at a lower rate in production
-    replaysSessionSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  integrations: typeof window !== 'undefined' ? [
+    Sentry.replayIntegration({
+      maskAllText: false,
+      blockAllMedia: false,
+    }),
+  ] : [],
 
-    // You can remove this option if you're not planning to use the Sentry Session Replay feature:
-    integrations: [
-      Sentry.replayIntegration({
-        // Additional Replay configuration goes in here, for example:
-        maskAllText: true,
-        blockAllMedia: true,
-      }),
-    ],
-
-    environment: process.env.NODE_ENV,
-
-    // Ignore certain errors
-    ignoreErrors: [
-      // Browser extensions
-      'top.GLOBALS',
-      'chrome-extension://',
-      'moz-extension://',
-      // Network errors
-      'NetworkError',
-      'Network request failed',
-      // Random plugins/extensions
-      'ResizeObserver loop limit exceeded',
-    ],
-
-    beforeSend(event, _hint) {
-      // Filter out errors from browser extensions
-      if (event.exception?.values?.[0]?.stacktrace?.frames?.some(
-        frame => frame.filename?.includes('chrome-extension://') ||
-                 frame.filename?.includes('moz-extension://')
-      )) {
-        return null;
-      }
-      return event;
-    },
-  });
-}
+  environment: process.env.NODE_ENV || 'development',
+});

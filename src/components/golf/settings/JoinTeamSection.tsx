@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createTeamJoinRequest, getPlayerJoinRequests, cancelJoinRequest } from '@/app/golf/actions/teams';
 import { createClient } from '@/lib/supabase/client';
-import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { IconUsers, IconCheck, IconAlertCircle, IconLogout } from '@/components/icons';
+import { IconUsers, IconCheck, IconAlertCircle, IconLogout, IconClock, IconX } from '@/components/icons';
 
 interface JoinTeamSectionProps {
   playerId: string;
@@ -19,16 +19,44 @@ interface JoinTeamSectionProps {
   } | null;
 }
 
+interface PendingRequest {
+  id: string;
+  status: string;
+  message: string | null;
+  created_at: string;
+  team: {
+    id: string;
+    name: string;
+    organization?: { name: string } | null;
+  };
+}
+
 export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps) {
   const router = useRouter();
   const supabase = createClient();
   const [inviteCode, setInviteCode] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  async function handleJoinTeam(e: React.FormEvent) {
+  // Fetch pending requests on mount
+  useEffect(() => {
+    async function fetchRequests() {
+      const result = await getPlayerJoinRequests(playerId);
+      if (result.success && result.data) {
+        setPendingRequests(result.data);
+      }
+      setLoadingRequests(false);
+    }
+    fetchRequests();
+  }, [playerId]);
+
+  async function handleRequestJoin(e: React.FormEvent) {
     e.preventDefault();
     if (!inviteCode.trim()) return;
 
@@ -37,63 +65,52 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
     setSuccess(null);
 
     try {
-      // Look up team by join code
-      const { data: team, error: teamError } = await supabase
-        .from('golf_teams')
-        .select('id, name, join_code, organization_id')
-        .eq('join_code', inviteCode.trim().toUpperCase())
-        .single();
+      const result = await createTeamJoinRequest(
+        inviteCode.trim().toUpperCase(),
+        playerId,
+        message.trim() || undefined
+      );
 
-      if (teamError || !team) {
-        setError('Invalid invite code. Please check and try again.');
+      if (!result.success) {
+        setError(result.error || 'Failed to submit request. Please try again.');
         setLoading(false);
         return;
       }
 
-      // Get organization name separately
-      let orgName: string | null = null;
-      if (team.organization_id) {
-        const { data: org } = await supabase
-          .from('organizations')
-          .select('name')
-          .eq('id', team.organization_id)
-          .single();
-        orgName = org?.name ?? null;
-      }
-
-      // Check if already on this team
-      if (currentTeam?.id === team.id) {
-        setError('You are already on this team.');
-        setLoading(false);
-        return;
-      }
-
-      // If on another team, need to leave first
-      if (currentTeam) {
-        setError(`You must leave ${currentTeam.name} before joining a new team.`);
-        setLoading(false);
-        return;
-      }
-
-      // Join via server action to ensure status is set correctly
-      const joinResult = await processGolfTeamInvitation(inviteCode.trim().toUpperCase(), playerId);
-      if (!joinResult.success) {
-        setError(joinResult.error || 'Failed to join team. Please try again.');
-        setLoading(false);
-        return;
-      }
-
-      setSuccess(`Successfully joined ${team.name}${orgName ? ` (${orgName})` : ''}!`);
+      setSuccess('Your request has been sent to the coach for approval.');
       setInviteCode('');
+      setMessage('');
 
-      // Refresh the page after a moment
-      setTimeout(() => {
-        router.refresh();
-      }, 1500);
+      // Refresh pending requests
+      const requestsResult = await getPlayerJoinRequests(playerId);
+      if (requestsResult.success && requestsResult.data) {
+        setPendingRequests(requestsResult.data);
+      }
     } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleCancelRequest(requestId: string) {
+    setCancellingId(requestId);
+
+    try {
+      const result = await cancelJoinRequest(requestId);
+
+      if (!result.success) {
+        setError(result.error || 'Failed to cancel request.');
+        setCancellingId(null);
+        return;
+      }
+
+      // Remove from local state
+      setPendingRequests(prev => prev.filter(r => r.id !== requestId));
+    } catch {
+      setError('Failed to cancel request.');
+    } finally {
+      setCancellingId(null);
     }
   }
 
@@ -104,8 +121,6 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
     setError(null);
 
     try {
-      // Leave team by removing from golf_team_members
-      // Filter by both player_id AND team_id for safety
       const { error: deleteError } = await supabase
         .from('golf_team_members')
         .delete()
@@ -131,6 +146,21 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
     }
   }
 
+  function formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  }
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-6">
       <div className="flex items-center gap-3 mb-6">
@@ -139,7 +169,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
         </div>
         <div>
           <h3 className="font-semibold text-slate-900">Team Membership</h3>
-          <p className="text-sm text-slate-500">Manage your team affiliation</p>
+          <p className="text-sm text-slate-500">Request to join your team</p>
         </div>
       </div>
 
@@ -191,70 +221,126 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
           </div>
         </div>
       ) : (
-        <div className="mb-6">
-          <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-            <IconAlertCircle size={20} className="text-amber-600 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-amber-900">Not on a team</p>
-              <p className="text-sm text-amber-700">
-                Enter an invite code from your coach to join a team.
-              </p>
+        <>
+          {/* Pending Requests */}
+          {!loadingRequests && pendingRequests.length > 0 && (
+            <div className="mb-6 space-y-3">
+              <label className="block text-sm font-medium text-slate-700">
+                Pending Requests
+              </label>
+              {pendingRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <IconClock size={20} className="text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-amber-900">{request.team.name}</p>
+                      <p className="text-sm text-amber-700">
+                        {request.team.organization?.name && `${request.team.organization.name} · `}
+                        Requested {formatDate(request.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCancelRequest(request.id)}
+                    disabled={cancellingId === request.id}
+                    className="text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                  >
+                    {cancellingId === request.id ? (
+                      <span className="flex items-center gap-1">
+                        <span className="w-3 h-3 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+                      </span>
+                    ) : (
+                      <>
+                        <IconX size={16} className="mr-1" />
+                        Cancel
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
+          )}
+
+          {/* Not on a team message */}
+          {pendingRequests.length === 0 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                <IconAlertCircle size={20} className="text-slate-500 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-slate-700">Not on a team yet</p>
+                  <p className="text-sm text-slate-500">
+                    Enter your team's invite code below to request to join.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Join Team Form */}
-      <form onSubmit={handleJoinTeam} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            {currentTeam ? 'Join a Different Team' : 'Join a Team'}
-          </label>
-          <div className="flex gap-3">
-            <Input
-              value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-              placeholder="Enter invite code (e.g., ABC12345)"
-              className="flex-1 uppercase"
-              maxLength={12}
-              disabled={loading || !!currentTeam}
-            />
-            <Button
-              type="submit"
-              disabled={!inviteCode.trim() || loading || !!currentTeam}
-              isLoading={loading}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Join Team
-            </Button>
+      {/* Request to Join Form */}
+      {!currentTeam && (
+        <form onSubmit={handleRequestJoin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Request to Join a Team
+            </label>
+            <div className="space-y-3">
+              <Input
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                placeholder="Enter team code (e.g., ABC12345)"
+                className="uppercase"
+                maxLength={12}
+                disabled={loading}
+              />
+              <Input
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Add a message to your coach (optional)"
+                maxLength={200}
+                disabled={loading}
+              />
+              <Button
+                type="submit"
+                disabled={!inviteCode.trim() || loading}
+                isLoading={loading}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                Request to Join
+              </Button>
+            </div>
           </div>
-          {currentTeam && (
-            <p className="text-xs text-slate-500 mt-2">
-              You must leave your current team before joining a new one.
-            </p>
+
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <IconAlertCircle size={16} className="text-red-600 flex-shrink-0" />
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
           )}
-        </div>
 
-        {error && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <IconAlertCircle size={16} className="text-red-600 flex-shrink-0" />
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
-
-        {success && (
-          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <IconCheck size={16} className="text-green-600 flex-shrink-0" />
-            <p className="text-sm text-green-600">{success}</p>
-          </div>
-        )}
-      </form>
+          {success && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <IconCheck size={16} className="text-green-600 flex-shrink-0" />
+              <p className="text-sm text-green-600">{success}</p>
+            </div>
+          )}
+        </form>
+      )}
 
       {/* Help text */}
       <div className="mt-6 pt-4 border-t border-slate-200">
         <p className="text-xs text-slate-500">
-          Your coach will provide you with a team invite code. Once you join, you'll have access
-          to team schedules, rounds, messages, and other team features.
+          {currentTeam
+            ? 'You can only be on one team at a time. Leave your current team to join a different one.'
+            : 'Your coach will review your request and approve you to join the team. You\'ll be notified when your request is approved.'}
         </p>
       </div>
     </div>

@@ -1,34 +1,12 @@
 import * as Sentry from '@sentry/nextjs';
 
-// Only initialize Sentry if DSN is configured
-if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+Sentry.init({
+  dsn: "https://17657b44b4ba82cae5ccd7d08669fd48@o4510780033794048.ingest.us.sentry.io/4510825486548992",
 
-    // Adjust this value in production, or use tracesSampler for greater control
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  // Enable debug mode to see what's happening
+  debug: true,
 
-    // Setting this option to true will print useful information to the console while you're setting up Sentry.
-    debug: false,
+  tracesSampleRate: 1.0,
 
-    environment: process.env.NODE_ENV,
-
-    // Ignore certain errors
-    ignoreErrors: [
-      // Common non-actionable errors
-      'ECONNRESET',
-      'ENOTFOUND',
-      'ETIMEDOUT',
-    ],
-
-    beforeSend(event, _hint) {
-      // Filter sensitive data from request headers
-      if (event.request?.headers) {
-        delete event.request.headers['authorization'];
-        delete event.request.headers['cookie'];
-      }
-
-      return event;
-    },
-  });
-}
+  environment: process.env.NODE_ENV || 'development',
+});

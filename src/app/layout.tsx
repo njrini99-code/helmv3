@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Playfair_Display, DM_Sans } from 'next/font/google';
 import './globals.css';
+import '../../sentry.client.config';
 import { ToastContainer } from '@/components/ui/toast';
 import { DatadogProvider } from '@/components/providers/DatadogProvider';
 

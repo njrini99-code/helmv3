@@ -7,6 +7,7 @@ import { InvitePlayerButton } from '@/components/golf/roster/InvitePlayerButton'
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
 import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
+import { PendingJoinRequests } from '@/components/golf/roster/PendingJoinRequests';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { Avatar } from '@/components/ui/avatar';
 import { IconUsers, IconChartBar, IconMessage, IconChevronRight, IconAlertCircle } from '@/components/icons';
@@ -239,6 +240,9 @@ export default async function GolfRosterPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Pending Join Requests */}
+        <PendingJoinRequests />
+
         {playersWithStats.length === 0 ? (
           <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
             <ShineEffect />

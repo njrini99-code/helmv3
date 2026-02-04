@@ -8,13 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
 import { PageLoading } from '@/components/ui/loading';
-import { IconArrowRight, IconCheck, IconUser, IconUpload, IconUsers } from '@/components/icons';
-import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
+import { IconArrowRight, IconCheck, IconUser, IconUpload } from '@/components/icons';
 
 // Player year is not stored in DB - just used for UI display
 type GolfPlayerYear = 'freshman' | 'sophomore' | 'junior' | 'senior' | 'fifth_year' | 'graduate';
 
-type Step = 'welcome' | 'basic' | 'golf' | 'academic' | 'photo' | 'team' | 'complete';
+type Step = 'welcome' | 'basic' | 'golf' | 'academic' | 'photo' | 'complete';
 
 const years: { value: GolfPlayerYear; label: string }[] = [
   { value: 'freshman', label: 'Freshman' },
@@ -27,7 +26,7 @@ const years: { value: GolfPlayerYear; label: string }[] = [
 
 const graduationYears = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() + i);
 
-const STEPS = ['welcome', 'basic', 'golf', 'academic', 'photo', 'team', 'complete'] as const;
+const STEPS = ['welcome', 'basic', 'golf', 'academic', 'photo', 'complete'] as const;
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -59,17 +58,6 @@ export default function GolfPlayerOnboarding() {
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
-  const [teamName, setTeamName] = useState<string>('');
-
-  // Team join state
-  const [inviteCode, setInviteCode] = useState('');
-  const [joiningTeam, setJoiningTeam] = useState(false);
-  const [teamJoinError, setTeamJoinError] = useState('');
-  const [teamJoined, setTeamJoined] = useState(false);
-  const [hasExistingTeam, setHasExistingTeam] = useState(false);
-
-  // Pending join code from invite link (passed via URL or sessionStorage)
-  const [pendingJoinCode, setPendingJoinCode] = useState<string | null>(null);
 
   // Form data
   const [firstName, setFirstName] = useState('');
@@ -113,44 +101,6 @@ export default function GolfPlayerOnboarding() {
       setUserId(user.id);
       setEmail(user.email || '');
 
-      // Check for pending join code from:
-      // 1. URL query param (from join page redirect)
-      // 2. sessionStorage (from signup flow with returnTo)
-      const urlJoinCode = searchParams.get('joinCode');
-      const storedReturnTo = typeof window !== 'undefined'
-        ? sessionStorage.getItem('golf_signup_returnTo')
-        : null;
-
-      // Extract join code from stored returnTo URL if present
-      let storedJoinCode: string | null = null;
-      if (storedReturnTo) {
-        const match = storedReturnTo.match(/\/golf\/join\/([^/]+)/);
-        if (match && match[1]) {
-          storedJoinCode = match[1];
-        }
-        // Clear the stored URL since we're handling it now
-        sessionStorage.removeItem('golf_signup_returnTo');
-      }
-
-      const joinCodeToUse = urlJoinCode || storedJoinCode;
-      if (joinCodeToUse) {
-        // Normalize to uppercase for consistency
-        const normalizedJoinCode = joinCodeToUse.toUpperCase();
-        setPendingJoinCode(normalizedJoinCode);
-        setInviteCode(normalizedJoinCode);
-
-        // Fetch the team name from the join code to show in the welcome message
-        const { data: pendingTeam } = await supabase
-          .from('golf_teams')
-          .select('name')
-          .eq('join_code', normalizedJoinCode)
-          .maybeSingle();
-
-        if (pendingTeam) {
-          setTeamName(pendingTeam.name);
-        }
-      }
-
       // Check for existing player record (use maybeSingle since record may not exist yet)
       const { data: player } = await supabase
         .from('golf_players')
@@ -161,13 +111,7 @@ export default function GolfPlayerOnboarding() {
       if (player) {
         setPlayerId(player.id);
         if (player.onboarding_completed) {
-          // If there's a pending join code and player completed onboarding,
-          // redirect to the join page to complete the join flow
-          if (joinCodeToUse) {
-            const normalizedCode = joinCodeToUse.toUpperCase();
-            router.push(`/golf/join/${normalizedCode}`);
-            return;
-          }
+          // Player already completed onboarding, redirect to dashboard
           router.push('/golf/dashboard');
           return;
         }
@@ -182,26 +126,6 @@ export default function GolfPlayerOnboarding() {
         setHandicap(player.handicap?.toString() || '');
         setMajor(''); // Major is not stored in golf_players
         setGpa(player.gpa?.toString() || '');
-
-        // Fetch team name if player is on a team via golf_team_members
-        const { data: teamMember } = await supabase
-          .from('golf_team_members')
-          .select('team_id')
-          .eq('player_id', player.id)
-          .maybeSingle();
-
-        if (teamMember?.team_id) {
-          setHasExistingTeam(true);
-          setTeamJoined(true);
-          const { data: team } = await supabase
-            .from('golf_teams')
-            .select('name')
-            .eq('id', teamMember.team_id)
-            .single();
-          if (team) {
-            setTeamName(team.name);
-          }
-        }
       }
 
       setAuthLoading(false);
@@ -215,48 +139,6 @@ export default function GolfPlayerOnboarding() {
   const currentStepIndex = STEPS.indexOf(step);
   const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
 
-  const handleJoinTeam = async () => {
-    if (!inviteCode.trim() || !playerId) return;
-
-    setJoiningTeam(true);
-    setTeamJoinError('');
-
-    try {
-      const result = await processGolfTeamInvitation(inviteCode.trim(), playerId);
-
-      if (!result.success) {
-        setTeamJoinError(result.error || 'Failed to join team');
-        setJoiningTeam(false);
-        return;
-      }
-
-      // Fetch the team name after joining via golf_team_members
-      const { data: teamMember } = await supabase
-        .from('golf_team_members')
-        .select('team_id')
-        .eq('player_id', playerId)
-        .maybeSingle();
-
-      if (teamMember?.team_id) {
-        const { data: team } = await supabase
-          .from('golf_teams')
-          .select('name')
-          .eq('id', teamMember.team_id)
-          .single();
-
-        if (team) {
-          setTeamName(team.name);
-        }
-      }
-
-      setTeamJoined(true);
-      setJoiningTeam(false);
-    } catch (err) {
-      setTeamJoinError(err instanceof Error ? err.message : 'Failed to join team');
-      setJoiningTeam(false);
-    }
-  };
-
   // Calculate profile completion percentage based on filled fields
   const calculateProfileCompletion = (): number => {
     // Define fields and their weights
@@ -267,10 +149,9 @@ export default function GolfPlayerOnboarding() {
       { value: phone, weight: 5, required: false },
       { value: hometown, weight: 5, required: false },
       { value: state, weight: 5, required: false },
-      { value: graduationYear, weight: 10, required: true },
-      { value: handicap, weight: 15, required: false },
+      { value: graduationYear, weight: 15, required: true },
+      { value: handicap, weight: 20, required: false },
       { value: gpa, weight: 10, required: false },
-      { value: teamJoined || hasExistingTeam, weight: 10, required: false },
     ];
 
     let totalWeight = 0;
@@ -455,15 +336,7 @@ export default function GolfPlayerOnboarding() {
       console.log('[Player Onboarding] Waiting 150ms for cache invalidation...');
       await new Promise(resolve => setTimeout(resolve, 150));
 
-      // If there's a pending join code and team wasn't joined during onboarding,
-      // redirect to the join page to complete the flow
-      if (pendingJoinCode && !teamJoined && !hasExistingTeam) {
-        console.log('[Player Onboarding] Redirecting to join page with pending code:', pendingJoinCode);
-        router.push(`/golf/join/${pendingJoinCode}`);
-        return;
-      }
-
-      // Now navigate to dashboard
+      // Navigate to dashboard - players can join a team from their settings
       console.log('[Player Onboarding] Navigating to /golf/dashboard...');
       router.push('/golf/dashboard');
     } catch (err: unknown) {
@@ -544,16 +417,6 @@ export default function GolfPlayerOnboarding() {
                   <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-3">
                     Welcome to GolfHelm!
                   </h1>
-                  {teamName && (
-                    <motion.p
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.3 }}
-                      className="text-green-600 font-semibold mb-2 text-lg"
-                    >
-                      You've been invited to {teamName}
-                    </motion.p>
-                  )}
                   <p className="text-slate-600 text-lg max-w-md mx-auto leading-relaxed">
                     Let's set up your player profile. This will help your coach track your progress and manage the team.
                   </p>
@@ -592,7 +455,7 @@ export default function GolfPlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 1 of 5
+                    Step 1 of 4
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Basic Information</h2>
                 </motion.div>
@@ -714,7 +577,7 @@ export default function GolfPlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 2 of 5
+                    Step 2 of 4
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Golf Information</h2>
                 </motion.div>
@@ -811,7 +674,7 @@ export default function GolfPlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 3 of 5
+                    Step 3 of 4
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Academic Information</h2>
                   <p className="text-sm text-slate-600 mt-2">
@@ -893,7 +756,7 @@ export default function GolfPlayerOnboarding() {
               >
                 <motion.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 4 of 5
+                    Step 4 of 4
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Profile Photo</h2>
                   <p className="text-sm text-slate-600 mt-2">
@@ -931,150 +794,16 @@ export default function GolfPlayerOnboarding() {
                     </Button>
                     <Button
                       variant="ghost"
-                      onClick={() => setStep('team')}
+                      onClick={() => setStep('complete')}
                       className="flex-1"
                     >
                       Skip
                     </Button>
                     <Button
-                      onClick={() => setStep('team')}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {step === 'team' && (
-            <motion.div
-              key="team"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <motion.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 5 of 5
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Join a Team</h2>
-                  <p className="text-sm text-slate-600 mt-2">
-                    {hasExistingTeam || teamJoined
-                      ? "You're already on a team!"
-                      : "Have an invite code from your coach? Enter it below to join your team."}
-                  </p>
-                </motion.div>
-
-                <motion.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  {(hasExistingTeam || teamJoined) ? (
-                    // Already on a team - show success state
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="text-center py-4"
-                    >
-                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <IconCheck size={32} className="text-green-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-slate-900 mb-1">
-                        Team Joined!
-                      </h3>
-                      <p className="text-slate-600">
-                        You are now a member of <span className="font-medium text-green-600">{teamName}</span>
-                      </p>
-                    </motion.div>
-                  ) : (
-                    // No team yet - show join form
-                    <div className="space-y-5">
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="flex flex-col items-center mb-6"
-                      >
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center mb-4 shadow-sm">
-                          <IconUsers size={28} className="text-green-600" />
-                        </div>
-                      </motion.div>
-
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 }}
-                      >
-                        <Input
-                          label="Team Invite Code"
-                          value={inviteCode}
-                          onChange={(e) => {
-                            setInviteCode(e.target.value.toUpperCase());
-                            setTeamJoinError('');
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && inviteCode.trim() && !joiningTeam) {
-                              e.preventDefault();
-                              handleJoinTeam();
-                            }
-                          }}
-                          placeholder="Enter code (e.g. ABC123)"
-                          maxLength={20}
-                          className="text-center tracking-widest font-mono text-lg"
-                        />
-                      </motion.div>
-
-                      {teamJoinError && (
-                        <motion.p
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="text-sm text-red-600 text-center bg-red-50 border border-red-200 rounded-xl px-4 py-3"
-                        >
-                          {teamJoinError}
-                        </motion.p>
-                      )}
-
-                      <Button
-                        onClick={handleJoinTeam}
-                        disabled={!inviteCode.trim() || joiningTeam}
-                        isLoading={joiningTeam}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                      >
-                        Join Team
-                      </Button>
-
-                      <div className="text-center">
-                        <p className="text-xs text-slate-500">
-                          Don't have a code? You can join a team later from Settings.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('photo')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
                       onClick={() => setStep('complete')}
                       className="flex-1 bg-green-600 hover:bg-green-700"
                     >
-                      {(hasExistingTeam || teamJoined) ? 'Continue' : 'Skip for Now'}
+                      Next
                     </Button>
                   </div>
                 </motion.div>
