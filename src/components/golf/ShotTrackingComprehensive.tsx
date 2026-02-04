@@ -1683,53 +1683,104 @@ export default function ShotTrackingComprehensive({
               </div>
             </div>
 
-            {/* Overhead Course View */}
-            <div className="relative bg-emerald-800 rounded-xl h-56 overflow-hidden">
-              {/* Rough (background) */}
-              <div className="absolute inset-0 bg-emerald-700" />
+            {/* Overhead Course View - Premium Minimalist Design */}
+            <div className="relative rounded-xl h-56 overflow-hidden shadow-inner">
+              {/* Base gradient - deep forest tones */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(180deg, #1a3a2f 0%, #234338 50%, #1e3a30 100%)',
+                }}
+              />
 
-              {/* Fairway - center strip */}
-              <div className="absolute top-8 bottom-8 left-1/2 -translate-x-1/2 w-12 bg-emerald-500 rounded-full" />
+              {/* Subtle texture overlay */}
+              <div
+                className="absolute inset-0 opacity-30"
+                style={{
+                  backgroundImage: `radial-gradient(circle at 20% 30%, rgba(255,255,255,0.03) 0%, transparent 50%),
+                                    radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02) 0%, transparent 40%)`,
+                }}
+              />
 
-              {/* Green at top */}
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-14 h-10 bg-emerald-400 rounded-full" />
+              {/* Fairway - refined center strip with gradient */}
+              <div
+                className="absolute top-10 bottom-10 left-1/2 -translate-x-1/2 w-10 rounded-full"
+                style={{
+                  background: 'linear-gradient(90deg, #2d5a48 0%, #3d7a60 50%, #2d5a48 100%)',
+                  boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)',
+                }}
+              />
 
-              {/* Hole/Flag */}
+              {/* Green at top - subtle gradient with fringe */}
+              <div
+                className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-9 rounded-[50%]"
+                style={{
+                  background: 'radial-gradient(ellipse at center, #4a9970 0%, #3d7a60 70%, #2d5a48 100%)',
+                  boxShadow: '0 0 8px rgba(74,153,112,0.3)',
+                }}
+              />
+
+              {/* Hole/Pin - minimalist premium style */}
               <div className="absolute top-5 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
-                <div className="w-0.5 h-6 bg-white" />
-                <div className="w-2 h-2 rounded-full bg-slate-900 -mt-0.5" />
+                {/* Flag pole - thin elegant line */}
+                <div
+                  className="w-px h-5 rounded-full"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.5) 100%)',
+                  }}
+                />
+                {/* Flag - small triangle */}
+                <div
+                  className="absolute top-0 left-0.5 w-0 h-0"
+                  style={{
+                    borderTop: '3px solid transparent',
+                    borderBottom: '3px solid transparent',
+                    borderLeft: '5px solid rgba(220,38,38,0.9)',
+                  }}
+                />
+                {/* Hole - subtle dark circle */}
+                <div
+                  className="w-1.5 h-1.5 rounded-full -mt-0.5"
+                  style={{
+                    background: 'radial-gradient(circle at 30% 30%, #1a1a1a 0%, #000 100%)',
+                  }}
+                />
               </div>
 
-              {/* Tee box at bottom */}
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-8 h-4 bg-amber-200 rounded-sm" />
+              {/* Tee box - subtle marker */}
+              <div
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 w-6 h-2.5 rounded-sm"
+                style={{
+                  background: 'linear-gradient(180deg, #8b7355 0%, #6b5a45 100%)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)',
+                }}
+              />
 
-              {/* Ball Position - calculated from distance and miss direction */}
+              {/* Ball Position */}
               {(() => {
-                // Calculate Y position (0 = hole, 100 = tee)
                 const yPercent = 100 - progressPercent;
-                // Map to visual range (top 12% is green, bottom 8% is tee)
-                const visualY = 12 + (yPercent * 0.76); // 12-88% range
+                const visualY = 14 + (yPercent * 0.72);
 
-                // Calculate X offset based on miss direction and lie
-                let xOffset = 0; // pixels from center
+                let xOffset = 0;
                 const lastMiss = missDirection?.toLowerCase();
                 const isOffFairway = ['rough', 'sand', 'other'].includes(currentLie);
 
                 if (isOffFairway && lastMiss) {
-                  if (lastMiss.includes('left')) xOffset = -20;
-                  else if (lastMiss.includes('right')) xOffset = 20;
+                  if (lastMiss.includes('left')) xOffset = -18;
+                  else if (lastMiss.includes('right')) xOffset = 18;
                 }
 
-                // Lie color indicator
-                const lieColors: Record<string, string> = {
-                  tee: 'bg-amber-300 ring-amber-400',
-                  fairway: 'bg-white ring-emerald-400',
-                  rough: 'bg-white ring-amber-500',
-                  sand: 'bg-white ring-yellow-500',
-                  green: 'bg-white ring-emerald-300',
-                  other: 'bg-white ring-red-400',
+                // Premium subtle lie indicators
+                const defaultStyle = { ring: 'rgba(74,153,112,0.8)', glow: 'rgba(74,153,112,0.4)' };
+                const lieStyles: Record<string, { ring: string; glow: string }> = {
+                  tee: { ring: 'rgba(139,115,85,0.8)', glow: 'rgba(139,115,85,0.3)' },
+                  fairway: defaultStyle,
+                  rough: { ring: 'rgba(45,90,72,0.8)', glow: 'rgba(45,90,72,0.3)' },
+                  sand: { ring: 'rgba(194,178,128,0.9)', glow: 'rgba(194,178,128,0.4)' },
+                  green: { ring: 'rgba(74,153,112,0.9)', glow: 'rgba(74,153,112,0.5)' },
+                  other: { ring: 'rgba(120,113,108,0.8)', glow: 'rgba(120,113,108,0.3)' },
                 };
-                const ballStyle = lieColors[currentLie] || 'bg-white ring-slate-300';
+                const style = lieStyles[currentLie] ?? defaultStyle;
 
                 return (
                   <div
@@ -1740,20 +1791,37 @@ export default function ShotTrackingComprehensive({
                       transform: 'translate(-50%, -50%)',
                     }}
                   >
-                    {/* Ball shadow */}
-                    <div className="absolute top-1 left-1/2 -translate-x-1/2 w-3 h-1 bg-black/30 rounded-full blur-sm" />
+                    {/* Outer glow */}
+                    <div
+                      className="absolute -inset-1 rounded-full blur-sm"
+                      style={{ background: style.glow }}
+                    />
                     {/* Ball */}
-                    <div className={`w-4 h-4 rounded-full ${ballStyle} ring-2 shadow-md`} />
+                    <div
+                      className="relative w-3 h-3 rounded-full"
+                      style={{
+                        background: 'radial-gradient(circle at 35% 35%, #ffffff 0%, #e8e8e8 50%, #d0d0d0 100%)',
+                        boxShadow: `0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.8), 0 0 0 1.5px ${style.ring}`,
+                      }}
+                    />
                   </div>
                 );
               })()}
 
-              {/* Distance markers */}
-              <div className="absolute right-1 top-12 bottom-12 flex flex-col justify-between text-[8px] font-bold text-white/60">
-                <span>0</span>
-                <span>{Math.round(currentHole.yardage / 2)}</span>
-                <span>{currentHole.yardage}</span>
+              {/* Distance markers - refined typography */}
+              <div className="absolute right-1.5 top-14 bottom-14 flex flex-col justify-between">
+                <span className="text-[7px] font-medium text-white/40 tracking-tight">0</span>
+                <span className="text-[7px] font-medium text-white/40 tracking-tight">{Math.round(currentHole.yardage / 2)}</span>
+                <span className="text-[7px] font-medium text-white/40 tracking-tight">{currentHole.yardage}</span>
               </div>
+
+              {/* Subtle vignette effect */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.15) 100%)',
+                }}
+              />
             </div>
 
             {/* Current Status */}
