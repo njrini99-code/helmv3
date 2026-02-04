@@ -68,7 +68,7 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
                 onClick={() => handleRoundClick(round)}
                 className="w-full text-left"
               >
-                <div className="relative glass-standard rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-amber-200">
+                <div className="relative glass-standard rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-amber-200">
                   <ShineEffect />
                   <div className="flex items-center gap-4 p-4">
                     {/* Progress Indicator */}

@@ -441,7 +441,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="relative glass-standard rounded-xl overflow-hidden p-6 hover:shadow-lg transition-all group cursor-pointer"
+                className="relative glass-standard rounded-2xl overflow-hidden p-6 hover:shadow-lg transition-all group cursor-pointer"
                 onClick={() => openPreview(doc)}
               >
                 <ShineEffect />

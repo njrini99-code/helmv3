@@ -539,7 +539,7 @@ export default function StatsClient({
                 <button
                   key={player.id}
                   onClick={() => handlePlayerClick(player.id)}
-                  className="w-full group relative glass-standard rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left"
+                  className="w-full group relative glass-standard rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left"
                   style={{
                     animation: 'fadeInUp 0.4s ease-out forwards',
                     animationDelay: `${index * 30}ms`,

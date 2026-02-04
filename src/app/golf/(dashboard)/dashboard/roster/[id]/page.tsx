@@ -68,7 +68,7 @@ function StatsSectionSkeleton() {
       {/* Metrics grid skeleton */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="glass-standard rounded-xl p-4 animate-pulse">
+          <div key={i} className="glass-standard rounded-2xl p-4 animate-pulse">
             <div className="h-7 bg-slate-200 rounded w-16 mx-auto mb-2" />
             <div className="h-4 bg-slate-200 rounded w-12 mx-auto" />
           </div>
@@ -318,7 +318,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                 <Link
                   key={round.id}
                   href={`/golf/dashboard/rounds/${round.id}`}
-                  className="group relative glass-standard rounded-xl block hover:shadow-md transition-all hover:-translate-y-0.5"
+                  className="group relative glass-standard rounded-2xl block hover:shadow-md transition-all hover:-translate-y-0.5"
                   style={{
                     animation: 'fadeInUp 0.4s ease-out forwards',
                     animationDelay: `${index * 60}ms`,

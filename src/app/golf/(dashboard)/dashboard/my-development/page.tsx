@@ -122,8 +122,8 @@ export default async function MyDevelopmentPage() {
                     return (
                       <div
                         key={fa.id}
-                        className="relative glass-standard rounded-xl overflow-hidden"
-                                              >
+                        className="relative glass-standard rounded-2xl overflow-hidden"
+                        >
                         <ShineEffect />
                         <div className="p-5">
                           <div className="flex items-start gap-4">
@@ -206,7 +206,7 @@ export default async function MyDevelopmentPage() {
                     return (
                       <div
                         key={fa.id}
-                        className="relative glass-standard rounded-xl overflow-hidden opacity-75"
+                        className="relative glass-standard rounded-2xl overflow-hidden opacity-75"
                       >
                         <ShineEffect />
                         <div className="p-4">

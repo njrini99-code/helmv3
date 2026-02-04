@@ -256,7 +256,7 @@ export default async function GolfRosterPage() {
             {playersWithStats.map((player, index) => (
               <div
                 key={player.id}
-                className="group relative glass-standard rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                className="group relative glass-standard rounded-2xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                 style={{
                   animation: 'fadeInUp 0.4s ease-out forwards',
                   animationDelay: `${index * 30}ms`,

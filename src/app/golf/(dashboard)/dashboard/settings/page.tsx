@@ -241,7 +241,7 @@ export default function GolfSettingsPage() {
 
         {/* Account Section */}
         <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '50ms', opacity: 0 }}>
-          <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Account</h3>
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Account</h3>
           <div className="relative glass-standard rounded-2xl overflow-hidden">
             <ShineEffect />
             <SettingsRow
@@ -268,7 +268,7 @@ export default function GolfSettingsPage() {
 
         {/* Preferences Section */}
         <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '100ms', opacity: 0 }}>
-          <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Preferences</h3>
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Preferences</h3>
           <div className="relative glass-standard rounded-2xl overflow-hidden">
             <ShineEffect />
             <SettingsRow
@@ -305,7 +305,7 @@ export default function GolfSettingsPage() {
         {/* CoachHelm AI Section */}
         {profile?.role === 'coach' && profile.coachId && (
           <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '125ms', opacity: 0 }}>
-            <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">AI Features</h3>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">AI Features</h3>
             <div className="relative glass-standard rounded-2xl overflow-hidden p-4">
               <ShineEffect />
               <CoachHelmToggle coachId={profile.coachId} />
@@ -315,7 +315,7 @@ export default function GolfSettingsPage() {
 
         {/* Team Section */}
         <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '150ms', opacity: 0 }}>
-          <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Team</h3>
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Team</h3>
 
           {/* For Coaches: Team Settings */}
           {profile?.role === 'coach' && (
@@ -348,7 +348,7 @@ export default function GolfSettingsPage() {
 
         {/* Legal */}
         <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '175ms', opacity: 0 }}>
-          <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Legal</h3>
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Legal</h3>
           <div className="relative glass-standard rounded-2xl overflow-hidden">
             <ShineEffect />
             <SettingsRow
@@ -369,7 +369,7 @@ export default function GolfSettingsPage() {
 
         {/* Danger Zone */}
         <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '190ms', opacity: 0 }}>
-          <h3 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Danger Zone</h3>
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Danger Zone</h3>
           <div className="relative glass-standard rounded-2xl overflow-hidden p-5">
             <ShineEffect />
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

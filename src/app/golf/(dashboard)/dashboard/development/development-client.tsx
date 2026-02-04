@@ -304,7 +304,7 @@ export function DevelopmentPlansClient({
             {filteredFocusAreas.map((fa, index) => (
               <div
                 key={fa.id}
-                className="relative glass-standard rounded-xl overflow-hidden"
+                className="relative glass-standard rounded-2xl overflow-hidden"
                 style={{
                   animation: 'fadeInUp 0.4s ease-out forwards',
                   animationDelay: `${index * 50}ms`,
@@ -389,7 +389,7 @@ export function DevelopmentPlansClient({
           // All players overview - show grouped by player
           <div className="space-y-6">
             {focusAreasByPlayer.map(({ player, areas }) => (
-              <div key={player.id} className="relative glass-standard rounded-xl overflow-hidden">
+              <div key={player.id} className="relative glass-standard rounded-2xl overflow-hidden">
                 <ShineEffect />
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-4">

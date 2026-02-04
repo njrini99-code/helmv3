@@ -266,7 +266,7 @@ export default async function RoundsPage() {
             )}
             {Object.entries(groupedRounds).map(([monthYear, monthRounds], groupIndex) => (
               <div key={monthYear}>
-                <h2 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">
+                <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">
                   {monthYear}
                 </h2>
                 <div className="space-y-2">
@@ -280,7 +280,7 @@ export default async function RoundsPage() {
                     return (
                       <Link key={round.id} href={`/golf/dashboard/rounds/${round.id}`}>
                         <div
-                          className="group relative glass-standard rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                          className="group relative glass-standard rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                           style={{
                             animation: 'fadeInUp 0.4s ease-out forwards',
                             animationDelay: `${(groupIndex * 100) + (index * 30)}ms`,
