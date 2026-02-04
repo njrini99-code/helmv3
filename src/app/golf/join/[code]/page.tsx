@@ -36,9 +36,10 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
     redirect(`/golf/player?joinCode=${code}`);
   }
 
-  // Find team by join code
+  // Find team by join code (case-insensitive - normalize to uppercase)
   // Note: golf_teams.organization_id references the 'organizations' table, not 'golf_organizations'
-  const { data: team } = await supabase
+  const normalizedCode = code.toUpperCase();
+  const { data: team, error: teamError } = await supabase
     .from('golf_teams')
     .select(`
       id,
@@ -52,10 +53,10 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
         logo_url
       )
     `)
-    .eq('join_code', code)
+    .eq('join_code', normalizedCode)
     .single();
 
-  if (!team) {
+  if (teamError || !team) {
     return (
       <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 text-center">

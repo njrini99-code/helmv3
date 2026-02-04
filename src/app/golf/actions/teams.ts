@@ -76,10 +76,19 @@ export async function validateGolfPlayerCanJoinTeam(
 ): Promise<TeamValidationResult> {
   const supabase = await createClient();
 
-  // Get player
+  // Verify user is authenticated
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return {
+      canJoin: false,
+      reason: 'You must be logged in to join a team',
+    };
+  }
+
+  // Get player and verify ownership
   const { data: player, error: playerError } = await supabase
     .from('golf_players')
-    .select('id')
+    .select('id, user_id, onboarding_completed')
     .eq('id', playerId)
     .single();
 
@@ -87,6 +96,22 @@ export async function validateGolfPlayerCanJoinTeam(
     return {
       canJoin: false,
       reason: 'Player not found',
+    };
+  }
+
+  // Verify the authenticated user owns this player profile
+  if (player.user_id !== user.id) {
+    return {
+      canJoin: false,
+      reason: 'You can only join teams with your own player profile',
+    };
+  }
+
+  // Verify onboarding is completed
+  if (!player.onboarding_completed) {
+    return {
+      canJoin: false,
+      reason: 'Please complete your player profile before joining a team',
     };
   }
 
@@ -142,6 +167,7 @@ export async function validateGolfPlayerCanJoinTeam(
 
 /**
  * Add a golf player to a team via golf_team_members
+ * Also notifies coaches when a player joins
  */
 export async function joinGolfTeam(playerId: string, teamId: string) {
   const supabase = await createClient();
@@ -155,6 +181,20 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
       error: validation.reason || 'Cannot join this team',
     };
   }
+
+  // Get player details for notification
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id, first_name, last_name, user_id')
+    .eq('id', playerId)
+    .single();
+
+  // Get team details including organization
+  const { data: team } = await supabase
+    .from('golf_teams')
+    .select('id, name, organization_id')
+    .eq('id', teamId)
+    .single();
 
   // Create team membership record
   const { error } = await supabase
@@ -170,6 +210,42 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
       success: false,
       error: 'Failed to join team. Please try again.',
     };
+  }
+
+  // Notify coaches about the new team member
+  if (player && team?.organization_id) {
+    try {
+      // Find all coaches for this organization
+      const { data: coaches } = await supabase
+        .from('golf_coaches')
+        .select('id, user_id')
+        .eq('organization_id', team.organization_id);
+
+      if (coaches && coaches.length > 0) {
+        const playerName = `${player.first_name} ${player.last_name}`.trim();
+
+        // Create notifications for each coach
+        const notifications = coaches.map((coach) => ({
+          user_id: coach.user_id,
+          type: 'team_join',
+          title: 'New Player Joined',
+          body: `${playerName} has joined ${team.name}`,
+          action_url: '/golf/dashboard/roster',
+          metadata: {
+            player_id: playerId,
+            player_name: playerName,
+            team_id: teamId,
+            team_name: team.name,
+          },
+          read: false,
+        }));
+
+        await supabase.from('notifications').insert(notifications);
+      }
+    } catch (notifyError) {
+      // Don't fail the join if notification fails - just log it
+      console.error('Failed to notify coaches:', notifyError);
+    }
   }
 
   // Revalidate relevant paths
@@ -189,11 +265,14 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
 export async function processGolfTeamInvitation(joinCode: string, playerId: string) {
   const supabase = await createClient();
 
+  // Normalize join code to uppercase for case-insensitive matching
+  const normalizedCode = joinCode.toUpperCase();
+
   // Find the team by join code
   const { data: team, error: teamError } = await supabase
     .from('golf_teams')
     .select('id, name, join_code')
-    .eq('join_code', joinCode)
+    .eq('join_code', normalizedCode)
     .single();
 
   if (teamError || !team) {

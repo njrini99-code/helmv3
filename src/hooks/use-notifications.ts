@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth-store';
 
 export interface Notification {
   id: string;
-  type: 'profile_view' | 'watchlist_add' | 'message' | 'evaluation' | 'camp_interest' | 'other';
+  type: 'profile_view' | 'watchlist_add' | 'message' | 'evaluation' | 'camp_interest' | 'team_join' | 'other';
   title: string;
   message: string;
   timestamp: string;

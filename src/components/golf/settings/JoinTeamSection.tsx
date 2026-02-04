@@ -54,7 +54,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
       let orgName: string | null = null;
       if (team.organization_id) {
         const { data: org } = await supabase
-          .from('golf_organizations')
+          .from('organizations')
           .select('name')
           .eq('id', team.organization_id)
           .single();
@@ -98,15 +98,19 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
   }
 
   async function handleLeaveTeam() {
+    if (!currentTeam) return;
+
     setLoading(true);
     setError(null);
 
     try {
       // Leave team by removing from golf_team_members
+      // Filter by both player_id AND team_id for safety
       const { error: deleteError } = await supabase
         .from('golf_team_members')
         .delete()
-        .eq('player_id', playerId);
+        .eq('player_id', playerId)
+        .eq('team_id', currentTeam.id);
 
       if (deleteError) {
         setError('Failed to leave team. Please try again.');

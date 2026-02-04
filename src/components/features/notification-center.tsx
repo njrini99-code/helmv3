@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 interface Notification {
   id: string;
-  type: 'profile_view' | 'watchlist_add' | 'message' | 'evaluation' | 'camp_interest' | 'other';
+  type: 'profile_view' | 'watchlist_add' | 'message' | 'evaluation' | 'camp_interest' | 'team_join' | 'other';
   title: string;
   message: string;
   timestamp: string;
@@ -33,6 +33,7 @@ const typeIcons: Record<string, { icon: string; color: string }> = {
   message: { icon: '💬', color: 'bg-green-100 text-green-600' },
   evaluation: { icon: '📊', color: 'bg-purple-100 text-purple-600' },
   camp_interest: { icon: '🏕️', color: 'bg-cyan-100 text-cyan-600' },
+  team_join: { icon: '👋', color: 'bg-emerald-100 text-emerald-600' },
   other: { icon: '🔔', color: 'bg-slate-100 text-slate-600' },
 };
 

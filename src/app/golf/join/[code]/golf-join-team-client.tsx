@@ -31,22 +31,35 @@ export function GolfJoinTeamClient({
 }: GolfJoinTeamClientProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleJoinTeam() {
     setLoading(true);
     setError(null);
 
-    const result = await processGolfTeamInvitation(inviteCode, playerId);
+    try {
+      const result = await processGolfTeamInvitation(inviteCode, playerId);
 
-    if (!result.success) {
-      setError(result.error || 'Failed to join team');
+      if (!result.success) {
+        setError(result.error || 'Failed to join team. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Show success feedback briefly before redirecting
+      setSuccess(true);
       setLoading(false);
-      return;
-    }
 
-    // Success! Redirect to golf dashboard
-    router.push('/golf/dashboard');
+      // Redirect after brief delay to show success state
+      setTimeout(() => {
+        router.push('/golf/dashboard');
+      }, 800);
+    } catch (err) {
+      console.error('Join team error:', err);
+      setError('Network error. Please check your connection and try again.');
+      setLoading(false);
+    }
   }
 
   return (
@@ -115,15 +128,26 @@ export function GolfJoinTeamClient({
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg" role="alert" aria-live="polite">
               <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg" role="status" aria-live="polite">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-sm font-medium text-green-600">Successfully joined {team.name}! Redirecting...</p>
+              </div>
             </div>
           )}
 
           <div className="space-y-3">
             <button
               onClick={handleJoinTeam}
-              disabled={loading}
+              disabled={loading || success}
               className="w-full px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
@@ -133,6 +157,13 @@ export function GolfJoinTeamClient({
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                   Joining Team...
+                </>
+              ) : success ? (
+                <>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Joined!
                 </>
               ) : (
                 <>
@@ -145,7 +176,7 @@ export function GolfJoinTeamClient({
             </button>
             <button
               onClick={() => router.push('/golf/dashboard')}
-              disabled={loading}
+              disabled={success}
               className="w-full px-6 py-3 bg-white text-slate-700 font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel

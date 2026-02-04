@@ -134,14 +134,16 @@ export default function GolfPlayerOnboarding() {
 
       const joinCodeToUse = urlJoinCode || storedJoinCode;
       if (joinCodeToUse) {
-        setPendingJoinCode(joinCodeToUse);
-        setInviteCode(joinCodeToUse);
+        // Normalize to uppercase for consistency
+        const normalizedJoinCode = joinCodeToUse.toUpperCase();
+        setPendingJoinCode(normalizedJoinCode);
+        setInviteCode(normalizedJoinCode);
 
         // Fetch the team name from the join code to show in the welcome message
         const { data: pendingTeam } = await supabase
           .from('golf_teams')
           .select('name')
-          .eq('join_code', joinCodeToUse)
+          .eq('join_code', normalizedJoinCode)
           .maybeSingle();
 
         if (pendingTeam) {
@@ -162,7 +164,8 @@ export default function GolfPlayerOnboarding() {
           // If there's a pending join code and player completed onboarding,
           // redirect to the join page to complete the join flow
           if (joinCodeToUse) {
-            router.push(`/golf/join/${joinCodeToUse}`);
+            const normalizedCode = joinCodeToUse.toUpperCase();
+            router.push(`/golf/join/${normalizedCode}`);
             return;
           }
           router.push('/golf/dashboard');
