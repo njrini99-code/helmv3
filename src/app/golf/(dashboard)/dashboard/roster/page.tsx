@@ -8,6 +8,7 @@ import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
 import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
 import { PendingJoinRequests } from '@/components/golf/roster/PendingJoinRequests';
+import { RosterPageClient } from '@/components/golf/roster/RosterPageClient';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { Avatar } from '@/components/ui/avatar';
 import { IconUsers, IconChartBar, IconMessage, IconChevronRight, IconAlertCircle } from '@/components/icons';
@@ -222,6 +223,7 @@ export default async function GolfRosterPage() {
   const inviteCode = team?.join_code || null;
 
   return (
+    <RosterPageClient>
     <div className="min-h-screen">
       {/* Header Section */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
@@ -417,5 +419,6 @@ export default async function GolfRosterPage() {
         }
       `}</style>
     </div>
+    </RosterPageClient>
   );
 }

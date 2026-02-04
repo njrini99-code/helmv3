@@ -47,6 +47,7 @@ import {
     containerVariants,
     itemVariants
 } from '@/components/golf/dashboard';
+import { JoinRequestAlert } from '@/components/golf/roster/JoinRequestAlert';
 import type { GolfCoach, GolfTeam } from '@/lib/types/golf';
 import type { CalendarEvent } from '@/lib/types/calendar';
 
@@ -226,6 +227,9 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                 initial="hidden"
                 animate="visible"
             >
+                {/* Pending Join Requests Alert */}
+                <JoinRequestAlert />
+
                 {/* Invite Code */}
                 {team?.join_code && stats.rosterSize < 20 && (
                     <InviteCodeCard inviteCode={team.join_code} />
