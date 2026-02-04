@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient, initTabSessionSync } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import { GolfSidebar } from '@/components/golf/layout/GolfSidebar';
 import { PageLoading } from '@/components/ui/loading';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
@@ -109,12 +109,6 @@ export default function GolfDashboardLayout({
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<UserData | null>(null);
-
-  // Initialize tab session sync for multi-account support
-  useEffect(() => {
-    const cleanup = initTabSessionSync();
-    return cleanup;
-  }, []);
 
   useEffect(() => {
     async function loadUser() {
