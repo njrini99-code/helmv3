@@ -1,22 +1,38 @@
 import * as Sentry from '@sentry/nextjs';
 
 Sentry.init({
-  dsn: "https://17657b44b4ba82cae5ccd7d08669fd48@o4510780033794048.ingest.us.sentry.io/4510825486548992",
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Enable debug mode to see what's happening
-  debug: true,
+  // Only enable debug in development
+  debug: process.env.NODE_ENV === 'development',
 
+  // Sample 100% of transactions for performance monitoring
   tracesSampleRate: 1.0,
 
+  // Capture 100% of sessions with errors, 10% of all sessions
   replaysOnErrorSampleRate: 1.0,
-  replaysSessionSampleRate: 1.0,
+  replaysSessionSampleRate: 0.1,
 
   integrations: typeof window !== 'undefined' ? [
     Sentry.replayIntegration({
       maskAllText: false,
       blockAllMedia: false,
     }),
+    Sentry.browserTracingIntegration(),
   ] : [],
 
   environment: process.env.NODE_ENV || 'development',
+
+  // Filter out noisy errors
+  ignoreErrors: [
+    // Browser extensions
+    /^chrome-extension:\/\//,
+    /^moz-extension:\/\//,
+    // Network errors that aren't actionable
+    'Network request failed',
+    'Failed to fetch',
+    'Load failed',
+    // User-initiated navigation
+    'AbortError',
+  ],
 });

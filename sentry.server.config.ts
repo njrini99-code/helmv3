@@ -1,12 +1,19 @@
 import * as Sentry from '@sentry/nextjs';
 
 Sentry.init({
-  dsn: "https://17657b44b4ba82cae5ccd7d08669fd48@o4510780033794048.ingest.us.sentry.io/4510825486548992",
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Enable debug mode to see what's happening
-  debug: true,
+  // Only enable debug in development
+  debug: process.env.NODE_ENV === 'development',
 
+  // Sample 100% of transactions for performance monitoring
   tracesSampleRate: 1.0,
 
   environment: process.env.NODE_ENV || 'development',
+
+  // Filter out noisy errors
+  ignoreErrors: [
+    'NEXT_NOT_FOUND',
+    'NEXT_REDIRECT',
+  ],
 });
