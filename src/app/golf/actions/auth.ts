@@ -105,28 +105,79 @@ export async function loginAction(
   resetRateLimit(`login:ip:${ip}`);
   await resetLoginAttempts(normalizedEmail);
 
+  // Debug: Log successful login
+  console.log('[Golf Login] Successful login for user:', {
+    id: data.user.id,
+    email: data.user.email,
+    sessionExists: !!data.session
+  });
+
+  // CRITICAL: Verify the session is properly established before profile queries
+  // This ensures auth.uid() in RLS policies returns the correct value
+  const { data: sessionCheck } = await supabase.auth.getUser();
+  console.log('[Golf Login] Session verification:', {
+    sessionUserId: sessionCheck?.user?.id,
+    expectedUserId: data.user.id,
+    match: sessionCheck?.user?.id === data.user.id
+  });
+
+  // If session isn't established yet, create a fresh client with the session token
+  // This handles cases where the cookie hasn't propagated within the same request
+  let queryClient = supabase;
+  if (!sessionCheck?.user || sessionCheck.user.id !== data.user.id) {
+    console.log('[Golf Login] Session mismatch - using access token directly');
+    // Create a new client with the session token
+    const { createClient: createFreshClient } = await import('@supabase/supabase-js');
+    queryClient = createFreshClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${data.session?.access_token}`,
+          },
+        },
+      }
+    );
+  }
+
   // Get user role and profile status to determine redirect
-  const { data: userData } = await supabase
+  const { data: userData } = await queryClient
     .from('users')
     .select('role')
     .eq('id', data.user.id)
     .maybeSingle();
 
   const [coachResult, playerResult] = await Promise.all([
-    supabase
+    queryClient
       .from('golf_coaches')
       .select('id, onboarding_completed')
       .eq('user_id', data.user.id)
       .maybeSingle(),
-    supabase
+    queryClient
       .from('golf_players')
       .select('id, onboarding_completed')
       .eq('user_id', data.user.id)
       .maybeSingle(),
   ]);
 
+  // Debug: Check for RLS/query errors that maybeSingle() might hide
+  if (coachResult.error) {
+    console.error('[Golf Login] Error fetching coach profile:', coachResult.error);
+  }
+  if (playerResult.error) {
+    console.error('[Golf Login] Error fetching player profile:', playerResult.error);
+  }
+
   const coachProfile = coachResult.data;
   const playerProfile = playerResult.data;
+
+  // Debug: Log what we found
+  console.log('[Golf Login] Profile lookup results:', {
+    userId: data.user.id,
+    coachProfile: coachProfile ? { id: coachProfile.id, onboarding: coachProfile.onboarding_completed } : null,
+    playerProfile: playerProfile ? { id: playerProfile.id, onboarding: playerProfile.onboarding_completed } : null,
+  });
 
   // Default to dashboard, but redirect to onboarding if profile is missing/incomplete
   const adminAllowlist = (process.env.ADMIN_EMAILS || '')
@@ -166,6 +217,17 @@ export async function loginAction(
       redirectTo = '/golf/player';
     }
   }
+
+  // Debug: Log final redirect decision
+  console.log('[Golf Login] Redirect decision:', {
+    declaredRole,
+    resolvedRole,
+    hasCoachProfile: !!coachProfile,
+    coachOnboarded: coachProfile?.onboarding_completed,
+    hasPlayerProfile: !!playerProfile,
+    playerOnboarded: playerProfile?.onboarding_completed,
+    redirectTo,
+  });
 
   revalidatePath('/golf/dashboard');
 
