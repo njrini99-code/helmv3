@@ -406,12 +406,14 @@ export default function GolfPlayerOnboarding() {
                     className="mb-6 inline-block"
                   >
                     <div className="relative">
-                      <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
-                      <img
-                        src="/helm-golf-logo.png"
-                        alt="GolfHelm"
-                        className="h-20 w-auto relative z-10"
-                      />
+                      <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-xl scale-150" />
+                      <div className="relative w-20 h-20 flex items-center justify-center">
+                        <img
+                          src="/helm.transparent. golf-logo.png"
+                          alt="GolfHelm"
+                          className="w-20 h-20 object-contain"
+                        />
+                      </div>
                     </div>
                   </motion.div>
                   <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-3">
