@@ -7353,6 +7353,7 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_current_golf_player_id: { Args: never; Returns: string }
       get_expected_strokes: {
         Args: { p_distance: number; p_is_putting?: boolean; p_lie: string }
         Returns: number
@@ -7447,6 +7448,18 @@ export type Database = {
         Returns: undefined
       }
       user_conversation_ids: { Args: { p_user_id: string }; Returns: string[] }
+      user_has_pending_join_request_to_coach_team: {
+        Args: { check_player_id: string }
+        Returns: boolean
+      }
+      user_is_coach_of_golf_player: {
+        Args: { check_player_id: string }
+        Returns: boolean
+      }
+      user_is_golf_team_member: {
+        Args: { check_team_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       baseball_coach_type: "college" | "juco" | "high_school" | "showcase"

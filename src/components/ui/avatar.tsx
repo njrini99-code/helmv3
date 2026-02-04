@@ -22,22 +22,8 @@ const sizes = {
   '2xl': { container: 'w-20 h-20', text: 'text-xl', ring: 'p-[3px]', dot: 'w-5 h-5', px: 80 },
 };
 
-// Deterministic gradient based on name - gives each person a unique color
-const AVATAR_GRADIENTS = [
-  'from-emerald-400 to-teal-500',
-  'from-sky-400 to-blue-500',
-  'from-violet-400 to-purple-500',
-  'from-rose-400 to-pink-500',
-  'from-amber-400 to-orange-500',
-  'from-cyan-400 to-sky-500',
-  'from-fuchsia-400 to-pink-500',
-  'from-lime-400 to-emerald-500',
-];
-
-function getGradientForName(name: string): string {
-  const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return AVATAR_GRADIENTS[hash % AVATAR_GRADIENTS.length]!;
-}
+// Helm green for all avatars - consistent brand identity
+const HELM_GREEN = 'bg-primary-600';
 
 // Status ring gradients (more visible than dots)
 const statusRingStyles = {
@@ -79,7 +65,6 @@ export function Avatar({
   const [imgError, setImgError] = useState(false);
   const showInitials = !src || imgError;
   const sizeConfig = sizes[size];
-  const gradient = getGradientForName(name);
   const shouldShowRing = showStatusRing || ring;
   const shouldUnoptimize = Boolean(src && (src.startsWith('data:') || src.startsWith('blob:')));
 
@@ -118,8 +103,7 @@ export function Avatar({
             ) : (
               <div className={cn(
                 'w-full h-full flex items-center justify-center',
-                'bg-gradient-to-br',
-                gradient
+                HELM_GREEN
               )}>
                 <span className="text-white drop-shadow-sm select-none">
                   {getInitials(name)}
@@ -160,8 +144,7 @@ export function Avatar({
         ) : (
           <div className={cn(
             'w-full h-full flex items-center justify-center',
-            'bg-gradient-to-br',
-            gradient
+            HELM_GREEN
           )}>
             <span className="text-white drop-shadow-sm select-none">
               {getInitials(name)}
