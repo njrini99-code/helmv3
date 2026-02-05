@@ -10,9 +10,7 @@ import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
 import { PendingJoinRequests } from '@/components/golf/roster/PendingJoinRequests';
 import { RosterPageClient } from '@/components/golf/roster/RosterPageClient';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
-import { ShineEffect } from '@/components/ui/shine-effect';
-import { Avatar } from '@/components/ui/avatar';
-import { IconUsers, IconChartBar, IconMessage, IconChevronRight, IconAlertCircle } from '@/components/icons';
+import { IconUsers, IconChartBar, IconMessage, IconAlertCircle } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Metadata } from 'next';
 
@@ -261,7 +259,7 @@ export default async function GolfRosterPage() {
 
   return (
     <RosterPageClient>
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#FFFEFA]">
       {/* Header Section */}
       <MobileNavHeader
         title="Team Roster"
@@ -271,132 +269,86 @@ export default async function GolfRosterPage() {
       </MobileNavHeader>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Pending Join Requests */}
         <PendingJoinRequests />
 
         {playersWithStats.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
-            <ShineEffect />
-            <div className="relative w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+          /* Empty State */
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 md:p-16 text-center shadow-sm">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-5">
               <IconUsers size={28} className="text-slate-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">No Players Yet</h3>
-            <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">No Players Yet</h3>
+            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
               Start building your team by inviting players to join your roster
             </p>
             <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
           </div>
         ) : (
-          <div className="space-y-3">
+          /* Player Cards Grid - 1 column on mobile, 2 columns on desktop */
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
             {playersWithStats.map((player, index) => (
               <div
                 key={player.id}
-                className="group relative glass-standard rounded-2xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200"
                 style={{
-                  animation: 'fadeInUp 0.4s ease-out forwards',
-                  animationDelay: `${index * 30}ms`,
+                  animation: 'fadeInUp 0.3s ease-out forwards',
+                  animationDelay: `${index * 40}ms`,
                   opacity: 0,
                 }}
               >
-                <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
-                  <ShineEffect />
-                </div>
-                <div className="relative flex items-center gap-4 p-4">
-                  {/* Avatar */}
-                  <div className="relative">
-                    {player.avatar_url ? (
-                      <div className={cn(
-                        'w-12 h-12 rounded-xl overflow-hidden flex-shrink-0',
-                        'ring-1 ring-black/5 shadow-sm'
-                      )}>
-                        <Image
-                          src={player.avatar_url}
-                          alt={`${player.first_name} ${player.last_name}`}
-                          width={48}
-                          height={48}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <Avatar
-                        name={`${player.first_name} ${player.last_name}`}
-                        size="lg"
-                      />
-                    )}
-                    {/* Online status dot - green if online, gray if offline */}
-                    <div className={cn(
-                      'absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm',
-                      isUserOnline(player.last_seen) ? 'bg-emerald-500' : 'bg-slate-300',
-                    )} title={isUserOnline(player.last_seen) ? 'Online' : 'Offline'} />
-                  </div>
-
-                  {/* Player Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-slate-900">
-                        {player.first_name} {player.last_name}
-                      </p>
-                      <YearBadge year={player.graduation_year} />
-                      <PlayerStatusBadge playerId={player.id} currentStatus={player.status} />
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {player.hometown && player.state && (
-                        <span className="text-sm text-slate-500">
-                          {player.hometown}, {player.state}
-                        </span>
+                {/* Card Header with Avatar and Name */}
+                <div className="p-5 md:p-6">
+                  <div className="flex items-start gap-4">
+                    {/* Large Avatar */}
+                    <div className="relative flex-shrink-0">
+                      {player.avatar_url ? (
+                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden ring-1 ring-slate-200 shadow-sm">
+                          <Image
+                            src={player.avatar_url}
+                            alt={`${player.first_name} ${player.last_name}`}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center ring-1 ring-slate-200">
+                          <span className="text-xl md:text-2xl font-semibold text-slate-500">
+                            {(player.first_name?.[0] || '')}{(player.last_name?.[0] || '')}
+                          </span>
+                        </div>
                       )}
+                      {/* Online status indicator */}
+                      <div className={cn(
+                        'absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full border-[3px] border-white shadow-sm',
+                        isUserOnline(player.last_seen) ? 'bg-emerald-500' : 'bg-slate-300',
+                      )} title={isUserOnline(player.last_seen) ? 'Online' : 'Offline'} />
                     </div>
-                  </div>
 
-                  {/* Stats - hidden on mobile, shown on md+ */}
-                  <div className="hidden md:flex items-center gap-1" role="group" aria-label={`Stats for ${player.first_name} ${player.last_name}`}>
-                    <div className="flex flex-col items-center px-4 py-1 rounded-lg hover:bg-slate-50 transition-colors">
-                      <p className="text-lg font-semibold text-slate-900 tabular-nums leading-none">
-                        {player.rounds_count || 0}
-                      </p>
-                      <p className="text-xs text-slate-400 uppercase tracking-wide mt-0.5">Rounds</p>
-                    </div>
-                    <div className="w-px h-8 bg-slate-100" aria-hidden="true" />
-                    <div className="flex flex-col items-center px-4 py-1 rounded-lg hover:bg-slate-50 transition-colors">
-                      <p className="text-lg font-semibold text-slate-900 tabular-nums leading-none">
-                        {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '—'}
-                      </p>
-                      <p className="text-xs text-slate-400 uppercase tracking-wide mt-0.5">Avg</p>
-                    </div>
-                    <div className="w-px h-8 bg-slate-100" aria-hidden="true" />
-                    <div className="flex flex-col items-center px-4 py-1 rounded-lg hover:bg-slate-50 transition-colors">
-                      <p className={cn(
-                        'text-lg font-semibold tabular-nums leading-none',
-                        player.handicap !== null && player.handicap <= 0 ? 'text-emerald-600' : 'text-slate-900'
-                      )}>
-                        {formatHandicap(player.handicap)}
-                      </p>
-                      <p className="text-xs text-slate-400 uppercase tracking-wide mt-0.5">HCP</p>
-                    </div>
-                  </div>
+                    {/* Player Info */}
+                    <div className="flex-1 min-w-0 pt-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg md:text-xl font-semibold text-slate-900 truncate">
+                          {player.first_name} {player.last_name}
+                        </h3>
+                        <YearBadge year={player.graduation_year} />
+                      </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-0.5">
-                    {/* Primary action always visible */}
-                    <Link href={`/golf/dashboard/messages?player=${player.id}`}>
-                      <button className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors" aria-label="Send Message">
-                        <IconMessage size={16} className="text-slate-600" />
-                      </button>
-                    </Link>
+                      {player.hometown && player.state && (
+                        <p className="text-sm text-slate-500 mt-1">
+                          {player.hometown}, {player.state}
+                        </p>
+                      )}
 
-                    {/* Secondary actions on hover */}
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Link href={`/golf/dashboard/stats?player=${player.id}`}>
-                        <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" aria-label="View Stats">
-                          <IconChartBar size={16} className="text-slate-500" />
-                        </button>
-                      </Link>
-                      <Link href={`/golf/dashboard/stats?player=${player.id}`}>
-                        <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" aria-label="View Stats">
-                          <IconChevronRight size={16} className="text-slate-400" />
-                        </button>
-                      </Link>
+                      <div className="mt-2">
+                        <PlayerStatusBadge playerId={player.id} currentStatus={player.status} />
+                      </div>
+                    </div>
+
+                    {/* Actions Menu */}
+                    <div className="flex-shrink-0">
                       <PlayerActionsMenu
                         playerId={player.id}
                         playerName={`${player.first_name} ${player.last_name}`}
@@ -406,24 +358,49 @@ export default async function GolfRosterPage() {
                   </div>
                 </div>
 
-                {/* Mobile Stats Row */}
-                <div className="md:hidden flex items-center justify-around px-4 py-3 border-t border-slate-100 bg-slate-50/50 rounded-b-xl overflow-hidden">
-                  <div className="text-center">
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">Rounds</p>
-                    <p className="font-semibold text-slate-900 text-sm">{player.rounds_count || 0}</p>
+                {/* Stats Row */}
+                <div className="px-5 md:px-6 pb-4 md:pb-5">
+                  <div className="flex items-center justify-between bg-slate-50 rounded-xl p-4">
+                    <div className="text-center flex-1">
+                      <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums">
+                        {player.rounds_count || 0}
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">Rounds</p>
+                    </div>
+                    <div className="w-px h-10 bg-slate-200" />
+                    <div className="text-center flex-1">
+                      <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums">
+                        {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '—'}
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">Avg Score</p>
+                    </div>
+                    <div className="w-px h-10 bg-slate-200" />
+                    <div className="text-center flex-1">
+                      <p className={cn(
+                        'text-2xl md:text-3xl font-bold tabular-nums',
+                        player.handicap !== null && player.handicap <= 0 ? 'text-emerald-600' : 'text-slate-900'
+                      )}>
+                        {formatHandicap(player.handicap)}
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">Handicap</p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">Avg</p>
-                    <p className="font-semibold text-slate-900 text-sm">
-                      {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '--'}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">HCP</p>
-                    <p className="font-semibold text-slate-900 text-sm">
-                      {formatHandicap(player.handicap)}
-                    </p>
-                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="px-5 md:px-6 pb-5 md:pb-6 flex items-center gap-2">
+                  <Link href={`/golf/dashboard/stats?player=${player.id}`} className="flex-1">
+                    <button className="w-full px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
+                      <IconChartBar size={16} />
+                      View Stats
+                    </button>
+                  </Link>
+                  <Link href={`/golf/dashboard/messages?player=${player.id}`} className="flex-1">
+                    <button className="w-full px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center justify-center gap-2">
+                      <IconMessage size={16} />
+                      Message
+                    </button>
+                  </Link>
                 </div>
               </div>
             ))}
@@ -436,7 +413,7 @@ export default async function GolfRosterPage() {
         @keyframes fadeInUp {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(8px);
           }
           to {
             opacity: 1;
