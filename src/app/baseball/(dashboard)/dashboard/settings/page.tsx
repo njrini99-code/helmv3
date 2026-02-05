@@ -17,14 +17,31 @@ export default function SettingsPage() {
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null);
   const [notificationSettings, setNotificationSettings] = useState({
     emailNewPlayer: true,
     emailMessages: true,
     emailWeeklyDigest: false,
   });
+
+  // Calculate password strength
+  const updatePasswordStrength = (password: string) => {
+    setNewPassword(password);
+    if (password.length === 0) {
+      setPasswordStrength(null);
+    } else if (password.length < 6) {
+      setPasswordStrength('weak');
+    } else if (password.length < 10 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setPasswordStrength('medium');
+    } else {
+      setPasswordStrength('strong');
+    }
+  };
 
   if (loading) return <PageLoading />;
 
@@ -72,12 +89,6 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    const confirmed = window.confirm(
-      'This will permanently delete your account and all associated data. This action cannot be undone.'
-    );
-
-    if (!confirmed) return;
-
     setDeletingAccount(true);
 
     try {
@@ -94,6 +105,8 @@ export default function SettingsPage() {
       showToast('Failed to delete account', 'error');
     } finally {
       setDeletingAccount(false);
+      setShowDeleteConfirm(false);
+      setDeleteConfirmText('');
     }
   };
 
@@ -155,7 +168,7 @@ export default function SettingsPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors group">
                 <div>
                   <p className="font-medium text-slate-900">New Player Alerts</p>
                   <p className="text-sm leading-relaxed text-slate-500">Get notified when new players match your criteria</p>
@@ -163,12 +176,15 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={notificationSettings.emailNewPlayer}
-                  onChange={(e) => setNotificationSettings(prev => ({ ...prev, emailNewPlayer: e.target.checked }))}
+                  onChange={(e) => {
+                    setNotificationSettings(prev => ({ ...prev, emailNewPlayer: e.target.checked }));
+                    showToast(e.target.checked ? 'Player alerts enabled' : 'Player alerts disabled', 'success');
+                  }}
                   className="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors group">
                 <div>
                   <p className="font-medium text-slate-900">Message Notifications</p>
                   <p className="text-sm leading-relaxed text-slate-500">Email me when I receive new messages</p>
@@ -176,12 +192,15 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={notificationSettings.emailMessages}
-                  onChange={(e) => setNotificationSettings(prev => ({ ...prev, emailMessages: e.target.checked }))}
+                  onChange={(e) => {
+                    setNotificationSettings(prev => ({ ...prev, emailMessages: e.target.checked }));
+                    showToast(e.target.checked ? 'Message notifications enabled' : 'Message notifications disabled', 'success');
+                  }}
                   className="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors group">
                 <div>
                   <p className="font-medium text-slate-900">Weekly Recruiting Digest</p>
                   <p className="text-sm leading-relaxed text-slate-500">Get a weekly summary of new prospects</p>
@@ -189,7 +208,10 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={notificationSettings.emailWeeklyDigest}
-                  onChange={(e) => setNotificationSettings(prev => ({ ...prev, emailWeeklyDigest: e.target.checked }))}
+                  onChange={(e) => {
+                    setNotificationSettings(prev => ({ ...prev, emailWeeklyDigest: e.target.checked }));
+                    showToast(e.target.checked ? 'Weekly digest enabled' : 'Weekly digest disabled', 'success');
+                  }}
                   className="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
                 />
               </label>
@@ -222,15 +244,38 @@ export default function SettingsPage() {
                 required
                 autoComplete="current-password"
               />
-              <Input
-                label="New Password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                minLength={6}
-                autoComplete="new-password"
-              />
+              <div>
+                <Input
+                  label="New Password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => updatePasswordStrength(e.target.value)}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                />
+                {/* Password strength indicator */}
+                {passwordStrength && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="flex-1 flex gap-1">
+                      <div className={`h-1.5 rounded-full flex-1 transition-colors ${
+                        passwordStrength === 'weak' ? 'bg-red-400' : passwordStrength === 'medium' ? 'bg-amber-400' : 'bg-green-500'
+                      }`} />
+                      <div className={`h-1.5 rounded-full flex-1 transition-colors ${
+                        passwordStrength === 'medium' ? 'bg-amber-400' : passwordStrength === 'strong' ? 'bg-green-500' : 'bg-slate-200'
+                      }`} />
+                      <div className={`h-1.5 rounded-full flex-1 transition-colors ${
+                        passwordStrength === 'strong' ? 'bg-green-500' : 'bg-slate-200'
+                      }`} />
+                    </div>
+                    <span className={`text-xs font-medium ${
+                      passwordStrength === 'weak' ? 'text-red-600' : passwordStrength === 'medium' ? 'text-amber-600' : 'text-green-600'
+                    }`}>
+                      {passwordStrength === 'weak' ? 'Weak' : passwordStrength === 'medium' ? 'Medium' : 'Strong'}
+                    </span>
+                  </div>
+                )}
+              </div>
               <Input
                 label="Confirm New Password"
                 type="password"
@@ -259,17 +304,65 @@ export default function SettingsPage() {
               </Link>
             </div>
             <div className="pt-2 border-t border-slate-200/60">
-              <p className="text-sm text-slate-500 mb-3">
-                You can permanently delete your account and personal data. This action is irreversible.
-              </p>
-              <Button
-                type="button"
-                variant="danger"
-                isLoading={deletingAccount}
-                onClick={handleDeleteAccount}
-              >
-                Delete Account
-              </Button>
+              {!showDeleteConfirm ? (
+                <>
+                  <p className="text-sm text-slate-500 mb-3">
+                    You can permanently delete your account and personal data. This action is irreversible.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    Delete Account
+                  </Button>
+                </>
+              ) : (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3 animate-fade-in">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <IconShield size={16} className="text-red-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-red-900 mb-1">Confirm Account Deletion</h4>
+                      <p className="text-sm text-red-700 mb-3">
+                        This will permanently delete your account, all your data, and any associated content. This action cannot be undone.
+                      </p>
+                      <p className="text-sm text-red-700 mb-2">
+                        Type <span className="font-mono font-semibold">DELETE</span> to confirm:
+                      </p>
+                      <Input
+                        type="text"
+                        value={deleteConfirmText}
+                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                        placeholder="Type DELETE to confirm"
+                        className="border-red-300 focus:border-red-500 focus:ring-red-100"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 justify-end">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setDeleteConfirmText('');
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      isLoading={deletingAccount}
+                      onClick={handleDeleteAccount}
+                      disabled={deleteConfirmText !== 'DELETE'}
+                    >
+                      Permanently Delete Account
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

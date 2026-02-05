@@ -15,14 +15,14 @@ export function EmptyChatState({ onNewConversation, className }: EmptyChatStateP
       'flex flex-col items-center justify-center bg-slate-50/50',
       className
     )}>
-      <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-        <IconMessage size={32} className="text-slate-400" />
+      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center mb-6">
+        <IconMessage size={36} className="text-green-600" />
       </div>
-      <h3 className="text-lg font-medium text-slate-900 mb-1">
+      <h3 className="text-lg font-semibold text-slate-900 mb-2">
         No conversation selected
       </h3>
-      <p className="text-sm text-slate-500 text-center max-w-xs mb-4">
-        Select a conversation from the list or start a new one
+      <p className="text-sm text-slate-500 text-center max-w-xs mb-6 leading-relaxed">
+        Select a conversation from the list to view messages, or start a new conversation to connect with coaches and players.
       </p>
       <Button onClick={onNewConversation} className="gap-2">
         <IconPlus size={16} />

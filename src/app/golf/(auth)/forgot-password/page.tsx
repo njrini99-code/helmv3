@@ -258,10 +258,11 @@ export default function ForgotPasswordPage() {
                   "
                 >
                   {loading ? (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1" role="status" aria-label="Sending reset link">
                       <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                       <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                       <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="sr-only">Sending reset link...</span>
                     </div>
                   ) : (
                     'Send reset link'

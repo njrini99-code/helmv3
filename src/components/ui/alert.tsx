@@ -1,6 +1,8 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface AlertProps {
   type: 'success' | 'error' | 'warning' | 'info';
@@ -8,6 +10,8 @@ interface AlertProps {
   description?: string;
   action?: { label: string; onClick: () => void };
   onDismiss?: () => void;
+  className?: string;
+  icon?: React.ReactNode;
 }
 
 const alertStyles = {
@@ -17,6 +21,7 @@ const alertStyles = {
     icon: 'text-primary-600',
     title: 'text-primary-800',
     text: 'text-primary-700',
+    dismissHover: 'hover:bg-primary-100',
   },
   error: {
     bg: 'bg-red-50',
@@ -24,6 +29,7 @@ const alertStyles = {
     icon: 'text-red-600',
     title: 'text-red-800',
     text: 'text-red-700',
+    dismissHover: 'hover:bg-red-100',
   },
   warning: {
     bg: 'bg-amber-50',
@@ -31,6 +37,7 @@ const alertStyles = {
     icon: 'text-amber-600',
     title: 'text-amber-800',
     text: 'text-amber-700',
+    dismissHover: 'hover:bg-amber-100',
   },
   info: {
     bg: 'bg-blue-50',
@@ -38,6 +45,7 @@ const alertStyles = {
     icon: 'text-blue-600',
     title: 'text-blue-800',
     text: 'text-blue-700',
+    dismissHover: 'hover:bg-blue-100',
   },
 };
 
@@ -48,28 +56,50 @@ const alertIcons = {
   info: Info,
 };
 
-export function Alert({ type, title, description, action, onDismiss }: AlertProps) {
+export function Alert({ type, title, description, action, onDismiss, className, icon }: AlertProps) {
   const styles = alertStyles[type];
-  const Icon = alertIcons[type];
+  const DefaultIcon = alertIcons[type];
+  const [isDismissing, setIsDismissing] = useState(false);
+
+  const handleDismiss = useCallback(() => {
+    setIsDismissing(true);
+    setTimeout(() => onDismiss?.(), 200);
+  }, [onDismiss]);
 
   return (
-    <div className={`
-      ${styles.bg} ${styles.border}
-      border rounded-[14px]
-      p-4
-      flex items-start gap-3
-    `}>
-      <Icon className={`w-5 h-5 flex-shrink-0 ${styles.icon}`} />
+    <div
+      role="alert"
+      className={cn(
+        styles.bg, styles.border,
+        'border rounded-[14px]',
+        'p-4',
+        'flex items-start gap-3',
+        'animate-fade-in',
+        'transition-all duration-200',
+        isDismissing && 'opacity-0 scale-95 -translate-y-1',
+        className,
+      )}
+    >
+      <div className={cn(
+        'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+        styles.bg,
+      )}>
+        {icon || <DefaultIcon className={cn('w-5 h-5', styles.icon)} />}
+      </div>
 
-      <div className="flex-1">
-        <p className={`font-semibold text-sm ${styles.title}`}>{title}</p>
+      <div className="flex-1 min-w-0">
+        <p className={cn('font-semibold text-sm', styles.title)}>{title}</p>
         {description && (
-          <p className={`text-sm mt-1 ${styles.text}`}>{description}</p>
+          <p className={cn('text-sm mt-1', styles.text)}>{description}</p>
         )}
         {action && (
           <button
             onClick={action.onClick}
-            className={`text-sm font-medium ${styles.icon} hover:underline mt-2`}
+            className={cn(
+              'text-sm font-medium mt-2 transition-all duration-150',
+              'hover:underline active:scale-95',
+              styles.icon,
+            )}
           >
             {action.label}
           </button>
@@ -78,14 +108,17 @@ export function Alert({ type, title, description, action, onDismiss }: AlertProp
 
       {onDismiss && (
         <button
-          onClick={onDismiss}
-          className={`
-            w-6 h-6 flex-shrink-0
-            rounded-md
-            flex items-center justify-center
-            ${styles.icon} hover:${styles.bg}
-            transition-colors duration-150
-          `}
+          onClick={handleDismiss}
+          aria-label="Dismiss alert"
+          className={cn(
+            'w-8 h-8 flex-shrink-0',
+            'rounded-lg',
+            'flex items-center justify-center',
+            'transition-all duration-150',
+            'active:scale-90',
+            styles.icon,
+            styles.dismissHover,
+          )}
         >
           <X className="w-4 h-4" />
         </button>
