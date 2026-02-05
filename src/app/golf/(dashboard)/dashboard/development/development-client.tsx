@@ -102,6 +102,20 @@ export function DevelopmentPlansClient({
     areas: focusAreas.filter(fa => fa.player_id === player.id),
   }));
 
+  // Summary statistics
+  const summaryStats = (() => {
+    const activeCount = focusAreas.filter(fa => fa.status === 'active' || fa.status === 'in_progress').length;
+    const completedCount = focusAreas.filter(fa => fa.status === 'completed').length;
+    const pausedCount = focusAreas.filter(fa => fa.status === 'paused').length;
+    const withProgress = focusAreas.filter(fa => fa.target_value && fa.current_value);
+    const avgProgress = withProgress.length > 0
+      ? Math.round(withProgress.reduce((sum, fa) => sum + getProgressPercent(fa.current_value, fa.target_value), 0) / withProgress.length)
+      : 0;
+    // Count distinct area types used
+    const areaTypesUsed = new Set(focusAreas.map(fa => fa.area_type)).size;
+    return { activeCount, completedCount, pausedCount, avgProgress, total: focusAreas.length, areaTypesUsed };
+  })();
+
   const resetForm = () => {
     setFormData({
       player_id: selectedPlayerId || '',
@@ -280,6 +294,43 @@ export function DevelopmentPlansClient({
         </div>
       </div>
 
+      {/* Summary Stats Bar */}
+      {focusAreas.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 md:px-6 pt-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{summaryStats.activeCount}</p>
+              <p className="text-xs text-slate-500 mt-0.5">in progress</p>
+            </div>
+            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Completed</p>
+              <p className="text-2xl font-bold text-green-600 mt-1">{summaryStats.completedCount}</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {summaryStats.total > 0 ? `${Math.round((summaryStats.completedCount / summaryStats.total) * 100)}% of total` : 'none yet'}
+              </p>
+            </div>
+            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg Progress</p>
+              <div className="flex items-end gap-2 mt-1">
+                <p className="text-2xl font-bold text-slate-900">{summaryStats.avgProgress}%</p>
+              </div>
+              <div className="mt-1.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-green-500 rounded-full transition-all duration-500"
+                  style={{ width: `${summaryStats.avgProgress}%` }}
+                />
+              </div>
+            </div>
+            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Focus Areas</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{summaryStats.areaTypesUsed}</p>
+              <p className="text-xs text-slate-500 mt-0.5">distinct categories</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {players.length === 0 ? (
@@ -360,22 +411,52 @@ export function DevelopmentPlansClient({
                   </div>
 
                   {/* Progress bar if metrics exist */}
-                  {fa.target_value && (
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="text-slate-500">{fa.target_metric || 'Progress'}</span>
-                        <span className="font-medium text-slate-700">
-                          {fa.current_value || 0} / {fa.target_value}
-                        </span>
+                  {fa.target_value && (() => {
+                    const pct = getProgressPercent(fa.current_value, fa.target_value);
+                    const isComplete = pct >= 100;
+                    return (
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between text-sm mb-1.5">
+                          <span className="text-slate-500">{fa.target_metric || 'Progress'}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-slate-700">
+                              {fa.current_value || 0} / {fa.target_value}
+                            </span>
+                            <span className={cn(
+                              'text-xs font-semibold px-1.5 py-0.5 rounded',
+                              isComplete
+                                ? 'bg-green-100 text-green-700'
+                                : pct >= 75
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-slate-100 text-slate-600'
+                            )}>
+                              {pct}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              'h-full rounded-full transition-all duration-700',
+                              isComplete
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-400'
+                                : pct >= 75
+                                  ? 'bg-gradient-to-r from-blue-500 to-blue-400'
+                                  : pct >= 50
+                                    ? 'bg-gradient-to-r from-amber-500 to-amber-400'
+                                    : 'bg-gradient-to-r from-slate-400 to-slate-300'
+                            )}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        {isComplete && fa.status !== 'completed' && (
+                          <p className="text-xs text-green-600 font-medium mt-1.5">
+                            Target reached -- mark as complete?
+                          </p>
+                        )}
                       </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-green-500 rounded-full transition-all duration-500"
-                          style={{ width: `${getProgressPercent(fa.current_value, fa.target_value)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-100">

@@ -60,11 +60,11 @@ export function Modal({
           setIsAnimating(true);
         });
       });
-    } else {
-      setIsAnimating(false);
-      const timer = setTimeout(() => setIsVisible(false), 200);
-      return () => clearTimeout(timer);
+      return;
     }
+    setIsAnimating(false);
+    const timer = setTimeout(() => setIsVisible(false), 200);
+    return () => clearTimeout(timer);
   }, [isModalOpen]);
 
   // Focus trap handler

@@ -21,7 +21,7 @@ export default function CalendarLoading() {
         <div className="p-4">
           {/* Day headers */}
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((_day, i) => (
               <div key={i} className="text-center py-2">
                 <div className="h-3 w-6 rounded bg-slate-200 mx-auto" />
               </div>
