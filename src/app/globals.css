@@ -1163,14 +1163,9 @@
   .bg-dashboard-gradient {
     background: linear-gradient(180deg,
         #FFFEFA 0%,
-        #FFFEF7 15%,
-        #FFF9EC 32%,
-        #FFEDCF 48%,
-        #FBF3DC 58%,
-        #F0F6E4 68%,
-        #E8F5E8 80%,
-        #E2F2E2 100%);
-    /* background-attachment: fixed causes severe scroll jank on mobile */
+        #FDF9F0 33%,
+        #FAF5EB 66%,
+        #F5F0E6 100%);
     background-attachment: scroll;
   }
 
