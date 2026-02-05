@@ -16,7 +16,7 @@ export default function TeamStatsError({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <div className="min-h-full flex items-center justify-center p-6">
       <div className="max-w-md text-center">
         <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center mx-auto mb-4">
           <IconAlertCircle size={32} className="text-rose-500" />

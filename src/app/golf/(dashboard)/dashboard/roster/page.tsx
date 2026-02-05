@@ -82,7 +82,7 @@ export default async function GolfRosterPage() {
 
   if (!coach) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <IconAlertCircle size={32} className="text-amber-500" />
@@ -112,7 +112,7 @@ export default async function GolfRosterPage() {
 
   if (!teamId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <IconUsers size={32} className="text-amber-500" />
@@ -259,7 +259,7 @@ export default async function GolfRosterPage() {
 
   return (
     <RosterPageClient>
-    <div className="min-h-screen bg-[#FFFEFA]">
+    <div className="min-h-full bg-[#FFFEFA]">
       {/* Header Section */}
       <MobileNavHeader
         title="Team Roster"

@@ -62,7 +62,7 @@ export default async function TeamStatsPage() {
 
   if (!teamId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <div className="text-center max-w-md">
           <h2 className="text-xl font-semibold text-slate-900 mb-2">No Team Found</h2>
           <p className="text-slate-500">
@@ -93,7 +93,7 @@ export default async function TeamStatsPage() {
 
   if (!players || players.length === 0) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-full">
         <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-5">
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Team Stats Overview</h1>
@@ -240,7 +240,7 @@ export default async function TeamStatsPage() {
   });
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-full">
       {/* Header */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-5">

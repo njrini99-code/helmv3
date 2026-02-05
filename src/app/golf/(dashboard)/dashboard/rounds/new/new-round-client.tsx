@@ -703,7 +703,7 @@ export default function NewRoundClient() {
   // ============================================================================
   if (step === 'setup') {
     return (
-      <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-4">
+      <div className="min-h-full bg-[#FAF6F1] flex items-center justify-center p-4">
         <div className="w-full max-w-2xl">
           <div className="relative glass-standard rounded-2xl overflow-hidden p-8">
             <ShineEffect />
@@ -1159,7 +1159,7 @@ export default function NewRoundClient() {
   // ============================================================================
   if (step === 'holes') {
     return (
-      <div className="min-h-screen bg-[#FAF6F1]">
+      <div className="min-h-full bg-[#FAF6F1]">
         <div className="max-w-lg mx-auto px-4 py-6">
           <HoleConfigurationForm
             courseName={setupData.courseName}
@@ -1180,7 +1180,7 @@ export default function NewRoundClient() {
     const toPar = totalScore - totalPar;
 
     return (
-      <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center">
+      <div className="min-h-full bg-[#FAF6F1] flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <div className="w-20 h-20 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">

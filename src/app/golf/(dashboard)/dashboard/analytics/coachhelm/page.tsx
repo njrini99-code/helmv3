@@ -49,7 +49,7 @@ export default async function CoachHelmAnalyticsPage() {
 
   if (!teamId) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="min-h-full flex items-center justify-center p-6">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-warm-900 mb-2">No Team Found</h2>
           <p className="text-warm-600">

@@ -166,7 +166,7 @@ function RecentRoundsSkeleton() {
 
 export default function CoachHelmLoading() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-full">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-transparent pointer-events-none" />
 

@@ -119,7 +119,7 @@ export function PlayerCoachHelmDashboard({
                   dashboardData.recentRounds.length > 0;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-full">
       {/* Gradient background based on state */}
       <div className={cn(
         'absolute inset-0 bg-gradient-to-br pointer-events-none',

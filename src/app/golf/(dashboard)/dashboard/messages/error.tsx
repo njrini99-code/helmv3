@@ -11,7 +11,7 @@ export default function MessagesError({
   reset: () => void;
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAF6F1] p-4">
+    <div className="min-h-full flex items-center justify-center bg-[#FAF6F1] p-4">
       <div className="text-center">
         <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
           <IconWarning size={32} className="text-red-500" />

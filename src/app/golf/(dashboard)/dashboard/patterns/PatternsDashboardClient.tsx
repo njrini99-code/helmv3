@@ -50,7 +50,7 @@ export function PatternsDashboardClient({
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-full bg-cream">
       {/* Header */}
       <div className="bg-white/70 backdrop-blur-xl border-b border-white/20 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">

@@ -201,7 +201,7 @@ export default async function RoundsPage() {
   }, {} as Record<string, RoundWithPlayer[]>);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-full">
       {/* Header Section */}
       <MobileNavHeader
         title="Rounds"

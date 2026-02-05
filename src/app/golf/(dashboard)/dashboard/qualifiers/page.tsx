@@ -102,7 +102,7 @@ export default async function GolfQualifiersPage() {
   const activeCount = qualifiers.filter(q => q.status === 'in_progress' || q.status === 'upcoming').length;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-full">
       {/* Header Section */}
       <MobileNavHeader
         title="Qualifiers"

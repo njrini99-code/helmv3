@@ -177,7 +177,7 @@ export default function GolfTasksPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF6F1]">
+      <div className="min-h-full bg-[#FAF6F1]">
         <div className="max-w-4xl mx-auto px-6 py-8">
           {/* Header Skeleton */}
           <div className="flex items-center justify-between mb-8">
@@ -203,7 +203,7 @@ export default function GolfTasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF6F1]">
+    <div className="min-h-full bg-[#FAF6F1]">
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Header */}
         <motion.div

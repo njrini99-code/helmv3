@@ -11,7 +11,7 @@ export default function NewQualifierError({
   reset: () => void;
 }) {
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-full bg-cream">
       {/* Header */}
       <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm">
         <div className="max-w-3xl mx-auto px-6 py-4">

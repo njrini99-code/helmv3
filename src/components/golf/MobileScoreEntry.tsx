@@ -291,7 +291,7 @@ export default function MobileScoreEntry({
 
   if (!currentHole) {
     return (
-      <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center">
+      <div className="min-h-full bg-[#FAF6F1] flex items-center justify-center">
         <p className="text-lg text-slate-600">No hole data available</p>
       </div>
     );
@@ -312,7 +312,7 @@ export default function MobileScoreEntry({
               : `+${scoreToPar}`;
 
   return (
-    <div className="min-h-screen bg-[#FAF6F1] flex flex-col select-none">
+    <div className="min-h-full bg-[#FAF6F1] flex flex-col select-none">
       {/* Header with progress */}
       <div className="bg-slate-900 text-white px-4 py-3 safe-area-top">
         <div className="flex items-center justify-between">

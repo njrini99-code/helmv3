@@ -119,7 +119,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       className={cn(
         // Dark sidebar per Batch 3 spec
         'bg-[rgba(28,25,23,0.97)] backdrop-blur-xl',
-        'h-screen flex flex-col relative',
+        'h-dvh flex flex-col relative',
         'transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         'will-change-[width]',
         isCollapsed ? 'w-[72px]' : 'w-64',

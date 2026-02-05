@@ -260,7 +260,7 @@ export function DocumentCardSkeleton({ delay = 0 }: { delay?: number }) {
 
 export function DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-cream-gradient">
+    <div className="min-h-full bg-cream-gradient">
       {/* Header Skeleton */}
       <div className="sticky top-0 z-20 bg-white/60 backdrop-blur-[24px] border-b border-white/30">
         <div className="max-w-7xl mx-auto px-6 py-5">
@@ -424,7 +424,7 @@ export function CalendarSkeleton() {
 
 export function RoundsListSkeleton() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-full">
       {/* Header Skeleton */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-5">
@@ -462,7 +462,7 @@ export function RoundsListSkeleton() {
 
 export function StatsPageSkeleton() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-full">
       {/* Header */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-5">
@@ -515,7 +515,7 @@ export function StatsPageSkeleton() {
 
 export function DetailedStatsSkeleton() {
   return (
-    <div className="min-h-screen bg-[#FAF6F1]">
+    <div className="min-h-full bg-[#FAF6F1]">
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6">
@@ -718,7 +718,7 @@ export function MessagesPageSkeleton() {
 
 export function RosterPageSkeleton() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-full">
       {/* Header Skeleton */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-5">

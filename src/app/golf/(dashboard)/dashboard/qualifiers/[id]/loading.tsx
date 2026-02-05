@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-[#FAF6F1]">
+    <div className="min-h-full bg-[#FAF6F1]">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Back Button Skeleton */}
         <Skeleton className="h-5 w-32 mb-6" />

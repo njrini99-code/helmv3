@@ -192,7 +192,7 @@ export default function GolfSettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+      <div className="min-h-full flex flex-col items-center justify-center gap-4">
         <div className="relative">
           <div className="h-8 w-8 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
           <div className="absolute inset-0 h-8 w-8 border-2 border-transparent border-t-primary-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }} />
@@ -203,7 +203,7 @@ export default function GolfSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-full">
       {/* Header Section */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-4 md:py-5">

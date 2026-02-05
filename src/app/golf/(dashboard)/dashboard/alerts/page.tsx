@@ -163,7 +163,7 @@ export default function AlertsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream-gradient">
+    <div className="min-h-full bg-cream-gradient">
       {/* Header */}
       <div className={cn(
         'sticky top-0 z-20',

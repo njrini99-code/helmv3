@@ -11,7 +11,7 @@ import { PlayerCoachHelmDashboard } from './components/PlayerCoachHelmDashboard'
  */
 function ErrorState({ error }: { error: string }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-red-500/5 via-transparent to-transparent">
+    <div className="min-h-full flex items-center justify-center p-6 bg-gradient-to-br from-red-500/5 via-transparent to-transparent">
       <GlassCard className="max-w-md w-full text-center">
         <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
           <IconInfo size={32} className="text-red-500" />
@@ -36,7 +36,7 @@ function ErrorState({ error }: { error: string }) {
  */
 function NotPlayerState() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <div className="min-h-full flex items-center justify-center p-6">
       <GlassCard className="max-w-md w-full text-center">
         <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
           <IconSparkles size={32} className="text-amber-500" />
@@ -64,7 +64,7 @@ function NotPlayerState() {
  */
 function CoachHelmDisabledState({ reason }: { reason: string }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <div className="min-h-full flex items-center justify-center p-6">
       <GlassCard className="max-w-md w-full text-center">
         <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
           <IconSparkles size={32} className="text-slate-400" />

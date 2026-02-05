@@ -17,7 +17,7 @@ export default function IntelligenceError({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-cream via-white to-cream">
+    <div className="min-h-full flex items-center justify-center p-6 bg-gradient-to-br from-cream via-white to-cream">
       <GlassCard className="max-w-md w-full text-center p-8">
         <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
           <IconInfo size={32} className="text-red-500" />
