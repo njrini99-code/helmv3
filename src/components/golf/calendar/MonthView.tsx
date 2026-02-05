@@ -50,13 +50,13 @@ function DroppableDayCell({
         'bg-white/80 min-h-[120px] p-3 cursor-pointer transition-all duration-200 relative',
         'hover:bg-white hover:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]',
         !isCurrentMonth && 'bg-stone-50/50',
-        isCurrentDay && 'bg-emerald-50/40',
-        isOver && 'bg-emerald-100/60 ring-2 ring-emerald-400 ring-inset'
+        isCurrentDay && 'bg-green-50/40',
+        isOver && 'bg-green-100/60 ring-2 ring-green-400 ring-inset'
       )}
     >
       {/* Drop indicator */}
       {isOver && (
-        <div className="absolute inset-1 border-2 border-dashed border-emerald-400 rounded-lg bg-emerald-50/40 pointer-events-none" />
+        <div className="absolute inset-1 border-2 border-dashed border-green-400 rounded-lg bg-green-50/40 pointer-events-none" />
       )}
 
       {/* Date Number */}
@@ -65,7 +65,7 @@ function DroppableDayCell({
           className={cn(
             'w-7 h-7 flex items-center justify-center rounded-full text-sm font-semibold transition-all',
             isCurrentDay
-              ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-[0_2px_8px_rgba(16,185,129,0.3)]'
+              ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-[0_2px_8px_rgba(22,163,74,0.35)]'
               : isCurrentMonth
               ? 'text-stone-900'
               : 'text-stone-400'
@@ -190,7 +190,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
                 'bg-white/80 min-h-[120px] p-3 cursor-pointer transition-all duration-200',
                 'hover:bg-white hover:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]',
                 !isCurrentMonth && 'bg-stone-50/50',
-                isCurrentDay && 'bg-emerald-50/40'
+                isCurrentDay && 'bg-green-50/40'
               )}
             >
               {/* Date Number */}
@@ -199,7 +199,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
                   className={cn(
                     'w-7 h-7 flex items-center justify-center rounded-full text-sm font-semibold transition-all',
                     isCurrentDay
-                      ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-[0_2px_8px_rgba(16,185,129,0.3)]'
+                      ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-[0_2px_8px_rgba(22,163,74,0.35)]'
                       : isCurrentMonth
                       ? 'text-stone-900'
                       : 'text-stone-400'

@@ -183,12 +183,12 @@ export function WeekView({
                 key={index}
                 className={cn(
                   'h-14 flex flex-col items-center justify-center border-l border-stone-100/30',
-                  isCurrentDay && 'bg-emerald-50/30'
+                  isCurrentDay && 'bg-green-50/30'
                 )}
               >
                 <p className={cn(
                   'text-xs font-medium uppercase tracking-wide',
-                  isCurrentDay ? 'text-emerald-700' : 'text-stone-500'
+                  isCurrentDay ? 'text-green-700' : 'text-stone-500'
                 )}>
                   {dayName}
                 </p>
@@ -196,7 +196,7 @@ export function WeekView({
                   className={cn(
                     'w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold mt-0.5 transition-all',
                     isCurrentDay
-                      ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-[0_2px_8px_rgba(16,185,129,0.3)]'
+                      ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-[0_2px_8px_rgba(22,163,74,0.35)]'
                       : 'text-stone-900'
                   )}
                 >

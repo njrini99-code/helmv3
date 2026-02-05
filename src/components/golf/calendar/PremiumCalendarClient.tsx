@@ -58,6 +58,7 @@ export interface PremiumCalendarClientProps {
   initialEvents: CalendarEvent[];
   teamMembers: TeamMember[];
   isCoach?: boolean;
+  currentUserId?: string; // Current user's coach/player ID to exclude from attendee lists
   onSyncSettings?: () => void;
   // Optional custom action handlers (defaults to golf actions)
   actionHandlers?: CalendarActionHandlers;
@@ -67,6 +68,7 @@ export function PremiumCalendarClient({
   initialEvents,
   teamMembers,
   isCoach = true,
+  currentUserId,
   onSyncSettings,
   actionHandlers = defaultActionHandlers,
 }: PremiumCalendarClientProps) {
@@ -712,6 +714,7 @@ export function PremiumCalendarClient({
         onDelete={selectedEvent ? handleDeleteEvent : undefined}
         isSaving={isSavingEvent}
         teamPlayers={teamMembers}
+        currentUserId={currentUserId}
       />
 
       {/* Mobile Event Sheet */}

@@ -39,7 +39,10 @@ export function GolfCalendarWrapper({
   const [feeds, setFeeds] = useState<CalendarFeed[]>([]);
   const [feedsLoading, setFeedsLoading] = useState(false);
   const [feedsError, setFeedsError] = useState<string | null>(null);
-  const { teamId, userRole } = useTeamContext();
+  const { teamId, userRole, coachId, playerId } = useTeamContext();
+
+  // Current user's coach/player ID (for filtering themselves out of attendee lists)
+  const currentUserId = coachId || playerId || undefined;
   const canManageTeamFeed = userRole === 'coach';
   const allowedTypes: FeedType[] = teamId && canManageTeamFeed ? ['team', 'personal'] : ['personal'];
 
@@ -125,6 +128,7 @@ export function GolfCalendarWrapper({
         initialEvents={initialEvents}
         teamMembers={teamMembers}
         isCoach={isCoach}
+        currentUserId={currentUserId}
         onSyncSettings={() => setShowFeedManager(true)}
       />
 

@@ -107,6 +107,7 @@ interface EventDetailModalProps {
   onDelete?: () => Promise<void>;
   isSaving: boolean;
   teamPlayers?: TeamPlayer[]; // Available for RSVP invitations
+  currentUserId?: string; // Current user's player/coach ID to exclude from attendee list
 }
 
 const eventTypeColors: Record<GolfEventType, { bg: string; text: string; border: string }> = {
@@ -128,7 +129,10 @@ export function EventDetailModal({
   onDelete,
   isSaving,
   teamPlayers = [],
+  currentUserId,
 }: EventDetailModalProps) {
+  // Filter out current user from attendee list - you shouldn't be able to add yourself
+  const availablePlayers = teamPlayers.filter(p => p.id !== currentUserId);
   const [formData, setFormData] = useState<GolfEventFormData>({
     title: '',
     eventType: 'practice',
@@ -593,36 +597,79 @@ export function EventDetailModal({
               <div className="flex items-center justify-between mb-3">
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                   <UserPlus className="w-4 h-4 text-slate-600" />
-                  Add People
+                  Attendees
                 </label>
-                {formData.attendeeIds.length > 0 && (
-                  <span className="text-xs font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
-                    {formData.attendeeIds.length} selected
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {formData.attendeeIds.length > 0 && (
+                    <span className="text-xs font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                      {formData.attendeeIds.length} of {availablePlayers.length}
+                    </span>
+                  )}
+                </div>
               </div>
 
-              {teamPlayers.length === 0 ? (
+              {availablePlayers.length === 0 ? (
                 <p className="text-sm text-slate-500 py-2">
                   No team members available. Add players to your roster first.
                 </p>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {teamPlayers.map(player => (
+                <div className="space-y-3">
+                  {/* Quick Actions */}
+                  <div className="flex gap-2">
                     <button
-                      key={player.id}
                       type="button"
-                      onClick={() => handleToggleAttendee(player.id)}
-                      disabled={isViewMode || isSaving}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                        formData.attendeeIds.includes(player.id)
-                          ? 'bg-green-100 text-green-700 border-2 border-green-500'
-                          : 'bg-slate-100 text-slate-600 border-2 border-transparent hover:border-slate-300'
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      onClick={() => setFormData(prev => ({ ...prev, attendeeIds: availablePlayers.map(p => p.id) }))}
+                      disabled={isViewMode || isSaving || formData.attendeeIds.length === availablePlayers.length}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
-                      {player.first_name} {player.last_name}
+                      Add All
                     </button>
-                  ))}
+                    {formData.attendeeIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, attendeeIds: [] }))}
+                        disabled={isViewMode || isSaving}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Player Grid */}
+                  <div className="flex flex-wrap gap-2">
+                    {availablePlayers.map(player => {
+                      const isSelected = formData.attendeeIds.includes(player.id);
+                      return (
+                        <button
+                          key={player.id}
+                          type="button"
+                          onClick={() => handleToggleAttendee(player.id)}
+                          disabled={isViewMode || isSaving}
+                          className={`group flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                            isSelected
+                              ? 'bg-green-600 text-white shadow-md shadow-green-600/20'
+                              : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          {player.avatar_url ? (
+                            <img
+                              src={player.avatar_url}
+                              alt=""
+                              className="w-5 h-5 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                              isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'
+                            }`}>
+                              {player.first_name[0]}{player.last_name[0]}
+                            </div>
+                          )}
+                          <span>{player.first_name} {player.last_name[0]}.</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
