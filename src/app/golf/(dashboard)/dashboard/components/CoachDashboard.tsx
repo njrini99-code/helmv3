@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, memo, useCallback } from 'react';
+import { useMemo, useState, memo } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';

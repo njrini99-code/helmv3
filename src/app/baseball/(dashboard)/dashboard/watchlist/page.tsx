@@ -144,9 +144,13 @@ export default function WatchlistPage() {
       // Update local state
       setWatchlist(prev => prev.map(item =>
         item.id === watchlistId
-          ? { ...item, pipeline_stage: newStatus }
+          ? { ...item, pipeline_stage: newStatus, updated_at: new Date().toISOString() }
           : item
       ));
+      const item = watchlist.find(w => w.id === watchlistId);
+      const playerName = item ? getFullName(item.player.first_name, item.player.last_name) : 'Player';
+      const stageLabel = statusOptions.find(o => o.value === newStatus)?.label || newStatus;
+      showToast(`${playerName} moved to ${stageLabel}`, 'success');
     } catch {
       showToast('Failed to update status', 'error');
     }
@@ -178,11 +182,12 @@ export default function WatchlistPage() {
       // Update local state
       setWatchlist(prev => prev.map(item =>
         item.id === watchlistId
-          ? { ...item, notes: noteValue }
+          ? { ...item, notes: noteValue, updated_at: new Date().toISOString() }
           : item
       ));
       setEditingNote(null);
       setNoteValue('');
+      showToast('Note saved successfully', 'success');
     } catch {
       showToast('Failed to save note', 'error');
     }
@@ -299,23 +304,37 @@ export default function WatchlistPage() {
           </div>
         )}
 
-        {/* Filter Tabs */}
+        {/* Filter Tabs with count badges */}
         <div className="flex items-center gap-2 mb-6 border-b border-slate-200 overflow-x-auto scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0" role="tablist" aria-label="Filter by status">
-          {filterTabs.map(tab => (
-            <button
-              key={tab.value}
-              role="tab"
-              aria-selected={filterTab === tab.value}
-              onClick={() => setFilterTab(tab.value)}
-              className={`px-4 py-2 font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 min-h-[44px] ${
-                filterTab === tab.value
-                  ? 'border-green-600 text-green-700'
-                  : 'border-transparent text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {filterTabs.map(tab => {
+            const count = tab.value === 'all'
+              ? watchlist.length
+              : watchlist.filter(w => w.pipeline_stage === tab.value).length;
+            return (
+              <button
+                key={tab.value}
+                role="tab"
+                aria-selected={filterTab === tab.value}
+                onClick={() => setFilterTab(tab.value)}
+                className={`px-4 py-2 font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 min-h-[44px] flex items-center gap-1.5 ${
+                  filterTab === tab.value
+                    ? 'border-green-600 text-green-700'
+                    : 'border-transparent text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full ${
+                    filterTab === tab.value
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Additional Filters */}
@@ -469,7 +488,7 @@ export default function WatchlistPage() {
             {/* Mobile card view */}
             <div className="lg:hidden space-y-4">
               {filteredWatchlist.map((item) => (
-                <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200">
                   {/* Player header with avatar + name + checkbox */}
                   <div className="flex items-start gap-3 mb-3">
                     <input
