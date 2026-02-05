@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { IconSend, IconArrowLeft } from '@/components/icons';
+import { IconSend, IconArrowLeft, IconCheck } from '@/components/icons';
 import { AttachmentButton } from './AttachmentButton';
 import { AttachmentPreview } from './AttachmentPreview';
 import { MessageAttachments, type MessageAttachmentData } from './MessageAttachment';
@@ -18,9 +18,29 @@ import {
 import type { Message } from '@/lib/types';
 import type { GolfConversationParticipant } from '@/hooks/golf/use-golf-messages';
 
-// Extended message type with attachments
+// Extended message type with attachments (read is already in Message type)
 export interface MessageWithAttachments extends Message {
   attachments?: MessageAttachmentData[];
+}
+
+// Message status indicator component
+function MessageStatus({ read, isOwn }: { read?: boolean | null; isOwn: boolean }) {
+  if (!isOwn) return null;
+
+  return (
+    <span className="inline-flex items-center ml-1">
+      {read ? (
+        // Double check for read
+        <span className="flex text-green-500">
+          <IconCheck size={12} className="-mr-1.5" />
+          <IconCheck size={12} />
+        </span>
+      ) : (
+        // Single check for sent/delivered
+        <IconCheck size={12} className="text-slate-400" />
+      )}
+    </span>
+  );
 }
 
 interface GolfChatWindowProps {
@@ -243,14 +263,15 @@ export function GolfChatWindow({
                     </div>
                   )}
 
-                  {/* Timestamp */}
+                  {/* Timestamp & Read Status */}
                   <p
                     className={cn(
-                      'text-xs px-1',
-                      isOwn ? 'text-right text-slate-400' : 'text-slate-400'
+                      'text-xs px-1 flex items-center',
+                      isOwn ? 'justify-end text-slate-400' : 'text-slate-400'
                     )}
                   >
                     {formatTime(message.created_at)}
+                    <MessageStatus read={message.read} isOwn={isOwn} />
                   </p>
                 </div>
               </div>

@@ -4,9 +4,31 @@ import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { IconSend, IconArrowLeft } from '@/components/icons';
+import { IconSend, IconArrowLeft, IconCheck } from '@/components/icons';
 import type { Message } from '@/lib/types';
 import type { ParticipantDetails } from '@/lib/types/messages';
+
+// Message type already has read field from database
+
+// Message status indicator component
+function MessageStatus({ read, isOwn }: { read?: boolean | null; isOwn: boolean }) {
+  if (!isOwn) return null;
+
+  return (
+    <span className="inline-flex items-center ml-1">
+      {read ? (
+        // Double check for read
+        <span className="flex text-green-300">
+          <IconCheck size={12} className="-mr-1.5" />
+          <IconCheck size={12} />
+        </span>
+      ) : (
+        // Single check for sent/delivered
+        <IconCheck size={12} className="text-green-200/60" />
+      )}
+    </span>
+  );
+}
 
 export interface ChatWindowProps {
   messages: Message[];
@@ -127,10 +149,11 @@ export function ChatWindow({
                 >
                   <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                   <p className={cn(
-                    'text-xs mt-1',
-                    isOwn ? 'text-green-200' : 'text-slate-400'
+                    'text-xs mt-1 flex items-center',
+                    isOwn ? 'text-green-200 justify-end' : 'text-slate-400'
                   )}>
                     {formatTime(message.created_at)}
+                    <MessageStatus read={message.read} isOwn={isOwn} />
                   </p>
                 </div>
               </div>
