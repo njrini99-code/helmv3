@@ -410,7 +410,7 @@ export default function PipelinePage() {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex lg:grid lg:grid-cols-5 gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:px-0 lg:overflow-visible snap-x snap-mandatory lg:snap-none">
+            <div className="flex lg:grid lg:grid-cols-5 gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:px-0 lg:overflow-visible snap-x snap-mandatory lg:snap-none scroll-smooth">
               {stages.map((stage) => (
                 <PipelineColumn
                   key={stage}
@@ -422,7 +422,7 @@ export default function PipelinePage() {
 
             <DragOverlay>
               {activeItem ? (
-                <div className="opacity-90">
+                <div className="opacity-90 rotate-[2deg] scale-105 shadow-xl">
                   <PipelineCard item={activeItem} isDragging />
                 </div>
               ) : null}

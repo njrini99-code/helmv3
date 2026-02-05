@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Toast {
   id: string;
@@ -9,6 +10,7 @@ interface Toast {
   title: string;
   description?: string;
   action?: { label: string; onClick: () => void };
+  duration?: number;
 }
 
 type ToastContextValue = {
@@ -26,12 +28,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substr(2, 9);
-    setToasts(prev => [...prev, { ...toast, id }]);
+    const duration = toast.duration ?? 5000;
+    setToasts(prev => [...prev, { ...toast, id, duration }]);
 
-    // Auto remove after 5 seconds
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
-    }, 5000);
+    }, duration);
   }, []);
 
   const removeToast = useCallback((id: string) => {
@@ -41,7 +43,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   // Backward compatibility method
   const showToast = useCallback((message: string, type: Toast['type']) => {
     const id = Math.random().toString(36).substr(2, 9);
-    setToasts(prev => [...prev, { id, type, title: message }]);
+    setToasts(prev => [...prev, { id, type, title: message, duration: 5000 }]);
 
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
@@ -75,13 +77,18 @@ export function useToast() {
 
 function ToastContainerInternal({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: string) => void }) {
   return (
-    <div className="
-      fixed bottom-6 right-6 z-50
-      flex flex-col gap-3
-      pointer-events-none
-    ">
-      {toasts.map(toast => (
-        <ToastItem key={toast.id} toast={toast} onRemove={() => onRemove(toast.id)} />
+    <div
+      className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3 pointer-events-none"
+      role="region"
+      aria-label="Notifications"
+    >
+      {toasts.map((toast, index) => (
+        <ToastItem
+          key={toast.id}
+          toast={toast}
+          onRemove={() => onRemove(toast.id)}
+          index={index}
+        />
       ))}
     </div>
   );
@@ -102,59 +109,111 @@ const toastIcons = {
 };
 
 const toastColors = {
-  success: 'text-primary-600',
-  error: 'text-red-600',
-  warning: 'text-amber-600',
-  info: 'text-blue-600',
+  success: {
+    icon: 'text-primary-600',
+    bg: 'bg-primary-50',
+    border: 'border-l-primary-500',
+    progress: 'bg-primary-500',
+  },
+  error: {
+    icon: 'text-red-600',
+    bg: 'bg-red-50',
+    border: 'border-l-red-500',
+    progress: 'bg-red-500',
+  },
+  warning: {
+    icon: 'text-amber-600',
+    bg: 'bg-amber-50',
+    border: 'border-l-amber-500',
+    progress: 'bg-amber-500',
+  },
+  info: {
+    icon: 'text-blue-600',
+    bg: 'bg-blue-50',
+    border: 'border-l-blue-500',
+    progress: 'bg-blue-500',
+  },
 };
 
-function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) {
+function ToastItem({ toast, onRemove, index }: { toast: Toast; onRemove: () => void; index: number }) {
   const Icon = toastIcons[toast.type];
+  const colors = toastColors[toast.type];
+  const [isExiting, setIsExiting] = useState(false);
+  const [progress, setProgress] = useState(100);
+  const startTimeRef = useRef(Date.now());
+  const duration = toast.duration ?? 5000;
+
+  // Progress bar countdown
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTimeRef.current;
+      const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
+      setProgress(remaining);
+      if (remaining <= 0) clearInterval(interval);
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [duration]);
+
+  const handleRemove = useCallback(() => {
+    setIsExiting(true);
+    setTimeout(onRemove, 200);
+  }, [onRemove]);
 
   return (
-    <div className="
-      pointer-events-auto
-      w-[360px]
-      bg-white
-      border border-warm-200
-      rounded-[16px]
-      shadow-lg
-      p-4
-      flex items-start gap-3
-      animate-in slide-in-from-right-full fade-in
-      duration-200
-    ">
-      <Icon className={`w-5 h-5 flex-shrink-0 ${toastColors[toast.type]}`} />
+    <div
+      role="alert"
+      className={cn(
+        'pointer-events-auto w-[380px] bg-white border border-warm-200 border-l-4 rounded-[14px] shadow-lg overflow-hidden',
+        'transition-all duration-200 ease-out',
+        isExiting
+          ? 'opacity-0 translate-x-[120%] scale-95'
+          : 'opacity-100 translate-x-0 scale-100 animate-slide-in-right',
+        colors.border,
+      )}
+      style={{ animationDelay: `${index * 50}ms` }}
+    >
+      <div className="p-4 flex items-start gap-3">
+        <div className={cn('w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0', colors.bg)}>
+          <Icon className={cn('w-4 h-4', colors.icon)} />
+        </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-warm-900">{toast.title}</p>
-        {toast.description && (
-          <p className="text-sm text-warm-500 mt-0.5">{toast.description}</p>
-        )}
-        {toast.action && (
-          <button
-            onClick={toast.action.onClick}
-            className="text-sm font-medium text-primary-600 hover:text-primary-700 mt-2"
-          >
-            {toast.action.label}
-          </button>
-        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm text-warm-900">{toast.title}</p>
+          {toast.description && (
+            <p className="text-sm text-warm-500 mt-0.5">{toast.description}</p>
+          )}
+          {toast.action && (
+            <button
+              onClick={toast.action.onClick}
+              className="text-sm font-medium text-primary-600 hover:text-primary-700 mt-2 transition-colors"
+            >
+              {toast.action.label}
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleRemove}
+          aria-label="Dismiss notification"
+          className={cn(
+            'w-7 h-7 flex-shrink-0 rounded-md flex items-center justify-center',
+            'text-warm-400 hover:text-warm-600 hover:bg-warm-100',
+            'transition-all duration-150 active:scale-90',
+          )}
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label="Dismiss notification"
-        className="
-          w-6 h-6 flex-shrink-0
-          rounded-md
-          flex items-center justify-center
-          text-warm-400 hover:text-warm-600 hover:bg-warm-100
-          transition-colors duration-150
-        "
-      >
-        <X className="w-4 h-4" />
-      </button>
+      {/* Progress bar */}
+      <div className="h-[2px] bg-warm-100 w-full">
+        <div
+          className={cn('h-full transition-all duration-100 ease-linear', colors.progress)}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
     </div>
   );
 }
