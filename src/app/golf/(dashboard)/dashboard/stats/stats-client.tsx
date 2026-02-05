@@ -476,7 +476,18 @@ export default function StatsClient({
 
     if (coach) {
       setUserRole('coach');
-      await loadCoachPlayers(coach.organization_id);
+      const loadedPlayers = await loadCoachPlayers(coach.organization_id);
+
+      // If a specific player was requested via URL param, auto-select them
+      if (initialPlayerId) {
+        const target = loadedPlayers.find(p => p.id === initialPlayerId);
+        if (target) {
+          setSelectedPlayer(target);
+          setPlayerName(`${target.first_name} ${target.last_name}`);
+          await loadPlayerSummary(initialPlayerId);
+        }
+      }
+
       setLoading(false);
       return;
     }
@@ -495,8 +506,8 @@ export default function StatsClient({
     }
   }
 
-  async function loadCoachPlayers(organizationId: string | null) {
-    if (!organizationId) return;
+  async function loadCoachPlayers(organizationId: string | null): Promise<(Player & { stats?: PlayerStats })[]> {
+    if (!organizationId) return [];
 
     const supabase = createClient();
 
@@ -506,7 +517,7 @@ export default function StatsClient({
       .eq('organization_id', organizationId)
       .maybeSingle();
 
-    if (!orgTeam?.id) return;
+    if (!orgTeam?.id) return [];
 
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
@@ -516,7 +527,7 @@ export default function StatsClient({
 
     const playerIds = teamMembers?.map(tm => tm.player_id) || [];
 
-    if (playerIds.length === 0) return;
+    if (playerIds.length === 0) return [];
 
     const { data: teamPlayers } = await supabase
       .from('golf_players')
@@ -524,7 +535,7 @@ export default function StatsClient({
       .in('id', playerIds)
       .order('last_name');
 
-    if (!teamPlayers || teamPlayers.length === 0) return;
+    if (!teamPlayers || teamPlayers.length === 0) return [];
 
     // Fetch ALL rounds for ALL players
     const { data: allRounds } = await supabase
@@ -590,6 +601,7 @@ export default function StatsClient({
     });
 
     setPlayers(playersWithStats);
+    return playersWithStats;
   }
 
   async function loadPlayerSummary(playerId: string) {

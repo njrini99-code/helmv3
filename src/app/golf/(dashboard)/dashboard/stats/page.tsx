@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import StatsClient from './stats-client';
 
 /**
@@ -14,5 +15,8 @@ import StatsClient from './stats-client';
  * This results in 3-5x faster initial page load for players with many rounds.
  */
 export default function GolfStatsPage() {
-  return <StatsClient />;
+  const searchParams = useSearchParams();
+  const playerId = searchParams.get('player');
+
+  return <StatsClient initialPlayerId={playerId} />;
 }
