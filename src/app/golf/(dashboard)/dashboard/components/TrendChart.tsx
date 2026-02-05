@@ -44,7 +44,7 @@ export function TrendChart({
 
     if (loading) {
         return (
-            <div className="h-[200px] relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-hidden">
+            <div className="h-[160px] sm:h-[180px] md:h-[200px] relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-hidden">
                 <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
                 <div className="relative h-full flex items-center justify-center">
                     <div className="text-center space-y-2">
@@ -58,7 +58,7 @@ export function TrendChart({
 
     if (data.length === 0) {
         return (
-            <div className="h-[200px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100">
+            <div className="h-[160px] sm:h-[180px] md:h-[200px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100">
                 <p className="text-sm leading-relaxed text-slate-400 font-medium">No data available</p>
             </div>
         );
@@ -93,12 +93,12 @@ export function TrendChart({
                 </motion.h3>
             )}
 
-            {/* Chart */}
-            <motion.div 
-                className="h-[200px] w-full"
+            {/* Chart - responsive height for mobile */}
+            <motion.div
+                className="h-[160px] sm:h-[180px] md:h-[200px] w-full"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ 
+                transition={{
                     type: 'spring',
                     stiffness: 200,
                     damping: 25,
@@ -106,7 +106,7 @@ export function TrendChart({
                 }}
             >
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <AreaChart data={data} margin={{ top: 8, right: 8, left: -25, bottom: 0 }}>
                         <defs>
                             <linearGradient id="colorGreen" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#16A34A" stopOpacity={0.2} />

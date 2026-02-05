@@ -3,29 +3,30 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { IconHome, IconUsers, IconCalendar, IconChart, IconMessage, IconSettings } from '@/components/icons';
+import { IconHome, IconUsers, IconCalendar, IconChart, IconMessage, IconSettings, IconGolf } from '@/components/icons';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  activeIcon?: React.ReactNode;
 }
 
 const coachNavItems: NavItem[] = [
-  { href: '/golf/dashboard', label: 'Home', icon: <IconHome size={20} /> },
-  { href: '/golf/dashboard/roster', label: 'Roster', icon: <IconUsers size={20} /> },
-  { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={20} /> },
-  { href: '/golf/dashboard/stats', label: 'Stats', icon: <IconChart size={20} /> },
-  { href: '/golf/dashboard/settings', label: 'Settings', icon: <IconSettings size={20} /> },
+  { href: '/golf/dashboard', label: 'Home', icon: <IconHome size={22} /> },
+  { href: '/golf/dashboard/roster', label: 'Roster', icon: <IconUsers size={22} /> },
+  { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={22} /> },
+  { href: '/golf/dashboard/stats', label: 'Stats', icon: <IconChart size={22} /> },
+  { href: '/golf/dashboard/settings', label: 'More', icon: <IconSettings size={22} /> },
 ];
 
 const playerNavItems: NavItem[] = [
-  { href: '/golf/dashboard', label: 'Home', icon: <IconHome size={20} /> },
-  { href: '/golf/dashboard/rounds', label: 'Rounds', icon: <IconChart size={20} /> },
-  { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={20} /> },
-  { href: '/golf/dashboard/messages', label: 'Messages', icon: <IconMessage size={20} /> },
-  { href: '/golf/dashboard/settings', label: 'Settings', icon: <IconSettings size={20} /> },
+  { href: '/golf/dashboard', label: 'Home', icon: <IconHome size={22} /> },
+  { href: '/golf/dashboard/rounds', label: 'Rounds', icon: <IconGolf size={22} /> },
+  { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={22} /> },
+  { href: '/golf/dashboard/messages', label: 'Messages', icon: <IconMessage size={22} /> },
+  { href: '/golf/dashboard/settings', label: 'More', icon: <IconSettings size={22} /> },
 ];
 
 interface MobileBottomNavProps {
@@ -42,30 +43,47 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-slate-200" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="flex items-center justify-around px-2 py-1">
+    <nav
+      className={cn(
+        'fixed bottom-0 left-0 right-0 z-40 lg:hidden',
+        'bg-white/95 backdrop-blur-xl',
+        'border-t border-slate-200/60',
+        'shadow-[0_-4px_20px_rgba(0,0,0,0.05)]'
+      )}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <div className="flex items-center justify-around px-1 py-1.5">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || 
+          const isActive = pathname === item.href ||
             (item.href !== '/golf/dashboard' && pathname.startsWith(item.href));
-          
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                'flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors min-w-[64px]',
-                isActive 
-                  ? 'text-green-600' 
-                  : 'text-slate-500 active:bg-slate-100'
+                'flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl transition-all duration-200',
+                'min-w-[56px] min-h-[52px]',
+                'active:scale-95',
+                isActive
+                  ? 'text-primary-600'
+                  : 'text-slate-400 hover:text-slate-600'
               )}
             >
               <div className={cn(
-                'p-1 rounded-lg transition-colors',
-                isActive && 'bg-green-100'
+                'p-1.5 rounded-xl transition-all duration-200',
+                isActive
+                  ? 'bg-primary-100/80 text-primary-600 shadow-sm'
+                  : 'text-slate-400'
               )}>
                 {item.icon}
               </div>
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className={cn(
+                'text-[10px] font-medium transition-colors',
+                isActive ? 'text-primary-600' : 'text-slate-500'
+              )}>
+                {item.label}
+              </span>
             </Link>
           );
         })}

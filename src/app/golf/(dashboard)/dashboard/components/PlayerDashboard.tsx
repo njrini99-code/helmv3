@@ -14,10 +14,12 @@ import {
     IconMessage,
     IconSparkles,
     IconSettings,
-    IconTarget
+    IconTarget,
+    IconMenu
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { ShineEffect } from '@/components/ui/shine-effect';
+import { useSidebar } from '@/contexts/sidebar-context';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TrendChart } from './TrendChart';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
@@ -62,44 +64,48 @@ export interface PlayerDashboardData {
 function JoinTeamBanner() {
     return (
         <motion.div
-            className="mb-6"
+            className="mb-4 md:mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
         >
             <div className={cn(
-                'relative overflow-hidden rounded-2xl p-6', // Standardized: 16px
+                'relative overflow-hidden rounded-2xl p-4 md:p-6',
                 'bg-gradient-to-r from-primary-600 to-primary-500',
                 'border border-primary-500/50',
                 'shadow-[0_8px_32px_rgba(22,163,74,0.2),inset_0_1px_0_rgba(255,255,255,0.2)]'
             )}>
-                {/* Ambient glows */}
-                <div className="absolute right-0 top-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                <div className="absolute left-0 bottom-0 w-32 h-32 bg-white/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+                {/* Ambient glows - hidden on mobile */}
+                <div className="hidden md:block absolute right-0 top-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="hidden md:block absolute left-0 bottom-0 w-32 h-32 bg-white/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
 
-                <div className="relative flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"> {/* Standardized: 12px */}
-                        <IconUsers size={24} className="text-white" />
+                <div className="relative flex items-start gap-3 md:gap-4">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                        <IconUsers size={20} className="text-white md:hidden" />
+                        <IconUsers size={24} className="text-white hidden md:block" />
                     </div>
-                    <div className="flex-1">
-                        <h3 className="text-lg font-bold text-white mb-1">
+                    <div className="flex-1 min-w-0">
+                        <h3 className="text-base md:text-lg font-bold text-white mb-1">
                             Join Your Team
                         </h3>
-                        <p className="text-white/80 text-sm mb-4">
-                            You haven't joined a team yet. Get your invite code from your coach to access team features.
+                        <p className="text-white/80 text-xs md:text-sm mb-3 md:mb-4">
+                            Get your invite code from your coach to access team features.
                         </p>
                         <Link
                             href="/golf/dashboard/settings"
                             className={cn(
-                                'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg', // Standardized: 12px
-                                'bg-white text-primary-700 font-semibold text-sm',
+                                'inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 md:py-2.5 rounded-lg',
+                                'bg-white text-primary-700 font-semibold text-xs md:text-sm',
                                 'shadow-[0_2px_8px_rgba(0,0,0,0.1)]',
-                                'hover:bg-primary-50 transition-colors'
+                                'hover:bg-primary-50 transition-colors active:scale-95'
                             )}
                         >
-                            <IconSettings size={16} />
-                            Enter Invite Code
-                            <IconArrowRight size={14} />
+                            <IconSettings size={14} className="md:hidden" />
+                            <IconSettings size={16} className="hidden md:block" />
+                            <span className="md:hidden">Join Team</span>
+                            <span className="hidden md:inline">Enter Invite Code</span>
+                            <IconArrowRight size={12} className="md:hidden" />
+                            <IconArrowRight size={14} className="hidden md:block" />
                         </Link>
                     </div>
                 </div>
@@ -114,6 +120,8 @@ function JoinTeamBanner() {
 
 export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
     const { player, team, stats, recentRounds } = data;
+    const { toggleMobile } = useSidebar();
+
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Good morning';
@@ -136,23 +144,37 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
             <div
                 className={cn(
                     'sticky top-0 z-20',
-                    'bg-white/60 backdrop-blur-[24px]', // More transparent, stronger blur
+                    'bg-white/60 backdrop-blur-[24px]',
                     'border-b border-white/30',
                     'shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
                 )}
                 style={{ viewTransitionName: 'page-header' }}
             >
-                <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">
+                <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+                    <div className="flex items-center gap-3">
+                        {/* Mobile hamburger menu */}
+                        <button
+                            onClick={toggleMobile}
+                            className={cn(
+                                'lg:hidden p-2 -ml-2 rounded-xl',
+                                'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                                'transition-colors duration-150 active:scale-95',
+                                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+                            )}
+                            aria-label="Open navigation menu"
+                        >
+                            <IconMenu size={22} />
+                        </button>
+
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-lg md:text-2xl font-bold tracking-tight text-slate-900 truncate">
                                 {greeting}, {player.first_name}
                             </h1>
-                            <p className="text-slate-500 mt-0.5 flex items-center gap-2 text-sm">
-                                <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
-                                {team?.name || 'Golf Team'}
-                                <span className="text-slate-300">•</span>
-                                <span className="capitalize">{player.graduation_year ? `Class of ${player.graduation_year}` : 'Player'}</span>
+                            <p className="text-slate-500 mt-0.5 flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
+                                <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary-500 animate-pulse flex-shrink-0" />
+                                <span className="truncate">{team?.name || 'Golf Team'}</span>
+                                <span className="text-slate-300 hidden sm:inline">•</span>
+                                <span className="capitalize hidden sm:inline">{player.graduation_year ? `Class of ${player.graduation_year}` : 'Player'}</span>
                             </p>
                         </div>
                     </div>
@@ -161,7 +183,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
 
             {/* Main Content */}
             <motion.div
-                className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8"
+                className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -169,8 +191,8 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                 {/* Join Team Banner - show if player has no team */}
                 {!team && <JoinTeamBanner />}
 
-                {/* Stats Grid */}
-                <motion.div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8" variants={itemVariants}>
+                {/* Stats Grid - tighter gap on mobile */}
+                <motion.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 mb-5 md:mb-8" variants={itemVariants}>
                     <PremiumStatCard
                         icon={<IconGolf size={20} />}
                         iconColor="text-primary-600"
@@ -209,10 +231,10 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                     />
                 </motion.div>
 
-                {/* Two Column Layout */}
-                <div className="grid lg:grid-cols-3 gap-6">
+                {/* Two Column Layout - reduced gap on mobile */}
+                <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
                     {/* Left Column - Quick Actions & Focus Areas */}
-                    <motion.div className="space-y-6" variants={itemVariants}>
+                    <motion.div className="space-y-4 md:space-y-6" variants={itemVariants}>
                         <div>
                             <SectionHeader title="Quick Actions" />
                             <div className="space-y-2">
@@ -258,7 +280,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                     </motion.div>
 
                     {/* Right Column - Recent Rounds & Charts */}
-                    <motion.div className="lg:col-span-2 space-y-6" variants={itemVariants}>
+                    <motion.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
                         {/* Scoring Trend Chart */}
                         {chartData.length >= 2 && (
                             <div>

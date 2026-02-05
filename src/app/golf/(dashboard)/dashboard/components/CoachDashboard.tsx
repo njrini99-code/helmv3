@@ -14,9 +14,11 @@ import {
     IconCopy,
     IconCheck,
     IconSparkles,
-    IconBell
+    IconBell,
+    IconMenu
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { useSidebar } from '@/contexts/sidebar-context';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CalendarWidget } from '@/components/dashboard/calendar-widget';
@@ -108,7 +110,7 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
     return (
         <motion.div
             className={cn(
-                'relative overflow-hidden rounded-2xl p-6 mb-6', // Standardized: 16px
+                'relative overflow-hidden rounded-2xl p-4 md:p-6 mb-4 md:mb-6',
                 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900',
                 'border border-white/10',
                 'shadow-[0_8px_32px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]'
@@ -117,38 +119,40 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
         >
-            {/* Ambient glow */}
-            <div className="absolute right-0 top-0 w-40 h-40 bg-primary-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute left-0 bottom-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+            {/* Ambient glow - hidden on mobile */}
+            <div className="hidden md:block absolute right-0 top-0 w-40 h-40 bg-primary-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+            <div className="hidden md:block absolute left-0 bottom-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
-            <div className="relative z-10 flex items-center justify-between gap-4">
-                <div>
-                    <h3 className="text-white/90 text-sm font-semibold mb-1 flex items-center gap-2">
-                        <IconUsers size={16} className="text-primary-400" />
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                <div className="min-w-0">
+                    <h3 className="text-white/90 text-xs sm:text-sm font-semibold mb-0.5 sm:mb-1 flex items-center gap-2">
+                        <IconUsers size={14} className="text-primary-400 sm:hidden" />
+                        <IconUsers size={16} className="text-primary-400 hidden sm:block" />
                         Team Invite Code
                     </h3>
-                    <p className="text-white/50 text-xs">Share this code with players to join your roster</p>
+                    <p className="text-white/50 text-[10px] sm:text-xs">Share this code with players to join</p>
                 </div>
                 <motion.button
                     onClick={handleCopy}
                     className={cn(
-                        'flex items-center gap-3 px-4 py-2.5 rounded-lg', // Standardized: 12px
+                        'flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg',
                         'bg-white/10 hover:bg-white/15 border border-white/10',
-                        'text-sm font-mono tracking-widest text-white',
-                        'transition-all duration-200'
+                        'text-xs sm:text-sm font-mono tracking-widest text-white',
+                        'transition-all duration-200 active:scale-95'
                     )}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                 >
                     {copied ? (
                         <>
-                            <IconCheck size={16} className="text-primary-400" />
+                            <IconCheck size={14} className="text-primary-400" />
                             <span className="text-primary-400">Copied!</span>
                         </>
                     ) : (
                         <>
                             <span>{inviteCode}</span>
-                            <IconCopy size={14} className="text-white/50" />
+                            <IconCopy size={12} className="text-white/50 sm:hidden" />
+                            <IconCopy size={14} className="text-white/50 hidden sm:block" />
                         </>
                     )}
                 </motion.button>
@@ -163,6 +167,7 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
 
 export function CoachDashboard({ data }: { data: CoachDashboardData }) {
     const { coach, team, stats, recentRounds, topPlayers, calendarEvents, teamScoringTrend } = data;
+    const { toggleMobile } = useSidebar();
 
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
@@ -187,27 +192,44 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
             <div
                 className={cn(
                     'sticky top-0 z-20',
-                    'bg-white/60 backdrop-blur-[24px]', // More transparent, stronger blur
+                    'bg-white/60 backdrop-blur-[24px]',
                     'border-b border-white/30',
                     'shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
                 )}
                 style={{ viewTransitionName: 'page-header' }}
             >
-                <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                                {greeting}, {firstName}
-                            </h1>
-                            <p className="text-slate-500 mt-0.5 flex items-center gap-2 text-sm">
-                                <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
-                                {team?.name || 'Golf Team'}
-                            </p>
+                <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            {/* Mobile hamburger menu */}
+                            <button
+                                onClick={toggleMobile}
+                                className={cn(
+                                    'lg:hidden p-2 -ml-2 rounded-xl',
+                                    'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                                    'transition-colors duration-150 active:scale-95',
+                                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+                                )}
+                                aria-label="Open navigation menu"
+                            >
+                                <IconMenu size={22} />
+                            </button>
+
+                            <div className="min-w-0">
+                                <h1 className="text-lg md:text-2xl font-bold tracking-tight text-slate-900 truncate">
+                                    {greeting}, {firstName}
+                                </h1>
+                                <p className="text-slate-500 mt-0.5 flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
+                                    <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary-500 animate-pulse flex-shrink-0" />
+                                    <span className="truncate">{team?.name || 'Golf Team'}</span>
+                                </p>
+                            </div>
                         </div>
+
                         <div className="hidden md:flex items-center gap-3">
                             <div className={cn(
-                                'flex items-center gap-2 px-3 py-2 rounded-lg', // Standardized: 12px
-                                'bg-slate-100/60 backdrop-blur-sm', // More transparent
+                                'flex items-center gap-2 px-3 py-2 rounded-lg',
+                                'bg-slate-100/60 backdrop-blur-sm',
                                 'border border-slate-200/40',
                                 'text-sm text-slate-500'
                             )}>
@@ -222,7 +244,7 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
 
             {/* Main Content */}
             <motion.div
-                className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8"
+                className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -235,8 +257,8 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                     <InviteCodeCard inviteCode={team.join_code} />
                 )}
 
-                {/* Stats Grid */}
-                <motion.div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8" variants={itemVariants}>
+                {/* Stats Grid - tighter gap on mobile */}
+                <motion.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 mb-5 md:mb-8" variants={itemVariants}>
                     <PremiumStatCard
                         icon={<IconUsers size={20} />}
                         iconColor="text-primary-600"
@@ -277,10 +299,10 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                     />
                 </motion.div>
 
-                {/* Two Column Layout */}
-                <div className="grid lg:grid-cols-3 gap-6">
+                {/* Two Column Layout - reduced gap on mobile */}
+                <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
                     {/* Left Column */}
-                    <motion.div className="space-y-6" variants={itemVariants}>
+                    <motion.div className="space-y-4 md:space-y-6" variants={itemVariants}>
                         {/* Quick Actions */}
                         <div>
                             <SectionHeader title="Quick Actions" />
@@ -368,7 +390,7 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                     </motion.div>
 
                     {/* Right Column */}
-                    <motion.div className="lg:col-span-2 space-y-6" variants={itemVariants}>
+                    <motion.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
                         {/* Player Alerts - AI-Generated Alerts for Proactive Coaching */}
                         {team && coach && (
                             <div>
