@@ -1,8 +1,9 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { useSidebar } from '@/contexts/sidebar-context';
 
 export type CalendarView = 'day' | 'week' | 'month';
 
@@ -22,6 +23,7 @@ export function CalendarHeader({
   onAddEvent,
 }: CalendarHeaderProps) {
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const { toggleMobile } = useSidebar();
   
   const getTitle = () => {
     if (view === 'day') {
@@ -50,8 +52,22 @@ export function CalendarHeader({
       }}
     >
       {/* Left: Title + Nav */}
-      <div className="flex items-center gap-4">
-        <h1 className="text-lg font-semibold text-stone-900 tracking-tight">
+      <div className="flex items-center gap-3 md:gap-4">
+        {/* Mobile hamburger menu */}
+        <button
+          type="button"
+          onClick={toggleMobile}
+          className={cn(
+            'lg:hidden p-2 -ml-2 rounded-xl',
+            'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+            'transition-colors duration-150 active:scale-95',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+          )}
+          aria-label="Open navigation menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <h1 className="text-base md:text-lg font-semibold text-stone-900 tracking-tight">
           {getTitle()}
         </h1>
 

@@ -9,6 +9,7 @@ import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
 import { PendingJoinRequests } from '@/components/golf/roster/PendingJoinRequests';
 import { RosterPageClient } from '@/components/golf/roster/RosterPageClient';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { Avatar } from '@/components/ui/avatar';
 import { IconUsers, IconChartBar, IconMessage, IconChevronRight, IconAlertCircle } from '@/components/icons';
@@ -262,19 +263,12 @@ export default async function GolfRosterPage() {
     <RosterPageClient>
     <div className="min-h-screen">
       {/* Header Section */}
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">Team Roster</h1>
-              <p className="text-slate-500 mt-0.5 text-sm md:text-base truncate">
-                {playersWithStats.length} {playersWithStats.length === 1 ? 'player' : 'players'} on {teamName}
-              </p>
-            </div>
-            <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
-          </div>
-        </div>
-      </div>
+      <MobileNavHeader
+        title="Team Roster"
+        subtitle={`${playersWithStats.length} ${playersWithStats.length === 1 ? 'player' : 'players'} on ${teamName}`}
+      >
+        <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
+      </MobileNavHeader>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">

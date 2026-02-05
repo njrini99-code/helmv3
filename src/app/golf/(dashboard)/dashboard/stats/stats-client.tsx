@@ -33,7 +33,10 @@ import {
   IconTrendingUp,
   IconTrendingDown,
   IconTarget,
+  IconMenu,
 } from '@/components/icons';
+import { useSidebar } from '@/contexts/sidebar-context';
+import { cn } from '@/lib/utils';
 
 // ============================================================================
 // TYPES
@@ -361,6 +364,9 @@ export default function StatsClient({
   const detailedStatsCache = useRef<Map<string, GolfStats>>(new Map());
   const lastFetchedPlayerId = useRef<string | null>(null);
   const lastFetchedRoundId = useRef<string | 'overall'>('overall');
+
+  // Mobile navigation
+  const { toggleMobile } = useSidebar();
 
   // ============================================================================
   // COMPUTED VALUES
@@ -845,9 +851,24 @@ export default function StatsClient({
         <div className="max-w-6xl mx-auto p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Team Stats</h1>
-              <p className="text-slate-500">{players.length} players on your roster</p>
+            <div className="flex items-center gap-3">
+              {/* Mobile hamburger menu */}
+              <button
+                onClick={toggleMobile}
+                className={cn(
+                  'lg:hidden p-2 -ml-2 rounded-xl',
+                  'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                  'transition-colors duration-150 active:scale-95',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+                )}
+                aria-label="Open navigation menu"
+              >
+                <IconMenu size={22} />
+              </button>
+              <div>
+                <h1 className="text-xl md:text-2xl font-bold text-slate-900">Team Stats</h1>
+                <p className="text-slate-500 text-sm md:text-base">{players.length} players on your roster</p>
+              </div>
             </div>
           </div>
 
@@ -957,6 +978,19 @@ export default function StatsClient({
   // Player stats view
   return (
     <div className="relative">
+      {/* Floating Mobile Nav Button */}
+      <button
+        onClick={toggleMobile}
+        className={cn(
+          'fixed top-6 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 shadow-lg hover:shadow-xl hover:bg-white transition-all group',
+          'lg:hidden',
+          userRole === 'coach' ? 'left-20' : 'left-6'
+        )}
+        aria-label="Open navigation menu"
+      >
+        <IconMenu size={20} className="text-slate-600 group-hover:text-green-600 transition-colors" />
+      </button>
+
       {/* Floating Back Button for Coaches */}
       {userRole === 'coach' && (
         <button

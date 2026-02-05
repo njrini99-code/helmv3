@@ -18,7 +18,9 @@ import {
   IconInfo,
   IconChevronRight,
   IconWarning,
+  IconMenu,
 } from '@/components/icons';
+import { useSidebar } from '@/contexts/sidebar-context';
 import { getTeamInsightsSummary, dismissInsight, acknowledgeInsight } from '@/app/golf/actions/intelligence-dashboard';
 import { generateTeamInsights } from '@/app/golf/actions/insights';
 import { ErrorBoundary, SectionErrorFallback } from '@/components/error-boundary';
@@ -710,6 +712,9 @@ export function CoachHelmIntelligenceDashboard({
   initialPlayerSummaries = [],
   initialCorrelations = [],
 }: DashboardProps) {
+  // Navigation
+  const { toggleMobile } = useSidebar();
+
   // State
   const [timeScope, setTimeScope] = useState<TimeScope>('last_30_days');
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
@@ -923,9 +928,22 @@ export function CoachHelmIntelligenceDashboard({
 
       {/* Header */}
       <div className="sticky top-0 z-20 bg-white/70 backdrop-blur-xl border-b border-warm-200/60">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between py-5">
-            <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-between py-4 md:py-5">
+            <div className="flex items-center gap-3 md:gap-4">
+              {/* Mobile hamburger menu */}
+              <button
+                onClick={toggleMobile}
+                className={cn(
+                  'lg:hidden p-2 -ml-2 rounded-xl',
+                  'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                  'transition-colors duration-150 active:scale-95',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+                )}
+                aria-label="Open navigation menu"
+              >
+                <IconMenu size={22} />
+              </button>
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}

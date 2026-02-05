@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { ShineEffect } from '@/components/ui/shine-effect';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { CreateQualifierButton } from '@/components/golf/qualifiers/CreateQualifierButton';
@@ -103,19 +104,12 @@ export default async function GolfQualifiersPage() {
   return (
     <div className="min-h-screen">
       {/* Header Section */}
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">Qualifiers</h1>
-              <p className="text-slate-500 mt-0.5 text-sm md:text-base">
-                {activeCount} active qualifier{activeCount !== 1 ? 's' : ''}
-              </p>
-            </div>
-            {isCoach && <CreateQualifierButton />}
-          </div>
-        </div>
-      </div>
+      <MobileNavHeader
+        title="Qualifiers"
+        subtitle={`${activeCount} active qualifier${activeCount !== 1 ? 's' : ''}`}
+      >
+        {isCoach && <CreateQualifierButton />}
+      </MobileNavHeader>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">

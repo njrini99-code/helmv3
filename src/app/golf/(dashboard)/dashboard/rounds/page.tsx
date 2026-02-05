@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { ShineEffect } from '@/components/ui/shine-effect';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -202,26 +203,19 @@ export default async function RoundsPage() {
   return (
     <div className="min-h-screen">
       {/* Header Section */}
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-4 md:py-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">Rounds</h1>
-              <p className="text-slate-500 mt-0.5">
-                {rounds.length} round{rounds.length !== 1 ? 's' : ''} recorded
-              </p>
-            </div>
-            {userRole === 'player' && (
-              <Link href="/golf/dashboard/rounds/new">
-                <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-medium text-sm rounded-xl hover:bg-slate-800 transition-colors">
-                  <IconPlus size={16} />
-                  New Round
-                </button>
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
+      <MobileNavHeader
+        title="Rounds"
+        subtitle={`${rounds.length} round${rounds.length !== 1 ? 's' : ''} recorded`}
+      >
+        {userRole === 'player' && (
+          <Link href="/golf/dashboard/rounds/new">
+            <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-medium text-sm rounded-xl hover:bg-slate-800 transition-colors">
+              <IconPlus size={16} />
+              New Round
+            </button>
+          </Link>
+        )}
+      </MobileNavHeader>
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
