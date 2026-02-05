@@ -43,17 +43,17 @@ export function ProductSplit() {
       <div className="relative max-w-7xl mx-auto px-6">
         {/* Section header */}
         <motion.h2
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+          transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
           className="text-center font-serif text-4xl md:text-5xl text-white mb-4"
         >
           Two sports. One platform.
         </motion.h2>
         <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+          transition={{ duration: 0.35, delay: 0.06, ease: [0.25, 0.1, 0.25, 1] }}
           className="text-center text-xl text-stone-400 mb-16"
         >
           Purpose-built for the sports you coach.
@@ -74,15 +74,15 @@ export function ProductSplit() {
             return (
               <motion.div
                 key={product.name}
-                initial={{ opacity: 0, y: 40 }}
-                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-                transition={{ duration: 0.7, delay: 0.2 + i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                transition={{ duration: 0.35, delay: 0.1 + i * 0.06, ease: [0.25, 0.1, 0.25, 1] }}
               >
                 <Link href={product.href}>
                   <motion.div
                     className="group relative rounded-2xl overflow-hidden cursor-pointer"
                     whileHover={{ scale: 1.02, y: -8 }}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                   >
                     {/* Layer 1: Very subtle white overlay */}
                     <div className="absolute inset-0 bg-white/[0.02]" />

@@ -19,27 +19,27 @@ export function FinalCTA() {
 
       <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
         <motion.h2
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.35 }}
           className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-warm-900 mb-6"
         >
           Ready to focus on what matters?
         </motion.h2>
 
         <motion.p
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.1 }}
+          transition={{ duration: 0.35, delay: 0.06 }}
           className="text-base sm:text-lg md:text-xl text-warm-700 mb-8 sm:mb-10"
         >
           Join coaches who are building better programs with Helm.
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.35, delay: 0.12 }}
         >
           <Link
             href="/baseball/coach-onboarding"

@@ -174,9 +174,9 @@ function ProductShowcase({
                   {/* Logo */}
                   <motion.div
                     className="mb-6"
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
                     animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                    transition={{ duration: 0.5, delay: 0.2 }}
+                    transition={{ duration: 0.3, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
                   >
                     <div className="relative inline-block">
                       {/* Logo glow */}
@@ -226,9 +226,9 @@ function ProductShowcase({
                     {product.features.map((feature, i) => (
                       <motion.div
                         key={feature.label}
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 12 }}
                         animate={isInView ? { opacity: 1, y: 0 } : {}}
-                        transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
+                        transition={{ duration: 0.25, delay: 0.15 + i * 0.05, ease: [0.25, 0.1, 0.25, 1] }}
                         className="flex items-start gap-3"
                       >
                         <div className={`
@@ -271,9 +271,9 @@ function ProductShowcase({
                 {/* Right: Dashboard preview */}
                 <div className="hidden lg:flex items-center justify-center">
                   <motion.div
-                    initial={{ opacity: 0, x: 40 }}
+                    initial={{ opacity: 0, x: 20 }}
                     animate={isInView ? { opacity: 1, x: 0 } : {}}
-                    transition={{ duration: 0.6, delay: 0.4 }}
+                    transition={{ duration: 0.35, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                     className="relative"
                   >
                     {/* Browser chrome */}
@@ -351,9 +351,9 @@ function ProductShowcase({
 
                     {/* Floating stat card */}
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 12 }}
                       animate={isInView ? { opacity: 1, y: 0 } : {}}
-                      transition={{ duration: 0.5, delay: 0.6 }}
+                      transition={{ duration: 0.3, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                       className="absolute -bottom-6 -left-6 bg-white rounded-xl p-4 shadow-xl"
                     >
                       <div className="text-xs text-stone-500 mb-1">

@@ -189,9 +189,9 @@ export function Hero({ useVideoBackground = false }: { useVideoBackground?: bool
       <div className="relative z-20 flex items-center justify-center min-h-[calc(100svh-80px)] md:min-h-[calc(100vh-80px)] px-4 sm:px-6 py-10 md:py-12">
         <motion.div
           style={{ opacity }}
-          initial={isClient ? { opacity: 0, y: 40, scale: 0.95 } : false}
+          initial={isClient ? { opacity: 0, y: 24, scale: 0.97 } : false}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.4, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
         >
           {/* Premium Glass Card with warm edge from light */}
           <div
@@ -215,9 +215,9 @@ export function Hero({ useVideoBackground = false }: { useVideoBackground?: bool
             <div className="relative z-10">
               {/* Main headline - BIG and dominant */}
               <motion.h1
-                initial={isClient ? { opacity: 0, y: 20 } : false}
+                initial={isClient ? { opacity: 0, y: 16 } : false}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.35, delay: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
                 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white text-center leading-tight"
               >
                 Where great teams
@@ -227,9 +227,9 @@ export function Hero({ useVideoBackground = false }: { useVideoBackground?: bool
 
               {/* Subhead - smaller, muted */}
               <motion.p
-                initial={isClient ? { opacity: 0, y: 20 } : false}
+                initial={isClient ? { opacity: 0, y: 16 } : false}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.35, delay: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
                 className="mt-5 text-base sm:text-lg md:text-xl text-white/60 text-center max-w-lg mx-auto"
               >
                 The command center for college sports. Recruiting, roster management, and athlete development—unified.
@@ -237,9 +237,9 @@ export function Hero({ useVideoBackground = false }: { useVideoBackground?: bool
 
               {/* Email Capture */}
               <motion.div
-                initial={isClient ? { opacity: 0, y: 20 } : false}
+                initial={isClient ? { opacity: 0, y: 16 } : false}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.35, delay: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
               >
                 <EmailCapture />
               </motion.div>
@@ -252,12 +252,12 @@ export function Hero({ useVideoBackground = false }: { useVideoBackground?: bool
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.2 }}
+        transition={{ delay: 0.7 }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20"
       >
         <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ repeat: Infinity, duration: 1.5 }}
+          animate={{ y: [0, 6, 0] }}
+          transition={{ repeat: Infinity, duration: 1.2 }}
           className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2"
         >
           <div className="w-1.5 h-3 rounded-full bg-white/40" />

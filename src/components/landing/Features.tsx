@@ -71,8 +71,8 @@ function AnimatedLetter({
                 scale: 0.3,
               }}
               transition={{
-                duration: 1.2,
-                delay: delay + p.id * 0.02,
+                duration: 0.7,
+                delay: delay + p.id * 0.01,
                 ease: [0.16, 1, 0.3, 1],
               }}
             />
@@ -89,9 +89,9 @@ function AnimatedLetter({
           scale: isExploding ? 0 : 1,
         }}
         transition={{
-          opacity: { duration: isExploding ? 0.6 : 0.5, delay },
-          y: { duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] },
-          scale: { duration: 0.6, delay },
+          opacity: { duration: isExploding ? 0.35 : 0.3, delay },
+          y: { duration: 0.4, delay, ease: [0.16, 1, 0.3, 1] },
+          scale: { duration: 0.35, delay },
         }}
       >
         {letter === ' ' ? '\u00A0' : letter}
@@ -146,9 +146,9 @@ function FeatureCarousel({
       {/* Browser Window */}
       <motion.div
         className="rounded-2xl overflow-hidden shadow-2xl bg-stone-900"
-        initial={{ y: 50, opacity: 0 }}
+        initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
       >
         {/* Title bar */}
         <div className="bg-stone-800 px-4 py-2.5 flex items-center gap-3 border-b border-stone-700/50">
@@ -177,7 +177,7 @@ function FeatureCarousel({
             className={`absolute inset-0 opacity-20 bg-gradient-to-br ${features[activeIndex]?.gradient}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.15 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.3 }}
             key={activeIndex}
           />
 
@@ -192,7 +192,7 @@ function FeatureCarousel({
               ][activeIndex % 3],
               scale: [1, 1.1, 1],
             }}
-            transition={{ duration: 2, ease: 'easeInOut' }}
+            transition={{ duration: 1.5, ease: 'easeInOut' }}
           />
 
           {/* Feature content with 3D transitions */}
@@ -205,9 +205,9 @@ function FeatureCarousel({
               animate="center"
               exit="exit"
               transition={{
-                duration: 0.6,
-                ease: [0.16, 1, 0.3, 1],
-                opacity: { duration: 0.4 },
+                duration: 0.35,
+                ease: [0.25, 0.1, 0.25, 1],
+                opacity: { duration: 0.25 },
               }}
               className="absolute inset-0 flex items-center justify-center p-8"
               style={{ transformStyle: 'preserve-3d' }}
@@ -219,9 +219,9 @@ function FeatureCarousel({
                   initial={{ scale: 0.5, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{
-                    duration: 0.6,
-                    ease: [0.16, 1, 0.3, 1],
-                    delay: 0.1,
+                    duration: 0.35,
+                    ease: [0.25, 0.1, 0.25, 1],
+                    delay: 0.05,
                   }}
                 >
                   <span className="text-3xl">{features[activeIndex]?.icon}</span>
@@ -232,7 +232,7 @@ function FeatureCarousel({
                   className="text-xl sm:text-2xl md:text-3xl font-semibold text-white mb-3"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
                 >
                   {features[activeIndex]?.title}
                 </motion.h3>
@@ -242,7 +242,7 @@ function FeatureCarousel({
                   className="text-sm sm:text-base md:text-lg text-stone-400 max-w-md mx-auto leading-relaxed"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
+                  transition={{ duration: 0.3, delay: 0.15 }}
                 >
                   {features[activeIndex]?.description}
                 </motion.p>
@@ -265,7 +265,7 @@ function FeatureCarousel({
             initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
           >
             <h4 className="text-xl sm:text-2xl md:text-3xl font-semibold text-stone-900 mb-2">
               {features[activeIndex]?.title}
@@ -472,7 +472,7 @@ export function Features() {
                 opacity: textInView && !isExploding && !showCarousel ? 1 : 0,
                 y: textInView ? 0 : 20,
               }}
-              transition={{ duration: 0.6, delay: 0.6 }}
+              transition={{ duration: 0.35, delay: 0.3 }}
             >
               Everything you need to run a modern program
             </motion.p>
@@ -480,7 +480,7 @@ export function Features() {
             <motion.div
               className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
               animate={{ opacity: textInView && !isExploding && !showCarousel ? 0.6 : 0 }}
-              transition={{ duration: 0.4, delay: 1 }}
+              transition={{ duration: 0.3, delay: 0.5 }}
             >
               <span className="text-sm text-stone-400">Keep scrolling</span>
               <motion.div
@@ -498,7 +498,7 @@ export function Features() {
             className="absolute inset-0 flex items-center justify-center z-20"
             initial={{ opacity: 0 }}
             animate={{ opacity: showCarousel ? 1 : 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.3 }}
             style={{ pointerEvents: showCarousel ? 'auto' : 'none' }}
           >
             <FeatureCarousel
