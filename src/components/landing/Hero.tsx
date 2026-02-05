@@ -4,18 +4,31 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Navigation } from './Navigation'
+import { submitDemoRequest } from '@/app/actions/demo-request'
 
 // Email capture form
 function EmailCapture() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (email) {
-      // TODO: Integrate with email service
+    if (!email) return
+
+    setLoading(true)
+    setError('')
+
+    const result = await submitDemoRequest(email)
+
+    if (result.success) {
       setSubmitted(true)
+    } else {
+      setError(result.error || 'Something went wrong. Please try again.')
     }
+
+    setLoading(false)
   }
 
   if (submitted) {
@@ -51,15 +64,31 @@ function EmailCapture() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Enter your email"
           required
-          className="flex-1 px-5 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+          disabled={loading}
+          className="flex-1 px-5 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all disabled:opacity-50"
         />
         <button
           type="submit"
-          className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition-colors whitespace-nowrap"
+          disabled={loading}
+          className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Notify Me
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Sending...
+            </span>
+          ) : (
+            'Notify Me'
+          )}
         </button>
       </form>
+
+      {error && (
+        <p className="text-red-400 text-sm mt-3">{error}</p>
+      )}
     </div>
   )
 }
