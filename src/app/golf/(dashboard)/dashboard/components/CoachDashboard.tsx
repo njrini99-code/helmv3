@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState, memo } from 'react';
+import { useMemo, useState, memo, useCallback } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     IconUsers,
     IconCalendar,
@@ -16,7 +16,9 @@ import {
     IconCheck,
     IconSparkles,
     IconBell,
-    IconMenu
+    IconMenu,
+    IconClock,
+    IconChevronDown,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/contexts/sidebar-context';
@@ -163,12 +165,97 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
 });
 
 // ============================================================================
+// DATE RANGE SELECTOR
+// ============================================================================
+
+type DateRange = '7d' | '30d' | '90d' | 'season' | 'all';
+
+const DATE_RANGE_OPTIONS: { value: DateRange; label: string; shortLabel: string }[] = [
+    { value: '7d', label: 'Last 7 Days', shortLabel: '7D' },
+    { value: '30d', label: 'Last 30 Days', shortLabel: '30D' },
+    { value: '90d', label: 'Last 90 Days', shortLabel: '90D' },
+    { value: 'season', label: 'This Season', shortLabel: 'Season' },
+    { value: 'all', label: 'All Time', shortLabel: 'All' },
+];
+
+const DateRangeSelector = memo(function DateRangeSelector({
+    value,
+    onChange,
+}: {
+    value: DateRange;
+    onChange: (range: DateRange) => void;
+}) {
+    const [open, setOpen] = useState(false);
+    const selected = DATE_RANGE_OPTIONS.find(o => o.value === value);
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setOpen(!open)}
+                className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium',
+                    'bg-white/60 backdrop-blur-sm border border-white/30',
+                    'text-slate-600 hover:text-slate-900 hover:bg-white/80',
+                    'transition-all duration-150 active:scale-95',
+                    'shadow-sm'
+                )}
+                aria-label="Select date range"
+            >
+                <IconClock size={14} className="text-slate-400" />
+                <span className="hidden sm:inline">{selected?.label}</span>
+                <span className="sm:hidden">{selected?.shortLabel}</span>
+                <IconChevronDown size={14} className={cn('text-slate-400 transition-transform', open && 'rotate-180')} />
+            </button>
+
+            <AnimatePresence>
+                {open && (
+                    <>
+                        <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+                        <motion.div
+                            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className={cn(
+                                'absolute right-0 top-full mt-1 z-40',
+                                'bg-white/90 backdrop-blur-xl rounded-xl',
+                                'border border-white/30 shadow-lg',
+                                'py-1 min-w-[160px]'
+                            )}
+                        >
+                            {DATE_RANGE_OPTIONS.map((option) => (
+                                <button
+                                    key={option.value}
+                                    onClick={() => {
+                                        onChange(option.value);
+                                        setOpen(false);
+                                    }}
+                                    className={cn(
+                                        'w-full text-left px-3 py-2 text-sm transition-colors',
+                                        option.value === value
+                                            ? 'text-primary-700 bg-primary-50 font-medium'
+                                            : 'text-slate-600 hover:bg-slate-50'
+                                    )}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+});
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 export function CoachDashboard({ data }: { data: CoachDashboardData }) {
     const { coach, team, stats, recentRounds, topPlayers, calendarEvents, teamScoringTrend } = data;
     const { toggleMobile } = useSidebar();
+    const [dateRange, setDateRange] = useState<DateRange>('all');
 
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
@@ -179,7 +266,33 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
 
     const firstName = coach.full_name?.split(' ')[0] || 'Coach';
 
+    // Filter rounds based on selected date range
+    const filteredRounds = useMemo(() => {
+        if (dateRange === 'all') return recentRounds;
+        const now = new Date();
+        let cutoff: Date;
+        switch (dateRange) {
+            case '7d': cutoff = new Date(now.getTime() - 7 * 86400000); break;
+            case '30d': cutoff = new Date(now.getTime() - 30 * 86400000); break;
+            case '90d': cutoff = new Date(now.getTime() - 90 * 86400000); break;
+            case 'season': {
+                // Season starts Aug 1 of current academic year
+                const month = now.getMonth();
+                const year = month >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+                cutoff = new Date(year, 7, 1);
+                break;
+            }
+            default: cutoff = new Date(0);
+        }
+        return recentRounds.filter(r => new Date(r.round_date) >= cutoff);
+    }, [recentRounds, dateRange]);
+
     const hasTrendData = teamScoringTrend && teamScoringTrend.length >= 2;
+
+    // Today's date for context
+    const todayStr = useMemo(() => {
+        return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    }, []);
 
     return (
         <div className="min-h-full bg-transparent">
@@ -217,18 +330,21 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                                 <p className="text-slate-500 mt-0.5 flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
                                     <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary-500 animate-pulse flex-shrink-0" />
                                     <span className="truncate">{team?.name || 'Golf Team'}</span>
+                                    <span className="hidden md:inline text-slate-400">|</span>
+                                    <span className="hidden md:inline text-slate-400 truncate">{todayStr}</span>
                                 </p>
                             </div>
                         </div>
 
-                        <div className="hidden md:flex items-center gap-3">
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <DateRangeSelector value={dateRange} onChange={setDateRange} />
                             <div className={cn(
-                                'flex items-center gap-2 px-3 py-2 rounded-lg',
+                                'hidden md:flex items-center gap-2 px-3 py-2 rounded-lg',
                                 'bg-slate-100/60 backdrop-blur-sm',
                                 'border border-slate-200/40',
                                 'text-sm text-slate-500'
                             )}>
-                                <kbd className="px-1.5 py-0.5 bg-white rounded-md text-xs font-medium shadow-sm border border-slate-200">⌘</kbd>
+                                <kbd className="px-1.5 py-0.5 bg-white rounded-md text-xs font-medium shadow-sm border border-slate-200">&#8984;</kbd>
                                 <kbd className="px-1.5 py-0.5 bg-white rounded-md text-xs font-medium shadow-sm border border-slate-200">K</kbd>
                                 <span className="text-slate-400 ml-1">Quick actions</span>
                             </div>
@@ -451,16 +567,19 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                             />
                             <PremiumGlassCard noPadding>
                                 <ShineEffect />
-                                {recentRounds.length === 0 ? (
+                                {filteredRounds.length === 0 ? (
                                     <EmptyState
                                         type="rounds"
                                         variant="compact"
-                                        description="Players can submit rounds from their dashboard"
+                                        description={dateRange !== 'all'
+                                            ? `No rounds in the selected time period. Try expanding the date range.`
+                                            : "Players can submit rounds from their dashboard"
+                                        }
                                         action={null}
                                     />
                                 ) : (
                                     <div className="divide-y divide-white/20">
-                                        {recentRounds.map((round) => (
+                                        {filteredRounds.map((round) => (
                                             <RoundRow
                                                 key={round.id}
                                                 playerName={round.player_name}

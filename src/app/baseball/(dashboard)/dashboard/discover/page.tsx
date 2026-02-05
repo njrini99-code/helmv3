@@ -351,11 +351,29 @@ function DiscoverContent() {
     );
   }
 
+  // Count active filters for badge display
+  const activeFilterCount = [
+    filters.gradYear,
+    filters.position,
+    filters.states && filters.states.length > 0 ? true : undefined,
+    filters.minVelo,
+    filters.maxVelo,
+    filters.minExit,
+    filters.maxExit,
+    filters.hasVideo,
+    filters.search,
+    filters.teamType,
+  ].filter(Boolean).length;
+
   return (
     <>
       <Header
         title="Discover"
-        subtitle="Find your next recruit or explore programs with talent"
+        subtitle={
+          filters.mode === 'players'
+            ? `Find your next recruit${playerCount > 0 ? ` \u2014 ${playerCount.toLocaleString()} players found` : ''}`
+            : `Explore programs with talent${teamCount > 0 ? ` \u2014 ${teamCount.toLocaleString()} programs found` : ''}`
+        }
       />
 
       <div className="p-6 lg:p-8">
@@ -378,7 +396,7 @@ function DiscoverContent() {
             <FilterPanel currentFilters={filters} mode={filters.mode} />
           </aside>
 
-          {/* Mobile filter button */}
+          {/* Mobile filter button with active count badge */}
           <div className="lg:hidden">
             <Button
               variant="secondary"
@@ -387,6 +405,11 @@ function DiscoverContent() {
             >
               <IconFilter size={16} className="mr-2" />
               Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-green-600 rounded-full">
+                  {activeFilterCount}
+                </span>
+              )}
             </Button>
           </div>
 
@@ -415,16 +438,23 @@ function DiscoverContent() {
           </div>
         </div>
 
-        {/* Mobile filter drawer */}
+        {/* Mobile filter drawer with slide-in animation */}
         {mobileFiltersOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div
-              className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade-in"
               onClick={() => setMobileFiltersOpen(false)}
             />
-            <div className="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl overflow-y-auto">
+            <div className="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl overflow-y-auto animate-slide-in-left">
               <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
-                <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
+                  {activeFilterCount > 0 && (
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
+                      {activeFilterCount} active
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => setMobileFiltersOpen(false)}
                   className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
@@ -435,6 +465,21 @@ function DiscoverContent() {
               </div>
               <div className="p-6">
                 <FilterPanel currentFilters={filters} mode={filters.mode} />
+              </div>
+              {/* Apply button at the bottom of filter sheet */}
+              <div className="sticky bottom-0 p-4 bg-white border-t border-slate-200">
+                <Button
+                  onClick={() => setMobileFiltersOpen(false)}
+                  className="w-full min-h-[44px]"
+                >
+                  Show Results
+                  {filters.mode === 'players' && playerCount > 0 && (
+                    <span className="ml-1">({playerCount.toLocaleString()})</span>
+                  )}
+                  {filters.mode === 'teams' && teamCount > 0 && (
+                    <span className="ml-1">({teamCount.toLocaleString()})</span>
+                  )}
+                </Button>
               </div>
             </div>
           </div>

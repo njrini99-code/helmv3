@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
-import { X, AlertTriangle, HelpCircle } from 'lucide-react';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { X, AlertTriangle, HelpCircle, CheckCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ModalProps {
   open?: boolean;
@@ -10,7 +11,7 @@ interface ModalProps {
   title?: string;
   description?: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
 const sizeClasses = {
@@ -18,6 +19,7 @@ const sizeClasses = {
   md: 'max-w-md',
   lg: 'max-w-lg',
   xl: 'max-w-xl',
+  full: 'max-w-3xl',
 };
 
 // Get all focusable elements within a container
@@ -46,6 +48,24 @@ export function Modal({
   const isModalOpen = open ?? isOpen ?? false;
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Animate in
+  useEffect(() => {
+    if (isModalOpen) {
+      setIsVisible(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      });
+    } else {
+      setIsAnimating(false);
+      const timer = setTimeout(() => setIsVisible(false), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isModalOpen]);
 
   // Focus trap handler
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -62,13 +82,11 @@ export function Modal({
       const lastElement = focusableElements[focusableElements.length - 1];
 
       if (e.shiftKey) {
-        // Shift + Tab: if on first element, go to last
         if (document.activeElement === firstElement) {
           e.preventDefault();
           lastElement?.focus();
         }
       } else {
-        // Tab: if on last element, go to first
         if (document.activeElement === lastElement) {
           e.preventDefault();
           firstElement?.focus();
@@ -80,17 +98,13 @@ export function Modal({
   // Focus management and keyboard handling
   useEffect(() => {
     if (!isModalOpen) {
-      // Restore focus when modal closes
       previousActiveElement.current?.focus();
       return;
     }
 
-    // Store the currently focused element to restore later
     previousActiveElement.current = document.activeElement as HTMLElement;
-
     document.addEventListener('keydown', handleKeyDown);
 
-    // Focus the first focusable element after a short delay
     const timer = setTimeout(() => {
       if (modalRef.current) {
         const focusableElements = getFocusableElements(modalRef.current);
@@ -114,19 +128,18 @@ export function Modal({
     };
   }, [isModalOpen]);
 
-  if (!isModalOpen) return null;
+  if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop with blur */}
       <div
-        className="
-          absolute inset-0
-          bg-warm-900/50
-          backdrop-blur-sm
-          transition-opacity duration-200
-        "
+        className={cn(
+          'absolute inset-0 bg-warm-900/50 backdrop-blur-sm transition-opacity duration-200',
+          isAnimating ? 'opacity-100' : 'opacity-0'
+        )}
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Modal Content */}
@@ -136,16 +149,14 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}
         aria-describedby={description ? 'modal-description' : undefined}
-        className={`
-          relative z-10
-          w-full ${sizeClasses[size]}
-          bg-white/95 backdrop-blur-xl
-          border border-white/40
-          rounded-[24px]
-          shadow-2xl
-          transform transition-all duration-200
-          animate-in fade-in zoom-in-95
-        `}
+        className={cn(
+          'relative z-10 w-full bg-white/95 backdrop-blur-xl border border-white/40 rounded-[24px] shadow-2xl',
+          'transition-all duration-200 ease-out',
+          isAnimating
+            ? 'opacity-100 translate-y-0 scale-100'
+            : 'opacity-0 translate-y-4 scale-[0.97]',
+          sizeClasses[size],
+        )}
       >
         {/* Header */}
         {(title || description) && (
@@ -163,13 +174,14 @@ export function Modal({
         <button
           onClick={onClose}
           aria-label="Close modal"
-          className="
-            absolute top-3 right-3
-            w-11 h-11 rounded-[10px]
-            flex items-center justify-center
-            text-warm-400 hover:text-warm-600 hover:bg-warm-100
-            transition-all duration-200
-          "
+          className={cn(
+            'absolute top-3 right-3 w-11 h-11 rounded-[10px]',
+            'flex items-center justify-center',
+            'text-warm-400 hover:text-warm-600 hover:bg-warm-100',
+            'transition-all duration-150',
+            'active:scale-90',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+          )}
         >
           <X className="w-5 h-5" aria-hidden="true" />
         </button>
@@ -191,7 +203,8 @@ interface ConfirmModalProps {
   description?: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: 'default' | 'danger';
+  variant?: 'default' | 'danger' | 'success';
+  isLoading?: boolean;
 }
 
 export function ConfirmModal({
@@ -203,21 +216,26 @@ export function ConfirmModal({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   variant = 'default',
+  isLoading = false,
 }: ConfirmModalProps) {
+  const iconConfig = {
+    default: { Icon: HelpCircle, bg: 'bg-primary-100', color: 'text-primary-600' },
+    danger: { Icon: AlertTriangle, bg: 'bg-red-100', color: 'text-red-600' },
+    success: { Icon: CheckCircle, bg: 'bg-primary-100', color: 'text-primary-600' },
+  };
+
+  const { Icon, bg, color } = iconConfig[variant];
+
   return (
     <Modal open={open} onClose={onClose} size="sm">
       <div className="text-center">
-        {/* Icon */}
-        <div className={`
-          w-12 h-12 mx-auto mb-4 rounded-full
-          flex items-center justify-center
-          ${variant === 'danger' ? 'bg-red-100' : 'bg-primary-100'}
-        `}>
-          {variant === 'danger' ? (
-            <AlertTriangle className="w-6 h-6 text-red-600" />
-          ) : (
-            <HelpCircle className="w-6 h-6 text-primary-600" />
-          )}
+        {/* Icon with animation */}
+        <div className={cn(
+          'w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center',
+          'animate-scale-in',
+          bg
+        )}>
+          <Icon className={cn('w-6 h-6', color)} />
         </div>
 
         <h3 className="text-lg font-bold text-warm-900 mb-2">{title}</h3>
@@ -228,30 +246,38 @@ export function ConfirmModal({
         <div className="flex items-center gap-3 justify-center">
           <button
             onClick={onClose}
-            className="
-              px-5 py-2.5 min-h-[44px]
-              text-warm-600 font-medium text-sm
-              border border-warm-200 rounded-[10px]
-              hover:bg-warm-50
-              transition-all duration-200
-            "
+            disabled={isLoading}
+            className={cn(
+              'px-5 py-2.5 min-h-[44px] text-warm-600 font-medium text-sm',
+              'border border-warm-200 rounded-[10px]',
+              'hover:bg-warm-50 active:scale-[0.97]',
+              'transition-all duration-200',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+            )}
           >
             {cancelText}
           </button>
           <button
             onClick={onConfirm}
-            className={`
-              px-5 py-2.5 min-h-[44px]
-              font-medium text-sm
-              rounded-[10px]
-              transition-all duration-200
-              ${variant === 'danger'
+            disabled={isLoading}
+            className={cn(
+              'px-5 py-2.5 min-h-[44px] font-medium text-sm rounded-[10px]',
+              'transition-all duration-200 active:scale-[0.97]',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+              variant === 'danger'
                 ? 'bg-red-600 text-white hover:bg-red-700'
-                : 'bg-primary-600 text-white hover:bg-primary-700'
-              }
-            `}
+                : 'bg-primary-600 text-white hover:bg-primary-700',
+            )}
           >
-            {confirmText}
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                {confirmText}
+              </div>
+            ) : confirmText}
           </button>
         </div>
       </div>
@@ -262,7 +288,7 @@ export function ConfirmModal({
 // Modal footer for action buttons (backward compatibility)
 export function ModalFooter({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`flex items-center justify-end gap-3 pt-4 mt-4 border-t border-warm-100 ${className || ''}`}>
+    <div className={cn('flex items-center justify-end gap-3 pt-4 mt-4 border-t border-warm-100', className)}>
       {children}
     </div>
   );

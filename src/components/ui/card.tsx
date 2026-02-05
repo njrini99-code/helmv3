@@ -2,21 +2,47 @@ import { cn } from '@/lib/utils';
 import { HTMLAttributes } from 'react';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  variant?: 'base' | 'glass' | 'interactive' | 'stat';
+  variant?: 'base' | 'glass' | 'interactive' | 'stat' | 'elevated';
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  loading?: boolean;
 }
 
-export function Card({ className, variant = 'base', padding = 'lg', children, ...props }: CardProps) {
+const paddingClasses = {
+  none: 'p-0',
+  sm: 'p-4',
+  md: 'p-6',
+  lg: 'p-8',
+};
+
+export function Card({ className, variant = 'base', padding = 'lg', loading = false, children, ...props }: CardProps) {
+  if (loading) {
+    return (
+      <div
+        className={cn(
+          'bg-white border border-warm-200 rounded-2xl overflow-hidden',
+          paddingClasses[padding],
+          className
+        )}
+        {...props}
+      >
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-warm-100 rounded w-1/3" />
+          <div className="h-8 bg-warm-100 rounded w-1/2" />
+          <div className="h-4 bg-warm-100 rounded w-2/3" />
+        </div>
+      </div>
+    );
+  }
+
   // Glass card variant
   if (variant === 'glass') {
     return (
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-glass border border-white/30 rounded-2xl transition-all duration-200',
-          padding === 'none' && 'p-0',
-          padding === 'sm' && 'p-4',
-          padding === 'md' && 'p-6',
-          padding === 'lg' && 'p-8',
+          'bg-white/70 backdrop-blur-glass border border-white/30 rounded-2xl',
+          'shadow-glass transition-all duration-200 ease-out',
+          'hover:bg-white/75 hover:shadow-glass-hover',
+          paddingClasses[padding],
           className
         )}
         {...props}
@@ -31,12 +57,29 @@ export function Card({ className, variant = 'base', padding = 'lg', children, ..
     return (
       <div
         className={cn(
-          'bg-white border border-warm-200 rounded-2xl transition-all duration-200 cursor-pointer',
-          'hover:shadow-lg hover:-translate-y-0.5 hover:border-primary-200',
-          padding === 'none' && 'p-0',
-          padding === 'sm' && 'p-4',
-          padding === 'md' && 'p-6',
-          padding === 'lg' && 'p-8',
+          'bg-white border border-warm-200 rounded-2xl cursor-pointer',
+          'shadow-card transition-all duration-200 ease-out',
+          'hover:shadow-card-hover hover:-translate-y-1 hover:border-primary-200',
+          'active:translate-y-0 active:shadow-card active:duration-75',
+          paddingClasses[padding],
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+
+  // Elevated card with more prominent shadow
+  if (variant === 'elevated') {
+    return (
+      <div
+        className={cn(
+          'bg-white border border-warm-100 rounded-2xl shadow-md',
+          'transition-all duration-200 ease-out',
+          'hover:shadow-lg hover:-translate-y-0.5',
+          paddingClasses[padding],
           className
         )}
         {...props}
@@ -52,10 +95,9 @@ export function Card({ className, variant = 'base', padding = 'lg', children, ..
       <div
         className={cn(
           'bg-white border border-warm-200 border-l-2 border-l-primary-600 rounded-2xl',
-          padding === 'none' && 'p-0',
-          padding === 'sm' && 'p-4',
-          padding === 'md' && 'p-6',
-          padding === 'lg' && 'p-6', // Stat cards use p-6 by default
+          'transition-all duration-200 ease-out',
+          'hover:shadow-sm hover:border-l-primary-500',
+          padding === 'lg' ? 'p-6' : paddingClasses[padding],
           className
         )}
         {...props}
@@ -69,11 +111,9 @@ export function Card({ className, variant = 'base', padding = 'lg', children, ..
   return (
     <div
       className={cn(
-        'bg-white border border-warm-200 rounded-2xl transition-all duration-200',
-        padding === 'none' && 'p-0',
-        padding === 'sm' && 'p-4',
-        padding === 'md' && 'p-6',
-        padding === 'lg' && 'p-8',
+        'bg-white border border-warm-200 rounded-2xl',
+        'transition-all duration-200 ease-out',
+        paddingClasses[padding],
         className
       )}
       {...props}
@@ -102,29 +142,34 @@ export function StatCard({ className, label, value, trend, icon, ...props }: Sta
           <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">
             {label}
           </p>
-          <p className="text-3xl font-bold text-warm-900">
+          <p className="text-3xl font-bold text-warm-900 tabular-nums">
             {value}
           </p>
           {trend && (
             <p className={cn(
-              'text-sm mt-2 flex items-center gap-1',
+              'text-sm mt-2 flex items-center gap-1 font-medium',
               trend.positive ? 'text-primary-600' : 'text-red-600'
             )}>
-              {trend.positive ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-              )}
+              <span className={cn(
+                'inline-flex items-center justify-center w-5 h-5 rounded-full text-xs',
+                trend.positive ? 'bg-primary-50' : 'bg-red-50'
+              )}>
+                {trend.positive ? (
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                  </svg>
+                ) : (
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                )}
+              </span>
               {trend.value}
             </p>
           )}
         </div>
         {icon && (
-          <div className="text-warm-400">
+          <div className="p-2.5 rounded-xl bg-warm-50 text-warm-400">
             {icon}
           </div>
         )}
