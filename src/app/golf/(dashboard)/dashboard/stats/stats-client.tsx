@@ -125,17 +125,20 @@ function AvatarWithRing({
   avatarUrl?: string | null;
   trend: 'up' | 'down' | 'stable';
 }) {
-  const ringColor = trend === 'up' ? 'ring-green-400' : trend === 'down' ? 'ring-red-400' : 'ring-slate-300';
+  const dotColor = trend === 'up' ? 'bg-emerald-500' : trend === 'down' ? 'bg-red-400' : 'bg-slate-300';
 
   return (
-    <div className={`w-12 h-12 rounded-full flex items-center justify-center ring-2 ${ringColor} ring-offset-2 overflow-hidden`}>
+    <div className="relative flex-shrink-0">
       {avatarUrl ? (
-        <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+        <div className="w-12 h-12 rounded-2xl overflow-hidden ring-1 ring-slate-200 shadow-sm">
+          <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+        </div>
       ) : (
-        <div className="w-full h-full bg-green-600 flex items-center justify-center">
-          <span className="text-white font-semibold text-sm">{initials}</span>
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center ring-1 ring-slate-200">
+          <span className="text-lg font-semibold text-slate-500">{initials}</span>
         </div>
       )}
+      <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${dotColor}`} />
     </div>
   );
 }

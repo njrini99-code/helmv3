@@ -1510,11 +1510,11 @@ function OverviewStats({
               <img
                 src={playerProfile.avatarUrl}
                 alt={playerName || 'Player'}
-                className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-lg"
+                className="w-20 h-20 rounded-2xl object-cover ring-1 ring-slate-200 shadow-lg"
               />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center border-2 border-white shadow-lg">
-                <span className="text-white font-bold text-2xl">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center ring-1 ring-slate-200 shadow-lg">
+                <span className="text-slate-500 font-bold text-2xl">
                   {playerName?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
                 </span>
               </div>
