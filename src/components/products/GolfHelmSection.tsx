@@ -52,7 +52,7 @@ export function GolfHelmSection() {
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="w-14 h-14 relative">
               <Image
-                src="/helm.transparent. golf-logo.png"
+                src="/helm-golf-logo-transparent.png"
                 alt="GolfHelm"
                 fill
                 className="object-contain"

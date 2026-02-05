@@ -20,7 +20,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { startOfDay } from 'date-fns';
+import { startOfDay, format } from 'date-fns';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useMobileDetection } from '@/hooks/use-mobile-detection';
 import { CalendarDayViewSwipeable, MobileWeekPicker } from './CalendarDayViewSwipeable';
@@ -165,58 +165,70 @@ export function MobileCalendarWrapper({
 
   return (
     <div className={cn('flex flex-col h-full bg-[#FFFEFA]', className)}>
-      {/* View Toggle Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/50 bg-white/80 backdrop-blur-sm">
-        <div className="flex items-center gap-1 p-1 bg-slate-100/80 rounded-lg">
-          <button
-            type="button"
-            onClick={() => setCurrentView('day')}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium',
-              'transition-all duration-200 min-h-[40px]',
-              currentView === 'day'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+      {/* Premium Header with Month/Year */}
+      <div className="sticky top-0 z-20 bg-[#FFFEFA]/95 backdrop-blur-lg border-b border-slate-200/30">
+        {/* Top bar with title and controls */}
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Month/Year Title */}
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              {format(currentDate, 'MMMM yyyy')}
+            </h1>
+          </div>
+
+          {/* Right controls */}
+          <div className="flex items-center gap-1.5">
+            {/* View toggle - compact pill style */}
+            <div className="flex items-center p-0.5 bg-slate-100/80 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setCurrentView('day')}
+                className={cn(
+                  'flex items-center justify-center',
+                  'w-9 h-9 rounded-lg',
+                  'transition-all duration-200',
+                  currentView === 'day'
+                    ? 'bg-white text-emerald-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                )}
+              >
+                <Calendar className="w-[18px] h-[18px]" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentView('list')}
+                className={cn(
+                  'flex items-center justify-center',
+                  'w-9 h-9 rounded-lg',
+                  'transition-all duration-200',
+                  currentView === 'list'
+                    ? 'bg-white text-emerald-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                )}
+              >
+                <List className="w-[18px] h-[18px]" />
+              </button>
+            </div>
+
+            {/* Settings button */}
+            {onOpenSettings && (
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                className={cn(
+                  'flex items-center justify-center',
+                  'w-9 h-9 rounded-xl',
+                  'text-slate-400 hover:text-slate-600 hover:bg-slate-100/80',
+                  'transition-all duration-200'
+                )}
+              >
+                <Settings2 className="w-[18px] h-[18px]" />
+              </button>
             )}
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Day</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrentView('list')}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium',
-              'transition-all duration-200 min-h-[40px]',
-              currentView === 'list'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            )}
-          >
-            <List className="w-4 h-4" />
-            <span>List</span>
-          </button>
+          </div>
         </div>
 
-        {/* Settings button */}
-        {onOpenSettings && (
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className={cn(
-              'p-2.5 rounded-lg',
-              'text-slate-500 hover:text-slate-900 hover:bg-slate-100',
-              'transition-colors min-w-[44px] min-h-[44px]',
-              'flex items-center justify-center'
-            )}
-          >
-            <Settings2 className="w-5 h-5" />
-          </button>
-        )}
-      </div>
-
-      {/* Week Picker (always visible) */}
-      <div className="border-b border-slate-200/50 bg-white/60 backdrop-blur-sm">
+        {/* Week Picker strip */}
         <MobileWeekPicker
           currentDate={currentDate}
           onDateSelect={setCurrentDate}

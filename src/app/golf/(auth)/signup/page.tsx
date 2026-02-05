@@ -77,7 +77,7 @@ export default function SignupPage() {
           <div className="flex flex-col items-center mb-8">
             <div className="w-14 h-14 flex items-center justify-center mb-4">
               <Image
-                src="/helm.transparent. golf-logo.png"
+                src="/helm-golf-logo-transparent.png"
                 alt="GolfHelm Logo"
                 width={56}
                 height={56}

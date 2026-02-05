@@ -225,39 +225,30 @@ export function QuickAddEventFAB({
           onClick={handleToggle}
           disabled={disabled}
           className={cn(
-            'w-14 h-14 rounded-full',
+            'relative w-14 h-14 rounded-2xl',
             'flex items-center justify-center',
-            'shadow-xl',
             'transition-all duration-300 ease-out',
             'touch-manipulation',
             'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300',
             isExpanded
-              ? 'bg-slate-800 rotate-45'
-              : 'bg-emerald-600 hover:bg-emerald-700 hover:scale-105',
+              ? 'bg-slate-900 rotate-0 rounded-xl'
+              : 'bg-emerald-600 hover:bg-emerald-500 hover:scale-105 shadow-lg shadow-emerald-600/40',
             'active:scale-95',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
           aria-label={isExpanded ? 'Close menu' : 'Add new event'}
         >
-          {isExpanded ? (
-            <X className="w-6 h-6 text-white" />
-          ) : (
-            <Plus className="w-7 h-7 text-white" />
-          )}
-        </button>
-
-        {/* Hint label (shows briefly on first load) */}
-        {!isExpanded && (
-          <span className={cn(
-            'absolute right-16 top-1/2 -translate-y-1/2',
-            'px-3 py-1.5 rounded-full',
-            'bg-slate-800 text-white text-sm font-medium',
-            'opacity-0 pointer-events-none',
-            'animate-pulse'
+          <div className={cn(
+            'transition-all duration-300',
+            isExpanded && 'rotate-45'
           )}>
-            Add Event
-          </span>
-        )}
+            {isExpanded ? (
+              <X className="w-6 h-6 text-white" />
+            ) : (
+              <Plus className="w-7 h-7 text-white" strokeWidth={2.5} />
+            )}
+          </div>
+        </button>
       </div>
     </>
   );

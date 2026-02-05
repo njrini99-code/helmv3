@@ -165,7 +165,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
               )}
             >
               <Image
-                src="/helm.transparent. golf-logo.png"
+                src="/helm-golf-logo-transparent.png"
                 alt="GolfHelm Logo"
                 width={56}
                 height={56}
@@ -183,7 +183,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
             >
               <div className="w-14 h-14 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Image
-                  src="/helm.transparent. golf-logo.png"
+                  src="/helm-golf-logo-transparent.png"
                   alt="GolfHelm Logo"
                   width={56}
                   height={56}

@@ -411,7 +411,7 @@ export default function GolfSettingsPage() {
           style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '260ms', opacity: 0 }}
         >
           <p>GolfHelm v1.0.0</p>
-          <p className="text-xs mt-1">© 2024 Helm Sports Labs</p>
+          <p className="text-xs mt-1">© 2026 Helm Sports Labs</p>
         </div>
       </div>
 

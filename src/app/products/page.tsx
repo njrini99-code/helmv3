@@ -44,7 +44,7 @@ export default function ProductsPage() {
                 )}>
                   <div className="w-8 h-8 relative flex-shrink-0">
                     <Image
-                      src="/helm.transparent. golf-logo.png"
+                      src="/helm-golf-logo-transparent.png"
                       alt="GolfHelm"
                       fill
                       className="object-contain"

@@ -12,7 +12,7 @@
  * - Today indicator and quick navigation
  */
 
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import {
   format,
@@ -246,78 +246,82 @@ export function CalendarDayViewSwipeable({
         </div>
       )}
 
-      {/* Day Navigation Header */}
-      <div className="px-4 py-3 border-b border-slate-200/50">
+      {/* Compact Day Navigation Header */}
+      <div className="px-4 pt-2 pb-3">
         <div className="flex items-center justify-between">
-          {/* Previous day button */}
-          <button
-            type="button"
-            onClick={goToPrevDay}
-            disabled={isTransitioning}
-            className={cn(
-              'flex items-center justify-center',
-              'min-w-[44px] min-h-[44px] rounded-xl',
-              'bg-white/80 border border-slate-200/50',
-              'text-slate-700 hover:bg-slate-100 active:bg-slate-200',
-              'transition-all duration-200',
-              'touch-manipulation',
-              isTransitioning && 'opacity-50'
-            )}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          {/* Date display */}
-          <div className="flex-1 text-center">
-            <h2 className={cn(
-              'text-lg font-bold',
-              isTodayDate ? 'text-emerald-600' : 'text-slate-900'
-            )}>
-              {dateLabel}
-            </h2>
-            <p className="text-sm text-slate-500">{fullDateLabel}</p>
+          {/* Left: Date info */}
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h2 className={cn(
+                'text-xl font-bold tracking-tight',
+                isTodayDate ? 'text-emerald-600' : 'text-slate-900'
+              )}>
+                {dateLabel}
+              </h2>
+              {isTodayDate && (
+                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700 rounded-full">
+                  Now
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-slate-500 mt-0.5">{fullDateLabel}</p>
           </div>
 
-          {/* Next day button */}
-          <button
-            type="button"
-            onClick={goToNextDay}
-            disabled={isTransitioning}
-            className={cn(
-              'flex items-center justify-center',
-              'min-w-[44px] min-h-[44px] rounded-xl',
-              'bg-white/80 border border-slate-200/50',
-              'text-slate-700 hover:bg-slate-100 active:bg-slate-200',
-              'transition-all duration-200',
-              'touch-manipulation',
-              isTransitioning && 'opacity-50'
+          {/* Right: Navigation controls */}
+          <div className="flex items-center gap-1">
+            {/* Today button (only when not on today) */}
+            {!isTodayDate && (
+              <button
+                type="button"
+                onClick={goToToday}
+                className={cn(
+                  'flex items-center justify-center',
+                  'w-10 h-10 rounded-xl',
+                  'bg-emerald-100 text-emerald-700',
+                  'hover:bg-emerald-200 active:scale-95',
+                  'transition-all duration-200',
+                  'touch-manipulation mr-1'
+                )}
+              >
+                <Calendar className="w-4 h-4" />
+              </button>
             )}
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Today quick navigation */}
-        {!isTodayDate && (
-          <div className="flex justify-center mt-3">
+            {/* Nav buttons */}
             <button
               type="button"
-              onClick={goToToday}
+              onClick={goToPrevDay}
+              disabled={isTransitioning}
               className={cn(
-                'flex items-center gap-1.5',
-                'px-4 py-2 rounded-full',
-                'bg-emerald-100 text-emerald-700',
-                'text-sm font-medium',
-                'hover:bg-emerald-200 active:scale-95',
+                'flex items-center justify-center',
+                'w-10 h-10 rounded-xl',
+                'bg-slate-100/80 text-slate-600',
+                'hover:bg-slate-200 active:bg-slate-300 active:scale-95',
                 'transition-all duration-200',
-                'touch-manipulation'
+                'touch-manipulation',
+                isTransitioning && 'opacity-50'
               )}
             >
-              <Calendar className="w-4 h-4" />
-              <span>Go to Today</span>
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={goToNextDay}
+              disabled={isTransitioning}
+              className={cn(
+                'flex items-center justify-center',
+                'w-10 h-10 rounded-xl',
+                'bg-slate-100/80 text-slate-600',
+                'hover:bg-slate-200 active:bg-slate-300 active:scale-95',
+                'transition-all duration-200',
+                'touch-manipulation',
+                isTransitioning && 'opacity-50'
+              )}
+            >
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Swipeable content area */}
@@ -329,84 +333,76 @@ export function CalendarDayViewSwipeable({
           transition: isTransitioning ? 'transform 0.2s ease-out' : 'none',
         }}
       >
-        <div className="px-4 py-4">
+        <div className="px-4 py-3">
           {dayEvents.length === 0 ? (
-            // Empty state
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                <Calendar className="w-8 h-8 text-slate-400" />
+            // Premium empty state
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-emerald-500/10 rounded-3xl blur-2xl scale-150" />
+                <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/50 flex items-center justify-center shadow-sm">
+                  <Calendar className="w-10 h-10 text-slate-300" />
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                No events
+              <h3 className="text-lg font-semibold text-slate-800 mb-1.5">
+                Nothing scheduled
               </h3>
-              <p className="text-sm text-slate-500 max-w-xs mb-6">
-                Nothing scheduled for {format(currentDate, 'MMMM d')}
+              <p className="text-sm text-slate-500 max-w-[200px] mb-8">
+                Your {format(currentDate, 'EEEE')} is free
               </p>
               {isCoach && onAddEvent && (
                 <button
                   type="button"
                   onClick={onAddEvent}
                   className={cn(
-                    'px-5 py-3 rounded-xl font-semibold text-sm',
+                    'group flex items-center gap-2',
+                    'px-6 py-3 rounded-2xl font-semibold text-sm',
                     'bg-emerald-600 text-white',
-                    'hover:bg-emerald-700 active:scale-95',
-                    'transition-all min-h-[48px]',
+                    'shadow-lg shadow-emerald-600/25',
+                    'hover:bg-emerald-700 hover:shadow-emerald-600/30',
+                    'active:scale-95',
+                    'transition-all duration-200',
                     'touch-manipulation'
                   )}
                 >
-                  Add Event
+                  <span className="text-lg leading-none">+</span>
+                  <span>Add Event</span>
                 </button>
               )}
             </div>
           ) : (
-            // Events list
+            // Events list with improved styling
             <div className="space-y-3">
-              {/* Event count badge */}
-              <div className="flex items-center gap-2 mb-4">
-                <span className={cn(
-                  'px-2.5 py-1 rounded-full text-xs font-bold',
-                  isTodayDate ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                )}>
-                  {dayEvents.length} event{dayEvents.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-
-              {dayEvents.map((event) => (
-                <MobileEventCard
+              {dayEvents.map((event, index) => (
+                <div
                   key={event.id}
-                  event={event}
-                  userRsvpStatus={userRsvpStatuses?.get(event.id) || null}
-                  onRsvp={onRsvp ? handleRsvp(event.id) : undefined}
-                  onClick={onEventClick ? () => onEventClick(event) : undefined}
-                  isCoach={isCoach}
-                />
+                  style={{
+                    animationDelay: `${index * 50}ms`
+                  }}
+                  className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+                >
+                  <MobileEventCard
+                    event={event}
+                    userRsvpStatus={userRsvpStatuses?.get(event.id) || null}
+                    onRsvp={onRsvp ? handleRsvp(event.id) : undefined}
+                    onClick={onEventClick ? () => onEventClick(event) : undefined}
+                    isCoach={isCoach}
+                  />
+                </div>
               ))}
             </div>
           )}
 
-          {/* Bottom padding for safe area */}
-          <div className="h-24" />
+          {/* Bottom padding for safe area and FAB */}
+          <div className="h-28" />
         </div>
       </div>
 
-      {/* Swipe hint dots */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-        <div className={cn(
-          'w-1.5 h-1.5 rounded-full transition-colors',
-          touchDelta > 20 ? 'bg-emerald-400' : 'bg-slate-300'
-        )} />
-        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-        <div className={cn(
-          'w-1.5 h-1.5 rounded-full transition-colors',
-          touchDelta < -20 ? 'bg-emerald-400' : 'bg-slate-300'
-        )} />
-      </div>
     </div>
   );
 }
 
 /**
- * Week quick picker for mobile - horizontal scrolling week selector
+ * Week quick picker for mobile - Premium Apple-calendar inspired selector
  */
 export function MobileWeekPicker({
   currentDate,
@@ -418,12 +414,13 @@ export function MobileWeekPicker({
   events: CalendarEvent[];
 }) {
   const { triggerHaptic } = useHapticFeedback();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Generate 14 days centered around today
+  // Generate 21 days centered around today
   const days = useMemo(() => {
     const today = startOfDay(new Date());
     const result: Date[] = [];
-    for (let i = -3; i <= 10; i++) {
+    for (let i = -7; i <= 13; i++) {
       result.push(addDays(today, i));
     }
     return result;
@@ -444,14 +441,37 @@ export function MobileWeekPicker({
     onDateSelect(date);
   };
 
+  // Scroll to selected date on mount
+  useEffect(() => {
+    if (scrollRef.current) {
+      const selectedIndex = days.findIndex(d => isSameDay(d, currentDate));
+      if (selectedIndex >= 0) {
+        const itemWidth = 48;
+        const gap = 6;
+        const containerWidth = scrollRef.current.offsetWidth;
+        const scrollPosition = (selectedIndex * (itemWidth + gap)) - (containerWidth / 2) + (itemWidth / 2);
+        scrollRef.current.scrollTo({ left: Math.max(0, scrollPosition), behavior: 'smooth' });
+      }
+    }
+  }, [currentDate, days]);
+
   return (
-    <div className="overflow-x-auto scrollbar-hide py-2">
-      <div className="flex gap-2 px-4" style={{ width: 'max-content' }}>
+    <div
+      ref={scrollRef}
+      className="overflow-x-auto scrollbar-hide"
+      style={{
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch'
+      }}
+    >
+      <div className="flex gap-1.5 px-3 py-2" style={{ width: 'max-content' }}>
         {days.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd');
           const eventCount = eventCounts.get(dateKey) || 0;
           const isSelected = isSameDay(day, currentDate);
           const isTodayDate = isToday(day);
+          const isPastDate = day < startOfDay(new Date()) && !isTodayDate;
 
           return (
             <button
@@ -459,29 +479,63 @@ export function MobileWeekPicker({
               type="button"
               onClick={() => handleSelect(day)}
               className={cn(
-                'flex flex-col items-center justify-center',
-                'min-w-[52px] min-h-[64px] px-2 py-2 rounded-xl',
-                'transition-all duration-200',
-                'touch-manipulation',
+                'flex flex-col items-center justify-center relative',
+                'w-12 h-16 rounded-2xl',
+                'transition-all duration-200 ease-out',
+                'touch-manipulation select-none',
                 isSelected
-                  ? 'bg-emerald-600 text-white shadow-md'
+                  ? 'bg-emerald-600 shadow-lg shadow-emerald-600/30 scale-105'
                   : isTodayDate
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-white/80 text-slate-700 border border-slate-200/50',
-                'hover:scale-105 active:scale-95'
+                    ? 'bg-emerald-50 ring-2 ring-emerald-500/30'
+                    : 'bg-white/60 hover:bg-white/90',
+                isPastDate && !isSelected && 'opacity-50',
+                'active:scale-95'
               )}
             >
-              <span className="text-[10px] font-medium uppercase opacity-70">
+              {/* Day of week */}
+              <span className={cn(
+                'text-[10px] font-semibold uppercase tracking-wide',
+                isSelected
+                  ? 'text-emerald-100'
+                  : isTodayDate
+                    ? 'text-emerald-600'
+                    : 'text-slate-400'
+              )}>
                 {format(day, 'EEE')}
               </span>
-              <span className="text-lg font-bold">
+
+              {/* Day number */}
+              <span className={cn(
+                'text-lg font-bold leading-tight',
+                isSelected
+                  ? 'text-white'
+                  : isTodayDate
+                    ? 'text-emerald-700'
+                    : 'text-slate-800'
+              )}>
                 {format(day, 'd')}
               </span>
+
+              {/* Event indicator dots */}
               {eventCount > 0 && (
-                <div className={cn(
-                  'w-1.5 h-1.5 rounded-full mt-0.5',
-                  isSelected ? 'bg-white/80' : 'bg-emerald-500'
-                )} />
+                <div className="flex gap-0.5 mt-0.5">
+                  {Array.from({ length: Math.min(eventCount, 3) }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        'w-1 h-1 rounded-full',
+                        isSelected
+                          ? 'bg-white/80'
+                          : 'bg-emerald-500'
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Today ring indicator */}
+              {isTodayDate && !isSelected && (
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-emerald-500/40 pointer-events-none" />
               )}
             </button>
           );

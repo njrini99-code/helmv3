@@ -76,7 +76,6 @@ export function MobileEventCard({
 }: MobileEventCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const eventTypeConfig = getEventTypeConfig(event.event_type as EventType);
   const relativeLabel = getRelativeDateLabel(event.start_date);
   const isEventPast = isPast(parseISO(event.start_date));
   const requiresRsvp = event.requires_rsvp && !isCoach && onRsvp;
@@ -100,51 +99,63 @@ export function MobileEventCard({
     total: event.rsvp_total_count || 0,
   } : null;
 
+  // Get accent color based on event type
+  const getAccentColor = () => {
+    switch (event.event_type) {
+      case 'practice': return 'bg-emerald-500';
+      case 'tournament': return 'bg-amber-500';
+      case 'qualifier': return 'bg-blue-500';
+      case 'meeting': return 'bg-purple-500';
+      case 'travel': return 'bg-orange-500';
+      default: return 'bg-slate-400';
+    }
+  };
+
   return (
     <div
       className={cn(
-        'bg-white rounded-2xl border shadow-sm overflow-hidden',
+        'relative bg-white rounded-2xl overflow-hidden',
+        'shadow-sm shadow-slate-200/50',
+        'border border-slate-100',
         'transition-all duration-200 ease-out',
-        'active:scale-[0.98]',
-        eventTypeConfig.borderColor,
-        isEventPast && 'opacity-60',
+        'active:scale-[0.98] active:shadow-none',
+        isEventPast && 'opacity-50',
         className
       )}
     >
+      {/* Left accent bar */}
+      <div className={cn(
+        'absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl',
+        getAccentColor()
+      )} />
+
       {/* Main card content - tappable */}
       <button
         type="button"
         onClick={handleCardClick}
         className={cn(
-          'w-full text-left p-4',
-          'min-h-[72px]', // Ensure touch-friendly height
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500'
+          'w-full text-left pl-4 pr-3 py-3.5',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500'
         )}
       >
         <div className="flex items-start gap-3">
-          {/* Event type indicator */}
-          <div
-            className={cn(
-              'w-1 h-full min-h-[48px] rounded-full flex-shrink-0',
-              eventTypeConfig.bgColor
-            )}
-          />
-
           {/* Event info */}
           <div className="flex-1 min-w-0">
             {/* Date label (if showing date or relative) */}
             {(showDate || relativeLabel) && (
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1.5">
                 {relativeLabel && (
                   <span className={cn(
-                    'text-xs font-bold px-2 py-0.5 rounded-full',
-                    relativeLabel === 'Today' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                    'text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md',
+                    relativeLabel === 'Today'
+                      ? 'bg-emerald-500/10 text-emerald-700'
+                      : 'bg-slate-100 text-slate-500'
                   )}>
                     {relativeLabel}
                   </span>
                 )}
                 {showDate && !relativeLabel && (
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-slate-400 font-medium">
                     {formatEventDate(event.start_date)}
                   </span>
                 )}
@@ -152,61 +163,58 @@ export function MobileEventCard({
             )}
 
             {/* Title */}
-            <h3 className={cn(
-              'font-semibold text-slate-900 truncate',
-              eventTypeConfig.textColor
-            )}>
+            <h3 className="font-semibold text-[15px] text-slate-900 leading-snug truncate">
               {event.title}
             </h3>
 
             {/* Time and location row */}
-            <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-600">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
               {/* Time */}
-              <div className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>{formatEventTime(event.start_date, event.end_date)}</span>
+              <div className="flex items-center gap-1.5 text-slate-500">
+                <Clock className="w-3.5 h-3.5" />
+                <span className="text-sm">{formatEventTime(event.start_date, event.end_date)}</span>
               </div>
 
               {/* Location */}
               {event.location && (
-                <div className="flex items-center gap-1 truncate">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                  <span className="truncate">{event.location}</span>
+                <div className="flex items-center gap-1.5 text-slate-500 min-w-0">
+                  <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="text-sm truncate">{event.location}</span>
                 </div>
               )}
             </div>
 
             {/* Attendance info for coaches */}
             {attendanceInfo && (
-              <div className="flex items-center gap-1 mt-2 text-xs text-slate-500">
-                <Users className="w-3.5 h-3.5" />
-                <span>
-                  {attendanceInfo.confirmed}/{attendanceInfo.total} confirmed
-                </span>
+              <div className="flex items-center gap-2 mt-2.5">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-50">
+                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-xs font-medium text-slate-600">
+                    {attendanceInfo.confirmed}/{attendanceInfo.total}
+                  </span>
+                </div>
               </div>
             )}
           </div>
 
           {/* Right side - RSVP status or chevron */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
             {/* RSVP status indicator */}
             {userRsvpStatus && (
               <div className={cn(
-                'w-8 h-8 rounded-full flex items-center justify-center',
-                userRsvpStatus === 'accepted' && 'bg-emerald-100 text-emerald-600',
-                userRsvpStatus === 'tentative' && 'bg-amber-100 text-amber-600',
-                userRsvpStatus === 'declined' && 'bg-rose-100 text-rose-600'
+                'w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm',
+                userRsvpStatus === 'accepted' && 'bg-emerald-500/10 text-emerald-600',
+                userRsvpStatus === 'tentative' && 'bg-amber-500/10 text-amber-600',
+                userRsvpStatus === 'declined' && 'bg-rose-500/10 text-rose-500'
               )}>
-                <span className="text-xs font-bold">
-                  {userRsvpStatus === 'accepted' ? 'Y' : userRsvpStatus === 'tentative' ? '?' : 'N'}
-                </span>
+                {userRsvpStatus === 'accepted' ? '✓' : userRsvpStatus === 'tentative' ? '?' : '✗'}
               </div>
             )}
 
             {/* Expandable indicator */}
             {(onClick || requiresRsvp) && (
               <ChevronRight className={cn(
-                'w-5 h-5 text-slate-400 transition-transform',
+                'w-5 h-5 text-slate-300 transition-transform',
                 isExpanded && 'rotate-90'
               )} />
             )}
@@ -216,7 +224,7 @@ export function MobileEventCard({
 
       {/* Expanded RSVP section */}
       {isExpanded && requiresRsvp && (
-        <div className="px-4 pb-4 pt-2 border-t border-slate-100">
+        <div className="px-4 pb-4 pt-3 border-t border-slate-100 bg-slate-50/50">
           <p className="text-sm font-medium text-slate-700 mb-3">
             Will you attend?
           </p>
@@ -300,7 +308,7 @@ export function CompactMobileEventCard({
 }
 
 /**
- * Empty state for no events
+ * Empty state for no events - Premium styled
  */
 export function MobileEmptyEventsState({
   date,
@@ -310,30 +318,37 @@ export function MobileEmptyEventsState({
   onAddEvent?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-        <Calendar className="w-8 h-8 text-slate-400" />
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+      <div className="relative mb-6">
+        <div className="absolute inset-0 bg-emerald-500/10 rounded-3xl blur-2xl scale-150" />
+        <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/50 flex items-center justify-center shadow-sm">
+          <Calendar className="w-10 h-10 text-slate-300" />
+        </div>
       </div>
-      <h3 className="text-lg font-semibold text-slate-900 mb-2">
-        No events
+      <h3 className="text-lg font-semibold text-slate-800 mb-1.5">
+        Nothing scheduled
       </h3>
-      <p className="text-sm text-slate-500 max-w-xs mb-4">
+      <p className="text-sm text-slate-500 max-w-[200px] mb-6">
         {date
-          ? `Nothing scheduled for ${format(date, 'MMMM d')}`
-          : 'No events scheduled yet'}
+          ? `Your ${format(date, 'EEEE')} is free`
+          : 'No upcoming events'}
       </p>
       {onAddEvent && (
         <button
           type="button"
           onClick={onAddEvent}
           className={cn(
-            'px-4 py-2.5 rounded-xl font-medium text-sm',
-            'bg-primary-600 text-white',
-            'hover:bg-primary-700 active:scale-95',
-            'transition-all min-h-[44px]'
+            'group flex items-center gap-2',
+            'px-5 py-2.5 rounded-2xl font-semibold text-sm',
+            'bg-emerald-600 text-white',
+            'shadow-lg shadow-emerald-600/20',
+            'hover:bg-emerald-700 hover:shadow-emerald-600/25',
+            'active:scale-95',
+            'transition-all duration-200'
           )}
         >
-          Add Event
+          <span className="text-lg leading-none">+</span>
+          <span>Add Event</span>
         </button>
       )}
     </div>

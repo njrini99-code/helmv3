@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
               <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-xl scale-150" />
               <div className="relative w-14 h-14 flex items-center justify-center mb-4">
                 <Image
-                  src="/helm.transparent. golf-logo.png"
+                  src="/helm-golf-logo-transparent.png"
                   alt="GolfHelm Logo"
                   width={56}
                   height={56}

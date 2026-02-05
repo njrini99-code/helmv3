@@ -121,62 +121,76 @@ export function MobileCalendarListView({
 
   return (
     <div className={cn('flex-1 overflow-y-auto overscroll-contain', className)}>
-      <div className="px-4 py-3 space-y-1">
+      <div className="px-4 py-3">
         {eventGroups.map((group, groupIndex) => (
           <div
             key={group.dateKey}
             className={cn(
-              // Add extra space before non-today groups
-              groupIndex > 0 && 'mt-6'
+              groupIndex > 0 && 'mt-8'
             )}
           >
-            {/* Sticky date header */}
+            {/* Premium sticky date header */}
             <div
               className={cn(
-                'sticky top-0 z-10 py-2 -mx-4 px-4',
-                'bg-gradient-to-b from-[#FFFEFA] via-[#FFFEFA] to-transparent'
+                'sticky top-0 z-10 -mx-4 px-4 py-2',
+                'bg-[#FFFEFA]/95 backdrop-blur-sm'
               )}
             >
-              <div className="flex items-center gap-3">
-                <h3
-                  className={cn(
-                    'text-sm font-bold',
-                    group.isToday ? 'text-emerald-600' : 'text-slate-600'
-                  )}
-                >
-                  {group.label}
-                </h3>
+              <div className="flex items-center gap-2">
+                {/* Date circle for today */}
                 {group.isToday && (
-                  <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full">
-                    {group.events.length} event{group.events.length !== 1 ? 's' : ''}
-                  </span>
+                  <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center shadow-sm shadow-emerald-600/20">
+                    <span className="text-xs font-bold text-white">
+                      {format(group.date, 'd')}
+                    </span>
+                  </div>
                 )}
-                {!group.isToday && (
-                  <span className="text-xs text-slate-400">
-                    {format(group.date, 'MMM d')}
+                <div className="flex flex-col">
+                  <h3
+                    className={cn(
+                      'text-sm font-semibold leading-tight',
+                      group.isToday ? 'text-emerald-700' : 'text-slate-800'
+                    )}
+                  >
+                    {group.label}
+                  </h3>
+                  {!group.isToday && (
+                    <span className="text-xs text-slate-400 font-medium">
+                      {format(group.date, 'MMM d')}
+                    </span>
+                  )}
+                </div>
+                {group.isToday && group.events.length > 0 && (
+                  <span className="ml-auto px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700 rounded-md">
+                    {group.events.length} event{group.events.length !== 1 ? 's' : ''}
                   </span>
                 )}
               </div>
             </div>
 
             {/* Events for this date */}
-            <div className="space-y-3 mt-2">
-              {group.events.map((event) => (
-                <MobileEventCard
+            <div className="space-y-3 mt-3">
+              {group.events.map((event, eventIndex) => (
+                <div
                   key={event.id}
-                  event={event}
-                  userRsvpStatus={userRsvpStatuses?.get(event.id) || null}
-                  onRsvp={onRsvp ? handleRsvp(event.id) : undefined}
-                  onClick={onEventClick ? () => onEventClick(event) : undefined}
-                  isCoach={isCoach}
-                />
+                  className="animate-in fade-in slide-in-from-bottom-1 duration-200"
+                  style={{ animationDelay: `${eventIndex * 30}ms` }}
+                >
+                  <MobileEventCard
+                    event={event}
+                    userRsvpStatus={userRsvpStatuses?.get(event.id) || null}
+                    onRsvp={onRsvp ? handleRsvp(event.id) : undefined}
+                    onClick={onEventClick ? () => onEventClick(event) : undefined}
+                    isCoach={isCoach}
+                  />
+                </div>
               ))}
             </div>
           </div>
         ))}
 
-        {/* Bottom padding for safe area */}
-        <div className="h-20" />
+        {/* Bottom padding for safe area and FAB */}
+        <div className="h-28" />
       </div>
     </div>
   );

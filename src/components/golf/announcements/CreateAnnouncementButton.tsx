@@ -21,12 +21,18 @@ export function CreateAnnouncementButton() {
     const formData = new FormData(e.currentTarget);
 
     try {
-      await createAnnouncement({
+      const result = await createAnnouncement({
         title: formData.get('title') as string,
         body: formData.get('body') as string,
         urgency: formData.get('urgency') as 'low' | 'normal' | 'high' | 'urgent',
         requiresAcknowledgement: formData.get('requiresAcknowledgement') === 'on',
       });
+
+      if (!result.success) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
 
       setIsOpen(false);
       router.refresh();

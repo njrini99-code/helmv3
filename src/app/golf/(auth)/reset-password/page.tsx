@@ -27,8 +27,8 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       setLoading(false);
       return;
     }
@@ -58,7 +58,7 @@ export default function ResetPasswordPage() {
           <div className="relative inline-flex items-center justify-center mb-4">
             <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl scale-150" />
             <Image
-              src="/helm.transparent. golf-logo.png"
+              src="/helm-golf-logo-transparent.png"
               alt="GolfHelm Logo"
               width={64}
               height={64}
@@ -73,15 +73,18 @@ export default function ResetPasswordPage() {
 
         <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="New Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              autoFocus
-            />
+            <div className="space-y-1">
+              <Input
+                label="New Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                autoFocus
+              />
+              <p className="text-xs text-slate-400">Must be at least 8 characters</p>
+            </div>
             <Input
               label="Confirm Password"
               type="password"

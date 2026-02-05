@@ -409,7 +409,7 @@ export default function GolfPlayerOnboarding() {
                       <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-xl scale-150" />
                       <div className="relative w-20 h-20 flex items-center justify-center">
                         <img
-                          src="/helm.transparent. golf-logo.png"
+                          src="/helm-golf-logo-transparent.png"
                           alt="GolfHelm"
                           className="w-20 h-20 object-contain"
                         />
