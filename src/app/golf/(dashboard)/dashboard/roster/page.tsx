@@ -301,10 +301,10 @@ export default async function GolfRosterPage() {
                 {/* Card Header with Avatar and Name */}
                 <div className="p-5 md:p-6">
                   <div className="flex items-start gap-4">
-                    {/* Large Avatar */}
+                    {/* Large Avatar - 72px mobile, 80px desktop */}
                     <div className="relative flex-shrink-0">
                       {player.avatar_url ? (
-                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden ring-1 ring-slate-200 shadow-sm">
+                        <div className="w-[72px] h-[72px] md:w-20 md:h-20 rounded-2xl overflow-hidden ring-1 ring-slate-200 shadow-sm">
                           <Image
                             src={player.avatar_url}
                             alt={`${player.first_name} ${player.last_name}`}
@@ -314,15 +314,15 @@ export default async function GolfRosterPage() {
                           />
                         </div>
                       ) : (
-                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center ring-1 ring-slate-200">
-                          <span className="text-xl md:text-2xl font-semibold text-slate-500">
+                        <div className="w-[72px] h-[72px] md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center ring-1 ring-slate-200">
+                          <span className="text-2xl font-semibold text-slate-500">
                             {(player.first_name?.[0] || '')}{(player.last_name?.[0] || '')}
                           </span>
                         </div>
                       )}
                       {/* Online status indicator */}
                       <div className={cn(
-                        'absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full border-[3px] border-white shadow-sm',
+                        'absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-[3px] border-white shadow-sm',
                         isUserOnline(player.last_seen) ? 'bg-emerald-500' : 'bg-slate-300',
                       )} title={isUserOnline(player.last_seen) ? 'Online' : 'Offline'} />
                     </div>
@@ -360,43 +360,43 @@ export default async function GolfRosterPage() {
 
                 {/* Stats Row */}
                 <div className="px-5 md:px-6 pb-4 md:pb-5">
-                  <div className="flex items-center justify-between bg-slate-50 rounded-xl p-4">
+                  <div className="flex items-center justify-between bg-slate-50/80 rounded-xl p-4 md:p-5">
                     <div className="text-center flex-1">
-                      <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums">
+                      <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums leading-none">
                         {player.rounds_count || 0}
                       </p>
-                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">Rounds</p>
+                      <p className="text-[11px] md:text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Rounds</p>
                     </div>
-                    <div className="w-px h-10 bg-slate-200" />
+                    <div className="w-px h-12 bg-slate-200/80" />
                     <div className="text-center flex-1">
-                      <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums">
+                      <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums leading-none">
                         {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '—'}
                       </p>
-                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">Avg Score</p>
+                      <p className="text-[11px] md:text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Avg Score</p>
                     </div>
-                    <div className="w-px h-10 bg-slate-200" />
+                    <div className="w-px h-12 bg-slate-200/80" />
                     <div className="text-center flex-1">
                       <p className={cn(
-                        'text-2xl md:text-3xl font-bold tabular-nums',
+                        'text-2xl md:text-3xl font-bold tabular-nums leading-none',
                         player.handicap !== null && player.handicap <= 0 ? 'text-emerald-600' : 'text-slate-900'
                       )}>
                         {formatHandicap(player.handicap)}
                       </p>
-                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">Handicap</p>
+                      <p className="text-[11px] md:text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Handicap</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="px-5 md:px-6 pb-5 md:pb-6 flex items-center gap-2">
+                {/* Action Buttons - min 44px touch targets */}
+                <div className="px-5 md:px-6 pb-5 md:pb-6 flex items-center gap-3">
                   <Link href={`/golf/dashboard/stats?player=${player.id}`} className="flex-1">
-                    <button className="w-full px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
+                    <button className="w-full px-4 py-3 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                       <IconChartBar size={16} />
                       View Stats
                     </button>
                   </Link>
                   <Link href={`/golf/dashboard/messages?player=${player.id}`} className="flex-1">
-                    <button className="w-full px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center justify-center gap-2">
+                    <button className="w-full px-4 py-3 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-xl hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                       <IconMessage size={16} />
                       Message
                     </button>
