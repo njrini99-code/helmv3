@@ -13,7 +13,7 @@ import {
   IconCalendar,
   IconFlag,
   IconChartBar,
-  IconMail,
+  IconMessage,
   IconAirplane,
   IconFolder,
   IconClipboardList,
@@ -46,7 +46,7 @@ const coachNavItems: NavItem[] = [
   { name: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
   { name: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
   { name: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
-  { name: 'Messages', href: '/golf/dashboard/messages', icon: IconMail },
+  { name: 'Messages', href: '/golf/dashboard/messages', icon: IconMessage },
 ];
 
 const coachSecondaryNav: NavItem[] = [
@@ -66,7 +66,7 @@ const playerNavItems: NavItem[] = [
   { name: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
   { name: 'My Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
   { name: 'Classes', href: '/golf/dashboard/classes', icon: IconBook },
-  { name: 'Messages', href: '/golf/dashboard/messages', icon: IconMail },
+  { name: 'Messages', href: '/golf/dashboard/messages', icon: IconMessage },
 ];
 
 const playerSecondaryNav: NavItem[] = [

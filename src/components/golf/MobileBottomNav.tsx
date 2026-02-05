@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { IconHome, IconUsers, IconCalendar, IconChart, IconMessage, IconSettings, IconGolf } from '@/components/icons';
+import { IconHome, IconUsers, IconCalendar, IconChartBar, IconMessage, IconSettings, IconGolf } from '@/components/icons';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 
 interface NavItem {
@@ -17,7 +17,7 @@ const coachNavItems: NavItem[] = [
   { href: '/golf/dashboard', label: 'Home', icon: <IconHome size={22} /> },
   { href: '/golf/dashboard/roster', label: 'Roster', icon: <IconUsers size={22} /> },
   { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={22} /> },
-  { href: '/golf/dashboard/stats', label: 'Stats', icon: <IconChart size={22} /> },
+  { href: '/golf/dashboard/stats', label: 'Stats', icon: <IconChartBar size={22} /> },
   { href: '/golf/dashboard/settings', label: 'More', icon: <IconSettings size={22} /> },
 ];
 

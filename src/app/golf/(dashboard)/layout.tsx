@@ -9,7 +9,6 @@ import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { ToastProvider } from '@/components/ui/toast';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { usePresence } from '@/hooks/use-presence';
-import { ViewTransitionsProvider } from '@/components/providers/ViewTransitionsProvider';
 import { CommandPalette } from '@/components/golf/CommandPalette';
 import { MobileBottomNav } from '@/components/golf/MobileBottomNav';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
@@ -299,17 +298,15 @@ export default function GolfDashboardLayout({
 
   return (
     <MobileNavProvider>
-      <ViewTransitionsProvider>
-        <SidebarProvider>
-          <ToastProvider>
-            <SessionActivityProvider>
-              <GolfDashboardContent userData={userData}>
-                {children}
-              </GolfDashboardContent>
-            </SessionActivityProvider>
-          </ToastProvider>
-        </SidebarProvider>
-      </ViewTransitionsProvider>
+      <SidebarProvider>
+        <ToastProvider>
+          <SessionActivityProvider>
+            <GolfDashboardContent userData={userData}>
+              {children}
+            </GolfDashboardContent>
+          </SessionActivityProvider>
+        </ToastProvider>
+      </SidebarProvider>
     </MobileNavProvider>
   );
 }

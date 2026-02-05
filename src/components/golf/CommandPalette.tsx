@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
-  IconSearch, IconUsers, IconCalendar, IconChart, IconMessage,
+  IconSearch, IconUsers, IconCalendar, IconChartBar, IconMessage,
   IconSettings, IconGolf, IconFlag, IconBook, IconAirplane,
   IconChevronRight
 } from '@/components/icons';
@@ -42,7 +42,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       id: 'stats',
       label: 'View Team Stats',
       description: 'Player performance analytics',
-      icon: <IconChart size={18} />,
+      icon: <IconChartBar size={18} />,
       action: () => router.push('/golf/dashboard/stats'),
       keywords: ['analytics', 'performance', 'scores'],
     },
@@ -109,7 +109,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       id: 'stats',
       label: 'My Stats',
       description: 'Performance analytics',
-      icon: <IconChart size={18} />,
+      icon: <IconChartBar size={18} />,
       action: () => router.push('/golf/dashboard/stats'),
       keywords: ['analytics', 'performance'],
     },
