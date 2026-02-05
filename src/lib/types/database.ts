@@ -6967,6 +6967,7 @@ export type Database = {
       notifications: {
         Row: {
           body: string | null
+          action_url: string | null
           created_at: string | null
           data: Json | null
           id: string
@@ -6977,6 +6978,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          action_url?: string | null
           body?: string | null
           created_at?: string | null
           data?: Json | null
@@ -6988,6 +6990,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          action_url?: string | null
           body?: string | null
           created_at?: string | null
           data?: Json | null
@@ -7510,8 +7513,10 @@ export type Database = {
         | "video_view"
         | "message"
         | "team_invite"
+        | "team_join"
         | "team_join_request"
         | "team_join_approved"
+        | "team_join_rejected"
         | "event_reminder"
         | "dev_plan_assigned"
       organization_type: "college" | "juco" | "high_school" | "showcase"
@@ -7674,8 +7679,10 @@ export const Constants = {
         "video_view",
         "message",
         "team_invite",
+        "team_join",
         "team_join_request",
         "team_join_approved",
+        "team_join_rejected",
         "event_reminder",
         "dev_plan_assigned",
       ],

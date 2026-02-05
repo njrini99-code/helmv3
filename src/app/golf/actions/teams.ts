@@ -227,11 +227,11 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
         // Create notifications for each coach
         const notifications = coaches.map((coach) => ({
           user_id: coach.user_id,
-          type: 'team_join',
+          type: 'team_join' as const,
           title: 'New Player Joined',
           body: `${playerName} has joined ${team.name}`,
           action_url: '/golf/dashboard/roster',
-          metadata: {
+          data: {
             player_id: playerId,
             player_name: playerName,
             team_id: teamId,
@@ -828,16 +828,16 @@ export async function acceptJoinRequest(
     try {
       await supabase.from('notifications').insert({
         user_id: player.user_id,
-        type: 'team_join_approved',
+        type: 'team_join_approved' as const,
         title: 'Request Approved!',
         body: `Your request to join ${team.name} has been approved. Welcome to the team!`,
         action_url: '/golf/dashboard',
-        metadata: {
+        data: {
           team_id: team.id,
           team_name: team.name,
         },
         read: false,
-      });
+      } as any);
     } catch (notifyError) {
       console.error('Failed to notify player:', notifyError);
     }
@@ -936,7 +936,7 @@ export async function rejectJoinRequest(
     try {
       await supabase.from('notifications').insert({
         user_id: player.user_id,
-        type: 'team_join_rejected' as any,
+        type: 'team_join_rejected' as const,
         title: 'Request Not Approved',
         body: reason
           ? `Your request to join ${team.name} was not approved: ${reason}`
