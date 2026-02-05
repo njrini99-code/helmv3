@@ -82,17 +82,17 @@ export default function ProductsPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Link href="#golfhelm">
                 <button
-                  className="w-full sm:w-auto flex items-center gap-3 px-5 py-3 rounded-xl
+                  className="w-full sm:w-auto flex items-center gap-4 px-5 py-3.5 rounded-xl
                            bg-white border border-slate-200 shadow-sm
-                           hover:border-slate-300 hover:shadow-md active:scale-[0.98] transition-all"
+                           hover:border-emerald-300 hover:shadow-md active:scale-[0.98] transition-all"
                 >
-                  <div className="w-9 h-9 relative flex-shrink-0">
+                  <div className="w-11 h-11 relative flex-shrink-0">
                     <Image
                       src="/helm-golf-logo-transparent.png"
                       alt="GolfHelm"
                       fill
                       className="object-contain"
-                      sizes="36px"
+                      sizes="44px"
                     />
                   </div>
                   <div className="text-left">
@@ -104,17 +104,17 @@ export default function ProductsPage() {
 
               <Link href="#baseballhelm">
                 <button
-                  className="w-full sm:w-auto flex items-center gap-3 px-5 py-3 rounded-xl
+                  className="w-full sm:w-auto flex items-center gap-4 px-5 py-3.5 rounded-xl
                            bg-white border border-slate-200 shadow-sm
-                           hover:border-slate-300 hover:shadow-md active:scale-[0.98] transition-all"
+                           hover:border-blue-300 hover:shadow-md active:scale-[0.98] transition-all"
                 >
-                  <div className="w-9 h-9 relative flex-shrink-0">
+                  <div className="w-11 h-11 relative flex-shrink-0">
                     <Image
                       src="/helm-baseball-logo.png"
                       alt="BaseballHelm"
                       fill
                       className="object-contain"
-                      sizes="36px"
+                      sizes="44px"
                     />
                   </div>
                   <div className="text-left">
