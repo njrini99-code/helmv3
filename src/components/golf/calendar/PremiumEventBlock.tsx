@@ -32,9 +32,7 @@ export interface PremiumEventBlockProps {
     start_time: string | null;
     end_time: string | null;
     location?: string | null;
-    rsvp_confirmed_count?: number;
-    rsvp_total_count?: number;
-    is_recurring?: boolean;
+    recurring?: boolean;
   };
   onClick?: () => void;
   className?: string;
@@ -47,7 +45,8 @@ export function PremiumEventBlock({
   className,
   compact = false,
 }: PremiumEventBlockProps) {
-  const hasRSVP = event.rsvp_total_count && event.rsvp_total_count > 0;
+  // RSVP counts are no longer stored on the event; remove RSVP display for now
+  const hasRSVP = false;
 
   return (
     <div
@@ -82,7 +81,7 @@ export function PremiumEventBlock({
             </span>
 
             {/* Recurring indicator */}
-            {event.is_recurring && (
+            {event.recurring && (
               <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
             )}
           </div>
@@ -115,7 +114,7 @@ export function PremiumEventBlock({
             <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 rounded">
               <Users className="w-3 h-3 text-slate-500" />
               <span className="text-xs text-slate-600 tabular-nums">
-                {event.rsvp_confirmed_count}/{event.rsvp_total_count}
+                0/0
               </span>
             </div>
           </div>
@@ -156,6 +155,11 @@ function EventStatusBadge({ status, compact }: EventStatusBadgeProps) {
     confirmed: {
       icon: CheckCircle,
       label: 'Confirmed',
+      className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    },
+    scheduled: {
+      icon: CheckCircle,
+      label: 'Scheduled',
       className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
     },
   }[status] || {

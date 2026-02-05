@@ -18,7 +18,7 @@ import { formatSafeErrorResponse } from '@/lib/validation/server-action-validato
 // TYPES
 // ============================================================================
 
-export type EventStatus = 'draft' | 'confirmed' | 'cancelled';
+export type EventStatus = 'draft' | 'scheduled' | 'cancelled';
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
 interface ActionResult<T = void> {
@@ -64,11 +64,11 @@ export async function publishEvent(eventId: string): Promise<ActionResult> {
       return { success: false, error: 'Coach not found' };
     }
 
-    // Update event status to confirmed
+    // Update event status to scheduled
     const { error: updateError } = await supabase
       .from('golf_events')
       .update({
-        status: 'confirmed' as EventStatus,
+        status: 'scheduled' as EventStatus,
         updated_at: new Date().toISOString(),
       })
       .eq('id', eventId)
@@ -152,20 +152,32 @@ export async function cancelEvent(
         .eq('team_id', event.team_id);
 
       if (teamMembers && teamMembers.length > 0) {
-        // TODO: golf_calendar_notifications table does not exist yet
-        // When the table is created, uncomment the following code to notify players
-        // const notifications = teamMembers.map(member => ({
-        //   user_id: member.player_id,
-        //   type: 'event_cancelled',
-        //   title: `Event Cancelled: ${event.title}`,
-        //   message: reason || 'This event has been cancelled.',
-        //   action_url: `/golf/dashboard/calendar`,
-        //   read: false,
-        // }));
-        // await supabase.from('golf_calendar_notifications').insert(notifications);
+        // Look up user_ids for each player to create notifications
+        const playerIds = teamMembers.map(m => m.player_id);
+        const { data: players } = await supabase
+          .from('golf_players')
+          .select('user_id')
+          .in('id', playerIds);
 
-        // Cancellation is tracked via the event status change
-        // TODO: Implement notification system for event cancellations
+        const userIds = (players || [])
+          .map(p => p.user_id)
+          .filter((uid): uid is string => Boolean(uid));
+
+        if (userIds.length > 0) {
+          const notifications = userIds.map(userId => ({
+            user_id: userId,
+            event_id: eventId,
+            notification_type: 'event_cancelled',
+            title: `Event Cancelled: ${event.title}`,
+            message: reason || 'This event has been cancelled.',
+            action_url: `/golf/dashboard/calendar`,
+          }));
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('golf_calendar_notifications')
+            .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
+        }
       }
     }
 
@@ -200,13 +212,12 @@ export async function reinstateEvent(eventId: string): Promise<ActionResult> {
       return { success: false, error: 'Coach not found' };
     }
 
-    // Update event status back to confirmed
+    // Update event status back to scheduled
     const { error: updateError } = await supabase
       .from('golf_events')
       .update({
-        status: 'confirmed' as EventStatus,
+        status: 'scheduled' as EventStatus,
         cancelled_at: null,
-        cancelled_by: null,
         cancellation_reason: null,
         updated_at: new Date().toISOString(),
       })

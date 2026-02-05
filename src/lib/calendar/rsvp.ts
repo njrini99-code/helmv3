@@ -197,17 +197,16 @@ export async function sendEventInvitations(
     .map(player => ({
       user_id: player.user_id!,
       event_id: eventId,
-      type: 'event_invitation' as const,
+      notification_type: 'event_invitation',
       title: `You're invited: ${event.title}`,
       message: `${formatEventDate(event)} ${event.location ? `at ${event.location}` : ''}`.trim(),
       action_url: `/golf/dashboard/calendar?event=${eventId}`,
-      read: false,
     }));
 
   if (notifications.length > 0) {
     await supabase
       .from('golf_calendar_notifications')
-      .insert(notifications);
+      .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
   }
 }
 
@@ -248,16 +247,15 @@ export async function notifyEventUpdate(
   const notifications = userIds.map(userId => ({
     user_id: userId,
     event_id: eventId,
-    type: 'event_updated' as const,
+    notification_type: 'event_updated',
     title: `Event updated: ${event.title}`,
     message: changes || `${formatEventDate(event)} ${event.location ? `at ${event.location}` : ''}`.trim(),
     action_url: `/golf/dashboard/calendar?event=${eventId}`,
-    read: false,
   }));
 
   await supabase
     .from('golf_calendar_notifications')
-    .insert(notifications);
+    .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
 }
 
 /**
@@ -294,16 +292,15 @@ export async function cancelEventAndNotify(
       const notifications = userIds.map(userId => ({
         user_id: userId,
         event_id: eventId,
-        type: 'event_cancelled' as const,
+        notification_type: 'event_cancelled',
         title: `Event cancelled: ${event.title}`,
         message: reason || `${formatEventDate(event)} has been cancelled`,
         action_url: `/golf/dashboard/calendar`,
-        read: false,
       }));
 
       await supabase
         .from('golf_calendar_notifications')
-        .insert(notifications);
+        .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
     }
   }
 
@@ -366,15 +363,14 @@ export async function updateRSVP(
 
     await supabase
       .from('golf_calendar_notifications')
-      .insert({
+      .upsert({
         user_id: event.creator.user_id,
         event_id: eventId,
-        type: 'rsvp_response' as const,
+        notification_type: 'rsvp_response',
         title: `${player?.first_name} ${statusText}`,
         message: `${player?.first_name} ${player?.last_name} has ${statusText} "${event.title}"`,
         action_url: `/golf/dashboard/calendar?event=${eventId}`,
-        read: false,
-      });
+      }, { onConflict: 'event_id,user_id,notification_type' });
   }
 }
 
@@ -431,8 +427,8 @@ export async function getPlayerPendingInvitations(
       endTime: event.end_time,
       location: event.location,
       description: event.description,
-      requiresRsvp: false, // Not in schema
-      rsvpDeadline: null, // Not in schema
+      requiresRsvp: event.requires_rsvp ?? false,
+      rsvpDeadline: event.rsvp_deadline ?? null,
       createdBy: event.created_by,
       status: (attendance.status ?? 'pending') as RSVPStatus,
     });
@@ -476,8 +472,8 @@ export async function getPlayerUpcomingEvents(
       endTime: event.end_time,
       location: event.location,
       description: event.description,
-      requiresRsvp: false, // Not in schema
-      rsvpDeadline: null, // Not in schema
+      requiresRsvp: event.requires_rsvp ?? false,
+      rsvpDeadline: event.rsvp_deadline ?? null,
       createdBy: event.created_by,
       status: (attendance.status ?? 'pending') as RSVPStatus,
     });
@@ -526,18 +522,17 @@ export async function sendRSVPReminders(
     return [{
       user_id: userId,
       event_id: eventId,
-      type: 'rsvp_reminder' as const,
+      notification_type: 'rsvp_reminder',
       title: `RSVP reminder: ${event.title}`,
       message: `Please respond to "${event.title}" by ${formatEventDate(event)}`,
       action_url: `/golf/dashboard/calendar?event=${eventId}`,
-      read: false,
     }];
   });
 
   if (notifications.length > 0) {
     await supabase
       .from('golf_calendar_notifications')
-      .insert(notifications);
+      .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
   }
 
   return notifications.length;

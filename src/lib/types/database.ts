@@ -2424,6 +2424,7 @@ export type Database = {
       }
       golf_calendar_notifications: {
         Row: {
+          action_url: string | null
           created_at: string | null
           event_id: string
           id: string
@@ -2431,9 +2432,11 @@ export type Database = {
           notification_type: string
           read_at: string | null
           sent_at: string | null
+          title: string | null
           user_id: string
         }
         Insert: {
+          action_url?: string | null
           created_at?: string | null
           event_id: string
           id?: string
@@ -2441,9 +2444,11 @@ export type Database = {
           notification_type: string
           read_at?: string | null
           sent_at?: string | null
+          title?: string | null
           user_id: string
         }
         Update: {
+          action_url?: string | null
           created_at?: string | null
           event_id?: string
           id?: string
@@ -2451,6 +2456,7 @@ export type Database = {
           notification_type?: string
           read_at?: string | null
           sent_at?: string | null
+          title?: string | null
           user_id?: string
         }
         Relationships: [
@@ -3315,6 +3321,7 @@ export type Database = {
           event_id: string
           id: string
           notes: string | null
+          notified_at: string | null
           player_id: string
           rsvp_at: string | null
           status: string | null
@@ -3326,6 +3333,7 @@ export type Database = {
           event_id: string
           id?: string
           notes?: string | null
+          notified_at?: string | null
           player_id: string
           rsvp_at?: string | null
           status?: string | null
@@ -3337,6 +3345,7 @@ export type Database = {
           event_id?: string
           id?: string
           notes?: string | null
+          notified_at?: string | null
           player_id?: string
           rsvp_at?: string | null
           status?: string | null
@@ -3465,10 +3474,13 @@ export type Database = {
           event_type: string
           id: string
           location: string | null
+          max_attendees: number | null
           metadata: Json | null
           parent_event_id: string | null
           recurrence_rule: string | null
           recurring: boolean | null
+          requires_rsvp: boolean | null
+          rsvp_deadline: string | null
           start_time: string
           status: string | null
           team_id: string
@@ -3487,10 +3499,13 @@ export type Database = {
           event_type: string
           id?: string
           location?: string | null
+          max_attendees?: number | null
           metadata?: Json | null
           parent_event_id?: string | null
           recurrence_rule?: string | null
           recurring?: boolean | null
+          requires_rsvp?: boolean | null
+          rsvp_deadline?: string | null
           start_time: string
           status?: string | null
           team_id: string
@@ -3509,10 +3524,13 @@ export type Database = {
           event_type?: string
           id?: string
           location?: string | null
+          max_attendees?: number | null
           metadata?: Json | null
           parent_event_id?: string | null
           recurrence_rule?: string | null
           recurring?: boolean | null
+          requires_rsvp?: boolean | null
+          rsvp_deadline?: string | null
           start_time?: string
           status?: string | null
           team_id?: string

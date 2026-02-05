@@ -18,7 +18,6 @@ import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns';
 import {
   MapPin,
   Clock,
-  Users,
   ChevronRight,
   AlertCircle,
   Calendar,
@@ -92,12 +91,6 @@ export function MobileEventCard({
     if (!onRsvp) return { success: false, error: 'RSVP not available' };
     return onRsvp(response);
   }, [onRsvp]);
-
-  // Attendance counts for coaches
-  const attendanceInfo = isCoach && event.rsvp_confirmed_count !== undefined ? {
-    confirmed: event.rsvp_confirmed_count || 0,
-    total: event.rsvp_total_count || 0,
-  } : null;
 
   // Get accent color based on event type
   const getAccentColor = () => {
@@ -185,16 +178,7 @@ export function MobileEventCard({
             </div>
 
             {/* Attendance info for coaches */}
-            {attendanceInfo && (
-              <div className="flex items-center gap-2 mt-2.5">
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-50">
-                  <Users className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-xs font-medium text-slate-600">
-                    {attendanceInfo.confirmed}/{attendanceInfo.total}
-                  </span>
-                </div>
-              </div>
-            )}
+            {/* Attendance info - will be populated when RSVP counts are fetched from attendance table */}
           </div>
 
           {/* Right side - RSVP status or chevron */}

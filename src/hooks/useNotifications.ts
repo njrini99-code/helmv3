@@ -72,13 +72,13 @@ export function useNotifications({
       const result = await getNotifications(limit);
 
       if (result.success) {
-        // Map CalendarNotification to local Notification type (handle null → false for read)
+        // Map CalendarNotification to local Notification type (read_at null = unread)
         const mappedNotifications: Notification[] = result.data.map((n) => ({
           id: n.id,
-          type: n.type,
-          title: n.title,
+          type: n.notification_type,
+          title: n.title ?? '',
           message: n.message,
-          read: n.read ?? false,
+          read: n.read_at !== null,
           action_url: n.action_url,
           created_at: n.created_at ?? new Date().toISOString(),
         }));

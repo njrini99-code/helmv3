@@ -93,11 +93,14 @@ export interface CalendarPreferences {
 export interface CalendarNotification {
   id: string;
   user_id: string;
-  event_id: string;
-  type: 'rsvp_response' | 'event_updated' | 'event_cancelled' | 'event_reminder';
-  message: string;
-  read: boolean;
-  created_at: string;
+  event_id: string | null;
+  notification_type: string;
+  title: string | null;
+  message: string | null;
+  sent_at: string | null;
+  read_at: string | null;
+  action_url: string | null;
+  created_at: string | null;
 
   // Populated from join
   event?: CalendarEvent;

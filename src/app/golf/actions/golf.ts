@@ -121,13 +121,13 @@ export interface CalendarNotification {
   id: string;
   user_id: string;
   event_id: string | null;
-  type: string;
-  title: string;
+  notification_type: string;
+  title: string | null;
   message: string | null;
-  read: boolean | null;
+  sent_at: string | null;
+  read_at: string | null;
   action_url: string | null;
   created_at: string | null;
-  updated_at: string | null;
 }
 
 /** Event invitation - re-exported from calendar lib */
@@ -549,15 +549,11 @@ type GolfEventUpdateData = {
   updated_at: string;
   title?: string;
   event_type?: 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
-  start_date?: string;
-  end_date?: string;
   start_time?: string;
-  end_time?: string;
+  end_time?: string | null;
   all_day?: boolean;
   location?: string;
-  course_name?: string;
   description?: string;
-  is_mandatory?: boolean;
   requires_rsvp?: boolean;
   rsvp_deadline?: string | null;
   max_attendees?: number | null;
@@ -1110,26 +1106,8 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       }
       createdBy = coach.id;
     } else {
-      // Check if user is a player
-      // Note: golf_players doesn't have team_id - we look it up via golf_team_members
-      const { data: player } = await supabase
-        .from('golf_players')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (!player) {
-        return { success: false, error: 'User profile not found' };
-      }
-
-      // For players, team_id is optional (can be null for personal events)
-      teamId = await getPlayerTeamId(supabase, player.id);
-      createdBy = null;
-    }
-
-    // Team ID is required for golf_events - handle personal events separately
-    if (!teamId) {
-      return { success: false, error: 'Team assignment required to create events' };
+      // Players cannot create team events (RLS policy restricts INSERT to coaches only)
+      return { success: false, error: 'Only coaches can create team events' };
     }
 
     // Build insert data matching the actual golf_events table schema
@@ -1201,9 +1179,7 @@ const golfEventUpdateSchema = z.object({
   endTime: z.string().optional(),
   allDay: z.boolean().optional(),
   location: z.string().max(500).optional(),
-  courseName: z.string().max(200).optional(),
   description: z.string().max(5000).optional(),
-  isMandatory: z.boolean().optional(),
   requiresRsvp: z.boolean().optional(),
   rsvpDeadline: z.string().optional(),
   maxAttendees: z.number().int().optional(),
@@ -1277,15 +1253,21 @@ export async function updateGolfEvent(
 
     if (validatedData.title) updateData.title = validatedData.title;
     if (validatedData.eventType) updateData.event_type = validatedData.eventType;
-    if (validatedData.startDate) updateData.start_date = validatedData.startDate;
-    if (validatedData.endDate) updateData.end_date = validatedData.endDate;
-    if (validatedData.startTime) updateData.start_time = validatedData.startTime;
-    if (validatedData.endTime) updateData.end_time = validatedData.endTime;
+    // Combine date+time into start_time/end_time timestamptz (matching createGolfEvent pattern)
+    if (validatedData.startDate) {
+      updateData.start_time = validatedData.startTime
+        ? `${validatedData.startDate}T${validatedData.startTime}`
+        : validatedData.startDate;
+    }
+    if (validatedData.endDate || validatedData.endTime) {
+      const endDate = validatedData.endDate || validatedData.startDate;
+      updateData.end_time = validatedData.endTime && endDate
+        ? `${endDate}T${validatedData.endTime}`
+        : endDate || null;
+    }
     if (validatedData.allDay !== undefined) updateData.all_day = validatedData.allDay;
     if (validatedData.location) updateData.location = validatedData.location;
-    if (validatedData.courseName) updateData.course_name = validatedData.courseName;
     if (validatedData.description) updateData.description = validatedData.description;
-    if (validatedData.isMandatory !== undefined) updateData.is_mandatory = validatedData.isMandatory;
     if (validatedData.requiresRsvp !== undefined) updateData.requires_rsvp = validatedData.requiresRsvp;
     if (validatedData.rsvpDeadline !== undefined) updateData.rsvp_deadline = validatedData.rsvpDeadline || null;
     if (validatedData.maxAttendees !== undefined) updateData.max_attendees = validatedData.maxAttendees;
@@ -1978,7 +1960,7 @@ export async function markNotificationRead(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from('golf_calendar_notifications')
-      .update({ read: true, updated_at: new Date().toISOString() })
+      .update({ read_at: new Date().toISOString() })
       .eq('id', notificationId);
 
     revalidatePath('/golf/dashboard');
@@ -2006,9 +1988,9 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from('golf_calendar_notifications')
-      .update({ read: true, updated_at: new Date().toISOString() })
+      .update({ read_at: new Date().toISOString() })
       .eq('user_id', user.id)
-      .eq('read', false);
+      .is('read_at', null);
 
     revalidatePath('/golf/dashboard');
     return { success: true, data: undefined };

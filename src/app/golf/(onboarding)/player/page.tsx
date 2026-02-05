@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { ensurePlayerRecord } from '@/app/golf/actions/onboarding';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
@@ -100,6 +101,10 @@ export default function GolfPlayerOnboarding() {
 
       setUserId(user.id);
       setEmail(user.email || '');
+
+      // Ensure a golf_players record exists early (server-side, handles RLS correctly).
+      // This prevents the "stuck with no record" bug if the user abandons onboarding.
+      await ensurePlayerRecord();
 
       // Check for existing player record (use maybeSingle since record may not exist yet)
       const { data: player } = await supabase

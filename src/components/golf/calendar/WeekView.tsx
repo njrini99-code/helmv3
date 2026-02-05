@@ -339,13 +339,11 @@ export function WeekView({
                           id: event.id,
                           title: event.title,
                           event_type: event.event_type,
-                          status: event.status || 'confirmed',
+                          status: event.status || 'scheduled',
                           start_time: event.start_time,
                           end_time: event.end_time,
                           location: event.location,
-                          rsvp_confirmed_count: event.rsvp_confirmed_count,
-                          rsvp_total_count: event.rsvp_total_count,
-                          is_recurring: event.is_recurring,
+                          recurring: event.recurring,
                         }}
                         onClick={() => onEventClick?.(event)}
                         compact={height < 80}

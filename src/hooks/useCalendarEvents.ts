@@ -8,20 +8,16 @@ export interface CalendarEvent {
   team_id: string;
   title: string;
   event_type: string; // Accepts any event type string for flexibility across sports
-  start_date: string;
-  end_date: string | null;
-  start_time: string | null;
-  end_time: string | null;
+  start_date: string; // Mapped from start_time (timestamptz)
+  end_date: string | null; // Mapped from end_time (timestamptz)
+  start_time: string | null; // Raw start_time from DB
+  end_time: string | null; // Raw end_time from DB
   location?: string | null;
   description?: string | null;
   status?: string;
-  rsvp_confirmed_count?: number;
-  rsvp_maybe_count?: number;
-  rsvp_declined_count?: number;
-  rsvp_pending_count?: number;
-  rsvp_total_count?: number;
-  rsvp_lock_time?: string | null;
-  is_recurring?: boolean;
+  all_day?: boolean;
+  recurring?: boolean;
+  created_by?: string | null;
   requires_rsvp?: boolean;
   rsvp_deadline?: string | null;
   max_attendees?: number | null;
@@ -69,8 +65,6 @@ export function useCalendarEvents({ teamId, startDate, endDate }: UseCalendarEve
           ...event,
           start_date: event.start_time, // Map start_time to start_date for interface compatibility
           end_date: event.end_time || event.start_time,
-          created_by_id: event.created_by || '',
-          is_recurring: false,
         } as CalendarEvent));
 
         setEvents(mappedEvents);

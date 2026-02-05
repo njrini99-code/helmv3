@@ -213,6 +213,79 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
 }
 
 // ============================================================================
+// ENSURE PLAYER RECORD EXISTS (called early in onboarding)
+// ============================================================================
+
+/**
+ * Ensure a golf_players record exists for the current user.
+ * Called on onboarding page load so the record is created even if the user
+ * abandons onboarding before clicking "Go to Dashboard".
+ * Sets onboarding_completed = false — the final step flips it to true.
+ */
+export async function ensurePlayerRecord() {
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Check if record already exists
+    const { data: existing } = await supabase
+      .from('golf_players')
+      .select('id, onboarding_completed')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (existing) {
+      // Record exists — return it
+      return { success: true, playerId: existing.id, onboardingCompleted: existing.onboarding_completed };
+    }
+
+    // Ensure users table record exists
+    await supabase
+      .from('users')
+      .upsert({
+        id: user.id,
+        email: user.email || '',
+        role: 'player',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'id',
+        ignoreDuplicates: true,
+      });
+
+    // Create minimal golf_players record with onboarding_completed = false
+    const firstName = user.user_metadata?.first_name || '';
+    const lastName = user.user_metadata?.last_name || '';
+
+    const { data: player, error: insertError } = await supabase
+      .from('golf_players')
+      .insert({
+        user_id: user.id,
+        first_name: firstName,
+        last_name: lastName,
+        email: user.email || null,
+        onboarding_completed: false,
+      })
+      .select('id')
+      .single();
+
+    if (insertError) {
+      console.error('[ensurePlayerRecord] Insert failed:', insertError);
+      return { success: false, error: insertError.message };
+    }
+
+    return { success: true, playerId: player.id, onboardingCompleted: false };
+  } catch (error) {
+    console.error('[ensurePlayerRecord] Error:', error);
+    return { success: false, error: 'Failed to ensure player record' };
+  }
+}
+
+// ============================================================================
 // PLAYER ONBOARDING ACTION
 // ============================================================================
 

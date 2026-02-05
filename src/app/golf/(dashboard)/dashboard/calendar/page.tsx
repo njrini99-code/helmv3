@@ -72,8 +72,9 @@ export default async function GolfCalendarPage() {
     ? await Promise.all([
         supabase
           .from('golf_events')
-          .select('id, team_id, title, event_type, start_time, end_time, location, description')
+          .select('id, team_id, title, event_type, start_time, end_time, location, description, status, all_day, recurring, created_by, requires_rsvp, rsvp_deadline, max_attendees')
           .eq('team_id', teamId)
+          .neq('status', 'cancelled')
           .order('start_time', { ascending: true }),
         // Get players via golf_team_members junction table
         supabase
@@ -108,18 +109,22 @@ export default async function GolfCalendarPage() {
   events = (eventsData || []).map(event => {
     return {
       id: event.id,
-      team_id: event.team_id || '', // Convert null to empty string
+      team_id: event.team_id || '',
       title: event.title,
       event_type: event.event_type,
       start_date: event.start_time, // start_time is the datetime column
-      end_date: event.end_time || event.start_time, // end_time is the datetime column
-      start_time: null, // No separate time field needed, it's in start_time
-      end_time: null, // No separate time field needed, it's in end_time
+      end_date: event.end_time || event.start_time,
+      start_time: event.start_time,
+      end_time: event.end_time,
       location: event.location,
       description: event.description,
-      requires_rsvp: false, // Not stored in DB, default to false
-      rsvp_deadline: null, // Not stored in DB
-      max_attendees: null, // Not stored in DB
+      status: event.status ?? undefined,
+      all_day: event.all_day ?? undefined,
+      recurring: event.recurring ?? undefined,
+      created_by: event.created_by,
+      requires_rsvp: event.requires_rsvp ?? false,
+      rsvp_deadline: event.rsvp_deadline,
+      max_attendees: event.max_attendees,
     };
   });
 
