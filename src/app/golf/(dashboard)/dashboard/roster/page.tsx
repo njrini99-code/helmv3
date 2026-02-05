@@ -365,14 +365,14 @@ export default async function GolfRosterPage() {
                       <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums leading-none">
                         {player.rounds_count || 0}
                       </p>
-                      <p className="text-[11px] md:text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Rounds</p>
+                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Rounds</p>
                     </div>
                     <div className="w-px h-12 bg-slate-200/80" />
                     <div className="text-center flex-1">
                       <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums leading-none">
                         {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '—'}
                       </p>
-                      <p className="text-[11px] md:text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Avg Score</p>
+                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Avg Score</p>
                     </div>
                     <div className="w-px h-12 bg-slate-200/80" />
                     <div className="text-center flex-1">
@@ -382,7 +382,7 @@ export default async function GolfRosterPage() {
                       )}>
                         {formatHandicap(player.handicap)}
                       </p>
-                      <p className="text-[11px] md:text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Handicap</p>
+                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Handicap</p>
                     </div>
                   </div>
                 </div>

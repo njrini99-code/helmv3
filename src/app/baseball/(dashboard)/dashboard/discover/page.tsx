@@ -8,7 +8,9 @@ import { DiscoverView } from '@/components/coach/discover/DiscoverView';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { TeamPeekPanel } from '@/components/panels/TeamPeekPanel';
 import { Header } from '@/components/layout/header';
+import { Button } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
+import { IconFilter, IconX } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useRecruitingRouteProtection } from '@/hooks/use-route-protection';
 import type { Player, Organization } from '@/lib/types';
@@ -53,6 +55,9 @@ function DiscoverContent() {
   const searchParams = useSearchParams();
   const { coach, loading: authLoading } = useAuth();
   const { isAllowed, isLoading: routeLoading } = useRecruitingRouteProtection();
+
+  // Mobile filter drawer state
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // State
   const [players, setPlayers] = useState<DiscoverPlayer[]>([]);
@@ -367,14 +372,26 @@ function DiscoverContent() {
           </div>
         )}
 
-        <div className="flex gap-6">
-          {/* Filters Sidebar */}
-          <div className="w-64 flex-shrink-0">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Filters Sidebar - hidden on mobile */}
+          <aside className="hidden lg:block lg:w-64 lg:flex-shrink-0">
             <FilterPanel currentFilters={filters} mode={filters.mode} />
+          </aside>
+
+          {/* Mobile filter button */}
+          <div className="lg:hidden">
+            <Button
+              variant="secondary"
+              onClick={() => setMobileFiltersOpen(true)}
+              className="w-full min-h-[44px]"
+            >
+              <IconFilter size={16} className="mr-2" />
+              Filters
+            </Button>
           </div>
 
-          {/* Results */}
-          <div className="flex-1">
+          {/* Results - full width on mobile */}
+          <div className="flex-1 min-w-0">
             <DiscoverView
               players={players}
               watchlistIds={watchlistIds}
@@ -397,6 +414,31 @@ function DiscoverContent() {
             />
           </div>
         </div>
+
+        {/* Mobile filter drawer */}
+        {mobileFiltersOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+              onClick={() => setMobileFiltersOpen(false)}
+            />
+            <div className="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl overflow-y-auto">
+              <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
+                <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
+                <button
+                  onClick={() => setMobileFiltersOpen(false)}
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+                  aria-label="Close filters"
+                >
+                  <IconX size={20} className="text-slate-500" />
+                </button>
+              </div>
+              <div className="p-6">
+                <FilterPanel currentFilters={filters} mode={filters.mode} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Player Peek Panel */}

@@ -213,7 +213,7 @@ function CompareContent() {
                       <span className="text-sm font-medium text-slate-700">{name}</span>
                       <button
                         onClick={() => removePlayer(player.id)}
-                        className="p-0.5 rounded-full hover:bg-slate-200 transition-colors"
+                        className="min-w-[44px] min-h-[44px] p-2 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"
                         aria-label={`Remove ${name} from comparison`}
                       >
                         <IconX size={14} className="text-slate-500" />

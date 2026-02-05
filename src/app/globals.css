@@ -118,6 +118,15 @@
 }
 
 @layer base {
+  /* iOS Safari zoom prevention - ensure all form inputs are 16px on mobile */
+  @media (max-width: 1023px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+
   * {
     @apply border-slate-200;
   }

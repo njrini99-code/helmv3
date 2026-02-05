@@ -150,7 +150,7 @@ export function GolfSignUpForm() {
             className="
               w-full px-4 py-3
               bg-white border border-warm-200 rounded-[10px]
-              text-warm-900 text-sm placeholder:text-warm-400
+              text-warm-900 text-base lg:text-sm placeholder:text-warm-400
               transition-all duration-200
               focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
             "
@@ -169,7 +169,7 @@ export function GolfSignUpForm() {
             className="
               w-full px-4 py-3
               bg-white border border-warm-200 rounded-[10px]
-              text-warm-900 text-sm placeholder:text-warm-400
+              text-warm-900 text-base lg:text-sm placeholder:text-warm-400
               transition-all duration-200
               focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
             "

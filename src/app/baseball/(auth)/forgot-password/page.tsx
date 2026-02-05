@@ -153,7 +153,7 @@ export default function ForgotPasswordPage() {
                     bg-white
                     border border-warm-200
                     rounded-[10px]
-                    text-warm-900 text-sm
+                    text-warm-900 text-base lg:text-sm
                     placeholder:text-warm-400
                     transition-all duration-200
                     focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10

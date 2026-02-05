@@ -134,7 +134,8 @@ export function MobileSidebarDrawer({
           <button
             onClick={onClose}
             className="
-              p-2 rounded-lg
+              min-w-[44px] min-h-[44px] p-3 rounded-lg
+              flex items-center justify-center
               text-warm-400 hover:text-white hover:bg-white/10
               transition-colors
             "

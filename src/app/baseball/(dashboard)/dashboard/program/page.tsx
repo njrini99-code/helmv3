@@ -311,7 +311,7 @@ export default function ProgramPage() {
                   <select
                     value={formData.division || ''}
                     onChange={(e) => handleInputChange('division', e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-base lg:text-sm text-slate-900 bg-white"
                   >
                     <option value="">Select Division</option>
                     {DIVISIONS.map(div => (
@@ -350,7 +350,7 @@ export default function ProgramPage() {
                   value={formData.description || ''}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={5}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 placeholder:text-slate-400"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-base lg:text-sm text-slate-900 placeholder:text-slate-400"
                   placeholder="Tell recruits about your program, culture, and what makes it special..."
                 />
               </div>

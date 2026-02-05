@@ -231,7 +231,7 @@ export default function JourneyPage() {
       <div className="p-6 lg:p-8">
         {/* Stats Overview */}
         {stats && stats.total_interests > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
             <Card variant="glass">
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-semibold tracking-tight text-slate-900">{stats.total_interests}</p>

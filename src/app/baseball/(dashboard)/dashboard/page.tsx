@@ -33,6 +33,22 @@ import { HotLeadsSection, PositionNeedsMatrix } from '@/components/baseball/dash
 import { getFullName, formatHeight, getPipelineStageLabel, pluralize, formatRelativeTime } from '@/lib/utils';
 import type { WatchlistWithPlayer } from '@/lib/types';
 
+// Skeleton for stat cards during loading
+function BentoStatSkeleton({ size = 'default' }: { size?: 'default' | 'large' }) {
+  return (
+    <div className={`glass-standard rounded-2xl overflow-hidden animate-pulse ${size === 'large' ? 'p-6' : 'p-5'}`}>
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="h-3.5 bg-slate-200 rounded w-20 mb-3" />
+          <div className={`${size === 'large' ? 'h-9' : 'h-7'} bg-slate-200 rounded w-16 mb-2`} />
+          <div className="h-3 bg-slate-100 rounded w-28" />
+        </div>
+        <div className="w-11 h-11 rounded-xl bg-slate-100" />
+      </div>
+    </div>
+  );
+}
+
 // Animated number component
 function AnimatedStat({ value, suffix = '' }: { value: number; suffix?: string }) {
   return (
@@ -172,10 +188,35 @@ export default function DashboardPage() {
         <div className="p-6 lg:p-8 space-y-6">
           {/* Bento Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-min">
+            {coachDashboardLoading ? (
+              <>
+                {/* Loading skeleton for the pipeline hero card */}
+                <div className="md:col-span-2 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-6 overflow-hidden animate-pulse">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-white/10" />
+                    <div>
+                      <div className="h-3.5 bg-white/10 rounded w-24 mb-2" />
+                      <div className="h-9 bg-white/10 rounded w-16" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 mt-6">
+                    {[1,2,3,4].map(i => (
+                      <div key={i} className="text-center p-3 rounded-xl bg-white/5">
+                        <div className="h-5 bg-white/10 rounded w-8 mx-auto mb-1" />
+                        <div className="h-3 bg-white/5 rounded w-12 mx-auto" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <BentoStatSkeleton />
+                <BentoStatSkeleton />
+              </>
+            ) : (
+              <>
             {/* Main Stat - Spans 2 cols */}
-            <div className="md:col-span-2 relative group rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-6 overflow-hidden">
+            <div className="md:col-span-2 relative group rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-6 overflow-hidden hover:shadow-2xl transition-shadow duration-300">
               {/* Glow effect */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-500/15 transition-colors duration-500" />
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
@@ -188,9 +229,9 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-4 gap-2 mt-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-6">
                   {(['watchlist', 'high_priority', 'offer_extended', 'committed'] as const).map((stage) => (
-                    <div key={stage} className="text-center p-3 rounded-xl bg-white/5 backdrop-blur-sm">
+                    <div key={stage} className="text-center p-3 rounded-xl bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors duration-200">
                       <p className="text-lg font-semibold tracking-tight text-white tabular-nums">{pipelineCounts[stage]}</p>
                       <p className="text-xs text-slate-400 mt-0.5">{getPipelineStageLabel(stage).split(' ')[0]}</p>
                     </div>
@@ -226,6 +267,8 @@ export default function DashboardPage() {
               iconColor="text-purple-500"
               href="/baseball/dashboard/messages"
             />
+              </>
+            )}
           </div>
 
           {/* Second Row - Hot Leads + Position Needs */}
@@ -457,12 +500,12 @@ export default function DashboardPage() {
         {/* Profile Card */}
         <div className="relative glass-standard rounded-2xl p-6 overflow-hidden">
           <ShineEffect />
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
             <Avatar name={getFullName(player?.first_name, player?.last_name)} size="2xl" src={player?.avatar_url} />
             <div className="flex-1">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div>
-                  <h2 className="text-2xl font-semibold tracking-tight text-slate-900 tracking-tight">{player?.first_name} {player?.last_name}</h2>
+                  <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{player?.first_name} {player?.last_name}</h2>
                   <p className="text-slate-500">{player?.primary_position} • Class of {player?.grad_year}</p>
                   <p className="text-sm leading-relaxed text-slate-400 mt-1">{player?.high_school_name} • {player?.city}, {player?.state}</p>
                 </div>
@@ -472,7 +515,7 @@ export default function DashboardPage() {
                   </Button>
                 </Link>
               </div>
-              <div className="flex items-center gap-2 mt-4">
+              <div className="flex items-center gap-2 mt-4 flex-wrap">
                 <Badge variant={player?.recruiting_activated ? 'success' : 'secondary'}>
                   {player?.recruiting_activated ? 'Recruiting Active' : 'Recruiting Inactive'}
                 </Badge>
@@ -486,41 +529,52 @@ export default function DashboardPage() {
 
         {/* Bento Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <BentoStatCard
-            label="Profile Views"
-            value={playerStats?.profileViews || 0}
-            change={playerStats?.profileViewsChange ? `${playerStats.profileViewsChange > 0 ? '+' : ''}${playerStats.profileViewsChange}% vs last week` : 'This week'}
-            icon={IconEye}
-            iconBg="bg-blue-50"
-            iconColor="text-blue-500"
-            href="/baseball/dashboard/analytics"
-          />
-          <BentoStatCard
-            label="On Watchlists"
-            value={playerStats?.watchlistCount || 0}
-            change="Coaches interested"
-            icon={IconStar}
-            iconBg="bg-amber-50"
-            iconColor="text-amber-500"
-          />
-          <BentoStatCard
-            label="Messages"
-            value={playerStats?.unreadMessages || 0}
-            change={pluralize(playerStats?.unreadMessages || 0, 'unread')}
-            icon={IconMessage}
-            iconBg="bg-purple-50"
-            iconColor="text-purple-500"
-            href="/baseball/dashboard/messages"
-          />
-          <BentoStatCard
-            label="Video Views"
-            value={playerStats?.videoViews || 0}
-            change="Total views"
-            icon={IconVideo}
-            iconBg="bg-green-50"
-            iconColor="text-green-500"
-            href="/baseball/dashboard/videos"
-          />
+          {!playerStats ? (
+            <>
+              <BentoStatSkeleton />
+              <BentoStatSkeleton />
+              <BentoStatSkeleton />
+              <BentoStatSkeleton />
+            </>
+          ) : (
+            <>
+              <BentoStatCard
+                label="Profile Views"
+                value={playerStats.profileViews || 0}
+                change={playerStats.profileViewsChange ? `${playerStats.profileViewsChange > 0 ? '+' : ''}${playerStats.profileViewsChange}% vs last week` : 'This week'}
+                icon={IconEye}
+                iconBg="bg-blue-50"
+                iconColor="text-blue-500"
+                href="/baseball/dashboard/analytics"
+              />
+              <BentoStatCard
+                label="On Watchlists"
+                value={playerStats.watchlistCount || 0}
+                change="Coaches interested"
+                icon={IconStar}
+                iconBg="bg-amber-50"
+                iconColor="text-amber-500"
+              />
+              <BentoStatCard
+                label="Messages"
+                value={playerStats.unreadMessages || 0}
+                change={pluralize(playerStats.unreadMessages || 0, 'unread')}
+                icon={IconMessage}
+                iconBg="bg-purple-50"
+                iconColor="text-purple-500"
+                href="/baseball/dashboard/messages"
+              />
+              <BentoStatCard
+                label="Video Views"
+                value={playerStats.videoViews || 0}
+                change="Total views"
+                icon={IconVideo}
+                iconBg="bg-green-50"
+                iconColor="text-green-500"
+                href="/baseball/dashboard/videos"
+              />
+            </>
+          )}
         </div>
 
         {/* Content Grid */}
@@ -539,7 +593,7 @@ export default function DashboardPage() {
                   { label: player?.pitch_velo ? 'Pitch Velo' : 'Exit Velo', value: `${player?.pitch_velo || player?.exit_velo || '—'}${(player?.pitch_velo || player?.exit_velo) ? ' mph' : ''}` },
                   { label: 'GPA', value: player?.gpa?.toFixed(2) || '—' },
                 ].map((stat) => (
-                  <div key={stat.label} className="p-4 bg-slate-50/80 rounded-xl border border-slate-100/50 hover:bg-slate-100/80 transition-colors">
+                  <div key={stat.label} className="p-4 bg-slate-50/80 rounded-xl border border-slate-100/50 hover:bg-slate-100/80 hover:scale-[1.02] hover:shadow-sm transition-all duration-200">
                     <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">{stat.label}</p>
                     <p className="text-xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stat.value}</p>
                   </div>

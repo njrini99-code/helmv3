@@ -275,6 +275,7 @@ export default function CoachOnboarding() {
   }
 
   return (
+    <div className="pb-[env(safe-area-inset-bottom)]">
     <AnimatePresence mode="wait">
       {currentStep === 'role-selection' && (
         <SignUpAs key="role-selection" onSelect={handleRoleSelect} />
@@ -366,10 +367,11 @@ export default function CoachOnboarding() {
       )}
 
       {error && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl shadow-lg z-50">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl shadow-lg z-50" style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
           {error}
         </div>
       )}
     </AnimatePresence>
+    </div>
   );
 }

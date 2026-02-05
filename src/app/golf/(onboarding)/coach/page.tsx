@@ -197,7 +197,7 @@ export default function GolfCoachOnboarding() {
         />
       </div>
 
-      <div className="relative min-h-screen flex items-center justify-center p-4">
+      <div className="relative min-h-screen flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <AnimatePresence mode="wait">
           {step === 'welcome' && (
             <motion.div

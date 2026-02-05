@@ -99,7 +99,7 @@ export function SearchBar({
           autoCapitalize="off"
           spellCheck={false}
           className={cn(
-            'w-full h-10 pl-10 pr-10 rounded-xl border bg-white text-slate-900 text-sm',
+            'w-full h-11 pl-10 pr-10 rounded-xl border bg-white text-slate-900 text-sm',
             'placeholder:text-slate-400',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500',
@@ -110,7 +110,8 @@ export function SearchBar({
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full
+            className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] p-2
+                       flex items-center justify-center rounded-full
                        text-slate-400 hover:text-slate-600 hover:bg-slate-100
                        transition-colors"
           >
@@ -124,7 +125,7 @@ export function SearchBar({
           type="button"
           onClick={onFilterClick}
           className={cn(
-            'relative h-10 px-4 rounded-xl border text-sm font-medium',
+            'relative h-11 px-4 rounded-xl border text-sm font-medium',
             'flex items-center gap-2 transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20',
             filterCount > 0
@@ -176,7 +177,7 @@ export function CompactSearch({
         autoCapitalize="off"
         spellCheck={false}
         className={cn(
-          'w-full h-8 pl-8 pr-3 rounded-lg border bg-white text-slate-900 text-sm',
+          'w-full h-11 lg:h-8 pl-8 pr-3 rounded-lg border bg-white text-slate-900 text-sm',
           'placeholder:text-slate-400',
           'transition-all duration-200',
           'focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500',

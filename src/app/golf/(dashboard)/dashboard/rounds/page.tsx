@@ -295,7 +295,7 @@ export default async function RoundsPage() {
                                 {round.total_score || '--'}
                               </span>
                               <span className={cn(
-                                'text-[10px] font-medium',
+                                'text-[11px] font-medium',
                                 scoreToPar < 0 ? 'text-green-500' : scoreToPar === 0 ? 'text-slate-500' : 'text-amber-500'
                               )}>
                                 {scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar}
@@ -309,7 +309,7 @@ export default async function RoundsPage() {
                                   {round.course_name}
                                 </h3>
                                 {round.status === 'completed' && (
-                                  <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-green-100 text-green-700">
+                                  <span className="flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium rounded-full bg-green-100 text-green-700">
                                     <IconCheck size={10} />
                                     Completed
                                   </span>

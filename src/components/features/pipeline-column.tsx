@@ -27,6 +27,7 @@ export function PipelineColumn({ stage, items }: PipelineColumnProps) {
       className={cn(
         'relative rounded-[20px] p-5 min-h-[500px] transition-all duration-200 overflow-hidden',
         'bg-white/60 backdrop-blur-md border border-white/40',
+        'flex-shrink-0 w-[280px] snap-start lg:w-auto lg:snap-align-none',
         isOver && 'ring-2 ring-green-600 ring-offset-2 bg-green-50/30'
       )}
     >

@@ -31,7 +31,7 @@ export default function PlayerDevPlanPage() {
       />
       <div className="p-8">
         {/* Progress Overview */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">

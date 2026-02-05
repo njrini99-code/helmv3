@@ -165,7 +165,7 @@ export default function DevPlansPage() {
       </Header>
       <div className="p-6 lg:p-8">
         {/* Stats Overview */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -335,7 +335,7 @@ export default function DevPlansPage() {
         </Card>
 
         {/* Info Cards */}
-        <div className="grid grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <Card variant="glass">
             <CardHeader>
               <h2 className="font-semibold text-slate-900">What are Development Plans?</h2>

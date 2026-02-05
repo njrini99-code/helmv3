@@ -333,7 +333,7 @@ export default function TeamsPage() {
                           </code>
                           <button
                             onClick={() => handleCopyInvite(invite.code)}
-                            className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors"
+                            className="min-w-[44px] min-h-[44px] p-2.5 rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center"
                             title="Copy invite link"
                           >
                             {copiedCode === invite.code ? (
@@ -411,7 +411,7 @@ export default function TeamsPage() {
                   placeholder="Brief description of your team..."
                   value={newTeam.description}
                   onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-base lg:text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                   rows={3}
                 />
               </div>

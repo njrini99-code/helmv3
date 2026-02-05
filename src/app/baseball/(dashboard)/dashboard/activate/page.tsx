@@ -109,7 +109,7 @@ export default function ActivateRecruitingPage() {
         </Card>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <Card variant="glass">
             <CardHeader>
               <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-3">
@@ -229,7 +229,7 @@ export default function ActivateRecruitingPage() {
             <h3 className="font-semibold text-slate-900">You're in control</h3>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-6 text-sm text-slate-600">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-600">
               <div>
                 <h4 className="font-medium text-slate-900 mb-2">Privacy Settings</h4>
                 <ul className="space-y-2">

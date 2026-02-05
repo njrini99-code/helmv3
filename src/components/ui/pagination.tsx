@@ -73,7 +73,7 @@ export function Pagination({
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
           className={cn(
-            'h-9 px-2 rounded-lg text-sm font-medium transition-colors',
+            'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20',
             currentPage === 1
               ? 'text-slate-300 cursor-not-allowed'
@@ -93,7 +93,7 @@ export function Pagination({
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         className={cn(
-          'h-9 px-2 rounded-lg text-sm font-medium transition-colors',
+          'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-green-500/20',
           currentPage === 1
             ? 'text-slate-300 cursor-not-allowed'
@@ -107,7 +107,7 @@ export function Pagination({
       {pages.map((page, index) => {
         if (page === 'ellipsis') {
           return (
-            <span key={`ellipsis-${index}`} className="h-9 w-9 flex items-center justify-center text-slate-400">
+            <span key={`ellipsis-${index}`} className="h-11 w-11 flex items-center justify-center text-slate-400">
               ...
             </span>
           );
@@ -121,7 +121,7 @@ export function Pagination({
             type="button"
             onClick={() => onPageChange(page)}
             className={cn(
-              'h-9 min-w-[36px] px-3 rounded-lg text-sm font-medium transition-colors',
+              'h-11 min-w-[44px] px-3 rounded-lg text-sm font-medium transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-green-500/20',
               isActive
                 ? 'bg-green-600 text-white shadow-sm'
@@ -139,7 +139,7 @@ export function Pagination({
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         className={cn(
-          'h-9 px-2 rounded-lg text-sm font-medium transition-colors',
+          'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-green-500/20',
           currentPage === totalPages
             ? 'text-slate-300 cursor-not-allowed'
@@ -156,7 +156,7 @@ export function Pagination({
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}
           className={cn(
-            'h-9 px-2 rounded-lg text-sm font-medium transition-colors',
+            'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20',
             currentPage === totalPages
               ? 'text-slate-300 cursor-not-allowed'
@@ -208,7 +208,7 @@ export function CompactPagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className={cn(
-            'h-8 px-3 rounded-lg border text-sm font-medium transition-colors',
+            'h-11 lg:h-8 px-3 rounded-lg border text-sm font-medium transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20',
             currentPage === 1
               ? 'border-slate-200 text-slate-300 cursor-not-allowed'
@@ -222,7 +222,7 @@ export function CompactPagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           className={cn(
-            'h-8 px-3 rounded-lg border text-sm font-medium transition-colors',
+            'h-11 lg:h-8 px-3 rounded-lg border text-sm font-medium transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20',
             currentPage === totalPages
               ? 'border-slate-200 text-slate-300 cursor-not-allowed'

@@ -244,8 +244,8 @@ export default function EventsPage() {
 
       <div className="p-6">
         {/* Filters */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-48">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+          <div className="w-full sm:w-48">
             <Select
               placeholder="All Teams"
               value={filterTeam}
@@ -256,7 +256,7 @@ export default function EventsPage() {
               ]}
             />
           </div>
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <Select
               placeholder="All Types"
               value={filterType}
@@ -330,7 +330,7 @@ export default function EventsPage() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleDeleteEvent(event.id)}
-                            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center"
                           >
                             <IconTrash size={16} />
                           </button>
@@ -386,7 +386,7 @@ export default function EventsPage() {
                     type="datetime-local"
                     value={newEvent.start_time}
                     onChange={(e) => setNewEvent({ ...newEvent, start_time: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-green-500 focus:ring-2 focus:ring-green-100"
                     required
                   />
                 </div>
@@ -398,7 +398,7 @@ export default function EventsPage() {
                     type="datetime-local"
                     value={newEvent.end_time}
                     onChange={(e) => setNewEvent({ ...newEvent, end_time: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-green-500 focus:ring-2 focus:ring-green-100"
                   />
                 </div>
               </div>
@@ -417,7 +417,7 @@ export default function EventsPage() {
                   onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                   placeholder="Add notes or details about this event..."
                   rows={3}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-100 resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-green-500 focus:ring-2 focus:ring-green-100 resize-none"
                 />
               </div>
               <div className="flex items-center gap-3 pt-4">

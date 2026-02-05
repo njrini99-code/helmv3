@@ -58,8 +58,8 @@ export default function CollegesPage() {
         {/* Filters */}
         <div className="relative glass-standard rounded-2xl p-5 mb-6 overflow-hidden">
           <ShineEffect />
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative flex-1 min-w-[200px] max-w-md">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] sm:max-w-md">
               <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input
                 value={search}
@@ -68,24 +68,26 @@ export default function CollegesPage() {
                 className="pl-9"
               />
             </div>
-            <Select
-              options={divisions}
-              value={division}
-              onChange={(value) => setDivision(value)}
-              className="w-36"
-            />
-            <Select
-              options={stateOptions}
-              value={stateFilter}
-              onChange={(value) => setStateFilter(value)}
-              className="w-36"
-            />
-            <Select
-              options={conferenceOptions}
-              value={conferenceFilter}
-              onChange={(value) => setConferenceFilter(value)}
-              className="w-48"
-            />
+            <div className="grid grid-cols-3 sm:flex gap-3">
+              <Select
+                options={divisions}
+                value={division}
+                onChange={(value) => setDivision(value)}
+                className="sm:w-36"
+              />
+              <Select
+                options={stateOptions}
+                value={stateFilter}
+                onChange={(value) => setStateFilter(value)}
+                className="sm:w-36"
+              />
+              <Select
+                options={conferenceOptions}
+                value={conferenceFilter}
+                onChange={(value) => setConferenceFilter(value)}
+                className="sm:w-48"
+              />
+            </div>
           </div>
         </div>
 
