@@ -15,7 +15,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { CalendarHeader, type CalendarView } from '@/components/golf/calendar/CalendarHeader';
-import { CalendarAvatarSidebar } from '@/components/golf/calendar/CalendarAvatarSidebar';
+import { CalendarAvatarSidebar, PLAYER_COLORS } from '@/components/golf/calendar/CalendarAvatarSidebar';
 import { AvailabilityDayView } from '@/components/golf/calendar/AvailabilityDayView';
 import { WeekView } from '@/components/golf/calendar/WeekView';
 import { MonthView } from '@/components/golf/calendar/MonthView';
@@ -80,7 +80,7 @@ export function PremiumCalendarClient({
 
   const [view, setView] = useState<CalendarView>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [showPlayerFilter, setShowPlayerFilter] = useState(false);
 
   // CRUD Modal State
@@ -114,16 +114,19 @@ export function PremiumCalendarClient({
   // Coach busy periods (always for current coach)
   const [coachBusyPeriods, setCoachBusyPeriods] = useState<Array<Record<string, unknown> & { start: string; end: string; ownerType?: 'coach' | 'player' }>>([]);
 
-  // Player busy periods (only when player is selected)
-  const [playerBusyPeriods, setPlayerBusyPeriods] = useState<Array<Record<string, unknown> & { start: string; end: string }>>([]);
+  // Multi-player busy periods with colors (keyed by player ID)
+  const [multiPlayerBusyPeriods, setMultiPlayerBusyPeriods] = useState<Map<string, Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>>>(new Map());
+
+  // For backward compatibility - flatten all player busy periods
+  const playerBusyPeriods = Array.from(multiPlayerBusyPeriods.values()).flat();
 
   // Auto-switch to list view on mobile (more touch-friendly than day view)
   useEffect(() => {
     if (showMobileUI && view !== 'day') {
       // Mobile defaults to day/list view
       setView('day');
-    } else if (!showMobileUI && view === 'day' && !selectedPlayerId) {
-      // Only switch back to week if not viewing a player's schedule
+    } else if (!showMobileUI && view === 'day' && selectedPlayerIds.length === 0) {
+      // Only switch back to week if not viewing any player's schedule
       setView('week');
     }
   }, [showMobileUI]); // Only run when mobile state changes
@@ -153,14 +156,14 @@ export function PremiumCalendarClient({
     return handleRsvp(selectedEvent.id, response);
   }, [selectedEvent, handleRsvp]);
 
-  // Fetch player availability when player is selected
+  // Fetch player availability when players are selected (multi-select)
   useEffect(() => {
-    if (!selectedPlayerId) {
-      setPlayerBusyPeriods([]);
+    if (selectedPlayerIds.length === 0) {
+      setMultiPlayerBusyPeriods(new Map());
       return;
     }
 
-    const fetchPlayerAvailability = async () => {
+    const fetchAllPlayerAvailability = async () => {
       // Calculate date range based on current view
       let startDate: Date;
       let endDate: Date;
@@ -178,33 +181,50 @@ export function PremiumCalendarClient({
 
       // Import and use the action
       const { getPlayerAvailability } = await import('@/app/golf/actions/golf');
-      const result = await getPlayerAvailability(
-        selectedPlayerId,
-        format(startDate, 'yyyy-MM-dd'),
-        format(endDate, 'yyyy-MM-dd')
+
+      // Fetch availability for all selected players in parallel
+      const results = await Promise.all(
+        selectedPlayerIds.map(async (playerId, index) => {
+          const result = await getPlayerAvailability(
+            playerId,
+            format(startDate, 'yyyy-MM-dd'),
+            format(endDate, 'yyyy-MM-dd')
+          );
+
+          const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
+
+          if (result.success && result.data) {
+            const rawPeriods = result.data as unknown as Array<Record<string, unknown> & { start: string; end: string }>;
+            const periods = rawPeriods.map((p) => ({
+              ...p,
+              start: p.start,
+              end: p.end,
+              type: (p.type as 'event' | 'class' | 'blocked') || 'event',
+              color,
+              playerId,
+            })) as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>;
+            return { playerId, periods };
+          }
+          return { playerId, periods: [] as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }> };
+        })
       );
 
-      if (result.success && result.data) {
-        // Keep as ISO strings for BusyPeriod interface
-        const rawPeriods = result.data as unknown as Array<Record<string, unknown> & { start: string; end: string }>;
-        const periods = rawPeriods.map((p) => ({
-          ...p,
-          start: p.start,
-          end: p.end,
-          type: (p.type as 'event' | 'class' | 'blocked') || 'event',
-        })) as Array<Record<string, unknown> & { start: string; end: string }>;
-        setPlayerBusyPeriods(periods);
-      }
+      // Build the map of player ID -> busy periods
+      const newMap = new Map<string, Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>>();
+      results.forEach(({ playerId, periods }) => {
+        newMap.set(playerId, periods);
+      });
+      setMultiPlayerBusyPeriods(newMap);
     };
 
-    fetchPlayerAvailability();
-  }, [selectedPlayerId, currentDate, view]);
+    fetchAllPlayerAvailability();
+  }, [selectedPlayerIds, currentDate, view]);
 
   // Fetch current user's busy periods (works for both coaches and players)
-  // This shows YOUR schedule when comparing availability with a selected team member
+  // This shows YOUR schedule when comparing availability with selected team members
   useEffect(() => {
-    // Only fetch if a team member is selected (comparing availability)
-    if (!selectedPlayerId) {
+    // Only fetch if team members are selected (comparing availability)
+    if (selectedPlayerIds.length === 0) {
       setCoachBusyPeriods([]);
       return;
     }
@@ -247,7 +267,7 @@ export function PremiumCalendarClient({
     };
 
     fetchCurrentUserAvailability();
-  }, [currentDate, view, selectedPlayerId, isCoach]);
+  }, [currentDate, view, selectedPlayerIds, isCoach]);
 
   // Configure drag sensors - require 8px movement before drag starts
   const sensors = useSensors(
@@ -258,11 +278,22 @@ export function PremiumCalendarClient({
     })
   );
 
-  // Get selected player object
-  const selectedPlayer = useMemo(() => {
-    if (!selectedPlayerId) return null;
-    return teamMembers.find(m => m.id === selectedPlayerId) || null;
-  }, [selectedPlayerId, teamMembers]);
+  // Get selected player objects with their assigned colors
+  const selectedPlayers = useMemo(() => {
+    return selectedPlayerIds
+      .map((id, index) => {
+        const member = teamMembers.find(m => m.id === id);
+        if (!member) return null;
+        return {
+          ...member,
+          color: PLAYER_COLORS[index % PLAYER_COLORS.length],
+        };
+      })
+      .filter((m): m is TeamMember & { color: typeof PLAYER_COLORS[0] } => m !== null);
+  }, [selectedPlayerIds, teamMembers]);
+
+  // For backward compatibility - first selected player
+  const selectedPlayer = selectedPlayers[0] || null;
 
   // All events are shown (no filtering needed)
   const filteredEvents = initialEvents;
@@ -473,8 +504,8 @@ export function PremiumCalendarClient({
           {!isMobile && (
             <CalendarAvatarSidebar
               teamMembers={teamMembers}
-              selectedPlayerId={selectedPlayerId}
-              onPlayerSelect={setSelectedPlayerId}
+              selectedPlayerIds={selectedPlayerIds}
+              onPlayerSelect={setSelectedPlayerIds}
               onSyncSettings={onSyncSettings}
             />
           )}
@@ -503,8 +534,8 @@ export function PremiumCalendarClient({
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/50 text-slate-700 text-sm font-medium min-h-[44px]"
                 >
                   <span>
-                    {selectedPlayerId 
-                      ? teamMembers.find(m => m.id === selectedPlayerId)?.first_name || 'Player'
+                    {selectedPlayerIds.length > 0
+                      ? `${selectedPlayerIds.length} player${selectedPlayerIds.length > 1 ? 's' : ''}`
                       : 'All Players'}
                   </span>
                 </button>
@@ -518,48 +549,56 @@ export function PremiumCalendarClient({
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      setSelectedPlayerId(null);
+                      setSelectedPlayerIds([]);
                       setShowPlayerFilter(false);
                     }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap min-h-[44px] transition-colors ${
-                      !selectedPlayerId
+                      selectedPlayerIds.length === 0
                         ? 'bg-emerald-500 text-white'
                         : 'bg-white/50 text-slate-700'
                     }`}
                   >
                     <span className="text-sm font-medium">All</span>
                   </button>
-                  {teamMembers.map((member) => (
-                    <button
-                      key={member.id}
-                      onClick={() => {
-                        setSelectedPlayerId(member.id === selectedPlayerId ? null : member.id);
-                        setShowPlayerFilter(false);
-                      }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap min-h-[44px] transition-colors ${
-                        selectedPlayerId === member.id
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-white/50 text-slate-700'
-                      }`}
-                    >
-                      {member.avatar_url ? (
-                        <img
-                          src={member.avatar_url}
-                          alt={`${member.first_name} ${member.last_name}`}
-                          className="w-6 h-6 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-slate-300 flex items-center justify-center">
-                          <span className="text-xs font-medium text-slate-600">
-                            {member.first_name[0]}{member.last_name[0]}
-                          </span>
-                        </div>
-                      )}
-                      <span className="text-sm font-medium">
-                        {member.first_name} {member.last_name[0]}
-                      </span>
-                    </button>
-                  ))}
+                  {teamMembers.map((member) => {
+                    const isSelected = selectedPlayerIds.includes(member.id);
+                    const colorIndex = selectedPlayerIds.indexOf(member.id);
+                    const color = colorIndex >= 0 ? PLAYER_COLORS[colorIndex % PLAYER_COLORS.length] : null;
+                    return (
+                      <button
+                        key={member.id}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedPlayerIds(selectedPlayerIds.filter(id => id !== member.id));
+                          } else if (selectedPlayerIds.length < 8) {
+                            setSelectedPlayerIds([...selectedPlayerIds, member.id]);
+                          }
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap min-h-[44px] transition-colors"
+                        style={{
+                          backgroundColor: isSelected && color ? color.bg : 'rgba(255,255,255,0.5)',
+                          color: isSelected ? 'white' : '#374151',
+                        }}
+                      >
+                        {member.avatar_url ? (
+                          <img
+                            src={member.avatar_url}
+                            alt={`${member.first_name} ${member.last_name}`}
+                            className="w-6 h-6 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-slate-300 flex items-center justify-center">
+                            <span className="text-xs font-medium text-slate-600">
+                              {member.first_name[0]}{member.last_name[0]}
+                            </span>
+                          </div>
+                        )}
+                        <span className="text-sm font-medium">
+                          {member.first_name} {member.last_name[0]}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

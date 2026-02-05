@@ -12,6 +12,14 @@ export interface BusyPeriod {
   end: string;
   type: 'event' | 'class' | 'blocked';
   title?: string;
+  // Multi-player color support
+  color?: {
+    bg: string;
+    light: string;
+    border: string;
+    name: string;
+  };
+  playerId?: string;
 }
 
 export interface WeekViewProps {
@@ -256,7 +264,7 @@ export function WeekView({
             ))}
           </div>
 
-          {/* Player Busy Periods overlay (classes, blocked time) */}
+          {/* Player Busy Periods overlay (classes, blocked time) - supports multi-player colors */}
           {playerBusyPeriods.length > 0 && (
             <div className="absolute inset-0 pointer-events-none grid grid-cols-[64px_repeat(7,1fr)]">
               <div />
@@ -267,6 +275,20 @@ export function WeekView({
                     const height = calculateBusyPeriodHeight(period.start, period.end);
                     const isClass = period.type === 'class';
 
+                    // Use player-specific color if available, otherwise fall back to defaults
+                    const hasColor = !!period.color;
+                    const bgColor = hasColor
+                      ? period.color!.light
+                      : isClass
+                        ? 'repeating-linear-gradient(45deg, rgba(244, 63, 94, 0.08), rgba(244, 63, 94, 0.08) 8px, rgba(244, 63, 94, 0.04) 8px, rgba(244, 63, 94, 0.04) 16px)'
+                        : 'rgba(251, 146, 60, 0.12)';
+                    const borderColor = hasColor
+                      ? period.color!.bg
+                      : isClass ? 'rgb(244, 63, 94)' : 'rgb(251, 146, 60)';
+                    const textColor = hasColor
+                      ? period.color!.bg
+                      : isClass ? 'rgb(244, 63, 94)' : 'rgb(251, 146, 60)';
+
                     return (
                       <div
                         key={periodIndex}
@@ -274,17 +296,15 @@ export function WeekView({
                         style={{
                           top: `${top}px`,
                           height: `${Math.max(height, 24)}px`,
-                          background: isClass 
-                            ? 'repeating-linear-gradient(45deg, rgba(244, 63, 94, 0.08), rgba(244, 63, 94, 0.08) 8px, rgba(244, 63, 94, 0.04) 8px, rgba(244, 63, 94, 0.04) 16px)'
-                            : 'rgba(251, 146, 60, 0.12)',
-                          borderColor: isClass ? 'rgb(244, 63, 94)' : 'rgb(251, 146, 60)',
+                          background: bgColor,
+                          borderColor: borderColor,
                         }}
                       >
                         <div className="px-2 py-1 h-full">
-                          <p className={cn(
-                            'text-[10px] font-medium truncate',
-                            isClass ? 'text-rose-600' : 'text-orange-600'
-                          )}>
+                          <p
+                            className="text-[10px] font-medium truncate"
+                            style={{ color: textColor }}
+                          >
                             {period.title || (isClass ? 'Class' : 'Busy')}
                           </p>
                         </div>
