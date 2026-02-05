@@ -179,22 +179,28 @@ export default function ResetPasswordPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
           >
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
-                  {error}
+                <div
+                  className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-start gap-2.5"
+                  role="alert"
+                >
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>{error}</span>
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-warm-700">New Password</label>
+                <label htmlFor="golf-reset-password" className="text-sm font-medium text-warm-700">New Password</label>
                 <input
+                  id="golf-reset-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Enter your new password"
                   required
                   autoFocus
+                  autoComplete="new-password"
                   className="
                     w-full px-4 py-2.5 sm:py-3
                     bg-white
@@ -206,33 +212,52 @@ export default function ResetPasswordPage() {
                     focus:outline-none focus:border-emerald-500 focus:ring-[3px] focus:ring-emerald-500/10
                   "
                 />
-                <p className="text-xs text-warm-400">Must be at least 8 characters</p>
+                <PasswordStrengthIndicator password={password} />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-warm-700">Confirm Password</label>
+                <label htmlFor="golf-reset-confirm" className="text-sm font-medium text-warm-700">Confirm Password</label>
                 <input
+                  id="golf-reset-confirm"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Confirm your new password"
                   required
-                  className="
+                  autoComplete="new-password"
+                  className={`
                     w-full px-4 py-2.5 sm:py-3
                     bg-white
-                    border border-warm-200
-                    rounded-xl
+                    border rounded-xl
                     text-warm-900 text-base lg:text-sm
                     placeholder:text-warm-400
                     transition-all duration-200
-                    focus:outline-none focus:border-emerald-500 focus:ring-[3px] focus:ring-emerald-500/10
-                  "
+                    focus:outline-none focus:ring-[3px]
+                    ${confirmPassword && confirmPassword !== password
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                      : confirmPassword && confirmPassword === password
+                      ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/10'
+                      : 'border-warm-200 focus:border-emerald-500 focus:ring-emerald-500/10'
+                    }
+                  `}
                 />
+                {confirmPassword && confirmPassword !== password && (
+                  <p className="text-xs text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Passwords do not match
+                  </p>
+                )}
+                {confirmPassword && confirmPassword === password && password.length >= 8 && (
+                  <p className="text-xs text-emerald-600 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" />
+                    Passwords match
+                  </p>
+                )}
               </div>
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !password || !confirmPassword}
                 className="
                   w-full py-2.5 sm:py-3
                   bg-emerald-600 text-white
@@ -247,10 +272,11 @@ export default function ResetPasswordPage() {
                 "
               >
                 {loading ? (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1" role="status" aria-label="Updating password">
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="sr-only">Updating password...</span>
                   </div>
                 ) : (
                   'Update password'

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -169,9 +170,23 @@ export default function ForgotPasswordPage() {
           >
             {success ? (
               <div className="space-y-4 sm:space-y-5">
-                <p className="text-sm text-warm-600 text-center">
-                  Click the link in the email to reset your password. The link will expire in 1
-                  hour.
+                {/* Success illustration */}
+                <div className="flex justify-center mb-2">
+                  <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
+                    <Mail className="w-8 h-8 text-emerald-600" />
+                  </div>
+                </div>
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-emerald-700">
+                      <p>Click the link in the email to reset your password.</p>
+                      <p className="mt-1 text-emerald-600">The link will expire in 1 hour.</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-warm-500 text-center">
+                  Did not receive the email? Check your spam folder or try again with a different email address.
                 </p>
                 <Link href="/golf/login">
                   <button
@@ -191,22 +206,28 @@ export default function ForgotPasswordPage() {
                 </Link>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
-                    {error}
+                  <div
+                    className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-start gap-2.5"
+                    role="alert"
+                  >
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>{error}</span>
                   </div>
                 )}
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-warm-700">Email</label>
+                  <label htmlFor="golf-forgot-email" className="text-sm font-medium text-warm-700">Email</label>
                   <input
+                    id="golf-forgot-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
                     required
                     autoFocus
+                    autoComplete="email"
                     className="
                       w-full px-4 py-2.5 sm:py-3
                       bg-white

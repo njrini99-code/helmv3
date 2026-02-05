@@ -373,28 +373,65 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           )}
         </div>
 
-        {/* Search and Filter Bar */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        {/* Category Quick Filters */}
+        {documents.length > 0 && (
+          <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
+            <button
+              onClick={() => setCategoryFilter('')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                !categoryFilter
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              All ({documents.length})
+            </button>
+            {CATEGORIES.map((cat) => {
+              const count = documents.filter(d => d.category === cat).length;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                    categoryFilter === cat
+                      ? 'bg-green-600 text-white shadow-sm'
+                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  {cat} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Search Bar */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search documents..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent text-slate-900 placeholder:text-slate-400"
+              placeholder="Search by title or description..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent text-slate-900 placeholder:text-slate-400 bg-white/80 backdrop-blur-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Clear search"
+              >
+                <IconX size={16} />
+              </button>
+            )}
           </div>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent text-slate-700 bg-white min-w-[160px]"
-          >
-            <option value="">All Categories</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
+          {(searchQuery || categoryFilter) && (
+            <p className="text-sm text-slate-500 self-center">
+              {filteredDocuments.length} result{filteredDocuments.length !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
 
         {documents.length === 0 ? (
