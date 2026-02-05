@@ -159,6 +159,11 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
+          // Enable JS profiling for Sentry
+          {
+            key: 'Document-Policy',
+            value: 'js-profiling',
+          },
           // HTTP Strict Transport Security (HSTS)
           // Forces HTTPS connections and prevents SSL stripping attacks
           {

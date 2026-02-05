@@ -240,10 +240,10 @@ export const QuickActionCard = memo(function QuickActionCard({
     return (
         <Link href={href} prefetch={true} aria-label={`${label}${description ? `: ${description}` : ''}`}>
             <motion.div
-                role="button"
                 className={cn(
                     'group flex items-center gap-4 p-4 rounded-2xl cursor-pointer', // Standardized: 16px
-                    'transition-all duration-200',
+                    'transition-all duration-200 touch-manipulation',
+                    'min-h-[56px]', // Ensure minimum touch target height
                     variant === 'primary'
                         ? [
                             'bg-gradient-to-r from-slate-900 to-slate-800',
@@ -263,7 +263,7 @@ export const QuickActionCard = memo(function QuickActionCard({
                         ? '0 8px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15)'
                         : '0 4px 12px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)'
                 }}
-                whileTap={{ scale: 0.98 }}
+                whileTap={{ scale: 0.97 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
                 <div className={cn(
