@@ -126,7 +126,7 @@ export function Select({
   return (
     <div className="w-full" ref={containerRef}>
       {label && (
-        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+        <label className="block text-base lg:text-sm font-medium text-slate-700 mb-1.5">
           {label}
         </label>
       )}
@@ -137,7 +137,7 @@ export function Select({
           onKeyDown={handleKeyDown}
           disabled={disabled}
           className={cn(
-            'w-full h-10 px-3 rounded-xl border bg-white text-sm text-left',
+            'w-full h-10 px-3 rounded-xl border bg-white text-base lg:text-sm text-left',
             'flex items-center justify-between gap-2',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500',
@@ -176,14 +176,14 @@ export function Select({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Search..."
-                  className="w-full h-8 px-3 rounded-lg border border-slate-200 text-sm
+                  className="w-full h-8 px-3 rounded-lg border border-slate-200 text-base lg:text-sm
                              focus:outline-none focus:border-green-500"
                 />
               </div>
             )}
             <div className="max-h-60 overflow-y-auto py-1">
               {filteredOptions.length === 0 ? (
-                <div className="px-3 py-6 text-sm text-slate-400 text-center">
+                <div className="px-3 py-6 text-base lg:text-sm text-slate-400 text-center">
                   No options found
                 </div>
               ) : (
@@ -195,7 +195,7 @@ export function Select({
                     onMouseEnter={() => setHighlightedIndex(index)}
                     disabled={option.disabled}
                     className={cn(
-                      'w-full px-3 py-2 text-sm text-left flex items-center justify-between gap-2',
+                      'w-full px-3 py-2 text-base lg:text-sm text-left flex items-center justify-between gap-2',
                       'transition-colors duration-100',
                       option.disabled
                         ? 'text-slate-300 cursor-not-allowed'
@@ -291,7 +291,7 @@ export function MultiSelect({
   return (
     <div className="w-full" ref={containerRef}>
       {label && (
-        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+        <label className="block text-base lg:text-sm font-medium text-slate-700 mb-1.5">
           {label}
         </label>
       )}
@@ -301,7 +301,7 @@ export function MultiSelect({
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
           className={cn(
-            'w-full h-10 px-3 rounded-xl border bg-white text-sm text-left',
+            'w-full h-10 px-3 rounded-xl border bg-white text-base lg:text-sm text-left',
             'flex items-center justify-between gap-2',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500',
@@ -339,7 +339,7 @@ export function MultiSelect({
                   onClick={() => handleToggle(option.value)}
                   disabled={option.disabled}
                   className={cn(
-                    'w-full px-3 py-2 text-sm text-left flex items-center gap-3',
+                    'w-full px-3 py-2 text-base lg:text-sm text-left flex items-center gap-3',
                     'transition-colors duration-100',
                     option.disabled
                       ? 'text-slate-300 cursor-not-allowed'
@@ -391,14 +391,14 @@ export const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
   ({ className, label, error, hint, options, placeholder, children, ...props }, ref) => (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+        <label className="block text-base lg:text-sm font-medium text-slate-700 mb-1.5">
           {label}
         </label>
       )}
       <select
         ref={ref}
         className={cn(
-          'w-full h-10 px-3 rounded-xl border bg-white text-slate-900 text-sm',
+          'w-full h-10 px-3 rounded-xl border bg-white text-slate-900 text-base lg:text-sm',
           'transition-all duration-200 appearance-none cursor-pointer',
           'focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500',
           'disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed',

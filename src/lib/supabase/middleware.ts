@@ -197,7 +197,7 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     // Redirect to the sport-specific login page
     url.pathname = sport ? `/${sport}/login` : '/baseball/login';
-    url.searchParams.set('redirect', pathname);
+    url.searchParams.set('returnTo', pathname);
     return NextResponse.redirect(url);
   }
 

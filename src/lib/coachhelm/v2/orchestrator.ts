@@ -11,6 +11,7 @@
  * - NLG
  */
 
+import { createClient } from '@/lib/supabase/server';
 import { extractAllFeatures } from './features';
 import { PatternMiner, CausalEngine, ShotPatternMiner, StatsInsightGenerator, CorrelationDiscovery, analyzeLieSpecificMissPatterns } from './mining';
 import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight } from './mining';
@@ -285,7 +286,7 @@ export class CoachHelmIntelligence {
   ): Promise<ComposedInsight[]> {
     const alerts: ComposedInsight[] = [];
 
-    // Initialize behavior learner for coach preferences (available for future alert filtering)
+    // Initialize behavior learner for coach preferences
     const behaviorLearner = new BehaviorLearner(coachId, 'coach');
     await behaviorLearner.getLearnedPreferences();
 
@@ -299,10 +300,202 @@ export class CoachHelmIntelligence {
     // Update calibration
     await this.confidenceCalibrator.updateCalibrationCurve();
 
-    // Generate team-level alerts based on global patterns
-    // This would typically query the team's players and analyze each
+    // Query team players
+    const supabase = await createClient();
+    const { data: teamMembers } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .eq('team_id', teamId)
+      .eq('status', 'active');
+
+    if (!teamMembers || teamMembers.length === 0) {
+      return alerts;
+    }
+
+    // Analyze each player with lightweight options for alert generation
+    const BATCH_SIZE = 3;
+    for (let i = 0; i < teamMembers.length; i += BATCH_SIZE) {
+      const batch = teamMembers.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.allSettled(
+        batch.map(async (member) => {
+          const analysis = await this.analyzePlayer(member.player_id, {
+            includePatterns: true,
+            includeCausal: false,
+            includePredictions: true,
+            includeShotPatterns: false,
+            includeLieAnalysis: false,
+            depth: 'quick',
+          });
+          return { playerId: member.player_id, analysis };
+        })
+      );
+
+      for (const result of batchResults) {
+        if (result.status !== 'fulfilled' || !result.value.analysis) continue;
+
+        const { playerId, analysis } = result.value;
+        const { patterns, predictions, alertLevel } = analysis;
+
+        // Only generate alerts for warning+ level players
+        if (alertLevel === 'none' || alertLevel === 'info') continue;
+
+        // High-impact patterns become alerts
+        for (const pattern of patterns.filter(p => p.isActive && p.strokeImpact > 1.5 && p.confidence > 0.65)) {
+          const reasoning = this.reasoningEngine.reason(
+            {
+              type: 'pattern_detected',
+              description: pattern.description || 'Alert pattern',
+              data: pattern as unknown as Record<string, unknown>,
+            },
+            { features: analysis.features, patterns }
+          );
+
+          reasoning.calibratedConfidence = await this.confidenceCalibrator.calibrate(
+            reasoning.confidence
+          );
+
+          const context: InsightContext = {
+            playerId,
+            isForCoach: true,
+            verbosity: 'brief',
+            playerState: this.inferPlayerState(analysis.features),
+            recentPerformance: this.inferRecentPerformance(analysis.features),
+          };
+
+          alerts.push(
+            this.insightComposer.compose(
+              {
+                type: 'alert',
+                data: {
+                  ...pattern as unknown as Record<string, unknown>,
+                  severity: pattern.strokeImpact > 2 ? 'critical' : 'warning',
+                  playerId,
+                },
+                reasoning,
+                features: analysis.features,
+              },
+              context
+            )
+          );
+        }
+
+        // Negative predictions become alerts
+        for (const pred of predictions.filter(p => p.predictedValue > 3)) {
+          const context: InsightContext = {
+            playerId,
+            isForCoach: true,
+            verbosity: 'brief',
+            playerState: this.inferPlayerState(analysis.features),
+            recentPerformance: this.inferRecentPerformance(analysis.features),
+          };
+
+          alerts.push(
+            this.insightComposer.compose(
+              {
+                type: 'alert',
+                data: {
+                  ...pred as unknown as Record<string, unknown>,
+                  severity: pred.predictedValue > 5 ? 'critical' : 'warning',
+                  playerId,
+                },
+              },
+              context
+            )
+          );
+        }
+      }
+    }
+
+    // Sort alerts: critical first, then by confidence
+    alerts.sort((a, b) => {
+      const severityOrder = { urgent: 0, cautionary: 1, neutral: 2, encouraging: 3, celebratory: 4 };
+      const aSev = severityOrder[a.tone] ?? 2;
+      const bSev = severityOrder[b.tone] ?? 2;
+      if (aSev !== bSev) return aSev - bSev;
+      return b.confidence - a.confidence;
+    });
 
     return alerts;
+  }
+
+  /**
+   * Generates cross-player team-level insights by finding shared patterns.
+   * Identifies patterns affecting multiple players (team-wide trends).
+   *
+   * @param teamId - The team's UUID
+   */
+  async generateTeamPatternInsights(
+    teamId: string
+  ): Promise<ComposedInsight[]> {
+    const insights: ComposedInsight[] = [];
+
+    try {
+      const crossLearner = new CrossLearner(teamId);
+      const globalPatterns = await crossLearner.buildGlobalPatternLibrary();
+
+      // Filter to patterns affecting multiple team players
+      const teamWidePatterns = globalPatterns.filter(
+        (gp) => gp.playerCount >= 2 && gp.confidence >= 0.6
+      );
+
+      for (const gp of teamWidePatterns.slice(0, 5)) {
+        const isPositive = gp.averageImpact < 0; // negative stroke impact = good
+        const tone = isPositive ? 'encouraging' : gp.averageImpact > 1.5 ? 'urgent' : 'cautionary';
+
+        const headline = isPositive
+          ? `Team Strength: ${gp.patternType.replace(/_/g, ' ')}`
+          : `Team-Wide Area: ${gp.patternType.replace(/_/g, ' ')}`;
+
+        const bodyParts: string[] = [];
+        bodyParts.push(
+          `${gp.playerCount} players share this ${gp.patternType.replace(/_/g, ' ')} pattern.`
+        );
+        bodyParts.push(
+          `Average impact: ${gp.averageImpact > 0 ? '+' : ''}${gp.averageImpact.toFixed(1)} strokes per round across ${gp.instanceCount} observed instances.`
+        );
+        if (!isPositive) {
+          bodyParts.push(
+            'Consider a team-wide practice focus targeting this area.'
+          );
+        }
+
+        insights.push({
+          headline,
+          body: bodyParts.join(' '),
+          callToAction: isPositive
+            ? 'Reinforce this in team practice to maintain the advantage.'
+            : 'Design a team drill session to address this shared weakness.',
+          tone,
+          confidence: gp.confidence,
+          reasoning: {
+            conclusion: `Cross-player analysis found ${gp.playerCount} players with the same ${gp.patternType} pattern`,
+            confidence: gp.confidence,
+            calibratedConfidence: gp.confidence,
+            reasoningChain: [
+              {
+                stepNumber: 1,
+                type: 'inductive' as const,
+                premise: `Analyzed patterns across team roster`,
+                inference: `${gp.playerCount} players exhibit the same pattern with ${(gp.prevalence * 100).toFixed(0)}% team prevalence`,
+                conclusion: 'This is a team-level pattern, not individual variation',
+                confidence: gp.confidence,
+                evidence: [
+                  `${gp.playerCount} players affected`,
+                  `${gp.instanceCount} total instances observed`,
+                  `Average confidence: ${(gp.confidence * 100).toFixed(0)}%`,
+                ],
+              },
+            ],
+            alternatives: [],
+            sensitivities: [],
+          },
+        });
+      }
+    } catch (error) {
+      console.error('[CoachHelm] Error generating team pattern insights:', error);
+    }
+
+    return insights;
   }
 
   /**

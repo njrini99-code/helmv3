@@ -211,7 +211,31 @@ export default function RosterPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <SkeletonTable rows={5} columns={7} />
+              <>
+                {/* Mobile loading skeleton */}
+                <div className="lg:hidden grid grid-cols-1 gap-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 animate-pulse">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-200" />
+                        <div className="flex-1">
+                          <div className="h-4 bg-slate-200 rounded w-2/3 mb-2" />
+                          <div className="h-3 bg-slate-200 rounded w-1/3" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="h-3 bg-slate-200 rounded" />
+                        <div className="h-3 bg-slate-200 rounded" />
+                      </div>
+                      <div className="h-11 bg-slate-200 rounded-lg" />
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop loading skeleton */}
+                <div className="hidden lg:block">
+                  <SkeletonTable rows={5} columns={7} />
+                </div>
+              </>
             ) : roster.length === 0 ? (
               /* Empty State */
               <div className="text-center py-12">
@@ -228,81 +252,163 @@ export default function RosterPage() {
                 </Button>
               </div>
             ) : (
-              /* Roster Table */
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Player</th>
-                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Position</th>
-                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Grad Year</th>
-                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Location</th>
-                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Jersey</th>
-                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Status</th>
-                      <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {filteredRoster.map((member) => (
-                      <tr key={member.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar
-                              name={getFullName(member.player.first_name, member.player.last_name)}
-                              src={member.player.avatar_url || undefined}
-                              size="sm"
-                            />
-                            <div>
-                              <p className="font-medium text-slate-900">
-                                {getFullName(member.player.first_name, member.player.last_name)}
-                              </p>
-                              <p className="text-xs text-slate-500">{member.player.email}</p>
-                            </div>
+              <>
+                {/* Mobile card view */}
+                <div className="lg:hidden grid grid-cols-1 gap-4">
+                  {filteredRoster.map((member) => (
+                    <div
+                      key={member.id}
+                      className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer"
+                      onClick={() => router.push(`/baseball/player/${member.player.id}`)}
+                    >
+                      {/* Player header with avatar + name */}
+                      <div className="flex items-start gap-3 mb-3">
+                        <Avatar
+                          name={getFullName(member.player.first_name, member.player.last_name)}
+                          src={member.player.avatar_url || undefined}
+                          size="md"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-slate-900 truncate">
+                            {getFullName(member.player.first_name, member.player.last_name)}
+                          </h3>
+                          <p className="text-sm text-slate-500">
+                            {member.player.primary_position || 'N/A'}
+                            {member.player.secondary_position && `, ${member.player.secondary_position}`}
+                            {member.player.grad_year ? ` \u2022 ${member.player.grad_year}` : ''}
+                          </p>
+                        </div>
+                        {member.status === 'active' && (
+                          <Badge variant="success">Active</Badge>
+                        )}
+                        {member.status === 'inactive' && (
+                          <Badge variant="secondary">Inactive</Badge>
+                        )}
+                        {member.status === 'injured' && (
+                          <Badge variant="warning">Injured</Badge>
+                        )}
+                        {member.status === 'alumni' && (
+                          <Badge variant="secondary">Alumni</Badge>
+                        )}
+                      </div>
+
+                      {/* Quick stats grid */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mb-3 text-sm">
+                        <div>
+                          <span className="text-slate-500">Location:</span>
+                          <span className="ml-1 text-slate-900">
+                            {member.player.city && member.player.state
+                              ? `${member.player.city}, ${member.player.state}`
+                              : '-'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500">Jersey:</span>
+                          <span className="ml-1 text-slate-900 font-medium">
+                            {member.jersey_number ? `#${member.jersey_number}` : '-'}
+                          </span>
+                        </div>
+                        {member.player.email && (
+                          <div className="col-span-2 truncate">
+                            <span className="text-slate-500">Email:</span>
+                            <span className="ml-1 text-slate-900">{member.player.email}</span>
                           </div>
-                        </td>
-                        <td className="py-4 px-4 text-sm text-slate-600">
-                          {member.player.primary_position || '-'}
-                          {member.player.secondary_position && `, ${member.player.secondary_position}`}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-slate-600">
-                          {member.player.grad_year || '-'}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-slate-600">
-                          {member.player.city && member.player.state
-                            ? `${member.player.city}, ${member.player.state}`
-                            : '-'}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-slate-600">
-                          {member.jersey_number || '-'}
-                        </td>
-                        <td className="py-4 px-4">
-                          {member.status === 'active' && (
-                            <Badge variant="success">Active</Badge>
-                          )}
-                          {member.status === 'inactive' && (
-                            <Badge variant="secondary">Inactive</Badge>
-                          )}
-                          {member.status === 'injured' && (
-                            <Badge variant="warning">Injured</Badge>
-                          )}
-                          {member.status === 'alumni' && (
-                            <Badge variant="secondary">Alumni</Badge>
-                          )}
-                        </td>
-                        <td className="py-4 px-4">
-                          <Button 
-                            variant="secondary" 
-                            size="sm"
-                            onClick={() => router.push(`/baseball/player/${member.player.id}`)}
-                          >
-                            View Profile
-                          </Button>
-                        </td>
+                        )}
+                      </div>
+
+                      {/* Action */}
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="w-full min-h-[44px]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/baseball/player/${member.player.id}`);
+                        }}
+                      >
+                        View Profile
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop table view */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200">
+                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Player</th>
+                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Position</th>
+                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Grad Year</th>
+                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Location</th>
+                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Jersey</th>
+                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Status</th>
+                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {filteredRoster.map((member) => (
+                        <tr key={member.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-3">
+                              <Avatar
+                                name={getFullName(member.player.first_name, member.player.last_name)}
+                                src={member.player.avatar_url || undefined}
+                                size="sm"
+                              />
+                              <div>
+                                <p className="font-medium text-slate-900">
+                                  {getFullName(member.player.first_name, member.player.last_name)}
+                                </p>
+                                <p className="text-xs text-slate-500">{member.player.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-sm text-slate-600">
+                            {member.player.primary_position || '-'}
+                            {member.player.secondary_position && `, ${member.player.secondary_position}`}
+                          </td>
+                          <td className="py-4 px-4 text-sm text-slate-600">
+                            {member.player.grad_year || '-'}
+                          </td>
+                          <td className="py-4 px-4 text-sm text-slate-600">
+                            {member.player.city && member.player.state
+                              ? `${member.player.city}, ${member.player.state}`
+                              : '-'}
+                          </td>
+                          <td className="py-4 px-4 text-sm text-slate-600">
+                            {member.jersey_number || '-'}
+                          </td>
+                          <td className="py-4 px-4">
+                            {member.status === 'active' && (
+                              <Badge variant="success">Active</Badge>
+                            )}
+                            {member.status === 'inactive' && (
+                              <Badge variant="secondary">Inactive</Badge>
+                            )}
+                            {member.status === 'injured' && (
+                              <Badge variant="warning">Injured</Badge>
+                            )}
+                            {member.status === 'alumni' && (
+                              <Badge variant="secondary">Alumni</Badge>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => router.push(`/baseball/player/${member.player.id}`)}
+                            >
+                              View Profile
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+
             )}
           </CardContent>
         </Card>

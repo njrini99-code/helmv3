@@ -72,11 +72,15 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
     setRemoving(true);
 
     try {
-      await removePlayerFromTeam(playerId);
-      showToast(`${playerName} removed from team`, 'success');
-      setShowRemoveConfirm(false);
-      setShowMenu(false);
-      router.refresh();
+      const result = await removePlayerFromTeam(playerId);
+      if (result.success) {
+        showToast(`${playerName} removed from team`, 'success');
+        setShowRemoveConfirm(false);
+        setShowMenu(false);
+        router.refresh();
+      } else {
+        showToast(result.error || 'Failed to remove player', 'error');
+      }
     } catch (error) {
       showToast(
         error instanceof Error ? error.message : 'Failed to remove player',

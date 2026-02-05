@@ -164,8 +164,8 @@ export function Modal({
           onClick={onClose}
           aria-label="Close modal"
           className="
-            absolute top-4 right-4
-            w-8 h-8 rounded-[10px]
+            absolute top-3 right-3
+            w-11 h-11 rounded-[10px]
             flex items-center justify-center
             text-warm-400 hover:text-warm-600 hover:bg-warm-100
             transition-all duration-200
@@ -229,7 +229,7 @@ export function ConfirmModal({
           <button
             onClick={onClose}
             className="
-              px-5 py-2.5
+              px-5 py-2.5 min-h-[44px]
               text-warm-600 font-medium text-sm
               border border-warm-200 rounded-[10px]
               hover:bg-warm-50
@@ -241,7 +241,7 @@ export function ConfirmModal({
           <button
             onClick={onConfirm}
             className={`
-              px-5 py-2.5
+              px-5 py-2.5 min-h-[44px]
               font-medium text-sm
               rounded-[10px]
               transition-all duration-200

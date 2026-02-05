@@ -110,11 +110,16 @@ export function AlertBadge({ coachId, teamId, className }: AlertBadgeProps) {
               : 'bg-slate-200 text-slate-700',
           className
         )}
+        role="status"
       >
         {displayCount}
+        <span className="sr-only">
+          {` unread alert${counts.total !== 1 ? 's' : ''}${hasCritical ? ', including critical' : ''}`}
+        </span>
         {hasCritical && (
           <motion.span
             className="absolute inset-0 rounded-full bg-red-400"
+            aria-hidden="true"
             animate={{
               scale: [1, 1.4, 1],
               opacity: [0.5, 0, 0.5],
@@ -153,11 +158,16 @@ export function NavAlertBadge({ count, hasCritical = false, className }: NavAler
           : 'bg-amber-500 text-white',
         className
       )}
+      role="status"
     >
       {displayCount}
+      <span className="sr-only">
+        {` alert${count !== 1 ? 's' : ''}${hasCritical ? ', including critical' : ''}`}
+      </span>
       {hasCritical && (
         <motion.span
           className="absolute inset-0 rounded-full bg-red-400"
+          aria-hidden="true"
           animate={{
             scale: [1, 1.4, 1],
             opacity: [0.5, 0, 0.5],

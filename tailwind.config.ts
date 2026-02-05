@@ -62,8 +62,14 @@ const config: Config = {
           900: '#1c1917',
         },
 
-        // CREAM BACKGROUND
-        cream: '#FFFEFA',
+        // CREAM BACKGROUND (warm off-white scale)
+        cream: {
+          DEFAULT: '#FFFEFA',
+          50: '#FFFEFA',      // Lightest — same as DEFAULT, subtle bg tint
+          100: '#FDF9F3',     // Light cream — hover states, tab backgrounds
+          200: '#F5F0E8',     // Visible cream — table rows, message bubbles
+          300: '#EDE8DD',     // Warm divider tone
+        },
 
         // SEMANTIC COLORS
         success: '#16A34A',  // Same as primary

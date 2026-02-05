@@ -54,7 +54,16 @@ export default function GolfCoachOnboarding() {
 
   // Team data
   const [teamName, setTeamName] = useState('');
-  const [season, setSeason] = useState('2024-25');
+  const [season, setSeason] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    // Academic year starts in August
+    if (month >= 7) {
+      return `${year}-${(year + 1).toString().slice(2)}`;
+    }
+    return `${year - 1}-${year.toString().slice(2)}`;
+  });
 
   // Profile data
   const [fullName, setFullName] = useState('');

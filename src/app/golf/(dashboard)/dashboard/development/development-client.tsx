@@ -133,8 +133,8 @@ export function DevelopmentPlansClient({
       setIsCreateModalOpen(false);
       resetForm();
       router.refresh();
-    } catch {
-      // Error creating focus area
+    } catch (err) {
+      console.error('[GolfHelm] Error creating focus area:', err);
     } finally {
       setIsSaving(false);
     }
@@ -172,8 +172,8 @@ export function DevelopmentPlansClient({
       setEditingFocusArea(null);
       resetForm();
       router.refresh();
-    } catch {
-      // Error updating focus area
+    } catch (err) {
+      console.error('[GolfHelm] Error updating focus area:', err);
     } finally {
       setIsSaving(false);
     }
@@ -185,8 +185,8 @@ export function DevelopmentPlansClient({
     try {
       await deleteFocusArea(id);
       router.refresh();
-    } catch {
-      // Error deleting focus area
+    } catch (err) {
+      console.error('[GolfHelm] Error deleting focus area:', err);
     }
   };
 
@@ -197,8 +197,8 @@ export function DevelopmentPlansClient({
         completed_at: new Date().toISOString(),
       });
       router.refresh();
-    } catch {
-      // Error updating status
+    } catch (err) {
+      console.error('[GolfHelm] Error marking focus area complete:', err);
     }
   };
 

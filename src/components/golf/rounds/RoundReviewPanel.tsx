@@ -67,6 +67,8 @@ function StarRating({
           type="button"
           disabled={disabled}
           onClick={() => onChange?.(star)}
+          aria-label={`Rate ${star} out of 5 stars`}
+          aria-pressed={value !== null && star <= value}
           className={cn(
             'w-6 h-6 transition-colors',
             disabled ? 'cursor-default' : 'cursor-pointer hover:scale-110',
@@ -127,9 +129,16 @@ function LoadingSpinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 // Progress Bar
 function ProgressBar({ progress }: { progress: number }) {
   return (
-    <div className="w-full bg-gray-200 rounded-full h-2">
+    <div
+      className="w-full bg-gray-200 rounded-full h-2"
+      role="progressbar"
+      aria-valuenow={progress}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`${progress}% complete`}
+    >
       <div
-        className="bg-brand-600 h-2 rounded-full transition-all duration-500"
+        className="bg-primary-600 h-2 rounded-full transition-all duration-500"
         style={{ width: `${progress}%` }}
       />
     </div>
@@ -188,16 +197,17 @@ function EditableList({
       {items.map((item, index) => (
         <div
           key={index}
-          className="flex items-start gap-2 p-2 bg-cream-50 rounded-lg"
+          className="flex items-start gap-2 p-2 bg-primary-50 rounded-lg"
         >
           <span className="flex-1 text-sm text-gray-700">{item}</span>
           {!disabled && onChange && (
             <button
               type="button"
               onClick={() => removeItem(index)}
+              aria-label={`Remove: ${item}`}
               className="p-1 text-gray-400 hover:text-red-500 rounded"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -212,12 +222,12 @@ function EditableList({
             onChange={(e) => setNewItem(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addItem())}
             placeholder={placeholder}
-            className="flex-1 px-3 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50"
+            className="flex-1 px-3 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50"
           />
           <button
             type="button"
             onClick={addItem}
-            className="px-3 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+            className="px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
           >
             Add
           </button>
@@ -391,7 +401,7 @@ export function RoundReviewPanel({
             <button
               onClick={handleRetry}
               disabled={isRetrying}
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
             >
               {isRetrying ? (
                 <>
@@ -459,14 +469,14 @@ export function RoundReviewPanel({
                   <button
                     onClick={() => handleSave(false)}
                     disabled={isSaving}
-                    className="px-3 py-1.5 text-sm font-medium text-gray-900 bg-white border border-border hover:bg-cream-100 rounded-lg transition-colors disabled:opacity-50"
+                    className="px-3 py-1.5 text-sm font-medium text-gray-900 bg-white border border-border hover:bg-warm-100 rounded-lg transition-colors disabled:opacity-50"
                   >
                     {isSaving ? 'Saving...' : 'Save Draft'}
                   </button>
                   <button
                     onClick={() => handleSave(true)}
                     disabled={isSaving}
-                    className="px-3 py-1.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors disabled:opacity-50"
+                    className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50"
                   >
                     {isSaving ? 'Saving...' : 'Approve'}
                   </button>
@@ -474,7 +484,7 @@ export function RoundReviewPanel({
               ) : (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="px-3 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                 >
                   Edit Feedback
                 </button>
@@ -485,7 +495,7 @@ export function RoundReviewPanel({
             <button
               onClick={handleShare}
               disabled={isSharing}
-              className="px-3 py-1.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50"
             >
               {isSharing ? 'Sharing...' : 'Share with Player'}
             </button>
@@ -584,7 +594,7 @@ export function RoundReviewPanel({
           <ul className="space-y-2">
             {review.ai_recommendations.map((rec, index) => (
               <li key={index} className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-brand-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                <svg className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                 </svg>
                 <span className="text-sm text-gray-600">{rec}</span>
@@ -622,7 +632,7 @@ export function RoundReviewPanel({
                 onChange={(e) => setCoachNotes(e.target.value)}
                 rows={4}
                 placeholder="Add your notes and observations..."
-                className="w-full px-3 py-2.5 text-sm bg-white border border-border rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 resize-none"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-border rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 resize-none"
               />
             ) : (
               <p className="text-sm text-gray-600 whitespace-pre-wrap">

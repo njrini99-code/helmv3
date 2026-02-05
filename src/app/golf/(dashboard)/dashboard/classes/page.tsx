@@ -95,8 +95,8 @@ export default function GolfClassesPage() {
       }));
 
       setClasses(processedClasses);
-    } catch {
-      // Error handled silently - classes will show empty state
+    } catch (err) {
+      console.error('[GolfHelm] Error loading classes:', err);
     } finally {
       setLoading(false);
     }
@@ -268,8 +268,8 @@ export default function GolfClassesPage() {
                 color: confirmedClass.color || generateClassColor(),
                 notes: '',
               }, insertedClass.id, playerId, teamId);
-            } catch {
-              // Calendar sync error - continue with other classes
+            } catch (err) {
+              console.error('[GolfHelm] Calendar sync error for class:', err);
             }
           }
         }
@@ -278,8 +278,8 @@ export default function GolfClassesPage() {
       await fetchClasses();
       setShowConfirmModal(false);
       setParsedClasses([]);
-    } catch {
-      // Error already handled with alert
+    } catch (err) {
+      console.error('[GolfHelm] Error saving classes:', err);
     }
   };
 
@@ -345,7 +345,8 @@ export default function GolfClassesPage() {
       if (error) throw error;
 
       await fetchClasses();
-    } catch {
+    } catch (err) {
+      console.error('[GolfHelm] Error deleting class:', err);
       alert('Error deleting classes. Please try again.');
     }
   };

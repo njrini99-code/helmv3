@@ -31,6 +31,14 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
 
   return (
     <div className="flex h-dvh bg-dashboard-gradient" style={{ overscrollBehavior: 'none' }}>
+      {/* Skip to main content link for keyboard navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+      >
+        Skip to main content
+      </a>
+
       {/* Command Palette (Cmd+K) */}
       <CommandPalette isCoach={isCoach} />
       
@@ -73,6 +81,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
 
       {/* Main content */}
       <main
+        id="main-content"
         className={cn(
           'flex-1 overflow-y-auto',
           'pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0',

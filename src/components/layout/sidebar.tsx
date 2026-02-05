@@ -230,8 +230,8 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
           onClick={() => setCollapsed(!collapsed)}
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={cn(
-            'absolute -right-3 top-7 z-50',
-            'w-6 h-6 rounded-full bg-[#1C1917] border border-white/20',
+            'absolute -right-5 top-6 z-50',
+            'w-10 h-10 rounded-full bg-[#1C1917] border border-white/20',
             'flex items-center justify-center',
             'shadow-lg hover:bg-white/10 hover:border-white/30',
             'transition-all duration-200',
@@ -317,7 +317,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   onClick={handleNavClick}
                   title={isCollapsed ? item.name : undefined}
                   className={cn(
-                    'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
+                    'flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
                     'transition-all duration-150 ease-out will-change-transform',
                     'active:scale-[0.98]',
                     isActive
@@ -381,7 +381,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                       onClick={handleNavClick}
                       title={isCollapsed ? item.name : undefined}
                       className={cn(
-                        'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
+                        'flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
                         'transition-all duration-150 ease-out',
                         isActive
                           ? 'bg-white/10 text-green-400 border-l-[3px] border-green-500'
@@ -431,7 +431,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   onClick={handleNavClick}
                   title={isCollapsed ? item.name : undefined}
                   className={cn(
-                    'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
+                    'flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
                     'transition-all duration-150 ease-out',
                     isActive
                       ? 'bg-white/10 text-green-400'
@@ -493,7 +493,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
           aria-label="Sign out"
           title={isCollapsed ? 'Sign out' : undefined}
           className={cn(
-            'w-full flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
+            'w-full flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
             'text-white/60 hover:bg-red-500/10 hover:text-red-400',
             'transition-all duration-150 ease-out active:scale-[0.98]',
             isCollapsed ? 'justify-center px-2' : 'px-3'

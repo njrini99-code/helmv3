@@ -183,7 +183,8 @@ export default function GolfSettingsPage() {
 
       showToast('Account deleted successfully', 'success');
       window.location.href = '/';
-    } catch {
+    } catch (err) {
+      console.error('[GolfHelm] Error deleting account:', err);
       showToast('Failed to delete account', 'error');
     } finally {
       setDeletingAccount(false);

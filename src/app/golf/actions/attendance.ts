@@ -88,12 +88,12 @@ export async function checkInPlayer(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Get coach or player ID
+    // Get coach or player ID — maybeSingle() since user may be a player, not a coach
     const { data: coach } = await supabase
       .from('golf_coaches')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     // Verify event exists - golf_events uses start_time (datetime), not separate date fields
     // Note: check-in settings may be stored in metadata or a separate table
@@ -101,13 +101,13 @@ export async function checkInPlayer(
       .from('golf_events')
       .select('id, start_time, metadata')
       .eq('id', eventId)
-      .single();
+      .maybeSingle();
 
     if (!event) {
       return { success: false, error: 'Event not found' };
     }
 
-    // Check-in settings could be in metadata (if stored there)
+    // Check-in settings stored in event metadata JSON field — cast needed for dynamic keys
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const metadata = (event.metadata || {}) as any;
     const enableCheckIn = metadata.enable_check_in !== false; // Default to enabled
@@ -134,13 +134,13 @@ export async function checkInPlayer(
       return { success: false, error: 'Coach approval required for check-in' };
     }
 
-    // Get or create attendance record
+    // Get or create attendance record — maybeSingle() since record may not exist yet
     const { data: attendance } = await supabase
       .from('golf_event_attendance')
       .select('id')
       .eq('event_id', eventId)
       .eq('player_id', playerId)
-      .single();
+      .maybeSingle();
 
     if (attendance) {
       // Update existing record
@@ -180,7 +180,8 @@ export async function checkInPlayer(
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to check in player:', err);
     return {
       success: false,
       error: 'Failed to check in player. Please try again.',
@@ -208,7 +209,7 @@ export async function bulkCheckIn(
       .from('golf_coaches')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!coach) {
       return { success: false, error: 'Coach not found' };
@@ -251,7 +252,8 @@ export async function bulkCheckIn(
       success: true,
       data: { successCount, failureCount },
     };
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to bulk check-in:', err);
     return {
       success: false,
       error: 'Failed to bulk check-in. Please try again.',
@@ -279,7 +281,7 @@ export async function markNoShow(
       .from('golf_coaches')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!coach) {
       return { success: false, error: 'Coach not found' };
@@ -302,7 +304,8 @@ export async function markNoShow(
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to mark no-show:', err);
     return {
       success: false,
       error: 'Failed to mark no-show. Please try again.',
@@ -326,11 +329,12 @@ export async function getAttendanceReport(
     }
 
     // Get attendance summary
+    // maybeSingle() — summary may not exist for this event yet
     const { data: summary } = await supabase
       .from('golf_attendance_summary')
       .select('*')
       .eq('event_id', eventId)
-      .single();
+      .maybeSingle();
 
     // Get detailed attendance records
     const { data: attendance } = await supabase
@@ -353,7 +357,8 @@ export async function getAttendanceReport(
         attendance: attendance as unknown as AttendanceRecord[] | null,
       },
     };
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to get attendance report:', err);
     return {
       success: false,
       error: 'Failed to get attendance report. Please try again.',
@@ -376,6 +381,7 @@ export async function getPlayerAttendanceStats(
       return { success: false, error: 'Not authenticated' };
     }
 
+    // Cast needed: golf_player_attendance_stats view is not in generated Supabase types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase as any)
       .from('golf_player_attendance_stats')
@@ -393,7 +399,8 @@ export async function getPlayerAttendanceStats(
     }
 
     return { success: true, data: data as unknown as PlayerAttendanceStats[] };
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to get attendance stats:', err);
     return {
       success: false,
       error: 'Failed to get attendance stats. Please try again.',
@@ -412,12 +419,13 @@ export async function verifyQRCodeCheckIn(
     const supabase = await createClient();
 
     // Note: qr_code_token and enable_check_in may be in metadata
+    // maybeSingle() to avoid PGRST116 if no event found
     const { data: event } = await supabase
       .from('golf_events')
       .select('id, title, metadata')
-      .single();
+      .maybeSingle();
 
-    // Check if event exists and has matching QR token in metadata
+    // QR token and check-in settings stored in event metadata JSON — cast needed for dynamic keys
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const metadata = (event?.metadata || {}) as any;
     const enableCheckIn = metadata.enable_check_in !== false;
@@ -434,7 +442,8 @@ export async function verifyQRCodeCheckIn(
         eventTitle: event.title,
       },
     };
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to verify QR code check-in:', err);
     return {
       success: false,
       error: 'Invalid QR code. Please try again.',

@@ -31,34 +31,76 @@ export function CoachAlertCenter({
   useEffect(() => {
     if (initialAlerts.length === 0) {
       startTransition(async () => {
-        const result = await getCoachAlerts(coachId, teamId);
-        if (result.success && result.alerts) {
-          setAlerts(result.alerts);
+        try {
+          const result = await getCoachAlerts(coachId, teamId);
+          if (result.success && result.alerts) {
+            setAlerts(result.alerts);
+          } else {
+            setError(result.error || 'Failed to load alerts');
+          }
+        } catch (err) {
+          console.error('[CoachHelm] Error loading alerts:', err);
+          setError('Could not connect to load alerts. Try refreshing.');
         }
       });
     }
   }, [coachId, teamId, initialAlerts.length]);
 
   const handleDismiss = async (alertId: string) => {
-    // Optimistically remove from UI
+    // Capture the alert before removing so we can restore on failure
+    const alertToRemove = alerts.find(a => a.id === alertId);
     setAlerts(prev => prev.filter(a => a.id !== alertId));
+    setError(null);
 
-    const result = await dismissAlert(alertId);
-    if (!result.success) {
-      // Restore if failed (though we don't have the alert anymore)
-      setError('Failed to dismiss alert');
+    try {
+      const result = await dismissAlert(alertId);
+      if (!result.success) {
+        // Restore the alert on failure
+        if (alertToRemove) {
+          setAlerts(prev => [...prev, alertToRemove].sort((a, b) =>
+            (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+          ));
+        }
+        setError('Failed to dismiss alert. It has been restored.');
+      }
+    } catch (err) {
+      console.error('[CoachHelm] Error dismissing alert:', err);
+      // Restore on unexpected error
+      if (alertToRemove) {
+        setAlerts(prev => [...prev, alertToRemove].sort((a, b) =>
+          (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+        ));
+      }
+      setError('Network error — alert has been restored.');
     }
   };
 
   const handleAcknowledge = async (alertId: string) => {
-    // Mark as acknowledged in UI
+    // Capture previous state for rollback
+    const previousAlert = alerts.find(a => a.id === alertId);
+    const previousAcknowledgedAt = previousAlert?.acknowledgedAt ?? null;
+
     setAlerts(prev => prev.map(a =>
       a.id === alertId ? { ...a, acknowledgedAt: new Date().toISOString() } : a
     ));
+    setError(null);
 
-    const result = await acknowledgeAlert(alertId);
-    if (!result.success) {
-      setError('Failed to acknowledge alert');
+    try {
+      const result = await acknowledgeAlert(alertId);
+      if (!result.success) {
+        // Revert the optimistic update
+        setAlerts(prev => prev.map(a =>
+          a.id === alertId ? { ...a, acknowledgedAt: previousAcknowledgedAt } : a
+        ));
+        setError('Failed to acknowledge alert.');
+      }
+    } catch (err) {
+      console.error('[CoachHelm] Error acknowledging alert:', err);
+      // Revert on unexpected error
+      setAlerts(prev => prev.map(a =>
+        a.id === alertId ? { ...a, acknowledgedAt: previousAcknowledgedAt } : a
+      ));
+      setError('Network error — acknowledgment reverted.');
     }
   };
 
@@ -95,7 +137,7 @@ export function CoachAlertCenter({
                 ? 'bg-gradient-to-br from-amber-500 to-orange-500'
                 : 'bg-gradient-to-br from-slate-400 to-slate-500'
           )}>
-            <IconBell size={18} className="text-white" />
+            <IconBell size={18} className="text-white" aria-hidden="true" />
             {totalNeedAttention > 0 && (
               <motion.span
                 initial={{ scale: 0 }}
@@ -105,8 +147,12 @@ export function CoachAlertCenter({
                   'text-[10px] font-bold text-white rounded-full',
                   criticalCount > 0 ? 'bg-red-600' : 'bg-amber-600'
                 )}
+                role="status"
               >
                 {totalNeedAttention}
+                <span className="sr-only">
+                  {` alert${totalNeedAttention !== 1 ? 's' : ''} need attention`}
+                </span>
               </motion.span>
             )}
           </div>
@@ -125,6 +171,7 @@ export function CoachAlertCenter({
           <button
             onClick={handleRefresh}
             disabled={isPending}
+            aria-label={isPending ? 'Scanning team for alerts' : 'Scan team for alerts'}
             className={cn(
               'flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all',
               isPending

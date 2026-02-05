@@ -33,6 +33,10 @@ const playerOnboardingSchema = z.object({
   phone: z.string().max(30).optional(),
   gradYear: z.number().int().min(2020).max(2040).optional(),
   handicap: z.number().min(-10).max(54).optional(),
+  hometown: z.string().max(100).optional(),
+  state: z.string().max(2).optional(),
+  gpa: z.number().min(0).max(5).optional(),
+  joinCode: z.string().max(20).optional(),
 });
 
 export type CoachOnboardingInput = z.infer<typeof coachOnboardingSchema>;
@@ -291,7 +295,7 @@ export async function ensurePlayerRecord() {
 
 /**
  * Complete player onboarding
- * Creates or updates player record
+ * Creates or updates player record, optionally auto-joins a team via joinCode
  */
 export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
   const supabase = await createClient();
@@ -350,12 +354,18 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
       email: validatedData.email || null,
       phone: validatedData.phone || null,
       graduation_year: validatedData.gradYear || null,
-      handicap: validatedData.handicap || null,
+      handicap: validatedData.handicap != null ? validatedData.handicap : null,
+      hometown: validatedData.hometown || null,
+      state: validatedData.state || null,
+      gpa: validatedData.gpa != null ? validatedData.gpa : null,
       onboarding_completed: true,
       updated_at: new Date().toISOString(),
     };
 
+    let playerId: string | null = null;
+
     if (existingPlayer) {
+      playerId = existingPlayer.id;
       const { error } = await supabase
         .from('golf_players')
         .update(playerData)
@@ -366,22 +376,67 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
         return { success: false, error: 'Failed to update player profile. Please try again.' };
       }
     } else {
-      const { error } = await supabase
+      const { data: newPlayer, error } = await supabase
         .from('golf_players')
         .insert({
           user_id: user.id,
           ...playerData,
-        });
+        })
+        .select('id')
+        .single();
 
-      if (error) {
+      if (error || !newPlayer) {
         console.error('[Onboarding] Player creation failed:', error);
         return { success: false, error: 'Failed to create player profile. Please try again.' };
+      }
+      playerId = newPlayer.id;
+    }
+
+    // Auto-join team if joinCode was provided (from invite link flow)
+    let joinResult: { success: boolean; error?: string } | null = null;
+    if (validatedData.joinCode && playerId) {
+      const normalizedCode = validatedData.joinCode.toUpperCase();
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('join_code', normalizedCode)
+        .maybeSingle();
+
+      if (team) {
+        // Check if not already on a team
+        const { data: existingMembership } = await supabase
+          .from('golf_team_members')
+          .select('id')
+          .eq('player_id', playerId)
+          .maybeSingle();
+
+        if (!existingMembership) {
+          const { error: joinError } = await supabase
+            .from('golf_team_members')
+            .insert({
+              player_id: playerId,
+              team_id: team.id,
+              status: 'active',
+            });
+
+          if (joinError) {
+            console.error('[Onboarding] Auto-join team failed:', joinError);
+            // Don't fail onboarding over this - player can join later
+            joinResult = { success: false, error: 'Profile saved, but failed to auto-join team. You can join from the dashboard.' };
+          } else {
+            joinResult = { success: true };
+          }
+        }
       }
     }
 
     revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/roster');
 
-    return { success: true };
+    return {
+      success: true,
+      joinResult,
+    };
 
   } catch (error) {
     console.error('[Onboarding] Unexpected error:', error);

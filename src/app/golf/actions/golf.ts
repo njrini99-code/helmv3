@@ -15,6 +15,8 @@ import { roundTypeToDb } from '@/lib/golf/round-type-utils';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
+import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
+import { generateRoundReview } from '@/app/golf/actions/round-reviews';
 
 // ============================================================================
 // RESULT TYPE
@@ -831,6 +833,18 @@ export async function submitGolfRoundComprehensive(
     // This triggers the database cache to be refreshed
     await invalidateOnRoundComplete(player.id, round.id);
 
+    // Fire-and-forget: trigger CoachHelm insight generation for this player
+    triggerPlayerInsightsAfterRound(player.id).catch((err) => {
+      console.error('[CoachHelm] Post-round insight trigger failed:', err);
+    });
+
+    // Fire-and-forget: start AI round review generation in the background
+    // The review page also has lazy generation as a fallback, but starting
+    // it here means it's likely ready by the time the player navigates there.
+    generateRoundReview(round.id).catch((err) => {
+      console.error('[CoachHelm] Post-round review generation failed:', err);
+    });
+
     return { success: true, data: { roundId: round.id } };
 
   } catch (error) {
@@ -937,6 +951,16 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
 
     // Invalidate stats cache for instant dashboard updates
     await invalidateOnRoundComplete(player.id, round.id);
+
+    // Fire-and-forget: trigger CoachHelm insight generation
+    triggerPlayerInsightsAfterRound(player.id).catch((err) => {
+      console.error('[CoachHelm] Post-round insight trigger failed:', err);
+    });
+
+    // Fire-and-forget: start AI round review generation
+    generateRoundReview(round.id).catch((err) => {
+      console.error('[CoachHelm] Post-round review generation failed:', err);
+    });
 
     return { success: true, data: { roundId: round.id } };
 
@@ -2630,7 +2654,8 @@ export async function savePartialRound(
 
     return { success: true, data: { roundId } };
 
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to save round:', err);
     return {
       success: false,
       error: 'Failed to save round. Please try again.'
@@ -2682,7 +2707,8 @@ export async function getInProgressRounds(): Promise<ActionResult<InProgressRoun
 
     return { success: true, data: rounds || [] };
 
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to fetch in-progress rounds:', err);
     return {
       success: false,
       error: 'Failed to fetch rounds. Please try again.'
@@ -2747,7 +2773,8 @@ export async function loadInProgressRound(roundId: string): Promise<ActionResult
       }
     };
 
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to load in-progress round:', err);
     return {
       success: false,
       error: 'Failed to load round. Please try again.'
@@ -2793,7 +2820,8 @@ export async function deleteInProgressRound(roundId: string): Promise<ActionResu
 
     return { success: true, data: undefined };
 
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to delete in-progress round:', err);
     return {
       success: false,
       error: 'Failed to delete round. Please try again.'
@@ -2940,7 +2968,8 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
 
     return { success: true, data: qualifiers };
 
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to fetch player qualifiers:', err);
     return {
       success: false,
       error: 'Failed to fetch qualifiers. Please try again.'
@@ -3028,7 +3057,8 @@ export async function getNextQualifierRoundNumber(
       data: { nextRoundNumber, availableRounds }
     };
 
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to get qualifier round number:', err);
     return {
       success: false,
       error: 'Failed to get round number. Please try again.'
@@ -3247,7 +3277,8 @@ export async function getQualifierLeaderboard(
       }
     };
 
-  } catch {
+  } catch (err) {
+    console.error('[GolfHelm] Failed to fetch qualifier leaderboard:', err);
     return {
       success: false,
       error: 'Failed to fetch leaderboard. Please try again.'

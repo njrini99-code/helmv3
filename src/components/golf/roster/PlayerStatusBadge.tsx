@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { updatePlayerStatus } from '@/app/golf/actions/golf';
+import { useToast } from '@/components/ui/toast';
 import { IconChevronDown } from '@/components/icons';
 
 interface PlayerStatusBadgeProps {
@@ -45,6 +46,7 @@ export function PlayerStatusBadge({
   editable = true
 }: PlayerStatusBadgeProps) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -59,11 +61,18 @@ export function PlayerStatusBadge({
     setLoading(true);
     setIsOpen(false);
 
+    const statusLabel = statuses.find(s => s.value === newStatus)?.label || newStatus;
+
     try {
-      await updatePlayerStatus(playerId, newStatus);
-      router.refresh();
+      const result = await updatePlayerStatus(playerId, newStatus);
+      if (result.success) {
+        addToast({ type: 'success', title: 'Status updated', description: `Player status changed to ${statusLabel}.` });
+        router.refresh();
+      } else {
+        addToast({ type: 'error', title: 'Failed to update status', description: result.error || 'Please try again.' });
+      }
     } catch {
-      // Status update failed - UI will show original status
+      addToast({ type: 'error', title: 'Failed to update status', description: 'An unexpected error occurred. Please try again.' });
     } finally {
       setLoading(false);
     }

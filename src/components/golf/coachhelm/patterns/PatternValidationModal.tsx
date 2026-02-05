@@ -10,6 +10,7 @@ import {
   IconSparkles,
 } from '@/components/icons';
 import type { ExtendedPattern, PatternSeverity } from '@/app/golf/actions/pattern-management';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 // ============================================================================
 // TYPES
@@ -83,6 +84,7 @@ export function PatternValidationModal({
   const [selectedSeverity, setSelectedSeverity] = useState<PatternSeverity>(pattern.severity);
   const [notes, setNotes] = useState('');
   const [createFocusArea, setCreateFocusArea] = useState(true);
+  const { modalRef } = useFocusTrap(isOpen, onClose);
 
   const handleConfirm = () => {
     onSubmit({
@@ -124,6 +126,10 @@ export function PatternValidationModal({
             className="fixed inset-0 flex items-center justify-center p-4 z-50 pointer-events-none"
           >
             <div
+              ref={modalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="pattern-validation-modal-title"
               className="bg-white rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto"
               onClick={e => e.stopPropagation()}
             >
@@ -134,7 +140,7 @@ export function PatternValidationModal({
                     <IconSparkles size={20} className="text-primary-600" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-slate-900">
+                    <h2 id="pattern-validation-modal-title" className="text-lg font-semibold text-slate-900">
                       Validate Pattern
                     </h2>
                     <p className="text-sm text-slate-500">

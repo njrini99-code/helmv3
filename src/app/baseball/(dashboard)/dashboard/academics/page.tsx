@@ -232,7 +232,7 @@ export default function AcademicsPage() {
         subtitle="Track student-athlete academic progress and eligibility"
       />
 
-      <div className="p-8 space-y-6">
+      <div className="p-4 lg:p-8 space-y-6">
         {/* Error Alert */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
@@ -246,7 +246,7 @@ export default function AcademicsPage() {
           </div>
         )}
         {/* Summary Cards */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
           <Card variant="glass">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -309,8 +309,129 @@ export default function AcademicsPage() {
           <CardHeader>
             <h2 className="font-semibold text-slate-900">Student-Athletes</h2>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
+          <CardContent className="p-0 lg:p-0">
+            {/* Mobile card view */}
+            <div className="lg:hidden p-4 space-y-4">
+              {students.map((student) => (
+                <div key={student.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                  {/* Student header */}
+                  <div className="flex items-start gap-3 mb-3">
+                    <Avatar
+                      name={getFullName(student.first_name, student.last_name)}
+                      src={student.avatar_url || undefined}
+                      size="md"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-slate-900 truncate">
+                        {getFullName(student.first_name, student.last_name)}
+                      </h3>
+                      <p className="text-sm text-slate-500">
+                        {student.primary_position || 'N/A'} {student.grad_year ? `\u2022 Class of ${student.grad_year}` : ''}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stats grid */}
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div className="bg-slate-50 rounded-lg p-3 text-center">
+                      <p className="text-lg font-semibold text-slate-900">
+                        {editingId === student.id ? (
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="4"
+                            value={editValues.gpa || ''}
+                            onChange={(e) => setEditValues({ ...editValues, gpa: parseFloat(e.target.value) })}
+                            className="w-full text-center text-base"
+                          />
+                        ) : (
+                          student.gpa?.toFixed(2) || 'N/A'
+                        )}
+                      </p>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 mt-1">GPA</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3 text-center">
+                      <p className="text-lg font-semibold text-slate-900">
+                        {editingId === student.id ? (
+                          <Input
+                            type="number"
+                            min="0"
+                            value={editValues.credits_completed || ''}
+                            onChange={(e) => setEditValues({ ...editValues, credits_completed: parseInt(e.target.value) })}
+                            className="w-full text-center text-base"
+                          />
+                        ) : (
+                          `${student.credits_completed || 0}/${student.credits_required || 60}`
+                        )}
+                      </p>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 mt-1">Credits</p>
+                    </div>
+                  </div>
+
+                  {/* Badges row */}
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    {editingId === student.id ? (
+                      <>
+                        <Select
+                          value={editValues.academic_standing || ''}
+                          onChange={(value) => setEditValues({ ...editValues, academic_standing: value as 'good' | 'warning' | 'probation' })}
+                          options={[
+                            { value: 'good', label: 'Good Standing' },
+                            { value: 'warning', label: 'Warning' },
+                            { value: 'probation', label: 'Probation' },
+                          ]}
+                          className="flex-1 text-base"
+                        />
+                        <Select
+                          value={editValues.eligibility_status || ''}
+                          onChange={(value) => setEditValues({ ...editValues, eligibility_status: value as 'eligible' | 'ineligible' | 'pending' })}
+                          options={[
+                            { value: 'eligible', label: 'Eligible' },
+                            { value: 'pending', label: 'Pending' },
+                            { value: 'ineligible', label: 'Ineligible' },
+                          ]}
+                          className="flex-1 text-base"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {student.academic_standing && (
+                          <Badge className={academicStandingColors[student.academic_standing]}>
+                            {student.academic_standing.charAt(0).toUpperCase() + student.academic_standing.slice(1)} Standing
+                          </Badge>
+                        )}
+                        {student.eligibility_status && (
+                          <Badge className={eligibilityColors[student.eligibility_status]}>
+                            {student.eligibility_status.charAt(0).toUpperCase() + student.eligibility_status.slice(1)}
+                          </Badge>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  {editingId === student.id ? (
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={saveEditing} className="flex-1 min-h-[44px]">Save</Button>
+                      <Button size="sm" variant="secondary" onClick={cancelEditing} className="flex-1 min-h-[44px]">Cancel</Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => startEditing(student)}
+                      className="w-full min-h-[44px]"
+                    >
+                      <IconEdit size={14} className="mr-1" /> Edit
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50">

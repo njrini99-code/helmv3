@@ -61,7 +61,7 @@ export async function removePlayerFromTeam(playerId: string): Promise<RosterActi
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (coachError || !coach) {
     return { success: false, error: 'Only coaches can remove players' };
@@ -136,7 +136,7 @@ export async function getTeamPlayers(): Promise<{
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (coachError || !coach) {
     return { success: false, error: 'Coach profile not found' };

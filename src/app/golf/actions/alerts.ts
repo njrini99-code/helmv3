@@ -87,6 +87,7 @@ export async function getCoachAlerts(
 
     // Transform to CoachAlert format
     const alerts: CoachAlert[] = (data || []).map((insight) => {
+      // Cast needed: Supabase join returns player as unknown object type, not typed relation
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const player = insight.player as any;
       const playerName = player
@@ -449,6 +450,7 @@ export async function generateAlerts(
 
     // Insert new alerts
     if (newAlerts.length > 0) {
+      // Cast needed: golf_coach_insights insert shape includes fields not in generated types
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: insertError } = await (supabase as any)
         .from('golf_coach_insights')

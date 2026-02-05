@@ -888,6 +888,39 @@ export async function generateTeamInsights() {
       }
     }
 
+    // 6.25. Generate team-wide cross-player pattern insights
+    try {
+      const teamPatternInsights = await coachHelmIntelligence.generateTeamPatternInsights(teamId);
+      for (const tpi of teamPatternInsights) {
+        const record: InsightRecord = {
+          coach_id: coach.id,
+          team_id: teamId,
+          insight_type: 'team_pattern',
+          priority: tpi.tone === 'urgent' ? 'high' : tpi.tone === 'cautionary' ? 'medium' : 'low',
+          player_id: players[0]?.id ?? '', // Team-level, attributed to first player
+          title: tpi.headline,
+          content: tpi.body,
+          metadata: {
+            v2_engine: true,
+            cross_player: true,
+            confidence: tpi.confidence,
+            recommendation: tpi.callToAction || 'Review team-wide pattern.',
+            reasoning_steps: tpi.reasoning?.reasoningChain?.length ?? 0,
+          },
+          status: 'active',
+        };
+
+        const teamKey = `team:${record.insight_type}:${tpi.headline}`;
+        if (!existingInsightKeys.has(teamKey)) {
+          allInsights.push(record);
+          existingInsightKeys.add(teamKey);
+          totalInsightsCreated++;
+        }
+      }
+    } catch (err) {
+      console.error('[CoachHelm] Error generating team pattern insights:', err);
+    }
+
     // 6.5. Apply philosophy weighting to sort and enhance insights
     const weightedInsights = weightInsightsByPhilosophy(allInsights, philosophy);
 
@@ -1101,6 +1134,87 @@ export async function resolveInsight(insightId: string) {
     return { success: true };
   } catch (error) {
     console.error('Unexpected error in insights action:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
+// RATE INSIGHT (feedback mechanism)
+// ============================================================================
+
+/**
+ * Allows coaches to rate an insight as helpful or not helpful.
+ * Feeds the rating back to the behavior learner to improve future insights.
+ */
+export async function rateInsight(
+  insightId: string,
+  rating: 'helpful' | 'not_helpful' | 'actionable'
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    // Get the insight to record its type/tone
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: insight } = await (supabase as any)
+      .from('golf_coach_insights')
+      .select('id, insight_type, priority, metadata')
+      .eq('id', insightId)
+      .eq('coach_id', coach.id)
+      .single();
+
+    if (!insight) {
+      return { success: false, error: 'Insight not found' };
+    }
+
+    // Update the insight metadata with the rating
+    const existingMetadata = (insight.metadata as Record<string, unknown>) || {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase as any)
+      .from('golf_coach_insights')
+      .update({
+        metadata: {
+          ...existingMetadata,
+          coach_rating: rating,
+          rated_at: new Date().toISOString(),
+        },
+      })
+      .eq('id', insightId);
+
+    if (updateError) {
+      return { success: false, error: 'Failed to save rating' };
+    }
+
+    // Record interaction for the behavior learner
+    try {
+      await recordInteraction(coach.id, 'coach', 'feedback', `insight_${rating}`, {
+        insightId,
+        insightType: insight.insight_type,
+        priority: insight.priority,
+        rating,
+      });
+    } catch (err) {
+      // Non-critical - don't fail the operation
+      console.error('[CoachHelm] Failed to record rating interaction:', err);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in rateInsight:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -2258,8 +2372,9 @@ export async function acknowledgeComposedInsight(
         insightTone: insight.tone,
         confidence: insight.confidence,
       });
-    } catch {
+    } catch (err) {
       // Non-critical, don't fail the operation
+      console.error('[CoachHelm] Failed to record acknowledge interaction:', err);
     }
 
     revalidatePath('/golf/dashboard');
@@ -2348,8 +2463,9 @@ export async function dismissComposedInsight(
         insightTone: insight.tone,
         confidence: insight.confidence,
       });
-    } catch {
+    } catch (err) {
       // Non-critical, don't fail the operation
+      console.error('[CoachHelm] Failed to record dismiss interaction:', err);
     }
 
     revalidatePath('/golf/dashboard');
@@ -2357,5 +2473,164 @@ export async function dismissComposedInsight(
   } catch (error) {
     console.error('Unexpected error dismissing composed insight:', error);
     return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
+// TRIGGER INSIGHTS FOR SINGLE PLAYER (called after round submission)
+// ============================================================================
+
+/**
+ * Lightweight per-player insight generation triggered after a round is submitted.
+ * Runs the V2 engine for just one player and stores any new insights.
+ * Designed to be called fire-and-forget (errors are logged, not thrown).
+ */
+export async function triggerPlayerInsightsAfterRound(
+  playerId: string
+): Promise<{ success: boolean; insights_created?: number }> {
+  try {
+    const supabase = await createClient();
+
+    // Look up the player's coach and team
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('team_id, golf_teams(organization_id)')
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .limit(1)
+      .single();
+
+    if (!membership?.team_id) {
+      return { success: false };
+    }
+
+    const teamId = membership.team_id;
+    const orgId = (membership.golf_teams as { organization_id: string } | null)?.organization_id;
+    if (!orgId) return { success: false };
+
+    // Find the coach for this organization
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('organization_id', orgId)
+      .limit(1)
+      .single();
+
+    if (!coach) return { success: false };
+
+    // Check if CoachHelm V2 is enabled
+    const coachHelmStatus = await isCoachHelmEnabledForCoach(coach.id);
+    if (!coachHelmStatus.effectivelyEnabled) {
+      return { success: false };
+    }
+
+    // Get coach philosophy
+    const philosophy = await getCoachPhilosophy(coach.id);
+    const confidenceThreshold = getConfidenceThreshold(philosophy.alertSensitivity);
+
+    // Run analysis for this single player
+    const analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
+      includePatterns: true,
+      includeCausal: true,
+      includePredictions: true,
+      includeShotPatterns: true,
+      depth: 'standard',
+    });
+
+    if (!analysis) return { success: false };
+
+    // Check existing insights to avoid duplicates
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existingInsights } = await (supabase as any)
+      .from('golf_coach_insights')
+      .select('player_id, insight_type')
+      .eq('coach_id', coach.id)
+      .eq('player_id', playerId)
+      .eq('status', 'active');
+
+    const existingKeys = new Set(
+      (existingInsights || []).map(
+        (i: { player_id: string; insight_type: string }) => `${i.player_id}:${i.insight_type}`
+      )
+    );
+
+    // Convert V2 insights to records
+    const newInsights: InsightRecord[] = [];
+    for (let i = 0; i < analysis.insights.length; i++) {
+      const insight = analysis.insights[i];
+      if (!insight || insight.confidence < confidenceThreshold) continue;
+
+      const pattern = analysis.patterns[i];
+      const prediction = analysis.predictions[0];
+
+      const record = convertV2ToInsightRecord(
+        insight, playerId, coach.id, teamId, pattern, prediction
+      );
+
+      if (!shouldIncludeInsight(record.insight_type as InsightType, philosophy)) continue;
+
+      const key = `${playerId}:${record.insight_type}`;
+      if (!existingKeys.has(key)) {
+        newInsights.push(record);
+        existingKeys.add(key);
+      }
+    }
+
+    // Add high-impact pattern insights
+    if (shouldIncludeInsight('recurring_weakness', philosophy)) {
+      for (const pattern of analysis.patterns.filter(p => p.isActive && p.strokeImpact > 1 && p.confidence >= confidenceThreshold)) {
+        const patternInsight: InsightRecord = {
+          coach_id: coach.id,
+          team_id: teamId,
+          insight_type: 'pattern_detected',
+          priority: pattern.strokeImpact > 2 ? 'high' : 'medium',
+          player_id: playerId,
+          title: `Pattern: ${pattern.description || 'Performance Pattern'}`,
+          content: pattern.recommendation || `Pattern detected with ${(pattern.confidence * 100).toFixed(0)}% confidence.`,
+          metadata: {
+            v2_engine: true,
+            auto_triggered: true,
+            pattern_type: pattern.patternType,
+            support: pattern.support,
+            confidence: pattern.confidence,
+            stroke_impact: pattern.strokeImpact,
+            recommendation: pattern.recommendation || 'Work with coach to address this pattern.',
+          },
+          status: 'active',
+        };
+
+        const patternKey = `${playerId}:${patternInsight.insight_type}:${pattern.id}`;
+        if (!existingKeys.has(patternKey)) {
+          newInsights.push(patternInsight);
+          existingKeys.add(patternKey);
+        }
+      }
+    }
+
+    // Apply philosophy weighting and insert
+    if (newInsights.length > 0) {
+      const weighted = weightInsightsByPhilosophy(newInsights, philosophy);
+      const cleanInsights = weighted.map(insight => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { philosophyScore, matchesCoachPriority, priorityCategory, strokeImpactScore, ...clean } = insight;
+        return {
+          ...clean,
+          metadata: {
+            ...clean.metadata,
+            philosophy_score: philosophyScore,
+            matches_coach_priority: matchesCoachPriority,
+          },
+        } as InsightRecord;
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('golf_coach_insights').insert(cleanInsights);
+    }
+
+    revalidatePath('/golf/dashboard');
+    return { success: true, insights_created: newInsights.length };
+  } catch (error) {
+    console.error('[CoachHelm] Error in post-round insight trigger:', error);
+    return { success: false };
   }
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { IconX, IconClock, IconTrash, IconAlertCircle } from '@/components/icons';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 interface SaveRoundModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export function SaveRoundModal({
   const { show } = useMobileNav();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { modalRef } = useFocusTrap(isOpen, onClose);
 
   // Show nav when modal closes (after save or delete)
   useEffect(() => {
@@ -78,6 +80,10 @@ export function SaveRoundModal({
 
       {/* Modal */}
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="save-round-modal-title"
         className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => {
           // Prevent clicks inside modal from closing it
@@ -86,7 +92,7 @@ export function SaveRoundModal({
       >
           {/* Header */}
           <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 id="save-round-modal-title" className="text-lg font-semibold text-slate-900">
               Exit Round
             </h2>
             <button

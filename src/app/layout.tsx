@@ -42,12 +42,10 @@ export const metadata: Metadata = {
     icon: '/Helm-Logo-New-Main.png',
     apple: '/Helm-Logo-New-Main.png',
   },
-  // Viewport settings to prevent pinch-zoom on mobile
+  // Viewport settings - allows zoom for accessibility (WCAG 2.1 Level AA compliance)
   viewport: {
     width: 'device-width',
     initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
     viewportFit: 'cover',
   },
   openGraph: {

@@ -116,6 +116,7 @@ export default function GolfDashboardPage() {
                         upcomingEvents: 0,
                         activeQualifiers: 0,
                         teamScoringAverage: null as number | null,
+                        previousAverage: null as number | null,
                     };
                     let recentRounds: RecentRound[] = [];
                     let topPlayers: TopPlayer[] = [];
@@ -217,6 +218,14 @@ export default function GolfDashboardPage() {
                                     stats.teamScoringAverage = scores.reduce((a, b) => a + b, 0) / scores.length;
                                 }
 
+                                // Calculate previous average for trend arrow
+                                // Split rounds into recent half vs older half for trend comparison
+                                if (scores.length >= 10) {
+                                    const midpoint = Math.floor(scores.length / 2);
+                                    const olderScores = scores.slice(midpoint);
+                                    stats.previousAverage = olderScores.reduce((a, b) => a + b, 0) / olderScores.length;
+                                }
+
                                 // Top Players
                                 const playerAvgs: TopPlayer[] = [];
                                 players.forEach(p => {
@@ -234,18 +243,22 @@ export default function GolfDashboardPage() {
                                 });
                                 topPlayers = playerAvgs.sort((a, b) => a.avg_score - b.avg_score).slice(0, 5);
 
-                                // Trend
-                                const roundsByMonth: Record<string, number[]> = {};
+                                // Trend — group by YYYY-MM for chronological ordering
+                                const roundsByYearMonth: Record<string, { label: string; scores: number[] }> = {};
                                 allRounds.forEach(round => {
                                     if (!round.round_date || round.total_score === null) return;
-                                    const monthKey = new Date(round.round_date).toLocaleString('default', { month: 'short' });
-                                    if (!roundsByMonth[monthKey]) roundsByMonth[monthKey] = [];
-                                    roundsByMonth[monthKey].push(round.total_score);
+                                    const d = new Date(round.round_date);
+                                    const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                                    const label = d.toLocaleString('default', { month: 'short' });
+                                    if (!roundsByYearMonth[sortKey]) roundsByYearMonth[sortKey] = { label, scores: [] };
+                                    roundsByYearMonth[sortKey].scores.push(round.total_score);
                                 });
-                                teamScoringTrend = Object.entries(roundsByMonth).map(([month, scores]) => ({
-                                    label: month,
-                                    value: Number((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1))
-                                }));
+                                teamScoringTrend = Object.entries(roundsByYearMonth)
+                                    .sort(([a], [b]) => a.localeCompare(b))
+                                    .map(([, { label, scores }]) => ({
+                                        label,
+                                        value: Number((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1))
+                                    }));
                             }
                         }
                     }
@@ -300,6 +313,7 @@ export default function GolfDashboardPage() {
                             .eq('status', 'completed')
                             .not('total_score', 'is', null)
                             .order('round_date', { ascending: false })
+                            .limit(50) // Sufficient for stats + display; prevents unbounded query
                     ]);
 
                     team = teamResult.data as GolfTeam | null;

@@ -124,7 +124,8 @@ export default function RoundReviewPage() {
           }
           setRound(roundData);
         }
-      } catch {
+      } catch (err) {
+        console.error('[GolfHelm] Error loading round for review:', err);
         setError('Failed to load round');
       } finally {
         setLoadingRound(false);
@@ -183,7 +184,8 @@ export default function RoundReviewPage() {
       } else {
         setError(result.error ?? 'Failed to generate review');
       }
-    } catch {
+    } catch (err) {
+      console.error('[GolfHelm] Error generating round review:', err);
       setError('An unexpected error occurred');
     } finally {
       setGeneratingReview(false);
@@ -218,7 +220,8 @@ export default function RoundReviewPage() {
           description: result.error ?? 'Could not share review.',
         });
       }
-    } catch {
+    } catch (err) {
+      console.error('[GolfHelm] Error sharing round review:', err);
       addToast({
         type: 'error',
         title: 'Share Failed',

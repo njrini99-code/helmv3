@@ -22,7 +22,7 @@ import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { OfflineSyncStatus, OfflineWarningBanner } from '@/components/golf';
-import { IconBookmark, IconCheck, IconChevronDown, IconChartBar, IconMapPin, IconPlus, IconTrophy } from '@/components/icons';
+import { IconBookmark, IconCheck, IconChartBar, IconMapPin, IconPlus, IconTrophy } from '@/components/icons';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
@@ -150,6 +150,13 @@ export default function NewRoundClient() {
     }
   }, [connectionStatus.isOnline, connectionStatus.quality]);
 
+  // Re-show offline warning if sync errors occur (even when online)
+  useEffect(() => {
+    if (syncStatus.syncError) {
+      setShowOfflineWarning(true);
+    }
+  }, [syncStatus.syncError]);
+
   // Auto-sync when coming back online
   useEffect(() => {
     if (connectionStatus.isOnline && syncStatus.pendingCount.total > 0) {
@@ -215,6 +222,7 @@ export default function NewRoundClient() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [preloadedHoleConfigs, setPreloadedHoleConfigs] = useState<SavedCourseHoleConfig[] | null>(null);
   const [saveCourseChecked, setSaveCourseChecked] = useState(false);
+  const [courseSearchQuery, setCourseSearchQuery] = useState('');
 
   // Fetch qualifiers when round type changes to 'qualifier'
   useEffect(() => {
@@ -324,8 +332,8 @@ export default function NewRoundClient() {
           setExistingDraftInfo(result.data.draftInfo);
           setShowResumeDraftModal(true);
         }
-      } catch {
-        // Silently fail - not critical
+      } catch (err) {
+        console.error('[GolfHelm] Failed to check for existing draft:', err);
       } finally {
         setIsCheckingForDraft(false);
       }
@@ -354,8 +362,8 @@ export default function NewRoundClient() {
           setSelectedRoundNumber(draftData.selectedRoundNumber);
         }
       }
-    } catch {
-      // Failed to load draft - user will start fresh
+    } catch (err) {
+      console.error('[GolfHelm] Failed to load draft, user will start fresh:', err);
     } finally {
       setShowResumeDraftModal(false);
     }
@@ -366,8 +374,8 @@ export default function NewRoundClient() {
     if (existingDraftInfo) {
       try {
         await clearRoundDraft(existingDraftInfo.roundId);
-      } catch {
-        // Silently fail
+      } catch (err) {
+        console.error('[GolfHelm] Failed to clear existing draft:', err);
       }
     }
     await clearDraft();
@@ -698,6 +706,45 @@ export default function NewRoundClient() {
     ? savedCourses.find(course => course.id === selectedCourseId) || null
     : null;
 
+  // Relative time formatter for course cards
+  const formatRelativeTime = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    const diffWeeks = Math.floor(diffDays / 7);
+    const diffMonths = Math.floor(diffDays / 30);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffWeeks < 5) return `${diffWeeks}w ago`;
+    if (diffMonths < 12) return `${diffMonths}mo ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  };
+
+  // Compute total par from hole configs
+  const computeTotalPar = (configs: SavedCourseHoleConfig[]): number => {
+    return configs.reduce((sum, h) => sum + h.par, 0);
+  };
+
+  // Filtered courses for search
+  const filteredSavedCourses = courseSearchQuery.trim()
+    ? savedCourses.filter(c => {
+        const q = courseSearchQuery.toLowerCase();
+        return (
+          c.courseName.toLowerCase().includes(q) ||
+          (c.courseCity?.toLowerCase().includes(q) ?? false) ||
+          (c.courseState?.toLowerCase().includes(q) ?? false) ||
+          (c.teesPlayed?.toLowerCase().includes(q) ?? false)
+        );
+      })
+    : savedCourses;
+
   // ============================================================================
   // SETUP STEP
   // ============================================================================
@@ -725,36 +772,42 @@ export default function NewRoundClient() {
                 />
               )}
 
-              {/* Course Selection Mode Toggle */}
+              {/* ── Course Selection ── */}
               {!loadingSavedCourses && savedCourses.length > 0 && (
-                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5 shadow-sm">
+                <div className="rounded-2xl border border-white/30 bg-white/60 backdrop-blur-sm p-5 shadow-sm">
+                  {/* Header with mode toggle */}
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
                         {courseMode === 'saved' ? <IconBookmark size={18} /> : <IconPlus size={18} />}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">Course setup</p>
-                        <p className="text-xs text-slate-500">Use a saved layout or start fresh.</p>
+                        <p className="text-sm font-semibold text-slate-900">Course</p>
+                        <p className="text-xs text-slate-500">
+                          {courseMode === 'saved'
+                            ? `${savedCourses.length} saved course${savedCourses.length !== 1 ? 's' : ''}`
+                            : 'Enter new course details'}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center rounded-full bg-slate-100 p-1">
+                    <div className="flex items-center rounded-full bg-slate-100/80 p-1">
                       <button
                         type="button"
                         onClick={() => {
                           setCourseMode('saved');
+                          setCourseSearchQuery('');
                           if (!selectedCourseId && savedCourses.length > 0) {
                             handleSavedCourseSelect(savedCourses[0]!.id);
                           }
                         }}
-                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                           courseMode === 'saved'
                             ? 'bg-white text-slate-900 shadow-sm'
                             : 'text-slate-500 hover:text-slate-700'
                         }`}
                         aria-pressed={courseMode === 'saved'}
                       >
-                        <IconBookmark size={14} />
+                        <IconBookmark size={13} />
                         Saved
                       </button>
                       <button
@@ -763,6 +816,7 @@ export default function NewRoundClient() {
                           setCourseMode('new');
                           setSelectedCourseId(null);
                           setPreloadedHoleConfigs(null);
+                          setCourseSearchQuery('');
                           setSetupData(prev => ({
                             ...prev,
                             courseName: '',
@@ -773,211 +827,309 @@ export default function NewRoundClient() {
                             teesPlayed: 'White',
                           }));
                         }}
-                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                           courseMode === 'new'
                             ? 'bg-white text-slate-900 shadow-sm'
                             : 'text-slate-500 hover:text-slate-700'
                         }`}
                         aria-pressed={courseMode === 'new'}
                       >
-                        <IconPlus size={14} />
+                        <IconPlus size={13} />
                         New
                       </button>
                     </div>
                   </div>
 
+                  {/* ── Saved Course: Card Selector ── */}
                   {courseMode === 'saved' && (
                     <div className="mt-4 space-y-3">
-                      <label htmlFor="savedCourse" className="text-sm font-medium text-slate-700 block">
-                        Saved course
-                      </label>
-                      <div className="relative">
-                        <IconMapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <select
-                          id="savedCourse"
-                          value={selectedCourseId || ''}
-                          onChange={(e) => handleSavedCourseSelect(e.target.value || null)}
-                          className="w-full appearance-none px-10 py-3 rounded-xl border border-slate-200 bg-white/80 text-sm font-medium text-slate-900 shadow-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
-                        >
-                          <option value="">Choose a saved course</option>
-                          {savedCourses.map(course => (
-                            <option key={course.id} value={course.id}>
-                              {course.courseName}
-                              {course.teesPlayed && ` (${course.teesPlayed})`}
-                            </option>
-                          ))}
-                        </select>
-                        <IconChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                      </div>
-                      {selectedCourse && (
-                        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2 text-xs text-emerald-800">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-0.5">
-                            <IconCheck size={12} className="text-emerald-600" />
-                            {selectedCourse.holeConfigs.length > 0
-                              ? `${selectedCourse.holeConfigs.length} holes configured`
-                              : 'Hole setup required'}
-                          </span>
-                          {selectedCourse.teesPlayed && (
-                            <span className="inline-flex items-center rounded-full bg-white/80 px-2 py-0.5">
-                              {selectedCourse.teesPlayed} tees
-                            </span>
-                          )}
-                          {selectedCourse.courseRating !== null && (
-                            <span className="inline-flex items-center rounded-full bg-white/80 px-2 py-0.5">
-                              Rating {selectedCourse.courseRating}
-                            </span>
-                          )}
-                          {selectedCourse.courseSlope !== null && (
-                            <span className="inline-flex items-center rounded-full bg-white/80 px-2 py-0.5">
-                              Slope {selectedCourse.courseSlope}
-                            </span>
-                          )}
-                          {selectedCourse.courseCity && (
-                            <span className="inline-flex items-center rounded-full bg-white/80 px-2 py-0.5">
-                              {selectedCourse.courseCity}{selectedCourse.courseState ? `, ${selectedCourse.courseState}` : ''}
-                            </span>
-                          )}
+                      {/* Search bar — only if 4+ courses */}
+                      {savedCourses.length >= 4 && (
+                        <div className="relative">
+                          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                          <input
+                            type="text"
+                            value={courseSearchQuery}
+                            onChange={(e) => setCourseSearchQuery(e.target.value)}
+                            placeholder="Search saved courses..."
+                            className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200/70 bg-white/80 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-colors"
+                          />
                         </div>
                       )}
+
+                      {/* Course cards */}
+                      <div className="space-y-2 max-h-[280px] overflow-y-auto scrollbar-hide pr-0.5">
+                        {filteredSavedCourses.length === 0 ? (
+                          <div className="text-center py-6 text-sm text-slate-400">
+                            No courses match &ldquo;{courseSearchQuery}&rdquo;
+                          </div>
+                        ) : (
+                          filteredSavedCourses.map((course) => {
+                            const isSelected = selectedCourseId === course.id;
+                            const totalPar = course.holeConfigs.length > 0 ? computeTotalPar(course.holeConfigs) : null;
+                            const location = [course.courseCity, course.courseState].filter(Boolean).join(', ');
+
+                            return (
+                              <button
+                                key={course.id}
+                                type="button"
+                                onClick={() => handleSavedCourseSelect(isSelected ? null : course.id)}
+                                className={`w-full text-left rounded-xl border p-3.5 transition-all duration-150 ${
+                                  isSelected
+                                    ? 'border-emerald-400/60 bg-emerald-50/60 ring-2 ring-emerald-500/20 shadow-sm'
+                                    : 'border-slate-200/70 bg-white/70 hover:border-slate-300 hover:bg-white/90 hover:shadow-sm'
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0 flex-1">
+                                    {/* Course name */}
+                                    <div className="flex items-center gap-2">
+                                      {isSelected && (
+                                        <span className="flex-shrink-0 h-5 w-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                                          <IconCheck size={12} className="text-white" />
+                                        </span>
+                                      )}
+                                      <p className={`text-sm font-semibold truncate ${isSelected ? 'text-emerald-900' : 'text-slate-900'}`}>
+                                        {course.courseName}
+                                      </p>
+                                    </div>
+
+                                    {/* Location + tees */}
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                      {location && (
+                                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                                          <IconMapPin size={11} className="text-slate-400 flex-shrink-0" />
+                                          {location}
+                                        </span>
+                                      )}
+                                      {location && course.teesPlayed && (
+                                        <span className="text-slate-300">·</span>
+                                      )}
+                                      {course.teesPlayed && (
+                                        <span className="text-xs text-slate-500">{course.teesPlayed} tees</span>
+                                      )}
+                                    </div>
+
+                                    {/* Stats row */}
+                                    <div className="flex items-center gap-2 mt-2">
+                                      {totalPar !== null && (
+                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+                                          isSelected ? 'bg-emerald-100/80 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                          Par {totalPar}
+                                        </span>
+                                      )}
+                                      {course.holeConfigs.length > 0 && (
+                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+                                          isSelected ? 'bg-emerald-100/80 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                          {course.holeConfigs.length} holes
+                                        </span>
+                                      )}
+                                      {course.courseRating !== null && (
+                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+                                          isSelected ? 'bg-emerald-100/80 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                          {course.courseRating}/{course.courseSlope ?? '—'}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Last played */}
+                                  <span className="text-[11px] text-slate-400 whitespace-nowrap flex-shrink-0 pt-0.5">
+                                    {formatRelativeTime(course.lastUsedAt)}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Course Info */}
-              <div>
-                <h2 className="text-lg font-medium text-slate-900 mb-4">
-                  {courseMode === 'saved' && selectedCourseId ? 'Course Details' : 'Course Information'}
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="courseName" className="text-sm font-medium text-slate-700 block mb-2">
-                      Course Name *
-                    </label>
-                    <input
-                      id="courseName"
-                      type="text"
-                      value={setupData.courseName}
-                      onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
-                      disabled={courseMode === 'saved' && !!selectedCourseId}
-                      className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
-                        courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
-                      }`}
-                      placeholder="Pebble Beach Golf Links"
-                      required
-                    />
+              {/* ── Course Details: Compact summary when saved, full form when new ── */}
+              {courseMode === 'saved' && selectedCourse ? (
+                /* Compact summary card for selected saved course */
+                <div className="rounded-2xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/50 to-white/80 backdrop-blur-sm p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                      <IconCheck size={16} className="text-emerald-600" />
+                      Course ready
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCourseId(null);
+                        setPreloadedHoleConfigs(null);
+                        setSetupData(prev => ({
+                          ...prev,
+                          courseName: '',
+                          courseCity: '',
+                          courseState: '',
+                          courseRating: '',
+                          courseSlope: '',
+                          teesPlayed: 'White',
+                        }));
+                      }}
+                      className="text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                      Change
+                    </button>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="courseCity" className="text-sm font-medium text-slate-700 block mb-2">
-                        City
-                      </label>
-                      <input
-                        id="courseCity"
-                        type="text"
-                        value={setupData.courseCity}
-                        onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
-                        disabled={courseMode === 'saved' && !!selectedCourseId}
-                        className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
-                          courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
-                        }`}
-                        placeholder="Pebble Beach"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="courseState" className="text-sm font-medium text-slate-700 block mb-2">
-                        State
-                      </label>
-                      <input
-                        id="courseState"
-                        type="text"
-                        value={setupData.courseState}
-                        onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
-                        disabled={courseMode === 'saved' && !!selectedCourseId}
-                        className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
-                          courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
-                        }`}
-                        placeholder="CA"
-                        maxLength={2}
-                      />
-                    </div>
+                  <p className="text-base font-semibold text-slate-900">{selectedCourse.courseName}</p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-slate-500">
+                    {selectedCourse.courseCity && (
+                      <span className="flex items-center gap-1">
+                        <IconMapPin size={11} className="text-slate-400" />
+                        {selectedCourse.courseCity}{selectedCourse.courseState ? `, ${selectedCourse.courseState}` : ''}
+                      </span>
+                    )}
+                    {selectedCourse.teesPlayed && <span>{selectedCourse.teesPlayed} tees</span>}
+                    {selectedCourse.courseRating !== null && <span>Rating {selectedCourse.courseRating}</span>}
+                    {selectedCourse.courseSlope !== null && <span>Slope {selectedCourse.courseSlope}</span>}
+                    {selectedCourse.holeConfigs.length > 0 && (
+                      <span className="text-emerald-600 font-medium">
+                        {selectedCourse.holeConfigs.length} holes · Par {computeTotalPar(selectedCourse.holeConfigs)}
+                      </span>
+                    )}
                   </div>
+                </div>
+              ) : (
+                /* Full form for new course entry */
+                <div>
+                  <h2 className="text-lg font-medium text-slate-900 mb-4">Course Information</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="courseName" className="text-sm font-medium text-slate-700 block mb-2">
+                        Course Name *
+                      </label>
+                      <input
+                        id="courseName"
+                        type="text"
+                        value={setupData.courseName}
+                        onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                        placeholder="Pebble Beach Golf Links"
+                        required
+                      />
+                    </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label htmlFor="courseRating" className="text-sm font-medium text-slate-700 block mb-2">
-                        Rating
-                      </label>
-                      <input
-                        id="courseRating"
-                        type="number"
-                        step="0.1"
-                        value={setupData.courseRating}
-                        onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
-                        disabled={courseMode === 'saved' && !!selectedCourseId}
-                        className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
-                          courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
-                        }`}
-                        placeholder="72.1"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="courseCity" className="text-sm font-medium text-slate-700 block mb-2">
+                          City
+                        </label>
+                        <input
+                          id="courseCity"
+                          type="text"
+                          value={setupData.courseCity}
+                          onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                          placeholder="Pebble Beach"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="courseState" className="text-sm font-medium text-slate-700 block mb-2">
+                          State
+                        </label>
+                        <input
+                          id="courseState"
+                          type="text"
+                          value={setupData.courseState}
+                          onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                          placeholder="CA"
+                          maxLength={2}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label htmlFor="courseSlope" className="text-sm font-medium text-slate-700 block mb-2">
-                        Slope
-                      </label>
-                      <input
-                        id="courseSlope"
-                        type="number"
-                        value={setupData.courseSlope}
-                        onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
-                        disabled={courseMode === 'saved' && !!selectedCourseId}
-                        className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
-                          courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
-                        }`}
-                        placeholder="133"
-                        aria-label="Course slope rating"
-                      />
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label htmlFor="courseRating" className="text-sm font-medium text-slate-700 block mb-2">
+                          Rating
+                        </label>
+                        <input
+                          id="courseRating"
+                          type="number"
+                          step="0.1"
+                          value={setupData.courseRating}
+                          onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                          placeholder="72.1"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="courseSlope" className="text-sm font-medium text-slate-700 block mb-2">
+                          Slope
+                        </label>
+                        <input
+                          id="courseSlope"
+                          type="number"
+                          value={setupData.courseSlope}
+                          onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                          placeholder="133"
+                          aria-label="Course slope rating"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="teesPlayed" className="text-sm font-medium text-slate-700 block mb-2">
+                          Tees
+                        </label>
+                        <select
+                          id="teesPlayed"
+                          value={setupData.teesPlayed}
+                          onChange={(e) => setSetupData({ ...setupData, teesPlayed: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                        >
+                          <option>Championship</option>
+                          <option>Black</option>
+                          <option>Blue</option>
+                          <option>White</option>
+                          <option>Gold</option>
+                          <option>Red</option>
+                        </select>
+                      </div>
                     </div>
-                    <div>
-                      <label htmlFor="teesPlayed" className="text-sm font-medium text-slate-700 block mb-2">
-                        Tees
-                      </label>
-                      <select
-                        id="teesPlayed"
-                        value={setupData.teesPlayed}
-                        onChange={(e) => setSetupData({ ...setupData, teesPlayed: e.target.value })}
-                        disabled={courseMode === 'saved' && !!selectedCourseId}
-                        className={`w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none ${
-                          courseMode === 'saved' && selectedCourseId ? 'bg-slate-50 text-slate-500' : ''
+
+                    {/* Save Course — premium toggle callout for new courses */}
+                    {courseMode === 'new' && (
+                      <button
+                        type="button"
+                        onClick={() => setSaveCourseChecked(!saveCourseChecked)}
+                        className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-150 ${
+                          saveCourseChecked
+                            ? 'border-emerald-300/60 bg-emerald-50/50'
+                            : 'border-slate-200/70 bg-white/50 hover:bg-white/70'
                         }`}
                       >
-                        <option>Championship</option>
-                        <option>Black</option>
-                        <option>Blue</option>
-                        <option>White</option>
-                        <option>Gold</option>
-                        <option>Red</option>
-                      </select>
-                    </div>
+                        <div className={`flex-shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                          saveCourseChecked
+                            ? 'border-emerald-500 bg-emerald-500'
+                            : 'border-slate-300'
+                        }`}>
+                          {saveCourseChecked && <IconCheck size={12} className="text-white" />}
+                        </div>
+                        <div className="text-left">
+                          <p className={`text-sm font-medium ${saveCourseChecked ? 'text-emerald-900' : 'text-slate-700'}`}>
+                            Save for quick access next round
+                          </p>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Remembers hole pars, yardages & course details
+                          </p>
+                        </div>
+                      </button>
+                    )}
                   </div>
-
-                  {/* Save Course Checkbox - only show for new courses */}
-                  {courseMode === 'new' && (
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={saveCourseChecked}
-                        onChange={(e) => setSaveCourseChecked(e.target.checked)}
-                        className="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-slate-600">
-                        Save this course for next time (including hole pars & yardages)
-                      </span>
-                    </label>
-                  )}
                 </div>
-              </div>
+              )}
 
               {/* Round Info */}
               <div>

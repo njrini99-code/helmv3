@@ -29,7 +29,7 @@ export function RowActionsMenu({ actions }: RowActionsMenuProps) {
       <button
         onClick={() => setOpen(!open)}
         className="
-          w-8 h-8 rounded-[8px]
+          w-11 h-11 rounded-[8px]
           flex items-center justify-center
           text-warm-400 hover:text-warm-600 hover:bg-warm-100
           transition-all duration-200
@@ -61,7 +61,7 @@ export function RowActionsMenu({ actions }: RowActionsMenuProps) {
               disabled={action.disabled}
               className={cn(
                 "w-full flex items-center gap-2.5",
-                "px-3 py-2",
+                "px-3 py-2.5 min-h-[44px]",
                 "text-sm text-left",
                 "transition-colors duration-150",
                 action.variant === 'danger'

@@ -9,6 +9,7 @@ import {
   IconX,
 } from '@/components/icons';
 import { AlertTriangle, Cloud, Smartphone } from 'lucide-react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 // Types for conflict data
 export interface ConflictData {
@@ -60,6 +61,7 @@ export function ConflictResolutionModal({
   const [resolutions, setResolutions] = useState<ConflictResolutionResult[]>([]);
   const [selectedFields, setSelectedFields] = useState<Record<string, 'local' | 'server'>>({});
   const [resolving, setResolving] = useState(false);
+  const { modalRef } = useFocusTrap(isOpen, onClose);
 
   const currentConflict = conflicts[currentIndex];
   const totalConflicts = conflicts.length;
@@ -177,6 +179,10 @@ export function ConflictResolutionModal({
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <motion.div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="conflict-resolution-modal-title"
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
@@ -191,7 +197,7 @@ export function ConflictResolutionModal({
                   <AlertTriangle size={20} className="text-amber-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">
+                  <h2 id="conflict-resolution-modal-title" className="text-lg font-semibold text-slate-900">
                     Sync Conflict Detected
                   </h2>
                   <p className="text-sm text-slate-600">

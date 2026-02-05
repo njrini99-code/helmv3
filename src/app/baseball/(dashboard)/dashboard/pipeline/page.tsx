@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -17,6 +17,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PlayerDetailModal } from '@/components/coach/PlayerDetailModal';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { PositionPlanner } from '@/components/baseball/position-planner';
+import { Badge } from '@/components/ui/badge';
 import { IconUsers, IconTrash, IconUser, IconLayoutGrid, IconList, IconTarget } from '@/components/icons';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useRecruitingRouteProtection } from '@/hooks/use-route-protection';
@@ -310,12 +311,12 @@ export default function PipelinePage() {
         )}
 
         {/* View Toggle Tabs */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setViewMode('pipeline')}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
                 viewMode === 'pipeline'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
@@ -327,43 +328,45 @@ export default function PipelinePage() {
             <button
               onClick={() => setViewMode('position')}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
                 viewMode === 'position'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               )}
             >
               <IconTarget size={16} />
-              Position Planner
+              <span className="hidden sm:inline">Position Planner</span>
+              <span className="sm:hidden">Planner</span>
             </button>
             <button
               onClick={() => setViewMode('list')}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
                 viewMode === 'list'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               )}
             >
               <IconList size={16} />
-              List View
+              List
             </button>
           </div>
 
           {/* Grad Year Filter (shared) */}
           <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-slate-700">Grad Year:</label>
+            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Grad Year:</label>
             <Select
               options={gradYearOptions}
               value={gradYearFilter}
               onChange={(value) => setGradYearFilter(value)}
-              className="w-36"
+              className="w-36 text-base"
             />
             {gradYearFilter && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setGradYearFilter('')}
+                className="min-h-[44px]"
               >
                 Clear
               </Button>
@@ -394,7 +397,7 @@ export default function PipelinePage() {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="grid grid-cols-5 gap-4">
+            <div className="flex lg:grid lg:grid-cols-5 gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:px-0 lg:overflow-visible snap-x snap-mandatory lg:snap-none">
               {stages.map((stage) => (
                 <PipelineColumn
                   key={stage}
@@ -427,14 +430,14 @@ export default function PipelinePage() {
         {viewMode === 'list' && watchlist.length > 0 && (
           <>
             {/* Status Filter Tabs */}
-            <div className="flex items-center gap-2 mb-6 border-b border-slate-200" role="tablist" aria-label="Filter by status">
+            <div className="flex items-center gap-2 mb-6 border-b border-slate-200 overflow-x-auto scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0" role="tablist" aria-label="Filter by status">
               {filterTabs.map(tab => (
                 <button
                   key={tab.value}
                   role="tab"
                   aria-selected={filterTab === tab.value}
                   onClick={() => setFilterTab(tab.value)}
-                  className={`px-4 py-2 font-medium transition-colors border-b-2 -mb-px ${
+                  className={`px-4 py-2 font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 min-h-[44px] ${
                     filterTab === tab.value
                       ? 'border-green-600 text-green-700'
                       : 'border-transparent text-slate-600 hover:text-slate-900'
@@ -514,143 +517,266 @@ export default function PipelinePage() {
                 description="Try adjusting your filters or add more players to your pipeline."
               />
             ) : (
-              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="px-4 py-3 w-12">
+              <>
+                {/* Mobile card view */}
+                <div className="lg:hidden space-y-4">
+                  {filteredWatchlist.map((item) => (
+                    <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                      {/* Player header */}
+                      <div className="flex items-start gap-3 mb-3">
                         <input
                           type="checkbox"
-                          checked={selectedPlayers.size === filteredWatchlist.length && filteredWatchlist.length > 0}
-                          onChange={toggleSelectAll}
-                          className="rounded border-slate-300 text-green-600 focus:ring-green-500"
+                          checked={selectedPlayers.has(item.id)}
+                          onChange={() => togglePlayerSelection(item.id)}
+                          className="mt-1 rounded border-slate-300 text-green-600 focus:ring-green-500 w-5 h-5"
                         />
-                      </th>
-                      <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Player</th>
-                      <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Position</th>
-                      <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Grad Year</th>
-                      <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Location</th>
-                      <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Status</th>
-                      <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Updated</th>
-                      <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Notes</th>
-                      <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {filteredWatchlist.map((item) => (
-                      <>
-                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-4 py-4">
-                            <input
-                              type="checkbox"
-                              checked={selectedPlayers.has(item.id)}
-                              onChange={() => togglePlayerSelection(item.id)}
-                              className="rounded border-slate-300 text-green-600 focus:ring-green-500"
-                            />
-                          </td>
-                          <td className="px-6 py-4">
-                            <div
-                              className="flex items-center gap-3 cursor-pointer group"
-                              onClick={() => setPeekPlayerId(item.player?.id || null)}
-                            >
-                              <Avatar
-                                src={item.player?.avatar_url}
-                                name={getFullName(item.player?.first_name, item.player?.last_name)}
-                                size="md"
-                              />
-                              <div>
-                                <p className="text-sm font-medium text-slate-900 group-hover:text-green-600 transition-colors">
-                                  {getFullName(item.player?.first_name, item.player?.last_name)}
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                  {item.player?.high_school_name || 'No school'}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-slate-600">
-                            {item.player?.primary_position}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-slate-600">
-                            {item.player?.grad_year}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-slate-600">
+                        <div
+                          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                          onClick={() => setPeekPlayerId(item.player?.id || null)}
+                        >
+                          <Avatar
+                            src={item.player?.avatar_url}
+                            name={getFullName(item.player?.first_name, item.player?.last_name)}
+                            size="md"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-slate-900 truncate">
+                              {getFullName(item.player?.first_name, item.player?.last_name)}
+                            </h3>
+                            <p className="text-sm text-slate-500">
+                              {item.player?.primary_position || 'N/A'} {item.player?.grad_year ? `\u2022 ${item.player.grad_year}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge
+                          variant={
+                            item.pipeline_stage === 'committed' ? 'success'
+                              : item.pipeline_stage === 'high_priority' ? 'warning'
+                              : item.pipeline_stage === 'offer_extended' ? 'primary'
+                              : item.pipeline_stage === 'uninterested' ? 'danger'
+                              : 'secondary'
+                          }
+                        >
+                          {statusOptions.find(o => o.value === item.pipeline_stage)?.label || 'Watching'}
+                        </Badge>
+                      </div>
+
+                      {/* Quick stats */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mb-3 text-sm">
+                        <div>
+                          <span className="text-slate-500">Location:</span>
+                          <span className="ml-1 text-slate-900">
                             {item.player?.city && item.player?.state ? `${item.player.city}, ${item.player.state}` : 'N/A'}
-                          </td>
-                          <td className="px-6 py-4">
-                            <Select
-                              options={statusOptions}
-                              value={item.pipeline_stage ?? undefined}
-                              onChange={(value) => handleStatusChange(item.id, value as PipelineStage)}
-                              className="w-44 text-sm"
-                            />
-                          </td>
-                          <td className="px-6 py-4 text-sm text-slate-500">
-                            {formatDate(item.updated_at)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => startEditingNote(item.id, item.notes)}
-                              className="text-xs text-slate-600 hover:text-slate-900 underline max-w-[120px] truncate block"
-                              title={item.notes || 'Add note'}
-                            >
-                              {item.notes ? (item.notes.length > 20 ? item.notes.substring(0, 20) + '...' : item.notes) : 'Add note'}
-                            </button>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => item.player && setSelectedPlayer(item.player)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500">Updated:</span>
+                          <span className="ml-1 text-slate-900">{formatDate(item.updated_at)}</span>
+                        </div>
+                      </div>
+
+                      {/* Notes preview */}
+                      {item.notes && (
+                        <p className="text-sm text-slate-600 line-clamp-2 mb-3 bg-slate-50 rounded-lg px-3 py-2">
+                          {item.notes}
+                        </p>
+                      )}
+
+                      {/* Note editing inline */}
+                      {editingNote === item.id && (
+                        <div className="mb-3 space-y-2">
+                          <textarea
+                            value={noteValue}
+                            onChange={(e) => setNoteValue(e.target.value)}
+                            placeholder="Add notes about this player..."
+                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-none text-base"
+                            rows={3}
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleSaveNote(item.id)} className="flex-1 min-h-[44px]">Save</Button>
+                            <Button variant="ghost" size="sm" onClick={() => { setEditingNote(null); setNoteValue(''); }} className="flex-1 min-h-[44px]">Cancel</Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Status select */}
+                      <div className="mb-3">
+                        <Select
+                          options={statusOptions}
+                          value={item.pipeline_stage ?? undefined}
+                          onChange={(value) => handleStatusChange(item.id, value as PipelineStage)}
+                          className="w-full text-base"
+                        />
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => item.player && setSelectedPlayer(item.player)}
+                          className="flex-1 min-h-[44px]"
+                        >
+                          View Profile
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => startEditingNote(item.id, item.notes)}
+                          className="min-h-[44px] min-w-[44px]"
+                        >
+                          {item.notes ? 'Edit Note' : 'Add Note'}
+                        </Button>
+                        <button
+                          onClick={() => setRemoveConfirm(item.id)}
+                          className="min-h-[44px] min-w-[44px] rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center"
+                          aria-label="Remove from pipeline"
+                        >
+                          <IconTrash size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop table view */}
+                <div className="hidden lg:block bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50">
+                        <th className="px-4 py-3 w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectedPlayers.size === filteredWatchlist.length && filteredWatchlist.length > 0}
+                            onChange={toggleSelectAll}
+                            className="rounded border-slate-300 text-green-600 focus:ring-green-500"
+                          />
+                        </th>
+                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Player</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Position</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Grad Year</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Location</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Status</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Updated</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Notes</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {filteredWatchlist.map((item) => (
+                        <React.Fragment key={item.id}>
+                          <tr className="hover:bg-slate-50 transition-colors">
+                            <td className="px-4 py-4">
+                              <input
+                                type="checkbox"
+                                checked={selectedPlayers.has(item.id)}
+                                onChange={() => togglePlayerSelection(item.id)}
+                                className="rounded border-slate-300 text-green-600 focus:ring-green-500"
+                              />
+                            </td>
+                            <td className="px-6 py-4">
+                              <div
+                                className="flex items-center gap-3 cursor-pointer group"
+                                onClick={() => setPeekPlayerId(item.player?.id || null)}
                               >
-                                View
-                              </Button>
-                              <button
-                                onClick={() => setRemoveConfirm(item.id)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                aria-label="Remove from watchlist"
-                              >
-                                <IconTrash size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        {editingNote === item.id && (
-                          <tr key={`note-${item.id}`}>
-                            <td colSpan={9} className="px-6 py-4 bg-slate-50">
-                              <div className="flex items-start gap-3">
-                                <textarea
-                                  value={noteValue}
-                                  onChange={(e) => setNoteValue(e.target.value)}
-                                  placeholder="Add notes about this player..."
-                                  className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-none"
-                                  rows={3}
+                                <Avatar
+                                  src={item.player?.avatar_url}
+                                  name={getFullName(item.player?.first_name, item.player?.last_name)}
+                                  size="md"
                                 />
-                                <div className="flex gap-2">
-                                  <Button size="sm" onClick={() => handleSaveNote(item.id)}>
-                                    Save
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setEditingNote(null);
-                                      setNoteValue('');
-                                    }}
-                                  >
-                                    Cancel
-                                  </Button>
+                                <div>
+                                  <p className="text-sm font-medium text-slate-900 group-hover:text-green-600 transition-colors">
+                                    {getFullName(item.player?.first_name, item.player?.last_name)}
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    {item.player?.high_school_name || 'No school'}
+                                  </p>
                                 </div>
                               </div>
                             </td>
+                            <td className="px-6 py-4 text-sm text-slate-600">
+                              {item.player?.primary_position}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600">
+                              {item.player?.grad_year}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600">
+                              {item.player?.city && item.player?.state ? `${item.player.city}, ${item.player.state}` : 'N/A'}
+                            </td>
+                            <td className="px-6 py-4">
+                              <Select
+                                options={statusOptions}
+                                value={item.pipeline_stage ?? undefined}
+                                onChange={(value) => handleStatusChange(item.id, value as PipelineStage)}
+                                className="w-44 text-sm"
+                              />
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-500">
+                              {formatDate(item.updated_at)}
+                            </td>
+                            <td className="px-6 py-4">
+                              <button
+                                onClick={() => startEditingNote(item.id, item.notes)}
+                                className="text-xs text-slate-600 hover:text-slate-900 underline max-w-[120px] truncate block"
+                                title={item.notes || 'Add note'}
+                              >
+                                {item.notes ? (item.notes.length > 20 ? item.notes.substring(0, 20) + '...' : item.notes) : 'Add note'}
+                              </button>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => item.player && setSelectedPlayer(item.player)}
+                                >
+                                  View
+                                </Button>
+                                <button
+                                  onClick={() => setRemoveConfirm(item.id)}
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                  aria-label="Remove from watchlist"
+                                >
+                                  <IconTrash size={16} />
+                                </button>
+                              </div>
+                            </td>
                           </tr>
-                        )}
-                      </>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                          {editingNote === item.id && (
+                            <tr>
+                              <td colSpan={9} className="px-6 py-4 bg-slate-50">
+                                <div className="flex items-start gap-3">
+                                  <textarea
+                                    value={noteValue}
+                                    onChange={(e) => setNoteValue(e.target.value)}
+                                    placeholder="Add notes about this player..."
+                                    className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-none"
+                                    rows={3}
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button size="sm" onClick={() => handleSaveNote(item.id)}>
+                                      Save
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEditingNote(null);
+                                        setNoteValue('');
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </>
         )}

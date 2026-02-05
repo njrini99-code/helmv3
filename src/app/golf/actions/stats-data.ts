@@ -9,6 +9,10 @@ import {
   type RoundInfo
 } from '@/lib/utils/golf-stats-calculator-shots';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
+import {
+  generateStatisticalStrengthsWeaknesses,
+  type StatisticalStrengthWeakness,
+} from '@/lib/golf/strokes-gained';
 
 // ============================================================================
 // TYPES
@@ -1174,4 +1178,31 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
     par5Average: calcAvg(par5s),
     closingHolesAverage: calcAvg(closingHoles),
   };
+}
+
+// ============================================================================
+// STATISTICAL STRENGTHS & WEAKNESSES
+// ============================================================================
+
+/**
+ * Get rich, statistically-backed strengths and weaknesses for a player.
+ * Analyzes 30+ metrics across distance, shot type, and lie categories.
+ *
+ * Returns top 3 strengths and top 3 weaknesses with stroke impact,
+ * benchmarks, and coaching recommendations.
+ */
+export async function getPlayerStrengthsWeaknesses(
+  playerId: string,
+  filter?: StatsFilter
+): Promise<{
+  strengths: StatisticalStrengthWeakness[];
+  weaknesses: StatisticalStrengthWeakness[];
+} | null> {
+  const stats = await getDetailedStats(playerId, 'overall', filter);
+
+  if (stats.roundsPlayed < 3) {
+    return null;
+  }
+
+  return generateStatisticalStrengthsWeaknesses(stats);
 }

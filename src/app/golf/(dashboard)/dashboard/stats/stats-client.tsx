@@ -19,6 +19,7 @@ import {
   type TrendAnalysisResponse,
 } from '@/app/golf/actions/stats-data';
 import GolfStatsDisplay from '@/components/golf/stats/GolfStatsDisplay';
+import { generateStatisticalStrengthsWeaknesses } from '@/lib/golf/strokes-gained';
 import { DetailedStatsSkeleton } from '@/components/golf/GolfSkeletons';
 import {
   IconChevronLeft,
@@ -451,6 +452,17 @@ export default function StatsClient({
     });
     return Array.from(years).sort();
   }, [players]);
+
+  // Compute statistical strengths/weaknesses from detailed stats
+  const strengthsWeaknesses = useMemo(() => {
+    if (!detailedStats || detailedStats.roundsPlayed < 3) return null;
+    try {
+      return generateStatisticalStrengthsWeaknesses(detailedStats);
+    } catch (err) {
+      console.error('[GolfHelm] Error generating strengths/weaknesses:', err);
+      return null;
+    }
+  }, [detailedStats]);
 
   // ============================================================================
   // DATA LOADING
@@ -1062,6 +1074,8 @@ export default function StatsClient({
           courseBreakdown={courseBreakdown}
           worstHoleData={worstHoleData}
           trendData={trendData}
+          statisticalStrengths={strengthsWeaknesses?.strengths}
+          statisticalWeaknesses={strengthsWeaknesses?.weaknesses}
         />
       ) : null}
     </div>

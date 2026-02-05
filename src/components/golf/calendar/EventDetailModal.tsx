@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { X, Trash2, MapPin, Calendar, Clock, Users, AlertCircle, UserPlus, Dumbbell, Trophy, ClipboardList, Plane, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -225,7 +226,7 @@ export function EventDetailModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [conflicts, setConflicts] = useState<ConflictData | null>(null);
   const [checkingConflicts, setCheckingConflicts] = useState(false);
-  const modalRef = useRef<HTMLDivElement>(null);
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const rsvpEnabled = Boolean(event?.id && formData.requiresRsvp && !isCreating);
   const {
@@ -249,27 +250,7 @@ export function EventDetailModal({
     })) || []
   ), [rsvpSummary]);
 
-  // Handle keyboard escape
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  }, [onClose]);
-
-  // Focus management and escape key
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      // Focus the close button when modal opens
-      setTimeout(() => closeButtonRef.current?.focus(), 0);
-      // Prevent body scrolling
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, handleKeyDown]);
+  // useFocusTrap handles: Escape key, focus trapping, focus restore, scroll lock
 
   // Reset form when modal opens/closes or event changes
   useEffect(() => {
@@ -443,6 +424,7 @@ export function EventDetailModal({
 
   return (
     <div
+      ref={modalRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
@@ -455,9 +437,8 @@ export function EventDetailModal({
         aria-hidden="true"
       />
 
-      {/* Modal */}
+      {/* Modal - focus trap ref is on the outer dialog container */}
       <div
-        ref={modalRef}
         className="relative bg-white rounded-[24px] border border-slate-200/60 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
       >
         {/* Colored Header Band - tinted by event type */}

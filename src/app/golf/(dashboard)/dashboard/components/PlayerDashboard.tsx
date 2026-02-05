@@ -221,6 +221,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                         iconBg="bg-amber-50"
                         label="Best Round"
                         value={stats.bestRound || '--'}
+                        href="/golf/dashboard/rounds"
                     />
                     <PremiumStatCard
                         icon={<IconSparkles size={20} />}
@@ -228,6 +229,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                         iconBg="bg-violet-50"
                         label="Handicap"
                         value={stats.handicap !== null ? stats.handicap.toFixed(1) : '--'}
+                        href="/golf/dashboard/stats"
                     />
                 </motion.div>
 
@@ -242,7 +244,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                     icon={<IconPlus size={18} className="text-white" />}
                                     label="Submit Round"
                                     description="Log your score"
-                                    href="/golf/dashboard/rounds"
+                                    href="/golf/dashboard/rounds/new"
                                     variant="primary"
                                 />
                                 <QuickActionCard
@@ -318,7 +320,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                     <EmptyState
                                         type="rounds"
                                         variant="compact"
-                                        action={{ label: 'Submit First Round', href: '/golf/dashboard/rounds' }}
+                                        action={{ label: 'Submit First Round', href: '/golf/dashboard/rounds/new' }}
                                     />
                                 )}
                             </PremiumGlassCard>

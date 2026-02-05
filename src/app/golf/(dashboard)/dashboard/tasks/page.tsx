@@ -140,8 +140,8 @@ export default function GolfTasksPage() {
           }
         }
       }
-    } catch {
-      // Error loading data - will show empty state
+    } catch (err) {
+      console.error('[GolfHelm] Error loading tasks data:', err);
     } finally {
       setInitialLoading(false);
     }

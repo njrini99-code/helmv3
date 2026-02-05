@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward, IconChartBar, IconCrosshair, IconFilter, IconChevronDown, IconDownload, IconPrinter, IconHome } from '@/components/icons';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
+import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 import ProgressStats from './ProgressStats';
 import ShotDispersionChart from './ShotDispersionChart';
 
@@ -358,6 +359,9 @@ interface StatsDisplayProps {
   courseBreakdown?: CourseBreakdownResponse | null;
   worstHoleData?: WorstHoleResponse | null;
   trendData?: TrendAnalysisResponse | null;
+  // Statistical strengths/weaknesses
+  statisticalStrengths?: StatisticalStrengthWeakness[];
+  statisticalWeaknesses?: StatisticalStrengthWeakness[];
 }
 
 // ============================================================================
@@ -1385,7 +1389,15 @@ function ScramblingStats({ stats }: { stats: GolfStats }) {
   );
 }
 
-function StrokesGainedStats({ stats }: { stats: GolfStats }) {
+function StrokesGainedStats({
+  stats,
+  statisticalStrengths,
+  statisticalWeaknesses,
+}: {
+  stats: GolfStats;
+  statisticalStrengths?: StatisticalStrengthWeakness[];
+  statisticalWeaknesses?: StatisticalStrengthWeakness[];
+}) {
   return (
     <motion.div
       className="space-y-4"
@@ -1453,6 +1465,34 @@ function StrokesGainedStats({ stats }: { stats: GolfStats }) {
         <StatRow label="SG: Total per Round" value={formatStat(stats.sgTotalPerRound, '', 2)} index={4} />
       </StatSection>
 
+      {/* Statistical Strengths & Weaknesses */}
+      {(statisticalStrengths && statisticalStrengths.length > 0 || statisticalWeaknesses && statisticalWeaknesses.length > 0) && (
+        <StatSection title="Strengths & Weaknesses" delay={0.25}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {statisticalStrengths && statisticalStrengths.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">Strengths</p>
+                <div className="space-y-2">
+                  {statisticalStrengths.map((item, i) => (
+                    <OverviewSWCard key={i} item={item} type="strength" />
+                  ))}
+                </div>
+              </div>
+            )}
+            {statisticalWeaknesses && statisticalWeaknesses.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">Areas to Improve</p>
+                <div className="space-y-2">
+                  {statisticalWeaknesses.map((item, i) => (
+                    <OverviewSWCard key={i} item={item} type="weakness" />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </StatSection>
+      )}
+
       {/* Info */}
       <motion.div
         className="bg-blue-50 border border-blue-200 rounded-xl p-4 backdrop-blur-sm"
@@ -1477,6 +1517,54 @@ function StrokesGainedStats({ stats }: { stats: GolfStats }) {
 }
 
 // ============================================================================
+// STRENGTH/WEAKNESS CARD (shared between Overview and SG tabs)
+// ============================================================================
+
+function OverviewSWCard({
+  item,
+  type,
+}: {
+  item: StatisticalStrengthWeakness;
+  type: 'strength' | 'weakness';
+}) {
+  const isStrength = type === 'strength';
+  const impactAbs = Math.abs(item.strokeImpact);
+  const impactStr = `${isStrength ? '+' : '-'}${impactAbs.toFixed(1)}`;
+
+  return (
+    <motion.div
+      className={`rounded-xl p-3.5 border ${
+        isStrength
+          ? 'bg-green-50/60 border-green-200/60'
+          : 'bg-red-50/50 border-red-200/60'
+      }`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-900 truncate">{item.label}</p>
+          <p className="text-xs text-slate-600 mt-0.5">{item.detail}</p>
+        </div>
+        <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-bold tabular-nums ${
+          isStrength
+            ? 'bg-green-100 text-green-700'
+            : 'bg-red-100 text-red-700'
+        }`}>
+          {impactStr}
+        </span>
+      </div>
+      {!isStrength && item.recommendation && (
+        <p className="text-xs text-slate-500 mt-2 pt-2 border-t border-red-200/40 italic">
+          {item.recommendation}
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
+// ============================================================================
 // OVERVIEW STATS COMPONENT (Player Dashboard)
 // ============================================================================
 
@@ -1485,11 +1573,15 @@ function OverviewStats({
   playerName,
   playerProfile,
   trendData,
+  statisticalStrengths,
+  statisticalWeaknesses,
 }: {
   stats: GolfStats;
   playerName?: string;
   playerProfile?: PlayerProfile;
   trendData?: TrendAnalysisResponse | null;
+  statisticalStrengths?: StatisticalStrengthWeakness[];
+  statisticalWeaknesses?: StatisticalStrengthWeakness[];
 }) {
   return (
     <motion.div
@@ -1629,6 +1721,40 @@ function OverviewStats({
                 </div>
               ))}
             </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Statistical Strengths & Weaknesses */}
+      {(statisticalStrengths && statisticalStrengths.length > 0 || statisticalWeaknesses && statisticalWeaknesses.length > 0) && (
+        <motion.div variants={sectionVariants}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Strengths */}
+            {statisticalStrengths && statisticalStrengths.length > 0 && (
+              <div>
+                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+                  Top Strengths
+                </h3>
+                <div className="space-y-2">
+                  {statisticalStrengths.map((item, i) => (
+                    <OverviewSWCard key={i} item={item} type="strength" />
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Weaknesses */}
+            {statisticalWeaknesses && statisticalWeaknesses.length > 0 && (
+              <div>
+                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+                  Areas to Improve
+                </h3>
+                <div className="space-y-2">
+                  {statisticalWeaknesses.map((item, i) => (
+                    <OverviewSWCard key={i} item={item} type="weakness" />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
       )}
@@ -2169,6 +2295,8 @@ export default function GolfStatsDisplay({
   courseBreakdown,
   worstHoleData,
   trendData,
+  statisticalStrengths,
+  statisticalWeaknesses,
 }: StatsDisplayProps) {
   // Default to overview tab when coach is viewing a player
   const [activeCategory, setActiveCategory] = useState<StatsCategory>(isCoachView ? 'overview' : 'scoring');
@@ -2771,6 +2899,8 @@ export default function GolfStatsDisplay({
                 playerName={playerName}
                 playerProfile={playerProfile}
                 trendData={trendData}
+                statisticalStrengths={statisticalStrengths}
+                statisticalWeaknesses={statisticalWeaknesses}
               />
             )}
             {activeCategory === 'progress' && <ProgressStats stats={stats} rounds={rounds} />}
@@ -2780,7 +2910,13 @@ export default function GolfStatsDisplay({
             {activeCategory === 'approach' && <ApproachStats stats={stats} />}
             {activeCategory === 'putting' && <PuttingStats stats={stats} />}
             {activeCategory === 'scrambling' && <ScramblingStats stats={stats} />}
-            {activeCategory === 'strokes-gained' && <StrokesGainedStats stats={stats} />}
+            {activeCategory === 'strokes-gained' && (
+              <StrokesGainedStats
+                stats={stats}
+                statisticalStrengths={statisticalStrengths}
+                statisticalWeaknesses={statisticalWeaknesses}
+              />
+            )}
             {activeCategory === 'analysis' && (
               <AnalysisStats
                 worstHoleData={worstHoleData}

@@ -38,6 +38,11 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
     router.push('/golf/dashboard/stats');
   };
 
+  const handleViewReview = () => {
+    onClose();
+    router.push(`/golf/dashboard/rounds/${summary.id}/review`);
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'long',
@@ -246,22 +251,34 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
 
         {/* Action Buttons */}
         <div className="px-8 py-6 bg-slate-50 rounded-b-2xl">
-          <div className="flex flex-col sm:flex-row gap-3">
+          {/* Primary CTA — AI Review */}
+          <button
+            onClick={handleViewReview}
+            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold py-3.5 px-6 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+            </svg>
+            View AI Round Review
+          </button>
+
+          {/* Secondary actions */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-3">
             <button
               onClick={handleBackToDashboard}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 px-6 rounded-xl transition-colors shadow-sm"
+              className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-6 rounded-xl border-2 border-slate-200 hover:border-slate-300 transition-colors"
             >
               Back to Dashboard
             </button>
             <button
               onClick={handleViewStats}
-              className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3.5 px-6 rounded-xl border-2 border-slate-200 hover:border-slate-300 transition-colors"
+              className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-6 rounded-xl border-2 border-slate-200 hover:border-slate-300 transition-colors"
             >
               View Full Stats
             </button>
           </div>
           <p className="text-center text-xs text-slate-400 mt-4">
-            Your round has been saved and stats are ready to view
+            Your round has been saved — AI review is being generated
           </p>
         </div>
       </div>

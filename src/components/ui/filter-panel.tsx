@@ -81,11 +81,28 @@ export function FilterPanel({
       {/* Slide-out Panel */}
       <div
         className={cn(
-          'fixed top-0 right-0 h-full w-80 bg-white shadow-elevation-4 transform transition-transform duration-300 ease-out z-50',
-          isOpen ? 'translate-x-0' : 'translate-x-full',
+          'fixed bg-white shadow-elevation-4 z-50',
+          'transition-transform duration-300 ease-out',
+
+          // Mobile: bottom sheet, full-width, rounded top
+          'bottom-0 left-0 right-0 w-full max-h-[85vh] rounded-t-2xl',
+
+          // Desktop: right sidebar, fixed width, full height
+          'sm:top-0 sm:right-0 sm:bottom-auto sm:left-auto sm:w-80 sm:h-full sm:max-h-full sm:rounded-none',
+
+          // Mobile slides up from bottom, desktop slides in from right
+          isOpen
+            ? 'translate-y-0 sm:translate-y-0 sm:translate-x-0'
+            : 'translate-y-full sm:translate-y-0 sm:translate-x-full',
+
           className
         )}
       >
+        {/* Drag handle - mobile only */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-slate-300" />
+        </div>
+
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border-light">
           <div className="flex items-center gap-2">
@@ -99,21 +116,22 @@ export function FilterPanel({
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="Close filters"
           >
             <IconX size={20} className="text-slate-500" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto h-[calc(100%-140px)] custom-scrollbar">
-          <div className="p-4 space-y-6">
+        <div className="overflow-y-auto h-[calc(100%-140px)] custom-scrollbar overscroll-contain">
+          <div className="p-4 space-y-6" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
             {filters.map(group => (
               <div key={group.id} className="space-y-3">
                 {/* Group Header */}
                 <button
                   onClick={() => toggleGroup(group.id)}
-                  className="w-full flex items-center justify-between text-sm font-medium text-slate-900 hover:text-brand-600 transition-colors"
+                  className="w-full flex items-center justify-between text-sm font-medium text-slate-900 hover:text-brand-600 transition-colors min-h-[44px]"
                 >
                   <span>{group.label}</span>
                   <IconChevronDown
@@ -136,7 +154,7 @@ export function FilterPanel({
                           return (
                             <label
                               key={option.value}
-                              className="flex items-center gap-2 cursor-pointer group"
+                              className="flex items-center gap-2 cursor-pointer group min-h-[44px]"
                             >
                               <input
                                 type="checkbox"
@@ -169,7 +187,7 @@ export function FilterPanel({
                           return (
                             <label
                               key={option.value}
-                              className="flex items-center gap-2 cursor-pointer group"
+                              className="flex items-center gap-2 cursor-pointer group min-h-[44px]"
                             >
                               <input
                                 type="radio"
@@ -232,7 +250,10 @@ export function FilterPanel({
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border-light bg-white">
+        <div
+          className="absolute bottom-0 left-0 right-0 p-4 border-t border-border-light bg-white sm:rounded-none rounded-b-none"
+          style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+        >
           <div className="flex gap-2">
             <Button
               variant="secondary"

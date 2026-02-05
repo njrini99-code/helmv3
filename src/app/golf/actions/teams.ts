@@ -49,13 +49,14 @@ async function getCoachTeamId(
 }
 
 /**
- * Generate a readable join code
- * Uses uppercase letters and numbers, excluding ambiguous characters (O, 0, I, 1, L)
+ * Generate a readable 6-character join code
+ * Uses uppercase letters and numbers, excluding ambiguous characters (I, O, L, 0, 1)
+ * Must match the format used in onboarding.ts
  */
 function generateJoinCode(): string {
-  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 6; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;
@@ -240,6 +241,7 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
           read: false,
         }));
 
+        // Cast needed: notification shape includes metadata field not in generated types
         await supabase.from('notifications').insert(notifications as any);
       }
     } catch (notifyError) {
@@ -305,12 +307,12 @@ export async function createTeam(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Get coach record
+  // Get coach record — maybeSingle() to avoid PGRST116 if user is not a coach
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (coachError || !coach) {
     return { success: false, error: 'Coach profile not found' };
@@ -342,6 +344,23 @@ export async function createTeam(
     return { success: false, error: 'Failed to create team. Please try again.' };
   }
 
+  // Add coach to team staff (required for RLS policies to grant access)
+  const { error: staffError } = await supabase
+    .from('golf_team_coach_staff')
+    .insert({
+      team_id: newTeam.id,
+      coach_id: coach.id,
+      role: 'head_coach',
+      is_primary: true,
+    });
+
+  if (staffError) {
+    console.error('Failed to add coach to team staff:', staffError);
+    // Clean up the team we just created since the coach can't manage it without staff record
+    await supabase.from('golf_teams').delete().eq('id', newTeam.id);
+    return { success: false, error: 'Failed to create team. Please try again.' };
+  }
+
   // Revalidate relevant paths
   revalidatePath('/golf/dashboard');
   revalidatePath('/golf/dashboard/team');
@@ -369,12 +388,12 @@ export async function updateTeam(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Get coach and verify ownership
+  // Get coach and verify ownership — maybeSingle() to avoid PGRST116
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (coachError || !coach) {
     return { success: false, error: 'Coach profile not found' };
@@ -442,12 +461,12 @@ export async function regenerateJoinCode(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Get coach and verify ownership
+  // Get coach and verify ownership — maybeSingle() to avoid PGRST116
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (coachError || !coach) {
     return { success: false, error: 'Coach profile not found' };
@@ -626,6 +645,7 @@ export async function createTeamJoinRequest(
           read: false,
         }));
 
+        // Cast needed: notification shape includes metadata field not in generated types
         await supabase.from('notifications').insert(notifications as any);
       }
     } catch (notifyError) {
@@ -655,12 +675,12 @@ export async function getTeamJoinRequests(): Promise<TeamActionResult<JoinReques
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Get coach and their team
+  // Get coach and their team — maybeSingle() to avoid PGRST116
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (coachError || !coach) {
     return { success: false, error: 'Coach profile not found' };
@@ -721,12 +741,12 @@ export async function acceptJoinRequest(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Get coach
+  // Get coach — maybeSingle() to avoid PGRST116
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (coachError || !coach) {
     return { success: false, error: 'Coach profile not found' };
@@ -826,6 +846,7 @@ export async function acceptJoinRequest(
 
   if (player?.user_id && team) {
     try {
+      // Cast needed: notification shape includes 'data' and custom 'type' not in generated types
       await supabase.from('notifications').insert({
         user_id: player.user_id,
         type: 'team_join_approved' as const,
@@ -864,12 +885,12 @@ export async function rejectJoinRequest(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Get coach
+  // Get coach — maybeSingle() to avoid PGRST116
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (coachError || !coach) {
     return { success: false, error: 'Coach profile not found' };
@@ -934,6 +955,7 @@ export async function rejectJoinRequest(
 
   if (player?.user_id && team) {
     try {
+      // Cast needed: notification shape includes 'data' and custom 'type' not in generated types
       await supabase.from('notifications').insert({
         user_id: player.user_id,
         type: 'team_join_rejected' as const,

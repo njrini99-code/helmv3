@@ -6,7 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/app/golf/actions/teams';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
+import { useToast } from '@/components/ui/toast';
 import { IconUsers, IconCheck, IconX, IconClock } from '@/components/icons';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 interface JoinRequest {
   id: string;
@@ -35,10 +37,12 @@ interface JoinRequestsModalProps {
  */
 export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { modalRef } = useFocusTrap(true, onClose); // Always open when rendered
 
   useEffect(() => {
     async function fetchRequests() {
@@ -55,14 +59,22 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
     setProcessingId(requestId);
     setError(null);
 
+    const request = requests.find(r => r.id === requestId);
+    const playerName = request?.player
+      ? `${request.player.first_name} ${request.player.last_name}`
+      : 'Player';
+
     const result = await acceptJoinRequest(requestId);
 
     if (!result.success) {
-      setError(result.error || 'Failed to accept request');
+      const errorMsg = result.error || 'Failed to accept request';
+      setError(errorMsg);
+      addToast({ type: 'error', title: 'Failed to accept request', description: errorMsg });
       setProcessingId(null);
       return;
     }
 
+    addToast({ type: 'success', title: 'Player accepted', description: `${playerName} has been added to your team.` });
     setRequests(prev => prev.filter(r => r.id !== requestId));
     setProcessingId(null);
     router.refresh();
@@ -77,14 +89,22 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
     setProcessingId(requestId);
     setError(null);
 
+    const request = requests.find(r => r.id === requestId);
+    const playerName = request?.player
+      ? `${request.player.first_name} ${request.player.last_name}`
+      : 'Player';
+
     const result = await rejectJoinRequest(requestId);
 
     if (!result.success) {
-      setError(result.error || 'Failed to reject request');
+      const errorMsg = result.error || 'Failed to decline request';
+      setError(errorMsg);
+      addToast({ type: 'error', title: 'Failed to decline request', description: errorMsg });
       setProcessingId(null);
       return;
     }
 
+    addToast({ type: 'success', title: 'Request declined', description: `${playerName}'s join request has been declined.` });
     setRequests(prev => prev.filter(r => r.id !== requestId));
     setProcessingId(null);
 
@@ -134,7 +154,13 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
         className="fixed inset-x-4 top-[10%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg z-50"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="join-requests-modal-title"
+          className="bg-white rounded-2xl shadow-2xl overflow-hidden"
+        >
           {/* Header */}
           <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5">
             <div className="flex items-center justify-between">
@@ -143,7 +169,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                   <IconUsers size={20} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Join Requests</h2>
+                  <h2 id="join-requests-modal-title" className="text-xl font-bold text-white">Join Requests</h2>
                   <p className="text-white/80 text-sm">
                     {loading ? 'Loading...' : `${requests.length} player${requests.length !== 1 ? 's' : ''} waiting`}
                   </p>

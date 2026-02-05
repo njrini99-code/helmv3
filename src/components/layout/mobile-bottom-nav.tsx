@@ -86,7 +86,7 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
               {/* Label */}
               <span
                 className={cn(
-                  'text-[11px] font-medium truncate max-w-full',
+                  'text-xs font-medium truncate max-w-full',
                   active && 'font-semibold'
                 )}
               >

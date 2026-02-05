@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/app/golf/actions/teams';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
+import { useToast } from '@/components/ui/toast';
 import { IconUser, IconCheck, IconX, IconClock, IconChevronDown, IconChevronUp } from '@/components/icons';
 
 interface JoinRequest {
@@ -28,6 +29,7 @@ interface JoinRequest {
 
 export function PendingJoinRequests() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(true);
@@ -49,13 +51,22 @@ export function PendingJoinRequests() {
     setProcessingId(requestId);
     setError(null);
 
+    const request = requests.find(r => r.id === requestId);
+    const playerName = request?.player
+      ? `${request.player.first_name} ${request.player.last_name}`
+      : 'Player';
+
     const result = await acceptJoinRequest(requestId);
 
     if (!result.success) {
-      setError(result.error || 'Failed to accept request');
+      const errorMsg = result.error || 'Failed to accept request';
+      setError(errorMsg);
+      addToast({ type: 'error', title: 'Failed to accept request', description: errorMsg });
       setProcessingId(null);
       return;
     }
+
+    addToast({ type: 'success', title: 'Player accepted', description: `${playerName} has been added to your team.` });
 
     // Remove from local state
     setRequests(prev => prev.filter(r => r.id !== requestId));
@@ -69,13 +80,22 @@ export function PendingJoinRequests() {
     setProcessingId(requestId);
     setError(null);
 
+    const request = requests.find(r => r.id === requestId);
+    const playerName = request?.player
+      ? `${request.player.first_name} ${request.player.last_name}`
+      : 'Player';
+
     const result = await rejectJoinRequest(requestId);
 
     if (!result.success) {
-      setError(result.error || 'Failed to reject request');
+      const errorMsg = result.error || 'Failed to decline request';
+      setError(errorMsg);
+      addToast({ type: 'error', title: 'Failed to decline request', description: errorMsg });
       setProcessingId(null);
       return;
     }
+
+    addToast({ type: 'success', title: 'Request declined', description: `${playerName}'s join request has been declined.` });
 
     // Remove from local state
     setRequests(prev => prev.filter(r => r.id !== requestId));

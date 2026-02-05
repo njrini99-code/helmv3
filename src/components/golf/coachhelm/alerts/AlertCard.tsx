@@ -157,10 +157,13 @@ export function AlertCard({
       <div className={cn('absolute left-0 top-0 bottom-0 w-1', config.accent)} />
 
       {/* Swipe hint background */}
-      <div className={cn(
-        'absolute inset-0 flex items-center px-4',
-        dragX > 50 ? 'justify-start bg-green-100' : dragX < -50 ? 'justify-end bg-red-100' : 'hidden'
-      )}>
+      <div
+        className={cn(
+          'absolute inset-0 flex items-center px-4',
+          dragX > 50 ? 'justify-start bg-green-100' : dragX < -50 ? 'justify-end bg-red-100' : 'hidden'
+        )}
+        aria-hidden="true"
+      >
         {dragX > 50 && <IconCheck size={24} className="text-green-600" />}
         {dragX < -50 && <IconX size={24} className="text-red-500" />}
       </div>
@@ -190,6 +193,7 @@ export function AlertCard({
                 config.iconBg
               )}>
                 {config.icon}
+                <span className="sr-only">{config.label} alert</span>
               </div>
               <span className="text-xs text-slate-400 ml-auto whitespace-nowrap">
                 {formatRelativeTime(alert.createdAt)}
@@ -274,6 +278,7 @@ export function AlertCard({
                       e.stopPropagation();
                       onDismiss();
                     }}
+                    aria-label="Dismiss alert"
                     className={cn(
                       'p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/50',
                       'transition-colors',
@@ -291,6 +296,8 @@ export function AlertCard({
           {compact && alert.callToAction && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
+              aria-label={isExpanded ? 'Collapse alert details' : 'Expand alert details'}
+              aria-expanded={isExpanded}
               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/50 transition-colors"
             >
               <motion.div
@@ -310,8 +317,14 @@ export function AlertCard({
 // Trend indicator component for alert messages
 export function TrendIndicator({ direction }: { direction: 'up' | 'down' }) {
   return direction === 'up' ? (
-    <IconTrendingUp size={14} className="text-green-600" />
+    <span>
+      <IconTrendingUp size={14} className="text-green-600" />
+      <span className="sr-only">Trending up</span>
+    </span>
   ) : (
-    <IconTrendingDown size={14} className="text-red-500" />
+    <span>
+      <IconTrendingDown size={14} className="text-red-500" />
+      <span className="sr-only">Trending down</span>
+    </span>
   );
 }

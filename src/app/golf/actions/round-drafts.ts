@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
+import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
 
 // ============================================================================
 // TYPES
@@ -282,7 +283,7 @@ export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> 
       try {
         draftData = JSON.parse(draft.notes) as RoundDraftData;
       } catch {
-        // Notes field doesn't contain valid JSON, that's okay
+        // Expected: notes field may not contain valid JSON draft data
         draftData = null;
       }
     }
@@ -381,7 +382,7 @@ export async function checkForDraft(): Promise<ActionResult<{
       try {
         draftData = JSON.parse(draft.notes) as RoundDraftData;
       } catch {
-        // Notes field doesn't contain valid JSON, that's okay
+        // Expected: notes field may not contain valid JSON draft data
         draftData = null;
       }
     }
@@ -503,6 +504,12 @@ export async function convertDraftToRound(roundId: string): Promise<ActionResult
     }
 
     revalidatePath('/golf/dashboard/rounds');
+
+    // Fire-and-forget: trigger CoachHelm insight generation
+    triggerPlayerInsightsAfterRound(player.id).catch((err) => {
+      console.error('[CoachHelm] Post-round insight trigger failed:', err);
+    });
+
     return { success: true, data: undefined };
 
   } catch (error) {

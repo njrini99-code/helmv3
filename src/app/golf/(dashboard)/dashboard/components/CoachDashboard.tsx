@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, memo } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import {
@@ -178,13 +179,7 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
 
     const firstName = coach.full_name?.split(' ')[0] || 'Coach';
 
-    const trendData = teamScoringTrend || [
-        { label: 'Jan', value: 76.5 },
-        { label: 'Feb', value: 75.8 },
-        { label: 'Mar', value: 75.2 },
-        { label: 'Apr', value: 74.5 },
-        { label: 'May', value: 73.8 },
-    ];
+    const hasTrendData = teamScoringTrend && teamScoringTrend.length >= 2;
 
     return (
         <div className="min-h-full bg-transparent">
@@ -409,24 +404,50 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                         )}
 
                         {/* Team Performance Chart */}
-                        {stats.teamScoringAverage && (
-                            <div>
-                                <SectionHeader title="Team Performance Trend" />
+                        <div>
+                            <SectionHeader title="Team Performance Trend" />
+                            {hasTrendData ? (
                                 <PremiumGlassCard glow>
                                     <TrendChart
-                                        data={trendData}
+                                        data={teamScoringTrend}
                                         valueLabel="Team Avg"
                                         reverse={true}
                                     />
                                 </PremiumGlassCard>
-                            </div>
-                        )}
+                            ) : (
+                                <PremiumGlassCard>
+                                    <div className="flex flex-col items-center justify-center py-8 md:py-10 text-center">
+                                        <div className="w-12 h-12 rounded-full bg-slate-100/80 flex items-center justify-center mb-4">
+                                            <IconChartBar size={22} className="text-slate-400" />
+                                        </div>
+                                        <h3 className="text-base font-semibold text-slate-800 mb-1.5">
+                                            No trend data yet
+                                        </h3>
+                                        <p className="text-sm text-slate-500 max-w-xs mb-5 leading-relaxed">
+                                            Performance trends will appear once your players submit rounds across multiple months.
+                                        </p>
+                                        <Link
+                                            href="/golf/dashboard/roster"
+                                            className={cn(
+                                                'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
+                                                'bg-primary-600 hover:bg-primary-700 text-white',
+                                                'transition-colors duration-150',
+                                                'shadow-sm hover:shadow-md'
+                                            )}
+                                        >
+                                            <IconPlus size={16} />
+                                            Invite Players
+                                        </Link>
+                                    </div>
+                                </PremiumGlassCard>
+                            )}
+                        </div>
 
                         {/* Recent Rounds */}
                         <div>
                             <SectionHeader
                                 title="Recent Rounds"
-                                action={{ label: 'View All', href: '/golf/dashboard/stats' }}
+                                action={{ label: 'View All', href: '/golf/dashboard/rounds' }}
                             />
                             <PremiumGlassCard noPadding>
                                 <ShineEffect />

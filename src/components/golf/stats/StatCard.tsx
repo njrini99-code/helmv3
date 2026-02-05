@@ -126,7 +126,10 @@ export function GolfStatCard({
               styles.trend
             )}
           >
-            <span>{trendStyles.icon}</span>
+            <span aria-hidden="true">{trendStyles.icon}</span>
+            <span className="sr-only">
+              {trend === 'improving' ? 'Improving' : trend === 'declining' ? 'Declining' : 'Stable'}
+            </span>
             {trendValue !== undefined && (
               <span>{typeof trendValue === 'number' ? Math.abs(trendValue).toFixed(2) : trendValue}</span>
             )}
@@ -137,7 +140,8 @@ export function GolfStatCard({
       {/* Comparison */}
       {comparisonStyles && comparisonLabel && (
         <div className={cn('mt-2 text-xs', comparisonStyles.color)}>
-          {comparisonStyles.isBetter ? '↑' : '↓'}{' '}
+          <span aria-hidden="true">{comparisonStyles.isBetter ? '↑' : '↓'}</span>
+          <span className="sr-only">{comparisonStyles.isBetter ? 'Better by' : 'Worse by'}</span>{' '}
           {comparisonStyles.diff.toFixed(format === 'percentage' ? 1 : 2)}{' '}
           vs {comparisonLabel}
         </div>
@@ -265,9 +269,14 @@ export function ScoringDistribution({
   ];
 
   return (
-    <div className={cn('', className)}>
+    <div className={cn('', className)} role="figure" aria-label="Scoring distribution">
+      {/* Accessible summary for screen readers */}
+      <div className="sr-only">
+        Scoring distribution: {data.map(d => `${d.label}: ${d.value} (${d.pct.toFixed(1)}%)`).join(', ')}
+      </div>
+
       {/* Bar */}
-      <div className="flex h-6 rounded-lg overflow-hidden mb-2">
+      <div className="flex h-6 rounded-lg overflow-hidden mb-2" aria-hidden="true">
         {data.map((d, i) => (
           d.pct > 0 && (
             <div
@@ -284,7 +293,7 @@ export function ScoringDistribution({
       <div className="flex flex-wrap gap-3 text-xs">
         {data.map((d, i) => (
           <div key={i} className="flex items-center gap-1">
-            <div className={cn('w-2.5 h-2.5 rounded', d.color)} />
+            <div className={cn('w-2.5 h-2.5 rounded', d.color)} aria-hidden="true" />
             <span className="text-gray-600">
               {d.label}: {d.value}
             </span>

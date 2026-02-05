@@ -21,11 +21,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizes = {
-      sm: 'px-3 py-2 text-xs',
-      md: 'px-5 py-2.5 text-sm',
-      lg: 'px-6 py-3 text-base',
-      'icon-sm': 'h-8 w-8 p-0',
-      icon: 'h-10 w-10 p-0',
+      sm: 'px-3 py-2.5 text-xs min-h-[44px]',
+      md: 'px-5 py-2.5 text-sm min-h-[44px]',
+      lg: 'px-6 py-3 text-base min-h-[48px]',
+      'icon-sm': 'h-11 w-11 p-0',
+      icon: 'h-12 w-12 p-0',
     };
 
     return (
@@ -61,7 +61,7 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   ({ className, variant = 'default', children, ...props }, ref) => {
-    const baseStyles = 'inline-flex items-center justify-center w-10 h-10 rounded-[10px] transition-all duration-200 active:scale-[0.95]';
+    const baseStyles = 'inline-flex items-center justify-center w-11 h-11 rounded-[10px] transition-all duration-200 active:scale-[0.95]';
 
     const variants = {
       default: 'text-warm-600 hover:bg-warm-100 hover:text-warm-900',
@@ -108,7 +108,7 @@ export const ButtonGroupOption = forwardRef<HTMLButtonElement, ButtonGroupOption
       <button
         ref={ref}
         className={cn(
-          'px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200',
+          'px-4 py-2.5 text-sm font-medium rounded-full transition-all duration-200 min-h-[44px]',
           active
             ? 'bg-white text-warm-900 shadow-sm'
             : 'text-warm-600 hover:text-warm-900',

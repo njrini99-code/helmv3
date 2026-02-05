@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
-import { ensurePlayerRecord } from '@/app/golf/actions/onboarding';
+import { ensurePlayerRecord, completePlayerOnboarding } from '@/app/golf/actions/onboarding';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
@@ -58,8 +58,6 @@ export default function GolfPlayerOnboarding() {
   const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
-  const [playerId, setPlayerId] = useState<string | null>(null);
-
   // Form data
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -114,7 +112,6 @@ export default function GolfPlayerOnboarding() {
         .maybeSingle();
 
       if (player) {
-        setPlayerId(player.id);
         if (player.onboarding_completed) {
           // Player already completed onboarding, redirect to dashboard
           router.push('/golf/dashboard');
@@ -144,208 +141,49 @@ export default function GolfPlayerOnboarding() {
   const currentStepIndex = STEPS.indexOf(step);
   const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
 
-  // Calculate profile completion percentage based on filled fields
-  const calculateProfileCompletion = (): number => {
-    // Define fields and their weights
-    const fields = [
-      { value: firstName, weight: 15, required: true },
-      { value: lastName, weight: 15, required: true },
-      { value: email, weight: 10, required: false },
-      { value: phone, weight: 5, required: false },
-      { value: hometown, weight: 5, required: false },
-      { value: state, weight: 5, required: false },
-      { value: graduationYear, weight: 15, required: true },
-      { value: handicap, weight: 20, required: false },
-      { value: gpa, weight: 10, required: false },
-    ];
-
-    let totalWeight = 0;
-    let earnedWeight = 0;
-
-    for (const field of fields) {
-      totalWeight += field.weight;
-      // Check if field has a value
-      const hasValue = typeof field.value === 'boolean'
-        ? field.value
-        : field.value !== null && field.value !== undefined && field.value !== '';
-      if (hasValue) {
-        earnedWeight += field.weight;
-      }
-    }
-
-    return Math.round((earnedWeight / totalWeight) * 100);
-  };
-
   const handleComplete = async () => {
     if (!userId) {
-      console.error('[Player Onboarding] No userId available');
+      setError('No user session found. Please log in again.');
       return;
     }
 
-    console.log('[Player Onboarding] Starting completion...', { userId, playerId });
     setLoading(true);
     setError('');
 
     try {
-      // Get current user for email
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      // Get the joinCode from URL params if present (from invite link flow)
+      const joinCode = searchParams.get('joinCode') || undefined;
 
-      if (authError) {
-        console.error('[Player Onboarding] Auth error:', authError);
-        throw new Error('Authentication error: ' + authError.message);
-      }
+      // Use server action for all DB operations (proper RLS, validation, atomicity)
+      const result = await completePlayerOnboarding({
+        firstName,
+        lastName,
+        email: email || undefined,
+        phone: phone || undefined,
+        gradYear: graduationYear,
+        handicap: handicap ? parseFloat(handicap) : undefined,
+        hometown: hometown || undefined,
+        state: state || undefined,
+        gpa: gpa ? parseFloat(gpa) : undefined,
+        joinCode,
+      });
 
-      if (!user) {
-        console.error('[Player Onboarding] No user found in session');
-        throw new Error('No authenticated user found. Please log in again.');
-      }
-
-      console.log('[Player Onboarding] Auth user:', { id: user.id, email: user.email });
-
-      // IMPORTANT: Ensure the users table record exists
-      // The trigger should create it, but let's make sure
-      // Note: users table only has: id, email, role, created_at, updated_at (no sport column)
-      const { error: usersError } = await supabase
-        .from('users')
-        .upsert({
-          id: user.id,
-          email: user.email || '',
-          role: 'player',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'id',
-          ignoreDuplicates: true,
-        });
-
-      if (usersError) {
-        console.warn('[Player Onboarding] Users upsert warning:', usersError);
-        // Continue anyway - the record might already exist
-      } else {
-        console.log('[Player Onboarding] Users table upsert successful');
-      }
-
-      // Calculate profile completion percentage
-      const profileCompletionPercent = calculateProfileCompletion();
-      console.log('[Player Onboarding] Profile completion:', profileCompletionPercent);
-
-      // Note: golf_players table has:
-      // - graduation_year (not grad_year)
-      // - hometown (not city)
-      // - profile_complete (boolean, not profile_completion_percent)
-      const updateData = {
-        first_name: firstName,
-        last_name: lastName,
-        email: email || null,
-        phone: phone || null,
-        hometown: hometown || null,
-        state: state || null,
-        graduation_year: graduationYear,
-        handicap: handicap ? parseFloat(handicap) : null,
-        gpa: gpa ? parseFloat(gpa) : null,
-        onboarding_completed: true,
-        profile_complete: profileCompletionPercent >= 80, // Boolean based on completion threshold
-      };
-
-      console.log('[Player Onboarding] Update data:', updateData);
-
-      if (playerId) {
-        // Update existing player by ID
-        console.log('[Player Onboarding] Updating existing player:', playerId);
-        const { data: updateResult, error: updateError } = await supabase
-          .from('golf_players')
-          .update(updateData)
-          .eq('id', playerId)
-          .select();
-
-        if (updateError) {
-          console.error('[Player Onboarding] Update error:', updateError);
-          throw updateError;
-        }
-        console.log('[Player Onboarding] Update successful:', updateResult);
-      } else {
-        // Check if a player record already exists for this user (trigger might have created it)
-        console.log('[Player Onboarding] Checking for existing player record...');
-        const { data: existingPlayer, error: checkError } = await supabase
-          .from('golf_players')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-
-        if (checkError && checkError.code !== 'PGRST116') {
-          console.error('[Player Onboarding] Error checking existing player:', checkError);
-        }
-
-        if (existingPlayer) {
-          // Update existing record
-          console.log('[Player Onboarding] Found existing player, updating:', existingPlayer.id);
-          const { data: updateResult, error: updateError } = await supabase
-            .from('golf_players')
-            .update({
-              ...updateData,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existingPlayer.id)
-            .select();
-
-          if (updateError) {
-            console.error('[Player Onboarding] Update error:', updateError);
-            throw updateError;
-          }
-          console.log('[Player Onboarding] Update successful:', updateResult);
-        } else {
-          // Insert new record
-          console.log('[Player Onboarding] No existing player, inserting new record...');
-          const { data: insertResult, error: insertError } = await supabase
-            .from('golf_players')
-            .insert({
-              user_id: userId,
-              ...updateData,
-            })
-            .select();
-
-          if (insertError) {
-            console.error('[Player Onboarding] Insert error:', {
-              message: insertError.message,
-              code: insertError.code,
-              details: insertError.details,
-              hint: insertError.hint,
-              full: JSON.stringify(insertError),
-            });
-            throw new Error(insertError.message || 'Failed to create player record');
-          }
-          console.log('[Player Onboarding] Insert successful:', insertResult);
-        }
-      }
-
-      // Verify the record was saved correctly
-      console.log('[Player Onboarding] Verifying saved record...');
-      const { data: verifyPlayer, error: verifyError } = await supabase
-        .from('golf_players')
-        .select('id, user_id, onboarding_completed, first_name, last_name')
-        .eq('user_id', userId)
-        .single();
-
-      if (verifyError) {
-        console.error('[Player Onboarding] Verification error:', verifyError);
-      } else {
-        console.log('[Player Onboarding] Verified player record:', verifyPlayer);
+      if (!result.success) {
+        setError(result.error || 'Failed to complete onboarding. Please try again.');
+        setLoading(false);
+        return;
       }
 
       // CRITICAL: Call router.refresh() FIRST to invalidate cache and propagate
-      // the session cookies, THEN navigate. This matches the pattern used in signup.
-      console.log('[Player Onboarding] Calling router.refresh()...');
+      // the session cookies, THEN navigate.
       router.refresh();
 
       // Wait for cache to invalidate and database write to commit
-      console.log('[Player Onboarding] Waiting 150ms for cache invalidation...');
       await new Promise(resolve => setTimeout(resolve, 150));
 
-      // Navigate to dashboard - players can join a team from their settings
-      console.log('[Player Onboarding] Navigating to /golf/dashboard...');
+      // Navigate to dashboard
       router.push('/golf/dashboard');
     } catch (err: unknown) {
-      console.error('[Player Onboarding] Caught error:', err);
       const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
       setError(errorMessage);
       setLoading(false);

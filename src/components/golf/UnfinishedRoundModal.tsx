@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { IconX, IconPlay, IconTrash, IconAlertCircle } from '@/components/icons';
 import { deleteInProgressRound } from '@/app/golf/actions/golf';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 interface UnfinishedRoundModalProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ export function UnfinishedRoundModal({
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { modalRef } = useFocusTrap(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -75,10 +77,16 @@ export function UnfinishedRoundModal({
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+        <div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="unfinished-round-modal-title"
+          className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+        >
           {/* Header */}
           <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 id="unfinished-round-modal-title" className="text-lg font-semibold text-slate-900">
               Unfinished Round
             </h2>
             <button

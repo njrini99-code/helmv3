@@ -116,6 +116,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
 
   return (
     <aside
+      aria-label="Main navigation"
       className={cn(
         // Dark sidebar per Batch 3 spec
         'bg-[rgba(28,25,23,0.97)] backdrop-blur-xl',
@@ -228,7 +229,8 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
               {userName || 'User'}
             </p>
             <p className="text-xs text-white/50 truncate flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary-500" aria-hidden="true" />
+              <span className="sr-only">Online - </span>
               {teamName || 'Golf Team'}
             </p>
           </div>
@@ -236,11 +238,14 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       </div>
 
       {/* Navigation */}
-      <nav className={cn(
-        'flex-1 overflow-y-auto overflow-x-hidden py-4',
-        'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-        isCollapsed ? 'px-2' : 'px-3'
-      )}>
+      <nav
+        aria-label={userRole === 'coach' ? 'Coach navigation' : 'Player navigation'}
+        className={cn(
+          'flex-1 overflow-y-auto overflow-x-hidden py-4',
+          'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          isCollapsed ? 'px-2' : 'px-3'
+        )}
+      >
         {/* Primary Navigation */}
         <div className="space-y-0.5">
           {!isCollapsed && (
@@ -258,6 +263,8 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 prefetch={true}
                 onClick={handleNavClick}
                 title={isCollapsed ? item.name : undefined}
+                aria-label={isCollapsed ? item.name : undefined}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
                   'transition-all duration-150 ease-out will-change-transform',
@@ -268,7 +275,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                   isCollapsed ? 'justify-center px-2' : 'px-3'
                 )}
               >
-                <Icon size={18} className={cn('flex-shrink-0', active ? 'text-primary-400' : 'text-white/50')} />
+                <Icon size={18} className={cn('flex-shrink-0', active ? 'text-primary-400' : 'text-white/50')} aria-hidden="true" />
                 <span
                   className={cn(
                     'whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
@@ -307,6 +314,8 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 prefetch={true}
                 onClick={handleNavClick}
                 title={isCollapsed ? item.name : undefined}
+                aria-label={isCollapsed ? item.name : undefined}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
                   'transition-all duration-150 ease-out',
@@ -316,7 +325,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                   isCollapsed ? 'justify-center px-2' : 'px-3'
                 )}
               >
-                <Icon size={18} className={cn('flex-shrink-0', active ? 'text-primary-400' : 'text-white/50')} />
+                <Icon size={18} className={cn('flex-shrink-0', active ? 'text-primary-400' : 'text-white/50')} aria-hidden="true" />
                 <span
                   className={cn(
                     'whitespace-nowrap transition-all duration-300',
@@ -342,6 +351,8 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           prefetch={true}
           onClick={handleNavClick}
           title={isCollapsed ? 'Settings' : undefined}
+          aria-label={isCollapsed ? 'Settings' : undefined}
+          aria-current={pathname === '/golf/dashboard/settings' ? 'page' : undefined}
           className={cn(
             'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
             'transition-all duration-150 ease-out',
@@ -351,7 +362,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
             isCollapsed ? 'justify-center px-2' : 'px-3'
           )}
         >
-          <IconSettings size={18} className="flex-shrink-0 text-white/50" />
+          <IconSettings size={18} className="flex-shrink-0 text-white/50" aria-hidden="true" />
           <span
             className={cn(
               'whitespace-nowrap transition-all duration-300',
@@ -365,6 +376,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           onClick={handleSignOut}
           disabled={isSigningOut}
           title={isCollapsed ? 'Sign out' : undefined}
+          aria-label={isCollapsed ? (isSigningOut ? 'Signing out' : 'Sign out') : undefined}
           className={cn(
             'w-full flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
             'text-white/60 hover:bg-red-500/10 hover:text-red-400',
@@ -372,7 +384,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
             isCollapsed ? 'justify-center px-2' : 'px-3'
           )}
         >
-          <IconLogout size={18} className="flex-shrink-0 text-white/50" />
+          <IconLogout size={18} className="flex-shrink-0 text-white/50" aria-hidden="true" />
           <span
             className={cn(
               'whitespace-nowrap transition-all duration-300',

@@ -65,8 +65,9 @@ export async function getCoachHelmSettings(
       disabledAt: data.disabled_at ?? null,
       disabledReason: data.disabled_reason ?? null,
     };
-  } catch {
+  } catch (err) {
     // Table doesn't exist yet - return null to use defaults (enabled)
+    console.error('[CoachHelm] Failed to fetch user CoachHelm settings:', err);
     return null;
   }
 }
@@ -101,8 +102,9 @@ export async function getTeamCoachHelmSettings(
       enabled: data.enabled,
       disabledReason: data.disabled_reason,
     };
-  } catch {
+  } catch (err) {
     // Table doesn't exist yet - return null to use defaults (enabled)
+    console.error('[CoachHelm] Failed to fetch team CoachHelm settings:', err);
     return null;
   }
 }

@@ -17,6 +17,7 @@ import type {
   DataQuality,
   TrendDirection,
 } from '@/lib/types/golf';
+import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 import { KPIRow, ScoringDistribution } from './StatCard';
 import { StrokesGainedDashboard, StrokesGainedSummary } from './StrokesGainedDashboard';
 import { TrendVisualization } from './TrendVisualization';
@@ -107,6 +108,8 @@ interface StatsDashboardProps {
   weakAreas?: WeakAreaWithDetails[];
   dataQuality?: DataQuality;
   trendInsights?: string[];
+  statisticalStrengths?: StatisticalStrengthWeakness[];
+  statisticalWeaknesses?: StatisticalStrengthWeakness[];
   prediction?: {
     predicted_score: number;
     confidence: number;
@@ -126,6 +129,8 @@ export function StatsDashboard({
   weakAreas,
   dataQuality,
   trendInsights,
+  statisticalStrengths,
+  statisticalWeaknesses,
   prediction,
   onRefresh,
   loading = false,
@@ -439,6 +444,8 @@ export function StatsDashboard({
                   }
                 : undefined
             }
+            statisticalStrengths={statisticalStrengths}
+            statisticalWeaknesses={statisticalWeaknesses}
           />
         </TabsContent>
 
@@ -505,7 +512,13 @@ export function StatsDashboard({
                 <div className="grid grid-cols-2 gap-6 mt-6">
                   <div>
                     <h4 className="text-sm font-semibold text-green-600 mb-2">Strengths</h4>
-                    {comparison.strengths.length > 0 ? (
+                    {statisticalStrengths && statisticalStrengths.length > 0 ? (
+                      <div className="space-y-2">
+                        {statisticalStrengths.map((s, i) => (
+                          <ComparisonSWItem key={i} item={s} type="strength" />
+                        ))}
+                      </div>
+                    ) : comparison.strengths.length > 0 ? (
                       <ul className="space-y-1">
                         {comparison.strengths.map((s, i) => (
                           <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
@@ -519,11 +532,17 @@ export function StatsDashboard({
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-red-600 mb-2">Areas to Improve</h4>
-                    {comparison.weaknesses.length > 0 ? (
+                    {statisticalWeaknesses && statisticalWeaknesses.length > 0 ? (
+                      <div className="space-y-2">
+                        {statisticalWeaknesses.map((w, i) => (
+                          <ComparisonSWItem key={i} item={w} type="weakness" />
+                        ))}
+                      </div>
+                    ) : comparison.weaknesses.length > 0 ? (
                       <ul className="space-y-1">
                         {comparison.weaknesses.map((w, i) => (
                           <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                            <span className="text-red-500">→</span> {w}
+                            <span className="text-red-500" aria-hidden="true">→</span> {w}
                           </li>
                         ))}
                       </ul>
@@ -597,6 +616,34 @@ export function StatsDashboard({
           </TabsContent>
         )}
       </Tabs>
+    </div>
+  );
+}
+
+// Compact strength/weakness item for comparison tab
+function ComparisonSWItem({
+  item,
+  type,
+}: {
+  item: StatisticalStrengthWeakness;
+  type: 'strength' | 'weakness';
+}) {
+  const isStrength = type === 'strength';
+  const sign = item.strokeImpact >= 0 ? '+' : '';
+  const impactColor = isStrength ? 'text-green-600' : 'text-red-600';
+
+  return (
+    <div className="flex items-start gap-2 text-sm">
+      <span className={isStrength ? 'text-green-500 mt-0.5' : 'text-red-500 mt-0.5'} aria-hidden="true">
+        {isStrength ? '✓' : '→'}
+      </span>
+      <div className="flex-1 min-w-0">
+        <span className="text-gray-900 font-medium">{item.label}</span>
+        <span className={cn('ml-1.5 text-xs font-semibold', impactColor)}>
+          ({sign}{item.strokeImpact.toFixed(1)})
+        </span>
+        <p className="text-xs text-gray-500 mt-0.5">{item.detail}</p>
+      </div>
     </div>
   );
 }

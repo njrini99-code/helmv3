@@ -1,11 +1,19 @@
 import * as Sentry from '@sentry/nextjs';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
+
+let profilingIntegration: ReturnType<typeof import('@sentry/profiling-node').nodeProfilingIntegration> | undefined;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { nodeProfilingIntegration } = require('@sentry/profiling-node');
+  profilingIntegration = nodeProfilingIntegration();
+} catch {
+  // Profiling native module not available - skip
+}
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   integrations: [
-    nodeProfilingIntegration(),
+    ...(profilingIntegration ? [profilingIntegration] : []),
   ],
 
   // Only enable debug in development

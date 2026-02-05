@@ -39,6 +39,14 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative p-4 bg-auth-golf">
+      {/* Skip to main content link for keyboard navigation */}
+      <a
+        href="#login-form"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+      >
+        Skip to login form
+      </a>
+
       {/* Animated floating orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Large primary orb - top right */}
@@ -110,7 +118,7 @@ function LoginContent() {
       />
 
       {/* Glass card */}
-      <div className="relative z-10 w-full max-w-[420px]">
+      <div id="login-form" className="relative z-10 w-full max-w-[420px]">
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}

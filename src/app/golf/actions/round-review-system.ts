@@ -515,8 +515,9 @@ export async function generateAndStoreRoundReview(
         }
         aiEnhanced = true;
       }
-    } catch {
+    } catch (err) {
       // AI enhancement failed, continue with rule-based review
+      console.error('[GolfHelm] AI review enhancement failed, using rule-based review:', err);
     }
 
     // 6. Check if review already exists

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { IconX, IconPlay, IconTrash, IconClock, IconFlag, IconCalendar } from '@/components/icons';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 interface DraftInfo {
   roundId: string;
@@ -36,6 +37,7 @@ export function ResumeDraftModal({
 }: ResumeDraftModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
+  const { modalRef } = useFocusTrap(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -97,6 +99,7 @@ export function ResumeDraftModal({
 
       {/* Modal */}
       <div
+        ref={modalRef}
         className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         role="dialog"
         aria-modal="true"

@@ -27,6 +27,8 @@ interface ShotCardProps {
   isLast?: boolean;
   /** Show offline sync status indicator */
   showSyncStatus?: boolean;
+  /** Callback when retry is clicked on a failed shot */
+  onRetrySync?: (offlineId: string) => void;
 }
 
 // Map club types to icons/labels
@@ -166,7 +168,7 @@ function SyncingIcon({ className }: { className?: string }) {
 // MAIN COMPONENT
 // ============================================================================
 
-export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false }: ShotCardProps) {
+export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetrySync }: ShotCardProps) {
   const clubDisplay = getClubDisplay(shot.club_type || '');
   const resultDisplay = getResultDisplay(shot.result || '');
   const isPutt = shot.shot_type === 'putt' || shot.shot_type === 'putting';
@@ -229,17 +231,16 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false }: Shot
                 {clubDisplay.label}
               </span>
 
-              {/* Offline sync status badge */}
+              {/* Offline sync status badge — always visible including mobile */}
               {showSyncStatus && isOfflineShot && syncDisplay && syncStatus !== 'synced' && (
                 <span
                   className={cn(
                     'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border',
                     syncDisplay.className
                   )}
-                  title={syncStatus === 'failed' ? offlineShot._error_message : undefined}
                 >
                   {syncDisplay.icon}
-                  <span className="hidden sm:inline">{syncDisplay.label}</span>
+                  <span>{syncDisplay.label}</span>
                 </span>
               )}
             </div>
@@ -262,7 +263,7 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false }: Shot
             </div>
 
             {/* Arrow */}
-            <svg className="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
 
@@ -332,6 +333,25 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false }: Shot
             <div className="mt-3 pt-3 border-t border-red-100 flex items-center gap-1 text-xs text-red-600">
               <IconWarning size={12} />
               <span className="font-medium capitalize">{shot.penalty_type.replace(/_/g, ' ')}</span>
+            </div>
+          )}
+
+          {/* Sync error — inline message with retry button */}
+          {showSyncStatus && syncStatus === 'failed' && offlineShot._error_message && (
+            <div className="mt-3 pt-3 border-t border-red-100 flex items-center justify-between gap-2">
+              <p className="text-xs text-red-600 min-w-0 truncate">
+                <IconWarning size={12} className="inline mr-1 flex-shrink-0" />
+                {offlineShot._error_message}
+              </p>
+              {onRetrySync && offlineShot._offline_id && (
+                <button
+                  type="button"
+                  onClick={() => onRetrySync(offlineShot._offline_id!)}
+                  className="flex-shrink-0 px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                >
+                  Retry
+                </button>
+              )}
             </div>
           )}
         </div>

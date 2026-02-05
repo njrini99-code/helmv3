@@ -32,7 +32,7 @@ export function FilterChips({
           type="button"
           onClick={() => onRemove(filter.key)}
           className={cn(
-            'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full',
+            'inline-flex items-center gap-1.5 h-11 px-3 rounded-full',
             'bg-slate-100 text-slate-700 text-sm',
             'hover:bg-slate-200 transition-colors group'
           )}
@@ -50,7 +50,7 @@ export function FilterChips({
         <button
           type="button"
           onClick={onClearAll}
-          className="text-sm leading-relaxed text-slate-500 hover:text-slate-700 transition-colors underline-offset-2 hover:underline"
+          className="text-sm leading-relaxed text-slate-500 hover:text-slate-700 transition-colors underline-offset-2 hover:underline min-h-[44px] px-2 inline-flex items-center"
         >
           Clear all
         </button>
@@ -80,7 +80,7 @@ export function ChipToggle({
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-sm font-medium',
+        'inline-flex items-center gap-1.5 h-11 px-3 rounded-full text-sm font-medium',
         'transition-all duration-200',
         'focus:outline-none focus:ring-2 focus:ring-green-500/20',
         selected

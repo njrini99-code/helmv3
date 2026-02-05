@@ -8,11 +8,39 @@ import { ToastProvider } from '@/components/ui/toast';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { PageLoading } from '@/components/ui/loading';
+import { MobileBottomNav, type MobileNavItem } from '@/components/layout/mobile-bottom-nav';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import {
+  IconHome,
+  IconUsers,
+  IconMessage,
+  IconUser,
+  IconSettings,
+} from '@/components/icons';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
+  const { user, profile } = useAuth();
+
+  // Configure mobile bottom nav based on user role
+  const isCoach = profile?.role === 'coach';
+  const isPlayer = profile?.role === 'player';
+
+  const mobileNavItems: MobileNavItem[] = isCoach
+    ? [
+        { label: 'Home', href: '/baseball/dashboard', icon: IconHome },
+        { label: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
+        { label: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage },
+        { label: 'More', href: '/baseball/dashboard/settings', icon: IconSettings },
+      ]
+    : [
+        { label: 'Home', href: '/baseball/dashboard', icon: IconHome },
+        { label: 'Profile', href: '/baseball/dashboard/profile', icon: IconUser },
+        { label: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage },
+        { label: 'More', href: '/baseball/dashboard/settings', icon: IconSettings },
+      ];
 
   return (
     <div className="min-h-screen bg-dashboard-gradient">
@@ -61,10 +89,23 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'
         )}
       >
-        <main id="main-content" className="flex-1">
+        <main
+          id="main-content"
+          className={cn(
+            'flex-1',
+            'pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0'
+          )}
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehaviorY: 'contain',
+          }}
+        >
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav items={mobileNavItems} />
     </div>
   );
 }

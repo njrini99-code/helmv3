@@ -59,12 +59,12 @@ export default async function GolfRosterPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/golf/login');
 
-  // Get coach
+  // Get coach — use maybeSingle() to avoid PGRST116 if user is not a coach
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (coachError) {
     return (

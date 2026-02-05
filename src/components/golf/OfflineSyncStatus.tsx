@@ -279,7 +279,9 @@ export function OfflineSyncStatus({
   }, [clearSyncError, hideBanner, isOnline, pendingCount.total, onDismissError]);
 
   // Don't render if nothing to show
-  if (!showWhenOnline && !isVisible && !showOfflineBanner && isOnline && pendingCount.total === 0 && !syncError) {
+  // Always render when there are pending items or sync errors — even when online
+  const hasPendingOrError = pendingCount.total > 0 || !!syncError;
+  if (!hasPendingOrError && !showWhenOnline && !isVisible && !showOfflineBanner && isOnline) {
     return null;
   }
 
@@ -350,6 +352,8 @@ export function OfflineSyncStatus({
           {/* Main button */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
+            aria-label={`Sync status: ${statusDisplay.label}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl border shadow-lg backdrop-blur-sm transition-all',
               statusDisplay.bgColor,
@@ -385,6 +389,7 @@ export function OfflineSyncStatus({
                     <span className="text-sm font-semibold text-slate-900">Sync Status</span>
                     <button
                       onClick={handleDismiss}
+                      aria-label="Dismiss sync status"
                       className="p-1 text-slate-400 hover:text-slate-600 rounded transition-colors"
                     >
                       <XIcon className="w-4 h-4" />
@@ -437,7 +442,14 @@ export function OfflineSyncStatus({
                           {syncProgress.current}/{syncProgress.total}
                         </span>
                       </div>
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"
+                        role="progressbar"
+                        aria-valuenow={syncProgress.percentComplete}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`Sync progress: ${syncProgress.percentComplete}%`}
+                      >
                         <div
                           className="h-full bg-blue-500 rounded-full transition-all duration-300"
                           style={{ width: `${syncProgress.percentComplete}%` }}
@@ -588,7 +600,14 @@ export function OfflineSyncStatus({
 
             {/* Progress bar */}
             {isSyncing && syncProgress && (
-              <div className="mt-2 w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+              <div
+                className="mt-2 w-full h-1.5 bg-slate-200 rounded-full overflow-hidden"
+                role="progressbar"
+                aria-valuenow={syncProgress.percentComplete}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Sync progress: ${syncProgress.percentComplete}%`}
+              >
                 <div
                   className="h-full bg-blue-500 rounded-full transition-all duration-300"
                   style={{ width: `${syncProgress.percentComplete}%` }}
@@ -617,6 +636,7 @@ export function OfflineSyncStatus({
             )}
             <button
               onClick={handleDismiss}
+              aria-label="Dismiss sync status"
               className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
             >
               <XIcon className="w-4 h-4" />

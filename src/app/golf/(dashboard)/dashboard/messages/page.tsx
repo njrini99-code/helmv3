@@ -102,7 +102,8 @@ export default function GolfMessagesPage() {
             setMobileShowChat(true);
             showToast('Conversation started', 'success');
           }
-        } catch {
+        } catch (err) {
+          console.error('[GolfHelm] Error starting conversation from URL param:', err);
           showToast('Failed to start conversation', 'error');
         }
         setHandledPlayerParam(true);

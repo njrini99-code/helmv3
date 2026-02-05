@@ -19,6 +19,7 @@ import {
   getStrokesGainedColor,
   type StrokesGainedResult,
   type StrokesGainedBreakdown,
+  type StatisticalStrengthWeakness,
 } from '@/lib/golf/strokes-gained';
 import { StrokesGainedRadar } from './StrokesGainedRadar';
 import { StrokesGainedBreakdownChart, StrokesGainedCompact } from './StrokesGainedBreakdownChart';
@@ -49,6 +50,8 @@ interface StrokesGainedDashboardProps {
     label: string;
   };
   insights?: string[];
+  statisticalStrengths?: StatisticalStrengthWeakness[];
+  statisticalWeaknesses?: StatisticalStrengthWeakness[];
   showTrends?: boolean;
   showComparison?: boolean;
   className?: string;
@@ -59,6 +62,8 @@ export function StrokesGainedDashboard({
   trendData,
   comparisonData,
   insights,
+  statisticalStrengths,
+  statisticalWeaknesses,
   showTrends = true,
   showComparison = true,
   className,
@@ -230,7 +235,13 @@ export function StrokesGainedDashboard({
                 <CardTitle className="text-base text-green-600">Strengths</CardTitle>
               </CardHeader>
               <CardContent>
-                {strengths.length > 0 ? (
+                {statisticalStrengths && statisticalStrengths.length > 0 ? (
+                  <div className="space-y-3">
+                    {statisticalStrengths.map((s, i) => (
+                      <StrengthWeaknessCard key={i} item={s} type="strength" />
+                    ))}
+                  </div>
+                ) : strengths.length > 0 ? (
                   <ul className="space-y-1">
                     {strengths.map((s, i) => (
                       <li key={i} className="flex items-center gap-2 text-sm">
@@ -252,11 +263,17 @@ export function StrokesGainedDashboard({
                 <CardTitle className="text-base text-red-600">Areas for Improvement</CardTitle>
               </CardHeader>
               <CardContent>
-                {weaknesses.length > 0 ? (
+                {statisticalWeaknesses && statisticalWeaknesses.length > 0 ? (
+                  <div className="space-y-3">
+                    {statisticalWeaknesses.map((w, i) => (
+                      <StrengthWeaknessCard key={i} item={w} type="weakness" />
+                    ))}
+                  </div>
+                ) : weaknesses.length > 0 ? (
                   <ul className="space-y-1">
                     {weaknesses.map((w, i) => (
                       <li key={i} className="flex items-center gap-2 text-sm">
-                        <span className="text-red-500">→</span>
+                        <span className="text-red-500" aria-hidden="true">→</span>
                         <span>{w}</span>
                       </li>
                     ))}
@@ -430,6 +447,48 @@ export function StrokesGainedDashboard({
           </TabsContent>
         )}
       </Tabs>
+    </div>
+  );
+}
+
+// Rich strength/weakness card for statistical data
+function StrengthWeaknessCard({
+  item,
+  type,
+}: {
+  item: StatisticalStrengthWeakness;
+  type: 'strength' | 'weakness';
+}) {
+  const isStrength = type === 'strength';
+  const sign = item.strokeImpact >= 0 ? '+' : '';
+  const impactColor = isStrength ? 'text-green-600' : 'text-red-600';
+  const impactBg = isStrength ? 'bg-green-50' : 'bg-red-50';
+  const borderColor = isStrength ? 'border-green-100' : 'border-red-100';
+
+  return (
+    <div className={cn('rounded-lg border p-3', borderColor)}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {item.label}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">{item.detail}</p>
+        </div>
+        <span
+          className={cn(
+            'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap',
+            impactBg,
+            impactColor
+          )}
+        >
+          {sign}{item.strokeImpact.toFixed(1)}
+        </span>
+      </div>
+      {item.recommendation && (
+        <p className="text-xs text-gray-600 mt-2 pt-2 border-t border-gray-100">
+          {item.recommendation}
+        </p>
+      )}
     </div>
   );
 }

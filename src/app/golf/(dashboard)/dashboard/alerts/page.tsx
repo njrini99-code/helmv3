@@ -43,89 +43,164 @@ export default function AlertsPage() {
   // Fetch coach and team data
   useEffect(() => {
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/golf/login');
-        return;
-      }
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          router.push('/golf/login');
+          return;
+        }
 
-      const { data: coach } = await supabase
-        .from('golf_coaches')
-        .select('id, organization_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (!coach) {
-        router.push('/golf/dashboard');
-        return;
-      }
-
-      setCoachId(coach.id);
-
-      // Get team via organization
-      if (coach.organization_id) {
-        const { data: team } = await supabase
-          .from('golf_teams')
-          .select('id')
-          .eq('organization_id', coach.organization_id)
+        const { data: coach, error: coachError } = await supabase
+          .from('golf_coaches')
+          .select('id, organization_id')
+          .eq('user_id', user.id)
           .maybeSingle();
 
-        if (team) {
-          setTeamId(team.id);
+        if (coachError) {
+          setError('Failed to load coach profile. Please try again.');
+          setIsLoading(false);
+          return;
         }
+
+        if (!coach) {
+          router.push('/golf/dashboard');
+          return;
+        }
+
+        setCoachId(coach.id);
+
+        // Get team via organization
+        let resolvedTeamId = teamId;
+        if (coach.organization_id) {
+          const { data: team } = await supabase
+            .from('golf_teams')
+            .select('id')
+            .eq('organization_id', coach.organization_id)
+            .maybeSingle();
+
+          if (team) {
+            setTeamId(team.id);
+            resolvedTeamId = team.id;
+          }
+        }
+
+        // Fetch alerts
+        const result = await getCoachAlerts(coach.id, resolvedTeamId || '', {
+          includeAcknowledged: showAcknowledged,
+          limit: 100,
+        });
+
+        if (result.success && result.alerts) {
+          setAlerts(result.alerts);
+        } else {
+          setError(result.error || 'Failed to load alerts.');
+        }
+      } catch (err) {
+        console.error('[GolfHelm] Error loading alerts:', err);
+        setError('Something went wrong loading alerts. Please refresh.');
+      } finally {
+        setIsLoading(false);
       }
-
-      // Fetch alerts
-      const result = await getCoachAlerts(coach.id, teamId || '', {
-        includeAcknowledged: showAcknowledged,
-        limit: 100,
-      });
-
-      if (result.success && result.alerts) {
-        setAlerts(result.alerts);
-      }
-
-      setIsLoading(false);
     }
 
     loadData();
   }, [supabase, router, showAcknowledged, teamId]);
 
   const handleDismiss = async (alertId: string) => {
+    const alertToRemove = alerts.find(a => a.id === alertId);
     setAlerts(prev => prev.filter(a => a.id !== alertId));
-    await dismissAlert(alertId);
+    setError(null);
+
+    try {
+      const result = await dismissAlert(alertId);
+      if (!result.success) {
+        if (alertToRemove) {
+          setAlerts(prev => [...prev, alertToRemove].sort((a, b) =>
+            (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+          ));
+        }
+        setError('Failed to dismiss alert. It has been restored.');
+      }
+    } catch (err) {
+      console.error('[GolfHelm] Error dismissing alert:', err);
+      if (alertToRemove) {
+        setAlerts(prev => [...prev, alertToRemove].sort((a, b) =>
+          (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+        ));
+      }
+      setError('Network error — alert has been restored.');
+    }
   };
 
   const handleAcknowledge = async (alertId: string) => {
+    const previousAlert = alerts.find(a => a.id === alertId);
+    const previousAcknowledgedAt = previousAlert?.acknowledgedAt ?? null;
+
     setAlerts(prev => prev.map(a =>
       a.id === alertId ? { ...a, acknowledgedAt: new Date().toISOString() } : a
     ));
-    await acknowledgeAlert(alertId);
+    setError(null);
+
+    try {
+      const result = await acknowledgeAlert(alertId);
+      if (!result.success) {
+        setAlerts(prev => prev.map(a =>
+          a.id === alertId ? { ...a, acknowledgedAt: previousAcknowledgedAt } : a
+        ));
+        setError('Failed to acknowledge alert.');
+      }
+    } catch (err) {
+      console.error('[GolfHelm] Error acknowledging alert:', err);
+      setAlerts(prev => prev.map(a =>
+        a.id === alertId ? { ...a, acknowledgedAt: previousAcknowledgedAt } : a
+      ));
+      setError('Network error — acknowledgment reverted.');
+    }
   };
 
   const handleDismissAll = async () => {
     if (!coachId) return;
+    const previousAlerts = [...alerts];
     startTransition(async () => {
-      const result = await dismissAllAlerts(coachId, {
-        level: filterLevel !== 'all' ? filterLevel : undefined,
-      });
-      if (result.success) {
-        setAlerts(prev => prev.filter(a =>
-          filterLevel === 'all' ? false : a.level !== filterLevel
-        ));
+      setError(null);
+      try {
+        const result = await dismissAllAlerts(coachId, {
+          level: filterLevel !== 'all' ? filterLevel : undefined,
+        });
+        if (result.success) {
+          setAlerts(prev => prev.filter(a =>
+            filterLevel === 'all' ? false : a.level !== filterLevel
+          ));
+        } else {
+          setError(result.error || 'Failed to dismiss all alerts.');
+        }
+      } catch (err) {
+        console.error('[GolfHelm] Error dismissing all alerts:', err);
+        setAlerts(previousAlerts);
+        setError('Network error — dismiss all failed.');
       }
     });
   };
 
   const handleAcknowledgeAll = async () => {
     if (!coachId) return;
+    const previousAlerts = [...alerts];
     startTransition(async () => {
-      const result = await acknowledgeAllAlerts(coachId);
-      if (result.success) {
-        setAlerts(prev => prev.map(a => ({
-          ...a,
-          acknowledgedAt: a.acknowledgedAt || new Date().toISOString(),
-        })));
+      setError(null);
+      try {
+        const result = await acknowledgeAllAlerts(coachId);
+        if (result.success) {
+          setAlerts(prev => prev.map(a => ({
+            ...a,
+            acknowledgedAt: a.acknowledgedAt || new Date().toISOString(),
+          })));
+        } else {
+          setError(result.error || 'Failed to acknowledge all alerts.');
+        }
+      } catch (err) {
+        console.error('[GolfHelm] Error acknowledging all alerts:', err);
+        setAlerts(previousAlerts);
+        setError('Network error — acknowledge all failed.');
       }
     });
   };

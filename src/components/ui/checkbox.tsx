@@ -13,7 +13,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
     const checkboxId = id || generatedId;
 
     return (
-      <label className="flex items-center gap-3 cursor-pointer group">
+      <label className="flex items-center gap-3 cursor-pointer group min-h-[44px] py-2">
         <div className="relative">
           <input
             ref={ref}
@@ -23,7 +23,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             {...props}
           />
           <div className={cn(
-            'w-5 h-5 border-2 border-warm-300 rounded-md bg-white',
+            'w-6 h-6 border-2 border-warm-300 rounded-md bg-white',
             'transition-all duration-200',
             'peer-checked:border-primary-600 peer-checked:bg-primary-600',
             'peer-focus:ring-2 peer-focus:ring-primary-600/20',

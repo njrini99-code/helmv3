@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import {
   getNotificationPreferences,
   updateNotificationPreferences
-} from '@/app/baseball/actions/profile-settings';
+} from '@/app/actions/notification-preferences';
 
 interface NotificationsModalProps {
   isOpen: boolean;
@@ -193,16 +193,22 @@ function ToggleRow({
   return (
     <button
       onClick={onChange}
+      role="switch"
+      aria-checked={checked}
+      aria-label={`${label}: ${checked ? 'enabled' : 'disabled'}`}
       className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors"
     >
       <div className="text-left flex-1">
         <p className="text-sm font-medium text-slate-900">{label}</p>
         <p className="text-xs text-slate-500">{description}</p>
       </div>
-      <div className={cn(
-        'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-        checked ? 'bg-emerald-600' : 'bg-slate-200'
-      )}>
+      <div
+        aria-hidden="true"
+        className={cn(
+          'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
+          checked ? 'bg-emerald-600' : 'bg-slate-200'
+        )}
+      >
         <div className={cn(
           'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform',
           checked && 'transform translate-x-5'

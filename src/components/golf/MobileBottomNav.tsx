@@ -44,6 +44,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
 
   return (
     <nav
+      aria-label="Mobile navigation"
       className={cn(
         'fixed bottom-0 left-0 right-0 z-40 lg:hidden',
         'bg-white/95 backdrop-blur-xl',
@@ -79,7 +80,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
                 {item.icon}
               </div>
               <span className={cn(
-                'text-[10px] font-medium transition-colors',
+                'text-xs font-medium transition-colors',
                 isActive ? 'text-primary-600' : 'text-slate-500'
               )}>
                 {item.label}
