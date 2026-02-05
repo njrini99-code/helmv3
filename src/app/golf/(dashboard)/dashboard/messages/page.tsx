@@ -560,7 +560,7 @@ export default function GolfMessagesPage() {
                               'max-w-[70%] px-4 py-2.5',
                               isOwn
                                 ? 'bg-emerald-500 text-white'
-                                : 'bg-white border border-slate-200 text-slate-900 shadow-sm',
+                                : 'bg-white/70 backdrop-blur-sm border border-white/30 text-slate-900 shadow-glass-sm',
                               // Dynamic border radius based on position in group
                               isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'),
                               isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-lg' : 'rounded-2xl rounded-bl-lg'),
@@ -790,10 +790,10 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 bg-white border-t border-slate-200/60">
+    <form onSubmit={handleSubmit} className="p-4 bg-white/60 backdrop-blur-sm border-t border-white/30">
       <div className={cn(
         'flex items-end gap-3 p-1.5 rounded-2xl',
-        'bg-slate-50 border border-slate-200',
+        'bg-white/50 border border-white/30',
         'focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20',
         'transition-all duration-200'
       )}>
