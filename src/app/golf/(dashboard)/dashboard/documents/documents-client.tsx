@@ -355,7 +355,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
   };
 
   return (
-    <div className="min-h-full bg-[#FAF6F1]">
+    <div className="min-h-full bg-transparent">
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>

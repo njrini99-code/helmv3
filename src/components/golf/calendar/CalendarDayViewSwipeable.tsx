@@ -222,7 +222,7 @@ export function CalendarDayViewSwipeable({
   return (
     <div
       ref={containerRef}
-      className={cn('flex flex-col h-full overflow-hidden bg-[#FFFEFA]', className)}
+      className={cn('flex flex-col h-full overflow-hidden', className)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

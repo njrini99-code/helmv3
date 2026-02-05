@@ -65,7 +65,7 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
     : null;
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-cream via-white to-cream">
+    <div className="min-h-full">
       <Suspense fallback={<PageLoading />}>
         <InsightsPageContent
           coachId={coach.id}

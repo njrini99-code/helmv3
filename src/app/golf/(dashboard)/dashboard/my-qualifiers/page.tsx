@@ -56,7 +56,7 @@ export default function MyQualifiersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-full bg-[#FAF6F1]">
+      <div className="min-h-full bg-transparent">
         <div className="max-w-4xl mx-auto px-6 py-8">
           <div className="animate-pulse">
             <div className="h-8 w-48 bg-slate-200 rounded mb-6" />
@@ -72,7 +72,7 @@ export default function MyQualifiersPage() {
   }
 
   return (
-    <div className="min-h-full bg-[#FAF6F1]">
+    <div className="min-h-full bg-transparent">
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">

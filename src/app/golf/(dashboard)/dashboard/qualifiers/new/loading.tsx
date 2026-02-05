@@ -1,6 +1,6 @@
 export default function NewQualifierLoading() {
   return (
-    <div className="min-h-full bg-cream">
+    <div className="min-h-full bg-transparent">
       {/* Header skeleton */}
       <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm">
         <div className="max-w-3xl mx-auto px-6 py-4">

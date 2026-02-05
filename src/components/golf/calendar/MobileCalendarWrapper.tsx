@@ -164,9 +164,9 @@ export function MobileCalendarWrapper({
   }, [selectedEvent, userRsvpStatuses]);
 
   return (
-    <div className={cn('flex flex-col h-full bg-[#FFFEFA]', className)}>
+    <div className={cn('flex flex-col h-full', className)}>
       {/* Premium Header with Month/Year */}
-      <div className="sticky top-0 z-20 bg-[#FFFEFA]/95 backdrop-blur-lg border-b border-slate-200/30">
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/30">
         {/* Top bar with title and controls */}
         <div className="flex items-center justify-between px-4 py-3">
           {/* Month/Year Title */}

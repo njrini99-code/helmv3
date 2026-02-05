@@ -862,7 +862,7 @@ export default function StatsClient({
   // Coach view - show roster with premium design
   if (userRole === 'coach' && !selectedPlayerId) {
     return (
-      <div className="min-h-full bg-[#FAF6F1]">
+      <div className="min-h-full bg-transparent">
         <div className="max-w-6xl mx-auto p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">

@@ -85,7 +85,7 @@ export default function CoachingIntelligenceSettingsPage() {
     }
 
     return (
-        <div className="min-h-full bg-slate-50/50 pb-20">
+        <div className="min-h-full pb-20">
             <Toaster position="bottom-right" />
 
             {/* Header */}

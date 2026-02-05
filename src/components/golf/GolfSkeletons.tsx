@@ -260,7 +260,7 @@ export function DocumentCardSkeleton({ delay = 0 }: { delay?: number }) {
 
 export function DashboardSkeleton() {
   return (
-    <div className="min-h-full bg-cream-gradient">
+    <div className="min-h-full bg-transparent">
       {/* Header Skeleton */}
       <div className="sticky top-0 z-20 bg-white/60 backdrop-blur-[24px] border-b border-white/30">
         <div className="max-w-7xl mx-auto px-6 py-5">
@@ -515,7 +515,7 @@ export function StatsPageSkeleton() {
 
 export function DetailedStatsSkeleton() {
   return (
-    <div className="min-h-full bg-[#FAF6F1]">
+    <div className="min-h-full bg-transparent">
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6">

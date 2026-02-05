@@ -74,7 +74,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="min-h-full bg-cream">
+    <div className="min-h-full bg-transparent">
       {/* Header */}
       <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 py-4">

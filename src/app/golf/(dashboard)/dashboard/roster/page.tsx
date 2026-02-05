@@ -259,7 +259,7 @@ export default async function GolfRosterPage() {
 
   return (
     <RosterPageClient>
-    <div className="min-h-full bg-[#FFFEFA]">
+    <div className="min-h-full bg-transparent">
       {/* Header Section */}
       <MobileNavHeader
         title="Team Roster"

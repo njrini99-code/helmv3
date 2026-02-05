@@ -200,7 +200,7 @@ export default function ShotTrackingComprehensive({
 
   if (!currentHole) {
     return (
-      <div className="min-h-full bg-slate-50 flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <p className="text-lg text-slate-600">Invalid hole data</p>
       </div>
     );
@@ -1098,7 +1098,7 @@ export default function ShotTrackingComprehensive({
   // ============================================================================
 
   return (
-    <div className="min-h-full bg-white">
+    <div className="min-h-full">
 
       {/* Desktop Header with Exit */}
       {onExit && (

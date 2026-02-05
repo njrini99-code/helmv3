@@ -2473,7 +2473,7 @@ export default function GolfStatsDisplay({
   };
 
   return (
-    <div className="min-h-full bg-[#FAF6F1] print:bg-white">
+    <div className="min-h-full bg-transparent print:bg-white">
       <div ref={contentRef} className="max-w-4xl mx-auto px-4 py-6 print:max-w-none print:px-8">
 
         {/* Header with animation */}
