@@ -746,6 +746,42 @@ export default function NewRoundClient() {
     : savedCourses;
 
   // ============================================================================
+  // STEP PROGRESS INDICATOR
+  // ============================================================================
+  const stepConfig = [
+    { key: 'setup', label: 'Course Setup', shortLabel: 'Setup' },
+    { key: 'holes', label: 'Hole Config', shortLabel: 'Holes' },
+    { key: 'tracking', label: 'Shot Tracking', shortLabel: 'Track' },
+    { key: 'submitting', label: 'Submit', shortLabel: 'Done' },
+  ];
+  const currentStepIndex = stepConfig.findIndex(s => s.key === step);
+
+  const StepProgressBar = () => (
+    <div className="flex items-center gap-1 mb-6">
+      {stepConfig.map((s, i) => {
+        const isActive = i === currentStepIndex;
+        const isComplete = i < currentStepIndex;
+        return (
+          <div key={s.key} className="flex-1 flex flex-col items-center gap-1">
+            <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-200">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  isComplete ? 'bg-green-500 w-full' : isActive ? 'bg-green-400 w-1/2' : 'w-0'
+                }`}
+                style={{ width: isComplete ? '100%' : isActive ? '50%' : '0%' }}
+              />
+            </div>
+            <span className={`text-xs font-medium ${isActive ? 'text-green-600' : isComplete ? 'text-slate-600' : 'text-slate-400'}`}>
+              <span className="hidden sm:inline">{s.label}</span>
+              <span className="sm:hidden">{s.shortLabel}</span>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // ============================================================================
   // SETUP STEP
   // ============================================================================
   if (step === 'setup') {
@@ -754,6 +790,7 @@ export default function NewRoundClient() {
         <div className="w-full max-w-2xl">
           <div className="relative glass-standard rounded-2xl overflow-hidden p-8">
             <ShineEffect />
+            <StepProgressBar />
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-2">
               New Round
             </h1>
@@ -1313,6 +1350,9 @@ export default function NewRoundClient() {
     return (
       <div className="min-h-full bg-transparent">
         <div className="max-w-lg mx-auto px-4 py-6">
+          <div className="mb-4">
+            <StepProgressBar />
+          </div>
           <HoleConfigurationForm
             courseName={setupData.courseName}
             onSave={handleHolesSave}

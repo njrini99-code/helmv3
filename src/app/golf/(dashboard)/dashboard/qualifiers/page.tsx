@@ -189,17 +189,10 @@ export default async function GolfQualifiersPage() {
                         </div>
                       )}
 
-                      {/* Rounds info */}
-                      {qualifier.num_rounds && (
-                        <div className="flex items-center gap-2 text-slate-600 col-span-2">
-                          <IconFlag size={14} className="text-slate-400" />
-                          <span>{qualifier.num_rounds} round{qualifier.num_rounds !== 1 ? 's' : ''} format</span>
-                        </div>
-                      )}
                     </div>
 
-                    {/* Rounds progress bar for in-progress qualifiers */}
-                    {qualifier.status === 'in_progress' && qualifier.num_rounds && qualifier.num_rounds > 1 && (
+                    {/* Progress indicator for in-progress qualifiers */}
+                    {qualifier.status === 'in_progress' && (
                       <div className="mt-4">
                         <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
                           <span>Progress</span>

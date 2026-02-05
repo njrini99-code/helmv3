@@ -151,18 +151,60 @@ export default async function GolfCalendarPage() {
     ];
   }
 
+  // Calculate event type summary for the header
+  const eventTypeCounts = events.reduce((acc, event) => {
+    const type = event.event_type || 'other';
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const upcomingEvents = events.filter(e => new Date(e.start_time || e.start_date) >= new Date()).length;
+
+  const eventTypeConfig: Record<string, { label: string; dot: string }> = {
+    practice: { label: 'Practice', dot: 'bg-green-500' },
+    tournament: { label: 'Tournament', dot: 'bg-blue-500' },
+    qualifying: { label: 'Qualifying', dot: 'bg-purple-500' },
+    meeting: { label: 'Meeting', dot: 'bg-amber-500' },
+    travel: { label: 'Travel', dot: 'bg-slate-500' },
+    other: { label: 'Other', dot: 'bg-slate-400' },
+  };
+
   return (
     <div
-      className="h-[calc(100vh-64px)] p-4 md:p-6"
+      className="h-[calc(100vh-64px)] flex flex-col"
       style={{
         background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
       }}
     >
-      <GolfCalendarWrapper
-        initialEvents={events}
-        teamMembers={teamMembers}
-        isCoach={isCoach}
-      />
+      {/* Event Summary Strip */}
+      {events.length > 0 && (
+        <div className="flex-shrink-0 px-4 md:px-6 pt-4 md:pt-6 pb-2">
+          <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
+            <span className="text-sm font-medium text-slate-600 whitespace-nowrap">
+              {upcomingEvents} upcoming event{upcomingEvents !== 1 ? 's' : ''}
+            </span>
+            <span className="text-slate-300">|</span>
+            {Object.entries(eventTypeCounts).map(([type, count]) => {
+              const fallback = { label: type, dot: 'bg-slate-400' };
+              const config = eventTypeConfig[type] ?? fallback;
+              return (
+                <span key={type} className="flex items-center gap-1.5 text-xs text-slate-600 whitespace-nowrap">
+                  <span className={`w-2 h-2 rounded-full ${config.dot}`} />
+                  {count} {config.label}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 p-4 md:p-6 pt-2 md:pt-2 min-h-0">
+        <GolfCalendarWrapper
+          initialEvents={events}
+          teamMembers={teamMembers}
+          isCoach={isCoach}
+        />
+      </div>
     </div>
   );
 }

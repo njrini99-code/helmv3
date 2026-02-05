@@ -156,9 +156,10 @@ function SectionCard({
   className?: string;
 }) {
   return (
-    <div className={cn('bg-white border border-border-light rounded-xl', className)}>
-      <div className="px-6 py-4 border-b border-border-light">
-        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+    <div className={cn('relative overflow-hidden bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-glass-sm', className)}>
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+      <div className="px-6 py-4 border-b border-white/20">
+        <h3 className="text-base font-semibold text-warm-900">{title}</h3>
       </div>
       <div className="p-6">{children}</div>
     </div>
@@ -363,10 +364,11 @@ export function RoundReviewPanel({
   // Render generating state
   if (review.status === 'generating') {
     return (
-      <div className="bg-white border border-border-light rounded-xl p-8">
+      <div className="relative overflow-hidden bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-8 shadow-glass-sm">
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
         <div className="flex flex-col items-center text-center">
           <LoadingSpinner size="lg" />
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">
+          <h3 className="mt-4 text-lg font-semibold text-warm-900">
             Generating Review
           </h3>
           <p className="mt-2 text-sm text-gray-500">

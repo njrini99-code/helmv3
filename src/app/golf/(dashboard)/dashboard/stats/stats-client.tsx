@@ -191,21 +191,22 @@ function KPICard({
   trend?: 'up' | 'down';
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+    <div className="relative overflow-hidden bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-5 shadow-glass-sm hover:shadow-glass-md hover:-translate-y-0.5 transition-all duration-200">
+      <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-slate-500 font-medium">{label}</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+          <p className="text-2xl font-bold text-warm-900 mt-1">{value}</p>
           {subtext && (
             <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-              {trend === 'up' && <IconTrendingUp size={14} className="text-green-500" />}
+              {trend === 'up' && <IconTrendingUp size={14} className="text-primary-600" />}
               {trend === 'down' && <IconTrendingDown size={14} className="text-red-500" />}
               {subtext}
             </p>
           )}
         </div>
-        <div className="p-2 bg-slate-100 rounded-lg">
-          <Icon size={20} className="text-slate-600" />
+        <div className="p-2.5 bg-primary-50/70 rounded-xl">
+          <Icon size={20} className="text-primary-600" />
         </div>
       </div>
     </div>
@@ -232,7 +233,7 @@ function PlayerCard({
   return (
     <button
       onClick={onClick}
-      className="w-full group bg-white rounded-xl border border-slate-200 p-4 hover:shadow-lg hover:border-slate-300 transition-all text-left"
+      className="w-full group bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-4 shadow-glass-sm hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-white/80 transition-all duration-200 text-left"
     >
       <div className="flex items-center gap-4">
         {/* Rank badge */}
@@ -295,7 +296,7 @@ function PlayerCard({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 pl-4 border-l border-slate-200">
+        <div className="flex items-center gap-1 pl-4 border-l border-white/30">
           <span className="p-2 rounded-lg text-slate-400 group-hover:text-slate-600 transition-colors">
             <IconChart size={20} />
           </span>
@@ -939,7 +940,7 @@ export default function StatsClient({
             const inactivePlayers = players.filter(p => !p.stats?.rounds_played || p.stats.rounds_played === 0);
 
             return (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 p-4 mb-4">
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-white/30 p-4 mb-4 shadow-glass-sm">
                 <h3 className="text-xs font-semibold text-green-800 uppercase tracking-wider mb-3">Team Insights</h3>
                 <div className="flex flex-wrap gap-4 text-sm">
                   {bestPlayer && (
@@ -980,7 +981,7 @@ export default function StatsClient({
           })()}
 
           {/* Filters Bar */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl border border-white/30 p-4 mb-4 shadow-glass-sm">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex-1 min-w-[200px] relative">
                 <IconSearch size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -989,14 +990,14 @@ export default function StatsClient({
                   placeholder="Search players..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition-colors"
+                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-white/40 bg-white/60 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-all"
                 />
               </div>
 
               <select
                 value={classFilter}
                 onChange={(e) => setClassFilter(e.target.value)}
-                className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+                className="px-4 py-2 rounded-xl border border-white/40 bg-white/60 text-slate-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none"
               >
                 <option value="all">All Classes</option>
                 {graduationYears.map(year => (
@@ -1007,7 +1008,7 @@ export default function StatsClient({
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+                className="px-4 py-2 rounded-xl border border-white/40 bg-white/60 text-slate-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none"
               >
                 <option value="avg">Sort: Best Avg</option>
                 <option value="name">Sort: Name A-Z</option>
@@ -1019,7 +1020,7 @@ export default function StatsClient({
 
           {/* Player Cards */}
           {players.length === 0 ? (
-            <div className="relative bg-white rounded-2xl border border-slate-200 overflow-hidden p-16 text-center">
+            <div className="relative bg-white/70 backdrop-blur-xl rounded-2xl border border-white/30 overflow-hidden p-16 text-center shadow-glass-sm">
               <ShineEffect />
               <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <IconUser size={28} className="text-slate-400" />

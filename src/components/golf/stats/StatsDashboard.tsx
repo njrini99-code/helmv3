@@ -168,13 +168,13 @@ export function StatsDashboard({
       <div className={cn('', className)}>
         <Card className="py-12">
           <CardContent className="text-center">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-16 h-16 rounded-full bg-slate-100/70 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Stats Available</h3>
-            <p className="text-sm text-gray-500 mb-4 max-w-sm mx-auto">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Stats Available</h3>
+            <p className="text-sm text-slate-500 mb-4 max-w-sm mx-auto">
               Complete some rounds to see your performance statistics and trends.
             </p>
           </CardContent>
@@ -189,10 +189,10 @@ export function StatsDashboard({
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-900">Player Statistics</h2>
+            <h2 className="text-xl font-semibold text-warm-900">Player Statistics</h2>
             {getDataQualityBadge()}
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate-500">
             Based on {stats.total_rounds} round{stats.total_rounds !== 1 ? 's' : ''}
             {stats.period_start && stats.period_end && (
               <span className="ml-1">
@@ -207,7 +207,7 @@ export function StatsDashboard({
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-warm-900 hover:bg-slate-100/70 rounded-lg transition-colors"
           >
             <svg
               className={cn('w-4 h-4', loading && 'animate-spin')}
@@ -271,28 +271,28 @@ export function StatsDashboard({
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-4 gap-4 mb-4">
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{stats.best_round}</div>
-                      <div className="text-xs text-gray-500">Best Round</div>
+                    <div className="text-center p-3 bg-primary-50/60 rounded-xl">
+                      <div className="text-2xl font-bold text-primary-600">{stats.best_round}</div>
+                      <div className="text-xs text-slate-500">Best Round</div>
                     </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-lg">
-                      <div className="text-2xl font-bold text-gray-900">{stats.scoring_avg.toFixed(1)}</div>
-                      <div className="text-xs text-gray-500">Average</div>
+                    <div className="text-center p-3 bg-slate-50/70 rounded-xl">
+                      <div className="text-2xl font-bold text-warm-900">{stats.scoring_avg.toFixed(1)}</div>
+                      <div className="text-xs text-slate-500">Average</div>
                     </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-lg">
-                      <div className="text-2xl font-bold text-gray-600">{stats.worst_round}</div>
-                      <div className="text-xs text-gray-500">Worst Round</div>
+                    <div className="text-center p-3 bg-slate-50/70 rounded-xl">
+                      <div className="text-2xl font-bold text-slate-600">{stats.worst_round}</div>
+                      <div className="text-xs text-slate-500">Worst Round</div>
                     </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-lg">
-                      <div className="text-2xl font-bold text-gray-900">{stats.total_rounds}</div>
-                      <div className="text-xs text-gray-500">Rounds</div>
+                    <div className="text-center p-3 bg-slate-50/70 rounded-xl">
+                      <div className="text-2xl font-bold text-warm-900">{stats.total_rounds}</div>
+                      <div className="text-xs text-slate-500">Rounds</div>
                     </div>
                   </div>
 
                   {/* Scoring Distribution */}
                   {(stats.eagles !== undefined || stats.birdies !== undefined) && (
                     <div className="mt-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Scoring Distribution</h4>
+                      <h4 className="text-sm font-medium text-slate-700 mb-2">Scoring Distribution</h4>
                       <ScoringDistribution
                         eagles={stats.eagles ?? 0}
                         birdies={stats.birdies ?? 0}
@@ -313,33 +313,33 @@ export function StatsDashboard({
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-sm text-gray-600">Fairways Hit</span>
+                      <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                        <span className="text-sm text-slate-600">Fairways Hit</span>
                         <span className="font-semibold">{stats.fairway_percentage.toFixed(1)}%</span>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-sm text-gray-600">Greens in Regulation</span>
+                      <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                        <span className="text-sm text-slate-600">Greens in Regulation</span>
                         <span className="font-semibold">{stats.gir_percentage.toFixed(1)}%</span>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-sm text-gray-600">Average Putts</span>
+                      <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                        <span className="text-sm text-slate-600">Average Putts</span>
                         <span className="font-semibold">{stats.avg_putts.toFixed(1)}</span>
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-sm text-gray-600">Up & Down %</span>
+                      <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                        <span className="text-sm text-slate-600">Up & Down %</span>
                         <span className="font-semibold">{stats.up_and_down_percentage.toFixed(1)}%</span>
                       </div>
                       {stats.sand_save_percentage !== undefined && (
-                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                          <span className="text-sm text-gray-600">Sand Save %</span>
+                        <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                          <span className="text-sm text-slate-600">Sand Save %</span>
                           <span className="font-semibold">{stats.sand_save_percentage.toFixed(1)}%</span>
                         </div>
                       )}
                       {stats.avg_penalty_strokes !== undefined && (
-                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                          <span className="text-sm text-gray-600">Penalties / Round</span>
+                        <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                          <span className="text-sm text-slate-600">Penalties / Round</span>
                           <span className="font-semibold">{stats.avg_penalty_strokes.toFixed(1)}</span>
                         </div>
                       )}
@@ -380,7 +380,7 @@ export function StatsDashboard({
                       {trendInsights.slice(0, 3).map((insight, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm">
                           <span className="text-green-500 mt-0.5">•</span>
-                          <span className="text-gray-700">{insight}</span>
+                          <span className="text-slate-700">{insight}</span>
                         </li>
                       ))}
                     </ul>
@@ -398,7 +398,7 @@ export function StatsDashboard({
                     <div className="text-3xl font-bold text-green-600">
                       {prediction.predicted_score}
                     </div>
-                    <div className="text-sm text-gray-500 mt-1">
+                    <div className="text-sm text-slate-500 mt-1">
                       Range: {prediction.range_low} - {prediction.range_high}
                     </div>
                     <Badge variant="outline" className="mt-2">
@@ -462,7 +462,7 @@ export function StatsDashboard({
           ) : (
             <Card className="py-12">
               <CardContent className="text-center">
-                <p className="text-gray-500">
+                <p className="text-slate-500">
                   Not enough data for trend analysis. Complete more rounds to see trends.
                 </p>
               </CardContent>
@@ -486,15 +486,15 @@ export function StatsDashboard({
                     const isNeutral = Math.abs(comp.difference) < 0.1;
 
                     return (
-                      <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100">
-                        <span className="text-sm font-medium text-gray-700">{comp.metric}</span>
+                      <div key={i} className="flex items-center justify-between py-2 border-b border-slate-100">
+                        <span className="text-sm font-medium text-slate-700">{comp.metric}</span>
                         <div className="flex items-center gap-4">
-                          <span className="text-sm text-gray-600">{comp.player_value.toFixed(2)}</span>
+                          <span className="text-sm text-slate-600">{comp.player_value.toFixed(2)}</span>
                           <span
                             className={cn(
                               'text-sm font-semibold',
                               isNeutral
-                                ? 'text-gray-500'
+                                ? 'text-slate-500'
                                 : isBetter
                                 ? 'text-green-600'
                                 : 'text-red-600'
@@ -521,13 +521,13 @@ export function StatsDashboard({
                     ) : comparison.strengths.length > 0 ? (
                       <ul className="space-y-1">
                         {comparison.strengths.map((s, i) => (
-                          <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                          <li key={i} className="flex items-center gap-2 text-sm text-slate-700">
                             <span className="text-green-500">✓</span> {s}
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-sm text-gray-500">No standout strengths</p>
+                      <p className="text-sm text-slate-500">No standout strengths</p>
                     )}
                   </div>
                   <div>
@@ -541,13 +541,13 @@ export function StatsDashboard({
                     ) : comparison.weaknesses.length > 0 ? (
                       <ul className="space-y-1">
                         {comparison.weaknesses.map((w, i) => (
-                          <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                          <li key={i} className="flex items-center gap-2 text-sm text-slate-700">
                             <span className="text-red-500" aria-hidden="true">→</span> {w}
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-sm text-gray-500">Well-rounded game</p>
+                      <p className="text-sm text-slate-500">Well-rounded game</p>
                     )}
                   </div>
                 </div>
@@ -560,8 +560,8 @@ export function StatsDashboard({
         {weakAreas && weakAreas.length > 0 && (
           <TabsContent value="development">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">Identified Weak Areas</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="text-lg font-semibold text-warm-900">Identified Weak Areas</h3>
+              <p className="text-sm text-slate-500">
                 Based on your stats, these areas could benefit from focused practice.
               </p>
 
@@ -572,7 +572,7 @@ export function StatsDashboard({
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-gray-900">{area.area}</h4>
+                            <h4 className="font-semibold text-warm-900">{area.area}</h4>
                             <Badge
                               className={cn(
                                 area.severity === 'critical'
@@ -585,12 +585,12 @@ export function StatsDashboard({
                               {area.severity}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-500 mt-1">
+                          <p className="text-sm text-slate-500 mt-1">
                             Current: {area.current_value.toFixed(2)} | Target: {area.target_value.toFixed(2)}
                           </p>
                         </div>
                         {area.estimated_improvement_time && (
-                          <div className="text-right text-sm text-gray-500">
+                          <div className="text-right text-sm text-slate-500">
                             Est. {area.estimated_improvement_time}
                           </div>
                         )}
@@ -598,7 +598,7 @@ export function StatsDashboard({
 
                       {area.recommended_drills && area.recommended_drills.length > 0 && (
                         <div className="mt-4">
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">Recommended Drills:</h5>
+                          <h5 className="text-sm font-medium text-slate-700 mb-2">Recommended Drills:</h5>
                           <div className="flex flex-wrap gap-2">
                             {area.recommended_drills.map((drill: string, j: number) => (
                               <Badge key={j} variant="outline" className="text-xs">
@@ -638,11 +638,11 @@ function ComparisonSWItem({
         {isStrength ? '✓' : '→'}
       </span>
       <div className="flex-1 min-w-0">
-        <span className="text-gray-900 font-medium">{item.label}</span>
+        <span className="text-warm-900 font-medium">{item.label}</span>
         <span className={cn('ml-1.5 text-xs font-semibold', impactColor)}>
           ({sign}{item.strokeImpact.toFixed(1)})
         </span>
-        <p className="text-xs text-gray-500 mt-0.5">{item.detail}</p>
+        <p className="text-xs text-slate-500 mt-0.5">{item.detail}</p>
       </div>
     </div>
   );

@@ -142,16 +142,6 @@ export default function PipelinePage() {
     setActiveId(event.active.id as string);
   };
 
-  // Count players per stage for badges
-  const stageCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    filteredByGradYear.forEach(item => {
-      const stage = item.pipeline_stage || 'watchlist';
-      counts[stage] = (counts[stage] || 0) + 1;
-    });
-    return counts;
-  }, [filteredByGradYear]);
-
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 

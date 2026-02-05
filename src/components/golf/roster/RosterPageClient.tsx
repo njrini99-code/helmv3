@@ -31,8 +31,9 @@ interface RosterPageClientProps {
 export function RosterPageClient({ children, players }: RosterPageClientProps) {
   const [showModal, setShowModal] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  // Sort state tracked for toolbar sync (sorting applied server-side on refresh)
+  const [, setSortField] = useState<SortField>('name');
+  const [, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     // Check for pending requests on mount
