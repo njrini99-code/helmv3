@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
@@ -20,7 +20,20 @@ import {
 } from '@/app/golf/actions/stats-data';
 import GolfStatsDisplay from '@/components/golf/stats/GolfStatsDisplay';
 import { DetailedStatsSkeleton } from '@/components/golf/GolfSkeletons';
-import { IconChevronLeft, IconUser, IconRefresh } from '@/components/icons';
+import {
+  IconChevronLeft,
+  IconUser,
+  IconRefresh,
+  IconSearch,
+  IconChart,
+  IconChevronRight,
+  IconMessageSquare,
+  IconCalendar,
+  IconUsers,
+  IconTrendingUp,
+  IconTrendingDown,
+  IconTarget,
+} from '@/components/icons';
 
 // ============================================================================
 // TYPES
@@ -41,16 +54,253 @@ interface PlayerStats {
   rounds_played: number;
   scoring_average: number | null;
   best_round: number | null;
+  recent_scores?: number[];
+  trend?: 'up' | 'down' | 'stable';
+  last_played?: string;
 }
 
-// Note: StatsViewState could be used for more complex state machine
-// keeping for potential future use
-// type StatsViewState =
-//   | { status: 'idle' }
-//   | { status: 'loading-summary' }
-//   | { status: 'summary-ready'; summary: StatsSummary; rounds: RoundSummary[] }
-//   | { status: 'loading-detailed' }
-//   | { status: 'detailed-ready'; stats: GolfStats };
+// ============================================================================
+// SPARKLINE COMPONENT
+// ============================================================================
+
+function Sparkline({ data, trend }: { data: number[]; trend: 'up' | 'down' | 'stable' }) {
+  if (data.length < 2) return null;
+
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const height = 24;
+  const width = 60;
+
+  const points = data.map((val, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((val - min) / range) * height;
+    return `${x},${y}`;
+  }).join(' ');
+
+  const color = trend === 'up' ? '#22c55e' : trend === 'down' ? '#ef4444' : '#94a3b8';
+
+  return (
+    <svg width={width} height={height} className="overflow-visible">
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {data.map((val, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((val - min) / range) * height;
+        return (
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r={i === data.length - 1 ? 3 : 2}
+            fill={i === data.length - 1 ? color : 'white'}
+            stroke={color}
+            strokeWidth="1.5"
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+// ============================================================================
+// AVATAR WITH PERFORMANCE RING
+// ============================================================================
+
+function AvatarWithRing({
+  initials,
+  avatarUrl,
+  trend,
+}: {
+  initials: string;
+  avatarUrl?: string | null;
+  trend: 'up' | 'down' | 'stable';
+}) {
+  const ringColor = trend === 'up' ? 'ring-green-400' : trend === 'down' ? 'ring-red-400' : 'ring-slate-300';
+
+  return (
+    <div className={`w-12 h-12 rounded-full flex items-center justify-center ring-2 ${ringColor} ring-offset-2 overflow-hidden`}>
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full bg-green-600 flex items-center justify-center">
+          <span className="text-white font-semibold text-sm">{initials}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// TREND INDICATOR
+// ============================================================================
+
+function TrendIndicator({ trend }: { trend: 'up' | 'down' | 'stable' }) {
+  if (trend === 'up') {
+    return (
+      <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
+        <IconTrendingUp size={14} />
+        <span>Improving</span>
+      </span>
+    );
+  }
+  if (trend === 'down') {
+    return (
+      <span className="inline-flex items-center gap-1 text-red-500 text-sm font-medium">
+        <IconTrendingDown size={14} />
+        <span>Declining</span>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-slate-500 text-sm font-medium">
+      <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+      <span>Steady</span>
+    </span>
+  );
+}
+
+// ============================================================================
+// KPI CARD
+// ============================================================================
+
+function KPICard({
+  label,
+  value,
+  subtext,
+  icon: Icon,
+  trend,
+}: {
+  label: string;
+  value: string | number;
+  subtext?: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  trend?: 'up' | 'down';
+}) {
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm text-slate-500 font-medium">{label}</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+          {subtext && (
+            <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
+              {trend === 'up' && <IconTrendingUp size={14} className="text-green-500" />}
+              {trend === 'down' && <IconTrendingDown size={14} className="text-red-500" />}
+              {subtext}
+            </p>
+          )}
+        </div>
+        <div className="p-2 bg-slate-100 rounded-lg">
+          <Icon size={20} className="text-slate-600" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// PLAYER CARD
+// ============================================================================
+
+function PlayerCard({
+  player,
+  rank,
+  onClick,
+}: {
+  player: Player & { stats?: PlayerStats };
+  rank: number;
+  onClick: () => void;
+}) {
+  const initials = `${player.first_name?.[0] || '?'}${player.last_name?.[0] || '?'}`;
+  const trend = player.stats?.trend || 'stable';
+  const recentScores = player.stats?.recent_scores || [];
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full group bg-white rounded-xl border border-slate-200 p-4 hover:shadow-lg hover:border-slate-300 transition-all text-left"
+    >
+      <div className="flex items-center gap-4">
+        {/* Rank badge */}
+        <div className="w-8 text-center flex-shrink-0">
+          <span className={`text-sm font-bold ${rank <= 3 ? 'text-green-600' : 'text-slate-400'}`}>
+            #{rank}
+          </span>
+        </div>
+
+        {/* Avatar with performance ring */}
+        <AvatarWithRing initials={initials} avatarUrl={player.avatar_url} trend={trend} />
+
+        {/* Player info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-slate-900 truncate group-hover:text-green-600 transition-colors">
+              {player.first_name} {player.last_name}
+            </h3>
+            {player.graduation_year && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                &apos;{String(player.graduation_year).slice(-2)}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-slate-500 truncate">
+            {player.handicap !== null ? `+${player.handicap.toFixed(1)} HCP` : 'No handicap'}
+          </p>
+        </div>
+
+        {/* Sparkline */}
+        {recentScores.length >= 2 && (
+          <div className="hidden sm:flex flex-col items-center px-4">
+            <Sparkline data={recentScores} trend={trend} />
+            <span className="text-xs text-slate-400 mt-1">Last {recentScores.length} rounds</span>
+          </div>
+        )}
+
+        {/* Stats block */}
+        <div className="flex items-center gap-6">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-slate-900 tabular-nums">
+              {player.stats?.scoring_average?.toFixed(1) || '--'}
+            </p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">Avg</p>
+          </div>
+
+          <div className="text-center">
+            <p className="text-lg font-semibold text-slate-700 tabular-nums">
+              {player.stats?.best_round || '--'}
+            </p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">Best</p>
+          </div>
+
+          <div className="text-center min-w-[80px]">
+            <TrendIndicator trend={trend} />
+            {player.stats?.last_played && (
+              <p className="text-xs text-slate-400 mt-0.5">{player.stats.last_played}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 pl-4 border-l border-slate-200">
+          <span className="p-2 rounded-lg text-slate-400 group-hover:text-slate-600 transition-colors">
+            <IconChart size={20} />
+          </span>
+          <span className="p-2 rounded-lg text-slate-400 group-hover:text-slate-600 transition-colors">
+            <IconMessageSquare size={20} />
+          </span>
+          <IconChevronRight size={20} className="text-slate-300 ml-2" />
+        </div>
+      </div>
+    </button>
+  );
+}
 
 // ============================================================================
 // STATS CLIENT COMPONENT
@@ -80,8 +330,12 @@ export default function StatsClient({
   const [selectedPlayer, setSelectedPlayer] = useState<(Player & { stats?: PlayerStats }) | null>(null);
   const [playerName, setPlayerName] = useState(initialPlayerName);
 
-  // Stats state - separating summary from detailed
-  // Summary is kept for potential future display during detailed loading
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [classFilter, setClassFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'avg' | 'name' | 'improved' | 'recent'>('avg');
+
+  // Stats state
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_summary, setSummary] = useState<StatsSummary | null>(initialSummary ?? null);
   const [rounds, setRounds] = useState<RoundSummary[]>(initialRounds);
@@ -91,7 +345,6 @@ export default function StatsClient({
   // Loading states
   const [loading, setLoading] = useState(!initialUserRole);
   const [loadingDetailed, setLoadingDetailed] = useState(false);
-  // Active tab is tracked for potential category-specific lazy loading
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [activeTab, _setActiveTab] = useState<StatsCategory>('scoring');
 
@@ -104,16 +357,96 @@ export default function StatsClient({
   const [worstHoleData, setWorstHoleData] = useState<WorstHoleResponse | null>(null);
   const [trendData, setTrendData] = useState<TrendAnalysisResponse | null>(null);
 
-  // Cache for detailed stats to prevent re-fetching
+  // Cache for detailed stats
   const detailedStatsCache = useRef<Map<string, GolfStats>>(new Map());
   const lastFetchedPlayerId = useRef<string | null>(null);
   const lastFetchedRoundId = useRef<string | 'overall'>('overall');
 
   // ============================================================================
+  // COMPUTED VALUES
+  // ============================================================================
+
+  // Filter and sort players
+  const filteredPlayers = useMemo(() => {
+    let result = [...players];
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(p =>
+        `${p.first_name} ${p.last_name}`.toLowerCase().includes(query)
+      );
+    }
+
+    // Class filter
+    if (classFilter !== 'all') {
+      const year = parseInt(classFilter);
+      result = result.filter(p => p.graduation_year === year);
+    }
+
+    // Sort
+    switch (sortBy) {
+      case 'avg':
+        result.sort((a, b) => (a.stats?.scoring_average || 999) - (b.stats?.scoring_average || 999));
+        break;
+      case 'name':
+        result.sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
+        break;
+      case 'improved':
+        result.sort((a, b) => {
+          const aImproved = a.stats?.trend === 'up' ? 0 : a.stats?.trend === 'stable' ? 1 : 2;
+          const bImproved = b.stats?.trend === 'up' ? 0 : b.stats?.trend === 'stable' ? 1 : 2;
+          return aImproved - bImproved;
+        });
+        break;
+      case 'recent':
+        // Sort by last played (would need actual dates)
+        break;
+    }
+
+    return result;
+  }, [players, searchQuery, classFilter, sortBy]);
+
+  // Calculate team stats
+  const teamStats = useMemo(() => {
+    const playersWithStats = players.filter(p => p.stats?.scoring_average);
+    const totalRounds = players.reduce((sum, p) => sum + (p.stats?.rounds_played || 0), 0);
+    const teamAvg = playersWithStats.length > 0
+      ? playersWithStats.reduce((sum, p) => sum + (p.stats?.scoring_average || 0), 0) / playersWithStats.length
+      : 0;
+
+    const sortedByAvg = [...playersWithStats].sort((a, b) =>
+      (a.stats?.scoring_average || 999) - (b.stats?.scoring_average || 999)
+    );
+    const top5 = sortedByAvg.slice(0, 5);
+    const top5Avg = top5.length > 0
+      ? top5.reduce((sum, p) => sum + (p.stats?.scoring_average || 0), 0) / top5.length
+      : 0;
+
+    const improvingCount = players.filter(p => p.stats?.trend === 'up').length;
+
+    return {
+      teamAvg: teamAvg.toFixed(1),
+      totalRounds,
+      top5Avg: top5Avg.toFixed(1),
+      improvingCount,
+      totalPlayers: players.length,
+    };
+  }, [players]);
+
+  // Get unique graduation years for filter
+  const graduationYears = useMemo(() => {
+    const years = new Set<number>();
+    players.forEach(p => {
+      if (p.graduation_year) years.add(p.graduation_year);
+    });
+    return Array.from(years).sort();
+  }, [players]);
+
+  // ============================================================================
   // DATA LOADING
   // ============================================================================
 
-  // Load initial data if not provided via props
   useEffect(() => {
     if (!initialUserRole) {
       loadInitialData();
@@ -129,7 +462,6 @@ export default function StatsClient({
       return;
     }
 
-    // Check if coach
     const { data: coach } = await supabase
       .from('golf_coaches')
       .select('id, organization_id')
@@ -143,7 +475,6 @@ export default function StatsClient({
       return;
     }
 
-    // Check if player
     const { data: player } = await supabase
       .from('golf_players')
       .select('id, first_name, last_name')
@@ -163,7 +494,6 @@ export default function StatsClient({
 
     const supabase = createClient();
 
-    // Get team_id from organization
     const { data: orgTeam } = await supabase
       .from('golf_teams')
       .select('id')
@@ -172,7 +502,6 @@ export default function StatsClient({
 
     if (!orgTeam?.id) return;
 
-    // Get player IDs from team_members
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
@@ -191,26 +520,54 @@ export default function StatsClient({
 
     if (!teamPlayers || teamPlayers.length === 0) return;
 
-    // Fetch ALL rounds for ALL players in ONE query
+    // Fetch ALL rounds for ALL players
     const { data: allRounds } = await supabase
       .from('golf_rounds')
-      .select('player_id, total_score')
+      .select('player_id, total_score, round_date')
       .in('player_id', playerIds)
       .eq('status', 'completed')
-      .not('total_score', 'is', null);
+      .not('total_score', 'is', null)
+      .order('round_date', { ascending: false });
 
     // Group rounds by player
     const roundsByPlayer = (allRounds || []).reduce((acc, round) => {
       if (!acc[round.player_id]) acc[round.player_id] = [];
       if (round.total_score !== null) {
-        acc[round.player_id]!.push(round.total_score);
+        acc[round.player_id]!.push({
+          score: round.total_score,
+          date: round.round_date,
+        });
       }
       return acc;
-    }, {} as Record<string, number[]>);
+    }, {} as Record<string, { score: number; date: string }[]>);
 
-    // Calculate stats for each player
+    // Calculate stats for each player including trend
     const playersWithStats = teamPlayers.map(player => {
-      const scores = roundsByPlayer[player.id] || [];
+      const rounds = roundsByPlayer[player.id] || [];
+      const scores = rounds.map(r => r.score);
+      const recentScores = scores.slice(0, 5);
+
+      // Calculate trend based on recent scores
+      let trend: 'up' | 'down' | 'stable' = 'stable';
+      if (recentScores.length >= 3) {
+        const firstHalf = recentScores.slice(Math.floor(recentScores.length / 2));
+        const secondHalf = recentScores.slice(0, Math.floor(recentScores.length / 2));
+        const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+        const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+        // Lower is better in golf
+        if (secondAvg < firstAvg - 1) trend = 'up';
+        else if (secondAvg > firstAvg + 1) trend = 'down';
+      }
+
+      // Format last played
+      let lastPlayed = '';
+      if (rounds[0]?.date) {
+        const daysAgo = Math.floor((Date.now() - new Date(rounds[0].date).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysAgo === 0) lastPlayed = 'Today';
+        else if (daysAgo === 1) lastPlayed = 'Yesterday';
+        else lastPlayed = `${daysAgo} days ago`;
+      }
+
       return {
         ...player,
         stats: {
@@ -219,6 +576,9 @@ export default function StatsClient({
             ? scores.reduce((a, b) => a + b, 0) / scores.length
             : null,
           best_round: scores.length > 0 ? Math.min(...scores) : null,
+          recent_scores: recentScores.reverse(), // Oldest to newest for sparkline
+          trend,
+          last_played: lastPlayed,
         }
       };
     });
@@ -226,13 +586,9 @@ export default function StatsClient({
     setPlayers(playersWithStats);
   }
 
-  /**
-   * Load lightweight summary stats (fast initial load)
-   */
   async function loadPlayerSummary(playerId: string) {
     const supabase = createClient();
 
-    // Fast query - no shot data
     const { data: roundsData } = await supabase
       .from('golf_rounds')
       .select(`
@@ -269,14 +625,12 @@ export default function StatsClient({
       return;
     }
 
-    // Fetch scrambling data from golf_round_stats_cache for these rounds
     const roundIds = roundsData.map(r => r.id);
     const { data: statsCache } = await supabase
       .from('golf_round_stats_cache')
       .select('scramble_attempts, scrambles_converted')
       .in('round_id', roundIds);
 
-    // Calculate summary from rounds data
     const scores = roundsData.map(r => r.total_score).filter((s): s is number => s !== null);
     let totalFairwaysHit = 0, totalFairwayOpp = 0;
     let totalGir = 0, totalGirOpp = 0;
@@ -296,17 +650,12 @@ export default function StatsClient({
       }
     }
 
-    // Calculate scrambling percentage from stats cache
     let totalScrambleAttempts = 0;
     let totalScramblesMade = 0;
     if (statsCache) {
       for (const cache of statsCache) {
-        if (cache.scramble_attempts !== null) {
-          totalScrambleAttempts += cache.scramble_attempts;
-        }
-        if (cache.scrambles_converted !== null) {
-          totalScramblesMade += cache.scrambles_converted;
-        }
+        if (cache.scramble_attempts !== null) totalScrambleAttempts += cache.scramble_attempts;
+        if (cache.scrambles_converted !== null) totalScramblesMade += cache.scrambles_converted;
       }
     }
     const scramblingPercentage = totalScrambleAttempts > 0
@@ -343,25 +692,19 @@ export default function StatsClient({
     })));
   }
 
-  /**
-   * Load detailed shot-level stats (lazy loaded when needed)
-   */
   const loadDetailedStats = useCallback(async (
     playerId: string,
     roundId: string | 'overall' = 'overall',
     filter?: StatsFilter | null
   ) => {
-    // Build cache key including filter
     const filterKey = filter ? JSON.stringify(filter) : 'none';
     const cacheKey = `${playerId}-${roundId}-${filterKey}`;
 
-    // Check cache first
     if (detailedStatsCache.current.has(cacheKey)) {
       setDetailedStats(detailedStatsCache.current.get(cacheKey)!);
       return;
     }
 
-    // Skip if already loading this exact data
     if (lastFetchedPlayerId.current === playerId && lastFetchedRoundId.current === roundId && loadingDetailed) {
       return;
     }
@@ -381,9 +724,6 @@ export default function StatsClient({
     }
   }, [loadingDetailed]);
 
-  /**
-   * Load filter options and additional analytics for a player
-   */
   const loadPlayerAnalytics = useCallback(async (playerId: string) => {
     try {
       const [options, courses, holes, trends] = await Promise.all([
@@ -401,49 +741,38 @@ export default function StatsClient({
     }
   }, []);
 
-  /**
-   * Handle filter change
-   */
   const handleFilterChange = useCallback((filter: StatsFilter | null) => {
     setActiveFilter(filter);
-    // Clear detailed stats to force reload with new filter
     setDetailedStats(null);
   }, []);
 
-  // Load detailed stats when needed (player selected or tab changed to detailed view)
   useEffect(() => {
     const playerId = selectedPlayerId || (userRole === 'player' ? initialPlayerId : null);
     if (!playerId) return;
 
-    // Load detailed stats when viewing detailed tabs
     const detailedTabs: StatsCategory[] = ['scoring', 'driving', 'approach', 'putting', 'scrambling', 'strokes-gained', 'progress'];
     if (detailedTabs.includes(activeTab) && !detailedStats) {
       loadDetailedStats(playerId, selectedRoundId, activeFilter);
     }
   }, [activeTab, selectedPlayerId, selectedRoundId, initialPlayerId, userRole, detailedStats, loadDetailedStats, activeFilter]);
 
-  // Reload detailed stats when round selection or filter changes
   useEffect(() => {
     const playerId = selectedPlayerId || (userRole === 'player' ? initialPlayerId : null);
     if (!playerId) return;
 
-    // Build cache key including filter
     const filterKey = activeFilter ? JSON.stringify(activeFilter) : 'none';
     const cacheKey = `${playerId}-${selectedRoundId}-${filterKey}`;
 
     if (detailedStatsCache.current.has(cacheKey)) {
       setDetailedStats(detailedStatsCache.current.get(cacheKey)!);
     } else if (detailedStats) {
-      // Reload with new filter/round
       loadDetailedStats(playerId, selectedRoundId, activeFilter);
     }
   }, [selectedRoundId, activeFilter]);
 
-  // Load filter options and analytics when player is selected
   useEffect(() => {
     const playerId = selectedPlayerId || (userRole === 'player' ? initialPlayerId : null);
     if (!playerId) return;
-
     loadPlayerAnalytics(playerId);
   }, [selectedPlayerId, initialPlayerId, userRole, loadPlayerAnalytics]);
 
@@ -458,15 +787,14 @@ export default function StatsClient({
     setSelectedPlayerId(playerId);
     setSelectedPlayer(player);
     setPlayerName(`${player.first_name} ${player.last_name}`);
-    setDetailedStats(null); // Clear previous detailed stats
-    setActiveFilter(null); // Reset filter for new player
+    setDetailedStats(null);
+    setActiveFilter(null);
     setCourseBreakdown(null);
     setWorstHoleData(null);
     setFilterOptions(null);
     setTrendData(null);
 
     await loadPlayerSummary(playerId);
-    // Don't load detailed stats immediately - wait for tab activation
   }
 
   function handleBackClick() {
@@ -486,7 +814,6 @@ export default function StatsClient({
     const playerId = selectedPlayerId || (userRole === 'player' ? initialPlayerId : null);
     if (!playerId) return;
 
-    // Clear cache for this player
     for (const key of detailedStatsCache.current.keys()) {
       if (key.startsWith(playerId)) {
         detailedStatsCache.current.delete(key);
@@ -511,21 +838,89 @@ export default function StatsClient({
     );
   }
 
-  // Coach view - show roster
+  // Coach view - show roster with premium design
   if (userRole === 'coach' && !selectedPlayerId) {
     return (
-      <div className="min-h-screen">
-        {/* Header */}
-        <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-6 py-5">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Team Stats</h1>
-            <p className="text-slate-500 mt-0.5">Select a player to view comprehensive analytics</p>
+      <div className="min-h-screen bg-slate-50">
+        <div className="max-w-6xl mx-auto p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Team Stats</h1>
+              <p className="text-slate-500">{players.length} players on your roster</p>
+            </div>
           </div>
-        </div>
 
-        <div className="max-w-7xl mx-auto px-6 py-8">
+          {/* KPI Summary Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <KPICard
+              label="Team Average"
+              value={teamStats.teamAvg}
+              subtext="scoring average"
+              icon={IconTarget}
+            />
+            <KPICard
+              label="Total Rounds"
+              value={teamStats.totalRounds}
+              subtext="this season"
+              icon={IconCalendar}
+            />
+            <KPICard
+              label="Top 5 Average"
+              value={teamStats.top5Avg}
+              subtext="lineup ready"
+              icon={IconChart}
+            />
+            <KPICard
+              label="Improving"
+              value={`${teamStats.improvingCount}/${teamStats.totalPlayers}`}
+              subtext="trending up"
+              trend="up"
+              icon={IconUsers}
+            />
+          </div>
+
+          {/* Filters Bar */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex-1 min-w-[200px] relative">
+                <IconSearch size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  placeholder="Search players..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition-colors"
+                />
+              </div>
+
+              <select
+                value={classFilter}
+                onChange={(e) => setClassFilter(e.target.value)}
+                className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+              >
+                <option value="all">All Classes</option>
+                {graduationYears.map(year => (
+                  <option key={year} value={year}>Class of {year}</option>
+                ))}
+              </select>
+
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+              >
+                <option value="avg">Sort: Best Avg</option>
+                <option value="name">Sort: Name A-Z</option>
+                <option value="improved">Sort: Most Improved</option>
+                <option value="recent">Sort: Recent Activity</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Player Cards */}
           {players.length === 0 ? (
-            <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
+            <div className="relative bg-white rounded-2xl border border-slate-200 overflow-hidden p-16 text-center">
               <ShineEffect />
               <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <IconUser size={28} className="text-slate-400" />
@@ -535,69 +930,26 @@ export default function StatsClient({
             </div>
           ) : (
             <div className="space-y-3">
-              {players.map((player, index) => (
-                <button
+              {filteredPlayers.map((player, index) => (
+                <PlayerCard
                   key={player.id}
+                  player={player}
+                  rank={index + 1}
                   onClick={() => handlePlayerClick(player.id)}
-                  className="w-full group relative glass-standard rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left"
-                  style={{
-                    animation: 'fadeInUp 0.4s ease-out forwards',
-                    animationDelay: `${index * 30}ms`,
-                    opacity: 0,
-                  }}
-                >
-                  <ShineEffect />
-                  <div className="flex items-center gap-4 p-4">
-                    {/* Avatar */}
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <span className="text-white font-semibold text-sm">
-                        {player.first_name?.[0] || '?'}{player.last_name?.[0] || '?'}
-                      </span>
-                    </div>
-
-                    {/* Player Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900 group-hover:text-green-600 transition-colors">
-                        {player.first_name} {player.last_name}
-                      </p>
-                      <p className="text-sm text-slate-500 capitalize">
-                        {player.graduation_year ? `Class of ${player.graduation_year}` : 'Player'}
-                        {player.handicap !== null && ` | ${player.handicap > 0 ? '+' : ''}${player.handicap} HCP`}
-                      </p>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="hidden md:flex items-center gap-6">
-                      <div className="text-center px-3">
-                        <p className="text-xs text-slate-400 mb-0.5">Rounds</p>
-                        <p className="font-semibold text-slate-900 tabular-nums">{player.stats?.rounds_played || 0}</p>
-                      </div>
-                      <div className="text-center px-3">
-                        <p className="text-xs text-slate-400 mb-0.5">Avg Score</p>
-                        <p className="font-semibold text-slate-900 tabular-nums">
-                          {player.stats?.scoring_average ? player.stats.scoring_average.toFixed(1) : '--'}
-                        </p>
-                      </div>
-                      <div className="text-center px-3">
-                        <p className="text-xs text-slate-400 mb-0.5">Best</p>
-                        <p className="font-semibold text-green-600 tabular-nums">
-                          {player.stats?.best_round || '--'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </button>
+                />
               ))}
             </div>
           )}
-        </div>
 
-        <style jsx>{`
-          @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
+          {/* Results count */}
+          {filteredPlayers.length > 0 && filteredPlayers.length !== players.length && (
+            <div className="mt-6 text-center">
+              <p className="text-slate-500 text-sm">
+                Showing {filteredPlayers.length} of {players.length} players
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -635,7 +987,6 @@ export default function StatsClient({
         <GolfStatsDisplay
           stats={detailedStats}
           playerName={playerName}
-          // Player profile (for coach view)
           playerProfile={userRole === 'coach' && selectedPlayer ? {
             avatarUrl: selectedPlayer.avatar_url,
             gradYear: selectedPlayer.graduation_year,
@@ -656,11 +1007,9 @@ export default function StatsClient({
           }))}
           selectedRoundId={selectedRoundId}
           onRoundChange={setSelectedRoundId}
-          // Filter props
           activeFilter={activeFilter}
           onFilterChange={handleFilterChange}
           filterOptions={filterOptions}
-          // Analytics props
           courseBreakdown={courseBreakdown}
           worstHoleData={worstHoleData}
           trendData={trendData}
