@@ -2,6 +2,9 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { MyInsightsContent } from './MyInsightsContent';
 
+// Force dynamic rendering - requires Supabase auth at runtime
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'GolfHelm | My Insights',
   description: 'Your personalized golf performance insights and recommendations',
