@@ -928,6 +928,57 @@ export default function StatsClient({
             />
           </div>
 
+          {/* Team Insights Bar */}
+          {players.length >= 3 && (() => {
+            const playersWithScores = players.filter(p => p.stats?.scoring_average);
+            const bestPlayer = playersWithScores.length > 0
+              ? [...playersWithScores].sort((a, b) => (a.stats?.scoring_average || 999) - (b.stats?.scoring_average || 999))[0]
+              : null;
+            const mostImproved = playersWithScores.filter(p => p.stats?.trend === 'up');
+            const needsAttention = playersWithScores.filter(p => p.stats?.trend === 'down');
+            const inactivePlayers = players.filter(p => !p.stats?.rounds_played || p.stats.rounds_played === 0);
+
+            return (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 p-4 mb-4">
+                <h3 className="text-xs font-semibold text-green-800 uppercase tracking-wider mb-3">Team Insights</h3>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  {bestPlayer && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-600 font-medium">Top Performer:</span>
+                      <span className="text-slate-700">
+                        {bestPlayer.first_name} {bestPlayer.last_name} ({bestPlayer.stats?.scoring_average?.toFixed(1)} avg)
+                      </span>
+                    </div>
+                  )}
+                  {mostImproved.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <IconTrendingUp size={14} className="text-green-500" />
+                      <span className="text-slate-700">
+                        <span className="font-medium text-green-600">{mostImproved.length}</span> player{mostImproved.length !== 1 ? 's' : ''} improving
+                      </span>
+                    </div>
+                  )}
+                  {needsAttention.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <IconTrendingDown size={14} className="text-red-500" />
+                      <span className="text-slate-700">
+                        <span className="font-medium text-red-600">{needsAttention.length}</span> declining -- may need coaching
+                      </span>
+                    </div>
+                  )}
+                  {inactivePlayers.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                      <span className="text-slate-600">
+                        {inactivePlayers.length} player{inactivePlayers.length !== 1 ? 's' : ''} with no rounds
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Filters Bar */}
           <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
             <div className="flex flex-wrap items-center gap-4">

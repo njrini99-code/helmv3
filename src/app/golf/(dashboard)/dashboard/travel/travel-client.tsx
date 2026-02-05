@@ -123,6 +123,31 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
     }
   };
 
+  const getTripStatus = (itinerary: TravelItinerary) => {
+    const now = new Date();
+    const departure = new Date(itinerary.departure_date);
+    const returnDate = itinerary.return_date ? new Date(itinerary.return_date) : null;
+    const diffMs = departure.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (returnDate && now > returnDate) {
+      return { label: 'Completed', color: 'bg-slate-100 text-slate-600', dotColor: 'bg-slate-400' };
+    }
+    if (now >= departure && returnDate && now <= returnDate) {
+      return { label: 'In Transit', color: 'bg-green-100 text-green-700', dotColor: 'bg-green-500', pulse: true };
+    }
+    if (now >= departure && !returnDate) {
+      return { label: 'Departed', color: 'bg-slate-100 text-slate-600', dotColor: 'bg-slate-400' };
+    }
+    if (diffDays <= 3 && diffDays > 0) {
+      return { label: `${diffDays}d away`, color: 'bg-amber-100 text-amber-700', dotColor: 'bg-amber-500' };
+    }
+    if (diffDays <= 7 && diffDays > 0) {
+      return { label: `${diffDays}d away`, color: 'bg-blue-100 text-blue-700', dotColor: 'bg-blue-500' };
+    }
+    return { label: 'Upcoming', color: 'bg-slate-100 text-slate-600', dotColor: 'bg-slate-400' };
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
@@ -316,7 +341,17 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Travel</h1>
-              <p className="text-slate-500 mt-0.5">Tournament travel itineraries & expenses</p>
+              <p className="text-slate-500 mt-0.5">
+                {itineraries.length === 0
+                  ? 'Tournament travel itineraries & expenses'
+                  : (() => {
+                      const now = new Date();
+                      const upcoming = itineraries.filter(i => new Date(i.departure_date) > now).length;
+                      const past = itineraries.length - upcoming;
+                      return `${upcoming} upcoming trip${upcoming !== 1 ? 's' : ''}${past > 0 ? ` \u00b7 ${past} completed` : ''}`;
+                    })()
+                }
+              </p>
             </div>
             {isCoach && (
               <button
@@ -382,7 +417,18 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   <div className="flex items-start gap-3">
                     <div className="text-2xl">{getTransportIcon(itinerary.transportation_type)}</div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-slate-900 truncate">{itinerary.event_name}</h3>
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-semibold text-slate-900 truncate">{itinerary.event_name}</h3>
+                        {(() => {
+                          const status = getTripStatus(itinerary);
+                          return (
+                            <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${status.dotColor} ${status.pulse ? 'animate-pulse' : ''}`} />
+                              {status.label}
+                            </span>
+                          );
+                        })()}
+                      </div>
                       <div className="flex items-center gap-1 text-sm text-slate-500 mt-0.5">
                         <IconMapPin size={14} />
                         <span className="truncate">{itinerary.destination}</span>
@@ -390,6 +436,9 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                       <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
                         <IconCalendar size={12} />
                         <span>{formatDate(itinerary.departure_date)}</span>
+                        {itinerary.return_date && itinerary.return_date !== itinerary.departure_date && (
+                          <span> - {formatDate(itinerary.return_date)}</span>
+                        )}
                       </div>
                     </div>
                   </div>

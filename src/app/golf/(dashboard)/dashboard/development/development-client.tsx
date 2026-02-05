@@ -521,27 +521,46 @@ export function DevelopmentPlansClient({
                     <p className="text-sm text-slate-500 italic">No focus areas assigned</p>
                   ) : (
                     <div className="space-y-2">
-                      {areas.slice(0, 3).map(fa => (
-                        <div
-                          key={fa.id}
-                          className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg">
-                              {AREA_TYPES.find(t => t.value === fa.area_type)?.icon || '📋'}
-                            </span>
-                            <span className="font-medium text-slate-700">{fa.title}</span>
-                          </div>
-                          <span
-                            className={cn(
-                              'px-2 py-0.5 text-xs font-medium rounded-full',
-                              STATUS_OPTIONS.find(s => s.value === fa.status)?.color
-                            )}
+                      {areas.slice(0, 3).map(fa => {
+                        const pct = fa.target_value ? getProgressPercent(fa.current_value, fa.target_value) : null;
+                        return (
+                          <div
+                            key={fa.id}
+                            className="p-3 bg-slate-50 rounded-lg"
                           >
-                            {STATUS_OPTIONS.find(s => s.value === fa.status)?.label || fa.status}
-                          </span>
-                        </div>
-                      ))}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <span className="text-lg flex-shrink-0">
+                                  {AREA_TYPES.find(t => t.value === fa.area_type)?.icon || '📋'}
+                                </span>
+                                <span className="font-medium text-slate-700 truncate">{fa.title}</span>
+                              </div>
+                              <span
+                                className={cn(
+                                  'px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ml-2',
+                                  STATUS_OPTIONS.find(s => s.value === fa.status)?.color
+                                )}
+                              >
+                                {STATUS_OPTIONS.find(s => s.value === fa.status)?.label || fa.status}
+                              </span>
+                            </div>
+                            {pct !== null && (
+                              <div className="mt-2 flex items-center gap-2">
+                                <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                  <div
+                                    className={cn(
+                                      'h-full rounded-full transition-all duration-500',
+                                      pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-slate-400'
+                                    )}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-medium text-slate-500 tabular-nums w-8 text-right">{pct}%</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                       {areas.length > 3 && (
                         <p className="text-sm text-slate-500 text-center pt-2">
                           +{areas.length - 3} more
