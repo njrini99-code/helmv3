@@ -284,60 +284,64 @@ export default function CollegeInterestClient() {
         title="College Interest"
         subtitle="Track which colleges are viewing your players"
       />
-      <div className="p-8">
+      <div className="p-4 lg:p-8">
         {/* Stats Overview */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
           <Card variant="glass">
-            <CardContent className="p-6">
+            <CardContent className="p-4 lg:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Players Tracked</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.totalPlayers}</p>
+                <div className="min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">Players Tracked</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.totalPlayers}</p>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
-                  <IconEye size={24} className="text-blue-600" />
+                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 ml-2">
+                  <IconEye size={20} className="text-blue-600 lg:hidden" />
+                  <IconEye size={24} className="text-blue-600 hidden lg:block" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card variant="glass">
-            <CardContent className="p-6">
+            <CardContent className="p-4 lg:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">High Interest</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.highInterest}</p>
+                <div className="min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">High Interest</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.highInterest}</p>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center">
-                  <IconStar size={24} className="text-amber-600" />
+                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0 ml-2">
+                  <IconStar size={20} className="text-amber-600 lg:hidden" />
+                  <IconStar size={24} className="text-amber-600 hidden lg:block" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card variant="glass">
-            <CardContent className="p-6">
+            <CardContent className="p-4 lg:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Total Views</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.totalViews}</p>
+                <div className="min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">Total Views</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.totalViews}</p>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center">
-                  <IconEye size={24} className="text-purple-600" />
+                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 ml-2">
+                  <IconEye size={20} className="text-purple-600 lg:hidden" />
+                  <IconEye size={24} className="text-purple-600 hidden lg:block" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card variant="glass">
-            <CardContent className="p-6">
+            <CardContent className="p-4 lg:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Avg Coaches/Player</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.avgCoachesPerPlayer}</p>
+                <div className="min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">Avg Coaches</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.avgCoachesPerPlayer}</p>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
-                  <IconTrendingUp size={24} className="text-green-600" />
+                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0 ml-2">
+                  <IconTrendingUp size={20} className="text-green-600 lg:hidden" />
+                  <IconTrendingUp size={24} className="text-green-600 hidden lg:block" />
                 </div>
               </div>
             </CardContent>
@@ -347,18 +351,19 @@ export default function CollegeInterestClient() {
         {/* Interest List */}
         <Card variant="glass">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <h2 className="font-semibold text-slate-900">Player Interest Activity</h2>
-                <p className="text-sm leading-relaxed text-slate-500 mt-1">
+                <p className="text-sm leading-relaxed text-slate-500 mt-1 hidden lg:block">
                   See which colleges are viewing and tracking your players
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
                 <Button
                   variant={filter === 'all' ? 'primary' : 'secondary'}
                   size="sm"
                   onClick={() => setFilter('all')}
+                  className="whitespace-nowrap flex-shrink-0"
                 >
                   All Players
                 </Button>
@@ -366,6 +371,7 @@ export default function CollegeInterestClient() {
                   variant={filter === 'high' ? 'primary' : 'secondary'}
                   size="sm"
                   onClick={() => setFilter('high')}
+                  className="whitespace-nowrap flex-shrink-0"
                 >
                   High Interest
                 </Button>
@@ -373,6 +379,7 @@ export default function CollegeInterestClient() {
                   variant={filter === 'recent' ? 'primary' : 'secondary'}
                   size="sm"
                   onClick={() => setFilter('recent')}
+                  className="whitespace-nowrap flex-shrink-0"
                 >
                   Recent (7d)
                 </Button>
@@ -397,34 +404,34 @@ export default function CollegeInterestClient() {
               </div>
             ) : (
               /* Interest List */
-              <div className="space-y-6">
+              <div className="space-y-4 lg:space-y-6">
                 {interests.map((interest) => (
                   <div
                     key={interest.player_id}
-                    className="border border-slate-200 rounded-lg p-4"
+                    className="border border-slate-200 rounded-lg p-3 lg:p-4"
                   >
-                    <div className="flex items-start gap-4 mb-4">
+                    <div className="flex items-start gap-3 lg:gap-4 mb-3 lg:mb-4">
                       <Avatar
                         name={interest.player_name}
                         src={interest.player_avatar_url || undefined}
                         size="md"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-slate-900">{interest.player_name}</h3>
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-slate-900 text-sm lg:text-base">{interest.player_name}</h3>
                           {interest.watchlist_adds > 0 && (
-                            <Badge variant="default">
+                            <Badge variant="default" className="text-xs">
                               {interest.watchlist_adds} watchlist{interest.watchlist_adds > 1 ? 's' : ''}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm leading-relaxed text-slate-600">
+                        <p className="text-xs lg:text-sm leading-relaxed text-slate-600">
                           {interest.player_position} • {interest.player_grad_year}
                         </p>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
+                        <div className="flex flex-wrap items-center gap-2 lg:gap-4 mt-2 text-xs lg:text-sm text-slate-500">
                           <span>{interest.total_views} views</span>
-                          <span>•</span>
-                          <span>{interest.unique_coaches} college{interest.unique_coaches !== 1 ? 's' : ''} interested</span>
+                          <span className="hidden lg:inline">•</span>
+                          <span>{interest.unique_coaches} college{interest.unique_coaches !== 1 ? 's' : ''}</span>
                         </div>
                       </div>
                     </div>
@@ -436,30 +443,36 @@ export default function CollegeInterestClient() {
                         {interest.recent_activity.slice(0, 5).map((activity) => (
                           <div
                             key={activity.id}
-                            className="flex items-center gap-3 text-sm"
+                            className="flex items-start lg:items-center gap-2 lg:gap-3 text-xs lg:text-sm"
                           >
-                            <div className="flex-shrink-0">
+                            <div className="flex-shrink-0 mt-0.5 lg:mt-0">
                               {getEngagementIcon(activity.engagement_type)}
                             </div>
                             <div className="flex-1 min-w-0">
                               {!activity.coach_name ? (
                                 <p className="text-slate-600">
-                                  <span className="font-medium">A college coach</span> {getEngagementLabel(activity.engagement_type).toLowerCase()}
+                                  <span className="font-medium">A college coach</span>{' '}
+                                  <span className="hidden lg:inline">{getEngagementLabel(activity.engagement_type).toLowerCase()}</span>
+                                  <span className="lg:hidden">viewed</span>
                                   {activity.coach_division && (
                                     <span className="text-slate-500"> • {activity.coach_division}</span>
                                   )}
                                 </p>
                               ) : (
                                 <p className="text-slate-600">
-                                  <span className="font-medium">{activity.coach_name}</span> from{' '}
-                                  <span className="font-medium">{activity.coach_school}</span> {getEngagementLabel(activity.engagement_type).toLowerCase()}
+                                  <span className="font-medium">{activity.coach_name}</span>
+                                  <span className="hidden lg:inline"> from <span className="font-medium">{activity.coach_school}</span> {getEngagementLabel(activity.engagement_type).toLowerCase()}</span>
+                                  <span className="lg:hidden block text-slate-500">{activity.coach_school}</span>
                                   {activity.coach_division && (
-                                    <span className="text-slate-500"> • {activity.coach_division}</span>
+                                    <span className="text-slate-500 hidden lg:inline"> • {activity.coach_division}</span>
                                   )}
                                 </p>
                               )}
+                              <span className="text-[10px] lg:hidden text-slate-400 block mt-0.5">
+                                {activity.created_at ? formatRelativeTime(activity.created_at) : ''}
+                              </span>
                             </div>
-                            <div className="flex-shrink-0 text-xs text-slate-400">
+                            <div className="flex-shrink-0 text-xs text-slate-400 hidden lg:block">
                               {activity.created_at ? formatRelativeTime(activity.created_at) : ''}
                             </div>
                           </div>

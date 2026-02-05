@@ -20,6 +20,8 @@ import { LineupBuilder } from '@/components/coach/lineup/LineupBuilder';
 import { saveLineup } from '@/app/baseball/actions/lineups';
 import { useToast } from '@/components/ui/toast';
 
+type MemberStatus = 'active' | 'inactive' | 'injured' | 'alumni';
+
 interface TeamMember {
   id: string;
   player: {
@@ -37,6 +39,7 @@ interface TeamMember {
   };
   jersey_number: number | null;
   joined_at: string | null;
+  status: MemberStatus;
 }
 
 export default function RosterPage() {
@@ -72,6 +75,7 @@ export default function RosterPage() {
         id,
         jersey_number,
         joined_at,
+        status,
         player:baseball_players (
           id,
           first_name,
@@ -272,10 +276,17 @@ export default function RosterPage() {
                           {member.jersey_number || '-'}
                         </td>
                         <td className="py-4 px-4">
-                          {member.player.recruiting_activated ? (
-                            <Badge variant="success">Recruiting Active</Badge>
-                          ) : (
-                            <Badge variant="secondary">Team Only</Badge>
+                          {member.status === 'active' && (
+                            <Badge variant="success">Active</Badge>
+                          )}
+                          {member.status === 'inactive' && (
+                            <Badge variant="secondary">Inactive</Badge>
+                          )}
+                          {member.status === 'injured' && (
+                            <Badge variant="warning">Injured</Badge>
+                          )}
+                          {member.status === 'alumni' && (
+                            <Badge variant="secondary">Alumni</Badge>
                           )}
                         </td>
                         <td className="py-4 px-4">

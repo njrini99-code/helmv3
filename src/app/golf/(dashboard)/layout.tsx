@@ -8,6 +8,7 @@ import { PageLoading } from '@/components/ui/loading';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { ToastProvider } from '@/components/ui/toast';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
+import { usePresence } from '@/hooks/use-presence';
 import { ViewTransitionsProvider } from '@/components/providers/ViewTransitionsProvider';
 import { CommandPalette } from '@/components/golf/CommandPalette';
 import { MobileBottomNav } from '@/components/golf/MobileBottomNav';
@@ -25,6 +26,9 @@ interface UserData {
 function GolfDashboardContent({ children, userData }: { children: React.ReactNode; userData: UserData }) {
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
   const isCoach = userData.role === 'coach';
+
+  // Track user online presence
+  usePresence();
 
   return (
     <div className="flex h-screen bg-dashboard-gradient overscroll-none" style={{ overscrollBehavior: 'none' }}>
