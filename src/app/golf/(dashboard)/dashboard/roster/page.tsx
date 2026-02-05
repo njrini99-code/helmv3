@@ -258,7 +258,7 @@ export default async function GolfRosterPage() {
   const inviteCode = team?.join_code || null;
 
   return (
-    <RosterPageClient>
+    <RosterPageClient players={playersWithStats}>
     <div className="min-h-full bg-transparent">
       {/* Header Section */}
       <MobileNavHeader
@@ -274,16 +274,35 @@ export default async function GolfRosterPage() {
         <PendingJoinRequests />
 
         {playersWithStats.length === 0 ? (
-          /* Empty State */
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 md:p-16 text-center shadow-sm">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-5">
-              <IconUsers size={28} className="text-slate-400" />
+          /* Enhanced Empty State */
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 md:p-16 text-center shadow-sm relative overflow-hidden">
+            {/* Decorative background pattern */}
+            <div className="absolute inset-0 opacity-[0.03]">
+              <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                <pattern id="roster-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <circle cx="20" cy="20" r="2" fill="currentColor" />
+                </pattern>
+                <rect fill="url(#roster-pattern)" width="100%" height="100%" />
+              </svg>
             </div>
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">No Players Yet</h3>
-            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
-              Start building your team by inviting players to join your roster
-            </p>
-            <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
+            <div className="relative z-10">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <IconUsers size={36} className="text-primary-500" />
+              </div>
+              <h3 className="text-2xl font-semibold text-slate-900 mb-3">Build Your Team</h3>
+              <p className="text-slate-500 mb-4 max-w-md mx-auto leading-relaxed">
+                Start building your team by inviting players to join your roster.
+                Players will receive a code they can use to join.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
+                <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
+              </div>
+              {inviteCode && (
+                <p className="text-xs text-slate-400 mt-4">
+                  Team code: <span className="font-mono font-medium text-slate-500">{inviteCode}</span>
+                </p>
+              )}
+            </div>
           </div>
         ) : (
           /* Player Cards Grid - 1 column on mobile, 2 columns on desktop */

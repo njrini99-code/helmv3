@@ -4,9 +4,30 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signupAction } from '@/app/golf/actions/auth';
-import { Users, GraduationCap } from 'lucide-react';
+import { Users, GraduationCap, AlertCircle } from 'lucide-react';
+import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 
 type Role = 'player' | 'coach';
+
+function getSignupErrorMessage(error: string): string {
+  const lower = error.toLowerCase();
+  if (lower.includes('already registered') || lower.includes('already exists') || lower.includes('user_already_exists')) {
+    return 'An account with this email already exists. Please sign in instead, or use a different email.';
+  }
+  if (lower.includes('invalid email') || lower.includes('validate email')) {
+    return 'Please enter a valid email address.';
+  }
+  if (lower.includes('weak password') || lower.includes('password')) {
+    return 'Password does not meet the requirements. Please use at least 8 characters.';
+  }
+  if (lower.includes('network') || lower.includes('fetch')) {
+    return 'Unable to reach the server. Please check your internet connection and try again.';
+  }
+  if (lower.includes('rate limit') || lower.includes('too many')) {
+    return 'Too many attempts. Please wait a moment and try again.';
+  }
+  return error;
+}
 
 export function GolfSignUpForm() {
   const router = useRouter();
@@ -34,6 +55,11 @@ export function GolfSignUpForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -47,7 +73,7 @@ export function GolfSignUpForm() {
       );
 
       if (!result.success) {
-        setError(result.error || 'Signup failed');
+        setError(getSignupErrorMessage(result.error || 'Signup failed'));
         setIsLoading(false);
         return;
       }
@@ -78,7 +104,7 @@ export function GolfSignUpForm() {
         router.push(role === 'coach' ? '/golf/coach' : '/golf/player');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Signup failed');
+      setError(getSignupErrorMessage(err instanceof Error ? err.message : 'Signup failed'));
       setIsLoading(false);
     }
     // Note: We don't set isLoading to false on success because
@@ -86,20 +112,35 @@ export function GolfSignUpForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-[10px]">
-          {error}
+        <div
+          className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-[10px] flex items-start gap-2.5"
+          role="alert"
+        >
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <div>
+            <span>{error}</span>
+            {error.includes('already exists') && (
+              <Link
+                href="/golf/login"
+                className="block mt-1 text-primary-600 font-medium hover:text-primary-700 underline underline-offset-2"
+              >
+                Go to sign in
+              </Link>
+            )}
+          </div>
         </div>
       )}
 
       {/* Role Selection */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-warm-700">I am a...</label>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium text-warm-700">I am a...</legend>
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => setRole('player')}
+            aria-pressed={role === 'player'}
             className={`
               p-4 rounded-[10px] border-2 transition-all
               flex flex-col items-center gap-2
@@ -118,6 +159,7 @@ export function GolfSignUpForm() {
           <button
             type="button"
             onClick={() => setRole('coach')}
+            aria-pressed={role === 'coach'}
             className={`
               p-4 rounded-[10px] border-2 transition-all
               flex flex-col items-center gap-2
@@ -133,20 +175,22 @@ export function GolfSignUpForm() {
             </span>
           </button>
         </div>
-      </div>
+      </fieldset>
 
       {/* Name fields - side by side */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-warm-700">
+          <label htmlFor="golf-signup-firstname" className="text-sm font-medium text-warm-700">
             First name
           </label>
           <input
+            id="golf-signup-firstname"
             type="text"
             value={formData.firstName}
             onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
             placeholder="John"
             required
+            autoComplete="given-name"
             className="
               w-full px-4 py-3
               bg-white border border-warm-200 rounded-[10px]
@@ -157,15 +201,17 @@ export function GolfSignUpForm() {
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-warm-700">
+          <label htmlFor="golf-signup-lastname" className="text-sm font-medium text-warm-700">
             Last name
           </label>
           <input
+            id="golf-signup-lastname"
             type="text"
             value={formData.lastName}
             onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
             placeholder="Doe"
             required
+            autoComplete="family-name"
             className="
               w-full px-4 py-3
               bg-white border border-warm-200 rounded-[10px]
@@ -179,48 +225,50 @@ export function GolfSignUpForm() {
 
       {/* Email */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-warm-700">
+        <label htmlFor="golf-signup-email" className="text-sm font-medium text-warm-700">
           Email
         </label>
         <input
+          id="golf-signup-email"
           type="email"
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           placeholder="you@example.com"
           required
+          autoComplete="email"
           className="
             w-full px-4 py-3
             bg-white border border-warm-200 rounded-[10px]
-            text-warm-900 text-sm placeholder:text-warm-400
+            text-warm-900 text-base lg:text-sm placeholder:text-warm-400
             transition-all duration-200
             focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
           "
         />
       </div>
 
-      {/* Password */}
+      {/* Password with strength indicator */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-warm-700">
+        <label htmlFor="golf-signup-password" className="text-sm font-medium text-warm-700">
           Password
         </label>
         <input
+          id="golf-signup-password"
           type="password"
           value={formData.password}
           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          placeholder="••••••••"
+          placeholder="Create a strong password"
           required
           minLength={8}
+          autoComplete="new-password"
           className="
             w-full px-4 py-3
             bg-white border border-warm-200 rounded-[10px]
-            text-warm-900 text-sm placeholder:text-warm-400
+            text-warm-900 text-base lg:text-sm placeholder:text-warm-400
             transition-all duration-200
             focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
           "
         />
-        <p className="text-xs text-warm-400">
-          Must be at least 8 characters
-        </p>
+        <PasswordStrengthIndicator password={formData.password} />
       </div>
 
       {/* Submit */}
@@ -239,10 +287,11 @@ export function GolfSignUpForm() {
         "
       >
         {isLoading ? (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1" role="status" aria-label="Creating account">
             <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
             <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
             <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <span className="sr-only">Creating account...</span>
           </div>
         ) : (
           'Create account'

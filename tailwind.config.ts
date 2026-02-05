@@ -313,6 +313,11 @@ const config: Config = {
         'aurora': 'aurora 15s ease-in-out infinite alternate',
         'scroll-bounce': 'scroll-bounce 2s ease-in-out infinite',
         'gradient-shift': 'gradient-shift 8s ease infinite',
+        'ripple': 'ripple 0.6s linear',
+        'checkmark': 'checkmark 0.3s ease-out forwards',
+        'progress-fill': 'progress-fill 0.8s ease-out forwards',
+        'progress-indeterminate': 'progress-indeterminate 1.5s ease-in-out infinite',
+        'badge-pulse': 'badge-pulse 2s ease-in-out infinite',
       },
       keyframes: {
         shake: {
@@ -414,6 +419,27 @@ const config: Config = {
           '0%, 100%': { transform: 'translate(0, 0)' },
           '33%': { transform: 'translate(-10px, 10px)' },
           '66%': { transform: 'translate(10px, -5px)' },
+        },
+        'ripple': {
+          '0%': { transform: 'scale(0)', opacity: '0.4' },
+          '100%': { transform: 'scale(4)', opacity: '0' },
+        },
+        'checkmark': {
+          '0%': { strokeDashoffset: '24', opacity: '0' },
+          '50%': { opacity: '1' },
+          '100%': { strokeDashoffset: '0', opacity: '1' },
+        },
+        'progress-fill': {
+          '0%': { width: '0%' },
+          '100%': { width: 'var(--progress-width)' },
+        },
+        'progress-indeterminate': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(400%)' },
+        },
+        'badge-pulse': {
+          '0%, 100%': { transform: 'scale(1)', opacity: '1' },
+          '50%': { transform: 'scale(1.05)', opacity: '0.85' },
         },
         // ═══════════════════════════════════════════════════════════════
         // LEGACY KEYFRAMES - Keep for backward compatibility

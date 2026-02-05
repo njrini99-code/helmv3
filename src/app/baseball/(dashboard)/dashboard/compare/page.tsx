@@ -124,7 +124,32 @@ function CompareContent() {
     return (
       <>
         <Header title="Compare Players" subtitle="Side-by-side player comparison" />
-        <PageLoading />
+        <div className="p-8 space-y-6">
+          {/* Skeleton for search area */}
+          <Card variant="glass">
+            <CardContent className="p-5">
+              <div className="animate-pulse space-y-3">
+                <div className="h-4 bg-slate-200 rounded w-40" />
+                <div className="h-10 bg-slate-200 rounded w-full" />
+              </div>
+            </CardContent>
+          </Card>
+          {/* Skeleton for comparison */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {playerIds.map((id) => (
+              <div key={id} className="glass-standard rounded-2xl p-6 animate-pulse">
+                <div className="w-16 h-16 rounded-full bg-slate-200 mx-auto mb-3" />
+                <div className="h-4 bg-slate-200 rounded w-3/4 mx-auto mb-2" />
+                <div className="h-3 bg-slate-200 rounded w-1/2 mx-auto mb-4" />
+                <div className="space-y-2">
+                  {[1,2,3,4].map(i => (
+                    <div key={i} className="h-3 bg-slate-100 rounded" />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </>
     );
   }
@@ -207,16 +232,16 @@ function CompareContent() {
                   return (
                     <div
                       key={player.id}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full"
+                      className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full hover:bg-green-100 transition-colors"
                     >
                       <Avatar name={name} src={player.avatar_url} size="xs" />
-                      <span className="text-sm font-medium text-slate-700">{name}</span>
+                      <span className="text-sm font-medium text-green-800">{name}</span>
                       <button
                         onClick={() => removePlayer(player.id)}
-                        className="min-w-[44px] min-h-[44px] p-2 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"
+                        className="min-w-[44px] min-h-[44px] p-2 flex items-center justify-center rounded-full hover:bg-green-200 transition-colors"
                         aria-label={`Remove ${name} from comparison`}
                       >
-                        <IconX size={14} className="text-slate-500" />
+                        <IconX size={14} className="text-green-600" />
                       </button>
                     </div>
                   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useState, useId } from 'react';
+import { forwardRef, useState, useId, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -12,17 +12,40 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   rightIcon?: React.ReactNode;
   onRightIconClick?: () => void;
   variant?: 'default' | 'glass';
+  clearable?: boolean;
+  onClear?: () => void;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, success, hint, leftIcon, rightIcon, onRightIconClick, type, id, variant = 'default', ...props }, ref) => {
+  ({ className, label, error, success, hint, leftIcon, rightIcon, onRightIconClick, type, id, variant = 'default', clearable = false, onClear, value, onChange, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
     const generatedId = useId();
     const inputId = id || generatedId;
     const isPassword = type === 'password';
     const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
 
-    const baseStyles = 'w-full px-4 py-2.5 rounded-[10px] text-warm-900 text-base lg:text-sm placeholder:text-warm-400 transition-all duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
+    const hasValue = value !== undefined && value !== '';
+
+    const handleClear = useCallback(() => {
+      if (onClear) {
+        onClear();
+      } else if (onChange) {
+        const syntheticEvent = {
+          target: { value: '' },
+          currentTarget: { value: '' },
+        } as React.ChangeEvent<HTMLInputElement>;
+        onChange(syntheticEvent);
+      }
+    }, [onClear, onChange]);
+
+    const baseStyles = cn(
+      'w-full px-4 py-2.5 rounded-[10px] text-warm-900 text-base lg:text-sm',
+      'placeholder:text-warm-400',
+      'transition-all duration-200',
+      'focus:outline-none',
+      'disabled:opacity-50 disabled:cursor-not-allowed',
+    );
 
     const variants = {
       default: cn(
@@ -31,7 +54,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ? 'border-red-300 focus:border-red-500 focus:ring-[3px] focus:ring-red-500/10'
           : success
           ? 'border-primary-300 focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10'
-          : 'focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10'
+          : 'focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10 hover:border-warm-300'
       ),
       glass: cn(
         'bg-white/60 backdrop-blur-sm border border-white/30',
@@ -44,14 +67,20 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-warm-700 mb-1.5">
+          <label htmlFor={inputId} className={cn(
+            'block text-sm font-medium mb-1.5 transition-colors duration-200',
+            isFocused ? 'text-warm-900' : 'text-warm-700',
+          )}>
             {label}
             {props.required && <span className="text-red-500 ml-0.5">*</span>}
           </label>
         )}
         <div className="relative group">
           {leftIcon && (
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-warm-400 transition-colors group-focus-within:text-warm-600">
+            <div className={cn(
+              'absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200',
+              isFocused ? 'text-warm-600' : 'text-warm-400',
+            )}>
               {leftIcon}
             </div>
           )}
@@ -59,22 +88,56 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             type={inputType}
+            value={value}
+            onChange={onChange}
+            onFocus={(e) => {
+              setIsFocused(true);
+              props.onFocus?.(e);
+            }}
+            onBlur={(e) => {
+              setIsFocused(false);
+              props.onBlur?.(e);
+            }}
             className={cn(
               baseStyles,
               variants[variant],
               leftIcon && 'pl-11',
-              (rightIcon || isPassword) && 'pr-11',
+              (rightIcon || isPassword || (clearable && hasValue)) && 'pr-11',
               className
             )}
             {...props}
           />
+          {/* Clear button */}
+          {clearable && hasValue && !isPassword && !rightIcon && (
+            <button
+              type="button"
+              onClick={handleClear}
+              aria-label="Clear input"
+              className={cn(
+                'absolute right-3 top-1/2 -translate-y-1/2',
+                'w-5 h-5 rounded-full flex items-center justify-center',
+                'text-warm-400 hover:text-warm-600 bg-warm-100 hover:bg-warm-200',
+                'transition-all duration-150',
+                'opacity-0 group-hover:opacity-100 focus:opacity-100',
+              )}
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
           {isPassword && (
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               aria-pressed={showPassword}
-              className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-warm-400 hover:text-warm-600 transition-colors"
+              className={cn(
+                'absolute right-1 top-1/2 -translate-y-1/2',
+                'min-w-[44px] min-h-[44px] flex items-center justify-center',
+                'text-warm-400 hover:text-warm-600',
+                'transition-colors duration-200',
+              )}
             >
               {showPassword ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -91,8 +154,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {rightIcon && !isPassword && (
             <div
               className={cn(
-                'absolute right-4 top-1/2 -translate-y-1/2 text-warm-400 transition-colors',
-                onRightIconClick && 'cursor-pointer hover:text-warm-600'
+                'absolute right-4 top-1/2 -translate-y-1/2 transition-colors duration-200',
+                isFocused ? 'text-warm-600' : 'text-warm-400',
+                onRightIconClick && 'cursor-pointer hover:text-warm-700'
               )}
               onClick={onRightIconClick}
             >
@@ -104,16 +168,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <p className="mt-1.5 text-xs text-warm-500">{hint}</p>
         )}
         {error && (
-          <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+          <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1 animate-fade-in">
+            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
             {error}
           </p>
         )}
         {success && !error && (
-          <p className="mt-1.5 text-xs text-primary-600 flex items-center gap-1">
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+          <p className="mt-1.5 text-xs text-primary-600 flex items-center gap-1 animate-fade-in">
+            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
             {success}
@@ -129,17 +193,26 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
   label?: string;
   error?: string;
   hint?: string;
+  showCharCount?: boolean;
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, label, error, hint, id, ...props }, ref) => {
+  ({ className, label, error, hint, id, showCharCount = false, maxLength, value, ...props }, ref) => {
+    const [isFocused, setIsFocused] = useState(false);
     const generatedId = useId();
     const textareaId = id || generatedId;
+
+    const charCount = typeof value === 'string' ? value.length : 0;
+    const isNearLimit = maxLength ? charCount > maxLength * 0.9 : false;
+    const isOverLimit = maxLength ? charCount > maxLength : false;
 
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={textareaId} className="block text-sm font-medium text-warm-700 mb-1.5">
+          <label htmlFor={textareaId} className={cn(
+            'block text-sm font-medium mb-1.5 transition-colors duration-200',
+            isFocused ? 'text-warm-900' : 'text-warm-700',
+          )}>
             {label}
             {props.required && <span className="text-red-500 ml-0.5">*</span>}
           </label>
@@ -147,11 +220,22 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           ref={ref}
           id={textareaId}
+          value={value}
+          maxLength={maxLength}
+          onFocus={(e) => {
+            setIsFocused(true);
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setIsFocused(false);
+            props.onBlur?.(e);
+          }}
           className={cn(
             'w-full px-4 py-3 rounded-[10px] border bg-white text-warm-900 text-base lg:text-sm',
             'placeholder:text-warm-400',
             'transition-all duration-200 resize-none',
             'focus:outline-none focus:ring-[3px] focus:border-primary-600 focus:ring-primary-600/10',
+            'hover:border-warm-300',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             error
               ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
@@ -160,17 +244,29 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           )}
           {...props}
         />
-        {hint && !error && (
-          <p className="mt-1.5 text-xs text-warm-500">{hint}</p>
-        )}
-        {error && (
-          <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            {error}
-          </p>
-        )}
+        <div className="flex items-center justify-between mt-1.5">
+          <div>
+            {hint && !error && (
+              <p className="text-xs text-warm-500">{hint}</p>
+            )}
+            {error && (
+              <p className="text-xs text-red-600 flex items-center gap-1 animate-fade-in">
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </p>
+            )}
+          </div>
+          {showCharCount && maxLength && (
+            <p className={cn(
+              'text-xs tabular-nums transition-colors duration-200',
+              isOverLimit ? 'text-red-500 font-medium' : isNearLimit ? 'text-amber-500' : 'text-warm-400'
+            )}>
+              {charCount}/{maxLength}
+            </p>
+          )}
+        </div>
       </div>
     );
   }

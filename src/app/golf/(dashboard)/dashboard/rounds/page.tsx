@@ -200,6 +200,32 @@ export default async function RoundsPage() {
     return acc;
   }, {} as Record<string, RoundWithPlayer[]>);
 
+  // Calculate round statistics summary
+  const roundStats = (() => {
+    if (rounds.length === 0) return null;
+    const scores = rounds.map(r => r.total_score).filter((s): s is number => s !== null && s > 0);
+    const toParScores = rounds.map(r => r.score_to_par).filter((s): s is number => s !== null);
+    if (scores.length === 0) return null;
+
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const best = Math.min(...scores);
+    const avgToPar = toParScores.length > 0 ? toParScores.reduce((a, b) => a + b, 0) / toParScores.length : null;
+    const underParCount = toParScores.filter(s => s < 0).length;
+    const underParPct = toParScores.length > 0 ? Math.round((underParCount / toParScores.length) * 100) : 0;
+
+    // Trend: compare last 5 vs previous 5
+    let trend: 'improving' | 'declining' | 'stable' | null = null;
+    if (scores.length >= 6) {
+      const recent5 = scores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
+      const prev5 = scores.slice(5, 10).reduce((a, b) => a + b, 0) / Math.min(5, scores.length - 5);
+      if (recent5 < prev5 - 0.5) trend = 'improving';
+      else if (recent5 > prev5 + 0.5) trend = 'declining';
+      else trend = 'stable';
+    }
+
+    return { avg, best, avgToPar, underParPct, totalRounds: scores.length, trend };
+  })();
+
   return (
     <div className="min-h-full">
       {/* Header Section */}
@@ -219,6 +245,62 @@ export default async function RoundsPage() {
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        {/* Round Statistics Summary */}
+        {roundStats && rounds.length >= 3 && (
+          <div className="mb-6 glass-standard rounded-2xl overflow-hidden p-4 md:p-5">
+            <ShineEffect />
+            <div className="relative z-10 grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
+              <div className="text-center">
+                <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums">{roundStats.totalRounds}</p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">Rounds</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums">{roundStats.avg.toFixed(1)}</p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">Avg Score</p>
+              </div>
+              <div className="text-center">
+                <p className={cn(
+                  'text-2xl md:text-3xl font-bold tabular-nums',
+                  roundStats.best < 72 ? 'text-green-600' : 'text-slate-900'
+                )}>{roundStats.best}</p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">Best Round</p>
+              </div>
+              <div className="text-center">
+                <p className={cn(
+                  'text-2xl md:text-3xl font-bold tabular-nums',
+                  roundStats.avgToPar !== null && roundStats.avgToPar < 0 ? 'text-green-600' : 'text-slate-900'
+                )}>
+                  {roundStats.avgToPar !== null
+                    ? `${roundStats.avgToPar >= 0 ? '+' : ''}${roundStats.avgToPar.toFixed(1)}`
+                    : '--'
+                  }
+                </p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">Avg to Par</p>
+              </div>
+              <div className="text-center col-span-2 md:col-span-1">
+                <div className="flex items-center justify-center gap-1.5">
+                  <p className="text-2xl md:text-3xl font-bold tabular-nums text-slate-900">
+                    {roundStats.underParPct}%
+                  </p>
+                  {roundStats.trend && (
+                    <span className={cn(
+                      'text-xs font-semibold px-1.5 py-0.5 rounded-full',
+                      roundStats.trend === 'improving' ? 'text-green-700 bg-green-50' :
+                      roundStats.trend === 'declining' ? 'text-red-600 bg-red-50' :
+                      'text-slate-500 bg-slate-50'
+                    )}>
+                      {roundStats.trend === 'improving' ? '\u2193 Improving' :
+                       roundStats.trend === 'declining' ? '\u2191 Declining' :
+                       '\u2194 Stable'}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">Under Par</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Unfinished Rounds Section */}
         {inProgressRounds.length > 0 && userRole === 'player' && (
           <>

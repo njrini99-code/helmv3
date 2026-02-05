@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -38,172 +39,264 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div
-      className="
-        min-h-screen
-        flex items-center justify-center
-        bg-cover bg-center bg-no-repeat
-        relative
-        p-4
-      "
-      style={{
-        backgroundImage: "url('/images/auth-bg-baseball.jpg')",
-        backgroundColor: '#0F172A',
-      }}
-    >
-      {/* Dark gradient overlay */}
-      <div
-        className="
-          absolute inset-0
-          bg-gradient-to-br
-          from-warm-900/90
-          via-warm-900/85
-          to-primary-900/80
-        "
-      />
+    <div className="min-h-screen flex items-center justify-center relative p-4 bg-auth-baseball">
+      {/* Skip to main content link for keyboard navigation */}
+      <a
+        href="#forgot-form"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+      >
+        Skip to form
+      </a>
 
-      {/* Decorative elements */}
+      {/* Animated floating orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary-600/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary-600/5 rounded-full blur-3xl" />
+        {/* Large primary orb - top right */}
+        <motion.div
+          className="auth-orb auth-orb-1 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] -top-20 -right-20 sm:-top-32 sm:-right-32 bg-gradient-to-br from-amber-400/40 to-orange-400/30"
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -20, 0],
+            scale: [1, 1.05, 1],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        {/* Medium orb - bottom left */}
+        <motion.div
+          className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-yellow-400/30 to-amber-400/25"
+          animate={{
+            x: [0, -25, 0],
+            y: [0, 25, 0],
+            scale: [1, 0.95, 1],
+          }}
+          transition={{
+            duration: 18,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2
+          }}
+        />
+        {/* Small accent orb - top left */}
+        <motion.div
+          className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-orange-300/25 to-amber-400/20"
+          animate={{
+            x: [0, 20, 0],
+            y: [0, -15, 0],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1
+          }}
+        />
+        {/* Tiny floating dot */}
+        <motion.div
+          className="absolute w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-amber-500/40 top-[30%] right-[15%] sm:right-[20%]"
+          animate={{
+            y: [0, -10, 0],
+            opacity: [0.4, 0.8, 0.4],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
       </div>
 
+      {/* Grid pattern overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(245, 158, 11, 0.5) 1px, transparent 1px),
+                           linear-gradient(90deg, rgba(245, 158, 11, 0.5) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px'
+        }}
+      />
+
       {/* Glass card */}
-      <div className="relative z-10 w-full max-w-[420px]">
+      <div id="forgot-form" className="relative z-10 w-full max-w-[420px]">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="
-            bg-white/85
-            backdrop-blur-xl
-            border border-white/40
-            rounded-[24px]
-            p-10
-            shadow-2xl
-          "
+          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
         >
-          {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 rounded-[12px] bg-primary-600 flex items-center justify-center mb-4 overflow-hidden">
-              <img
-                src="/helm-baseball-logo.png"
-                alt="BaseballHelm"
-                className="w-full h-full object-cover"
-              />
+          {/* Logo with glow effect */}
+          <motion.div
+            className="flex flex-col items-center mb-6 sm:mb-8"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-amber-500/30 rounded-2xl blur-xl scale-150" />
+              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-3 sm:mb-4 shadow-lg overflow-hidden">
+                <img
+                  src="/helm-baseball-logo.png"
+                  alt="BaseballHelm"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
-            <h1 className="text-xl font-bold text-warm-900">BaseballHelm</h1>
-          </div>
+            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
+              BaseballHelm
+            </h1>
+          </motion.div>
 
           {/* Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-warm-900 mb-2">
+          <motion.div
+            className="text-center mb-6 sm:mb-8"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
               {success ? 'Check your email' : 'Reset your password'}
             </h2>
-            <p className="text-warm-500">
+            <p className="text-warm-500 text-sm sm:text-base">
               {success
                 ? `We've sent a reset link to ${email}`
                 : 'Enter your email to receive a reset link'}
             </p>
-          </div>
+          </motion.div>
 
           {/* Content */}
-          {success ? (
-            <div className="space-y-5">
-              <p className="text-sm text-warm-600 text-center">
-                Click the link in the email to reset your password. The link will expire in 1
-                hour.
-              </p>
-              <Link href="/baseball/login">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            {success ? (
+              <div className="space-y-4 sm:space-y-5">
+                {/* Success illustration */}
+                <div className="flex justify-center mb-2">
+                  <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center">
+                    <Mail className="w-8 h-8 text-amber-600" />
+                  </div>
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-amber-700">
+                      <p>Click the link in the email to reset your password.</p>
+                      <p className="mt-1 text-amber-600">The link will expire in 1 hour.</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-warm-500 text-center">
+                  Did not receive the email? Check your spam folder or try again with a different email address.
+                </p>
+                <Link href="/baseball/login">
+                  <button
+                    className="
+                      w-full py-2.5 sm:py-3
+                      bg-white text-warm-700
+                      font-medium text-sm
+                      rounded-xl
+                      border border-warm-200
+                      transition-all duration-200
+                      hover:bg-warm-50 hover:border-warm-300
+                      active:scale-[0.98]
+                    "
+                  >
+                    Back to Sign In
+                  </button>
+                </Link>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
+                {error && (
+                  <div
+                    className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-start gap-2.5"
+                    role="alert"
+                  >
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label htmlFor="forgot-email" className="text-sm font-medium text-warm-700">Email</label>
+                  <input
+                    id="forgot-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                    autoFocus
+                    autoComplete="email"
+                    className="
+                      w-full px-4 py-2.5 sm:py-3
+                      bg-white
+                      border border-warm-200
+                      rounded-xl
+                      text-warm-900 text-base lg:text-sm
+                      placeholder:text-warm-400
+                      transition-all duration-200
+                      focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
+                    "
+                  />
+                </div>
+
                 <button
+                  type="submit"
+                  disabled={loading}
                   className="
-                    w-full py-3
-                    bg-white text-warm-700
+                    w-full py-2.5 sm:py-3
+                    bg-primary-600 text-white
                     font-medium text-sm
-                    rounded-[10px]
-                    border border-warm-200
+                    rounded-xl
+                    shadow-sm
                     transition-all duration-200
-                    hover:bg-warm-50 hover:border-warm-300
+                    hover:bg-primary-700 hover:shadow-md
                     active:scale-[0.98]
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    flex items-center justify-center
                   "
                 >
-                  Back to Sign In
+                  {loading ? (
+                    <div className="flex items-center gap-1" role="status" aria-label="Sending reset link">
+                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="sr-only">Sending reset link...</span>
+                    </div>
+                  ) : (
+                    'Send reset link'
+                  )}
                 </button>
-              </Link>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-[10px]">
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-warm-700">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  autoFocus
-                  className="
-                    w-full px-4 py-3
-                    bg-white
-                    border border-warm-200
-                    rounded-[10px]
-                    text-warm-900 text-base lg:text-sm
-                    placeholder:text-warm-400
-                    transition-all duration-200
-                    focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
-                  "
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="
-                  w-full py-3
-                  bg-primary-600 text-white
-                  font-medium text-sm
-                  rounded-[10px]
-                  shadow-sm
-                  transition-all duration-200
-                  hover:bg-primary-700 hover:shadow-md
-                  active:scale-[0.98]
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  flex items-center justify-center
-                "
-              >
-                {loading ? (
-                  <div className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                ) : (
-                  'Send reset link'
-                )}
-              </button>
-
-              <p className="text-center text-sm text-warm-600 pt-2">
-                Remember your password?{' '}
-                <Link href="/baseball/login" className="text-primary-600 font-medium hover:text-primary-700">
-                  Sign in
-                </Link>
-              </p>
-            </form>
-          )}
+              </form>
+            )}
+          </motion.div>
         </motion.div>
 
-        {/* Back to home */}
-        <p className="text-center mt-6 text-white/60 text-sm">
-          <Link href="/" className="hover:text-white/90 transition-colors">
-            ← Back to HelmLabs
-          </Link>
-        </p>
+        {/* Footer links */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+        >
+          {!success && (
+            <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
+              Remember your password?{' '}
+              <Link href="/baseball/login" className="text-amber-600 font-semibold hover:text-amber-700 transition-colors">
+                Sign in
+              </Link>
+            </p>
+          )}
+
+          <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
+            <Link href="/" className="hover:text-warm-700 transition-colors">
+              &#8592; Back to HelmLabs
+            </Link>
+          </p>
+        </motion.div>
       </div>
     </div>
   );

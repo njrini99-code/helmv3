@@ -242,19 +242,46 @@ export default function GolfTasksPage() {
           )}
         </motion.div>
 
+        {/* Due Date Alert Banner */}
+        {stats.overdue_tasks > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-100"
+          >
+            <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+              <IconClipboardList size={16} className="text-red-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-red-800">
+                {stats.overdue_tasks} overdue task{stats.overdue_tasks !== 1 ? 's' : ''} need{stats.overdue_tasks === 1 ? 's' : ''} attention
+              </p>
+              <p className="text-xs text-red-600 mt-0.5">
+                Review and update tasks that are past their due date
+              </p>
+            </div>
+            <button
+              onClick={() => setFilter('active')}
+              className="text-xs font-medium text-red-700 hover:text-red-800 px-2 py-1 rounded-md hover:bg-red-100 transition-colors flex-shrink-0"
+            >
+              View
+            </button>
+          </motion.div>
+        )}
+
         {/* Filters */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="flex items-center gap-2 mb-6"
+          className="flex items-center gap-2 mb-6 overflow-x-auto scrollbar-hide"
         >
           <motion.button
             onClick={() => setFilter('all')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className={cn(
-              'px-4 py-2 rounded-lg font-medium transition-all',
+              'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap',
               filter === 'all'
                 ? 'bg-green-600 text-white shadow-md'
                 : 'bg-white text-slate-600 hover:bg-slate-50 shadow-sm'
@@ -267,20 +294,25 @@ export default function GolfTasksPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className={cn(
-              'px-4 py-2 rounded-lg font-medium transition-all',
+              'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap relative',
               filter === 'active'
                 ? 'bg-green-600 text-white shadow-md'
                 : 'bg-white text-slate-600 hover:bg-slate-50 shadow-sm'
             )}
           >
             Active ({activeCount})
+            {stats.overdue_tasks > 0 && filter !== 'active' && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {stats.overdue_tasks}
+              </span>
+            )}
           </motion.button>
           <motion.button
             onClick={() => setFilter('completed')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className={cn(
-              'px-4 py-2 rounded-lg font-medium transition-all',
+              'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap',
               filter === 'completed'
                 ? 'bg-green-600 text-white shadow-md'
                 : 'bg-white text-slate-600 hover:bg-slate-50 shadow-sm'

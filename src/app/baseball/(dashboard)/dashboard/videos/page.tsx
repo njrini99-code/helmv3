@@ -214,30 +214,59 @@ export default function VideosPage() {
         {videos.length === 0 && !showUpload ? (
           <Card variant="glass">
             <CardContent className="p-12 text-center">
-              <IconVideo size={48} className="mx-auto text-gray-300 mb-4" />
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center mx-auto mb-6">
+                <IconVideo size={40} className="text-green-600" />
+              </div>
               <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">
                 {isCoach ? "No videos from your team yet" : "No videos yet"}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-500 mb-6">
+              <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
                 {isCoach
-                  ? "Videos uploaded by your players will appear here"
-                  : "Upload your first highlight video to showcase your skills"}
+                  ? "Videos uploaded by your players will appear here. Encourage your athletes to upload highlight reels and at-bat footage."
+                  : "Upload your first highlight video to showcase your skills to college coaches. Recruiters review videos more than any other profile element."}
               </p>
               {!isCoach && (
                 <Button onClick={() => setShowUpload(true)}>
-                  <IconPlus size={18} />
-                  Upload Video
+                  <IconPlus size={18} className="mr-1" />
+                  Upload Your First Video
                 </Button>
               )}
+            </CardContent>
+          </Card>
+        ) : filteredVideos.length === 0 && searchQuery ? (
+          /* No search results */
+          <Card variant="glass">
+            <CardContent className="p-12 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <IconSearch size={32} className="text-slate-400" />
+              </div>
+              <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">
+                No videos match &quot;{searchQuery}&quot;
+              </h3>
+              <p className="text-sm leading-relaxed text-slate-500 mb-4">
+                Try adjusting your search terms.
+              </p>
+              <Button variant="secondary" onClick={() => setSearchQuery('')}>
+                Clear Search
+              </Button>
             </CardContent>
           </Card>
         ) : (
           /* Video Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredVideos.map((video) => (
-              <Card variant="glass" key={video.id}>
+              <Card variant="glass" key={video.id} className="hover:shadow-lg hover:scale-[1.01] transition-all duration-200">
                 <CardContent className="p-4">
-                  {video.url && <VideoPlayer src={video.url} thumbnail={video.thumbnail_url} title={video.title} />}
+                  {/* Video player with duration overlay */}
+                  <div className="relative">
+                    {video.url && <VideoPlayer src={video.url} thumbnail={video.thumbnail_url} title={video.title} />}
+                    {/* Duration badge overlay */}
+                    {video.duration && video.duration > 0 && (
+                      <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/75 text-white text-xs font-medium rounded">
+                        {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+                      </div>
+                    )}
+                  </div>
                   <div className="mt-4 space-y-3">
                     {/* Coach: Show player info */}
                     {isCoach && video.player && (
@@ -260,12 +289,22 @@ export default function VideosPage() {
 
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="font-semibold text-slate-900 truncate">{video.title}</h3>
                           {video.is_primary && (
                             <Badge variant="success" className="flex items-center gap-1">
                               <IconStar size={12} />
                               Primary
+                            </Badge>
+                          )}
+                          {video.video_type && (
+                            <Badge variant="secondary" className="capitalize">
+                              {video.video_type.replace(/_/g, ' ')}
+                            </Badge>
+                          )}
+                          {video.is_clip && (
+                            <Badge variant="secondary">
+                              Clip
                             </Badge>
                           )}
                         </div>

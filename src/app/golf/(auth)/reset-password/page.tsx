@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { AlertCircle, ShieldCheck } from 'lucide-react';
+import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');

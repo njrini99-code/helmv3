@@ -81,13 +81,13 @@ export default async function GolfQualifiersPage() {
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'upcoming':
-        return { bg: 'bg-slate-50', text: 'text-slate-700', dot: 'bg-slate-500' };
+        return { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', label: 'Upcoming', icon: '\u{1F4C5}' };
       case 'in_progress':
-        return { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500', pulse: true };
+        return { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500', pulse: true, label: 'Live', icon: '\u{1F3AF}' };
       case 'completed':
-        return { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' };
+        return { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400', label: 'Completed', icon: '\u2705' };
       default:
-        return { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' };
+        return { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400', label: status.replace('_', ' ') };
     }
   };
 
@@ -157,9 +157,9 @@ export default async function GolfQualifiersPage() {
                           </p>
                         )}
                       </div>
-                      <span className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${statusConfig.bg} ${statusConfig.text}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot} ${statusConfig.pulse ? 'animate-pulse' : ''}`} />
-                        {(qualifier.status || 'upcoming').replace('_', ' ')}
+                      <span className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-full ${statusConfig.bg} ${statusConfig.text} shadow-sm`}>
+                        <span className={`w-2 h-2 rounded-full ${statusConfig.dot} ${statusConfig.pulse ? 'animate-pulse' : ''}`} />
+                        {statusConfig.label || (qualifier.status || 'upcoming').replace('_', ' ')}
                       </span>
                     </div>
 
@@ -188,7 +188,35 @@ export default async function GolfQualifiersPage() {
                           <span className="truncate">{qualifier.course_name}</span>
                         </div>
                       )}
+
+                      {/* Rounds info */}
+                      {qualifier.num_rounds && (
+                        <div className="flex items-center gap-2 text-slate-600 col-span-2">
+                          <IconFlag size={14} className="text-slate-400" />
+                          <span>{qualifier.num_rounds} round{qualifier.num_rounds !== 1 ? 's' : ''} format</span>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Rounds progress bar for in-progress qualifiers */}
+                    {qualifier.status === 'in_progress' && qualifier.num_rounds && qualifier.num_rounds > 1 && (
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+                          <span>Progress</span>
+                          <span className="tabular-nums font-medium">
+                            {qualifier.spots_available
+                              ? `${qualifier.spots_available} players competing`
+                              : 'In progress'}
+                          </span>
+                        </div>
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(100, 50)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {/* Footer */}
                     <div className="flex items-center justify-end mt-4 pt-4 border-t border-slate-100">

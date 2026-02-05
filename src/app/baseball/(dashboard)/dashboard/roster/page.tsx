@@ -175,6 +175,34 @@ export default function RosterPage() {
         {/* Roster View */}
         {activeView === 'roster' && (
           <>
+            {/* Roster Stats Summary */}
+            {!loading && roster.length > 0 && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                <div className="glass-standard rounded-xl p-4">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Total Players</p>
+                  <p className="text-2xl font-semibold text-slate-900 mt-1 tabular-nums">{roster.length}</p>
+                </div>
+                <div className="glass-standard rounded-xl p-4">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Active</p>
+                  <p className="text-2xl font-semibold text-green-600 mt-1 tabular-nums">
+                    {roster.filter(m => m.status === 'active').length}
+                  </p>
+                </div>
+                <div className="glass-standard rounded-xl p-4">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Positions</p>
+                  <p className="text-2xl font-semibold text-slate-900 mt-1 tabular-nums">
+                    {new Set(roster.map(m => m.player.primary_position).filter(Boolean)).size}
+                  </p>
+                </div>
+                <div className="glass-standard rounded-xl p-4">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Recruiting</p>
+                  <p className="text-2xl font-semibold text-slate-900 mt-1 tabular-nums">
+                    {roster.filter(m => m.player.recruiting_activated).length}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Filters and Search */}
             <Card variant="glass" className="mb-6">
           <CardContent className="p-4">
@@ -258,7 +286,7 @@ export default function RosterPage() {
                   {filteredRoster.map((member) => (
                     <div
                       key={member.id}
-                      className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer"
+                      className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-slate-300 active:scale-[0.98] transition-all duration-200 cursor-pointer"
                       onClick={() => router.push(`/baseball/player/${member.player.id}`)}
                     >
                       {/* Player header with avatar + name */}
