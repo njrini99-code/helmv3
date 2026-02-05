@@ -1170,7 +1170,8 @@
         #F0F6E4 68%,
         #E8F5E8 80%,
         #E2F2E2 100%);
-    background-attachment: fixed;
+    /* background-attachment: fixed causes severe scroll jank on mobile */
+    background-attachment: scroll;
   }
 
   /* Text Utilities */
@@ -1704,8 +1705,6 @@
     body {
       overscroll-behavior-y: none;
       -webkit-overflow-scrolling: touch;
-      position: relative;
-      height: 100%;
       overflow-x: hidden;
     }
 
@@ -1716,8 +1715,8 @@
       touch-action: pan-y;
     }
 
-    /* Prevent scroll chaining on scrollable elements */
-    [class*="overflow"] {
+    /* Prevent scroll chaining on explicitly marked scrollable elements */
+    [data-scroll-lock] {
       overscroll-behavior: contain;
     }
 
@@ -1744,13 +1743,10 @@
       -webkit-user-select: text;
     }
 
-    /* Fix for iOS Safari viewport issues */
+    /* Fix for iOS Safari viewport issues - use dvh units instead */
     @supports (-webkit-touch-callout: none) {
-      .min-h-screen {
-        min-height: -webkit-fill-available;
-      }
-
-      .h-screen {
+      .h-dvh {
+        height: 100dvh;
         height: -webkit-fill-available;
       }
     }
@@ -1771,9 +1767,11 @@
   }
 }
 
-/* Smooth scroll and reduced motion support */
-html {
-  scroll-behavior: smooth;
+/* Smooth scroll - only on desktop; mobile native momentum is better */
+@media (min-width: 1024px) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {

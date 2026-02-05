@@ -252,7 +252,10 @@ export default function GolfSettingsPage() {
                   )}
                 </p>
               </div>
-              <button className="px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+              <button
+                onClick={() => setPersonalInfoOpen(true)}
+                className="px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+              >
                 Edit Profile
               </button>
             </div>

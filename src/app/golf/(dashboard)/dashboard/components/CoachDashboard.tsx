@@ -187,7 +187,7 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
     ];
 
     return (
-        <div className="min-h-screen bg-cream-gradient">
+        <div className="min-h-full bg-cream-gradient">
             {/* Header Section - Enhanced Premium Glass Panel */}
             <div
                 className={cn(

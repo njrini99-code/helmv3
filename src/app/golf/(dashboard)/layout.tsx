@@ -31,7 +31,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
   usePresence();
 
   return (
-    <div className="flex h-screen bg-dashboard-gradient overscroll-none" style={{ overscrollBehavior: 'none' }}>
+    <div className="flex h-dvh bg-dashboard-gradient" style={{ overscrollBehavior: 'none' }}>
       {/* Command Palette (Cmd+K) */}
       <CommandPalette isCoach={isCoach} />
       
@@ -75,19 +75,16 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       {/* Main content */}
       <main
         className={cn(
-          'flex-1 overflow-y-auto lg:overflow-y-auto',
+          'flex-1 overflow-y-auto',
           'pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0',
           'transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
           collapsed ? 'lg:ml-[72px]' : 'lg:ml-64',
-          // Mobile scroll optimization
-          'overscroll-none touch-pan-y',
-          // Prevent scroll chaining
-          'overscroll-behavior-contain'
         )}
-        style={{ 
-          background: 'transparent', 
+        style={{
+          background: 'transparent',
           viewTransitionName: 'page-content',
           WebkitOverflowScrolling: 'touch',
+          overscrollBehaviorY: 'contain',
         }}
       >
         <div className="animate-page-enter min-h-full" style={{ background: 'transparent' }}>
