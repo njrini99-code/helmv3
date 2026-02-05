@@ -42,17 +42,17 @@ export function GolfHelmSection() {
       >
         {/* Hero Intro */}
         <motion.div variants={itemVariants} className="text-center max-w-2xl mx-auto mb-16 md:mb-20">
-          <div className="flex items-center justify-center gap-3 mb-5">
-            <div className="w-12 h-12 relative">
+          <div className="flex flex-col items-center justify-center gap-4 mb-6">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 relative">
               <Image
                 src="/helm-golf-logo-transparent.png"
                 alt="GolfHelm"
                 fill
                 className="object-contain"
-                sizes="48px"
+                sizes="96px"
               />
             </div>
-            <span className="text-xl font-bold text-slate-900">GolfHelm</span>
+            <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">GolfHelm</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 leading-[1.1] tracking-tight mb-5">
