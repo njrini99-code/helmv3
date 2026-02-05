@@ -42,6 +42,14 @@ export const metadata: Metadata = {
     icon: '/Helm-Logo-New-Main.png',
     apple: '/Helm-Logo-New-Main.png',
   },
+  // Viewport settings to prevent pinch-zoom on mobile
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: 'cover',
+  },
   openGraph: {
     title: 'Helm Sports Labs',
     description: 'The modern platform for athletic development and college recruiting',
