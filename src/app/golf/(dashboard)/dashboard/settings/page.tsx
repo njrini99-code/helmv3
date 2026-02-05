@@ -203,14 +203,14 @@ export default function GolfSettingsPage() {
     <div className="min-h-screen">
       {/* Header Section */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-6 py-5">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Settings</h1>
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-4 md:py-5">
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">Settings</h1>
           <p className="text-slate-500 mt-0.5">Manage your account and preferences</p>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
         {/* Profile Card */}
         {profile && (
           <div

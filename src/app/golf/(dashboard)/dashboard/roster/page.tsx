@@ -35,6 +35,16 @@ interface PlayerWithStats {
   status: string | null;
   rounds_count?: number;
   avg_score?: number;
+  last_seen?: string | null;
+}
+
+// Helper function to check if user is online (active within last 5 minutes)
+function isUserOnline(lastSeen: string | null | undefined): boolean {
+  if (!lastSeen) return false;
+  const lastSeenDate = new Date(lastSeen);
+  const now = new Date();
+  const diffMinutes = (now.getTime() - lastSeenDate.getTime()) / (1000 * 60);
+  return diffMinutes < 5;
 }
 
 // Helper function to format handicap display
@@ -143,6 +153,7 @@ export default async function GolfRosterPage() {
   }
 
   // Get players via team_members join - players are connected to teams through golf_team_members
+  // Also fetch user's last_seen for online status indicator
   const { data: teamMembersData, error: playersError } = await supabase
     .from('golf_team_members')
     .select(`
@@ -155,18 +166,42 @@ export default async function GolfRosterPage() {
         hometown,
         state,
         graduation_year,
-        handicap
+        handicap,
+        user:users (
+          last_seen
+        )
       )
     `)
     .eq('team_id', teamId);
 
-  // Transform the data to flatten player info with status
+  // Transform the data to flatten player info with status and last_seen
   const players = (teamMembersData || [])
     .filter(tm => tm.player && !('error' in tm.player))
-    .map(tm => ({
-      ...tm.player,
-      status: tm.status,
-    }))
+    .map(tm => {
+      const player = tm.player as {
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        avatar_url: string | null;
+        hometown: string | null;
+        state: string | null;
+        graduation_year: number | null;
+        handicap: number | null;
+        user?: { last_seen: string | null } | null;
+      };
+      return {
+        id: player.id,
+        first_name: player.first_name,
+        last_name: player.last_name,
+        avatar_url: player.avatar_url,
+        hometown: player.hometown,
+        state: player.state,
+        graduation_year: player.graduation_year,
+        handicap: player.handicap,
+        status: tm.status,
+        last_seen: player.user?.last_seen || null,
+      };
+    })
     .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
 
   if (playersError) {
@@ -214,6 +249,7 @@ export default async function GolfRosterPage() {
             ...player,
             rounds_count: roundsCount,
             avg_score: avgScore,
+            last_seen: player.last_seen,
           };
         });
       })()
@@ -227,11 +263,11 @@ export default async function GolfRosterPage() {
     <div className="min-h-screen">
       {/* Header Section */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Team Roster</h1>
-              <p className="text-slate-500 mt-0.5">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">Team Roster</h1>
+              <p className="text-slate-500 mt-0.5 text-sm md:text-base truncate">
                 {playersWithStats.length} {playersWithStats.length === 1 ? 'player' : 'players'} on {teamName}
               </p>
             </div>
@@ -241,7 +277,7 @@ export default async function GolfRosterPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Pending Join Requests */}
         <PendingJoinRequests />
 
@@ -294,15 +330,11 @@ export default async function GolfRosterPage() {
                         size="lg"
                       />
                     )}
-                    {/* Status dot color matches actual status */}
+                    {/* Online status dot - green if online, gray if offline */}
                     <div className={cn(
                       'absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm',
-                      player.status === 'active' && 'bg-emerald-500',
-                      player.status === 'injured' && 'bg-rose-500',
-                      player.status === 'redshirt' && 'bg-amber-500',
-                      player.status === 'inactive' && 'bg-slate-400',
-                      !player.status && 'bg-emerald-500',
-                    )} />
+                      isUserOnline(player.last_seen) ? 'bg-emerald-500' : 'bg-slate-300',
+                    )} title={isUserOnline(player.last_seen) ? 'Online' : 'Offline'} />
                   </div>
 
                   {/* Player Info */}

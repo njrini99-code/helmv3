@@ -142,10 +142,10 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                 )}
                 style={{ viewTransitionName: 'page-header' }}
             >
-                <div className="max-w-7xl mx-auto px-6 py-5">
+                <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">
                                 {greeting}, {player.first_name}
                             </h1>
                             <p className="text-slate-500 mt-0.5 flex items-center gap-2 text-sm">
@@ -161,7 +161,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
 
             {/* Main Content */}
             <motion.div
-                className="max-w-7xl mx-auto px-6 py-8"
+                className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"

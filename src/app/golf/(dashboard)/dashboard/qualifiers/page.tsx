@@ -104,11 +104,11 @@ export default async function GolfQualifiersPage() {
     <div className="min-h-screen">
       {/* Header Section */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Qualifiers</h1>
-              <p className="text-slate-500 mt-0.5">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">Qualifiers</h1>
+              <p className="text-slate-500 mt-0.5 text-sm md:text-base">
                 {activeCount} active qualifier{activeCount !== 1 ? 's' : ''}
               </p>
             </div>
@@ -118,7 +118,7 @@ export default async function GolfQualifiersPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {qualifiers.length === 0 ? (
           <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
             <ShineEffect />

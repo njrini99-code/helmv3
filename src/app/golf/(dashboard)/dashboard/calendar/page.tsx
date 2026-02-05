@@ -148,7 +148,7 @@ export default async function GolfCalendarPage() {
 
   return (
     <div
-      className="h-[calc(100vh-64px)] p-6"
+      className="h-[calc(100vh-64px)] p-4 md:p-6"
       style={{
         background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
       }}
