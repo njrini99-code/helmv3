@@ -9,25 +9,23 @@ import { IconArrowRight, IconSparkles, IconVideo, IconCheck } from '@/components
 
 /**
  * BaseballHelm Product Section - Multi-Feature Showcase
- *
- * Design: Alternating feature spotlights with varied visual treatments
- * Each feature has its own unique mockup style
+ * Performance optimized - no infinite animations, minimal motion
  */
 export function BaseballHelmSection() {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.12, delayChildren: 0.1 }
+      transition: { staggerChildren: 0.1, delayChildren: 0.05 }
     }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
+    hidden: { opacity: 0, y: 24 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const }
+      transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] as const }
     }
   };
 
@@ -39,23 +37,9 @@ export function BaseballHelmSection() {
       {/* Background gradient - blue tint */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#FFFEFA] via-blue-50/30 to-[#FFFEFA]" />
 
-      {/* Animated decorative orbs */}
-      <motion.div
-        className="absolute top-40 right-0 w-80 h-80 bg-gradient-to-bl from-blue-200/40 to-indigo-100/20 rounded-full blur-3xl pointer-events-none"
-        animate={{
-          scale: [1, 1.1, 1],
-          opacity: [0.4, 0.5, 0.4],
-        }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute bottom-40 -left-10 w-64 h-64 bg-gradient-to-tr from-indigo-100/30 to-transparent rounded-full blur-3xl pointer-events-none"
-        animate={{
-          scale: [1, 1.15, 1],
-          opacity: [0.3, 0.4, 0.3],
-        }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-      />
+      {/* Static decorative orbs - no animation for performance */}
+      <div className="absolute top-40 right-0 w-80 h-80 bg-gradient-to-bl from-blue-200/40 to-indigo-100/20 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute bottom-40 -left-10 w-64 h-64 bg-gradient-to-tr from-indigo-100/30 to-transparent rounded-full blur-2xl pointer-events-none" />
 
       <motion.div
         className="relative max-w-6xl mx-auto px-5 sm:px-6"
@@ -67,16 +51,8 @@ export function BaseballHelmSection() {
         {/* ===== HERO INTRO ===== */}
         <motion.div variants={itemVariants} className="text-center max-w-3xl mx-auto mb-16 md:mb-20">
           {/* Logo + Brand */}
-          <motion.div
-            className="flex items-center justify-center gap-3 mb-6"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
-            <motion.div
-              className="w-14 h-14 relative"
-              whileHover={{ rotate: 10 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="w-14 h-14 relative">
               <Image
                 src="/helm-baseball-logo.png"
                 alt="BaseballHelm"
@@ -84,9 +60,9 @@ export function BaseballHelmSection() {
                 className="object-contain"
                 sizes="56px"
               />
-            </motion.div>
+            </div>
             <span className="text-2xl font-bold text-slate-900">BaseballHelm</span>
-          </motion.div>
+          </div>
 
           {/* Headline */}
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.1] tracking-tight mb-6">
@@ -105,32 +81,29 @@ export function BaseballHelmSection() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <Link href="/baseball/signup" className="group w-full sm:w-auto">
-              <motion.button
+              <button
                 className={cn(
                   "w-full sm:w-auto flex items-center justify-center gap-2 px-7 py-4 sm:py-3.5 rounded-2xl",
                   "bg-gradient-to-r from-blue-500 to-indigo-600",
                   "text-white font-semibold shadow-lg shadow-blue-500/30",
-                  "transition-all duration-200"
+                  "active:scale-[0.98] hover:shadow-xl transition-all duration-150"
                 )}
-                whileHover={{ scale: 1.03, y: -2 }}
-                whileTap={{ scale: 0.98 }}
               >
                 <IconSparkles size={20} />
                 Start Recruiting Smarter
-                <IconArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-              </motion.button>
+                <IconArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-150" />
+              </button>
             </Link>
-            <motion.button
+            <button
               className={cn(
                 "w-full sm:w-auto px-7 py-4 sm:py-3.5 rounded-2xl",
-                "bg-white/80 backdrop-blur-sm border border-slate-200/60",
-                "text-slate-700 font-semibold shadow-sm transition-all duration-200"
+                "bg-white/90 border border-slate-200/60",
+                "text-slate-700 font-semibold shadow-sm",
+                "hover:bg-white active:scale-[0.98] transition-all duration-150"
               )}
-              whileHover={{ scale: 1.03, backgroundColor: "rgba(255,255,255,1)" }}
-              whileTap={{ scale: 0.98 }}
             >
               Request Demo
-            </motion.button>
+            </button>
           </div>
         </motion.div>
 
@@ -139,22 +112,14 @@ export function BaseballHelmSection() {
           variants={itemVariants}
           className="grid lg:grid-cols-2 gap-8 lg:gap-20 items-center mb-20 md:mb-32"
         >
-          <motion.div
-            className="order-2 lg:order-1"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
-          >
+          <div className="order-2 lg:order-1">
             <DiscoveryMockup />
-          </motion.div>
+          </div>
           <div className="order-1 lg:order-2">
-            <motion.span
-              className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-100/80 backdrop-blur-sm text-blue-700 text-sm font-semibold rounded-full mb-4"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-            >
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-100/80 text-blue-700 text-sm font-semibold rounded-full mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
               Discovery
-            </motion.span>
+            </span>
             <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">
               Find your next commit
             </h3>
@@ -163,23 +128,13 @@ export function BaseballHelmSection() {
               exit velo, academics, position, geography, and more.
             </p>
             <ul className="space-y-3">
-              {['12,000+ verified prospects', 'Advanced metric filters', 'Geographic targeting', 'Academic requirements'].map((item, i) => (
-                <motion.li
-                  key={item}
-                  className="flex items-center gap-3 text-slate-600"
-                  initial={{ opacity: 0, x: -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <motion.span
-                    className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-600 flex items-center justify-center text-xs font-bold shadow-sm"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                  >
+              {['12,000+ verified prospects', 'Advanced metric filters', 'Geographic targeting', 'Academic requirements'].map((item) => (
+                <li key={item} className="flex items-center gap-3 text-slate-600">
+                  <span className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-600 flex items-center justify-center text-xs font-bold shadow-sm">
                     <IconCheck size={12} />
-                  </motion.span>
+                  </span>
                   {item}
-                </motion.li>
+                </li>
               ))}
             </ul>
           </div>
@@ -191,14 +146,10 @@ export function BaseballHelmSection() {
           className="grid lg:grid-cols-2 gap-8 lg:gap-20 items-center mb-20 md:mb-32"
         >
           <div>
-            <motion.span
-              className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-100/80 backdrop-blur-sm text-indigo-700 text-sm font-semibold rounded-full mb-4"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-            >
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-100/80 text-indigo-700 text-sm font-semibold rounded-full mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
               Pipeline
-            </motion.span>
+            </span>
             <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">
               Track every prospect's journey
             </h3>
@@ -207,32 +158,19 @@ export function BaseballHelmSection() {
               Never lose track of where each recruit stands.
             </p>
             <ul className="space-y-3">
-              {['Kanban-style board', 'Custom pipeline stages', 'Activity timeline', 'Team collaboration'].map((item, i) => (
-                <motion.li
-                  key={item}
-                  className="flex items-center gap-3 text-slate-600"
-                  initial={{ opacity: 0, x: -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <motion.span
-                    className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                  >
+              {['Kanban-style board', 'Custom pipeline stages', 'Activity timeline', 'Team collaboration'].map((item) => (
+                <li key={item} className="flex items-center gap-3 text-slate-600">
+                  <span className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm">
                     <IconCheck size={12} />
-                  </motion.span>
+                  </span>
                   {item}
-                </motion.li>
+                </li>
               ))}
             </ul>
           </div>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
-          >
+          <div>
             <PipelineMiniMockup />
-          </motion.div>
+          </div>
         </motion.div>
 
         {/* ===== FEATURE 3: PLAYER COMPARISON ===== */}
@@ -240,22 +178,14 @@ export function BaseballHelmSection() {
           variants={itemVariants}
           className="grid lg:grid-cols-2 gap-8 lg:gap-20 items-center mb-20 md:mb-32"
         >
-          <motion.div
-            className="order-2 lg:order-1"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
-          >
+          <div className="order-2 lg:order-1">
             <CompareMockup />
-          </motion.div>
+          </div>
           <div className="order-1 lg:order-2">
-            <motion.span
-              className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-100/80 backdrop-blur-sm text-purple-700 text-sm font-semibold rounded-full mb-4"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-            >
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-100/80 text-purple-700 text-sm font-semibold rounded-full mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
               Compare
-            </motion.span>
+            </span>
             <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">
               Make informed decisions
             </h3>
@@ -264,70 +194,32 @@ export function BaseballHelmSection() {
               See who's the best match for your program's needs.
             </p>
             <ul className="space-y-3">
-              {['Side-by-side comparison', 'Stat highlights', 'Video sync playback', 'Share with staff'].map((item, i) => (
-                <motion.li
-                  key={item}
-                  className="flex items-center gap-3 text-slate-600"
-                  initial={{ opacity: 0, x: -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <motion.span
-                    className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-100 to-violet-100 text-purple-600 flex items-center justify-center text-xs font-bold shadow-sm"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                  >
+              {['Side-by-side comparison', 'Stat highlights', 'Video sync playback', 'Share with staff'].map((item) => (
+                <li key={item} className="flex items-center gap-3 text-slate-600">
+                  <span className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-100 to-violet-100 text-purple-600 flex items-center justify-center text-xs font-bold shadow-sm">
                     <IconCheck size={12} />
-                  </motion.span>
+                  </span>
                   {item}
-                </motion.li>
+                </li>
               ))}
             </ul>
           </div>
         </motion.div>
 
         {/* ===== FEATURE 4: VIDEO LIBRARY ===== */}
-        <motion.div
-          variants={itemVariants}
-          className="relative"
-          whileHover={{ scale: 1.01 }}
-          transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        >
+        <motion.div variants={itemVariants} className="relative">
           {/* Special video section with gradient background */}
           <div className="relative bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 md:p-12 overflow-hidden">
-            {/* Animated gradient orbs */}
-            <motion.div
-              className="absolute top-0 right-0 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.2, 0.3, 0.2]
-              }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <motion.div
-              className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl"
-              animate={{
-                scale: [1, 1.1, 1],
-                opacity: [0.15, 0.25, 0.15]
-              }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            />
+            {/* Static gradient orbs - no animation for performance */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/15 rounded-full blur-2xl pointer-events-none" />
 
             <div className="relative grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div>
-                <motion.span
-                  className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/20 backdrop-blur-sm text-blue-300 text-sm font-semibold rounded-full mb-4"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <motion.span
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    <IconVideo size={14} />
-                  </motion.span>
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/20 text-blue-300 text-sm font-semibold rounded-full mb-4">
+                  <IconVideo size={14} />
                   Video Library
-                </motion.span>
+                </span>
                 <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
                   All the film you need
                 </h3>
@@ -336,32 +228,19 @@ export function BaseballHelmSection() {
                   Tag, clip, and share videos with your staff instantly.
                 </p>
                 <ul className="space-y-3">
-                  {['Unlimited storage', 'Smart tagging', 'Quick clips', 'Staff sharing'].map((item, i) => (
-                    <motion.li
-                      key={item}
-                      className="flex items-center gap-3 text-slate-300"
-                      initial={{ opacity: 0, x: -10 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      viewport={{ once: true }}
-                    >
-                      <motion.span
-                        className="w-6 h-6 rounded-full bg-blue-500/30 text-blue-400 flex items-center justify-center text-xs font-bold"
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                      >
+                  {['Unlimited storage', 'Smart tagging', 'Quick clips', 'Staff sharing'].map((item) => (
+                    <li key={item} className="flex items-center gap-3 text-slate-300">
+                      <span className="w-6 h-6 rounded-full bg-blue-500/30 text-blue-400 flex items-center justify-center text-xs font-bold">
                         <IconCheck size={12} />
-                      </motion.span>
+                      </span>
                       {item}
-                    </motion.li>
+                    </li>
                   ))}
                 </ul>
               </div>
-              <motion.div
-                whileHover={{ scale: 1.02, y: -4 }}
-                transition={{ type: "spring", stiffness: 200, damping: 20 }}
-              >
+              <div>
                 <VideoMockup />
-              </motion.div>
+              </div>
             </div>
           </div>
         </motion.div>

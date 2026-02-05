@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence, useAnimation } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { submitDemoRequest } from '@/app/actions/demo-request'
@@ -17,69 +17,32 @@ const navLinks = [
   { name: 'Log in', href: '/golf/login', description: 'Access your account' },
 ]
 
-// Premium spring config for buttery animations
-const springConfig = {
-  type: 'spring' as const,
-  stiffness: 400,
-  damping: 30,
-}
+// Optimized easing - fast out, slow in (snappy feel)
+const snappyEase = [0.32, 0.72, 0, 1] as const
 
-// Overlay animation variants
+// Fast overlay animation - GPU accelerated opacity + transform only
 const overlayVariants = {
   closed: {
-    clipPath: 'circle(0% at calc(100% - 42px) 42px)',
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 40,
-      delay: 0.1,
-    },
+    opacity: 0,
+    transition: { duration: 0.2, ease: snappyEase },
   },
   open: {
-    clipPath: 'circle(150% at calc(100% - 42px) 42px)',
-    transition: {
-      type: 'spring' as const,
-      stiffness: 200,
-      damping: 40,
-    },
+    opacity: 1,
+    transition: { duration: 0.25, ease: snappyEase },
   },
 }
 
-// Stagger container for nav items
-const navContainerVariants = {
-  closed: {
-    transition: {
-      staggerChildren: 0.05,
-      staggerDirection: -1,
-    },
-  },
-  open: {
-    transition: {
-      delayChildren: 0.2,
-      staggerChildren: 0.07,
-    },
-  },
-}
-
-// Individual nav item animation
-const navItemVariants = {
+// Content slide animation
+const contentVariants = {
   closed: {
     opacity: 0,
     y: 20,
-    scale: 0.95,
-    transition: {
-      duration: 0.2,
-    },
+    transition: { duration: 0.15 },
   },
   open: {
     opacity: 1,
     y: 0,
-    scale: 1,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 24,
-    },
+    transition: { duration: 0.25, ease: snappyEase, delay: 0.05 },
   },
 }
 
@@ -90,8 +53,6 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const controls = useAnimation()
 
   // Lock body scroll when menu is open
   useEffect(() => {
@@ -114,16 +75,6 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
       setError('')
     }
   }, [isOpen])
-
-  // Trigger button animation on toggle
-  useEffect(() => {
-    if (isOpen) {
-      controls.start({
-        scale: [1, 0.9, 1],
-        transition: { duration: 0.3 },
-      })
-    }
-  }, [isOpen, controls])
 
   const handleDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -152,63 +103,39 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
 
   return (
     <>
-      {/* Hamburger button - premium glass morphism */}
-      <motion.button
-        ref={buttonRef}
+      {/* Hamburger button - lightweight, no backdrop-blur */}
+      <button
         onClick={() => setIsOpen(!isOpen)}
-        animate={controls}
-        whileTap={{ scale: 0.92 }}
         className={`md:hidden relative z-50 w-12 h-12 flex items-center justify-center
-                   rounded-2xl backdrop-blur-2xl transition-all duration-500
+                   rounded-2xl transition-all duration-200 active:scale-95
                    ${isOpen
-                     ? 'bg-white shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-slate-100'
+                     ? 'bg-white shadow-lg'
                      : isProductsPage
-                       ? 'bg-white/90 border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.08)]'
-                       : 'bg-white/10 border border-white/20 shadow-[0_4px_24px_rgba(0,0,0,0.12)]'
+                       ? 'bg-white/95 border border-slate-200/60 shadow-md'
+                       : 'bg-white/15 border border-white/25 shadow-md'
                    }`}
         aria-label={isOpen ? 'Close menu' : 'Open menu'}
       >
         <div className="w-5 h-4 relative flex flex-col justify-center items-center">
-          {/* Top line */}
-          <motion.span
-            animate={isOpen
-              ? { rotate: 45, y: 0, width: '100%' }
-              : { rotate: 0, y: -6, width: '100%' }
-            }
-            transition={springConfig}
-            className={`absolute h-[2px] rounded-full ${
-              isOpen ? 'bg-slate-800' : isProductsPage ? 'bg-slate-800' : 'bg-white'
-            }`}
-            style={{ width: '100%' }}
+          {/* Top line - CSS transition for performance */}
+          <span
+            className={`absolute h-[2px] rounded-full transition-all duration-200 ease-out
+              ${isOpen ? 'bg-slate-800 rotate-45 w-full' : isProductsPage ? 'bg-slate-800 -translate-y-1.5 w-full' : 'bg-white -translate-y-1.5 w-full'}`}
           />
           {/* Middle line */}
-          <motion.span
-            animate={isOpen
-              ? { opacity: 0, scaleX: 0.3 }
-              : { opacity: 1, scaleX: 1 }
-            }
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className={`absolute h-[2px] rounded-full ${
-              isOpen ? 'bg-slate-800' : isProductsPage ? 'bg-slate-800' : 'bg-white'
-            }`}
-            style={{ width: '100%' }}
+          <span
+            className={`absolute h-[2px] rounded-full transition-all duration-150 ease-out
+              ${isOpen ? 'bg-slate-800 opacity-0 scale-x-0' : isProductsPage ? 'bg-slate-800 opacity-100 w-full' : 'bg-white opacity-100 w-full'}`}
           />
           {/* Bottom line */}
-          <motion.span
-            animate={isOpen
-              ? { rotate: -45, y: 0, width: '100%' }
-              : { rotate: 0, y: 6, width: '100%' }
-            }
-            transition={springConfig}
-            className={`absolute h-[2px] rounded-full ${
-              isOpen ? 'bg-slate-800' : isProductsPage ? 'bg-slate-800' : 'bg-white'
-            }`}
-            style={{ width: '100%' }}
+          <span
+            className={`absolute h-[2px] rounded-full transition-all duration-200 ease-out
+              ${isOpen ? 'bg-slate-800 -rotate-45 w-full' : isProductsPage ? 'bg-slate-800 translate-y-1.5 w-full' : 'bg-white translate-y-1.5 w-full'}`}
           />
         </div>
-      </motion.button>
+      </button>
 
-      {/* Full-screen overlay with clip-path reveal */}
+      {/* Full-screen overlay - simple opacity fade */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -217,51 +144,33 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
             exit="closed"
             variants={overlayVariants}
             className="fixed inset-0 z-40 bg-[#FAFAF8]"
+            style={{ willChange: 'opacity' }}
           >
-            {/* Refined gradient background */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
-              className="absolute inset-0 bg-gradient-to-b from-white via-[#FAFAF8] to-green-50/30 pointer-events-none"
-            />
+            {/* Static gradient background - no animation */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white via-[#FAFAF8] to-green-50/30 pointer-events-none" />
 
-            {/* Animated decorative orbs */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.6, ease: 'easeOut' }}
-              className="absolute top-24 right-0 w-80 h-80 rounded-full bg-gradient-to-br from-green-100/50 to-transparent blur-3xl pointer-events-none"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4, duration: 0.6, ease: 'easeOut' }}
-              className="absolute bottom-32 -left-16 w-64 h-64 rounded-full bg-gradient-to-tr from-amber-100/40 to-transparent blur-3xl pointer-events-none"
-            />
+            {/* Static decorative orbs - no blur animation, reduced blur */}
+            <div className="absolute top-24 right-0 w-72 h-72 rounded-full bg-gradient-to-br from-green-100/60 to-transparent blur-2xl pointer-events-none" />
+            <div className="absolute bottom-32 -left-12 w-56 h-56 rounded-full bg-gradient-to-tr from-amber-100/50 to-transparent blur-2xl pointer-events-none" />
 
-            <nav className="relative h-full flex flex-col px-7 pt-24 pb-10 safe-area-inset">
-              {/* Logo header with refined animation */}
-              <motion.div
-                initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 0.15, ...springConfig }}
-                className="mb-12"
-              >
+            <motion.nav
+              variants={contentVariants}
+              initial="closed"
+              animate="open"
+              exit="closed"
+              className="relative h-full flex flex-col px-7 pt-24 pb-10 safe-area-inset"
+              style={{ willChange: 'opacity, transform' }}
+            >
+              {/* Logo header */}
+              <div className="mb-12">
                 <div className="flex items-center gap-4">
-                  <motion.div
-                    initial={{ opacity: 0, rotate: -10 }}
-                    animate={{ opacity: 1, rotate: 0 }}
-                    transition={{ delay: 0.2, duration: 0.4 }}
-                  >
-                    <Image
-                      src="/Helm-Logo-New-Main.png"
-                      alt="Helm"
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 object-contain"
-                    />
-                  </motion.div>
+                  <Image
+                    src="/Helm-Logo-New-Main.png"
+                    alt="Helm"
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 object-contain"
+                  />
                   <div>
                     <span className="block text-slate-900 font-semibold text-xl tracking-tight">
                       Helm Sports Labs
@@ -271,84 +180,64 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                     </span>
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
-              {/* Navigation Links with stagger */}
-              <motion.div
-                className="flex-1"
-                variants={navContainerVariants}
-                initial="closed"
-                animate="open"
-                exit="closed"
-              >
-                <div className="space-y-2">
+              {/* Navigation Links - simple stagger with CSS */}
+              <div className="flex-1">
+                <div className="space-y-1">
                   {navLinks.map((link, i) => (
-                    <motion.div
+                    <Link
                       key={link.name}
-                      variants={navItemVariants}
-                      custom={i}
+                      href={link.href}
+                      onClick={() => setIsOpen(false)}
+                      className="group flex items-center justify-between py-5 px-5 -mx-5 rounded-2xl
+                                 hover:bg-white/80 active:bg-white active:scale-[0.98] transition-all duration-150"
+                      style={{
+                        animationDelay: `${i * 40}ms`,
+                      }}
                     >
-                      <Link
-                        href={link.href}
-                        onClick={() => setIsOpen(false)}
-                        className="group flex items-center justify-between py-5 px-5 -mx-5 rounded-2xl
-                                   hover:bg-white/80 active:bg-white active:scale-[0.98] transition-all duration-200"
+                      <div className="flex-1">
+                        <span className="block text-[1.75rem] font-semibold text-slate-900 tracking-tight
+                                       group-hover:text-green-600 transition-colors duration-150">
+                          {link.name}
+                        </span>
+                        <span className="block text-base text-slate-500 mt-1 font-normal">
+                          {link.description}
+                        </span>
+                      </div>
+                      <svg
+                        className="w-6 h-6 text-slate-300 group-hover:text-green-500 group-hover:translate-x-1 transition-all duration-150"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
                       >
-                        <div className="flex-1">
-                          <span className="block text-[1.75rem] font-semibold text-slate-900 tracking-tight
-                                         group-hover:text-green-600 transition-colors duration-200">
-                            {link.name}
-                          </span>
-                          <span className="block text-base text-slate-500 mt-1 font-normal">
-                            {link.description}
-                          </span>
-                        </div>
-                        <motion.svg
-                          className="w-6 h-6 text-slate-300 group-hover:text-green-500 transition-colors duration-200"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          whileHover={{ x: 4 }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </motion.svg>
-                      </Link>
-                    </motion.div>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
                   ))}
                 </div>
-              </motion.div>
+              </div>
 
-              {/* CTA Section with premium animation */}
-              <motion.div
-                initial={{ opacity: 0, y: 24, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 0.45, ...springConfig }}
-                className="pt-8 border-t border-slate-200/60"
-              >
+              {/* CTA Section */}
+              <div className="pt-8 border-t border-slate-200/60">
                 <AnimatePresence mode="wait">
                   {!showDemoForm && !submitted && (
                     <motion.div
                       key="cta-button"
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -12, scale: 0.95 }}
-                      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
                       className="space-y-4"
                     >
-                      <motion.button
+                      <button
                         onClick={() => setShowDemoForm(true)}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="w-full py-4.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900
-                                   text-white text-center font-semibold text-lg
-                                   shadow-[0_8px_32px_rgba(0,0,0,0.2)]
-                                   transition-all duration-300"
-                        style={{ paddingTop: '1.125rem', paddingBottom: '1.125rem' }}
+                        className="w-full py-4 rounded-2xl bg-slate-900 text-white text-center
+                                   font-semibold text-lg shadow-lg active:scale-[0.98] transition-transform duration-150"
                       >
                         Book a Demo
-                      </motion.button>
+                      </button>
                       <p className="text-center text-base text-slate-500 font-medium">
                         Get early access to BaseballHelm or GolfHelm
                       </p>
@@ -358,10 +247,10 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                   {showDemoForm && !submitted && (
                     <motion.form
                       key="demo-form"
-                      initial={{ opacity: 0, y: 12, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -12, scale: 0.95 }}
-                      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
                       onSubmit={handleDemoSubmit}
                       className="space-y-5"
                     >
@@ -380,40 +269,32 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                           className="w-full px-5 py-4 rounded-xl border border-slate-200
                                    bg-white text-slate-900 placeholder:text-slate-400 text-base
                                    focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500
-                                   transition-all duration-200"
+                                   transition-colors duration-150"
                         />
                       </div>
                       {error && (
-                        <motion.p
-                          initial={{ opacity: 0, y: -4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="text-base text-red-600 font-medium"
-                        >
-                          {error}
-                        </motion.p>
+                        <p className="text-base text-red-600 font-medium">{error}</p>
                       )}
                       <div className="flex gap-3">
-                        <motion.button
+                        <button
                           type="button"
                           onClick={() => setShowDemoForm(false)}
-                          whileTap={{ scale: 0.98 }}
                           className="flex-1 py-4 rounded-xl border border-slate-200
                                    text-slate-600 font-semibold text-base
-                                   hover:bg-slate-50 transition-all duration-200"
+                                   active:scale-[0.98] transition-transform duration-150"
                         >
                           Cancel
-                        </motion.button>
-                        <motion.button
+                        </button>
+                        <button
                           type="submit"
                           disabled={isSubmitting || !email.trim()}
-                          whileTap={{ scale: 0.98 }}
                           className="flex-1 py-4 rounded-xl bg-green-600 text-white
-                                   font-semibold text-base shadow-lg shadow-green-600/25
-                                   hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed
-                                   transition-all duration-200"
+                                   font-semibold text-base shadow-md
+                                   disabled:opacity-50 disabled:cursor-not-allowed
+                                   active:scale-[0.98] transition-transform duration-150"
                         >
                           {isSubmitting ? 'Submitting...' : 'Submit'}
-                        </motion.button>
+                        </button>
                       </div>
                     </motion.form>
                   )}
@@ -421,21 +302,13 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                   {submitted && (
                     <motion.div
                       key="success"
-                      initial={{ opacity: 0, scale: 0.9 }}
+                      initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                      transition={{ duration: 0.2 }}
                       className="text-center space-y-6"
                     >
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.1, type: 'spring', stiffness: 400, damping: 20 }}
-                        className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center"
-                      >
-                        <motion.svg
-                          initial={{ pathLength: 0, opacity: 0 }}
-                          animate={{ pathLength: 1, opacity: 1 }}
-                          transition={{ delay: 0.3, duration: 0.4 }}
+                      <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
+                        <svg
                           className="w-8 h-8 text-green-600"
                           fill="none"
                           viewBox="0 0 24 24"
@@ -443,29 +316,26 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                           strokeWidth={2.5}
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </motion.svg>
-                      </motion.div>
+                        </svg>
+                      </div>
                       <div>
                         <h3 className="text-2xl font-semibold text-slate-900 mb-2">Thanks!</h3>
                         <p className="text-base text-slate-600 font-medium">
                           One of our team members will reach out to you shortly.
                         </p>
                       </div>
-                      <motion.button
+                      <button
                         onClick={handleBackToHome}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
                         className="w-full py-4 rounded-2xl bg-slate-100 text-slate-900
-                                 font-semibold text-base hover:bg-slate-200
-                                 transition-all duration-200"
+                                 font-semibold text-base active:scale-[0.98] transition-transform duration-150"
                       >
                         Back to Home
-                      </motion.button>
+                      </button>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </motion.div>
-            </nav>
+              </div>
+            </motion.nav>
           </motion.div>
         )}
       </AnimatePresence>
