@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { X, Trash2, MapPin, Calendar, Clock, Users, AlertCircle, UserPlus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { X, Trash2, MapPin, Calendar, Clock, Users, AlertCircle, UserPlus, Dumbbell, Trophy, ClipboardList, Plane, MoreHorizontal } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { RSVPStatusSection } from './RSVPStatusSection';
 import { PlayerRSVPCard } from './PlayerRSVPCard';
@@ -110,14 +110,85 @@ interface EventDetailModalProps {
   currentUserId?: string; // Current user's player/coach ID to exclude from attendee list
 }
 
-const eventTypeColors: Record<GolfEventType, { bg: string; text: string; border: string }> = {
-  practice: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
-  tournament: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
-  qualifier: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
-  meeting: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' },
-  travel: { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200' },
-  other: { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' },
-};
+// Premium event type pill configuration
+const EVENT_TYPE_PILLS: Array<{
+  type: GolfEventType;
+  label: string;
+  icon: typeof Dumbbell;
+  activeBg: string;
+  activeText: string;
+  activeShadow: string;
+  inactiveBg: string;
+  inactiveText: string;
+  headerGradient: string;
+}> = [
+  {
+    type: 'practice',
+    label: 'Practice',
+    icon: Dumbbell,
+    activeBg: 'bg-stone-800',
+    activeText: 'text-white',
+    activeShadow: 'shadow-stone-800/30',
+    inactiveBg: 'bg-stone-100 hover:bg-stone-200',
+    inactiveText: 'text-stone-600',
+    headerGradient: 'from-stone-50 to-white',
+  },
+  {
+    type: 'tournament',
+    label: 'Tournament',
+    icon: Trophy,
+    activeBg: 'bg-emerald-600',
+    activeText: 'text-white',
+    activeShadow: 'shadow-emerald-600/30',
+    inactiveBg: 'bg-emerald-50 hover:bg-emerald-100',
+    inactiveText: 'text-emerald-700',
+    headerGradient: 'from-emerald-50 to-white',
+  },
+  {
+    type: 'qualifier',
+    label: 'Qualifier',
+    icon: ClipboardList,
+    activeBg: 'bg-amber-500',
+    activeText: 'text-white',
+    activeShadow: 'shadow-amber-500/30',
+    inactiveBg: 'bg-amber-50 hover:bg-amber-100',
+    inactiveText: 'text-amber-700',
+    headerGradient: 'from-amber-50 to-white',
+  },
+  {
+    type: 'meeting',
+    label: 'Meeting',
+    icon: Users,
+    activeBg: 'bg-sky-600',
+    activeText: 'text-white',
+    activeShadow: 'shadow-sky-600/30',
+    inactiveBg: 'bg-sky-50 hover:bg-sky-100',
+    inactiveText: 'text-sky-700',
+    headerGradient: 'from-sky-50 to-white',
+  },
+  {
+    type: 'travel',
+    label: 'Travel',
+    icon: Plane,
+    activeBg: 'bg-purple-600',
+    activeText: 'text-white',
+    activeShadow: 'shadow-purple-600/30',
+    inactiveBg: 'bg-purple-50 hover:bg-purple-100',
+    inactiveText: 'text-purple-700',
+    headerGradient: 'from-purple-50 to-white',
+  },
+  {
+    type: 'other',
+    label: 'Other',
+    icon: MoreHorizontal,
+    activeBg: 'bg-slate-700',
+    activeText: 'text-white',
+    activeShadow: 'shadow-slate-700/30',
+    inactiveBg: 'bg-slate-100 hover:bg-slate-200',
+    inactiveText: 'text-slate-600',
+    headerGradient: 'from-slate-50 to-white',
+  },
+];
 
 export function EventDetailModal({
   isOpen,
@@ -366,9 +437,9 @@ export function EventDetailModal({
   // For editing, coaches can edit any event, players can only view
   const canEdit = isCreating || isCoach;
   const isViewMode = !isCreating && !isCoach;
-  const eventTypeColor = eventTypeColors[formData.eventType] || eventTypeColors.other;
+  const activeTypePill = EVENT_TYPE_PILLS.find(p => p.type === formData.eventType) ?? EVENT_TYPE_PILLS[EVENT_TYPE_PILLS.length - 1]!;
 
-  const modalTitle = isCreating ? 'Create Event' : isViewMode ? 'Event Details' : 'Edit Event';
+  const modalTitle = isCreating ? 'New Event' : isViewMode ? 'Event Details' : 'Edit Event';
 
   return (
     <div
@@ -387,28 +458,67 @@ export function EventDetailModal({
       {/* Modal */}
       <div
         ref={modalRef}
-        className="relative bg-white/95 backdrop-blur-xl rounded-[24px] border border-white/40 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
+        className="relative bg-white rounded-[24px] border border-slate-200/60 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
       >
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200/50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${eventTypeColor.bg} ${eventTypeColor.border} border-2`} aria-hidden="true" />
+        {/* Colored Header Band - tinted by event type */}
+        <div className={cn('bg-gradient-to-r', activeTypePill.headerGradient, 'px-6 pt-5 pb-4')}>
+          <div className="flex items-center justify-between mb-4">
             <h2 id="event-modal-title" className="text-lg font-semibold text-slate-900">
               {modalTitle}
             </h2>
+            <button
+              ref={closeButtonRef}
+              onClick={onClose}
+              aria-label="Close modal"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-white/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            >
+              <X className="w-5 h-5" aria-hidden="true" />
+            </button>
           </div>
-          <button
-            ref={closeButtonRef}
-            onClick={onClose}
-            aria-label="Close modal"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-          >
-            <X className="w-5 h-5" aria-hidden="true" />
-          </button>
+
+          {/* Event Type Selector - Colorful pills */}
+          {canEdit ? (
+            <div className="flex flex-wrap gap-2">
+              {EVENT_TYPE_PILLS.map((pill) => {
+                const Icon = pill.icon;
+                const isActive = formData.eventType === pill.type;
+                return (
+                  <button
+                    key={pill.type}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, eventType: pill.type })}
+                    disabled={isSaving}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200',
+                      isActive
+                        ? cn(pill.activeBg, pill.activeText, 'shadow-md', pill.activeShadow)
+                        : cn(pill.inactiveBg, pill.inactiveText),
+                      'disabled:opacity-50'
+                    )}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {pill.label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              {(() => {
+                const Icon = activeTypePill.icon;
+                return (
+                  <span className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold', activeTypePill.activeBg, activeTypePill.activeText)}>
+                    <Icon className="w-3.5 h-3.5" />
+                    {activeTypePill.label}
+                  </span>
+                );
+              })()}
+            </div>
+          )}
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-5 max-h-[calc(90vh-140px)] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 max-h-[calc(90vh-200px)] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
           {error && (
             <div
               role="alert"
@@ -419,332 +529,258 @@ export function EventDetailModal({
             </div>
           )}
 
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Event Title
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              disabled={isViewMode || isSaving}
-              placeholder="Team Practice"
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors disabled:bg-slate-50 disabled:text-slate-500"
-              required
-            />
-          </div>
+          {/* Title - Hero input */}
+          <input
+            type="text"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            disabled={isViewMode || isSaving}
+            placeholder="Event name..."
+            className="w-full px-0 py-2 text-xl font-semibold text-slate-900 placeholder:text-slate-300 border-none focus:ring-0 focus:outline-none bg-transparent disabled:text-slate-500"
+            required
+          />
 
-          {/* Event Type */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Event Type
-            </label>
-            <select
-              value={formData.eventType}
-              onChange={(e) => setFormData({ ...formData, eventType: e.target.value as GolfEventType })}
-              disabled={isViewMode || isSaving}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 bg-white transition-colors disabled:bg-slate-50 disabled:text-slate-500"
-            >
-              <option value="practice">Practice</option>
-              <option value="tournament">Tournament</option>
-              <option value="qualifier">Qualifier</option>
-              <option value="meeting">Meeting</option>
-              <option value="travel">Travel</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          {/* Date Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                <Calendar className="w-3.5 h-3.5 inline-block mr-1" />
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                disabled={isViewMode || isSaving}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 bg-white transition-colors disabled:bg-slate-50 disabled:text-slate-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={formData.endDate || ''}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
-                disabled={isViewMode || isSaving}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 bg-white transition-colors disabled:bg-slate-50 disabled:text-slate-500"
-              />
-            </div>
-          </div>
-
-          {/* All Day Toggle */}
-          <label className="flex items-center gap-3 cursor-pointer group">
-            <input
-              type="checkbox"
-              checked={formData.allDay}
-              onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
-              disabled={isViewMode || isSaving}
-              className="w-5 h-5 rounded-lg border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-            />
-            <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">
-              All day event
-            </span>
-          </label>
-
-          {/* Time Row (hidden if all day) */}
-          {!formData.allDay && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  <Clock className="w-3.5 h-3.5 inline-block mr-1" />
-                  Start Time
-                </label>
-                <input
-                  type="time"
-                  value={formData.startTime || ''}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
-                  disabled={isViewMode || isSaving}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 bg-white transition-colors disabled:bg-slate-50 disabled:text-slate-500"
-                />
+          {/* Date & Time Section - Compact card */}
+          <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                <Calendar className="w-4.5 h-4.5 text-slate-500" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  End Time
-                </label>
+              <div className="flex-1 grid grid-cols-2 gap-3">
                 <input
-                  type="time"
-                  value={formData.endTime || ''}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   disabled={isViewMode || isSaving}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 bg-white transition-colors disabled:bg-slate-50 disabled:text-slate-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 bg-white transition-colors disabled:bg-white disabled:text-slate-500"
+                  required
+                />
+                <input
+                  type="date"
+                  value={formData.endDate || ''}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
+                  disabled={isViewMode || isSaving}
+                  placeholder="End date"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 bg-white transition-colors disabled:bg-white disabled:text-slate-500"
                 />
               </div>
             </div>
-          )}
 
-          {/* Location */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              <MapPin className="w-3.5 h-3.5 inline-block mr-1" />
-              Location
+            {!formData.allDay && (
+              <div className="flex items-center gap-4">
+                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                  <Clock className="w-4.5 h-4.5 text-slate-500" />
+                </div>
+                <div className="flex-1 grid grid-cols-2 gap-3">
+                  <input
+                    type="time"
+                    value={formData.startTime || ''}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
+                    disabled={isViewMode || isSaving}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 bg-white transition-colors disabled:bg-white disabled:text-slate-500"
+                  />
+                  <input
+                    type="time"
+                    value={formData.endTime || ''}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
+                    disabled={isViewMode || isSaving}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 bg-white transition-colors disabled:bg-white disabled:text-slate-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* All Day Toggle - inline */}
+            <label className="flex items-center gap-3 pl-[52px] cursor-pointer group">
+              <div className={cn(
+                'relative w-10 h-6 rounded-full transition-colors duration-200',
+                formData.allDay ? 'bg-emerald-500' : 'bg-slate-300'
+              )}>
+                <input
+                  type="checkbox"
+                  checked={formData.allDay}
+                  onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
+                  disabled={isViewMode || isSaving}
+                  className="sr-only"
+                />
+                <div className={cn(
+                  'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200',
+                  formData.allDay && 'translate-x-4'
+                )} />
+              </div>
+              <span className="text-sm text-slate-600">All day</span>
             </label>
+          </div>
+
+          {/* Location - Icon-prefixed input */}
+          <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3">
+            <MapPin className="w-5 h-5 text-slate-400 flex-shrink-0" />
             <input
               type="text"
               value={formData.location || ''}
               onChange={(e) => setFormData({ ...formData, location: e.target.value || null })}
               disabled={isViewMode || isSaving}
-              placeholder="City, State"
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors disabled:bg-slate-50 disabled:text-slate-500"
+              placeholder="Add location..."
+              className="flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-slate-900 placeholder:text-slate-400 disabled:text-slate-500"
             />
           </div>
 
-          {/* Course Name */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Course Name
-            </label>
-            <input
-              type="text"
-              value={formData.courseName || ''}
-              onChange={(e) => setFormData({ ...formData, courseName: e.target.value || null })}
-              disabled={isViewMode || isSaving}
-              placeholder="For tournaments or practices"
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors disabled:bg-slate-50 disabled:text-slate-500"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Description
-            </label>
+          {/* Description - Expandable, cleaner */}
+          <div className="bg-slate-50 rounded-2xl px-4 py-3">
             <textarea
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
               disabled={isViewMode || isSaving}
-              rows={3}
-              placeholder="Event details and information..."
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-none disabled:bg-slate-50 disabled:text-slate-500"
+              rows={2}
+              placeholder="Add notes or description..."
+              className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-slate-900 placeholder:text-slate-400 resize-none disabled:text-slate-500"
             />
           </div>
 
-          {/* Mandatory Toggle */}
-          <label className="flex items-center gap-3 cursor-pointer group">
-            <input
-              type="checkbox"
-              checked={formData.isMandatory}
-              onChange={(e) => setFormData({ ...formData, isMandatory: e.target.checked })}
-              disabled={isViewMode || isSaving}
-              className="w-5 h-5 rounded-lg border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-            />
-            <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">
-              <Users className="w-3.5 h-3.5 inline-block mr-1" />
-              Mandatory attendance
-            </span>
-          </label>
-
-          {/* Add People Section (always visible for coaches) */}
+          {/* Attendees Section (coaches) */}
           {canEdit && (
-            <div className="border-t border-slate-200 pt-4 mt-4">
-              <div className="flex items-center justify-between mb-3">
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                  <UserPlus className="w-4 h-4 text-slate-600" />
-                  Attendees
-                </label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm font-semibold text-slate-900">Attendees</span>
+                </div>
                 <div className="flex items-center gap-2">
                   {formData.attendeeIds.length > 0 && (
-                    <span className="text-xs font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
-                      {formData.attendeeIds.length} of {availablePlayers.length}
+                    <span className="text-xs font-medium px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full">
+                      {formData.attendeeIds.length}/{availablePlayers.length}
                     </span>
+                  )}
+                  {availablePlayers.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (formData.attendeeIds.length === availablePlayers.length) {
+                          setFormData(prev => ({ ...prev, attendeeIds: [] }));
+                        } else {
+                          setFormData(prev => ({ ...prev, attendeeIds: availablePlayers.map(p => p.id) }));
+                        }
+                      }}
+                      disabled={isViewMode || isSaving}
+                      className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 disabled:opacity-40 transition-colors"
+                    >
+                      {formData.attendeeIds.length === availablePlayers.length ? 'Clear' : 'Add All'}
+                    </button>
                   )}
                 </div>
               </div>
 
               {availablePlayers.length === 0 ? (
                 <p className="text-sm text-slate-500 py-2">
-                  No team members available. Add players to your roster first.
+                  No team members available.
                 </p>
               ) : (
-                <div className="space-y-3">
-                  {/* Quick Actions */}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, attendeeIds: availablePlayers.map(p => p.id) }))}
-                      disabled={isViewMode || isSaving || formData.attendeeIds.length === availablePlayers.length}
-                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Add All
-                    </button>
-                    {formData.attendeeIds.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {availablePlayers.map(player => {
+                    const isSelected = formData.attendeeIds.includes(player.id);
+                    return (
                       <button
+                        key={player.id}
                         type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, attendeeIds: [] }))}
+                        onClick={() => handleToggleAttendee(player.id)}
                         disabled={isViewMode || isSaving}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className={cn(
+                          'group flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150',
+                          isSelected
+                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 scale-[1.02]'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+                          'disabled:opacity-50 disabled:cursor-not-allowed'
+                        )}
                       >
-                        Clear
+                        {player.avatar_url ? (
+                          <img src={player.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                        ) : (
+                          <div className={cn(
+                            'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold',
+                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-300 text-slate-500'
+                          )}>
+                            {player.first_name[0]}{player.last_name[0]}
+                          </div>
+                        )}
+                        <span>{player.first_name} {player.last_name[0]}.</span>
                       </button>
-                    )}
-                  </div>
-
-                  {/* Player Grid */}
-                  <div className="flex flex-wrap gap-2">
-                    {availablePlayers.map(player => {
-                      const isSelected = formData.attendeeIds.includes(player.id);
-                      return (
-                        <button
-                          key={player.id}
-                          type="button"
-                          onClick={() => handleToggleAttendee(player.id)}
-                          disabled={isViewMode || isSaving}
-                          className={`group flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                            isSelected
-                              ? 'bg-green-600 text-white shadow-md shadow-green-600/20'
-                              : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                          {player.avatar_url ? (
-                            <img
-                              src={player.avatar_url}
-                              alt=""
-                              className="w-5 h-5 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                              isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'
-                            }`}>
-                              {player.first_name[0]}{player.last_name[0]}
-                            </div>
-                          )}
-                          <span>{player.first_name} {player.last_name[0]}.</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
 
-              {/* Conflict Warning - shows when people are added */}
+              {/* Conflict Warning */}
               {checkingConflicts && (
-                <div className="mt-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 flex items-center gap-2">
+                <div className="p-3 bg-slate-100 rounded-xl text-sm text-slate-600 flex items-center gap-2">
                   <div className="animate-spin h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full" />
-                  Checking for scheduling conflicts...
+                  Checking conflicts...
                 </div>
               )}
 
               {conflicts && conflicts.hasConflict && (
-                <div className="mt-3">
-                  <ConflictWarning
-                    conflicts={transformConflictsForWarning(conflicts.conflicts)}
-                    suggestions={conflicts.suggestions}
-                    onSelectTime={handleSelectSuggestedTime}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* RSVP Settings (optional - for tracking responses) */}
-          {canEdit && (
-            <div className="border-t border-slate-200 pt-4 mt-4">
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.requiresRsvp}
-                  onChange={(e) => setFormData({ ...formData, requiresRsvp: e.target.checked })}
-                  disabled={isViewMode || isSaving}
-                  className="w-5 h-5 rounded-lg border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                <ConflictWarning
+                  conflicts={transformConflictsForWarning(conflicts.conflicts)}
+                  suggestions={conflicts.suggestions}
+                  onSelectTime={handleSelectSuggestedTime}
                 />
-                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">
-                  <Users className="w-3.5 h-3.5 inline-block mr-1" />
-                  Require RSVP from attendees
-                </span>
-              </label>
-
-              {/* RSVP Deadline & Max Attendees (shown when RSVP is enabled) */}
-              {formData.requiresRsvp && (
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      RSVP Deadline
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={formData.rsvpDeadline || ''}
-                      onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value || null })}
-                      disabled={isViewMode || isSaving}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 bg-white transition-colors disabled:bg-slate-50 disabled:text-slate-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Max Attendees
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={formData.maxAttendees || ''}
-                      onChange={(e) => setFormData({ ...formData, maxAttendees: e.target.value ? parseInt(e.target.value) : null })}
-                      disabled={isViewMode || isSaving}
-                      placeholder="Optional"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors disabled:bg-slate-50 disabled:text-slate-500"
-                    />
-                  </div>
-                </div>
               )}
             </div>
           )}
 
-          {/* Player RSVP Card (for players viewing events requiring RSVP) */}
+          {/* RSVP Toggle */}
+          {canEdit && (
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm font-medium text-slate-700">Require RSVP</span>
+              <label className="cursor-pointer">
+                <div className={cn(
+                  'relative w-10 h-6 rounded-full transition-colors duration-200',
+                  formData.requiresRsvp ? 'bg-emerald-500' : 'bg-slate-300'
+                )}>
+                  <input
+                    type="checkbox"
+                    checked={formData.requiresRsvp}
+                    onChange={(e) => setFormData({ ...formData, requiresRsvp: e.target.checked })}
+                    disabled={isViewMode || isSaving}
+                    className="sr-only"
+                  />
+                  <div className={cn(
+                    'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200',
+                    formData.requiresRsvp && 'translate-x-4'
+                  )} />
+                </div>
+              </label>
+            </div>
+          )}
+
+          {/* RSVP Settings (when enabled) */}
+          {canEdit && formData.requiresRsvp && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">RSVP Deadline</label>
+                <input
+                  type="datetime-local"
+                  value={formData.rsvpDeadline || ''}
+                  onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value || null })}
+                  disabled={isViewMode || isSaving}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 bg-white transition-colors disabled:bg-slate-50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Max Attendees</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.maxAttendees || ''}
+                  onChange={(e) => setFormData({ ...formData, maxAttendees: e.target.value ? parseInt(e.target.value) : null })}
+                  disabled={isViewMode || isSaving}
+                  placeholder="No limit"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 placeholder:text-slate-400 bg-white transition-colors disabled:bg-slate-50"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Player RSVP Card */}
           {!isCreating && event && formData.requiresRsvp && !isCoach && (
             <div className="border-t border-slate-200 -mx-6 px-6 pt-4">
               <PlayerRSVPCard
@@ -775,7 +811,7 @@ export function EventDetailModal({
             </div>
           )}
 
-          {/* RSVP Status Section (for coaches viewing all responses) */}
+          {/* RSVP Status Section (for coaches) */}
           {!isCreating && event?.id && formData.requiresRsvp && isCoach && (
             <div className="border-t border-slate-200 -mx-6 px-6 pt-4">
               <h4 className="text-sm font-semibold text-slate-900 mb-3">RSVP Status</h4>
@@ -794,21 +830,20 @@ export function EventDetailModal({
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200/50 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
           {/* Delete Button (left side) */}
           <div>
             {onDelete && !isCreating && (
               <>
                 {showDeleteConfirm ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-red-600">Confirm delete?</span>
                     <button
                       type="button"
                       onClick={handleDelete}
                       disabled={isSaving}
                       className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      Yes, Delete
+                      Confirm Delete
                     </button>
                     <button
                       type="button"
@@ -824,7 +859,7 @@ export function EventDetailModal({
                     type="button"
                     onClick={() => setShowDeleteConfirm(true)}
                     disabled={isSaving}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                   >
                     <Trash2 className="w-4 h-4" />
                     Delete
@@ -836,22 +871,28 @@ export function EventDetailModal({
 
           {/* Save/Cancel Buttons (right side) */}
           <div className="flex items-center gap-3">
-            <Button
+            <button
               type="button"
-              variant="secondary"
               onClick={onClose}
               disabled={isSaving}
+              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
             >
               {isViewMode ? 'Close' : 'Cancel'}
-            </Button>
+            </button>
             {!isViewMode && (
-              <Button
+              <button
                 type="submit"
                 onClick={handleSubmit}
-                isLoading={isSaving}
+                disabled={isSaving}
+                className={cn(
+                  'px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all',
+                  'bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                  isSaving && 'animate-pulse'
+                )}
               >
-                {isCreating ? 'Create Event' : 'Save Changes'}
-              </Button>
+                {isSaving ? 'Saving...' : isCreating ? 'Create Event' : 'Save Changes'}
+              </button>
             )}
           </div>
         </div>
