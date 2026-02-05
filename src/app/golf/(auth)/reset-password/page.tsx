@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -54,11 +55,18 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img
-            src="/helm-golf-logo.png"
-            alt="GolfHelm"
-            className="h-16 w-auto mx-auto mb-4"
-          />
+          <div className="relative inline-flex items-center justify-center mb-4">
+            <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl scale-150" />
+            <Image
+              src="/helm.transparent. golf-logo.png"
+              alt="GolfHelm Logo"
+              width={64}
+              height={64}
+              className="relative w-16 h-16 object-contain"
+              priority
+              unoptimized
+            />
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Reset password</h1>
           <p className="text-slate-500 mt-1">Enter your new password</p>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 
@@ -83,17 +84,31 @@ export default function ForgotPasswordPage() {
             shadow-2xl
           "
         >
-          {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 rounded-[12px] bg-primary-600 flex items-center justify-center mb-4 overflow-hidden">
-              <img
-                src="/helm-golf-logo.png"
-                alt="GolfHelm"
-                className="w-full h-full object-cover"
-              />
+          {/* Logo with glow effect */}
+          <motion.div
+            className="flex flex-col items-center mb-8"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-xl scale-150" />
+              <div className="relative w-14 h-14 flex items-center justify-center mb-4">
+                <Image
+                  src="/helm.transparent. golf-logo.png"
+                  alt="GolfHelm Logo"
+                  width={56}
+                  height={56}
+                  className="w-14 h-14 object-contain"
+                  priority
+                  unoptimized
+                />
+              </div>
             </div>
-            <h1 className="text-xl font-bold text-warm-900">GolfHelm</h1>
-          </div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
+              GolfHelm
+            </h1>
+          </motion.div>
 
           {/* Header */}
           <div className="text-center mb-8">
