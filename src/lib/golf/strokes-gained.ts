@@ -35,6 +35,7 @@ export type BaselineData = Record<LieType, Record<number, number>>;
 /**
  * Internal shot representation for strokes gained calculations
  * Maps from database fields to calculation-friendly names
+ * All distances are normalized to YARDS (green distances converted from feet)
  */
 export interface SGShot {
   hole_id: string | null;
@@ -71,16 +72,36 @@ export interface SGRound {
 }
 
 /**
- * Convert database shot to internal shot format
+ * Normalize a distance value to yards, converting from feet if necessary.
+ * The database stores distances with a companion unit field ('yards' | 'feet').
+ * Putts are typically stored in feet; other shots in yards.
+ */
+function normalizeDistanceToYards(
+  distance: number | null,
+  unit: string | null
+): number {
+  if (distance == null) return 0;
+  return unit === 'feet' ? distance / 3 : distance;
+}
+
+/**
+ * Convert database shot to internal shot format.
+ * Normalizes all distances to yards using the distance_unit_before/after fields.
  */
 export function convertDbShot(shot: DbGolfShot): SGShot {
   return {
     hole_id: shot.hole_id,
     shot_number: shot.shot_number,
     starting_lie: mapLieType(shot.lie_before),
-    starting_distance_yards: shot.distance_to_hole_before ?? 0,
+    starting_distance_yards: normalizeDistanceToYards(
+      shot.distance_to_hole_before,
+      shot.distance_unit_before
+    ),
     ending_lie: mapLieType(shot.lie_after),
-    ending_distance_yards: shot.distance_to_hole_after ?? 0,
+    ending_distance_yards: normalizeDistanceToYards(
+      shot.distance_to_hole_after,
+      shot.distance_unit_after
+    ),
     is_holed: shot.putt_made === true || shot.result === 'holed' || shot.result === 'hole',
     is_penalty: shot.is_penalty === true,
   };
@@ -104,7 +125,10 @@ export function convertDbHole(hole: DbGolfHole, shots?: DbGolfShot[]): SGHole {
 }
 
 /**
- * Map database lie string to LieType enum
+ * Map database lie string to LieType enum.
+ * Returns 'fairway' as default for unknown lie types (reasonable middle-ground baseline).
+ * Note: null lies are also mapped to 'fairway' - callers should handle null lie_before
+ * by checking shot data completeness before calling strokes gained calculations.
  */
 export function mapLieType(lie: string | null): LieType {
   if (!lie) return 'fairway';
@@ -115,7 +139,8 @@ export function mapLieType(lie: string | null): LieType {
   if (normalized === 'sand' || normalized === 'bunker' || normalized === 'greenside_bunker' || normalized === 'fairway_bunker') return 'sand';
   if (normalized === 'green' || normalized === 'fringe') return 'green';
   if (normalized === 'recovery' || normalized === 'hazard' || normalized === 'penalty') return 'recovery';
-  return 'fairway'; // Default fallback
+  if (normalized === 'other') return 'rough';
+  return 'fairway';
 }
 
 /**
@@ -275,9 +300,20 @@ export function getExpectedStrokes(
 }
 
 /**
- * Calculate strokes gained for a single shot
+ * Calculate strokes gained for a single shot.
+ * Returns null if the shot has insufficient data for accurate calculation.
  */
-export function calculateShotStrokesGained(shot: SGShot): number {
+export function calculateShotStrokesGained(shot: SGShot): number | null {
+  // Cannot calculate SG without a starting distance
+  if (shot.starting_distance_yards <= 0 && shot.starting_lie !== 'green') {
+    return null;
+  }
+
+  // Cannot calculate SG without an ending distance (unless holed)
+  if (!shot.is_holed && shot.ending_distance_yards <= 0 && shot.ending_lie !== 'green') {
+    return null;
+  }
+
   const expectedBefore = getExpectedStrokes(
     shot.starting_lie,
     shot.starting_distance_yards,
@@ -357,6 +393,7 @@ export function calculateStrokesGained(
     if (!category) continue;
 
     const sg = calculateShotStrokesGained(shot);
+    if (sg == null) continue; // Skip shots with insufficient data
     result[category] += sg;
   }
 
@@ -401,9 +438,10 @@ export function calculateStrokesGainedBreakdown(
     if (!category) continue;
 
     const sg = calculateShotStrokesGained(shot);
+    if (sg == null) continue; // Skip shots with insufficient data
     result[category] += sg;
 
-    // Count shots per category
+    // Count shots per category (only for shots with valid SG)
     switch (category) {
       case 'sg_off_tee': counts.off_tee++; break;
       case 'sg_approach': counts.approach++; break;
