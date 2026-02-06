@@ -79,6 +79,7 @@ export default async function GolfDocumentsPage() {
     uploaded_by: string | null;
     current_version_id: string | null;
     version_count: number | null;
+    folder: string | null;
     uploader: { full_name: string | null } | null;
   };
 
@@ -98,9 +99,7 @@ export default async function GolfDocumentsPage() {
       uploaded_by,
       current_version_id,
       version_count,
-      uploader:golf_coaches!golf_documents_uploaded_by_fkey (
-        full_name
-      )
+      folder
     `)
     .eq('team_id', teamId)
     .order('created_at', { ascending: false });

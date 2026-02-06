@@ -117,4 +117,6 @@ export function IconDumbbell({ size = 18, ...p }: IconProps) { return <svg width
 export function IconCircleDot({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="1" fill="currentColor" /></svg>; }
 
 // Sport-specific icons
+export function IconFolderPlus({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /><path d="M12 11v6M9 14h6" /></svg>; }
+export function IconFileSpreadsheet({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h2M14 13h2M8 17h2M14 17h2" /></svg>; }
 export function IconBaseball({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="12" cy="12" r="10" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10" /><path d="M12 2a15.3 15.3 0 0 0-4 10 15.3 15.3 0 0 0 4 10" /></svg>; }

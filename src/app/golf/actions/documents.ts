@@ -609,9 +609,14 @@ export async function createGolfDocument(data: {
   category?: string;
   player_visible: boolean;
   uploaded_by: string;
+  folder?: string;
 }): Promise<{ success: boolean; data?: GolfDocument; error?: string }> {
   try {
     const supabase = await createClient();
+
+    // Get authenticated user ID (uploaded_by now references auth.users)
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error('Not authenticated');
 
     // Create document record
     const { data: document, error: insertError } = await supabase
@@ -625,9 +630,10 @@ export async function createGolfDocument(data: {
         file_size: data.file_size,
         category: data.category || 'other',
         is_public: data.player_visible,
-        uploaded_by: data.uploaded_by,
+        uploaded_by: user.id,
         version_count: 1,
-      })
+        folder: data.folder || null,
+      } as any)
       .select()
       .single();
 
@@ -643,12 +649,13 @@ export async function createGolfDocument(data: {
       .insert({
         document_id: document.id,
         version_number: 1,
+        file_url: data.file_url,
         file_name: data.title,
         file_size: data.file_size,
         mime_type: data.file_type,
         storage_path: storagePath,
         change_notes: 'Initial upload',
-        uploaded_by: data.uploaded_by,
+        uploaded_by: user.id,
       });
 
     if (versionError) {
