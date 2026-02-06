@@ -25,7 +25,9 @@ export {
     QuickActionCard,
     SectionHeader,
     RoundRow,
+    RecentRoundCard,
     TopPerformerRow,
     containerVariants,
     itemVariants
 } from './premium-components';
+export type { RecentRoundCardProps } from './premium-components';

@@ -56,6 +56,12 @@ export default function GolfMessagesPage() {
   const [isEditSaving, setIsEditSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
+  // Auto-scroll to bottom when messages change
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   // Memoize grouped conversations for performance
   const groupedConversations = useMemo(() => {
     return groupConversationsByTime(conversations);
@@ -473,7 +479,7 @@ export default function GolfMessagesPage() {
                         )}
 
                         {/* Message bubble with edit/delete controls */}
-                        <div className="group relative flex items-center gap-1">
+                        <div className="group relative flex items-center gap-1 max-w-[70%]">
                           {/* Edit/Delete buttons for own messages (appear on hover) */}
                           {isOwn && editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
                             <div className={cn(
@@ -521,7 +527,7 @@ export default function GolfMessagesPage() {
                           {/* Message bubble - edit mode */}
                           {editingMessageId === msg.id ? (
                             <div className={cn(
-                              'max-w-[70%] px-3 py-2',
+                              'w-full px-3 py-2',
                               'bg-emerald-50 border-2 border-emerald-300 shadow-sm',
                               'rounded-2xl'
                             )}>
@@ -557,7 +563,7 @@ export default function GolfMessagesPage() {
                           ) : (
                             /* Message bubble - normal mode */
                             <div className={cn(
-                              'max-w-[70%] px-4 py-2.5',
+                              'px-4 py-2.5',
                               isOwn
                                 ? 'bg-emerald-500 text-white'
                                 : 'bg-white/70 backdrop-blur-sm border border-white/30 text-slate-900 shadow-glass-sm',
@@ -615,6 +621,7 @@ export default function GolfMessagesPage() {
                       <TypingIndicator />
                     </div>
                   )}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </div>

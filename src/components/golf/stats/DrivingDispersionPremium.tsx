@@ -9,9 +9,10 @@
  * - Consistent 8px grid spacing
  * - Purposeful motion (fade-in, hover states only)
  * - Clean fairway visualization with subtle perspective
+ * - Accurate stats: handles untracked misses gracefully
  */
 
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -32,93 +33,93 @@ interface DrivingDispersionProps {
 type HoveredZone = 'left' | 'fairway' | 'right' | null;
 
 // ============================================================================
+// SEEDED RANDOM (deterministic dot positions)
+// ============================================================================
+
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 49297;
+  return x - Math.floor(x);
+}
+
+// ============================================================================
 // FAIRWAY VISUALIZATION (SVG)
 // ============================================================================
 
 function FairwayVisualization({
   fairwayPct,
-  leftPct,
-  rightPct,
+  missLeftCount,
+  missRightCount,
   hoveredZone,
   onHover,
 }: {
   fairwayPct: number;
-  leftPct: number;
-  rightPct: number;
+  missLeftCount: number;
+  missRightCount: number;
   hoveredZone: HoveredZone;
   onHover: (zone: HoveredZone) => void;
 }) {
-  // Generate shot positions
-  const generateShots = useCallback(() => {
-    const shots: Array<{ x: number; y: number; zone: HoveredZone; delay: number }> = [];
+  const shots = useMemo(() => {
+    const result: Array<{ x: number; y: number; zone: HoveredZone; delay: number }> = [];
 
-    // Left misses
-    const leftCount = Math.min(Math.round(leftPct / 10), 8);
+    // Left misses - deterministic positions
+    const leftCount = Math.min(missLeftCount, 8);
     for (let i = 0; i < leftCount; i++) {
-      const seed = i * 7919;
-      shots.push({
-        x: 15 + (seed % 40),
-        y: 20 + (i * 15) % 100,
+      result.push({
+        x: 12 + seededRandom(i * 7 + 1) * 42,
+        y: 15 + seededRandom(i * 13 + 2) * 105,
         zone: 'left',
         delay: i * 0.04,
       });
     }
 
-    // Fairway hits
-    const fairwayCount = Math.min(Math.round(fairwayPct / 10), 10);
+    // Fairway hits - cluster in fairway zone
+    const fairwayCount = Math.min(Math.round(fairwayPct / 8), 12);
     for (let i = 0; i < fairwayCount; i++) {
-      shots.push({
-        x: 85 + (i % 5) * 14,
-        y: 15 + Math.floor(i / 5) * 40 + (i % 3) * 10,
+      const col = i % 4;
+      const row = Math.floor(i / 4);
+      result.push({
+        x: 80 + col * 20 + seededRandom(i * 11 + 50) * 10,
+        y: 14 + row * 35 + seededRandom(i * 17 + 60) * 18,
         zone: 'fairway',
-        delay: 0.1 + i * 0.03,
+        delay: 0.08 + i * 0.025,
       });
     }
 
-    // Right misses
-    const rightCount = Math.min(Math.round(rightPct / 10), 8);
+    // Right misses - deterministic positions
+    const rightCount = Math.min(missRightCount, 8);
     for (let i = 0; i < rightCount; i++) {
-      const seed = i * 3571;
-      shots.push({
-        x: 185 + (seed % 40),
-        y: 20 + (i * 15) % 100,
+      result.push({
+        x: 186 + seededRandom(i * 19 + 3) * 42,
+        y: 15 + seededRandom(i * 23 + 4) * 105,
         zone: 'right',
         delay: i * 0.04,
       });
     }
 
-    return shots;
-  }, [fairwayPct, leftPct, rightPct]);
-
-  const shots = generateShots();
+    return result;
+  }, [fairwayPct, missLeftCount, missRightCount]);
 
   return (
-    <svg viewBox="0 0 240 140" className="w-full max-w-[280px] mx-auto">
+    <svg viewBox="0 0 240 140" className="w-full max-w-[300px] mx-auto">
       <defs>
-        {/* Fairway gradient - clean green */}
-        <linearGradient id="fairwayGradPremium" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#22c55e" stopOpacity={hoveredZone === 'fairway' ? 0.4 : 0.25} />
-          <stop offset="100%" stopColor="#16a34a" stopOpacity={hoveredZone === 'fairway' ? 0.5 : 0.3} />
+        <linearGradient id="fairwayGradP" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#22c55e" stopOpacity={hoveredZone === 'fairway' ? 0.4 : 0.22} />
+          <stop offset="100%" stopColor="#16a34a" stopOpacity={hoveredZone === 'fairway' ? 0.5 : 0.28} />
         </linearGradient>
-
-        {/* Left rough - subtle red */}
-        <linearGradient id="leftRoughPremium" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#fecaca" stopOpacity={hoveredZone === 'left' ? 0.5 : 0.2} />
-          <stop offset="100%" stopColor="#fca5a5" stopOpacity={hoveredZone === 'left' ? 0.6 : 0.3} />
+        <linearGradient id="leftRoughP" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#fecaca" stopOpacity={hoveredZone === 'left' ? 0.5 : 0.15} />
+          <stop offset="100%" stopColor="#fca5a5" stopOpacity={hoveredZone === 'left' ? 0.6 : 0.22} />
         </linearGradient>
-
-        {/* Right rough - subtle orange */}
-        <linearGradient id="rightRoughPremium" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#fed7aa" stopOpacity={hoveredZone === 'right' ? 0.5 : 0.2} />
-          <stop offset="100%" stopColor="#fdba74" stopOpacity={hoveredZone === 'right' ? 0.6 : 0.3} />
+        <linearGradient id="rightRoughP" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#fed7aa" stopOpacity={hoveredZone === 'right' ? 0.5 : 0.15} />
+          <stop offset="100%" stopColor="#fdba74" stopOpacity={hoveredZone === 'right' ? 0.6 : 0.22} />
         </linearGradient>
       </defs>
 
       {/* Background zones with perspective */}
-      {/* Left rough */}
       <motion.path
         d="M0,0 L65,0 L50,140 L0,140 Z"
-        fill="url(#leftRoughPremium)"
+        fill="url(#leftRoughP)"
         className="cursor-pointer"
         onMouseEnter={() => onHover('left')}
         onMouseLeave={() => onHover(null)}
@@ -126,11 +127,9 @@ function FairwayVisualization({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
       />
-
-      {/* Fairway */}
       <motion.path
         d="M65,0 L175,0 L190,140 L50,140 Z"
-        fill="url(#fairwayGradPremium)"
+        fill="url(#fairwayGradP)"
         className="cursor-pointer"
         onMouseEnter={() => onHover('fairway')}
         onMouseLeave={() => onHover(null)}
@@ -138,11 +137,9 @@ function FairwayVisualization({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, delay: 0.1 }}
       />
-
-      {/* Right rough */}
       <motion.path
         d="M175,0 L240,0 L240,140 L190,140 Z"
-        fill="url(#rightRoughPremium)"
+        fill="url(#rightRoughP)"
         className="cursor-pointer"
         onMouseEnter={() => onHover('right')}
         onMouseLeave={() => onHover(null)}
@@ -154,37 +151,28 @@ function FairwayVisualization({
       {/* Fairway edge lines */}
       <motion.line
         x1="65" y1="0" x2="50" y2="140"
-        stroke="#16a34a"
-        strokeWidth="1"
-        strokeDasharray="4 3"
-        opacity="0.4"
+        stroke="#16a34a" strokeWidth="1" strokeDasharray="4 3" opacity="0.35"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
         transition={{ delay: 0.3, duration: 0.5 }}
       />
       <motion.line
         x1="175" y1="0" x2="190" y2="140"
-        stroke="#16a34a"
-        strokeWidth="1"
-        strokeDasharray="4 3"
-        opacity="0.4"
+        stroke="#16a34a" strokeWidth="1" strokeDasharray="4 3" opacity="0.35"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
         transition={{ delay: 0.3, duration: 0.5 }}
       />
 
-      {/* Distance markers (subtle) */}
+      {/* Distance markers */}
       {[35, 70, 105].map((y, i) => (
         <motion.line
           key={y}
           x1="40" y1={y} x2="200" y2={y}
-          stroke="#94a3b8"
-          strokeWidth="0.5"
-          strokeDasharray="2 4"
-          opacity="0.3"
+          stroke="#94a3b8" strokeWidth="0.5" strokeDasharray="2 4" opacity="0.25"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.3 }}
-          transition={{ delay: 0.4 + i * 0.1 }}
+          animate={{ opacity: 0.25 }}
+          transition={{ delay: 0.4 + i * 0.08 }}
         />
       ))}
 
@@ -208,15 +196,15 @@ function FairwayVisualization({
 
         return (
           <motion.circle
-            key={i}
+            key={`${shot.zone}-${i}`}
             cx={shot.x}
             cy={shot.y}
-            r={shot.zone === 'fairway' ? 5 : 4}
+            r={shot.zone === 'fairway' ? 5 : 4.5}
             fill={color}
             initial={{ scale: 0, opacity: 0 }}
             animate={{
-              scale: isHovered ? 1.2 : 1,
-              opacity: isOtherHovered ? 0.3 : 0.8,
+              scale: isHovered ? 1.15 : 1,
+              opacity: isOtherHovered ? 0.25 : 0.8,
             }}
             transition={{
               delay: shot.delay,
@@ -232,10 +220,7 @@ function FairwayVisualization({
 
       {/* Zone labels */}
       <motion.text
-        x="30" y="75"
-        textAnchor="middle"
-        fontSize="9"
-        fontWeight="500"
+        x="30" y="75" textAnchor="middle" fontSize="9" fontWeight="500"
         fill={hoveredZone === 'left' ? '#ef4444' : '#94a3b8'}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -244,10 +229,7 @@ function FairwayVisualization({
         LEFT
       </motion.text>
       <motion.text
-        x="120" y="60"
-        textAnchor="middle"
-        fontSize="10"
-        fontWeight="600"
+        x="120" y="60" textAnchor="middle" fontSize="10" fontWeight="600"
         fill="#16a34a"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -256,10 +238,7 @@ function FairwayVisualization({
         FAIRWAY
       </motion.text>
       <motion.text
-        x="210" y="75"
-        textAnchor="middle"
-        fontSize="9"
-        fontWeight="500"
+        x="210" y="75" textAnchor="middle" fontSize="9" fontWeight="500"
         fill={hoveredZone === 'right' ? '#f97316' : '#94a3b8'}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -272,7 +251,7 @@ function FairwayVisualization({
 }
 
 // ============================================================================
-// STAT CARD (zone breakdown)
+// ZONE STAT CARD
 // ============================================================================
 
 function ZoneStatCard({
@@ -285,29 +264,29 @@ function ZoneStatCard({
 }: {
   label: string;
   percentage: number;
-  count?: number;
+  count: number;
   color: 'green' | 'red' | 'orange';
   isActive?: boolean;
   onClick?: () => void;
 }) {
   const colorClasses = {
     green: {
-      bg: 'bg-green-50',
-      border: 'border-green-200',
+      bg: 'bg-green-50/80',
+      border: 'border-green-200/60',
       text: 'text-green-700',
-      ring: 'ring-green-500',
+      ring: 'ring-green-500/40',
     },
     red: {
-      bg: 'bg-red-50',
-      border: 'border-red-200',
+      bg: 'bg-red-50/80',
+      border: 'border-red-200/60',
       text: 'text-red-600',
-      ring: 'ring-red-500',
+      ring: 'ring-red-500/40',
     },
     orange: {
-      bg: 'bg-orange-50',
-      border: 'border-orange-200',
+      bg: 'bg-orange-50/80',
+      border: 'border-orange-200/60',
       text: 'text-orange-600',
-      ring: 'ring-orange-500',
+      ring: 'ring-orange-500/40',
     },
   };
 
@@ -317,23 +296,20 @@ function ZoneStatCard({
     <motion.button
       type="button"
       className={cn(
-        'flex flex-col items-center p-3 rounded-xl border transition-all',
-        classes.bg,
-        classes.border,
+        'flex flex-col items-center p-3.5 rounded-xl border transition-all',
+        classes.bg, classes.border,
         isActive && `ring-2 ring-offset-1 ${classes.ring}`,
         onClick && 'cursor-pointer hover:shadow-sm',
       )}
-      whileHover={onClick ? { y: -2 } : undefined}
+      whileHover={onClick ? { y: -1 } : undefined}
       whileTap={onClick ? { scale: 0.98 } : undefined}
       onClick={onClick}
     >
-      <span className={cn('text-2xl font-bold tabular-nums', classes.text)}>
+      <span className={cn('text-2xl font-bold tabular-nums leading-none', classes.text)}>
         {percentage.toFixed(0)}%
       </span>
-      <span className="text-xs font-medium text-slate-600 mt-0.5">{label}</span>
-      {count !== undefined && (
-        <span className="text-[10px] text-slate-400 mt-0.5">{count} shots</span>
-      )}
+      <span className="text-xs font-medium text-slate-600 mt-1.5">{label}</span>
+      <span className="text-[10px] text-slate-400 mt-0.5 tabular-nums">{count} shots</span>
     </motion.button>
   );
 }
@@ -354,21 +330,36 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
   const [hoveredZone, setHoveredZone] = useState<HoveredZone>(null);
 
   const fairway = fairwayPct ?? 0;
-  const totalMisses = missLeftCount + missRightCount;
-  const leftPctOfMisses = totalMisses > 0 ? (missLeftCount / totalMisses) * 100 : 50;
-  const rightPctOfMisses = totalMisses > 0 ? (missRightCount / totalMisses) * 100 : 50;
+  const totalTrackedMisses = missLeftCount + missRightCount;
+  const totalMisses = fairwayOpportunities - fairwaysHit;
 
-  const missTotal = 100 - fairway;
-  const leftPct = (missTotal * leftPctOfMisses) / 100;
-  const rightPct = (missTotal * rightPctOfMisses) / 100;
+  // Calculate accurate percentages based on actual shot counts
+  // If we have direction data, use it proportionally
+  // If no direction data exists, show the untracked portion honestly
+  const untrackedMisses = Math.max(0, totalMisses - totalTrackedMisses);
 
-  // Determine tendency
-  const tendency = leftPctOfMisses > 60 ? 'left' : rightPctOfMisses > 60 ? 'right' : 'balanced';
+  // Percentages of ALL tee shots (not just misses)
+  const leftPct = fairwayOpportunities > 0
+    ? (missLeftCount / fairwayOpportunities) * 100
+    : 0;
+  const rightPct = fairwayOpportunities > 0
+    ? (missRightCount / fairwayOpportunities) * 100
+    : 0;
+  const untrackedPct = fairwayOpportunities > 0
+    ? (untrackedMisses / fairwayOpportunities) * 100
+    : 0;
+
+  // Miss tendency (only meaningful if we have direction data)
+  const hasMissDirectionData = totalTrackedMisses > 0;
+  const leftPctOfTracked = totalTrackedMisses > 0 ? (missLeftCount / totalTrackedMisses) * 100 : 0;
+  const rightPctOfTracked = totalTrackedMisses > 0 ? (missRightCount / totalTrackedMisses) * 100 : 0;
+  const tendency = !hasMissDirectionData ? 'none' :
+    leftPctOfTracked > 60 ? 'left' : rightPctOfTracked > 60 ? 'right' : 'balanced';
 
   return (
     <motion.div
       className={cn(
-        'bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden',
+        'bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden',
         className
       )}
       initial={{ opacity: 0, y: 16 }}
@@ -377,28 +368,26 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
       whileHover={{ boxShadow: '0 8px 24px rgba(0,0,0,0.06)', y: -2 }}
     >
       {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100">
+      <div className="px-6 py-5 border-b border-slate-100/80">
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-lg font-semibold text-slate-900 tracking-tight">
               Driving Accuracy
             </h3>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-[13px] text-slate-500 mt-0.5">
               Tee shot dispersion
             </p>
           </div>
-
-          {/* Dominant stat */}
           <div className="text-right">
             <motion.div
-              className="text-4xl font-bold text-green-600 tabular-nums tracking-tight"
+              className="text-4xl font-bold text-green-600 tabular-nums tracking-tight leading-none"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
             >
               {fairway.toFixed(0)}%
             </motion.div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mt-0.5">
+            <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mt-1 tabular-nums">
               {fairwaysHit}/{fairwayOpportunities} Fairways
             </div>
           </div>
@@ -406,11 +395,11 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
       </div>
 
       {/* Fairway Visualization */}
-      <div className="px-6 py-6 bg-slate-50/50">
+      <div className="px-6 py-5 bg-slate-50/40">
         <FairwayVisualization
           fairwayPct={fairway}
-          leftPct={leftPct}
-          rightPct={rightPct}
+          missLeftCount={missLeftCount}
+          missRightCount={missRightCount}
           hoveredZone={hoveredZone}
           onHover={setHoveredZone}
         />
@@ -442,8 +431,8 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
       </div>
 
       {/* Stats breakdown */}
-      <div className="px-6 py-5 bg-white border-t border-slate-100">
-        <div className="grid grid-cols-3 gap-3">
+      <div className="px-6 py-5 bg-white border-t border-slate-100/80">
+        <div className="grid grid-cols-3 gap-2.5">
           <ZoneStatCard
             label="Left"
             percentage={leftPct}
@@ -470,6 +459,25 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
           />
         </div>
 
+        {/* Untracked misses notice */}
+        {untrackedMisses > 0 && (
+          <motion.div
+            className="mt-3 px-3 py-2 rounded-lg bg-slate-50 border border-slate-100"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>
+                {untrackedMisses} miss{untrackedMisses !== 1 ? 'es' : ''} without direction data ({untrackedPct.toFixed(0)}% of tee shots)
+              </span>
+            </div>
+          </motion.div>
+        )}
+
         {/* Driver-specific stat */}
         {driverFairwayPct !== null && (
           <motion.div
@@ -481,7 +489,7 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-600">Driver fairway %</span>
               <div className="flex items-center gap-3">
-                <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
                   <motion.div
                     className="h-full bg-green-500 rounded-full"
                     initial={{ width: 0 }}
@@ -499,11 +507,11 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
 
         {/* Miss tendency insight */}
         <AnimatePresence>
-          {tendency !== 'balanced' && totalMisses >= 3 && (
+          {tendency !== 'none' && tendency !== 'balanced' && totalTrackedMisses >= 3 && (
             <motion.div
               className={cn(
                 'mt-4 p-3 rounded-xl flex items-center gap-3',
-                tendency === 'left' ? 'bg-red-50 border border-red-100' : 'bg-orange-50 border border-orange-100'
+                tendency === 'left' ? 'bg-red-50/80 border border-red-100' : 'bg-orange-50/80 border border-orange-100'
               )}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -511,7 +519,7 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
             >
               <div
                 className={cn(
-                  'w-8 h-8 rounded-lg flex items-center justify-center text-lg',
+                  'w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0',
                   tendency === 'left' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'
                 )}
               >
@@ -522,7 +530,7 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
                   Tendency to miss {tendency}
                 </div>
                 <div className="text-xs text-slate-500">
-                  {Math.max(leftPctOfMisses, rightPctOfMisses).toFixed(0)}% of misses go {tendency}
+                  {Math.max(leftPctOfTracked, rightPctOfTracked).toFixed(0)}% of tracked misses go {tendency}
                 </div>
               </div>
             </motion.div>

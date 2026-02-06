@@ -12,11 +12,19 @@ import { PlayerDashboard, type PlayerDashboardData } from './components/PlayerDa
 // Local types for dashboard data
 interface RecentRound {
     id: string;
+    player_id: string;
     player_name: string;
+    player_avatar_url: string | null;
     course_name: string;
     total_score: number;
     total_to_par: number;
     round_date: string;
+    round_type: string | null;
+    total_putts: number | null;
+    total_fairways_hit: number | null;
+    total_fairways: number | null;
+    total_gir: number | null;
+    total_gir_possible: number | null;
 }
 
 interface TopPlayer {
@@ -49,11 +57,18 @@ interface ScoringTrend {
 
 interface RoundWithPlayer {
     id: string;
+    player_id: string;
     course_name: string | null;
     total_score: number | null;
     score_to_par: number | null;
     round_date: string;
-    player?: { first_name: string | null; last_name: string | null } | null;
+    round_type: string | null;
+    total_putts: number | null;
+    total_fairways_hit: number | null;
+    total_fairways: number | null;
+    total_gir: number | null;
+    total_gir_possible: number | null;
+    player?: { first_name: string | null; last_name: string | null; avatar_url: string | null } | null;
 }
 
 
@@ -181,7 +196,7 @@ export default function GolfDashboardPage() {
                             const [recentRoundsResult, allRoundsResult] = await Promise.all([
                                 supabase
                                     .from('golf_rounds')
-                                    .select('id, course_name, total_score, score_to_par, round_date, player:golf_players(first_name, last_name)')
+                                    .select('id, player_id, course_name, total_score, score_to_par, round_date, round_type, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, player:golf_players(first_name, last_name, avatar_url)')
                                     .in('player_id', playerIds)
                                     .eq('status', 'completed')
                                     .not('total_score', 'is', null)
@@ -201,11 +216,19 @@ export default function GolfDashboardPage() {
                             if (recentRoundsResult.data) {
                                 recentRounds = (recentRoundsResult.data as RoundWithPlayer[]).map((r) => ({
                                     id: r.id,
+                                    player_id: r.player_id,
                                     player_name: `${r.player?.first_name || ''} ${r.player?.last_name || ''}`.trim() || 'Unknown',
+                                    player_avatar_url: r.player?.avatar_url || null,
                                     course_name: r.course_name || 'Unknown Course',
                                     total_score: r.total_score || 0,
                                     total_to_par: r.score_to_par || 0,
                                     round_date: r.round_date,
+                                    round_type: r.round_type || null,
+                                    total_putts: r.total_putts,
+                                    total_fairways_hit: r.total_fairways_hit,
+                                    total_fairways: r.total_fairways,
+                                    total_gir: r.total_gir,
+                                    total_gir_possible: r.total_gir_possible,
                                 }));
                             }
 

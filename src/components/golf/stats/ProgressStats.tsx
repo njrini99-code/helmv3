@@ -767,88 +767,104 @@ const KeyStatsSummary = memo(function KeyStatsSummary({ stats }: { stats: GolfSt
 const InsightCard = memo(function InsightCard({ stats }: { stats: GolfStats }) {
   if (stats.roundsPlayed < 3) return null;
 
-  const insights: { icon: string; text: string; type: 'positive' | 'neutral' | 'improvement' }[] = [];
+  const insights: { label: string; detail: string; type: 'strength' | 'opportunity' }[] = [];
 
-  // Add relevant insights
+  // Strengths
   if (stats.birdiesPerRound && stats.birdiesPerRound >= 2) {
     insights.push({
-      icon: '🐦',
-      text: `Averaging ${stats.birdiesPerRound.toFixed(1)} birdies per round - great birdie making!`,
-      type: 'positive'
+      label: 'Birdie Rate',
+      detail: `${stats.birdiesPerRound.toFixed(1)} per round`,
+      type: 'strength',
     });
   }
 
   if (stats.girPercentage && stats.girPercentage >= 50) {
     insights.push({
-      icon: '🎯',
-      text: `${stats.girPercentage.toFixed(0)}% GIR - solid approach game!`,
-      type: 'positive'
+      label: 'Approach',
+      detail: `${stats.girPercentage.toFixed(0)}% greens in regulation`,
+      type: 'strength',
     });
   } else if (stats.girPercentage && stats.girPercentage < 40) {
     insights.push({
-      icon: '📈',
-      text: `Focus on approach shots - GIR at ${stats.girPercentage.toFixed(0)}%`,
-      type: 'improvement'
+      label: 'Approach',
+      detail: `GIR at ${stats.girPercentage.toFixed(0)}% — focus area`,
+      type: 'opportunity',
     });
   }
 
   if (stats.puttsPerRound && stats.puttsPerRound <= 30) {
     insights.push({
-      icon: '⛳',
-      text: `${stats.puttsPerRound.toFixed(1)} putts per round - excellent putting!`,
-      type: 'positive'
+      label: 'Putting',
+      detail: `${stats.puttsPerRound.toFixed(1)} putts per round`,
+      type: 'strength',
     });
   } else if (stats.puttsPerRound && stats.puttsPerRound > 34) {
     insights.push({
-      icon: '🏌️',
-      text: `Work on putting - averaging ${stats.puttsPerRound.toFixed(1)} per round`,
-      type: 'improvement'
+      label: 'Putting',
+      detail: `${stats.puttsPerRound.toFixed(1)} putts/round — focus area`,
+      type: 'opportunity',
     });
   }
 
   if (stats.scramblingPercentage && stats.scramblingPercentage >= 50) {
     insights.push({
-      icon: '💪',
-      text: `${stats.scramblingPercentage.toFixed(0)}% scrambling - great recovery skills!`,
-      type: 'positive'
+      label: 'Scrambling',
+      detail: `${stats.scramblingPercentage.toFixed(0)}% save rate`,
+      type: 'strength',
     });
   }
 
   if (stats.longestNo3PuttStreak && stats.longestNo3PuttStreak >= 18) {
     insights.push({
-      icon: '🔥',
-      text: `${stats.longestNo3PuttStreak} hole streak without 3-putting!`,
-      type: 'positive'
+      label: 'Consistency',
+      detail: `${stats.longestNo3PuttStreak}-hole streak without 3-putting`,
+      type: 'strength',
     });
   }
 
-  if (insights.length === 0) {
-    insights.push({
-      icon: '📊',
-      text: `${stats.roundsPlayed} rounds played with a ${stats.scoringAverage?.toFixed(1)} average. Keep tracking!`,
-      type: 'neutral'
-    });
-  }
+  if (insights.length === 0) return null;
+
+  const strengths = insights.filter(i => i.type === 'strength');
+  const opportunities = insights.filter(i => i.type === 'opportunity');
 
   return (
-    <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-2xl border border-green-200/50 p-6">
-      <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center gap-2">
-        <span>💡</span> Performance Insights
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-6">
+      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">
+        Key Takeaways
       </h3>
-      <div className="space-y-3">
-        {insights.slice(0, 4).map((insight, i) => (
-          <div
-            key={i}
-            className={`flex items-start gap-3 p-3 rounded-xl ${
-              insight.type === 'positive' ? 'bg-green-100/50' :
-              insight.type === 'improvement' ? 'bg-amber-100/50' :
-              'bg-white/50'
-            }`}
-          >
-            <span className="text-xl">{insight.icon}</span>
-            <p className="text-sm text-slate-700">{insight.text}</p>
+      <div className="space-y-4">
+        {strengths.length > 0 && (
+          <div>
+            <div className="text-[11px] font-medium text-green-600 uppercase tracking-wider mb-2">Strengths</div>
+            <div className="space-y-2">
+              {strengths.map((insight, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-green-50/60 border border-green-100/80">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-slate-800">{insight.label}</span>
+                    <span className="text-sm text-slate-500 ml-1.5">{insight.detail}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
+        )}
+        {opportunities.length > 0 && (
+          <div>
+            <div className="text-[11px] font-medium text-amber-600 uppercase tracking-wider mb-2">Opportunities</div>
+            <div className="space-y-2">
+              {opportunities.map((insight, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-amber-50/60 border border-amber-100/80">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-slate-800">{insight.label}</span>
+                    <span className="text-sm text-slate-500 ml-1.5">{insight.detail}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

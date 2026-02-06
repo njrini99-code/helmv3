@@ -1130,6 +1130,52 @@ export default function StatsClient({
           statisticalWeaknesses={strengthsWeaknesses?.weaknesses}
         />
       ) : null}
+
+      {/* Recent Rounds Section */}
+      {rounds.length > 0 && (
+        <div className="max-w-6xl mx-auto px-6 pb-8 mt-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Recent Rounds</h3>
+          <div className="space-y-2">
+            {rounds.slice(0, 10).map((round) => {
+              const toPar = round.score_to_par ?? 0;
+              const scoreColor = toPar < 0 ? 'text-emerald-600' : toPar > 0 ? 'text-red-600' : 'text-slate-600';
+              const scoreBg = toPar < 0 ? 'bg-emerald-50 ring-emerald-200' : toPar > 0 ? 'bg-red-50 ring-red-200' : 'bg-slate-50 ring-slate-200';
+              const formattedDate = new Date(round.round_date).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              });
+              return (
+                <a
+                  key={round.id}
+                  href={`/golf/dashboard/rounds/${round.id}`}
+                  className="flex items-center gap-4 px-4 py-3 rounded-xl bg-white/60 border border-white/30 hover:bg-white/80 hover:shadow-sm transition-all duration-200 group"
+                >
+                  <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg ring-1', scoreBg, scoreColor)}>
+                    {round.total_score ?? '--'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-900 truncate group-hover:text-primary-600 transition-colors">
+                        {round.course_name || 'Unknown Course'}
+                      </span>
+                      {round.round_type && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500 capitalize">
+                          {round.round_type.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400">{formattedDate}</p>
+                  </div>
+                  <div className={cn('text-sm font-semibold tabular-nums', scoreColor)}>
+                    {toPar === 0 ? 'E' : toPar > 0 ? `+${toPar}` : toPar}
+                  </div>
+                  <IconChevronRight size={16} className="text-slate-300 group-hover:text-slate-400 transition-colors" />
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

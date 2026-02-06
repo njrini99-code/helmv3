@@ -14,7 +14,6 @@ import {
     IconBook,
     IconCopy,
     IconCheck,
-    IconSparkles,
     IconBell,
     IconMenu,
     IconClock,
@@ -33,9 +32,9 @@ const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: 
     ssr: false // Chart doesn't need SSR
 });
 
-const V2InsightsFeed = dynamic(() => import('@/components/golf/coachhelm/v2').then(mod => ({ default: mod.V2InsightsFeed })), {
-    loading: () => <div className="h-[300px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
-    ssr: true // Insights can be SSR'd
+const IntelligenceCommandCenter = dynamic(() => import('@/components/golf/coachhelm/v2').then(mod => ({ default: mod.IntelligenceCommandCenter })), {
+    loading: () => <div className="h-[400px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
+    ssr: true
 });
 
 const CoachAlertCenter = dynamic(() => import('@/components/golf/coachhelm/alerts').then(mod => ({ default: mod.CoachAlertCenter })), {
@@ -47,7 +46,7 @@ import {
     PremiumStatCard,
     QuickActionCard,
     SectionHeader,
-    RoundRow,
+    RecentRoundCard,
     TopPerformerRow,
     containerVariants,
     itemVariants
@@ -74,11 +73,19 @@ export interface CoachDashboardData {
     stats: DashboardStats;
     recentRounds: Array<{
         id: string;
+        player_id: string;
         player_name: string;
+        player_avatar_url: string | null;
         course_name: string;
         total_score: number;
         total_to_par: number;
         round_date: string;
+        round_type: string | null;
+        total_putts: number | null;
+        total_fairways_hit: number | null;
+        total_fairways: number | null;
+        total_gir: number | null;
+        total_gir_possible: number | null;
     }>;
     topPlayers: Array<{
         id: string;
@@ -410,9 +417,21 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                     />
                 </motion.div>
 
-                {/* Two Column Layout - reduced gap on mobile */}
+                {/* CoachHelm Intelligence Command Center - Full Width Hero Section */}
+                {team && coach && (
+                    <motion.div className="mb-5 md:mb-8" variants={itemVariants}>
+                        <PremiumGlassCard className="!p-0 overflow-hidden">
+                            <IntelligenceCommandCenter
+                                teamId={team.id}
+                                coachId={coach.id}
+                            />
+                        </PremiumGlassCard>
+                    </motion.div>
+                )}
+
+                {/* Two Column Layout */}
                 <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
-                    {/* Left Column */}
+                    {/* Left Column - Quick Actions, Top Performers, Calendar */}
                     <motion.div className="space-y-4 md:space-y-6" variants={itemVariants}>
                         {/* Quick Actions */}
                         <div>
@@ -452,19 +471,6 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                             </div>
                         </div>
 
-                        {/* CoachHelm V2 Insights */}
-                        {team && coach && (
-                            <div>
-                                <SectionHeader
-                                    title="CoachHelm AI"
-                                    icon={<IconSparkles size={14} />}
-                                    action={{ label: 'Settings', href: '/golf/dashboard/settings/coaching-intelligence' }}
-                                />
-                                {/* V2InsightsFeed has its own glass styling - no wrapper needed */}
-                                <V2InsightsFeed teamId={team.id} coachId={coach.id} />
-                            </div>
-                        )}
-
                         {/* Top Performers */}
                         <div>
                             <SectionHeader
@@ -500,9 +506,9 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                         </div>
                     </motion.div>
 
-                    {/* Right Column */}
+                    {/* Right Column - Alerts, Trend, Rounds, Activity */}
                     <motion.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
-                        {/* Player Alerts - AI-Generated Alerts for Proactive Coaching */}
+                        {/* Player Alerts */}
                         {team && coach && (
                             <div>
                                 <SectionHeader
@@ -578,15 +584,24 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                                         action={null}
                                     />
                                 ) : (
-                                    <div className="divide-y divide-white/20">
+                                    <div className="divide-y divide-white/15">
                                         {filteredRounds.map((round) => (
-                                            <RoundRow
+                                            <RecentRoundCard
                                                 key={round.id}
+                                                id={round.id}
+                                                playerId={round.player_id}
                                                 playerName={round.player_name}
+                                                playerAvatarUrl={round.player_avatar_url}
                                                 courseName={round.course_name}
                                                 score={round.total_score}
                                                 toPar={round.total_to_par}
                                                 date={round.round_date}
+                                                roundType={round.round_type}
+                                                totalPutts={round.total_putts}
+                                                totalFairwaysHit={round.total_fairways_hit}
+                                                totalFairways={round.total_fairways}
+                                                totalGir={round.total_gir}
+                                                totalGirPossible={round.total_gir_possible}
                                             />
                                         ))}
                                     </div>

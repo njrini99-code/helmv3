@@ -1763,7 +1763,7 @@ function OverviewStats({
       {trendData?.personalBests && (
         <motion.div variants={sectionVariants}>
           <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
-            🏆 Personal Records
+            Personal Records
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {trendData.personalBests.bestScore && (
@@ -1896,7 +1896,7 @@ function AnalysisStats({
     >
       {/* Personal Bests */}
       {trendData?.personalBests && (
-        <StatSection title="🏆 Personal Records" delay={0}>
+        <StatSection title="Personal Records" delay={0}>
           <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3" variants={containerVariants}>
             {trendData.personalBests.bestScore && (
               <motion.div
@@ -1974,7 +1974,7 @@ function AnalysisStats({
 
       {/* Period Comparison - Last 30 Days vs Previous */}
       {trendData?.periodComparison && trendData.periodComparison.last30Days.roundCount > 0 && (
-        <StatSection title="📈 Last 30 Days vs Previous 30 Days" delay={0.1}>
+        <StatSection title="Last 30 Days vs Previous 30 Days" delay={0.1}>
           <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3" variants={containerVariants}>
             <StatCard
               label="Scoring Avg"
@@ -2458,7 +2458,7 @@ export default function GolfStatsDisplay({
         ${trendData?.personalBests ? `
         <div style="background: #fef3c7; border-radius: 12px; padding: 20px;">
           <h2 style="font-size: 14px; font-weight: 600; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px 0;">
-            🏆 Personal Records
+            Personal Records
           </h2>
           <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
             ${trendData.personalBests.bestScore ? `

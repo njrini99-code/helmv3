@@ -134,7 +134,20 @@ export function useGolfMessages(conversationId: string) {
         },
         (payload) => {
           const newMessage = payload.new as MessageWithReadStatus;
-          setMessages(prev => [...prev, newMessage]);
+          setMessages(prev => {
+            // Replace optimistic message if this is our own message arriving via realtime
+            if (newMessage.sender_id === currentUserId) {
+              const optimisticIdx = prev.findIndex(m => m.id.startsWith('optimistic-') && m.sender_id === currentUserId);
+              if (optimisticIdx !== -1) {
+                const updated = [...prev];
+                updated[optimisticIdx] = newMessage;
+                return updated;
+              }
+            }
+            // Avoid duplicates (message already exists by ID)
+            if (prev.some(m => m.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          });
           // Clear typing indicator when message is received
           if (newMessage.sender_id !== currentUserId) {
             setIsOtherTyping(false);
@@ -229,18 +242,39 @@ export function useGolfMessages(conversationId: string) {
     // Clear typing indicator when sending
     sendTypingStatus(false);
 
-    const result = await sendGolfMessage(conversationId, content);
+    // Optimistic update: add message to UI immediately
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticMessage: MessageWithReadStatus = {
+      id: optimisticId,
+      conversation_id: conversationId,
+      sender_id: currentUserId || '',
+      content,
+      read: false,
+      has_attachments: false,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimisticMessage]);
 
-    // Check if the result indicates an error
-    if (result && 'error' in result && result.error) {
-      throw new Error(result.error);
+    try {
+      const result = await sendGolfMessage(conversationId, content);
+
+      // Check if the result indicates an error
+      if (result && 'error' in result && result.error) {
+        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        throw new Error(result.error);
+      }
+
+      if (!result || !result.success) {
+        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        throw new Error('Failed to send message');
+      }
+
+      return true;
+    } catch (error) {
+      // Roll back optimistic message on any error
+      setMessages(prev => prev.filter(m => m.id !== optimisticId));
+      throw error;
     }
-
-    if (!result || !result.success) {
-      throw new Error('Failed to send message');
-    }
-
-    return true;
   };
 
   // Edit a message

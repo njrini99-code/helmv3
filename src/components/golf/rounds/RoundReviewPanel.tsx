@@ -466,7 +466,7 @@ export function RoundReviewPanel({
                 <>
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100/70 rounded-lg transition-colors"
                   >
                     Cancel
                   </button>

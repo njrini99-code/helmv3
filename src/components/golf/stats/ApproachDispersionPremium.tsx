@@ -8,10 +8,11 @@
  * - Clear hierarchy (one dominant stat)
  * - Consistent 8px grid spacing
  * - Purposeful motion (fade-in, hover lift only)
+ * - Deterministic dot positioning (no Math.random)
  * - Distinctive green visualization with subtle topography
  */
 
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -37,7 +38,16 @@ interface ApproachDispersionProps {
 type MissDirection = 'short' | 'long' | 'left' | 'right' | null;
 
 // ============================================================================
-// MISS DIRECTION DATA
+// SEEDED RANDOM (deterministic dot positions)
+// ============================================================================
+
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 49297;
+  return x - Math.floor(x);
+}
+
+// ============================================================================
+// MISS DIRECTION CONFIG
 // ============================================================================
 
 const missDirectionConfig = {
@@ -68,16 +78,16 @@ function GreenVisualization({
   hoveredDirection: MissDirection;
   onHover: (dir: MissDirection) => void;
 }) {
-  // Calculate shot positions based on percentages
-  const generateShotDots = useCallback(() => {
-    const dots: Array<{ x: number; y: number; type: 'gir' | MissDirection; delay: number }> = [];
+  // Calculate shot positions deterministically
+  const dots = useMemo(() => {
+    const result: Array<{ x: number; y: number; type: 'gir' | MissDirection; delay: number }> = [];
 
-    // GIR shots (on the green)
+    // GIR shots (on the green) - clustered around pin
     const girCount = Math.min(Math.round(girPct / 12), 8);
     for (let i = 0; i < girCount; i++) {
-      const angle = (i / girCount) * Math.PI * 2;
-      const r = 15 + (i % 3) * 10;
-      dots.push({
+      const angle = (i / Math.max(girCount, 1)) * Math.PI * 2;
+      const r = 12 + (i % 3) * 9;
+      result.push({
         x: 100 + Math.cos(angle) * r,
         y: 100 + Math.sin(angle) * r * 0.75,
         type: 'gir',
@@ -85,7 +95,7 @@ function GreenVisualization({
       });
     }
 
-    // Miss directions
+    // Miss directions - use seeded random instead of Math.random
     const misses: Array<{ pct: number; type: MissDirection; baseAngle: number }> = [
       { pct: missShort, type: 'short', baseAngle: Math.PI / 2 },
       { pct: missLong, type: 'long', baseAngle: -Math.PI / 2 },
@@ -93,62 +103,51 @@ function GreenVisualization({
       { pct: missRight, type: 'right', baseAngle: 0 },
     ];
 
+    let seedOffset = 100;
     misses.forEach(({ pct, type, baseAngle }) => {
       const count = Math.min(Math.round(pct / 15), 5);
       for (let i = 0; i < count; i++) {
-        const spread = (Math.random() - 0.5) * 0.4;
-        const r = 55 + Math.random() * 25;
-        dots.push({
+        const spread = (seededRandom(seedOffset + i * 7) - 0.5) * 0.4;
+        const r = 52 + seededRandom(seedOffset + i * 13) * 28;
+        result.push({
           x: 100 + Math.cos(baseAngle + spread) * r,
           y: 100 + Math.sin(baseAngle + spread) * r * 0.75,
           type,
-          delay: 0.2 + i * 0.04,
+          delay: 0.15 + i * 0.04,
         });
+        seedOffset += 17;
       }
     });
 
-    return dots;
+    return result;
   }, [girPct, missShort, missLong, missLeft, missRight]);
 
-  const dots = generateShotDots();
-
   return (
-    <svg viewBox="0 0 200 200" className="w-full max-w-[240px] mx-auto">
+    <svg viewBox="0 0 200 200" className="w-full max-w-[260px] mx-auto">
       <defs>
-        {/* Premium green gradient with subtle depth */}
-        <radialGradient id="greenSurface" cx="50%" cy="45%" r="45%">
-          <stop offset="0%" stopColor="#22c55e" stopOpacity="0.35" />
-          <stop offset="60%" stopColor="#16a34a" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#15803d" stopOpacity="0.15" />
+        <radialGradient id="greenSurfaceP" cx="50%" cy="45%" r="45%">
+          <stop offset="0%" stopColor="#22c55e" stopOpacity="0.32" />
+          <stop offset="60%" stopColor="#16a34a" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#15803d" stopOpacity="0.12" />
         </radialGradient>
-
-        {/* Fringe gradient */}
-        <radialGradient id="fringeArea" cx="50%" cy="50%" r="55%">
-          <stop offset="70%" stopColor="#86efac" stopOpacity="0.08" />
-          <stop offset="100%" stopColor="#4ade80" stopOpacity="0.15" />
+        <radialGradient id="fringeAreaP" cx="50%" cy="50%" r="55%">
+          <stop offset="70%" stopColor="#86efac" stopOpacity="0.06" />
+          <stop offset="100%" stopColor="#4ade80" stopOpacity="0.12" />
         </radialGradient>
-
-        {/* Subtle contour pattern */}
-        <pattern id="contours" width="20" height="20" patternUnits="userSpaceOnUse">
-          <circle cx="10" cy="10" r="8" fill="none" stroke="#16a34a" strokeWidth="0.5" opacity="0.1" />
-        </pattern>
       </defs>
 
       {/* Background fringe area */}
-      <ellipse
-        cx="100" cy="100" rx="85" ry="75"
-        fill="url(#fringeArea)"
-      />
+      <ellipse cx="100" cy="100" rx="85" ry="75" fill="url(#fringeAreaP)" />
 
       {/* Contour lines (subtle topographic effect) */}
-      <ellipse cx="100" cy="100" rx="70" ry="60" fill="none" stroke="#16a34a" strokeWidth="0.5" opacity="0.15" />
-      <ellipse cx="100" cy="100" rx="55" ry="45" fill="none" stroke="#16a34a" strokeWidth="0.5" opacity="0.12" />
-      <ellipse cx="100" cy="100" rx="40" ry="32" fill="none" stroke="#16a34a" strokeWidth="0.5" opacity="0.1" />
+      <ellipse cx="100" cy="100" rx="70" ry="60" fill="none" stroke="#16a34a" strokeWidth="0.5" opacity="0.12" />
+      <ellipse cx="100" cy="100" rx="55" ry="45" fill="none" stroke="#16a34a" strokeWidth="0.5" opacity="0.1" />
+      <ellipse cx="100" cy="100" rx="40" ry="32" fill="none" stroke="#16a34a" strokeWidth="0.5" opacity="0.08" />
 
       {/* Green surface */}
       <motion.ellipse
         cx="100" cy="100" rx="48" ry="40"
-        fill="url(#greenSurface)"
+        fill="url(#greenSurfaceP)"
         stroke="#16a34a"
         strokeWidth="1.5"
         strokeDasharray="4 3"
@@ -163,9 +162,9 @@ function GreenVisualization({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.3 }}
       >
-        <circle cx="100" cy="100" r="3" fill="#1f2937" />
-        <line x1="100" y1="75" x2="100" y2="100" stroke="#fbbf24" strokeWidth="1.5" />
-        <polygon points="100,75 112,80 100,80" fill="#dc2626" />
+        <circle cx="100" cy="100" r="2.5" fill="#1f2937" />
+        <line x1="100" y1="77" x2="100" y2="100" stroke="#fbbf24" strokeWidth="1.5" />
+        <polygon points="100,77 111,81 100,81" fill="#dc2626" />
       </motion.g>
 
       {/* Shot dots */}
@@ -177,15 +176,15 @@ function GreenVisualization({
 
         return (
           <motion.circle
-            key={i}
+            key={`${dot.type}-${i}`}
             cx={dot.x}
             cy={dot.y}
             r={isGir ? 5 : 4}
             fill={isGir ? '#16a34a' : config?.color || '#94a3b8'}
             initial={{ scale: 0, opacity: 0 }}
             animate={{
-              scale: isHovered ? 1.3 : 1,
-              opacity: isOtherHovered ? 0.3 : (isGir ? 0.85 : 0.75),
+              scale: isHovered ? 1.25 : 1,
+              opacity: isOtherHovered ? 0.25 : (isGir ? 0.85 : 0.75),
             }}
             transition={{
               delay: dot.delay,
@@ -202,7 +201,7 @@ function GreenVisualization({
         );
       })}
 
-      {/* Direction labels (only show on hover or for dominant miss) */}
+      {/* Direction labels (only on hover) */}
       <AnimatePresence>
         {hoveredDirection && (
           <motion.text
@@ -225,40 +224,38 @@ function GreenVisualization({
 }
 
 // ============================================================================
-// STAT PILL (compact stat display)
+// STAT PILL
 // ============================================================================
 
 function StatPill({
   label,
   value,
-  subtext,
   color = 'slate',
   isActive,
   onClick,
 }: {
   label: string;
   value: string | number;
-  subtext?: string;
   color?: 'green' | 'slate' | 'red' | 'orange' | 'blue' | 'purple';
   isActive?: boolean;
   onClick?: () => void;
 }) {
   const colorClasses = {
-    green: 'bg-green-50 border-green-200 text-green-700',
-    slate: 'bg-slate-50 border-slate-200 text-slate-700',
-    red: 'bg-red-50 border-red-200 text-red-600',
-    orange: 'bg-orange-50 border-orange-200 text-orange-600',
-    blue: 'bg-blue-50 border-blue-200 text-blue-600',
-    purple: 'bg-purple-50 border-purple-200 text-purple-600',
+    green: 'bg-green-50/80 border-green-200/60 text-green-700',
+    slate: 'bg-slate-50/80 border-slate-200/60 text-slate-700',
+    red: 'bg-red-50/80 border-red-200/60 text-red-600',
+    orange: 'bg-orange-50/80 border-orange-200/60 text-orange-600',
+    blue: 'bg-blue-50/80 border-blue-200/60 text-blue-600',
+    purple: 'bg-purple-50/80 border-purple-200/60 text-purple-600',
   };
 
-  const ringColorClasses = {
-    green: 'ring-green-500',
-    slate: 'ring-slate-400',
-    red: 'ring-red-500',
-    orange: 'ring-orange-500',
-    blue: 'ring-blue-500',
-    purple: 'ring-purple-500',
+  const ringClasses = {
+    green: 'ring-green-500/40',
+    slate: 'ring-slate-400/40',
+    red: 'ring-red-500/40',
+    orange: 'ring-orange-500/40',
+    blue: 'ring-blue-500/40',
+    purple: 'ring-purple-500/40',
   };
 
   return (
@@ -267,16 +264,15 @@ function StatPill({
       className={cn(
         'flex flex-col items-center p-3 rounded-xl border transition-all',
         colorClasses[color],
-        isActive && `ring-2 ring-offset-1 ${ringColorClasses[color]}`,
+        isActive && `ring-2 ring-offset-1 ${ringClasses[color]}`,
         onClick && 'cursor-pointer hover:shadow-sm',
       )}
-      whileHover={onClick ? { y: -2 } : undefined}
+      whileHover={onClick ? { y: -1 } : undefined}
       whileTap={onClick ? { scale: 0.98 } : undefined}
       onClick={onClick}
     >
-      <span className="text-xl font-bold tabular-nums">{value}</span>
-      <span className="text-xs font-medium mt-0.5">{label}</span>
-      {subtext && <span className="text-[10px] text-slate-500 mt-0.5">{subtext}</span>}
+      <span className="text-xl font-bold tabular-nums leading-none">{value}</span>
+      <span className="text-xs font-medium mt-1.5">{label}</span>
     </motion.button>
   );
 }
@@ -351,10 +347,17 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
   const dominantMiss = misses.reduce((a, b) => a.pct > b.pct ? a : b);
   const hasDominantPattern = dominantMiss.pct >= 35;
 
+  // Check if we have any miss direction data
+  const hasMissData = approachMissTotal > 0 && (missShort + missLong + missLeft + missRight) > 0;
+
+  // Untracked misses
+  const totalMissed = girOpportunities - girTotal;
+  const hasUntrackedMisses = totalMissed > 0 && approachMissTotal === 0;
+
   return (
     <motion.div
       className={cn(
-        'bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden',
+        'bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden',
         className
       )}
       initial={{ opacity: 0, y: 16 }}
@@ -362,37 +365,35 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
       transition={{ duration: 0.3 }}
       whileHover={{ boxShadow: '0 8px 24px rgba(0,0,0,0.06)', y: -2 }}
     >
-      {/* Header - Clear hierarchy with ONE dominant stat */}
-      <div className="px-6 py-5 border-b border-slate-100">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-slate-100/80">
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-lg font-semibold text-slate-900 tracking-tight">
               Approach Accuracy
             </h3>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-[13px] text-slate-500 mt-0.5">
               Greens in regulation
             </p>
           </div>
-
-          {/* Dominant stat - the ONE number that matters */}
           <div className="text-right">
             <motion.div
-              className="text-4xl font-bold text-green-600 tabular-nums tracking-tight"
+              className="text-4xl font-bold text-green-600 tabular-nums tracking-tight leading-none"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
             >
               {gir.toFixed(0)}%
             </motion.div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mt-0.5">
+            <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mt-1 tabular-nums">
               {girTotal}/{girOpportunities} GIR
             </div>
           </div>
         </div>
       </div>
 
-      {/* Green Visualization - Solid background */}
-      <div className="px-6 py-6 bg-slate-50/50">
+      {/* Green Visualization */}
+      <div className="px-6 py-5 bg-slate-50/40">
         <GreenVisualization
           girPct={gir}
           missShort={missShort}
@@ -415,7 +416,7 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
               <span
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium"
                 style={{
-                  backgroundColor: `${missDirectionConfig[hoveredDirection].color}15`,
+                  backgroundColor: `${missDirectionConfig[hoveredDirection].color}12`,
                   color: missDirectionConfig[hoveredDirection].color,
                 }}
               >
@@ -427,10 +428,10 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
         </AnimatePresence>
       </div>
 
-      {/* Stats Grid - Solid surface for data */}
-      <div className="px-6 py-5 bg-white border-t border-slate-100">
+      {/* Stats Grid */}
+      <div className="px-6 py-5 bg-white border-t border-slate-100/80">
         {/* Miss direction pills */}
-        {approachMissTotal > 0 && (
+        {hasMissData && (
           <div className="mb-5">
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
               Miss Pattern
@@ -452,6 +453,25 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
               ))}
             </div>
           </div>
+        )}
+
+        {/* Untracked misses notice */}
+        {hasUntrackedMisses && (
+          <motion.div
+            className="mb-5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-100"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>
+                {totalMissed} missed green{totalMissed !== 1 ? 's' : ''} without miss direction data
+              </span>
+            </div>
+          </motion.div>
         )}
 
         {/* GIR by lie breakdown */}
@@ -490,22 +510,22 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
 
         {/* Dominant miss insight */}
         <AnimatePresence>
-          {hasDominantPattern && (
+          {hasDominantPattern && hasMissData && (
             <motion.div
               className="mt-4 p-3 rounded-xl flex items-center gap-3"
               style={{
-                backgroundColor: `${missDirectionConfig[dominantMiss.type].color}08`,
+                backgroundColor: `${missDirectionConfig[dominantMiss.type].color}06`,
                 borderWidth: 1,
-                borderColor: `${missDirectionConfig[dominantMiss.type].color}20`,
+                borderColor: `${missDirectionConfig[dominantMiss.type].color}18`,
               }}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
             >
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0"
                 style={{
-                  backgroundColor: `${missDirectionConfig[dominantMiss.type].color}15`,
+                  backgroundColor: `${missDirectionConfig[dominantMiss.type].color}12`,
                   color: missDirectionConfig[dominantMiss.type].color,
                 }}
               >

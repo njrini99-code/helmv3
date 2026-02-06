@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconArrowRight, IconTrendingUp, IconTrendingDown } from '@/components/icons';
+import { Avatar } from '@/components/ui/avatar';
 
 // ============================================================================
 // ANIMATION VARIANTS
@@ -335,7 +336,7 @@ export function SectionHeader({
 }
 
 // ============================================================================
-// ROUND ROW
+// ROUND ROW (Legacy — kept for backward compat with player dashboard)
 // ============================================================================
 
 interface RoundRowProps {
@@ -356,21 +357,20 @@ export function RoundRow({
     showPlayer = true
 }: RoundRowProps) {
     const toParLabel = toPar === 0 ? 'even' : toPar > 0 ? `${toPar} over par` : `${Math.abs(toPar)} under par`;
-    const accessibleLabel = showPlayer && playerName 
+    const accessibleLabel = showPlayer && playerName
         ? `${playerName} scored ${score} (${toParLabel}) at ${courseName}`
         : `Score ${score} (${toParLabel}) at ${courseName}`;
-    
+
     return (
         <motion.div
             role="button"
             tabIndex={0}
             aria-label={accessibleLabel}
-            className="group flex items-center gap-4 px-4 py-3.5 hover:bg-white/30 rounded-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" // Standardized: 12px
+            className="group flex items-center gap-4 px-4 py-3.5 hover:bg-white/30 rounded-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             whileHover={{ x: 4 }}
         >
-            {/* Score badge */}
             <div className={cn(
-                'w-14 h-14 rounded-lg flex flex-col items-center justify-center flex-shrink-0', // Standardized: 12px
+                'w-14 h-14 rounded-lg flex flex-col items-center justify-center flex-shrink-0',
                 'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
                 toPar < 0 ? 'bg-gradient-to-br from-primary-50 to-primary-100' :
                 toPar === 0 ? 'bg-gradient-to-br from-slate-50 to-slate-100' :
@@ -383,14 +383,12 @@ export function RoundRow({
                     {score}
                 </span>
                 <span className={cn(
-                    'text-xs font-semibold', // Standardized: 12px
+                    'text-xs font-semibold',
                     toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-slate-500' : 'text-amber-500'
                 )}>
                     {toPar > 0 ? '+' : ''}{toPar}
                 </span>
             </div>
-
-            {/* Details */}
             <div className="flex-1 min-w-0">
                 {showPlayer && playerName && (
                     <p className="font-semibold text-slate-900 truncate">{playerName}</p>
@@ -402,21 +400,196 @@ export function RoundRow({
                     {courseName}
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">
-                    {new Date(date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                    })}
+                    {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
             </div>
-
-            {/* Hover indicator */}
             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <IconArrowRight size={16} className="text-primary-500" />
             </div>
         </motion.div>
     );
 }
+
+// ============================================================================
+// RECENT ROUND CARD (Premium — Coach Dashboard)
+// ============================================================================
+
+function formatRelativeDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatRoundType(type: string | null): string {
+    if (!type) return 'Round';
+    const map: Record<string, string> = {
+        practice: 'Practice',
+        tournament: 'Tournament',
+        qualifier: 'Qualifier',
+        casual: 'Casual',
+        match: 'Match Play',
+    };
+    return map[type] || type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+export interface RecentRoundCardProps {
+    id: string;
+    playerId: string;
+    playerName: string;
+    playerAvatarUrl: string | null;
+    courseName: string;
+    score: number;
+    toPar: number;
+    date: string;
+    roundType: string | null;
+    totalPutts: number | null;
+    totalFairwaysHit: number | null;
+    totalFairways: number | null;
+    totalGir: number | null;
+    totalGirPossible: number | null;
+}
+
+export const RecentRoundCard = memo(function RecentRoundCard({
+    id,
+    playerName,
+    playerAvatarUrl,
+    courseName,
+    score,
+    toPar,
+    date,
+    roundType,
+    totalPutts,
+    totalFairwaysHit,
+    totalFairways,
+    totalGir,
+    totalGirPossible,
+}: RecentRoundCardProps) {
+    const toParLabel = toPar === 0 ? 'E' : toPar > 0 ? `+${toPar}` : `${toPar}`;
+    const accessibleLabel = `${playerName} scored ${score} (${toParLabel}) at ${courseName}`;
+
+    // Calculate percentages for stat pills
+    const firPct = totalFairwaysHit !== null && totalFairways && totalFairways > 0
+        ? Math.round((totalFairwaysHit / totalFairways) * 100)
+        : null;
+    const girPct = totalGir !== null && totalGirPossible && totalGirPossible > 0
+        ? Math.round((totalGir / totalGirPossible) * 100)
+        : null;
+
+    const hasStats = totalPutts !== null || firPct !== null || girPct !== null;
+
+    return (
+        <Link href={`/golf/dashboard/rounds/${id}`} prefetch={false}>
+            <motion.div
+                role="article"
+                aria-label={accessibleLabel}
+                className={cn(
+                    'group relative px-4 py-4',
+                    'hover:bg-white/40 transition-all duration-200 cursor-pointer',
+                    'focus-within:ring-2 focus-within:ring-primary-500/30 focus-within:ring-offset-1'
+                )}
+                whileHover={{ x: 2 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            >
+                <div className="flex items-start gap-3.5">
+                    {/* Player Avatar */}
+                    <div className="flex-shrink-0 mt-0.5">
+                        <Avatar
+                            src={playerAvatarUrl}
+                            name={playerName}
+                            size="sm"
+                        />
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 min-w-0">
+                        {/* Top row: Player name + relative date */}
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                            <p className="font-semibold text-sm text-slate-900 truncate">
+                                {playerName}
+                            </p>
+                            <span className="text-xs text-slate-400 flex-shrink-0 tabular-nums">
+                                {formatRelativeDate(date)}
+                            </span>
+                        </div>
+
+                        {/* Course name + round type */}
+                        <div className="flex items-center gap-1.5 mb-2.5">
+                            <p className="text-[13px] text-slate-500 truncate">
+                                {courseName}
+                            </p>
+                            {roundType && (
+                                <>
+                                    <span className="text-slate-300 flex-shrink-0">&middot;</span>
+                                    <span className="text-xs text-slate-400 flex-shrink-0">
+                                        {formatRoundType(roundType)}
+                                    </span>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Score badge + Stat pills row */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {/* Score badge — primary visual anchor */}
+                            <div className={cn(
+                                'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg',
+                                'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
+                                toPar < 0 ? 'bg-primary-50/80 border border-primary-200/60' :
+                                toPar === 0 ? 'bg-slate-50/80 border border-slate-200/60' :
+                                'bg-amber-50/80 border border-amber-200/60'
+                            )}>
+                                <span className={cn(
+                                    'text-base font-bold tabular-nums leading-none',
+                                    toPar < 0 ? 'text-primary-700' : toPar === 0 ? 'text-slate-700' : 'text-amber-700'
+                                )}>
+                                    {score}
+                                </span>
+                                <span className={cn(
+                                    'text-xs font-semibold tabular-nums leading-none',
+                                    toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-slate-400' : 'text-amber-500'
+                                )}>
+                                    {toParLabel}
+                                </span>
+                            </div>
+
+                            {/* Stat pills — subtle inline metrics */}
+                            {hasStats && (
+                                <div className="flex items-center gap-1.5">
+                                    {totalPutts !== null && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-[11px] font-medium text-slate-500 tabular-nums">
+                                            <svg className="w-3 h-3 text-slate-400" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg>
+                                            {totalPutts} putts
+                                        </span>
+                                    )}
+                                    {firPct !== null && (
+                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-[11px] font-medium text-slate-500 tabular-nums">
+                                            FIR {firPct}%
+                                        </span>
+                                    )}
+                                    {girPct !== null && (
+                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-[11px] font-medium text-slate-500 tabular-nums">
+                                            GIR {girPct}%
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Arrow indicator */}
+                    <div className="flex-shrink-0 mt-2 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200">
+                        <IconArrowRight size={14} className="text-primary-500" />
+                    </div>
+                </div>
+            </motion.div>
+        </Link>
+    );
+});
 
 // ============================================================================
 // TOP PERFORMER ROW
