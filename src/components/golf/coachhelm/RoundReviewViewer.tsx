@@ -6,9 +6,7 @@ import { IconSparkles, IconRefresh, IconAlertCircle } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { useRoundReviewV2 } from '@/hooks/coachhelm/useRoundReviewV2';
 
-// Import existing round review section components
-import { HighlightsSection } from './round-review/HighlightsSection';
-import { AreasToReviewSection } from './round-review/AreasToReviewSection';
+// Import existing round review section components for V2
 import { V2ReviewSummary } from './round-review/V2ReviewSummary';
 import { V2PatternsSection } from './round-review/V2PatternsSection';
 import { V2CausalInsights } from './round-review/V2CausalInsights';
@@ -20,20 +18,35 @@ interface RoundReviewViewerProps {
   className?: string;
 }
 
+// Grade color mapping
+const gradeColors: Record<string, { bg: string; text: string; border: string }> = {
+  A: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  B: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
+  C: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  D: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
+  F: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
+};
+
+// Sentiment emoji
+const sentimentEmoji: Record<string, string> = {
+  positive: '🟢',
+  neutral: '🟡',
+  challenging: '🔴',
+};
+
 /**
- * RoundReviewViewer - Displays CoachHelm AI review for a golf round
+ * RoundReviewViewer - Displays AI/rule-based review for a golf round
  *
- * Features:
- * - Generates and caches V2 intelligent reviews
- * - Shows highlights, areas to work on, patterns, causal insights
- * - Displays performance predictions
+ * Supports:
+ * - Rule-based reviews (always available)
+ * - CoachHelm V2 intelligent reviews (when enabled)
  * - Loading and error states with graceful fallbacks
  */
 export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewViewerProps) {
   const {
     review,
+    ruleBasedContent,
     v2Review,
-    isV2Enabled,
     loading,
     generating,
     error,
@@ -121,10 +134,8 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
               </>
             )}
           </Button>
-          {!isV2Enabled && (
-            <p className="text-xs text-slate-400 mt-3">
-              CoachHelm AI is available for enhanced insights
-            </p>
+          {error && (
+            <p className="text-xs text-red-500 mt-3">{error}</p>
           )}
         </div>
       </motion.div>
@@ -146,7 +157,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             Analyzing Round...
           </h3>
           <p className="text-sm text-slate-500 text-center max-w-xs">
-            CoachHelm is reviewing your performance, identifying patterns,
+            Reviewing your performance, identifying patterns,
             and generating personalized insights.
           </p>
         </div>
@@ -156,9 +167,10 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
 
   // Has review data - show full review
   const hasV2Data = v2Review !== null;
+  const hasRuleBasedData = ruleBasedContent !== null;
   const hasV1Data = review !== null;
 
-  if (!hasV2Data && !hasV1Data) {
+  if (!hasV2Data && !hasRuleBasedData && !hasV1Data) {
     return null;
   }
 
@@ -177,7 +189,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
           <div>
             <h2 className="text-lg font-semibold text-slate-900">AI Round Review</h2>
             <p className="text-xs text-slate-500">
-              {hasV2Data ? 'CoachHelm V2 Intelligence' : 'CoachHelm Analysis'}
+              {hasV2Data ? 'CoachHelm Intelligence' : 'Performance Analysis'}
             </p>
           </div>
         </div>
@@ -193,7 +205,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
       </div>
 
       <AnimatePresence mode="wait">
-        {/* V2 Review Content */}
+        {/* V2 Review Content (when CoachHelm AI is available) */}
         {hasV2Data && v2Review && (
           <motion.div
             key="v2-review"
@@ -202,28 +214,190 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             exit={{ opacity: 0 }}
             className="space-y-4"
           >
-            {/* V2 Summary */}
             <V2ReviewSummary review={v2Review} />
-
-            {/* Patterns Section */}
             {v2Review.patternsApplied && v2Review.patternsApplied.length > 0 && (
               <V2PatternsSection patterns={v2Review.patternsApplied} />
             )}
-
-            {/* Prediction Card */}
             {v2Review.prediction && (
               <V2PredictionCard prediction={v2Review.prediction} />
             )}
-
-            {/* Causal Insights */}
             {v2Review.causalInsights && v2Review.causalInsights.length > 0 && (
               <V2CausalInsights insights={v2Review.causalInsights} />
             )}
           </motion.div>
         )}
 
-        {/* V1 Review Content (fallback when V2 not available) */}
-        {!hasV2Data && hasV1Data && review && (
+        {/* Rule-based Review Content (primary display for non-V2) */}
+        {!hasV2Data && hasRuleBasedData && ruleBasedContent && (
+          <motion.div
+            key="rule-based-review"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-4"
+          >
+            {/* Grade + Summary Card */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <div className="flex items-start gap-4">
+                {/* Grade badge */}
+                <div className={cn(
+                  'flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center border-2',
+                  gradeColors[ruleBasedContent.overallGrade]?.bg ?? 'bg-slate-50',
+                  gradeColors[ruleBasedContent.overallGrade]?.text ?? 'text-slate-600',
+                  gradeColors[ruleBasedContent.overallGrade]?.border ?? 'border-slate-200',
+                )}>
+                  <span className="text-2xl font-bold">{ruleBasedContent.overallGrade}</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm">
+                      {sentimentEmoji[ruleBasedContent.sentiment] ?? '⚪'}
+                    </span>
+                    <span className="text-xs font-medium text-slate-500 capitalize">
+                      {ruleBasedContent.sentiment} round
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-700 leading-relaxed">
+                    {ruleBasedContent.summary}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Key Stats */}
+            {ruleBasedContent.keyStats && ruleBasedContent.keyStats.length > 0 && (
+              <div
+                className="rounded-xl border border-slate-200 bg-white p-5"
+                style={{ animation: 'fadeInUp 0.5s ease-out 0.2s both' }}
+              >
+                <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="text-lg">📊</span>
+                  Key Stats
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {ruleBasedContent.keyStats.map((stat, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        'p-3 rounded-lg border',
+                        stat.comparison === 'above' && 'bg-green-50 border-green-100',
+                        stat.comparison === 'below' && 'bg-red-50 border-red-100',
+                        stat.comparison === 'average' && 'bg-slate-50 border-slate-100',
+                      )}
+                    >
+                      <p className="text-xs font-medium text-slate-500">{stat.label}</p>
+                      <p className="text-lg font-semibold text-slate-900 mt-0.5">{stat.value}</p>
+                      <p className={cn(
+                        'text-[11px] font-medium mt-0.5',
+                        stat.comparison === 'above' && 'text-green-600',
+                        stat.comparison === 'below' && 'text-red-600',
+                        stat.comparison === 'average' && 'text-slate-400',
+                      )}>
+                        {stat.comparison === 'above' ? '↑ Above avg' :
+                         stat.comparison === 'below' ? '↓ Below avg' :
+                         '— Average'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Highlights */}
+            {ruleBasedContent.highlights && ruleBasedContent.highlights.length > 0 && (
+              <div
+                className="rounded-xl border border-slate-200 bg-white p-5"
+                style={{ animation: 'fadeInUp 0.5s ease-out 0.3s both' }}
+              >
+                <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="text-lg">✨</span>
+                  Highlights
+                </h3>
+                <div className="space-y-3">
+                  {ruleBasedContent.highlights.map((highlight, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-green-50 to-white border border-green-100"
+                      style={{
+                        animation: `fadeInUp 0.4s ease-out ${300 + index * 80}ms both`,
+                      }}
+                    >
+                      <span className="text-2xl">🌟</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-slate-900">{highlight.title}</span>
+                        <p className="text-sm text-slate-600 mt-0.5">{highlight.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Areas for Improvement */}
+            {ruleBasedContent.areasForImprovement && ruleBasedContent.areasForImprovement.length > 0 && (
+              <div
+                className="rounded-xl border border-slate-200 bg-white p-5"
+                style={{ animation: 'fadeInUp 0.5s ease-out 0.4s both' }}
+              >
+                <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="text-lg">🔍</span>
+                  Areas to Work On
+                </h3>
+                <div className="space-y-3">
+                  {ruleBasedContent.areasForImprovement.map((area, index) => (
+                    <div
+                      key={index}
+                      className="p-4 rounded-xl bg-amber-50 border-l-4 border-l-amber-500"
+                      style={{
+                        animation: `fadeInUp 0.4s ease-out ${400 + index * 80}ms both`,
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl">⚠️</span>
+                        <div className="flex-1">
+                          <span className="font-medium text-slate-900">{area.area}</span>
+                          <p className="text-sm text-slate-600 mt-1">{area.recommendation}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recommendations */}
+            {ruleBasedContent.recommendations && ruleBasedContent.recommendations.length > 0 && (
+              <div
+                className="rounded-xl border border-slate-200 bg-white p-5"
+                style={{ animation: 'fadeInUp 0.5s ease-out 0.5s both' }}
+              >
+                <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="text-lg">💡</span>
+                  Recommendations
+                </h3>
+                <div className="space-y-2">
+                  {ruleBasedContent.recommendations.map((rec, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 p-3 rounded-lg bg-slate-50"
+                      style={{
+                        animation: `fadeInUp 0.4s ease-out ${500 + index * 80}ms both`,
+                      }}
+                    >
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold">
+                        {index + 1}
+                      </span>
+                      <p className="text-sm text-slate-700">{rec}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Fallback V1 Review Content (from existing database reviews loaded on fetch) */}
+        {!hasV2Data && !hasRuleBasedData && hasV1Data && review && (
           <motion.div
             key="v1-review"
             initial={{ opacity: 0 }}
@@ -252,16 +426,6 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                 </div>
               )}
             </div>
-
-            {/* Highlights */}
-            {review.highlights && review.highlights.length > 0 && (
-              <HighlightsSection highlights={review.highlights} />
-            )}
-
-            {/* Areas to Review */}
-            {review.areasToReview && review.areasToReview.length > 0 && (
-              <AreasToReviewSection areas={review.areasToReview} />
-            )}
           </motion.div>
         )}
       </AnimatePresence>
