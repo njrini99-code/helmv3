@@ -20,7 +20,7 @@ import { LineupBuilder } from '@/components/coach/lineup/LineupBuilder';
 import { saveLineup } from '@/app/baseball/actions/lineups';
 import { useToast } from '@/components/ui/toast';
 
-type MemberStatus = 'active' | 'inactive' | 'injured' | 'alumni';
+type MemberStatus = 'pending' | 'active' | 'inactive' | 'removed' | 'injured' | 'alumni';
 
 interface TeamMember {
   id: string;
@@ -39,7 +39,7 @@ interface TeamMember {
   };
   jersey_number: number | null;
   joined_at: string | null;
-  status: MemberStatus;
+  status: MemberStatus | null;
 }
 
 export default function RosterPage() {

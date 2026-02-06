@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { CommandPalette } from '@/components/CommandPalette';
@@ -22,11 +22,10 @@ import {
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
-  const { user, profile } = useAuth();
+  const { coach } = useAuth();
 
   // Configure mobile bottom nav based on user role
-  const isCoach = profile?.role === 'coach';
-  const isPlayer = profile?.role === 'player';
+  const isCoach = !!coach;
 
   const mobileNavItems: MobileNavItem[] = isCoach
     ? [
@@ -112,12 +111,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
     async function checkAuth() {
+      const supabase = supabaseRef.current;
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
@@ -178,7 +178,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     checkAuth();
-  }, [router, supabase]);
+  }, [router]);
 
   if (loading || !authorized) {
     return <PageLoading />;

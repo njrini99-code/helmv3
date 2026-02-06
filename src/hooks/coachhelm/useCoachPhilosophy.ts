@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
@@ -124,7 +124,7 @@ export function useCoachPhilosophy(coachId: string | null) {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const supabase = createClient();
+    const supabaseRef = useRef(createClient());
 
     // Fetch on mount
     useEffect(() => {
@@ -140,7 +140,7 @@ export function useCoachPhilosophy(coachId: string | null) {
             setLoading(true);
             setError(null);
 
-            const { data, error: fetchError } = await supabase
+            const { data, error: fetchError } = await supabaseRef.current
                 .from('golf_coach_philosophy')
                 .select('*')
                 .eq('coach_id', currentCoachId)
@@ -156,7 +156,7 @@ export function useCoachPhilosophy(coachId: string | null) {
                 setPhilosophy(dbToTs(data as unknown as PhilosophyDbRow));
             } else {
                 // Create default record if none exists
-                const { data: newData, error: createError } = await supabase
+                const { data: newData, error: createError } = await supabaseRef.current
                     .from('golf_coach_philosophy')
                     .insert({
                         coach_id: currentCoachId,
@@ -181,7 +181,7 @@ export function useCoachPhilosophy(coachId: string | null) {
         }
 
         fetchPhilosophy();
-    }, [coachId, supabase]);
+    }, [coachId]);
 
     // Save changes
     const save = useCallback(
@@ -191,7 +191,7 @@ export function useCoachPhilosophy(coachId: string | null) {
             setSaving(true);
             setError(null);
 
-            const { data, error: updateError } = await supabase
+            const { data, error: updateError } = await supabaseRef.current
                 .from('golf_coach_philosophy')
                 .update(tsToDb(updates))
                 .eq('id', philosophy.id)
@@ -208,7 +208,7 @@ export function useCoachPhilosophy(coachId: string | null) {
             setSaving(false);
             return true;
         },
-        [philosophy?.id, supabase]
+        [philosophy?.id]
     );
 
     return { philosophy, loading, saving, error, save };

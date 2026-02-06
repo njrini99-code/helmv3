@@ -42,7 +42,7 @@ interface UpdateFocusAreaData {
 
 /**
  * Create a new focus area for a player
- * Only coaches can create focus areas
+ * Only coaches who manage the player can create focus areas
  */
 export async function createFocusArea(
   data: CreateFocusAreaData
@@ -54,15 +54,37 @@ export async function createFocusArea(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Verify user is a coach
+  // Verify user is a coach and has access to this player
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .single();
 
   if (coachError || !coach) {
     return { success: false, error: 'Not authorized to create focus areas' };
+  }
+
+  // Verify coach manages this player via team membership
+  if (coach.organization_id && data.player_id) {
+    const { data: orgTeam } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+
+    if (orgTeam?.id) {
+      const { data: membership } = await supabase
+        .from('golf_team_members')
+        .select('id')
+        .eq('team_id', orgTeam.id)
+        .eq('player_id', data.player_id)
+        .maybeSingle();
+
+      if (!membership) {
+        return { success: false, error: 'Player is not on your team' };
+      }
+    }
   }
 
   const { error } = await supabase.from('golf_player_focus_areas').insert({
@@ -91,7 +113,7 @@ export async function createFocusArea(
 
 /**
  * Update an existing focus area
- * Only coaches can update focus areas
+ * Only the coach who created it can update focus areas
  */
 export async function updateFocusArea(
   id: string,
@@ -115,13 +137,15 @@ export async function updateFocusArea(
     return { success: false, error: 'Not authorized to update focus areas' };
   }
 
+  // Verify the focus area belongs to this coach
   const { error } = await supabase
     .from('golf_player_focus_areas')
     .update({
       ...data,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('coach_id', coach.id);
 
   if (error) {
     console.error('Failed to update focus area:', error);
@@ -136,7 +160,7 @@ export async function updateFocusArea(
 
 /**
  * Delete a focus area
- * Only coaches can delete focus areas
+ * Only the coach who created it can delete focus areas
  */
 export async function deleteFocusArea(id: string): Promise<DevelopmentActionResult> {
   const supabase = await createClient();
@@ -157,10 +181,12 @@ export async function deleteFocusArea(id: string): Promise<DevelopmentActionResu
     return { success: false, error: 'Not authorized to delete focus areas' };
   }
 
+  // Only delete if this coach owns the focus area
   const { error } = await supabase
     .from('golf_player_focus_areas')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('coach_id', coach.id);
 
   if (error) {
     console.error('Failed to delete focus area:', error);

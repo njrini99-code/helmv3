@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { CoachHelmStatus } from '@/lib/coachhelm/v2/types';
 
@@ -34,7 +34,7 @@ export function useCoachHelmGate(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
 
   // Check if globally enabled via environment
   const globallyEnabled =
@@ -70,7 +70,7 @@ export function useCoachHelmGate(
 
     try {
       // Check user-level settings
-      const { data: userSettings, error: userError } = await (supabase
+      const { data: userSettings, error: userError } = await (supabaseRef.current
         .from('golf_coachhelm_settings' as 'users')
         .select('enabled, disabled_reason')
         .eq('user_id', userId)
@@ -97,7 +97,7 @@ export function useCoachHelmGate(
 
       // Check team-level settings if team provided
       if (teamId) {
-        const { data: teamSettings, error: teamError } = await (supabase
+        const { data: teamSettings, error: teamError } = await (supabaseRef.current
           .from('golf_team_coachhelm_settings' as 'users')
           .select('enabled, disabled_reason')
           .eq('team_id', teamId)
@@ -145,7 +145,7 @@ export function useCoachHelmGate(
     } finally {
       setLoading(false);
     }
-  }, [userId, teamId, globallyEnabled, supabase]);
+  }, [userId, teamId, globallyEnabled]);
 
   useEffect(() => {
     fetchStatus();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // Database row type for golf_coachhelm_settings (table created in migration)
@@ -80,7 +80,7 @@ export function useCoachHelmSettings(
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
 
   // Fetch settings on mount
   useEffect(() => {
@@ -96,7 +96,7 @@ export function useCoachHelmSettings(
       setError(null);
 
       // Use type assertion since table is created via migration
-      const { data, error: fetchError } = await (supabase
+      const { data, error: fetchError } = await (supabaseRef.current
         .from('golf_coachhelm_settings' as 'users') // Type hack for new table
         .select('*')
         .eq('coach_id', currentCoachId)
@@ -113,7 +113,7 @@ export function useCoachHelmSettings(
       } else {
         // Create default settings if none exist
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const table = supabase.from('golf_coachhelm_settings' as any) as any;
+        const table = supabaseRef.current.from('golf_coachhelm_settings' as any) as any;
         const { data: newData, error: createError } = await table
           .insert({
             coach_id: currentCoachId,
@@ -137,7 +137,7 @@ export function useCoachHelmSettings(
     }
 
     fetchSettings();
-  }, [coachId, supabase]);
+  }, [coachId]);
 
   // Update settings
   const updateSettings = useCallback(
@@ -164,7 +164,7 @@ export function useCoachHelmSettings(
         dbUpdates.focus_areas = updates.focusAreas;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const table = supabase.from('golf_coachhelm_settings' as any) as any;
+      const table = supabaseRef.current.from('golf_coachhelm_settings' as any) as any;
       const { data, error: updateError } = await table
         .upsert({
           coach_id: coachId,
@@ -194,7 +194,7 @@ export function useCoachHelmSettings(
       setSaving(false);
       return true;
     },
-    [coachId, supabase]
+    [coachId]
   );
 
   // Enable CoachHelm

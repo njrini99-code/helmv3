@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { RoundReview, GoalImpact, Highlight, AreaToReview, RoundStats, StrokesGainedBreakdown, Pattern } from '@/lib/coachhelm/types';
 
@@ -84,7 +84,7 @@ export function useRoundReview(roundId: string | null) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
 
   // Fetch existing review
   useEffect(() => {
@@ -102,7 +102,7 @@ export function useRoundReview(roundId: string | null) {
       // Note: golf_round_reviews table may not exist in generated types yet
       // Using type assertion to bypass TypeScript until types are regenerated
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error: fetchError } = await (supabase as any)
+      const { data, error: fetchError } = await (supabaseRef.current as any)
         .from('golf_round_reviews')
         .select('*')
         .eq('round_id', currentRoundId)
@@ -123,7 +123,7 @@ export function useRoundReview(roundId: string | null) {
     }
 
     fetchReview();
-  }, [roundId, supabase]);
+  }, [roundId]);
 
   // Generate review (calls API route)
   const generate = useCallback(async () => {
@@ -158,7 +158,7 @@ export function useRoundReview(roundId: string | null) {
 
     // Note: golf_round_reviews table may not exist in generated types yet
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: updateError } = await (supabase as any)
+    const { error: updateError } = await (supabaseRef.current as any)
       .from('golf_round_reviews')
       .update({
         shared_with_coach: true,
@@ -178,7 +178,7 @@ export function useRoundReview(roundId: string | null) {
     } : null);
 
     return true;
-  }, [review?.id, supabase]);
+  }, [review?.id]);
 
   return {
     review,

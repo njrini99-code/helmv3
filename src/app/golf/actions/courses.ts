@@ -53,16 +53,20 @@ export async function getCourseWithHoles(courseId: string): Promise<{
   course: GolfCourse | null;
   holes: GolfCourseHole[];
 }> {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: courseData } = await (supabase as any)
-    .from('golf_courses')
-    .select('*')
-    .eq('id', courseId)
-    .single();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { course: null, holes: [] };
 
-  if (!courseData) return { course: null, holes: [] };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: courseData } = await (supabase as any)
+      .from('golf_courses')
+      .select('*')
+      .eq('id', courseId)
+      .single();
+
+    if (!courseData) return { course: null, holes: [] };
 
   // Map to GolfCourse type
   const course: GolfCourse = {
@@ -100,7 +104,11 @@ export async function getCourseWithHoles(courseId: string): Promise<{
     handicap_index: (h.handicap_index as number) ?? null,
   }));
 
-  return { course, holes };
+    return { course, holes };
+  } catch (err) {
+    console.error('[getCourseWithHoles Error]', err);
+    return { course: null, holes: [] };
+  }
 }
 
 /**
