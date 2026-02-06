@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { IconArrowLeft, IconChartBar } from '@/components/icons';
 import { RoundReviewViewer } from '@/components/golf/coachhelm/RoundReviewViewer';
 import { ShotByShot } from '@/components/golf/rounds';
-import { PremiumRoundView } from '@/components/golf/rounds/PremiumRoundView';
+import { PremiumRoundHeader } from '@/components/golf/rounds/PremiumRoundHeader';
 
 export async function generateMetadata({
   params,
@@ -38,7 +38,7 @@ export async function generateMetadata({
   };
 }
 
-// Matches the actual golf_rounds schema from database.ts
+// Matches the actual golf_rounds schema
 interface RoundWithDetails {
   id: string;
   player_id: string;
@@ -58,30 +58,13 @@ interface RoundWithDetails {
   total_gir: number | null;
   total_gir_possible: number | null;
   notes: string | null;
-  status: string | null;
-  holes_played: number | null;
-  current_hole: number | null;
   front_nine: number | null;
   back_nine: number | null;
-  weather_conditions: string | null;
   player: {
     first_name: string | null;
     last_name: string | null;
     avatar_url: string | null;
   } | null;
-  holes: Array<{
-    id: string;
-    hole_number: number;
-    par: number;
-    score: number | null;
-    putts: number | null;
-    fairway_hit: boolean | null;
-    gir: boolean | null;
-    penalty_strokes: number | null;
-    sand_save: boolean | null;
-    up_and_down: boolean | null;
-    notes: string | null;
-  }>;
 }
 
 
@@ -98,13 +81,12 @@ export default async function RoundDetailPage({
     redirect('/golf/login');
   }
 
-  // Fetch round with holes and player avatar
+  // Fetch round with player avatar
   const { data: round, error } = await supabase
     .from('golf_rounds')
     .select(`
       *,
-      player:golf_players(first_name, last_name, avatar_url),
-      holes:golf_holes(*)
+      player:golf_players(first_name, last_name, avatar_url)
     `)
     .eq('id', id)
     .single();
@@ -116,7 +98,6 @@ export default async function RoundDetailPage({
   const roundData = {
     ...round,
     player: Array.isArray(round.player) ? round.player[0] : round.player,
-    holes: (Array.isArray(round.holes) ? round.holes : []) as unknown as RoundWithDetails['holes'],
   } as unknown as RoundWithDetails;
 
   // Check authorization
@@ -181,9 +162,8 @@ export default async function RoundDetailPage({
         </Link>
       </div>
 
-      {/* Premium Round View - header, stats, hole-by-hole with insights */}
-      <PremiumRoundView
-        roundId={id}
+      {/* Premium Header - player info, score, stats */}
+      <PremiumRoundHeader
         playerName={playerName}
         playerAvatarUrl={playerAvatarUrl}
         courseName={roundData.course_name}
@@ -203,17 +183,14 @@ export default async function RoundDetailPage({
         courseRating={roundData.course_rating}
         courseSlope={roundData.course_slope}
         teesPlayed={roundData.tees_played}
-        holes={roundData.holes}
         notes={roundData.notes}
       />
 
       {/* AI Round Review */}
-      <div className="mt-6">
-        <RoundReviewViewer roundId={id} className="mb-6" />
-      </div>
+      <RoundReviewViewer roundId={id} isCoach={isCoach} className="mt-6" />
 
       {/* Shot-by-Shot Review */}
-      <ShotByShot roundId={id} className="mb-6" />
+      <ShotByShot roundId={id} className="mt-6" />
     </div>
   );
 }

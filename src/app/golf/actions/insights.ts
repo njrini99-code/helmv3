@@ -1362,20 +1362,35 @@ const CATEGORY_LABELS: Record<InsightCategory, string> = {
 function categorizeComposedInsight(insight: ComposedInsight): InsightCategory {
   const text = (insight.headline + ' ' + insight.body).toLowerCase();
 
-  if (text.includes('putt') || text.includes('three-putt') || text.includes('green reading') || text.includes('lag putt'))
+  // Priority order matters — check more specific terms first to avoid false matches
+  // (e.g., "approach" would match ball_striking before course_management)
+  if (text.includes('three-putt') || text.includes('lag putt') || text.includes('green reading') ||
+      text.includes('putt make') || text.includes('putts per') || text.includes('start line') ||
+      (text.includes('putt') && !text.includes('approach') && !text.includes('dispersion')))
     return 'putting';
-  if (text.includes('approach') || text.includes('gir') || text.includes('iron') || text.includes('tee') || text.includes('fairway') || text.includes('driving') || text.includes('off the tee') || text.includes('ball striking'))
-    return 'ball_striking';
-  if (text.includes('scrambl') || text.includes('short game') || text.includes('chip') || text.includes('around the green') || text.includes('sand') || text.includes('bunker') || text.includes('up-and-down'))
+  if (text.includes('scrambl') || text.includes('short game') || text.includes('chip') ||
+      text.includes('around the green') || text.includes('sand save') || text.includes('bunker') ||
+      text.includes('up-and-down') || text.includes('pitch'))
     return 'short_game';
-  if (text.includes('penalty') || text.includes('course manage') || text.includes('decision') || text.includes('strategy'))
-    return 'course_management';
-  if (text.includes('pressure') || text.includes('closing') || text.includes('mental') || text.includes('momentum') || text.includes('tournament') || text.includes('composure'))
-    return 'mental_game';
-  if (text.includes('scoring') || text.includes('score') || text.includes('handicap'))
-    return 'scoring';
-  if (text.includes('shot pattern') || text.includes('dispersion') || text.includes('miss pattern'))
+  if (text.includes('shot pattern') || text.includes('dispersion') || text.includes('miss pattern') ||
+      text.includes('miss left') || text.includes('miss right') || text.includes('miss short') ||
+      text.includes('miss long') || text.includes('lie-dependent'))
     return 'shot_pattern';
+  if (text.includes('approach') || text.includes('gir') || text.includes('iron') ||
+      text.includes('proximity') || text.includes('green in regulation'))
+    return 'ball_striking';
+  if (text.includes('tee') || text.includes('fairway') || text.includes('driving') ||
+      text.includes('off the tee') || text.includes('tee shot'))
+    return 'ball_striking';
+  if (text.includes('penalty') || text.includes('course manage') || text.includes('decision') ||
+      text.includes('strategy') || text.includes('club selection'))
+    return 'course_management';
+  if (text.includes('pressure') || text.includes('closing') || text.includes('mental') ||
+      text.includes('composure') || text.includes('tournament') || text.includes('qualifying'))
+    return 'mental_game';
+  if (text.includes('scoring') || text.includes('score') || text.includes('par 3') ||
+      text.includes('par 4') || text.includes('par 5') || text.includes('birdie') || text.includes('bogey'))
+    return 'scoring';
 
   return 'general';
 }
@@ -1400,6 +1415,45 @@ function mapMetricKeyToCategory(key: string): InsightCategory {
   }
 }
 
+/**
+ * Extract a sub-issue key from an insight for finer-grained grouping.
+ * Instead of lumping all "putting concerns" together, this distinguishes
+ * "three-putt rate" from "lag putting" from "SG Putting" etc.
+ */
+function extractSubIssue(insight: TeamComposedInsight): string {
+  const text = (insight.headline + ' ' + insight.body).toLowerCase();
+
+  // Putting sub-issues
+  if (text.includes('three-putt')) return 'three_putt';
+  if (text.includes('lag putt')) return 'lag_putting';
+  if (text.includes('putts per') || text.includes('putt make')) return 'putt_efficiency';
+  if (text.includes('start line') || text.includes('green reading')) return 'green_reading';
+
+  // Ball striking sub-issues
+  if (text.includes('gir') || text.includes('green in regulation')) return 'gir';
+  if (text.includes('approach') || text.includes('proximity')) return 'approach';
+  if (text.includes('fairway') || text.includes('driving') || text.includes('tee shot')) return 'driving';
+
+  // Short game sub-issues
+  if (text.includes('sand') || text.includes('bunker')) return 'sand';
+  if (text.includes('scrambl') || text.includes('up-and-down')) return 'scrambling';
+
+  // Mental game sub-issues
+  if (text.includes('pressure') || text.includes('tournament')) return 'pressure';
+  if (text.includes('closing') || text.includes('finish')) return 'closing';
+
+  // Scoring sub-issues
+  if (text.includes('par 3')) return 'par3';
+  if (text.includes('par 4')) return 'par4';
+  if (text.includes('par 5')) return 'par5';
+
+  // Shot pattern sub-issues
+  if (text.includes('dispersion')) return 'dispersion';
+  if (text.includes('miss pattern') || text.includes('miss left') || text.includes('miss right')) return 'miss_direction';
+
+  return 'general';
+}
+
 function toneBucket(tone: InsightTone): string {
   if (tone === 'urgent' || tone === 'cautionary') return 'concern';
   if (tone === 'encouraging' || tone === 'celebratory') return 'positive';
@@ -1410,12 +1464,16 @@ function groupAndDeduplicateInsights(
   insights: TeamComposedInsight[],
   totalPlayers: number
 ): InsightGroup[] {
+  // Group by (category, sub-issue, toneBucket) for finer granularity.
+  // This prevents "SG Putting is bad" and "Three-putt rate is high" from collapsing
+  // into the same group — they're different issues within the same category.
   const groupMap = new Map<string, TeamComposedInsight[]>();
 
   for (const insight of insights) {
     const cat = insight.category || 'general';
     const bucket = toneBucket(insight.tone);
-    const key = `${cat}::${bucket}`;
+    const subIssue = extractSubIssue(insight);
+    const key = `${cat}::${subIssue}::${bucket}`;
 
     if (!groupMap.has(key)) groupMap.set(key, []);
     groupMap.get(key)!.push(insight);
@@ -1450,20 +1508,25 @@ function groupAndDeduplicateInsights(
     const isTeamWide = totalPlayers > 2 && players.length >= Math.ceil(totalPlayers * 0.5);
     const catLabel = CATEGORY_LABELS[category as InsightCategory] || 'Insights';
 
-    // Synthesize headline
+    // Synthesize headline — preserve specificity from the top insight
     let headline: string;
     if (players.length === 0) {
+      // No player context (team alert) — use original headline
       headline = topInsight.headline;
     } else if (players.length === 1) {
-      // Single player — use original headline, ensure player name is there
+      // Single player — use original insight headline (already has player name from buildStatInsightsForTeam)
       const singlePlayer = players[0]!;
       headline = topInsight.headline.includes(singlePlayer.playerName)
         ? topInsight.headline
-        : `${singlePlayer.playerName}: ${catLabel}`;
+        : `${singlePlayer.playerName}: ${topInsight.headline}`;
     } else if (isTeamWide) {
-      headline = `Team-wide: ${catLabel}`;
+      // Team-wide — extract the specific issue from the top insight headline
+      const issueDescription = extractIssueFromHeadline(topInsight.headline, catLabel);
+      headline = `Team-wide: ${issueDescription}`;
     } else {
-      headline = `${players.length} players: ${catLabel}`;
+      // Multiple players — same: preserve the specific issue
+      const issueDescription = extractIssueFromHeadline(topInsight.headline, catLabel);
+      headline = `${players.length} players: ${issueDescription}`;
     }
 
     // Synthesize body
@@ -1471,10 +1534,11 @@ function groupAndDeduplicateInsights(
     if (members.length === 1 || players.length <= 1) {
       body = topInsight.body;
     } else {
+      // Show first names, then the worst insight's data as representative
       const names = players.map(p => p.playerName.split(' ')[0]);
-      const nameList = names.length <= 3
+      const nameList = names.length <= 4
         ? names.join(', ')
-        : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+        : `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`;
       body = `Affecting ${nameList}. ${topInsight.body}`;
     }
 
@@ -1493,14 +1557,34 @@ function groupAndDeduplicateInsights(
     });
   }
 
-  // Sort groups: urgent first, then by player count desc
+  // Sort groups: urgent first, then by player count desc, then by confidence
   groups.sort((a, b) => {
     const toneDiff = (toneRank[a.tone] ?? 5) - (toneRank[b.tone] ?? 5);
     if (toneDiff !== 0) return toneDiff;
-    return b.playerCount - a.playerCount;
+    if (a.playerCount !== b.playerCount) return b.playerCount - a.playerCount;
+    return b.confidence - a.confidence;
   });
 
   return groups;
+}
+
+/**
+ * Extracts the specific issue description from a headline for group synthesis.
+ * E.g., "John: Putting is costing strokes" → "Putting is costing strokes"
+ * E.g., "After Week+ Layoff: Scoring Suffers (+1.2)" → "After Week+ Layoff: Scoring Suffers"
+ * Falls back to catLabel if no useful text can be extracted.
+ */
+function extractIssueFromHeadline(headline: string, fallback: string): string {
+  // If headline has "PlayerName: Issue" pattern, extract the issue part
+  const colonIdx = headline.indexOf(':');
+  if (colonIdx > 0 && colonIdx < headline.length - 2) {
+    const afterColon = headline.slice(colonIdx + 1).trim();
+    // Only use if it's meaningful (not just a category label)
+    if (afterColon.length > 3) return afterColon;
+  }
+  // If the headline itself is short and specific, use it
+  if (headline.length <= 50 && headline.length > 5) return headline;
+  return fallback;
 }
 
 // ============================================================================
@@ -2281,9 +2365,9 @@ function buildStatInsightsForTeam(
       if ((teamWeakness.value as number) < -0.3) {
         insightsWithSeverity.push({
           insight: {
-            headline: `Team focus: ${teamWeakness.label} is the biggest drag`,
-            body: `Team SG ${teamWeakness.label} averages ${formatSigned(teamWeakness.value as number)} per round, the lowest category on the roster.`,
-            callToAction: `Prioritize practice plans that lift ${teamWeakness.label.toLowerCase()} performance.`,
+            headline: `Team SG ${teamWeakness.label}: ${formatSigned(teamWeakness.value as number)} per round`,
+            body: `${teamWeakness.label} is the biggest drag on team scoring. Team SG ${teamWeakness.label} averages ${formatSigned(teamWeakness.value as number)} per round — the weakest category across the roster.`,
+            callToAction: `Prioritize practice plans that lift ${teamWeakness.label.toLowerCase()} performance across the roster.`,
             tone: 'cautionary',
             confidence: 0.7,
             category: 'team_trend',
@@ -2347,34 +2431,41 @@ function buildStatInsightsForTeam(
         );
 
         if ((worst.value as number) <= -0.5) {
-          const delta =
+          const teamDelta =
             worst.teamAvg != null
-              ? ` (${formatSigned((worst.value as number) - worst.teamAvg)} vs team avg ${formatSigned(worst.teamAvg)})`
-              : '';
+              ? (worst.value as number) - worst.teamAvg
+              : null;
+          const vsTeam = teamDelta != null
+            ? ` (${formatSigned(teamDelta)} vs team avg)`
+            : '';
+          const severity = Math.abs(worst.value as number);
           playerInsights.push({
             insight: {
-              headline: `${playerName}: ${worst.label} is costing strokes`,
-              body: `SG ${worst.label} is ${formatSigned(worst.value as number)} per round${delta}.`,
+              headline: `${playerName}: SG ${worst.label} ${formatSigned(worst.value as number)}`,
+              body: `Losing ${severity.toFixed(1)} strokes per round ${worst.label.toLowerCase()}${vsTeam}. Over ${rounds} rounds, this area is the biggest opportunity for improvement.`,
               callToAction: worst.action,
-              tone: 'cautionary',
+              tone: severity >= 1.0 ? 'urgent' : 'cautionary',
               confidence,
               playerId: player.id,
               playerName,
               category: mapMetricKeyToCategory(worst.key),
             },
-            severity: Math.abs(worst.value as number),
+            severity,
           });
         }
 
         if ((best.value as number) >= 0.5) {
-          const delta =
+          const teamDelta =
             best.teamAvg != null
-              ? ` (${formatSigned((best.value as number) - best.teamAvg)} vs team avg ${formatSigned(best.teamAvg)})`
-              : '';
+              ? (best.value as number) - best.teamAvg
+              : null;
+          const vsTeam = teamDelta != null
+            ? ` (${formatSigned(teamDelta)} vs team avg)`
+            : '';
           playerInsights.push({
             insight: {
-              headline: `${playerName}: ${best.label} is a clear strength`,
-              body: `SG ${best.label} is ${formatSigned(best.value as number)} per round${delta}.`,
+              headline: `${playerName}: SG ${best.label} ${formatSigned(best.value as number)}`,
+              body: `Gaining ${(best.value as number).toFixed(1)} strokes per round ${best.label.toLowerCase()}${vsTeam}. This is a clear competitive advantage.`,
               callToAction: `Keep reinforcing ${best.label.toLowerCase()} strengths in practice plans.`,
               tone: 'celebratory',
               confidence,
@@ -2446,12 +2537,12 @@ function buildStatInsightsForTeam(
           : value >= metric.thresholdAbsolute;
 
         if (diffTrigger || absoluteTrigger) {
-          const detail = teamAvg != null
-            ? ` vs team avg ${metric.higherIsBetter ? formatPercent(teamAvg) : teamAvg.toFixed(1)}`
-            : '';
           const formattedValue = metric.higherIsBetter
             ? formatPercent(value)
             : value.toFixed(1);
+          const teamAvgFormatted = teamAvg != null
+            ? (metric.higherIsBetter ? formatPercent(teamAvg) : teamAvg.toFixed(1))
+            : null;
 
           const severity = delta != null
             ? Math.abs(delta)
@@ -2459,10 +2550,10 @@ function buildStatInsightsForTeam(
 
           playerInsights.push({
             insight: {
-              headline: `${playerName}: ${metric.label} is lagging`,
-              body: `${metric.label} is ${formattedValue}${detail}.`,
+              headline: `${playerName}: ${metric.label} at ${formattedValue}`,
+              body: `${metric.label} is ${formattedValue}${teamAvgFormatted ? ` vs team avg ${teamAvgFormatted}` : ''} across ${rounds} rounds.`,
               callToAction: metric.action,
-              tone: 'cautionary',
+              tone: severity >= 10 ? 'urgent' : 'cautionary',
               confidence,
               playerId: player.id,
               playerName,
@@ -2476,13 +2567,16 @@ function buildStatInsightsForTeam(
 
     if (playerInsights.length > 0) {
       playerInsights.sort((a, b) => b.severity - a.severity);
-      insightsWithSeverity.push(...playerInsights.slice(0, 2));
+      // Keep top 3 per player to avoid losing important insights
+      insightsWithSeverity.push(...playerInsights.slice(0, 3));
     }
   }
 
+  // Cap at ~3 insights per player (grouping will consolidate overlaps)
+  const maxInsights = Math.max(12, players.length * 3);
   return insightsWithSeverity
     .sort((a, b) => b.severity - a.severity)
-    .slice(0, 8)
+    .slice(0, maxInsights)
     .map((entry) => entry.insight);
 }
 

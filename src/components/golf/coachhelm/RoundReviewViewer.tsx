@@ -16,6 +16,7 @@ import { V2PredictionCard } from './round-review/V2PredictionCard';
 
 interface RoundReviewViewerProps {
   roundId: string;
+  isCoach?: boolean;
   className?: string;
 }
 
@@ -28,7 +29,7 @@ interface RoundReviewViewerProps {
  * - Displays performance predictions
  * - Loading and error states with graceful fallbacks
  */
-export function RoundReviewViewer({ roundId, className }: RoundReviewViewerProps) {
+export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewViewerProps) {
   const {
     review,
     v2Review,
@@ -38,7 +39,7 @@ export function RoundReviewViewer({ roundId, className }: RoundReviewViewerProps
     error,
     generate,
     needsGeneration,
-  } = useRoundReviewV2(roundId);
+  } = useRoundReviewV2(roundId, isCoach);
 
   // Loading state
   if (loading) {

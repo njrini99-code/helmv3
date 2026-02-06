@@ -120,229 +120,137 @@ export class InsightComposer {
   }
 
   /**
-   * Composes attention-grabbing headline
+   * Composes data-driven headline from actual insight data.
+   * Prefers extracting specifics from the pattern/prediction data over
+   * generic templates so coaches can skim insights effectively.
    */
   private composeHeadline(
     insight: { type: string; data: Record<string, unknown> },
     tone: InsightTone
   ): string {
-    const templates: Record<string, Record<InsightTone, string[]>> = {
+    // Try to build a data-driven headline first
+    const specific = this.buildSpecificHeadline(insight, tone);
+    if (specific) return specific;
+
+    // Fallback: concise tone-aware labels (not random arrays)
+    const fallbacks: Record<string, Record<InsightTone, string>> = {
       pattern: {
-        neutral: [
-          'Pattern Detected',
-          'Scoring Pattern Identified',
-          'Pattern Analysis',
-          'Trend Spotted',
-          'Data-Driven Finding',
-          'Performance Pattern',
-          'Statistical Pattern',
-          'Recurring Tendency',
-        ],
-        encouraging: [
-          'Positive Pattern Emerging',
-          'Strength Identified',
-          'Something\'s Working',
-          'Momentum Building',
-          'Consistent Strength',
-          'Reliable Trend',
-          'Solid Foundation Detected',
-        ],
-        cautionary: [
-          'Area to Watch',
-          'Pattern Needs Attention',
-          'Improvement Opportunity',
-          'Worth a Closer Look',
-          'Room for Adjustment',
-          'Coaching Opportunity',
-          'Development Area Flagged',
-        ],
-        celebratory: [
-          'Great Pattern Found!',
-          'This is Working!',
-          'Keep This Going',
-          'Winning Trend!',
-          'Stand-Out Pattern',
-          'Elite-Level Consistency',
-        ],
-        urgent: [
-          'Critical Pattern',
-          'Immediate Attention Needed',
-          'Important Finding',
-          'High-Priority Pattern',
-          'Action Required',
-          'Significant Trend Change',
-        ],
+        neutral: 'Performance Pattern',
+        encouraging: 'Positive Trend',
+        cautionary: 'Area to Watch',
+        celebratory: 'Standout Strength',
+        urgent: 'Needs Attention',
       },
       prediction: {
-        neutral: [
-          'Performance Forecast',
-          'Upcoming Round Outlook',
-          'Score Prediction',
-          'Projection Update',
-          'Expected Performance Range',
-          'Scoring Outlook',
-          'Next Round Forecast',
-        ],
-        encouraging: [
-          'Strong Outlook Ahead',
-          'Improvement Expected',
-          'Positive Trajectory',
-          'Upward Trend Projected',
-          'Scoring Dip Likely Behind Them',
-          'Good Things Coming',
-          'Form is Trending Up',
-        ],
-        cautionary: [
-          'Challenging Round Ahead',
-          'Prepare for Difficulty',
-          'Tough Stretch Coming',
-          'Scoring May Regress',
-          'Expect a Grind',
-          'Conditions Favor Caution',
-        ],
-        celebratory: [
-          'Peak Performance Expected!',
-          'Great Round Coming!',
-          'Breakthrough Potential',
-          'Career-Best Territory',
-          'Playing Their Best Golf',
-          'Everything Is Clicking',
-        ],
-        urgent: [
-          'Critical Forecast',
-          'Important Prediction',
-          'Must-See Outlook',
-          'Scoring Alert',
-          'Major Shift Expected',
-        ],
+        neutral: 'Next Round Outlook',
+        encouraging: 'Strong Outlook Ahead',
+        cautionary: 'Prepare for a Grind',
+        celebratory: 'Peak Form Expected',
+        urgent: 'Scoring Alert',
       },
       milestone: {
-        neutral: [
-          'Milestone Update',
-          'Progress Report',
-          'Goal Tracking',
-          'Development Checkpoint',
-          'Progress Snapshot',
-        ],
-        encouraging: [
-          'Getting Closer!',
-          'Progress Made',
-          'Keep Going',
-          'On the Right Track',
-          'Building Toward the Goal',
-          'Steady Progress',
-        ],
-        cautionary: [
-          'Milestone at Risk',
-          'Off Track',
-          'Adjustment Needed',
-          'Falling Behind Target',
-          'Goal Needs Recalibration',
-        ],
-        celebratory: [
-          'Milestone Reached!',
-          'Goal Achieved!',
-          'Celebration Time',
-          'Target Hit!',
-          'New Personal Best',
-          'Benchmark Surpassed',
-        ],
-        urgent: [
-          'Critical Milestone',
-          'Deadline Approaching',
-          'Time Sensitive',
-          'Season Goal at Stake',
-          'Must-Address Target',
-        ],
+        neutral: 'Progress Update',
+        encouraging: 'Getting Closer',
+        cautionary: 'Milestone at Risk',
+        celebratory: 'Milestone Reached',
+        urgent: 'Season Goal at Stake',
       },
       alert: {
-        neutral: [
-          'Alert',
-          'Notification',
-          'Update',
-          'Heads-Up',
-          'FYI',
-          'Status Change',
-        ],
-        encouraging: [
-          'Positive Development',
-          'Good News',
-          'Looking Up',
-          'Encouraging Sign',
-          'Silver Lining',
-          'Bright Spot',
-        ],
-        cautionary: [
-          'Heads Up',
-          'Watch This',
-          'Pay Attention',
-          'Monitor Closely',
-          'Keep an Eye On This',
-          'Worth Watching',
-        ],
-        celebratory: [
-          'Great News!',
-          'Exciting Update!',
-          'Congrats!',
-          'Well Earned!',
-          'Outstanding!',
-        ],
-        urgent: [
-          'Urgent Alert',
-          'Immediate Action',
-          'Critical',
-          'Needs Attention Now',
-          'Priority Issue',
-          'Time-Sensitive Alert',
-        ],
+        neutral: 'Heads Up',
+        encouraging: 'Good News',
+        cautionary: 'Watch This',
+        celebratory: 'Great News',
+        urgent: 'Action Needed',
       },
       causal: {
-        neutral: [
-          'Cause Found',
-          'Root Cause Analysis',
-          'Why This Happens',
-          'Key Driver Identified',
-          'Contributing Factor',
-          'Connection Discovered',
-        ],
-        encouraging: [
-          'Success Factor Identified',
-          'What\'s Working',
-          'Keep Doing This',
-          'Winning Ingredient',
-          'This Drives Success',
-          'The Key to Their Improvement',
-        ],
-        cautionary: [
-          'Problem Source Found',
-          'Root Cause Identified',
-          'This Is Why',
-          'Here\'s the Issue',
-          'Underlying Factor Found',
-          'Cause of the Slump',
-        ],
-        celebratory: [
-          'Secret to Success!',
-          'This Is Key!',
-          'Winning Formula',
-          'Found the Edge!',
-          'Breakthrough Factor',
-        ],
-        urgent: [
-          'Critical Discovery',
-          'Must Address',
-          'Key Finding',
-          'Root Cause is Clear',
-          'Immediate Cause Found',
-        ],
+        neutral: 'Root Cause Found',
+        encouraging: 'Success Factor Identified',
+        cautionary: 'Issue Source Found',
+        celebratory: 'Key to Their Success',
+        urgent: 'Critical Discovery',
       },
     };
 
-    const typeTemplates = templates[insight.type] ?? templates.alert;
-    const toneTemplates = typeTemplates?.[tone] ?? typeTemplates?.neutral ?? ['Update'];
+    const typeFallbacks = fallbacks[insight.type] ?? fallbacks.alert!;
+    return typeFallbacks[tone] ?? 'Update';
+  }
 
-    // Pick random template for variety
-    return toneTemplates[Math.floor(Math.random() * toneTemplates.length)] ?? 'Update';
+  /**
+   * Extracts specific, data-driven headline from insight data.
+   * Returns null if data is insufficient for a specific headline.
+   */
+  private buildSpecificHeadline(
+    insight: { type: string; data: Record<string, unknown> },
+    tone: InsightTone
+  ): string | null {
+    if (insight.type === 'pattern') {
+      const pattern = insight.data as unknown as MinedPattern;
+      const condition = pattern.conditions?.[0];
+      const impact = pattern.strokeImpact;
+
+      // Build from condition label + outcome direction + stroke impact
+      if (condition?.label && impact !== undefined) {
+        const impactStr = Math.abs(impact) >= 0.3
+          ? ` (${impact > 0 ? '+' : ''}${impact.toFixed(1)} strokes)`
+          : '';
+
+        if (tone === 'celebratory' || tone === 'encouraging') {
+          return `${condition.label}: Scoring Improves${impactStr}`;
+        }
+        if (tone === 'urgent' || tone === 'cautionary') {
+          return `${condition.label}: Scoring Suffers${impactStr}`;
+        }
+        return `${condition.label}${impactStr}`;
+      }
+
+      // Fall back to description if available
+      if (pattern.description) {
+        // Take the first sentence of description, capped at ~60 chars
+        const firstSentence = pattern.description.split(/[.!]/)[0] ?? '';
+        if (firstSentence.length > 0 && firstSentence.length <= 65) {
+          return firstSentence;
+        }
+        if (firstSentence.length > 65) {
+          return firstSentence.slice(0, 62) + '...';
+        }
+      }
+    }
+
+    if (insight.type === 'prediction') {
+      const pred = insight.data as unknown as PerformancePrediction;
+      if (pred.predictedValue !== undefined) {
+        const score = pred.predictedValue >= 0
+          ? `+${pred.predictedValue.toFixed(1)}`
+          : pred.predictedValue.toFixed(1);
+        if (tone === 'encouraging' || tone === 'celebratory') {
+          return `Forecast: ${score} — Trending Up`;
+        }
+        if (tone === 'cautionary' || tone === 'urgent') {
+          return `Forecast: ${score} — Watch Form`;
+        }
+        return `Next Round Forecast: ${score}`;
+      }
+    }
+
+    if (insight.type === 'causal') {
+      const data = insight.data as Record<string, unknown>;
+      const cause = data.cause as string | undefined;
+      const effect = data.effect as string | undefined;
+      if (cause && effect) {
+        return `${this.titleCase(cause)} → ${this.titleCase(effect)}`;
+      }
+    }
+
+    return null;
+  }
+
+  /** Title-case a snake_case or lowercase string */
+  private titleCase(str: string): string {
+    return str
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase())
+      .replace('Gir', 'GIR')
+      .replace('Sg ', 'SG ');
   }
 
   /**
@@ -351,7 +259,7 @@ export class InsightComposer {
   private composeBody(
     insight: { type: string; data: Record<string, unknown>; reasoning?: ReasoningResult },
     verbosity: 'brief' | 'balanced' | 'detailed',
-    tone: InsightTone
+    _tone: InsightTone
   ): string {
     const parts: string[] = [];
 
@@ -394,63 +302,8 @@ export class InsightComposer {
       }
     }
 
-    // Add tone-appropriate wrapper (randomized for variety)
-    let body = parts.join(' ');
-
-    const encouragingOpeners = [
-      'Here\'s some positive news.',
-      'Good to see this.',
-      'This is worth noting.',
-      'A bright spot in the data.',
-    ];
-    const encouragingClosers = [
-      'Keep up the good work!',
-      'This is the right direction.',
-      'Build on this momentum.',
-      'Reinforce this with consistent practice.',
-    ];
-    const cautionaryOpeners = [
-      'Something to be aware of.',
-      'This deserves attention.',
-      'Worth addressing soon.',
-      'Keep this on the radar.',
-    ];
-    const cautionaryClosers = [
-      'But with focus, this can be addressed.',
-      'A targeted practice plan can turn this around.',
-      'Small adjustments here can make a big difference.',
-      'This is fixable with the right approach.',
-    ];
-    const celebratoryOpeners = [
-      'This is great!',
-      'Excellent work!',
-      'Really impressive.',
-      'This stands out.',
-    ];
-    const urgentOpeners = [
-      'Important:',
-      'Attention needed:',
-      'Priority item:',
-      'Act on this:',
-    ];
-    const urgentClosers = [
-      'This requires immediate attention.',
-      'Address this before the next competition.',
-      'Don\'t let this go unaddressed.',
-      'This should be the top practice priority.',
-    ];
-
-    const pick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)] ?? arr[0];
-
-    if (tone === 'encouraging') {
-      body = `${pick(encouragingOpeners)} ${body} ${pick(encouragingClosers)}`;
-    } else if (tone === 'cautionary') {
-      body = `${pick(cautionaryOpeners)} ${body} ${pick(cautionaryClosers)}`;
-    } else if (tone === 'celebratory') {
-      body = `${pick(celebratoryOpeners)} ${body}`;
-    } else if (tone === 'urgent') {
-      body = `${pick(urgentOpeners)} ${body} ${pick(urgentClosers)}`;
-    }
+    // Join content — keep body focused on data, not filler wrappers
+    const body = parts.join(' ');
 
     return body;
   }

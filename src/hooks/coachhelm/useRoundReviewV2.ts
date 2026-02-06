@@ -8,9 +8,10 @@
  * - Generate AI-powered reviews via CoachHelm
  * - Share reviews with coach
  * - Check CoachHelm enabled status
+ * - Supports both player and coach access
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { RoundReview } from '@/lib/coachhelm/types';
 import type { IntelligentRoundReview } from '@/lib/coachhelm/v2/types';
@@ -76,7 +77,7 @@ export interface UseRoundReviewResult {
 // Backwards compatible type alias
 export type UseRoundReviewV2Result = UseRoundReviewResult;
 
-export function useRoundReview(roundId: string | null): UseRoundReviewResult {
+export function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundReviewResult {
   const [review, setReview] = useState<RoundReview | null>(null);
   const [intelligentReview, setIntelligentReview] = useState<IntelligentRoundReview | null>(null);
   const [isCoachHelmEnabled, setIsCoachHelmEnabled] = useState(false);
@@ -85,7 +86,8 @@ export function useRoundReview(roundId: string | null): UseRoundReviewResult {
   const [error, setError] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
 
-  const supabase = createClient();
+  // Use ref to keep a stable supabase reference
+  const supabaseRef = useRef(createClient());
 
   // Fetch existing review and check CoachHelm status
   useEffect(() => {
@@ -95,6 +97,7 @@ export function useRoundReview(roundId: string | null): UseRoundReviewResult {
     }
 
     const currentRoundId = roundId;
+    const supabase = supabaseRef.current;
 
     async function fetchReviewAndCheckStatus() {
       setLoading(true);
@@ -116,32 +119,53 @@ export function useRoundReview(roundId: string | null): UseRoundReviewResult {
 
         setPlayerId(round.player_id);
 
-        // Check if CoachHelm is enabled for this player
-        const status = await getCoachHelmStatus('player', round.player_id);
-        setIsCoachHelmEnabled(status.enabled);
+        // Check CoachHelm status - for coaches, also check coach-level
+        let enabled = false;
+        try {
+          const playerStatus = await getCoachHelmStatus('player', round.player_id);
+          enabled = playerStatus.enabled;
 
-        // Fetch existing review
-        const { data, error: fetchError } = await (supabase as unknown as {
-          from: (table: string) => {
-            select: (columns: string) => {
-              eq: (column: string, value: string) => {
-                maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
+          // If coach and player status isn't enabled, check coach-level too
+          if (!enabled && isCoach) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              const { data: coach } = await supabase
+                .from('golf_coaches')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+              if (coach) {
+                const coachStatus = await getCoachHelmStatus('coach', coach.id);
+                enabled = coachStatus.enabled;
+              }
+            }
+          }
+        } catch {
+          // CoachHelm status check failed, continue without it
+        }
+        setIsCoachHelmEnabled(enabled);
+
+        // Fetch existing review - wrapped in try/catch for RLS issues
+        try {
+          const { data, error: fetchError } = await (supabase as unknown as {
+            from: (table: string) => {
+              select: (columns: string) => {
+                eq: (column: string, value: string) => {
+                  maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
+                };
               };
             };
-          };
-        }).from('golf_round_reviews')
-          .select('*')
-          .eq('round_id', currentRoundId)
-          .maybeSingle();
+          }).from('golf_round_reviews')
+            .select('*')
+            .eq('round_id', currentRoundId)
+            .maybeSingle();
 
-        if (fetchError) {
-          setError((fetchError as Error).message);
-          setLoading(false);
-          return;
-        }
-
-        if (data) {
-          setReview(dbToReview(data));
+          if (!fetchError && data) {
+            setReview(dbToReview(data));
+          }
+          // If fetchError (e.g. RLS blocking coach), just skip - they can generate
+        } catch {
+          // Silently skip if table doesn't exist or RLS blocks
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load review');
@@ -151,7 +175,7 @@ export function useRoundReview(roundId: string | null): UseRoundReviewResult {
     }
 
     fetchReviewAndCheckStatus();
-  }, [roundId, supabase]);
+  }, [roundId, isCoach]);
 
   // Generate review using CoachHelm AI
   const generate = useCallback(async () => {
@@ -162,7 +186,7 @@ export function useRoundReview(roundId: string | null): UseRoundReviewResult {
 
     try {
       if (isCoachHelmEnabled) {
-        // Try CoachHelm first
+        // Try CoachHelm server action first
         const result = await generateRoundReview(roundId, playerId);
 
         if (result.success && result.review) {
@@ -257,11 +281,11 @@ export function useRoundReview(roundId: string | null): UseRoundReviewResult {
           return;
         }
 
-        // Fall back to standard generation if CoachHelm fails
-        console.warn('CoachHelm review failed, falling back to standard:', result.error);
+        // Fall back to API route if server action fails
+        console.warn('CoachHelm server action failed, falling back to API:', result.error);
       }
 
-      // Standard review generation via API
+      // API route fallback for generation
       const response = await fetch('/api/golf/rounds/generate-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -269,11 +293,19 @@ export function useRoundReview(roundId: string | null): UseRoundReviewResult {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate review');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to generate review' }));
+        throw new Error(errorData.error || 'Failed to generate review');
       }
 
       const data = await response.json();
-      setReview(data.review);
+
+      // Handle V2 response format from API
+      if (data.v2Review) {
+        setIntelligentReview(data.v2Review);
+      }
+      if (data.review) {
+        setReview(data.review);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate review');
     } finally {
@@ -284,6 +316,7 @@ export function useRoundReview(roundId: string | null): UseRoundReviewResult {
   // Share with coach
   const shareWithCoach = useCallback(async () => {
     if (!review?.id) return false;
+    const supabase = supabaseRef.current;
 
     const { error: updateError } = await (supabase as unknown as {
       from: (table: string) => {
@@ -310,7 +343,7 @@ export function useRoundReview(roundId: string | null): UseRoundReviewResult {
     } : null);
 
     return true;
-  }, [review?.id, supabase]);
+  }, [review?.id]);
 
   return {
     review,

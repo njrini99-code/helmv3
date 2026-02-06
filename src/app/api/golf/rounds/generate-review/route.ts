@@ -5,6 +5,8 @@
 // This endpoint now uses ONLY the V2 intelligence engine.
 // V1 (round-review-generator.ts) is deprecated and no longer used here.
 //
+// Supports both player (own round) and coach (team member round) access.
+//
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -24,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Verify user owns this round
+    // Verify user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -40,10 +42,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Round not found' }, { status: 404 });
     }
 
-    // Type assertion for the joined data
+    // Check access: player owns the round OR coach has team access
     const playerData = round.golf_players as unknown as { user_id: string };
-    if (playerData.user_id !== user.id) {
-      return NextResponse.json({ error: 'Round not found' }, { status: 404 });
+    let hasAccess = playerData.user_id === user.id;
+
+    if (!hasAccess) {
+      // Check if user is a coach with access to this player
+      const { data: coachData } = await supabase
+        .from('golf_coaches')
+        .select('id, organization_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (coachData?.organization_id) {
+        const { data: orgTeam } = await supabase
+          .from('golf_teams')
+          .select('id')
+          .eq('organization_id', coachData.organization_id)
+          .maybeSingle();
+
+        if (orgTeam?.id) {
+          const { data: teamMember } = await supabase
+            .from('golf_team_members')
+            .select('id')
+            .eq('team_id', orgTeam.id)
+            .eq('player_id', round.player_id)
+            .maybeSingle();
+
+          hasAccess = !!teamMember;
+        }
+      }
+    }
+
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
     // Check if CoachHelm V2 is enabled for this player
