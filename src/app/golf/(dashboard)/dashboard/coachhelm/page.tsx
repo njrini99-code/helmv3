@@ -5,6 +5,7 @@ import { IconInfo, IconSparkles } from '@/components/icons';
 import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
 import { getPlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 import { PlayerCoachHelmDashboard } from './components/PlayerCoachHelmDashboard';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 /**
  * Error state component for displaying errors gracefully
@@ -153,10 +154,14 @@ export default async function PlayerCoachHelmPage() {
 
   // Render the dashboard
   return (
-    <PlayerCoachHelmDashboard
-      data={dashboardResult.data}
-      playerId={player.id}
-      initialShotAnalytics={analyticsResult.success ? analyticsResult.data : null}
-    />
+    <AnimatedPage>
+      <AnimatedItem>
+        <PlayerCoachHelmDashboard
+          data={dashboardResult.data}
+          playerId={player.id}
+          initialShotAnalytics={analyticsResult.success ? analyticsResult.data : null}
+        />
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

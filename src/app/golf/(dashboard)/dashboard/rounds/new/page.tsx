@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import NewRoundClient from './new-round-client';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 export default async function NewRoundPage() {
   const supabase = await createClient();
@@ -10,5 +11,11 @@ export default async function NewRoundPage() {
     redirect('/golf/login');
   }
 
-  return <NewRoundClient />;
+  return (
+    <AnimatedPage>
+      <AnimatedItem>
+        <NewRoundClient />
+      </AnimatedItem>
+    </AnimatedPage>
+  );
 }

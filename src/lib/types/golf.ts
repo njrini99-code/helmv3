@@ -116,6 +116,80 @@ export type GolfAnnouncementWithAcknowledgements = GolfAnnouncement & {
   acknowledgements: GolfAnnouncementAcknowledgement[];
 };
 
+// Announcement Recipients (junction - specific players)
+export interface GolfAnnouncementRecipient {
+  id: string;
+  announcement_id: string;
+  player_id: string;
+  created_at?: string;
+}
+
+// Announcement Documents (junction - links to golf_documents)
+export interface GolfAnnouncementDocument {
+  id: string;
+  announcement_id: string;
+  document_id: string;
+  sort_order: number;
+  created_at?: string;
+}
+
+// Announcement Tasks (junction - links to golf_tasks)
+export interface GolfAnnouncementTask {
+  id: string;
+  announcement_id: string;
+  task_id: string;
+  sort_order: number;
+  created_at?: string;
+}
+
+// Enriched announcement with all relations (used by detail views)
+export interface GolfAnnouncementEnriched extends GolfAnnouncement {
+  recipients: Array<{
+    player_id: string;
+    player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null;
+  }>;
+  documents: Array<{
+    id: string;
+    document_id: string;
+    sort_order: number;
+    document: { id: string; title: string; file_url: string; file_type: string; file_size: number } | null;
+  }>;
+  tasks: Array<{
+    id: string;
+    task_id: string;
+    sort_order: number;
+    task: {
+      id: string;
+      title: string;
+      description: string | null;
+      due_date: string | null;
+    } | null;
+    assignments: Array<{
+      id: string;
+      player_id: string;
+      status: string;
+      completed_at: string | null;
+      player: { first_name: string | null; last_name: string | null } | null;
+    }>;
+  }>;
+  acknowledgements: GolfAnnouncementAcknowledgement[];
+  total_recipients: number;
+  acknowledged_count: number;
+  task_count: number;
+  completed_task_count: number;
+}
+
+// Announcement meta for list views (lighter than full enriched)
+export interface GolfAnnouncementMeta extends GolfAnnouncement {
+  recipient_count: number;
+  acknowledged_count: number;
+  total_recipients: number;
+  task_count: number;
+  completed_task_count: number;
+  document_count: number;
+  has_player_acknowledged?: boolean; // for player view
+}
+
 // ============================================================================
 // FORM DATA TYPES
 // ============================================================================

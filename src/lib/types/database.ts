@@ -2175,6 +2175,156 @@ export type Database = {
           },
         ]
       }
+      golf_announcement_acknowledgements: {
+        Row: {
+          acknowledged_at: string | null
+          announcement_id: string
+          id: string
+          player_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          announcement_id: string
+          id?: string
+          player_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          announcement_id?: string
+          id?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_announcement_acknowledgements_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "golf_announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_announcement_acknowledgements_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_announcement_documents: {
+        Row: {
+          announcement_id: string
+          created_at: string | null
+          document_id: string
+          id: string
+          sort_order: number | null
+        }
+        Insert: {
+          announcement_id: string
+          created_at?: string | null
+          document_id: string
+          id?: string
+          sort_order?: number | null
+        }
+        Update: {
+          announcement_id?: string
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_announcement_documents_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "golf_announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_announcement_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "golf_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_announcement_recipients: {
+        Row: {
+          announcement_id: string
+          created_at: string | null
+          id: string
+          player_id: string
+        }
+        Insert: {
+          announcement_id: string
+          created_at?: string | null
+          id?: string
+          player_id: string
+        }
+        Update: {
+          announcement_id?: string
+          created_at?: string | null
+          id?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_announcement_recipients_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "golf_announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_announcement_recipients_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_announcement_tasks: {
+        Row: {
+          announcement_id: string
+          created_at: string | null
+          id: string
+          sort_order: number | null
+          task_id: string
+        }
+        Insert: {
+          announcement_id: string
+          created_at?: string | null
+          id?: string
+          sort_order?: number | null
+          task_id: string
+        }
+        Update: {
+          announcement_id?: string
+          created_at?: string | null
+          id?: string
+          sort_order?: number | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_announcement_tasks_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "golf_announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_announcement_tasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "golf_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_announcements: {
         Row: {
           body: string | null

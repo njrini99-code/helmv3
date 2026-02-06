@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { TeamSettingsClient } from './team-settings-client';
 import { TeamInfoPlayer } from './team-info-player';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 // Type for the team data that the client component expects
 interface TeamForClient {
@@ -71,10 +72,14 @@ export default async function TeamSettingsPage() {
       ? { ...coachData.golf_teams, created_at: coachData.golf_teams.created_at ?? '' }
       : null;
     return (
-      <TeamSettingsClient
-        coach={coachData}
-        team={team}
-      />
+      <AnimatedPage>
+        <AnimatedItem>
+          <TeamSettingsClient
+            coach={coachData}
+            team={team}
+          />
+        </AnimatedItem>
+      </AnimatedPage>
     );
   }
 
@@ -153,11 +158,15 @@ export default async function TeamSettingsPage() {
   }));
 
   return (
-    <TeamInfoPlayer
-      team={team}
-      coach={teamCoach}
-      roster={roster ?? []}
-      announcements={announcements ?? []}
-    />
+    <AnimatedPage>
+      <AnimatedItem>
+        <TeamInfoPlayer
+          team={team}
+          coach={teamCoach}
+          roster={roster ?? []}
+          announcements={announcements ?? []}
+        />
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

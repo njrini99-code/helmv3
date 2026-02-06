@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { TravelClient } from './travel-client';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 export const metadata: Metadata = {
   title: 'Travel | Helm Golf',
@@ -99,11 +100,15 @@ export default async function GolfTravelPage() {
   }));
 
   return (
-    <TravelClient
-      itineraries={itineraries}
-      coachId={coach?.id || ''}
-      teamId={teamId}
-      isCoach={isCoach}
-    />
+    <AnimatedPage>
+      <AnimatedItem>
+        <TravelClient
+          itineraries={itineraries}
+          coachId={coach?.id || ''}
+          teamId={teamId}
+          isCoach={isCoach}
+        />
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

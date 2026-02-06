@@ -10,6 +10,7 @@ import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
 import { PendingJoinRequests } from '@/components/golf/roster/PendingJoinRequests';
 import { RosterPageClient } from '@/components/golf/roster/RosterPageClient';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { IconUsers, IconChartBar, IconMessage, IconAlertCircle } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Metadata } from 'next';
@@ -259,16 +260,19 @@ export default async function GolfRosterPage() {
 
   return (
     <RosterPageClient players={playersWithStats}>
-    <div className="min-h-full bg-transparent">
+    <AnimatedPage className="min-h-full bg-transparent">
       {/* Header Section */}
+      <AnimatedItem>
       <MobileNavHeader
         title="Team Roster"
         subtitle={`${playersWithStats.length} ${playersWithStats.length === 1 ? 'player' : 'players'} on ${teamName}`}
       >
         <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
       </MobileNavHeader>
+      </AnimatedItem>
 
       {/* Main Content */}
+      <AnimatedItem>
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Pending Join Requests */}
         <PendingJoinRequests />
@@ -307,15 +311,10 @@ export default async function GolfRosterPage() {
         ) : (
           /* Player Cards Grid - 1 column on mobile, 2 columns on desktop */
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
-            {playersWithStats.map((player, index) => (
+            {playersWithStats.map((player) => (
               <div
                 key={player.id}
                 className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-200"
-                style={{
-                  animation: 'fadeInUp 0.22s ease-out forwards',
-                  animationDelay: `${index * 40}ms`,
-                  opacity: 0,
-                }}
               >
                 {/* Card Header with Avatar and Name */}
                 <div className="p-5 md:p-6">
@@ -426,21 +425,8 @@ export default async function GolfRosterPage() {
           </div>
         )}
       </div>
-
-      {/* CSS Keyframes */}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </div>
+      </AnimatedItem>
+    </AnimatedPage>
     </RosterPageClient>
   );
 }

@@ -6,6 +6,7 @@ import { ShineEffect } from '@/components/ui/shine-effect';
 import Link from 'next/link';
 import { getPlayerQualifiers, type PlayerQualifierInfo } from '@/app/golf/actions/golf';
 import { IconTrophy, IconChevronRight, IconCalendar, IconMapPin, IconGolf } from '@/components/icons';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 export default function MyQualifiersPage() {
   const router = useRouter();
@@ -55,27 +56,14 @@ export default function MyQualifiersPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-full bg-transparent">
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 w-48 bg-slate-200 rounded mb-6" />
-            <div className="space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-32 bg-slate-200 rounded-2xl" />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="min-h-full bg-transparent">
+    <AnimatedPage className="min-h-full bg-transparent">
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
+        <AnimatedItem className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
             <IconTrophy size={20} className="text-amber-600" />
           </div>
@@ -83,8 +71,9 @@ export default function MyQualifiersPage() {
             <h1 className="text-2xl font-semibold text-slate-900">My Qualifiers</h1>
             <p className="text-slate-500 text-sm">View your qualifier progress and leaderboards</p>
           </div>
-        </div>
+        </AnimatedItem>
 
+        <AnimatedItem>
         {error ? (
           <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
             <ShineEffect />
@@ -206,9 +195,10 @@ export default function MyQualifiersPage() {
             })}
           </div>
         )}
+        </AnimatedItem>
 
         {/* Help Text */}
-        <div className="mt-8 p-4 bg-slate-100 rounded-xl">
+        <AnimatedItem className="mt-8 p-4 bg-slate-100 rounded-xl">
           <h4 className="font-medium text-slate-700 mb-2">How Qualifiers Work</h4>
           <ul className="text-sm text-slate-600 space-y-1">
             <li>• When entering a new round, select &ldquo;Qualifier&rdquo; as the round type</li>
@@ -216,8 +206,8 @@ export default function MyQualifiersPage() {
             <li>• Your scores automatically appear on the leaderboard</li>
             <li>• Click any qualifier above to view the full leaderboard</li>
           </ul>
-        </div>
+        </AnimatedItem>
       </div>
-    </div>
+    </AnimatedPage>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -192,19 +193,11 @@ export default function GolfSettingsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-full flex flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <div className="h-8 w-8 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-          <div className="absolute inset-0 h-8 w-8 border-2 border-transparent border-t-primary-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }} />
-        </div>
-        <p className="text-sm text-slate-500 font-medium">Loading settings...</p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="min-h-full">
+    <AnimatedPage className="min-h-full">
       {/* Header Section */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-4 md:py-5">
@@ -234,9 +227,9 @@ export default function GolfSettingsPage() {
       <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
         {/* Profile Card */}
         {profile && (
+          <AnimatedItem>
           <div
             className="relative glass-standard rounded-2xl overflow-hidden p-6"
-            style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0 }}
           >
             <ShineEffect />
             <div className="flex items-center gap-4">
@@ -261,10 +254,11 @@ export default function GolfSettingsPage() {
               </button>
             </div>
           </div>
+          </AnimatedItem>
         )}
 
         {/* Account Section */}
-        <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '50ms', opacity: 0 }}>
+        <AnimatedItem>
           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Account</h3>
           <div className="relative glass-standard rounded-2xl overflow-hidden">
             <ShineEffect />
@@ -288,10 +282,10 @@ export default function GolfSettingsPage() {
               isLast
             />
           </div>
-        </div>
+        </AnimatedItem>
 
         {/* Preferences Section */}
-        <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '100ms', opacity: 0 }}>
+        <AnimatedItem>
           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Preferences</h3>
           <div className="relative glass-standard rounded-2xl overflow-hidden">
             <ShineEffect />
@@ -324,21 +318,21 @@ export default function GolfSettingsPage() {
               />
             )}
           </div>
-        </div>
+        </AnimatedItem>
 
         {/* CoachHelm AI Section */}
         {profile?.role === 'coach' && profile.coachId && (
-          <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '125ms', opacity: 0 }}>
+          <AnimatedItem>
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">AI Features</h3>
             <div className="relative glass-standard rounded-2xl overflow-hidden p-4">
               <ShineEffect />
               <CoachHelmToggle coachId={profile.coachId} />
             </div>
-          </div>
+          </AnimatedItem>
         )}
 
         {/* Team Section */}
-        <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '150ms', opacity: 0 }}>
+        <AnimatedItem>
           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Team</h3>
 
           {/* For Coaches: Team Settings */}
@@ -368,10 +362,10 @@ export default function GolfSettingsPage() {
               currentTeam={profile.currentTeam}
             />
           )}
-        </div>
+        </AnimatedItem>
 
         {/* Legal */}
-        <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '175ms', opacity: 0 }}>
+        <AnimatedItem>
           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Legal</h3>
           <div className="relative glass-standard rounded-2xl overflow-hidden">
             <ShineEffect />
@@ -389,10 +383,10 @@ export default function GolfSettingsPage() {
               isLast
             />
           </div>
-        </div>
+        </AnimatedItem>
 
         {/* Danger Zone */}
-        <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '190ms', opacity: 0 }}>
+        <AnimatedItem>
           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Danger Zone</h3>
           <div className="relative glass-standard rounded-2xl overflow-hidden p-5">
             <ShineEffect />
@@ -413,10 +407,10 @@ export default function GolfSettingsPage() {
               </Button>
             </div>
           </div>
-        </div>
+        </AnimatedItem>
 
         {/* Sign Out */}
-        <div style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '210ms', opacity: 0 }}>
+        <AnimatedItem>
           <button
             onClick={handleSignOut}
             className="relative w-full glass-standard rounded-2xl overflow-hidden p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50 transition-all group"
@@ -427,31 +421,14 @@ export default function GolfSettingsPage() {
             </div>
             <span className="font-medium text-red-600">Sign Out</span>
           </button>
-        </div>
+        </AnimatedItem>
 
         {/* App Info */}
-        <div 
-          className="text-center text-sm text-slate-400 py-4"
-          style={{ animation: 'fadeInUp 0.4s ease-out forwards', animationDelay: '260ms', opacity: 0 }}
-        >
+        <AnimatedItem className="text-center text-sm text-slate-400 py-4">
           <p>GolfHelm v1.0.0</p>
           <p className="text-xs mt-1">© 2026 Helm Sports Labs</p>
-        </div>
+        </AnimatedItem>
       </div>
-
-      {/* CSS Keyframes */}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
 
       {/* Modals */}
       {profile && (
@@ -501,7 +478,7 @@ export default function GolfSettingsPage() {
           )}
         </>
       )}
-    </div>
+    </AnimatedPage>
   );
 }
 

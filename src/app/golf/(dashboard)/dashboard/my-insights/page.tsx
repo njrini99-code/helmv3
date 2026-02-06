@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { MyInsightsContent } from './MyInsightsContent';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 // Force dynamic rendering - requires Supabase auth at runtime
 export const dynamic = 'force-dynamic';
@@ -70,14 +71,18 @@ export default async function MyInsightsPage() {
   const stats = calculatePlayerStats(recentRounds || [], allRounds || []);
 
   return (
-    <MyInsightsContent
-      playerName={`${player.first_name} ${player.last_name}`.trim()}
-      playerId={player.id}
-      handicap={player.handicap}
-      stats={stats}
-      recentRounds={recentRounds || []}
-      focusAreas={focusAreas || []}
-    />
+    <AnimatedPage>
+      <AnimatedItem>
+        <MyInsightsContent
+          playerName={`${player.first_name} ${player.last_name}`.trim()}
+          playerId={player.id}
+          handicap={player.handicap}
+          stats={stats}
+          recentRounds={recentRounds || []}
+          focusAreas={focusAreas || []}
+        />
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }
 

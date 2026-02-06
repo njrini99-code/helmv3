@@ -12,7 +12,7 @@ import {
 } from '@/components/golf/coachhelm/settings';
 import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
-import { PageLoading } from '@/components/ui/loading';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { IconArrowLeft, IconCheck } from '@/components/icons';
 import Link from 'next/link';
 import { Toaster } from 'sonner';
@@ -81,15 +81,15 @@ export default function CoachingIntelligenceSettingsPage() {
     };
 
     if (loading || !philosophy) {
-        return <PageLoading />;
+        return null;
     }
 
     return (
-        <div className="min-h-full pb-20">
+        <AnimatedPage className="min-h-full pb-20">
             <Toaster position="bottom-right" />
 
             {/* Header */}
-            <div className="bg-white border-b border-slate-200 sticky top-0 z-20">
+            <AnimatedItem className="bg-white border-b border-slate-200 sticky top-0 z-20">
                 <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link
@@ -112,20 +112,20 @@ export default function CoachingIntelligenceSettingsPage() {
                         )}
                     </div>
                 </div>
-            </div>
+            </AnimatedItem>
 
             <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
 
                 {/* Intro */}
-                <div className="prose prose-sm prose-slate max-w-none">
+                <AnimatedItem className="prose prose-sm prose-slate max-w-none">
                     <p className="text-slate-500 text-[15px] leading-relaxed">
                         Configure how CoachHelm analyzes your team's performance. These settings control insight generation,
                         alert sensitivity, and how players are ranked against your specific coaching priorities.
                     </p>
-                </div>
+                </AnimatedItem>
 
                 {/* Priority Section */}
-                <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-slate-100">
                         <h2 className="text-base font-semibold text-slate-900">Metric Priorities</h2>
                         <p className="text-sm text-slate-500 mt-1">
@@ -144,10 +144,10 @@ export default function CoachingIntelligenceSettingsPage() {
                             onChange={handlePriorityChange}
                         />
                     </div>
-                </section>
+                </section></AnimatedItem>
 
                 {/* Sensitivity Section */}
-                <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-slate-100">
                         <h2 className="text-base font-semibold text-slate-900">Alert Sensitivity</h2>
                         <p className="text-sm text-slate-500 mt-1">
@@ -160,10 +160,10 @@ export default function CoachingIntelligenceSettingsPage() {
                             onChange={handleSensitivityChange}
                         />
                     </div>
-                </section>
+                </section></AnimatedItem>
 
                 {/* Thresholds Section */}
-                <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-slate-100">
                         <h2 className="text-base font-semibold text-slate-900">Fine-tune Thresholds</h2>
                         <p className="text-sm text-slate-500 mt-1">
@@ -198,10 +198,10 @@ export default function CoachingIntelligenceSettingsPage() {
                             unit="strokes"
                         />
                     </div>
-                </section>
+                </section></AnimatedItem>
 
                 {/* Weight Distributor Section */}
-                <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-slate-100">
                         <h2 className="text-base font-semibold text-slate-900">Comparison Weighting</h2>
                         <p className="text-sm text-slate-500 mt-1">
@@ -220,10 +220,10 @@ export default function CoachingIntelligenceSettingsPage() {
                             onChange={handleWeightChange}
                         />
                     </div>
-                </section>
+                </section></AnimatedItem>
 
                 {/* Alert Toggles Section */}
-                <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-slate-100">
                         <h2 className="text-base font-semibold text-slate-900">Active Alerts</h2>
                         <p className="text-sm text-slate-500 mt-1">
@@ -236,10 +236,10 @@ export default function CoachingIntelligenceSettingsPage() {
                             onChange={handleAlertToggle}
                         />
                     </div>
-                </section>
+                </section></AnimatedItem>
 
                 {/* Display Preferences Section */}
-                <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-slate-100">
                         <h2 className="text-base font-semibold text-slate-900">Display Preferences</h2>
                         <p className="text-sm text-slate-500 mt-1">
@@ -283,9 +283,9 @@ export default function CoachingIntelligenceSettingsPage() {
                             </div>
                         </div>
                     </div>
-                </section>
+                </section></AnimatedItem>
 
             </div>
-        </div>
+        </AnimatedPage>
     );
 }

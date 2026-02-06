@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { DocumentsClient } from './documents-client';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 export const metadata: Metadata = {
   title: 'Documents | Helm Golf',
@@ -113,11 +114,15 @@ export default async function GolfDocumentsPage() {
   const documents = rawDocuments as unknown as DocumentRow[] | null;
 
   return (
-    <DocumentsClient
-      documents={documents || []}
-      coachId={coach?.id || ''}
-      teamId={teamId}
-      isCoach={isCoach}
-    />
+    <AnimatedPage>
+      <AnimatedItem>
+        <DocumentsClient
+          documents={documents || []}
+          coachId={coach?.id || ''}
+          teamId={teamId}
+          isCoach={isCoach}
+        />
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

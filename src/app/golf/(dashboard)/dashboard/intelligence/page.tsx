@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { PageLoading } from '@/components/ui/loading';
 import { IntelligenceCommandCenter } from '@/components/golf/coachhelm/v2';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 // ============================================================================
 // METADATA
@@ -71,11 +72,15 @@ export default async function IntelligenceDashboardPage() {
   return (
     <div className="flex flex-col min-h-full">
       <Suspense fallback={<PageLoading />}>
-        <IntelligenceCommandCenter
-          teamId={teamId}
-          coachId={coach.id}
-          variant="page"
-        />
+        <AnimatedPage>
+          <AnimatedItem>
+            <IntelligenceCommandCenter
+              teamId={teamId}
+              coachId={coach.id}
+              variant="page"
+            />
+          </AnimatedItem>
+        </AnimatedPage>
       </Suspense>
     </div>
   );

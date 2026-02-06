@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { IconArrowLeft, IconChartBar } from '@/components/icons';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { RoundReviewViewer } from '@/components/golf/coachhelm/RoundReviewViewer';
 import { ShotByShot } from '@/components/golf/rounds';
 import { PremiumRoundHeader } from '@/components/golf/rounds/PremiumRoundHeader';
@@ -145,8 +146,9 @@ export default async function RoundDetailPage({
   const playerAvatarUrl = roundData.player?.avatar_url || null;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <AnimatedPage className="p-6 max-w-5xl mx-auto">
       {/* Navigation */}
+      <AnimatedItem>
       <div className="flex items-center justify-between mb-6">
         <Link href="/golf/dashboard/rounds">
           <Button variant="secondary" size="sm">
@@ -161,8 +163,10 @@ export default async function RoundDetailPage({
           </Button>
         </Link>
       </div>
+      </AnimatedItem>
 
       {/* Premium Header - player info, score, stats */}
+      <AnimatedItem>
       <PremiumRoundHeader
         playerName={playerName}
         playerAvatarUrl={playerAvatarUrl}
@@ -185,12 +189,17 @@ export default async function RoundDetailPage({
         teesPlayed={roundData.tees_played}
         notes={roundData.notes}
       />
+      </AnimatedItem>
 
       {/* AI Round Review */}
+      <AnimatedItem>
       <RoundReviewViewer roundId={id} isCoach={isCoach} className="mt-6" />
+      </AnimatedItem>
 
       {/* Shot-by-Shot Review */}
+      <AnimatedItem>
       <ShotByShot roundId={id} className="mt-6" />
-    </div>
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

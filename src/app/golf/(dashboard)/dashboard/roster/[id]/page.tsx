@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ShineEffect } from '@/components/ui/shine-effect';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
 import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerStatsSection } from '@/components/golf/profile/PlayerStatsSection';
@@ -172,8 +173,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   const totalRounds = recentRounds?.length || 0;
 
   return (
-    <div className="min-h-full">
+    <AnimatedPage className="min-h-full">
       {/* Header with Back Button */}
+      <AnimatedItem>
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <Link
@@ -185,7 +187,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           </Link>
         </div>
       </div>
+      </AnimatedItem>
 
+      <AnimatedItem>
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Profile Header Card - Compact */}
         <div className="relative glass-standard rounded-2xl overflow-hidden mb-8">
@@ -369,6 +373,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           )}
         </div>
       </div>
-    </div>
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

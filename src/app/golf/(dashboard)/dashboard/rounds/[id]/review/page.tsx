@@ -10,6 +10,7 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRoundReviewV2 } from '@/hooks/coachhelm/useRoundReviewV2';
@@ -306,12 +307,13 @@ export default function RoundReviewPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
       className="max-w-2xl mx-auto px-4 py-6 pb-24"
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <motion.div variants={itemVariants} className="flex items-center justify-between mb-6">
         <Link
           href="/golf/dashboard/rounds"
           className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700"
@@ -341,10 +343,10 @@ export default function RoundReviewPage() {
             Refresh
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Content */}
-      <div className="space-y-4">
+      <motion.div variants={itemVariants} className="space-y-4">
         {/* Primary Review Display - New Component */}
         {storedReview && storedReview.review_content && (
           <RoundReviewDisplay
@@ -406,10 +408,10 @@ export default function RoundReviewPage() {
         ) : (
           v1Review && !storedReview?.review_content && <ReviewSummary review={v1Review} />
         )}
-      </div>
+      </motion.div>
 
       {/* Bottom actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent lg:relative lg:bg-none lg:p-0 lg:mt-6">
+      <motion.div variants={itemVariants} className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent lg:relative lg:bg-none lg:p-0 lg:mt-6">
         <div className="max-w-2xl mx-auto flex gap-3">
           <Link
             href={`/golf/dashboard/rounds/${roundId}`}
@@ -424,7 +426,7 @@ export default function RoundReviewPage() {
             View Stats
           </Link>
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }

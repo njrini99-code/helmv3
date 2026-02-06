@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { IconMail, IconPlus, IconSend, IconArrowLeft, IconMessageSquare, IconAlertCircle, IconPencil, IconTrash, IconCheck, IconX, IconUsers, IconMenu } from '@/components/icons';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
 import { useToast } from '@/components/ui/toast';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
 import { createGolfConversation, getPlayerUserId } from '@/app/golf/actions/messages';
@@ -285,7 +286,7 @@ export default function GolfMessagesPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] flex">
+    <AnimatedPage className="h-[calc(100vh-64px)] flex">
       {/* Conversation List */}
       <div className={cn(
         'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-slate-200/60 glass-standard flex flex-col',
@@ -665,7 +666,7 @@ export default function GolfMessagesPage() {
           teamId={teamId}
         />
       )}
-    </div>
+    </AnimatedPage>
   );
 }
 

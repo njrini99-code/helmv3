@@ -110,5 +110,11 @@ export function IconVolumeX({ size = 18, ...p }: IconProps) { return <svg width=
 export function IconMaximize({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" /></svg>; }
 export function IconMinimize({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" /></svg>; }
 
+// Development area icons
+export function IconWind({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2" /><path d="M9.6 4.6A2 2 0 1 1 11 8H2" /><path d="M12.6 19.4A2 2 0 1 0 14 16H2" /></svg>; }
+export function IconBrain({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" /><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" /><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" /><path d="M12 18v4" /></svg>; }
+export function IconDumbbell({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><path d="m6.5 6.5 11 11" /><path d="m21 21-1-1" /><path d="m3 3 1 1" /><path d="m18 22 4-4" /><path d="m2 6 4-4" /><path d="m3 10 7-7" /><path d="m14 21 7-7" /></svg>; }
+export function IconCircleDot({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="1" fill="currentColor" /></svg>; }
+
 // Sport-specific icons
 export function IconBaseball({ size = 18, ...p }: IconProps) { return <svg width={size} height={size} viewBox="0 0 24 24" {...d} {...p}><circle cx="12" cy="12" r="10" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10" /><path d="M12 2a15.3 15.3 0 0 0-4 10 15.3 15.3 0 0 0 4 10" /></svg>; }

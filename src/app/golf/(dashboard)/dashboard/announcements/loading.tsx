@@ -1,28 +1,26 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import { AnnouncementCardSkeleton } from '@/components/golf/GolfSkeletons';
 
 export default function Loading() {
   return (
     <div className="min-h-full">
-      {/* Header Skeleton */}
+      {/* Header skeleton */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
-            <div>
-              <Skeleton className="h-8 w-48 mb-2" />
-              <Skeleton className="h-4 w-32" />
+            <div className="space-y-2">
+              <div className="h-7 w-48 bg-slate-200/60 rounded animate-pulse" />
+              <div className="h-4 w-32 bg-slate-100/60 rounded animate-pulse" />
             </div>
-            <Skeleton className="h-10 w-40" />
+            <div className="h-10 w-44 bg-slate-200/60 rounded-lg animate-pulse" />
           </div>
         </div>
       </div>
 
-      {/* Content Skeleton */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32 w-full rounded-2xl" />
-          ))}
-        </div>
+      {/* Content skeleton */}
+      <div className="max-w-4xl mx-auto px-6 py-8 space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <AnnouncementCardSkeleton key={i} delay={i * 80} />
+        ))}
       </div>
     </div>
   );

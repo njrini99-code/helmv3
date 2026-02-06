@@ -301,17 +301,23 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
   const tone = TONE_CONFIG[insight.tone] || TONE_CONFIG.neutral;
   const confidencePct = Math.round(insight.confidence * 100);
 
-  // Extract stroke impact from reasoning chain (last deductive step with "strokes/round")
-  const strokeImpactStep = insight.reasoning?.reasoningChain?.find(
-    (s: ReasoningStep) => s.type === 'deductive' && s.conclusion?.includes('strokes/round')
-  );
-  const strokeImpactMatch = strokeImpactStep?.conclusion?.match(/([\d.]+)\s*strokes\/round/);
-  const strokeImpact = strokeImpactMatch?.[1] ? parseFloat(strokeImpactMatch[1]) : null;
+  // Use direct strokeImpact if available, fall back to regex extraction for legacy insights
+  let strokeImpact: number | null = insight.strokeImpact ?? null;
+  if (strokeImpact === null) {
+    const strokeImpactStep = insight.reasoning?.reasoningChain?.find(
+      (s: ReasoningStep) => s.type === 'deductive' && s.conclusion?.includes('strokes/round')
+    );
+    const strokeImpactMatch = strokeImpactStep?.conclusion?.match(/([\d.]+)\s*strokes\/round/);
+    strokeImpact = strokeImpactMatch?.[1] ? parseFloat(strokeImpactMatch[1]) : null;
+  }
 
-  // Extract evidence metrics (non-stroke-impact reasoning steps)
-  const evidenceSteps = (insight.reasoning?.reasoningChain || []).filter(
-    (s: ReasoningStep) => s.type !== 'deductive' || !s.conclusion?.includes('strokes/round')
-  );
+  // Use direct evidenceMetrics if available, fall back to reasoning chain extraction
+  const hasDirectEvidence = insight.evidenceMetrics && insight.evidenceMetrics.length > 0;
+  const evidenceSteps = hasDirectEvidence
+    ? [] // Will render direct evidence instead
+    : (insight.reasoning?.reasoningChain || []).filter(
+        (s: ReasoningStep) => s.type !== 'deductive' || !s.conclusion?.includes('strokes/round')
+      );
 
   return (
     <motion.div
@@ -418,8 +424,69 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                 {insight.body}
               </p>
 
-              {/* Evidence metrics as visual data grid */}
-              {evidenceSteps.length > 0 && (
+              {/* Direct evidence metrics (structured data - preferred path) */}
+              {hasDirectEvidence && (
+                <div>
+                  <h5 className={cn(
+                    'font-bold text-slate-400 uppercase tracking-wider',
+                    isPage ? 'text-xs mb-2' : 'text-[9px] mb-1.5'
+                  )}>
+                    Evidence
+                  </h5>
+                  <div className={cn(
+                    'grid gap-1.5',
+                    isPage
+                      ? (insight.evidenceMetrics!.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4')
+                      : 'grid-cols-2'
+                  )}>
+                    {insight.evidenceMetrics!.slice(0, isPage ? 8 : 4).map((metric, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          'bg-white/60 rounded-lg border border-white/50 text-center',
+                          isPage ? 'p-3' : 'p-2'
+                        )}
+                      >
+                        <div className={cn(
+                          'font-bold text-slate-800 tabular-nums',
+                          isPage ? 'text-base' : 'text-sm'
+                        )}>
+                          {String(metric.value)}
+                        </div>
+                        <div className={cn(
+                          'text-slate-400 leading-tight mt-0.5',
+                          isPage ? 'text-[11px]' : 'text-[9px]'
+                        )}>
+                          {metric.label}
+                        </div>
+                        {metric.benchmark != null && (
+                          <div className={cn(
+                            'mt-1 font-medium',
+                            isPage ? 'text-[10px]' : 'text-[8px]',
+                            metric.belowBenchmark ? 'text-red-500' : 'text-green-500'
+                          )}>
+                            vs {metric.benchmark}{String(metric.value).includes('%') ? '%' : ''}
+                          </div>
+                        )}
+                        {metric.trend && (
+                          <div className={cn(
+                            'mt-0.5 font-medium',
+                            isPage ? 'text-[10px]' : 'text-[8px]',
+                            metric.trend === 'improving' ? 'text-green-500' :
+                            metric.trend === 'declining' ? 'text-red-500' :
+                            'text-slate-400'
+                          )}>
+                            {metric.trend === 'improving' ? '\u2191 Improving' : metric.trend === 'declining' ? '\u2193 Declining' : '\u2192 Stable'}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Legacy evidence from reasoning chain (fallback for older insights) */}
+              {!hasDirectEvidence && evidenceSteps.length > 0 && (
                 <div>
                   <h5 className={cn(
                     'font-bold text-slate-400 uppercase tracking-wider',
@@ -445,14 +512,12 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                           'font-bold text-slate-800 tabular-nums',
                           isPage ? 'text-base' : 'text-sm'
                         )}>
-                          {/* Extract the value from premise "Label: Value" */}
                           {step.premise?.split(':').slice(1).join(':').trim() || step.premise}
                         </div>
                         <div className={cn(
                           'text-slate-400 leading-tight mt-0.5',
                           isPage ? 'text-[11px]' : 'text-[9px]'
                         )}>
-                          {/* Extract the label from premise */}
                           {step.premise?.split(':')[0]?.trim() || 'Metric'}
                         </div>
                         {step.inference?.startsWith('Benchmark:') && (
@@ -661,6 +726,19 @@ const InsightGroupCard = memo(function InsightGroupCard({
             )}>
               {CATEGORY_LABELS[group.category]}
             </span>
+            {group.strokeImpact != null && group.strokeImpact > 0 && (
+              <span className={cn(
+                'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
+                isPage ? 'text-[10px] px-2 py-1' : 'text-[9px]',
+                group.strokeImpact >= 1.0
+                  ? 'bg-red-100 text-red-700'
+                  : group.strokeImpact >= 0.5
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-slate-100 text-slate-600'
+              )}>
+                {group.strokeImpact >= 1.0 ? 'Major' : group.strokeImpact >= 0.5 ? 'Significant' : 'Minor'}: {group.strokeImpact.toFixed(1)} strokes/rd
+              </span>
+            )}
             <span className={cn('text-slate-400', isPage ? 'text-xs' : 'text-[10px]')}>
               {confidencePct}%
             </span>

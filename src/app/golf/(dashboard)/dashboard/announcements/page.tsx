@@ -1,18 +1,17 @@
 import { createClient } from '@/lib/supabase/server';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { redirect } from 'next/navigation';
-import { CreateAnnouncementButton } from '@/components/golf/announcements/CreateAnnouncementButton';
-import { AnnouncementCard } from '@/components/golf/announcements/AnnouncementCard';
-import type { GolfAnnouncement } from '@/lib/types/golf';
-import { IconBell } from '@/components/icons';
 import { Metadata } from 'next';
+import { IconBell } from '@/components/icons';
+import { getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
+import { AnnouncementsCoachView } from '@/components/golf/announcements/AnnouncementsCoachView';
+import { AnnouncementsPlayerView } from '@/components/golf/announcements/AnnouncementsPlayerView';
+import { CreateAnnouncementFlow } from '@/components/golf/announcements/CreateAnnouncementFlow';
 
 export const metadata: Metadata = {
   title: 'Team Announcements | Helm Sports',
   description: 'View team news, updates, and important announcements from your golf coaching staff',
 };
 
-// Cache announcements for 2 minutes (new announcements added moderately often)
 export const revalidate = 120;
 
 export default async function GolfAnnouncementsPage() {
@@ -32,17 +31,14 @@ export default async function GolfAnnouncementsPage() {
 
   let teamId: string | null = null;
   let playerId: string | null = null;
-  let announcements: GolfAnnouncement[] = [];
 
   if (isCoach) {
-    // Get coach record
     const { data: coach } = await supabase
       .from('golf_coaches')
       .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
 
-    // Get team via organization (golf_teams links to organization_id)
     if (coach?.organization_id) {
       const { data: team } = await supabase
         .from('golf_teams')
@@ -52,7 +48,6 @@ export default async function GolfAnnouncementsPage() {
       teamId = team?.id || null;
     }
   } else {
-    // Get player record
     const { data: player } = await supabase
       .from('golf_players')
       .select('id')
@@ -61,7 +56,6 @@ export default async function GolfAnnouncementsPage() {
 
     if (player) {
       playerId = player.id;
-      // Get team via golf_team_members junction table
       const { data: membership } = await supabase
         .from('golf_team_members')
         .select('team_id')
@@ -71,28 +65,48 @@ export default async function GolfAnnouncementsPage() {
     }
   }
 
-  if (teamId) {
-    const { data: announcementsData } = await supabase
-      .from('golf_announcements')
-      .select('*')
-      .eq('team_id', teamId)
-      .order('published_at', { ascending: false });
+  // Fetch enriched announcements
+  const announcementsResult = teamId
+    ? await getAnnouncementsWithMeta(teamId, user.id, isCoach, playerId)
+    : { success: true as const, data: [] };
 
-    announcements = announcementsData || [];
+  const announcements = announcementsResult.data ?? [];
+
+  // For coaches: fetch roster + team documents for the create flow
+  let players: Array<{ id: string; first_name: string | null; last_name: string | null }> = [];
+  let documents: Array<{ id: string; title: string; file_type: string; file_size: number }> = [];
+
+  if (isCoach && teamId) {
+    // Fetch team roster
+    const { data: members } = await supabase
+      .from('golf_team_members')
+      .select('player_id, player:golf_players(id, first_name, last_name)')
+      .eq('team_id', teamId)
+      .eq('status', 'active');
+
+    players = (members || [])
+      .map((m: any) => m.player) // eslint-disable-line @typescript-eslint/no-explicit-any
+      .filter(Boolean)
+      .map((p: any) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name })); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+    // Fetch team documents
+    const { data: docs } = await supabase
+      .from('golf_documents')
+      .select('id, title, file_type, file_size')
+      .eq('team_id', teamId)
+      .order('created_at', { ascending: false });
+
+    documents = (docs || []) as typeof documents;
   }
 
-  // Get recent count (announcements from last 7 days)
   const recentCount = announcements.filter(a => {
-    if (!a.published_at) return false; // Handle null published_at
-    const publishedAt = new Date(a.published_at);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    return publishedAt > sevenDaysAgo;
+    if (!a.published_at) return false;
+    return (Date.now() - new Date(a.published_at).getTime()) < 7 * 86400000;
   }).length;
 
   return (
     <div className="min-h-full">
-      {/* Header Section */}
+      {/* Header */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
@@ -105,69 +119,46 @@ export default async function GolfAnnouncementsPage() {
                   </span>
                 )}
               </div>
-              <p className="text-slate-500 mt-0.5">Team news and updates</p>
+              <p className="text-slate-500 mt-0.5">
+                {isCoach ? 'Share updates with your team' : 'Team news and updates'}
+              </p>
             </div>
-            {isCoach && <CreateAnnouncementButton />}
+            {isCoach && (
+              <CreateAnnouncementFlow
+                players={players}
+                documents={documents}
+              />
+            )}
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Content */}
       <div className="max-w-4xl mx-auto px-6 py-8">
         {announcements.length === 0 ? (
-          <div
-            className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center"
-            style={{
-              animation: 'fadeInUp 0.4s ease-out forwards',
-              opacity: 0,
-            }}
-          ><ShineEffect />
-            <div className="relative w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-sm p-16 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <IconBell size={28} className="text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">No Announcements</h3>
             <p className="text-slate-500 mb-6 max-w-sm mx-auto">
               {isCoach
-                ? 'Create announcements to keep your team informed'
-                : 'No announcements have been posted yet'}
+                ? 'Create announcements to keep your team informed about schedule changes, upcoming events, and important updates.'
+                : 'No announcements have been posted yet. Check back later for team updates.'}
             </p>
-            {isCoach && <CreateAnnouncementButton />}
+            {isCoach && (
+              <CreateAnnouncementFlow
+                players={players}
+                documents={documents}
+              />
+            )}
           </div>
+        ) : isCoach ? (
+          <AnnouncementsCoachView announcements={announcements} />
         ) : (
-          <div className="space-y-3">
-            {announcements.map((announcement, index) => (
-              <div
-                key={announcement.id}
-                style={{
-                  animation: 'fadeInUp 0.4s ease-out forwards',
-                  animationDelay: `${index * 50}ms`,
-                  opacity: 0,
-                }}
-              >
-                <AnnouncementCard
-                  announcement={announcement}
-                  isCoach={isCoach}
-                  playerId={playerId}
-                />
-              </div>
-            ))}
-          </div>
+          <AnnouncementsPlayerView announcements={announcements} playerId={playerId!} />
         )}
       </div>
-
-      {/* CSS Keyframes */}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

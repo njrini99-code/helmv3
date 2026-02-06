@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import NewQualifierClient from './new-qualifier-client';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 export const metadata: Metadata = {
   title: 'Create Qualifier | Helm Sports',
@@ -65,5 +66,11 @@ export default async function NewQualifierPage() {
     }
   }
 
-  return <NewQualifierClient players={players} />;
+  return (
+    <AnimatedPage>
+      <AnimatedItem>
+        <NewQualifierClient players={players} />
+      </AnimatedItem>
+    </AnimatedPage>
+  );
 }

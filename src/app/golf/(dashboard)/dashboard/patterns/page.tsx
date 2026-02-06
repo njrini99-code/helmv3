@@ -4,6 +4,7 @@ import { GlassCard } from '@/components/ui/glass-card';
 import { IconInfo, IconSparkles } from '@/components/icons';
 import { getTeamPatterns, getPatternStats } from '@/app/golf/actions/pattern-management';
 import { PatternsDashboardClient } from './PatternsDashboardClient';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 /**
  * Error state component
@@ -107,10 +108,14 @@ export default async function PatternsPage() {
   }
 
   return (
-    <PatternsDashboardClient
-      initialPatterns={patternsResult.patterns || []}
-      initialStats={statsResult.success ? statsResult.stats : undefined}
-    />
+    <AnimatedPage>
+      <AnimatedItem>
+        <PatternsDashboardClient
+          initialPatterns={patternsResult.patterns || []}
+          initialStats={statsResult.success ? statsResult.stats : undefined}
+        />
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }
 

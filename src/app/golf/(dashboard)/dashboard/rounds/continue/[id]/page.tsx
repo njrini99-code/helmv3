@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 import type { Tables } from '@/lib/types/database';
 import type { ApproachMissDirection, PuttMissTag } from '@/lib/types/golf';
@@ -264,14 +265,18 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   const initialShots: ShotRecord[] = sortedStartHoleShots.map(mapShotToRecord);
 
   return (
-    <ContinueRoundClient
-      roundId={id}
-      setupData={setupData}
-      holes={allHoles}
-      completedHoleStats={completedHoleStats}
-      startHoleIndex={startHoleIndex}
-      initialShots={initialShots}
-      initialShotNumber={startShotNumber}
-    />
+    <AnimatedPage>
+      <AnimatedItem>
+        <ContinueRoundClient
+          roundId={id}
+          setupData={setupData}
+          holes={allHoles}
+          completedHoleStats={completedHoleStats}
+          startHoleIndex={startHoleIndex}
+          initialShots={initialShots}
+          initialShotNumber={startShotNumber}
+        />
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { CreateQualifierButton } from '@/components/golf/qualifiers/CreateQualifierButton';
@@ -102,16 +103,19 @@ export default async function GolfQualifiersPage() {
   const activeCount = qualifiers.filter(q => q.status === 'in_progress' || q.status === 'upcoming').length;
 
   return (
-    <div className="min-h-full">
+    <AnimatedPage className="min-h-full">
       {/* Header Section */}
+      <AnimatedItem>
       <MobileNavHeader
         title="Qualifiers"
         subtitle={`${activeCount} active qualifier${activeCount !== 1 ? 's' : ''}`}
       >
         {isCoach && <CreateQualifierButton />}
       </MobileNavHeader>
+      </AnimatedItem>
 
       {/* Main Content */}
+      <AnimatedItem>
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {qualifiers.length === 0 ? (
           <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
@@ -225,20 +229,7 @@ export default async function GolfQualifiersPage() {
           </div>
         )}
       </div>
-
-      {/* CSS Keyframes */}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </div>
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

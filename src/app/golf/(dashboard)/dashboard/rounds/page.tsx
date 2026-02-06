@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -227,8 +228,9 @@ export default async function RoundsPage() {
   })();
 
   return (
-    <div className="min-h-full">
+    <AnimatedPage className="min-h-full">
       {/* Header Section */}
+      <AnimatedItem>
       <MobileNavHeader
         title="Rounds"
         subtitle={`${rounds.length} round${rounds.length !== 1 ? 's' : ''} recorded`}
@@ -242,8 +244,10 @@ export default async function RoundsPage() {
           </Link>
         )}
       </MobileNavHeader>
+      </AnimatedItem>
 
       {/* Main Content */}
+      <AnimatedItem>
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Round Statistics Summary */}
         {roundStats && rounds.length >= 3 && (
@@ -446,20 +450,7 @@ export default async function RoundsPage() {
           </div>
         ) : null}
       </div>
-
-      {/* CSS Keyframes */}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </div>
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

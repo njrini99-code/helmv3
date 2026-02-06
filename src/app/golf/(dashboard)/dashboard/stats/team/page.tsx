@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { TeamStatsTable } from './team-stats-table';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -240,8 +241,9 @@ export default async function TeamStatsPage() {
   });
 
   return (
-    <div className="min-h-full">
+    <AnimatedPage className="min-h-full">
       {/* Header */}
+      <AnimatedItem>
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
@@ -254,11 +256,14 @@ export default async function TeamStatsPage() {
           </div>
         </div>
       </div>
+      </AnimatedItem>
 
       {/* Table */}
+      <AnimatedItem>
       <div className="max-w-7xl mx-auto px-6 py-8">
         <TeamStatsTable players={playersWithStats} />
       </div>
-    </div>
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

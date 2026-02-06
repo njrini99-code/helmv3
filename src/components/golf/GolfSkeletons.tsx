@@ -190,22 +190,28 @@ export function MessageThreadSkeleton({ delay = 0 }: { delay?: number }) {
 export function AnnouncementCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
+      className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-hidden border-l-[3px] border-l-slate-200"
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Shimmer effect */}
       <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
 
-      <div className="relative space-y-3">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-slate-100/60 flex-shrink-0 skeleton-shimmer" />
+      <div className="relative px-5 py-4 space-y-3">
+        <div className="flex items-start gap-4">
           <div className="flex-1 space-y-2">
-            <div className="h-4 w-3/4 bg-slate-200/60 rounded skeleton-shimmer" />
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-48 bg-slate-200/60 rounded skeleton-shimmer" />
+              <div className="h-4 w-10 bg-green-100/40 rounded-full skeleton-shimmer" />
+            </div>
             <div className="h-3 w-full bg-slate-100/60 rounded skeleton-shimmer" />
-            <div className="h-3 w-5/6 bg-slate-100/60 rounded skeleton-shimmer" />
+            <div className="h-3 w-4/5 bg-slate-100/60 rounded skeleton-shimmer" />
+            <div className="flex items-center gap-3 mt-1">
+              <div className="h-3 w-20 bg-slate-100/60 rounded skeleton-shimmer" />
+              <div className="h-4 w-14 bg-slate-100/60 rounded skeleton-shimmer" />
+              <div className="h-3 w-16 bg-slate-100/60 rounded skeleton-shimmer" />
+            </div>
           </div>
+          <div className="w-4 h-4 bg-slate-200/40 rounded skeleton-shimmer flex-shrink-0 mt-1" />
         </div>
-        <div className="h-2.5 w-24 bg-slate-100/60 rounded skeleton-shimmer" />
       </div>
     </div>
   );
@@ -771,6 +777,315 @@ export function RosterPageSkeleton() {
                 {/* Actions */}
                 <div className="flex items-center gap-0.5">
                   <div className="h-8 w-8 bg-slate-100/60 rounded-lg skeleton-shimmer" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// GENERIC PAGE SKELETON (fallback for any page)
+// ============================================================================
+
+export function GenericPageSkeleton() {
+  return (
+    <div className="min-h-full">
+      {/* Header */}
+      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-7 w-40 bg-slate-200/60 rounded skeleton-shimmer" />
+              <div className="h-4 w-56 bg-slate-100/60 rounded skeleton-shimmer" />
+            </div>
+            <div className="h-10 w-32 bg-slate-200/60 rounded-xl skeleton-shimmer" />
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-5xl mx-auto px-6 py-8 space-y-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
+            <div className="relative space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2 flex-1">
+                  <div className="h-5 w-2/5 bg-slate-200/60 rounded skeleton-shimmer" />
+                  <div className="h-3 w-3/4 bg-slate-100/60 rounded skeleton-shimmer" />
+                </div>
+                <div className="h-6 w-16 bg-slate-100/60 rounded-full skeleton-shimmer" />
+              </div>
+              <div className="h-3 w-1/2 bg-slate-100/60 rounded skeleton-shimmer" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// FORM PAGE SKELETON (for new round, new qualifier, continue round)
+// ============================================================================
+
+export function FormPageSkeleton() {
+  return (
+    <div className="min-h-full">
+      {/* Header with back link */}
+      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-2xl mx-auto px-6 py-5">
+          <div className="h-4 w-20 bg-slate-100/60 rounded skeleton-shimmer mb-3" />
+          <div className="h-7 w-48 bg-slate-200/60 rounded skeleton-shimmer" />
+          <div className="h-4 w-64 bg-slate-100/60 rounded mt-1 skeleton-shimmer" />
+        </div>
+      </div>
+
+      {/* Form card */}
+      <div className="max-w-2xl mx-auto px-6 py-8">
+        <div className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-6 overflow-hidden">
+          <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
+          <div className="relative space-y-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="space-y-2">
+                <div className="h-3 w-24 bg-slate-200/60 rounded skeleton-shimmer" />
+                <div className="h-10 w-full bg-slate-100/60 rounded-lg skeleton-shimmer" />
+              </div>
+            ))}
+            <div className="flex justify-end gap-3 pt-4">
+              <div className="h-10 w-24 bg-slate-100/60 rounded-lg skeleton-shimmer" />
+              <div className="h-10 w-32 bg-slate-200/60 rounded-lg skeleton-shimmer" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// DETAIL PAGE SKELETON (for round detail, qualifier detail, player detail)
+// ============================================================================
+
+export function DetailPageSkeleton() {
+  return (
+    <div className="min-h-full">
+      {/* Header with back link */}
+      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-5">
+          <div className="h-4 w-20 bg-slate-100/60 rounded skeleton-shimmer mb-3" />
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-7 w-56 bg-slate-200/60 rounded skeleton-shimmer" />
+              <div className="h-4 w-36 bg-slate-100/60 rounded skeleton-shimmer" />
+            </div>
+            <div className="flex gap-2">
+              <div className="h-9 w-24 bg-slate-100/60 rounded-lg skeleton-shimmer" />
+              <div className="h-9 w-9 bg-slate-100/60 rounded-lg skeleton-shimmer" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Main content */}
+          <div className="lg:col-span-2 space-y-4">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
+                <div className="relative space-y-3">
+                  <div className="h-4 w-32 bg-slate-200/60 rounded skeleton-shimmer" />
+                  <div className="grid grid-cols-2 gap-3">
+                    {[1, 2, 3, 4].map((j) => (
+                      <div key={j} className="p-3 bg-white/30 rounded-lg space-y-1">
+                        <div className="h-2.5 w-16 bg-slate-200/60 rounded skeleton-shimmer" />
+                        <div className="h-5 w-12 bg-slate-200/60 rounded skeleton-shimmer" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-4">
+            <div className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden">
+              <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
+              <div className="relative space-y-3">
+                <div className="h-4 w-24 bg-slate-200/60 rounded skeleton-shimmer" />
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-200/60 skeleton-shimmer" />
+                    <div className="flex-1 space-y-1">
+                      <div className="h-3 w-24 bg-slate-200/60 rounded skeleton-shimmer" />
+                      <div className="h-2 w-16 bg-slate-100/60 rounded skeleton-shimmer" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// DEVELOPMENT PAGE SKELETON
+// ============================================================================
+
+export function DevelopmentPageSkeleton() {
+  return (
+    <div className="min-h-full">
+      {/* Header */}
+      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-7 w-44 bg-slate-200/60 rounded skeleton-shimmer" />
+              <div className="h-4 w-64 bg-slate-100/60 rounded skeleton-shimmer" />
+            </div>
+            <div className="h-10 w-36 bg-slate-200/60 rounded-xl skeleton-shimmer" />
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-5xl mx-auto px-6 py-8 space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-slate-200/60 skeleton-shimmer" />
+                <div className="space-y-1.5">
+                  <div className="h-4 w-32 bg-slate-200/60 rounded skeleton-shimmer" />
+                  <div className="h-3 w-24 bg-slate-100/60 rounded skeleton-shimmer" />
+                </div>
+              </div>
+              {/* Focus area pills */}
+              <div className="flex gap-2 flex-wrap">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="h-7 w-24 bg-slate-100/60 rounded-full skeleton-shimmer" />
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ALERTS PAGE SKELETON
+// ============================================================================
+
+export function AlertsPageSkeleton() {
+  return (
+    <div className="min-h-full">
+      {/* Header */}
+      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-5">
+          <div className="space-y-2">
+            <div className="h-7 w-24 bg-slate-200/60 rounded skeleton-shimmer" />
+            <div className="h-4 w-48 bg-slate-100/60 rounded skeleton-shimmer" />
+          </div>
+        </div>
+      </div>
+
+      {/* Filter tabs */}
+      <div className="max-w-5xl mx-auto px-6 pt-6">
+        <div className="flex gap-2 mb-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-8 w-20 bg-slate-100/60 rounded-lg skeleton-shimmer" />
+          ))}
+        </div>
+
+        {/* Alert cards */}
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-4 overflow-hidden"
+              style={{ animationDelay: `${i * 50}ms` }}
+            >
+              <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
+              <div className="relative flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-slate-100/60 flex-shrink-0 skeleton-shimmer" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-3/4 bg-slate-200/60 rounded skeleton-shimmer" />
+                  <div className="h-3 w-1/2 bg-slate-100/60 rounded skeleton-shimmer" />
+                </div>
+                <div className="h-3 w-16 bg-slate-100/60 rounded skeleton-shimmer" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// CLASSES PAGE SKELETON
+// ============================================================================
+
+export function ClassesPageSkeleton() {
+  return (
+    <div className="min-h-full">
+      {/* Header */}
+      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-7 w-28 bg-slate-200/60 rounded skeleton-shimmer" />
+              <div className="h-4 w-48 bg-slate-100/60 rounded skeleton-shimmer" />
+            </div>
+            <div className="h-10 w-32 bg-slate-200/60 rounded-xl skeleton-shimmer" />
+          </div>
+        </div>
+      </div>
+
+      {/* Schedule grid */}
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="grid md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
+              <div className="relative space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="h-5 w-32 bg-slate-200/60 rounded skeleton-shimmer" />
+                  <div className="h-6 w-16 bg-slate-100/60 rounded-full skeleton-shimmer" />
+                </div>
+                <div className="h-3 w-48 bg-slate-100/60 rounded skeleton-shimmer" />
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-20 bg-slate-100/60 rounded skeleton-shimmer" />
+                  <div className="h-3 w-24 bg-slate-100/60 rounded skeleton-shimmer" />
                 </div>
               </div>
             </div>

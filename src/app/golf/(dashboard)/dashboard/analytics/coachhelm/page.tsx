@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { CoachHelmAnalyticsDashboard } from '@/components/golf/coachhelm/analytics/CoachHelmAnalyticsDashboard';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import {
   getCoachHelmOverview,
   getInsightEffectiveness,
@@ -69,13 +70,17 @@ export default async function CoachHelmAnalyticsPage() {
   ]);
 
   return (
-    <CoachHelmAnalyticsDashboard
-      teamId={teamId}
-      coachId={coach.id}
-      initialOverview={overviewResult.data}
-      initialEffectiveness={effectivenessResult.data}
-      initialPerformance={performanceResult.data}
-      initialPatternImpact={patternResult.data}
-    />
+    <AnimatedPage>
+      <AnimatedItem>
+        <CoachHelmAnalyticsDashboard
+          teamId={teamId}
+          coachId={coach.id}
+          initialOverview={overviewResult.data}
+          initialEffectiveness={effectivenessResult.data}
+          initialPerformance={performanceResult.data}
+          initialPatternImpact={patternResult.data}
+        />
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

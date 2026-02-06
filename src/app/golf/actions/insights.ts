@@ -37,6 +37,8 @@ import type {
 import type { InsightType, InsightPriority } from '@/lib/coachhelm/insight-types';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
+import { generateTeamPatterns } from '@/lib/coachhelm/v2/mining/team-pattern-generator';
+import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
 
 // ============================================================================
 // TYPES
@@ -1542,6 +1544,14 @@ function groupAndDeduplicateInsights(
       body = `Affecting ${nameList}. ${topInsight.body}`;
     }
 
+    // Compute max stroke impact across all members
+    const memberImpacts = members
+      .map(m => m.strokeImpact)
+      .filter((v): v is number => v !== undefined && v > 0);
+    const maxStrokeImpact = memberImpacts.length > 0
+      ? Math.max(...memberImpacts)
+      : undefined;
+
     groups.push({
       id: key,
       category: category as InsightCategory,
@@ -1550,6 +1560,7 @@ function groupAndDeduplicateInsights(
       body,
       callToAction: topInsight.callToAction,
       confidence: Math.max(...members.map(m => m.confidence)),
+      strokeImpact: maxStrokeImpact,
       players,
       memberInsights: members,
       playerCount: players.length,
@@ -1557,10 +1568,12 @@ function groupAndDeduplicateInsights(
     });
   }
 
-  // Sort groups: urgent first, then by player count desc, then by confidence
+  // Sort groups: urgent first, then by stroke impact, then player count, then confidence
   groups.sort((a, b) => {
     const toneDiff = (toneRank[a.tone] ?? 5) - (toneRank[b.tone] ?? 5);
     if (toneDiff !== 0) return toneDiff;
+    const impactDiff = (b.strokeImpact ?? 0) - (a.strokeImpact ?? 0);
+    if (Math.abs(impactDiff) > 0.1) return impactDiff;
     if (a.playerCount !== b.playerCount) return b.playerCount - a.playerCount;
     return b.confidence - a.confidence;
   });
@@ -1665,13 +1678,21 @@ export async function generateTeamInsight(): Promise<{
       return { success: false, error: 'No players found' };
     }
 
-    // Fetch stats cache for stat insights
+    // Fetch stats cache for stat insights + team-level pattern/forecast generation
     const { data: statsRows } = await supabase
       .from('golf_player_stats_cache')
       .select(
-        'player_id, rounds_in_calculation, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting, gir_percentage, driving_accuracy_percentage, scrambling_percentage, putts_per_round, approach_proximity_average'
+        'player_id, rounds_in_calculation, scoring_average, scoring_average_vs_par, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting, gir_percentage, driving_accuracy_percentage, scrambling_percentage, putts_per_round, approach_proximity_average, three_putt_percentage, penalty_strokes_per_round, putt_make_pct_5_10ft, putt_make_pct_10_15ft, putt_make_pct_15_20ft, approach_miss_left_pct, approach_miss_right_pct, approach_miss_short_pct, approach_miss_long_pct, par3_average, par4_average, par5_average, last_5_average, improvement_trend, trend_direction, best_round, worst_round'
       )
       .in('player_id', playerIds);
+
+    // Fetch recent rounds for team-level patterns and forecasts
+    const { data: allRoundsData } = await supabase
+      .from('golf_rounds')
+      .select('player_id, total_score, score_to_par, round_date, round_type, created_at')
+      .in('player_id', playerIds)
+      .eq('status', 'completed')
+      .order('round_date', { ascending: false });
 
     // Fetch coach philosophy using helper that properly maps DB fields
     const philosophy = await getCoachPhilosophy(coach.id);
@@ -1774,7 +1795,26 @@ export async function generateTeamInsight(): Promise<{
       allInsights.push(...statInsights);
     }
 
-    // 5. Generate team-level alerts — tag as team_trend
+    // 5. Generate team-level patterns and forecasts from stats cache
+    const teamPatterns = generateTeamPatterns(
+      players as Array<{ id: string; first_name: string; last_name: string }>,
+      statsRows ?? [],
+      allRoundsData ?? []
+    );
+    if (teamPatterns.length > 0) {
+      allPatterns.push(...teamPatterns);
+    }
+
+    const teamForecasts = generateTeamForecasts(
+      players as Array<{ id: string; first_name: string; last_name: string }>,
+      statsRows ?? [],
+      allRoundsData ?? []
+    );
+    if (teamForecasts.length > 0) {
+      allPredictions.push(...teamForecasts);
+    }
+
+    // 6. Generate team-level alerts — tag as team_trend
     const teamAlerts = await coachHelmIntelligence.generateAlerts(coach.id, teamId);
     if (teamAlerts.length > 0) {
       for (const alert of teamAlerts) {

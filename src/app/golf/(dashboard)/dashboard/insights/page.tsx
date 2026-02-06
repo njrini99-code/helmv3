@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { InsightsPageContent } from './InsightsPageContent';
 import { PageLoading } from '@/components/ui/loading';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { getInsightFilterOptions } from '@/app/golf/actions/insight-management';
 
 // ============================================================================
@@ -67,11 +68,15 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
   return (
     <div className="min-h-full">
       <Suspense fallback={<PageLoading />}>
-        <InsightsPageContent
-          coachId={coach.id}
-          initialSearchParams={params}
-          filterOptions={filterOptions}
-        />
+        <AnimatedPage>
+          <AnimatedItem>
+            <InsightsPageContent
+              coachId={coach.id}
+              initialSearchParams={params}
+              filterOptions={filterOptions}
+            />
+          </AnimatedItem>
+        </AnimatedPage>
       </Suspense>
     </div>
   );

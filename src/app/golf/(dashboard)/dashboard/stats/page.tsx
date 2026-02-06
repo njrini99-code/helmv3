@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import StatsClient from './stats-client';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 /**
  * Golf Stats Page
@@ -18,5 +19,11 @@ export default function GolfStatsPage() {
   const searchParams = useSearchParams();
   const playerId = searchParams.get('player');
 
-  return <StatsClient initialPlayerId={playerId} />;
+  return (
+    <AnimatedPage>
+      <AnimatedItem>
+        <StatsClient initialPlayerId={playerId} />
+      </AnimatedItem>
+    </AnimatedPage>
+  );
 }

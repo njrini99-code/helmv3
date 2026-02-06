@@ -24,7 +24,7 @@ import {
   acknowledgeAllAlerts,
   generateAlerts,
 } from '@/app/golf/actions/alerts';
-import { PageLoading } from '@/components/ui/loading';
+import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
 
 type FilterLevel = AlertLevel | 'all';
 
@@ -234,13 +234,18 @@ export default function AlertsPage() {
   };
 
   if (isLoading) {
-    return <PageLoading />;
+    return null;
   }
 
   return (
-    <div className="min-h-full bg-transparent">
+    <motion.div
+      className="min-h-full bg-transparent"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Header */}
-      <div className={cn(
+      <motion.div variants={itemVariants} className={cn(
         'sticky top-0 z-20',
         'bg-white/60 backdrop-blur-[24px]',
         'border-b border-white/30',
@@ -295,10 +300,10 @@ export default function AlertsPage() {
             </button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <motion.div variants={itemVariants} className="max-w-4xl mx-auto px-6 py-8">
         {/* Error Banner */}
         <AnimatePresence>
           {error && (
@@ -404,8 +409,8 @@ export default function AlertsPage() {
             )}
           </AnimatePresence>
         </GlassCard>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { ShineEffect } from '@/components/ui/shine-effect';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { IconChevronLeft } from '@/components/icons';
@@ -148,9 +149,10 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   };
 
   return (
-    <div className="min-h-full bg-transparent">
+    <AnimatedPage className="min-h-full bg-transparent">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Back Button */}
+        <AnimatedItem>
         <Link
           href="/golf/dashboard/qualifiers"
           className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-6"
@@ -158,8 +160,10 @@ export default async function QualifierDetailPage({ params }: PageProps) {
           <IconChevronLeft size={16} />
           Back to Qualifiers
         </Link>
+        </AnimatedItem>
 
         {/* Qualifier Header */}
+        <AnimatedItem>
         <div className="relative glass-standard rounded-2xl overflow-hidden p-6 mb-6">
           <ShineEffect />
           <div className="flex items-start justify-between mb-4">
@@ -218,8 +222,10 @@ export default async function QualifierDetailPage({ params }: PageProps) {
             </div>
           )}
         </div>
+        </AnimatedItem>
 
         {/* Real-time Leaderboard with Bracket/Table Toggle */}
+        <AnimatedItem>
         <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
           <ShineEffect />
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Leaderboard</h2>
@@ -228,7 +234,8 @@ export default async function QualifierDetailPage({ params }: PageProps) {
             numRounds={1}
           />
         </div>
+        </AnimatedItem>
       </div>
-    </div>
+    </AnimatedPage>
   );
 }

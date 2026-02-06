@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconBook, IconPlus, IconUpload, IconClock, IconMapPin, IconCalendar } from '@/components/icons';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { createClient } from '@/lib/supabase/client';
 import { AddClassModal, type ClassFormData } from '@/components/golf/classes/AddClassModal';
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
@@ -402,9 +403,9 @@ export default function GolfClassesPage() {
   const totalCredits = classes.reduce((sum, cls) => sum + (cls.credits || 0), 0);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <AnimatedPage className="p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <AnimatedItem className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">My Classes</h1>
           <p className="text-slate-500 mt-1">
@@ -433,8 +434,9 @@ export default function GolfClassesPage() {
             Add Class
           </Button>
         </div>
-      </div>
+      </AnimatedItem>
 
+      <AnimatedItem>
       {loading ? (
         <Card variant="glass">
           <CardContent className="py-12 text-center">
@@ -660,6 +662,7 @@ export default function GolfClassesPage() {
           </Card>
         </div>
       )}
+      </AnimatedItem>
 
       {/* Modals */}
       <AddClassModal
@@ -715,6 +718,6 @@ export default function GolfClassesPage() {
           };
         })() : null}
       />
-    </div>
+    </AnimatedPage>
   );
 }
