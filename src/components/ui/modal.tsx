@@ -152,6 +152,7 @@ export function Modal({
         className={cn(
           'relative z-10 w-full bg-white/95 backdrop-blur-xl border border-white/40 rounded-[24px] shadow-2xl',
           'transition-all duration-200 ease-out',
+          'max-h-[calc(100vh-2rem)] flex flex-col',
           isAnimating
             ? 'opacity-100 translate-y-0 scale-100'
             : 'opacity-0 translate-y-4 scale-[0.97]',
@@ -160,9 +161,9 @@ export function Modal({
       >
         {/* Header */}
         {(title || description) && (
-          <div className="px-6 pt-6 pb-4">
+          <div className="px-6 pt-6 pb-4 flex-shrink-0">
             {title && (
-              <h2 id="modal-title" className="text-lg font-bold text-warm-900">{title}</h2>
+              <h2 id="modal-title" className="text-lg font-bold text-warm-900 pr-10">{title}</h2>
             )}
             {description && (
               <p id="modal-description" className="text-sm text-warm-500 mt-1">{description}</p>
@@ -175,7 +176,7 @@ export function Modal({
           onClick={onClose}
           aria-label="Close modal"
           className={cn(
-            'absolute top-3 right-3 w-11 h-11 rounded-[10px]',
+            'absolute top-3 right-3 z-10 w-11 h-11 rounded-[10px]',
             'flex items-center justify-center',
             'text-warm-400 hover:text-warm-600 hover:bg-warm-100',
             'transition-all duration-150',
@@ -186,8 +187,8 @@ export function Modal({
           <X className="w-5 h-5" aria-hidden="true" />
         </button>
 
-        {/* Body */}
-        <div className="px-6 pb-6">
+        {/* Body — scrollable when content is tall */}
+        <div className="px-6 pb-6 overflow-y-auto flex-1 min-h-0">
           {children}
         </div>
       </div>

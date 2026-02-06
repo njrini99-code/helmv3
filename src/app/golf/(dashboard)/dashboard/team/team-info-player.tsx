@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { IconUsers, IconMail, IconCalendar, IconUser } from '@/components/icons';
+import { IconUsers, IconMail, IconCalendar, IconUser, IconClipboardList } from '@/components/icons';
 import { PremiumGlassCard, SectionHeader } from '@/components/golf/dashboard';
 
 interface TeamInfoPlayerProps {
@@ -28,6 +28,14 @@ interface TeamInfoPlayerProps {
     content: string | null;
     created_at: string | null;
   }>;
+  tasks?: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    due_date: string | null;
+    status: string | null;
+    priority: string | null;
+  }>;
 }
 
 const containerVariants = {
@@ -47,7 +55,9 @@ const itemVariants = {
   }
 };
 
-export function TeamInfoPlayer({ team, coach, roster, announcements }: TeamInfoPlayerProps) {
+export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] }: TeamInfoPlayerProps) {
+  const pendingTasks = tasks.filter(t => t.status !== 'completed');
+  const completedTasks = tasks.filter(t => t.status === 'completed');
   return (
     <div className="p-6 lg:p-8 max-w-4xl mx-auto">
       {/* Header */}
@@ -106,6 +116,64 @@ export function TeamInfoPlayer({ team, coach, roster, announcements }: TeamInfoP
                   </p>
                 </PremiumGlassCard>
               ))
+            )}
+          </div>
+        </motion.div>
+
+        {/* Tasks */}
+        <motion.div variants={itemVariants}>
+          <SectionHeader
+            title="My Tasks"
+            icon={<IconClipboardList size={18} />}
+            action={{ label: "View all", href: "/golf/dashboard/tasks" }}
+          />
+          <div className="mt-3 space-y-2">
+            {pendingTasks.length === 0 && completedTasks.length === 0 ? (
+              <PremiumGlassCard>
+                <p className="text-warm-500 text-sm text-center py-4">No tasks assigned yet</p>
+              </PremiumGlassCard>
+            ) : pendingTasks.length === 0 ? (
+              <PremiumGlassCard>
+                <div className="flex items-center gap-3 py-2">
+                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                    <IconClipboardList size={16} className="text-primary-600" />
+                  </div>
+                  <p className="text-sm font-medium text-primary-700">All tasks completed!</p>
+                </div>
+              </PremiumGlassCard>
+            ) : (
+              pendingTasks.slice(0, 3).map((task) => (
+                <PremiumGlassCard key={task.id}>
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-warm-900 text-sm">{task.title}</h3>
+                      {task.description && (
+                        <p className="text-xs text-warm-500 mt-0.5 line-clamp-1">{task.description}</p>
+                      )}
+                      {task.due_date && (
+                        <p className="text-xs text-warm-400 mt-1">
+                          Due: {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                    {task.priority && task.priority !== 'normal' && (
+                      <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded uppercase tracking-wider flex-shrink-0 ${
+                        task.priority === 'high' || task.priority === 'urgent'
+                          ? 'bg-red-50 text-red-600'
+                          : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {task.priority}
+                      </span>
+                    )}
+                  </div>
+                </PremiumGlassCard>
+              ))
+            )}
+            {pendingTasks.length > 3 && (
+              <p className="text-xs text-warm-400 text-center pt-1">
+                +{pendingTasks.length - 3} more pending tasks
+              </p>
             )}
           </div>
         </motion.div>

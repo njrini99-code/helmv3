@@ -3,7 +3,7 @@
 /**
  * AnimatedPage — Shared page-level stagger animation wrappers
  *
- * Uses the premium blur-to-sharp spring animation from premium-components.tsx.
+ * Uses the premium fade-slide entrance animation from premium-components.tsx.
  * Wrap any page content to get the staggered entrance animation.
  *
  * Usage:
@@ -54,7 +54,7 @@ export function AnimatedPage({ children, className }: AnimatedPageProps) {
 }
 
 // ============================================================================
-// ANIMATED ITEM — Child element with blur-to-sharp spring entrance
+// ANIMATED ITEM — Child element with fade-slide entrance
 // ============================================================================
 
 interface AnimatedItemProps {

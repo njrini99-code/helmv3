@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
+import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import {
   IconSettings,
@@ -16,24 +19,28 @@ import {
   IconUsers,
   IconLogout,
   IconChevronRight,
+  IconChevronDown,
   IconMail,
   IconMapPin,
   IconShield,
   IconPalette,
   IconSparkles,
-  IconMenu
+  IconMenu,
+  IconCopy,
+  IconRefresh,
+  IconCheck,
 } from '@/components/icons';
 import { useSidebar } from '@/contexts/sidebar-context';
-import { PersonalInfoModal } from '@/components/golf/settings/PersonalInfoModal';
-import { EmailModal } from '@/components/golf/settings/EmailModal';
-import { PasswordModal } from '@/components/golf/settings/PasswordModal';
-import { NotificationsModal } from '@/components/golf/settings/NotificationsModal';
-import { AppearanceModal } from '@/components/golf/settings/AppearanceModal';
-import { LocationModal } from '@/components/golf/settings/LocationModal';
-import { TeamSettingsModal } from '@/components/golf/settings/TeamSettingsModal';
-import { InviteSettingsModal } from '@/components/golf/settings/InviteSettingsModal';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences,
+} from '@/app/actions/notification-preferences';
+
+// ============================================================================
+// TYPES
+// ============================================================================
 
 interface UserProfile {
   userId: string;
@@ -43,42 +50,44 @@ interface UserProfile {
   avatarUrl?: string | null;
   role: 'coach' | 'player';
   teamName?: string;
+  teamId?: string;
+  organizationId?: string;
   // Player-specific
   playerId?: string;
+  playerData?: {
+    first_name: string | null;
+    last_name: string | null;
+    handicap: number | null;
+    handicap_index: number | null;
+    graduation_year: number | null;
+    hometown: string | null;
+    state: string | null;
+    phone: string | null;
+  };
   currentTeam?: {
     id: string;
     name: string;
-    organization?: {
-      name: string;
-    } | null;
+    organization?: { name: string } | null;
   } | null;
 }
+
+type ExpandedSection = string | null;
+
+// ============================================================================
+// MAIN PAGE
+// ============================================================================
 
 export default function GolfSettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<ExpandedSection>(null);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const { showToast } = useToast();
   const { toggleMobile } = useSidebar();
-  const [deletingAccount, setDeletingAccount] = useState(false);
 
-  // Modal state
-  const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
-  const [emailOpen, setEmailOpen] = useState(false);
-  const [passwordOpen, setPasswordOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [appearanceOpen, setAppearanceOpen] = useState(false);
-  const [locationOpen, setLocationOpen] = useState(false);
-  const [teamSettingsOpen, setTeamSettingsOpen] = useState(false);
-  const [inviteSettingsOpen, setInviteSettingsOpen] = useState(false);
-
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
     if (!user) return;
 
     // Check if coach
@@ -89,15 +98,16 @@ export default function GolfSettingsPage() {
       .single();
 
     if (coach) {
-      // Get team name if organization_id exists
       let teamName: string | undefined;
+      let teamId: string | undefined;
       if (coach.organization_id) {
         const { data: team } = await supabase
           .from('golf_teams')
-          .select('name')
+          .select('id, name')
           .eq('organization_id', coach.organization_id)
           .maybeSingle();
         teamName = team?.name;
+        teamId = team?.id;
       }
 
       setProfile({
@@ -108,6 +118,8 @@ export default function GolfSettingsPage() {
         avatarUrl: coach.avatar_url,
         role: 'coach',
         teamName,
+        teamId,
+        organizationId: coach.organization_id ?? undefined,
       });
       setLoading(false);
       return;
@@ -116,12 +128,11 @@ export default function GolfSettingsPage() {
     // Check if player
     const { data: player } = await supabase
       .from('golf_players')
-      .select('id, first_name, last_name, avatar_url')
+      .select('id, first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state, phone')
       .eq('user_id', user.id)
       .single();
 
     if (player) {
-      // Get team via team_members table (golf_players doesn't have team_id)
       let teamName: string | undefined;
       let currentTeam: UserProfile['currentTeam'] = null;
 
@@ -153,10 +164,28 @@ export default function GolfSettingsPage() {
         teamName,
         playerId: player.id,
         currentTeam,
+        playerData: {
+          first_name: player.first_name,
+          last_name: player.last_name,
+          handicap: player.handicap,
+          handicap_index: player.handicap_index,
+          graduation_year: player.graduation_year,
+          hometown: player.hometown,
+          state: player.state,
+          phone: player.phone,
+        },
       });
     }
 
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  function toggle(section: string) {
+    setExpanded(prev => (prev === section ? null : section));
   }
 
   async function handleSignOut() {
@@ -169,11 +198,9 @@ export default function GolfSettingsPage() {
     const confirmed = window.confirm(
       'This will permanently delete your account and all associated data. This action cannot be undone.'
     );
-
     if (!confirmed) return;
 
     setDeletingAccount(true);
-
     try {
       const response = await fetch('/api/account/delete', { method: 'DELETE' });
       if (!response.ok) {
@@ -181,56 +208,44 @@ export default function GolfSettingsPage() {
         showToast(payload.error || 'Failed to delete account', 'error');
         return;
       }
-
       showToast('Account deleted successfully', 'success');
       window.location.href = '/';
-    } catch (err) {
-      console.error('[GolfHelm] Error deleting account:', err);
+    } catch {
       showToast('Failed to delete account', 'error');
     } finally {
       setDeletingAccount(false);
     }
   }
 
-  if (loading) {
-    return null;
-  }
+  if (loading) return null;
+  if (!profile) return null;
 
   return (
     <AnimatedPage className="min-h-full">
-      {/* Header Section */}
+      {/* Header */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-4 md:py-5">
+        <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 md:py-5">
           <div className="flex items-center gap-3">
-            {/* Mobile hamburger menu */}
             <button
               onClick={toggleMobile}
-              className={cn(
-                'lg:hidden p-2 -ml-2 rounded-xl',
-                'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
-                'transition-colors duration-150 active:scale-95',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-              )}
+              className="lg:hidden p-2 -ml-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100/80 transition-colors active:scale-95"
               aria-label="Open navigation menu"
             >
               <IconMenu size={22} />
             </button>
             <div>
               <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">Settings</h1>
-              <p className="text-slate-500 mt-0.5">Manage your account and preferences</p>
+              <p className="text-slate-500 mt-0.5 text-sm">Manage your account and preferences</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
         {/* Profile Card */}
-        {profile && (
-          <AnimatedItem>
-          <div
-            className="relative glass-standard rounded-2xl overflow-hidden p-6"
-          >
+        <AnimatedItem>
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-5">
             <ShineEffect />
             <div className="flex items-center gap-4">
               <Avatar src={profile.avatarUrl} name={profile.name} size="lg" />
@@ -240,79 +255,95 @@ export default function GolfSettingsPage() {
                   <span className="capitalize">{profile.role}</span>
                   {profile.teamName && (
                     <>
-                      <span className="text-slate-300">•</span>
-                      <span>{profile.teamName}</span>
+                      <span className="text-slate-300">·</span>
+                      <span className="truncate">{profile.teamName}</span>
                     </>
                   )}
                 </p>
               </div>
-              <button
-                onClick={() => setPersonalInfoOpen(true)}
-                className="px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-              >
-                Edit Profile
-              </button>
             </div>
-          </div>
-          </AnimatedItem>
-        )}
-
-        {/* Account Section */}
-        <AnimatedItem>
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Account</h3>
-          <div className="relative glass-standard rounded-2xl overflow-hidden">
-            <ShineEffect />
-            <SettingsRow
-              icon={<IconUser size={18} />}
-              label="Personal Information"
-              description="Update your name, email and profile picture"
-              onClick={() => setPersonalInfoOpen(true)}
-            />
-            <SettingsRow
-              icon={<IconMail size={18} />}
-              label="Email Address"
-              description={profile?.email || 'Not set'}
-              onClick={() => setEmailOpen(true)}
-            />
-            <SettingsRow
-              icon={<IconShield size={18} />}
-              label="Password & Security"
-              description="Change password and manage security"
-              onClick={() => setPasswordOpen(true)}
-              isLast
-            />
           </div>
         </AnimatedItem>
 
-        {/* Preferences Section */}
+        {/* Account */}
         <AnimatedItem>
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Preferences</h3>
-          <div className="relative glass-standard rounded-2xl overflow-hidden">
+          <SectionHeader>Account</SectionHeader>
+          <div className="glass-standard rounded-2xl overflow-hidden relative">
             <ShineEffect />
-            <SettingsRow
+            <SettingsExpandableRow
+              icon={<IconUser size={18} />}
+              label="Personal Information"
+              description="Name, profile photo"
+              isExpanded={expanded === 'personal'}
+              onToggle={() => toggle('personal')}
+            >
+              <PersonalInfoPanel profile={profile} onUpdate={loadProfile} />
+            </SettingsExpandableRow>
+
+            <SettingsExpandableRow
+              icon={<IconMail size={18} />}
+              label="Email Address"
+              description={profile.email}
+              isExpanded={expanded === 'email'}
+              onToggle={() => toggle('email')}
+            >
+              <EmailPanel currentEmail={profile.email} onUpdate={loadProfile} />
+            </SettingsExpandableRow>
+
+            <SettingsExpandableRow
+              icon={<IconShield size={18} />}
+              label="Password & Security"
+              description="Change your password"
+              isExpanded={expanded === 'password'}
+              onToggle={() => toggle('password')}
+              isLast
+            >
+              <PasswordPanel />
+            </SettingsExpandableRow>
+          </div>
+        </AnimatedItem>
+
+        {/* Preferences */}
+        <AnimatedItem>
+          <SectionHeader>Preferences</SectionHeader>
+          <div className="glass-standard rounded-2xl overflow-hidden relative">
+            <ShineEffect />
+            <SettingsExpandableRow
               icon={<IconBell size={18} />}
               label="Notifications"
-              description="Manage email and push notifications"
-              onClick={() => setNotificationsOpen(true)}
-            />
-            <SettingsRow
+              description="Email and push preferences"
+              isExpanded={expanded === 'notifications'}
+              onToggle={() => toggle('notifications')}
+            >
+              <NotificationsPanel />
+            </SettingsExpandableRow>
+
+            <SettingsExpandableRow
               icon={<IconPalette size={18} />}
               label="Appearance"
-              description="Theme and display preferences"
-              onClick={() => setAppearanceOpen(true)}
-            />
-            <SettingsRow
+              description="Display density, date format, animations"
+              isExpanded={expanded === 'appearance'}
+              onToggle={() => toggle('appearance')}
+            >
+              <AppearancePanel />
+            </SettingsExpandableRow>
+
+            <SettingsExpandableRow
               icon={<IconMapPin size={18} />}
-              label="Location"
-              description="Default course and location settings"
-              onClick={() => setLocationOpen(true)}
-              isLast={profile?.role !== 'coach'}
-            />
-            {profile?.role === 'coach' && (
-              <SettingsRow
+              label="Location Defaults"
+              description="Default course and location"
+              isExpanded={expanded === 'location'}
+              onToggle={() => toggle('location')}
+              isLast={profile.role !== 'coach'}
+            >
+              <LocationPanel />
+            </SettingsExpandableRow>
+
+            {profile.role === 'coach' && (
+              <SettingsLinkRow
                 icon={<IconSparkles size={18} />}
                 label="Coaching Philosophy"
-                description="Configure CoachHelm AI insights and priorities"
+                description="CoachHelm AI insights and priorities"
                 href="/golf/dashboard/settings/coaching-intelligence"
                 isLast
               />
@@ -320,43 +351,89 @@ export default function GolfSettingsPage() {
           </div>
         </AnimatedItem>
 
-        {/* CoachHelm AI Section */}
-        {profile?.role === 'coach' && profile.coachId && (
+        {/* Golf-Specific Settings (Coach) */}
+        {profile.role === 'coach' && profile.teamId && (
           <AnimatedItem>
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">AI Features</h3>
-            <div className="relative glass-standard rounded-2xl overflow-hidden p-4">
+            <SectionHeader>Golf Settings</SectionHeader>
+            <div className="glass-standard rounded-2xl overflow-hidden relative">
+              <ShineEffect />
+              <SettingsExpandableRow
+                icon={<IconSettings size={18} />}
+                label="Scoring & Format"
+                description="Scoring format, handicap system, default tees"
+                isExpanded={expanded === 'golf-scoring'}
+                onToggle={() => toggle('golf-scoring')}
+                isLast
+              >
+                <GolfScoringPanel teamId={profile.teamId} />
+              </SettingsExpandableRow>
+            </div>
+          </AnimatedItem>
+        )}
+
+        {/* Golf-Specific Settings (Player) */}
+        {profile.role === 'player' && profile.playerId && (
+          <AnimatedItem>
+            <SectionHeader>Golf Profile</SectionHeader>
+            <div className="glass-standard rounded-2xl overflow-hidden relative">
+              <ShineEffect />
+              <SettingsExpandableRow
+                icon={<IconSettings size={18} />}
+                label="Golf Details"
+                description="Handicap, graduation year, hometown"
+                isExpanded={expanded === 'golf-details'}
+                onToggle={() => toggle('golf-details')}
+                isLast
+              >
+                <PlayerGolfDetailsPanel
+                  playerId={profile.playerId}
+                  playerData={profile.playerData}
+                  onUpdate={loadProfile}
+                />
+              </SettingsExpandableRow>
+            </div>
+          </AnimatedItem>
+        )}
+
+        {/* CoachHelm AI Toggle */}
+        {profile.role === 'coach' && profile.coachId && (
+          <AnimatedItem>
+            <SectionHeader>AI Features</SectionHeader>
+            <div className="glass-standard rounded-2xl overflow-hidden p-4 relative">
               <ShineEffect />
               <CoachHelmToggle coachId={profile.coachId} />
             </div>
           </AnimatedItem>
         )}
 
-        {/* Team Section */}
+        {/* Team */}
         <AnimatedItem>
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Team</h3>
-
-          {/* For Coaches: Team Settings */}
-          {profile?.role === 'coach' && (
-            <div className="relative glass-standard rounded-2xl overflow-hidden">
+          <SectionHeader>Team</SectionHeader>
+          {profile.role === 'coach' && (
+            <div className="glass-standard rounded-2xl overflow-hidden relative">
               <ShineEffect />
-              <SettingsRow
+              <SettingsExpandableRow
                 icon={<IconUsers size={18} />}
                 label="Team Settings"
-                description="Manage team name, logo and details"
-                onClick={() => setTeamSettingsOpen(true)}
-              />
-              <SettingsRow
+                description={profile.teamName || 'Manage team details'}
+                isExpanded={expanded === 'team'}
+                onToggle={() => toggle('team')}
+              >
+                <TeamSettingsPanel onUpdate={loadProfile} />
+              </SettingsExpandableRow>
+              <SettingsExpandableRow
                 icon={<IconSettings size={18} />}
                 label="Invite Settings"
-                description="Manage team invite codes and access"
-                onClick={() => setInviteSettingsOpen(true)}
+                description="Team invite code and link"
+                isExpanded={expanded === 'invite'}
+                onToggle={() => toggle('invite')}
                 isLast
-              />
+              >
+                <InviteSettingsPanel />
+              </SettingsExpandableRow>
             </div>
           )}
-
-          {/* For Players: Join Team Section */}
-          {profile?.role === 'player' && profile.playerId && (
+          {profile.role === 'player' && profile.playerId && (
             <JoinTeamSection
               playerId={profile.playerId}
               currentTeam={profile.currentTeam}
@@ -366,19 +443,19 @@ export default function GolfSettingsPage() {
 
         {/* Legal */}
         <AnimatedItem>
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Legal</h3>
-          <div className="relative glass-standard rounded-2xl overflow-hidden">
+          <SectionHeader>Legal</SectionHeader>
+          <div className="glass-standard rounded-2xl overflow-hidden relative">
             <ShineEffect />
-            <SettingsRow
+            <SettingsLinkRow
               icon={<IconShield size={18} />}
               label="Privacy Policy"
-              description="Learn how we handle your data"
+              description="How we handle your data"
               href="/privacy"
             />
-            <SettingsRow
+            <SettingsLinkRow
               icon={<IconSettings size={18} />}
               label="Terms of Service"
-              description="Read the terms for using Helm"
+              description="Terms for using Helm"
               href="/terms"
               isLast
             />
@@ -387,22 +464,17 @@ export default function GolfSettingsPage() {
 
         {/* Danger Zone */}
         <AnimatedItem>
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Danger Zone</h3>
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-5">
+          <SectionHeader>Danger Zone</SectionHeader>
+          <div className="glass-standard rounded-2xl overflow-hidden p-5 relative">
             <ShineEffect />
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <p className="font-medium text-slate-900">Delete account</p>
                 <p className="text-sm text-slate-500">
-                  Permanently remove your account and all associated data.
+                  Permanently remove your account and all data.
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="danger"
-                isLoading={deletingAccount}
-                onClick={handleDeleteAccount}
-              >
+              <Button variant="danger" isLoading={deletingAccount} onClick={handleDeleteAccount}>
                 Delete Account
               </Button>
             </div>
@@ -413,7 +485,7 @@ export default function GolfSettingsPage() {
         <AnimatedItem>
           <button
             onClick={handleSignOut}
-            className="relative w-full glass-standard rounded-2xl overflow-hidden p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50 transition-all group"
+            className="relative w-full glass-standard rounded-2xl overflow-hidden p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50/50 transition-all group"
           >
             <ShineEffect />
             <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
@@ -429,76 +501,108 @@ export default function GolfSettingsPage() {
           <p className="text-xs mt-1">© 2026 Helm Sports Labs</p>
         </AnimatedItem>
       </div>
-
-      {/* Modals */}
-      {profile && (
-        <>
-          <PersonalInfoModal
-            isOpen={personalInfoOpen}
-            onClose={() => setPersonalInfoOpen(false)}
-            currentName={profile.name}
-            currentAvatarUrl={profile.avatarUrl}
-            role={profile.role}
-            onUpdate={loadProfile}
-          />
-          <EmailModal
-            isOpen={emailOpen}
-            onClose={() => setEmailOpen(false)}
-            currentEmail={profile.email}
-            onUpdate={loadProfile}
-          />
-          <PasswordModal
-            isOpen={passwordOpen}
-            onClose={() => setPasswordOpen(false)}
-          />
-          <NotificationsModal
-            isOpen={notificationsOpen}
-            onClose={() => setNotificationsOpen(false)}
-          />
-          <AppearanceModal
-            isOpen={appearanceOpen}
-            onClose={() => setAppearanceOpen(false)}
-          />
-          <LocationModal
-            isOpen={locationOpen}
-            onClose={() => setLocationOpen(false)}
-          />
-          {profile.role === 'coach' && (
-            <>
-              <TeamSettingsModal
-                isOpen={teamSettingsOpen}
-                onClose={() => setTeamSettingsOpen(false)}
-                onUpdate={loadProfile}
-              />
-              <InviteSettingsModal
-                isOpen={inviteSettingsOpen}
-                onClose={() => setInviteSettingsOpen(false)}
-              />
-            </>
-          )}
-        </>
-      )}
     </AnimatedPage>
   );
 }
 
-function SettingsRow({
+// ============================================================================
+// LAYOUT COMPONENTS
+// ============================================================================
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">
+      {children}
+    </h3>
+  );
+}
+
+function SettingsExpandableRow({
   icon,
   label,
   description,
-  onClick,
-  href,
-  isLast = false
+  isExpanded,
+  onToggle,
+  isLast = false,
+  children,
 }: {
   icon: React.ReactNode;
   label: string;
   description?: string;
-  onClick?: () => void;
-  href?: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  isLast?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={cn(!isLast && !isExpanded && 'border-b border-slate-100')}>
+      <button
+        onClick={onToggle}
+        className={cn(
+          'w-full flex items-center gap-4 p-4 text-left transition-colors',
+          isExpanded ? 'bg-slate-50/50' : 'hover:bg-slate-50/50',
+        )}
+      >
+        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-600">
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-slate-900">{label}</p>
+          {description && (
+            <p className="text-sm text-slate-500 truncate">{description}</p>
+          )}
+        </div>
+        <motion.div
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="flex-shrink-0"
+        >
+          <IconChevronDown size={18} className="text-slate-300" />
+        </motion.div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div className={cn('px-4 pb-4', !isLast && 'border-b border-slate-100')}>
+              <div className="bg-white rounded-xl border border-slate-200 p-4">
+                {children}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function SettingsLinkRow({
+  icon,
+  label,
+  description,
+  href,
+  isLast = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description?: string;
+  href: string;
   isLast?: boolean;
 }) {
-  const content = (
-    <>
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'w-full flex items-center gap-4 p-4 text-left hover:bg-slate-50/50 transition-colors',
+        !isLast && 'border-b border-slate-100'
+      )}
+    >
       <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-600">
         {icon}
       </div>
@@ -509,25 +613,961 @@ function SettingsRow({
         )}
       </div>
       <IconChevronRight size={18} className="text-slate-300 flex-shrink-0" />
-    </>
+    </Link>
   );
+}
 
-  const className = cn(
-    'w-full flex items-center gap-4 p-4 text-left hover:bg-slate-50 transition-colors',
-    !isLast && 'border-b border-slate-100'
+// ============================================================================
+// SHARED UI
+// ============================================================================
+
+function ToggleSwitch({
+  checked,
+  onChange,
+  label,
+  description,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+  description?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      role="switch"
+      aria-checked={checked}
+      className="w-full flex items-center justify-between py-2.5 group"
+    >
+      <div className="text-left flex-1 mr-3">
+        <p className="text-sm font-medium text-slate-900">{label}</p>
+        {description && <p className="text-xs text-slate-500">{description}</p>}
+      </div>
+      <div
+        aria-hidden="true"
+        className={cn(
+          'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
+          checked ? 'bg-green-600' : 'bg-slate-200'
+        )}
+      >
+        <div
+          className={cn(
+            'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform',
+            checked && 'translate-x-5'
+          )}
+        />
+      </div>
+    </button>
   );
+}
 
-  if (href) {
-    return (
-      <Link href={href} className={className}>
-        {content}
-      </Link>
-    );
+function SaveBar({
+  onSave,
+  onCancel,
+  loading,
+  label = 'Save Changes',
+}: {
+  onSave: () => void;
+  onCancel?: () => void;
+  loading: boolean;
+  label?: string;
+}) {
+  return (
+    <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 mt-4">
+      {onCancel && (
+        <Button variant="secondary" size="sm" onClick={onCancel} disabled={loading}>
+          Cancel
+        </Button>
+      )}
+      <Button size="sm" onClick={onSave} isLoading={loading}>
+        {label}
+      </Button>
+    </div>
+  );
+}
+
+// ============================================================================
+// PANEL: Personal Info
+// ============================================================================
+
+function PersonalInfoPanel({ profile, onUpdate }: { profile: UserProfile; onUpdate: () => void }) {
+  const { showToast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [firstName, setFirstName] = useState(profile.playerData?.first_name || '');
+  const [lastName, setLastName] = useState(profile.playerData?.last_name || '');
+  const [fullName, setFullName] = useState(profile.role === 'coach' ? profile.name : '');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatarUrl || null);
+
+  async function handleSave() {
+    setSaving(true);
+    const supabase = createClient();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      if (profile.role === 'coach') {
+        const { error } = await supabase
+          .from('golf_coaches')
+          .update({ full_name: fullName.trim(), avatar_url: avatarUrl })
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('golf_players')
+          .update({ first_name: firstName.trim(), last_name: lastName.trim(), avatar_url: avatarUrl })
+          .eq('user_id', user.id);
+        if (error) throw error;
+      }
+
+      showToast('Profile updated', 'success');
+      onUpdate();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to update profile', 'error');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
-    <button onClick={onClick} className={className}>
-      {content}
-    </button>
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Profile Picture</label>
+        <AvatarUpload
+          currentAvatarUrl={avatarUrl}
+          name={profile.role === 'coach' ? fullName : `${firstName} ${lastName}`}
+          onUploadComplete={(url) => setAvatarUrl(url)}
+          onRemove={() => setAvatarUrl(null)}
+        />
+      </div>
+
+      {profile.role === 'coach' ? (
+        <Input label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Coach Smith" />
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="John" />
+          <Input label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Smith" />
+        </div>
+      )}
+
+      <SaveBar onSave={handleSave} loading={saving} />
+    </div>
+  );
+}
+
+// ============================================================================
+// PANEL: Email
+// ============================================================================
+
+function EmailPanel({ currentEmail, onUpdate }: { currentEmail: string; onUpdate: () => void }) {
+  const { showToast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+
+  async function handleSave() {
+    if (!newEmail.trim() || !newEmail.includes('@')) {
+      showToast('Please enter a valid email', 'error');
+      return;
+    }
+    if (newEmail === currentEmail) {
+      showToast('Same as current email', 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
+      if (error) throw error;
+      showToast('Confirmation email sent. Check your inbox.', 'success');
+      setNewEmail('');
+      onUpdate();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to update email', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="text-sm font-medium text-slate-700 block mb-1">Current Email</label>
+        <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600">{currentEmail}</div>
+      </div>
+      <Input label="New Email Address" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="new@example.com" />
+      <p className="text-xs text-slate-500">We'll send a confirmation email to verify the change.</p>
+      <SaveBar onSave={handleSave} loading={saving} label="Send Confirmation" />
+    </div>
+  );
+}
+
+// ============================================================================
+// PANEL: Password
+// ============================================================================
+
+function PasswordPanel() {
+  const { showToast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  async function handleSave() {
+    if (newPassword.length < 6) {
+      showToast('Password must be at least 6 characters', 'error');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast('Passwords do not match', 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      showToast('Password updated', 'success');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to update password', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <Input label="New Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
+      <Input label="Confirm Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+      <p className="text-xs text-slate-500">At least 6 characters. Use a unique password.</p>
+      <SaveBar onSave={handleSave} loading={saving} label="Update Password" />
+    </div>
+  );
+}
+
+// ============================================================================
+// PANEL: Notifications
+// ============================================================================
+
+function NotificationsPanel() {
+  const { showToast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [prefs, setPrefs] = useState({
+    email_messages: true,
+    email_announcements: true,
+    email_event_reminders: true,
+    email_task_reminders: true,
+    push_messages: false,
+    push_events: false,
+    push_task_reminders: true,
+  });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const result = await getNotificationPreferences();
+        if (result.data) {
+          setPrefs({
+            email_messages: result.data.email_messages ?? true,
+            email_announcements: result.data.email_announcements ?? true,
+            email_event_reminders: result.data.email_event_reminders ?? true,
+            email_task_reminders: result.data.email_task_reminders ?? true,
+            push_messages: result.data.push_messages ?? false,
+            push_events: result.data.push_events ?? false,
+            push_task_reminders: result.data.push_task_reminders ?? true,
+          });
+        }
+      } catch { /* use defaults */ }
+      setLoaded(true);
+    })();
+  }, []);
+
+  function toggle(key: keyof typeof prefs) {
+    setPrefs(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const result = await updateNotificationPreferences(prefs);
+      if (result.success) {
+        showToast('Notification preferences updated', 'success');
+      } else {
+        showToast(result.error || 'Failed to update', 'error');
+      }
+    } catch {
+      showToast('Failed to update preferences', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!loaded) {
+    return <div className="flex justify-center py-4"><div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" /></div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Email</p>
+        <div className="space-y-1">
+          <ToggleSwitch label="Messages" description="Email for new messages" checked={prefs.email_messages} onChange={() => toggle('email_messages')} />
+          <ToggleSwitch label="Announcements" description="Team announcements" checked={prefs.email_announcements} onChange={() => toggle('email_announcements')} />
+          <ToggleSwitch label="Event Reminders" description="Upcoming events and schedule" checked={prefs.email_event_reminders} onChange={() => toggle('email_event_reminders')} />
+          <ToggleSwitch label="Task Reminders" description="Practice tasks and assignments" checked={prefs.email_task_reminders} onChange={() => toggle('email_task_reminders')} />
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 pt-4">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Push</p>
+        <div className="space-y-1">
+          <ToggleSwitch label="Messages" description="Instant push notifications" checked={prefs.push_messages} onChange={() => toggle('push_messages')} />
+          <ToggleSwitch label="Events" description="Event and schedule updates" checked={prefs.push_events} onChange={() => toggle('push_events')} />
+          <ToggleSwitch label="Task Reminders" description="Push for tasks and reminders" checked={prefs.push_task_reminders} onChange={() => toggle('push_task_reminders')} />
+        </div>
+      </div>
+
+      <SaveBar onSave={handleSave} loading={saving} />
+    </div>
+  );
+}
+
+// ============================================================================
+// PANEL: Appearance
+// ============================================================================
+
+type DisplayDensity = 'comfortable' | 'compact';
+type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
+
+function AppearancePanel() {
+  const { showToast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [density, setDensity] = useState<DisplayDensity>('comfortable');
+  const [dateFormat, setDateFormat] = useState<DateFormat>('MM/DD/YYYY');
+  const [showAnimations, setShowAnimations] = useState(true);
+  const [scoreDisplay, setScoreDisplay] = useState<'to_par' | 'raw'>('to_par');
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('golf_appearance_preferences');
+      if (stored) {
+        const p = JSON.parse(stored);
+        setDensity(p.display_density || 'comfortable');
+        setDateFormat(p.date_format || 'MM/DD/YYYY');
+        setShowAnimations(p.show_animations ?? true);
+        setScoreDisplay(p.score_display || 'to_par');
+      }
+    } catch { /* defaults */ }
+  }, []);
+
+  function handleSave() {
+    setSaving(true);
+    try {
+      localStorage.setItem('golf_appearance_preferences', JSON.stringify({
+        display_density: density,
+        date_format: dateFormat,
+        show_animations: showAnimations,
+        score_display: scoreDisplay,
+      }));
+      showToast('Appearance updated', 'success');
+    } catch {
+      showToast('Failed to save preferences', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Density */}
+      <div>
+        <p className="text-sm font-medium text-slate-700 mb-2">Display Density</p>
+        <div className="grid grid-cols-2 gap-2">
+          {(['comfortable', 'compact'] as const).map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setDensity(opt)}
+              className={cn(
+                'p-3 rounded-lg border-2 text-left transition-all',
+                density === opt ? 'border-green-600 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+              )}
+            >
+              <p className="text-sm font-medium text-slate-900 capitalize">{opt}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{opt === 'comfortable' ? 'More spacing' : 'Denser layout'}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Date format */}
+      <div>
+        <p className="text-sm font-medium text-slate-700 mb-2">Date Format</p>
+        <div className="space-y-1.5">
+          {([
+            { val: 'MM/DD/YYYY' as const, ex: '01/28/2026' },
+            { val: 'DD/MM/YYYY' as const, ex: '28/01/2026' },
+            { val: 'YYYY-MM-DD' as const, ex: '2026-01-28' },
+          ]).map(({ val, ex }) => (
+            <button
+              key={val}
+              onClick={() => setDateFormat(val)}
+              className={cn(
+                'w-full p-2.5 rounded-lg border-2 text-left text-sm flex justify-between items-center transition-all',
+                dateFormat === val ? 'border-green-600 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+              )}
+            >
+              <span className="font-medium text-slate-900">{val}</span>
+              <span className="text-slate-500 text-xs">{ex}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Score Display */}
+      <div>
+        <p className="text-sm font-medium text-slate-700 mb-2">Score Display</p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setScoreDisplay('to_par')}
+            className={cn(
+              'p-3 rounded-lg border-2 text-left transition-all',
+              scoreDisplay === 'to_par' ? 'border-green-600 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+            )}
+          >
+            <p className="text-sm font-medium text-slate-900">Score to Par</p>
+            <p className="text-xs text-slate-500 mt-0.5">E, +2, -1</p>
+          </button>
+          <button
+            onClick={() => setScoreDisplay('raw')}
+            className={cn(
+              'p-3 rounded-lg border-2 text-left transition-all',
+              scoreDisplay === 'raw' ? 'border-green-600 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+            )}
+          >
+            <p className="text-sm font-medium text-slate-900">Raw Score</p>
+            <p className="text-xs text-slate-500 mt-0.5">72, 74, 71</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Animations */}
+      <ToggleSwitch
+        label="Animations"
+        description="Enable smooth transitions and effects"
+        checked={showAnimations}
+        onChange={() => setShowAnimations(!showAnimations)}
+      />
+
+      <SaveBar onSave={handleSave} loading={saving} />
+    </div>
+  );
+}
+
+// ============================================================================
+// PANEL: Location
+// ============================================================================
+
+function LocationPanel() {
+  const { showToast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [defaultCourse, setDefaultCourse] = useState('');
+  const [defaultCity, setDefaultCity] = useState('');
+  const [defaultState, setDefaultState] = useState('');
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('golf_location_preferences');
+      if (stored) {
+        const p = JSON.parse(stored);
+        setDefaultCourse(p.default_course || '');
+        setDefaultCity(p.default_city || '');
+        setDefaultState(p.default_state || '');
+      }
+    } catch { /* defaults */ }
+  }, []);
+
+  function handleSave() {
+    setSaving(true);
+    try {
+      localStorage.setItem('golf_location_preferences', JSON.stringify({
+        default_course: defaultCourse.trim(),
+        default_city: defaultCity.trim(),
+        default_state: defaultState.trim(),
+      }));
+      showToast('Location preferences updated', 'success');
+    } catch {
+      showToast('Failed to save', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <Input label="Default Course" value={defaultCourse} onChange={(e) => setDefaultCourse(e.target.value)} placeholder="Pebble Beach Golf Links" />
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="City" value={defaultCity} onChange={(e) => setDefaultCity(e.target.value)} placeholder="Pebble Beach" />
+        <Input label="State" value={defaultState} onChange={(e) => setDefaultState(e.target.value)} placeholder="CA" maxLength={2} />
+      </div>
+      <p className="text-xs text-slate-500">Pre-filled when creating new rounds or tracking shots.</p>
+      <SaveBar onSave={handleSave} loading={saving} />
+    </div>
+  );
+}
+
+// ============================================================================
+// PANEL: Golf Scoring (Coach Only)
+// ============================================================================
+
+function GolfScoringPanel({ teamId }: { teamId: string }) {
+  const { showToast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [scoringFormat, setScoringFormat] = useState('stroke_play');
+  const [handicapSystem, setHandicapSystem] = useState('usga');
+  const [defaultTees, setDefaultTees] = useState('blue');
+  const [timezone, setTimezone] = useState('America/New_York');
+
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('golf_team_settings')
+        .select('scoring_format, handicap_system, default_tees, timezone')
+        .eq('team_id', teamId)
+        .maybeSingle();
+
+      if (data) {
+        setScoringFormat(data.scoring_format || 'stroke_play');
+        setHandicapSystem(data.handicap_system || 'usga');
+        setDefaultTees(data.default_tees || 'blue');
+        setTimezone(data.timezone || 'America/New_York');
+      }
+      setLoaded(true);
+    })();
+  }, [teamId]);
+
+  async function handleSave() {
+    setSaving(true);
+    const supabase = createClient();
+    try {
+      // Upsert — create if doesn't exist
+      const { error } = await supabase
+        .from('golf_team_settings')
+        .upsert({
+          team_id: teamId,
+          scoring_format: scoringFormat,
+          handicap_system: handicapSystem,
+          default_tees: defaultTees,
+          timezone,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'team_id' });
+
+      if (error) throw error;
+      showToast('Golf settings updated', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to save', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!loaded) {
+    return <div className="flex justify-center py-4"><div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" /></div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-sm font-medium text-slate-700 block mb-2">Scoring Format</label>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { val: 'stroke_play', label: 'Stroke Play', desc: 'Total strokes' },
+            { val: 'match_play', label: 'Match Play', desc: 'Hole-by-hole' },
+          ].map(({ val, label, desc }) => (
+            <button
+              key={val}
+              onClick={() => setScoringFormat(val)}
+              className={cn(
+                'p-3 rounded-lg border-2 text-left transition-all',
+                scoringFormat === val ? 'border-green-600 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+              )}
+            >
+              <p className="text-sm font-medium text-slate-900">{label}</p>
+              <p className="text-xs text-slate-500">{desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-slate-700 block mb-2">Handicap System</label>
+        <select
+          value={handicapSystem}
+          onChange={(e) => setHandicapSystem(e.target.value)}
+          className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-900 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
+        >
+          <option value="usga">USGA Handicap</option>
+          <option value="world">World Handicap System</option>
+          <option value="none">No Handicap</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-slate-700 block mb-2">Default Tees</label>
+        <div className="grid grid-cols-4 gap-1.5">
+          {['black', 'blue', 'white', 'gold'].map((tee) => (
+            <button
+              key={tee}
+              onClick={() => setDefaultTees(tee)}
+              className={cn(
+                'px-2 py-2 rounded-lg border-2 text-center text-sm font-medium capitalize transition-all',
+                defaultTees === tee ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-200 hover:border-slate-300 text-slate-700'
+              )}
+            >
+              {tee}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-slate-700 block mb-2">Timezone</label>
+        <select
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-900 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
+        >
+          <option value="America/New_York">Eastern (ET)</option>
+          <option value="America/Chicago">Central (CT)</option>
+          <option value="America/Denver">Mountain (MT)</option>
+          <option value="America/Los_Angeles">Pacific (PT)</option>
+          <option value="America/Anchorage">Alaska (AKT)</option>
+          <option value="Pacific/Honolulu">Hawaii (HT)</option>
+        </select>
+      </div>
+
+      <SaveBar onSave={handleSave} loading={saving} />
+    </div>
+  );
+}
+
+// ============================================================================
+// PANEL: Player Golf Details
+// ============================================================================
+
+function PlayerGolfDetailsPanel({
+  playerId,
+  playerData,
+  onUpdate,
+}: {
+  playerId: string;
+  playerData?: UserProfile['playerData'];
+  onUpdate: () => void;
+}) {
+  const { showToast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [handicap, setHandicap] = useState(playerData?.handicap?.toString() || '');
+  const [handicapIndex, setHandicapIndex] = useState(playerData?.handicap_index?.toString() || '');
+  const [gradYear, setGradYear] = useState(playerData?.graduation_year?.toString() || '');
+  const [hometown, setHometown] = useState(playerData?.hometown || '');
+  const [homeState, setHomeState] = useState(playerData?.state || '');
+  const [phone, setPhone] = useState(playerData?.phone || '');
+
+  async function handleSave() {
+    setSaving(true);
+    const supabase = createClient();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('golf_players')
+        .update({
+          handicap: handicap ? parseFloat(handicap) : null,
+          handicap_index: handicapIndex ? parseFloat(handicapIndex) : null,
+          graduation_year: gradYear ? parseInt(gradYear) : null,
+          hometown: hometown.trim() || null,
+          state: homeState.trim() || null,
+          phone: phone.trim() || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', playerId);
+
+      if (error) throw error;
+      showToast('Golf details updated', 'success');
+      onUpdate();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to save', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="Handicap" type="number" value={handicap} onChange={(e) => setHandicap(e.target.value)} placeholder="5.2" />
+        <Input label="Handicap Index" type="number" value={handicapIndex} onChange={(e) => setHandicapIndex(e.target.value)} placeholder="4.8" />
+      </div>
+      <Input label="Graduation Year" type="number" value={gradYear} onChange={(e) => setGradYear(e.target.value)} placeholder="2027" />
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="Hometown" value={hometown} onChange={(e) => setHometown(e.target.value)} placeholder="Austin" />
+        <Input label="State" value={homeState} onChange={(e) => setHomeState(e.target.value)} placeholder="TX" maxLength={2} />
+      </div>
+      <Input label="Phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
+      <SaveBar onSave={handleSave} loading={saving} />
+    </div>
+  );
+}
+
+// ============================================================================
+// PANEL: Team Settings (Coach)
+// ============================================================================
+
+function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
+  const { showToast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [teamId, setTeamId] = useState<string | null>(null);
+  const [teamName, setTeamName] = useState('');
+  const [season, setSeason] = useState('');
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [orgName, setOrgName] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [division, setDivision] = useState('');
+  const [conference, setConference] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: coach } = await supabase
+        .from('golf_coaches')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!coach?.organization_id) { setLoaded(true); return; }
+
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id, name, season, organization_id')
+        .eq('organization_id', coach.organization_id)
+        .single();
+
+      if (team) {
+        setTeamId(team.id);
+        setTeamName(team.name || '');
+        setSeason(team.season || '');
+        setOrganizationId(team.organization_id);
+
+        if (team.organization_id) {
+          const { data: org } = await supabase
+            .from('golf_organizations')
+            .select('name, city, state, division, conference')
+            .eq('id', team.organization_id)
+            .single();
+          if (org) {
+            setOrgName(org.name || '');
+            setCity(org.city || '');
+            setState(org.state || '');
+            setDivision(org.division || '');
+            setConference(org.conference || '');
+          }
+        }
+      }
+      setLoaded(true);
+    })();
+  }, []);
+
+  async function handleSave() {
+    if (!teamId || !teamName.trim()) {
+      showToast('Team name required', 'error');
+      return;
+    }
+
+    setSaving(true);
+    const supabase = createClient();
+    try {
+      const { error: teamError } = await supabase
+        .from('golf_teams')
+        .update({ name: teamName.trim(), season: season.trim() || undefined, updated_at: new Date().toISOString() })
+        .eq('id', teamId);
+      if (teamError) throw teamError;
+
+      if (organizationId) {
+        const { error: orgError } = await supabase
+          .from('golf_organizations')
+          .update({
+            name: orgName.trim() || undefined,
+            city: city.trim() || undefined,
+            state: state.trim() || undefined,
+            division: division.trim() || undefined,
+            conference: conference.trim() || undefined,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', organizationId);
+        if (orgError) throw orgError;
+      }
+
+      showToast('Team settings updated', 'success');
+      onUpdate();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to save', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!loaded) {
+    return <div className="flex justify-center py-4"><div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" /></div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <Input label="Team Name" value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Men's Golf Team" required />
+      <Input label="Season" value={season} onChange={(e) => setSeason(e.target.value)} placeholder="2025-2026" />
+
+      {organizationId && (
+        <>
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Organization</p>
+          </div>
+          <Input label="School Name" value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="University" />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="City" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Los Angeles" />
+            <Input label="State" value={state} onChange={(e) => setState(e.target.value)} placeholder="CA" maxLength={2} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Division" value={division} onChange={(e) => setDivision(e.target.value)} placeholder="Division I" />
+            <Input label="Conference" value={conference} onChange={(e) => setConference(e.target.value)} placeholder="Pac-12" />
+          </div>
+        </>
+      )}
+
+      <SaveBar onSave={handleSave} loading={saving} />
+    </div>
+  );
+}
+
+// ============================================================================
+// PANEL: Invite Settings (Coach)
+// ============================================================================
+
+function InviteSettingsPanel() {
+  const { showToast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+  const [teamId, setTeamId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: coach } = await supabase
+        .from('golf_coaches')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!coach?.organization_id) { setLoaded(true); return; }
+
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id, join_code')
+        .eq('organization_id', coach.organization_id)
+        .single();
+
+      if (team) {
+        setTeamId(team.id);
+        setInviteCode(team.join_code || '');
+      }
+      setLoaded(true);
+    })();
+  }, []);
+
+  async function generateNewCode() {
+    if (!teamId) return;
+    setLoading(true);
+    const supabase = createClient();
+    try {
+      const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const { error } = await supabase
+        .from('golf_teams')
+        .update({ join_code: newCode, updated_at: new Date().toISOString() })
+        .eq('id', teamId);
+      if (error) throw error;
+      setInviteCode(newCode);
+      showToast('New invite code generated', 'success');
+    } catch {
+      showToast('Failed to generate code', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function copyLink() {
+    const url = `${window.location.origin}/golf/join/${inviteCode}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      showToast('Invite link copied', 'success');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showToast('Failed to copy', 'error');
+    }
+  }
+
+  if (!loaded) {
+    return <div className="flex justify-center py-4"><div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" /></div>;
+  }
+
+  const inviteUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/golf/join/${inviteCode}`;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-sm font-medium text-slate-700 block mb-2">Invite Code</label>
+        <div className="flex gap-2">
+          <div className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg font-mono text-lg font-semibold text-slate-900">
+            {inviteCode || '—'}
+          </div>
+          <Button variant="secondary" onClick={generateNewCode} isLoading={loading} className="px-3">
+            <IconRefresh size={18} />
+          </Button>
+        </div>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-slate-700 block mb-2">Invite Link</label>
+        <div className="flex gap-2">
+          <div className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600 truncate">
+            {inviteUrl}
+          </div>
+          <Button variant="secondary" onClick={copyLink} className="px-3">
+            {copied ? <IconCheck size={18} /> : <IconCopy size={18} />}
+          </Button>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+        <ul className="text-xs text-slate-600 space-y-1 ml-3 list-disc">
+          <li>Share the code or link with players to join</li>
+          <li>Generate a new code to revoke old invites</li>
+          <li>Players will need coach approval to join</li>
+        </ul>
+      </div>
+    </div>
   );
 }

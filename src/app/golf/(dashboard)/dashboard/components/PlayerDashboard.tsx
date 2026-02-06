@@ -15,7 +15,9 @@ import {
     IconSparkles,
     IconSettings,
     IconTarget,
-    IconMenu
+    IconMenu,
+    IconClipboardList,
+    IconBell,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { ShineEffect } from '@/components/ui/shine-effect';
@@ -260,6 +262,18 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                             variant="primary"
                                         />
                                         <QuickActionCard
+                                            icon={<IconClipboardList size={18} className="text-slate-600" />}
+                                            label="My Tasks"
+                                            description="Pending assignments"
+                                            href="/golf/dashboard/tasks"
+                                        />
+                                        <QuickActionCard
+                                            icon={<IconBell size={18} className="text-slate-600" />}
+                                            label="Announcements"
+                                            description="Team updates"
+                                            href="/golf/dashboard/announcements"
+                                        />
+                                        <QuickActionCard
                                             icon={<IconCalendar size={18} className="text-slate-600" />}
                                             label="View Calendar"
                                             description="Upcoming events"
@@ -356,6 +370,18 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                             label="View My Stats"
                                             description="Performance analytics"
                                             href="/golf/dashboard/stats"
+                                        />
+                                        <QuickActionCard
+                                            icon={<IconClipboardList size={18} className="text-slate-600" />}
+                                            label="My Tasks"
+                                            description="Pending assignments"
+                                            href="/golf/dashboard/tasks"
+                                        />
+                                        <QuickActionCard
+                                            icon={<IconBell size={18} className="text-slate-600" />}
+                                            label="Announcements"
+                                            description="Team updates"
+                                            href="/golf/dashboard/announcements"
                                         />
                                         <QuickActionCard
                                             icon={<IconCalendar size={18} className="text-slate-600" />}

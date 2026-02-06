@@ -157,6 +157,36 @@ export default async function TeamSettingsPage() {
     created_at: a.created_at
   }));
 
+  // Get player's task assignments
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: taskAssignments } = await (supabase as any)
+    .from('golf_task_assignments')
+    .select('id, task_id, status, completed_at')
+    .eq('player_id', player.id) as { data: Array<{ id: string; task_id: string; status: string | null; completed_at: string | null }> | null };
+
+  const taskIds = (taskAssignments ?? []).map(ta => ta.task_id);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: tasksRaw } = taskIds.length > 0
+    ? await (supabase as any)
+        .from('golf_tasks')
+        .select('id, title, description, due_date, priority')
+        .in('id', taskIds)
+        .order('created_at', { ascending: false }) as { data: Array<{ id: string; title: string; description: string | null; due_date: string | null; priority: string | null }> | null }
+    : { data: [] as Array<{ id: string; title: string; description: string | null; due_date: string | null; priority: string | null }> };
+
+  const tasks = (tasksRaw ?? []).map(task => {
+    const assignment = (taskAssignments ?? []).find(ta => ta.task_id === task.id);
+    return {
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      due_date: task.due_date,
+      status: assignment?.status ?? null,
+      priority: task.priority,
+    };
+  });
+
   return (
     <AnimatedPage>
       <AnimatedItem>
@@ -165,6 +195,7 @@ export default async function TeamSettingsPage() {
           coach={teamCoach}
           roster={roster ?? []}
           announcements={announcements ?? []}
+          tasks={tasks}
         />
       </AnimatedItem>
     </AnimatedPage>

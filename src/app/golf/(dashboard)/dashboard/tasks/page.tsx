@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown } from '@/components/icons';
 import { CreateTaskModal } from '@/components/golf/tasks/CreateTaskModal';
 import { TasksList } from '@/components/golf/tasks/TasksList';
-import { TaskListSkeleton } from '@/components/golf/tasks/TaskSkeleton';
 import { TaskTemplateList } from '@/components/golf/tasks/TaskTemplateList';
 import { CreateFromTemplateModal } from '@/components/golf/tasks/CreateFromTemplateModal';
 import { cn } from '@/lib/utils';
@@ -175,32 +174,7 @@ export default function GolfTasksPage() {
   const completedCount = tasks.filter(t => t.status === 'completed').length;
   const loading = initialLoading || tasksLoading;
 
-  if (loading) {
-    return (
-      <div className="min-h-full bg-transparent">
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          {/* Header Skeleton */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="space-y-2">
-              <div className="h-8 w-32 bg-slate-200 rounded animate-pulse" />
-              <div className="h-4 w-48 bg-slate-200 rounded animate-pulse" />
-            </div>
-            <div className="h-10 w-32 bg-slate-200 rounded-lg animate-pulse" />
-          </div>
-
-          {/* Filter Skeleton */}
-          <div className="flex items-center gap-2 mb-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-10 w-24 bg-slate-200 rounded-lg animate-pulse" />
-            ))}
-          </div>
-
-          {/* Tasks Skeleton */}
-          <TaskListSkeleton count={3} />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return null;
 
   return (
     <div className="min-h-full bg-transparent">

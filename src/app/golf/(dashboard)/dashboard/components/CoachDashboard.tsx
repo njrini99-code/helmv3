@@ -18,6 +18,7 @@ import {
     IconMenu,
     IconClock,
     IconChevronDown,
+    IconClipboardList,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/contexts/sidebar-context';
@@ -467,6 +468,12 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                                     label="Schedule Event"
                                     description="Practice or tournament"
                                     href="/golf/dashboard/calendar"
+                                />
+                                <QuickActionCard
+                                    icon={<IconClipboardList size={18} className="text-slate-600" />}
+                                    label="Manage Tasks"
+                                    description="Assign to players"
+                                    href="/golf/dashboard/tasks"
                                 />
                                 <QuickActionCard
                                     icon={<IconBook size={18} className="text-slate-600" />}

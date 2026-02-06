@@ -71,6 +71,7 @@ const playerNavItems: NavItem[] = [
 
 const playerSecondaryNav: NavItem[] = [
   { name: 'Team Info', href: '/golf/dashboard/team', icon: IconUsers },
+  { name: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
   { name: 'Announcements', href: '/golf/dashboard/announcements', icon: IconBell },
 ];
 

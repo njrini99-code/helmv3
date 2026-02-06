@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { IconBell } from '@/components/icons';
+import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { AnnouncementsCoachView } from '@/components/golf/announcements/AnnouncementsCoachView';
 import { AnnouncementsPlayerView } from '@/components/golf/announcements/AnnouncementsPlayerView';
@@ -105,9 +106,9 @@ export default async function GolfAnnouncementsPage() {
   }).length;
 
   return (
-    <div className="min-h-full">
+    <AnimatedPage>
       {/* Header */}
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <AnimatedItem className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div>
@@ -131,10 +132,10 @@ export default async function GolfAnnouncementsPage() {
             )}
           </div>
         </div>
-      </div>
+      </AnimatedItem>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <AnimatedItem className="max-w-4xl mx-auto px-6 py-8">
         {announcements.length === 0 ? (
           <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-sm p-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
@@ -158,7 +159,7 @@ export default async function GolfAnnouncementsPage() {
         ) : (
           <AnnouncementsPlayerView announcements={announcements} playerId={playerId!} />
         )}
-      </div>
-    </div>
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

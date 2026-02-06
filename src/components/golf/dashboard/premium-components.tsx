@@ -33,22 +33,20 @@ export const containerVariants = {
     visible: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.06,
-            delayChildren: 0.1
+            staggerChildren: 0.05,
+            delayChildren: 0
         }
     }
 } as const;
 
 export const itemVariants = {
-    hidden: { opacity: 0, y: 20, filter: 'blur(4px)' },
+    hidden: { opacity: 0, y: 12 },
     visible: {
         opacity: 1,
         y: 0,
-        filter: 'blur(0px)',
         transition: {
-            type: 'spring' as const,
-            stiffness: 300,
-            damping: 30
+            duration: 0.35,
+            ease: [0.16, 1, 0.3, 1] as [number, number, number, number]
         }
     }
 };

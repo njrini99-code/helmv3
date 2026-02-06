@@ -252,13 +252,7 @@ export default function GolfMessagesPage() {
   };
 
   // Loading state
-  if (contextLoading || conversationsLoading) {
-    return (
-      <div className="h-[calc(100vh-64px)] flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  if (contextLoading || conversationsLoading) return null;
 
   // No team error state - CRITICAL: Show helpful message
   if (!teamId) {

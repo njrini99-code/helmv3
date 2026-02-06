@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { PageLoading } from '@/components/ui/loading';
 import type { GolfCoach, GolfPlayer, GolfTeam } from '@/lib/types/golf';
 import type { CalendarEvent } from '@/lib/types/calendar';
 import { CoachDashboard, type CoachDashboardData } from './components/CoachDashboard';
@@ -400,9 +399,7 @@ export default function GolfDashboardPage() {
         };
     }, [supabase, router]);
 
-    if (loading) {
-        return <PageLoading />;
-    }
+    if (loading) return null;
 
     if (error) {
         return (
@@ -433,5 +430,5 @@ export default function GolfDashboardPage() {
         return <PlayerDashboard data={playerData} />;
     }
 
-    return <PageLoading />;
+    return null;
 }

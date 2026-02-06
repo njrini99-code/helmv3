@@ -129,7 +129,7 @@ export function CreateAnnouncementFlow({ players, documents }: CreateAnnouncemen
         size="full"
       >
         <form onSubmit={handleSubmit}>
-          <div className="space-y-5 max-h-[60vh] overflow-y-auto pr-1 -mr-1">
+          <div className="space-y-5">
             {/* Title */}
             <Input
               label="Title"
@@ -148,9 +148,9 @@ export function CreateAnnouncementFlow({ players, documents }: CreateAnnouncemen
               <textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                rows={4}
+                rows={3}
                 required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-none text-sm"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-y min-h-[72px] max-h-[200px] text-sm"
                 placeholder="Write your announcement..."
               />
             </div>
@@ -205,7 +205,7 @@ export function CreateAnnouncementFlow({ players, documents }: CreateAnnouncemen
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-5 mt-5 border-t border-slate-200">
+          <div className="flex items-center justify-between pt-4 mt-5 border-t border-slate-200 sticky bottom-0 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-1 -mb-6">
             <div className="flex items-center gap-2 text-xs text-slate-400">
               {recipientPlayerIds === null ? (
                 <span>Sending to all {players.length} players</span>
