@@ -1148,34 +1148,66 @@ export class CoachHelmIntelligence {
       conclusion: string;
       confidence: number;
       evidence: string[];
-    }> = insight.evidenceMetrics.map((metric, i) => ({
-      stepNumber: i + 1,
-      type: 'inductive' as ReasoningType,
-      premise: `${metric.label}: ${metric.value}`,
-      inference: metric.benchmark
-        ? `Compared to benchmark of ${metric.benchmark}`
-        : 'Observed from shot data analysis',
-      conclusion: metric.trend
-        ? `Trend is ${metric.trend}`
-        : 'Statistical pattern identified',
-      confidence: insight.confidence,
-      evidence: [`${metric.label}: ${metric.value}`],
-    }));
+    }> = insight.evidenceMetrics.map((metric, i) => {
+      const hasBenchmark = metric.benchmark !== undefined && metric.benchmark !== null;
+      let conclusion: string;
+      if (metric.trend) {
+        conclusion = `Trend is ${metric.trend}`;
+      } else if (hasBenchmark) {
+        // Parse numeric value from string for comparison
+        const numValue = parseFloat(String(metric.value).replace(/[^0-9.-]/g, ''));
+        const gap = !isNaN(numValue) ? numValue - Number(metric.benchmark) : 0;
+        conclusion = gap < 0
+          ? `${Math.abs(gap).toFixed(1)} below benchmark — area for improvement`
+          : gap > 0
+            ? `${gap.toFixed(1)} above benchmark — performing well`
+            : `At benchmark level`;
+      } else {
+        conclusion = `Data point from ${insight.category} analysis`;
+      }
+
+      return {
+        stepNumber: i + 1,
+        type: (hasBenchmark ? 'deductive' : 'inductive') as ReasoningType,
+        premise: `${metric.label}: ${metric.value}`,
+        inference: hasBenchmark
+          ? `Benchmark: ${metric.benchmark}${String(metric.value).includes('%') ? '%' : ''}`
+          : 'Derived from shot-level data',
+        conclusion,
+        confidence: insight.confidence,
+        evidence: [`${metric.label}: ${metric.value}`],
+      };
+    });
 
     // Add stroke impact reasoning step
     if (insight.strokeImpact > 0) {
       reasoningChain.push({
         stepNumber: reasoningChain.length + 1,
         type: 'deductive' as ReasoningType,
-        premise: `This pattern has an estimated stroke impact of ${insight.strokeImpact.toFixed(1)} strokes per round`,
-        inference: insight.strokeImpact > 0.5
-          ? 'This is a significant area for improvement'
-          : 'Addressing this would provide incremental gains',
-        conclusion: `Potential improvement: ${insight.strokeImpact.toFixed(1)} strokes/round`,
+        premise: `Estimated stroke impact: ${insight.strokeImpact.toFixed(1)} strokes per round`,
+        inference: insight.strokeImpact >= 1.0
+          ? 'This is a major area for improvement — fixing this changes scores'
+          : insight.strokeImpact >= 0.5
+            ? 'This is a significant area for improvement'
+            : 'Addressing this would provide incremental gains',
+        conclusion: `Potential savings: ${insight.strokeImpact.toFixed(1)} strokes/round`,
         confidence: insight.confidence,
         evidence: [`Stroke impact: ${insight.strokeImpact.toFixed(2)}`],
       });
     }
+
+    // Build structured evidence metrics for direct UI consumption
+    const structuredEvidence = insight.evidenceMetrics.map((metric) => {
+      const numValue = parseFloat(String(metric.value).replace(/[^0-9.-]/g, ''));
+      const hasBenchmark = metric.benchmark !== undefined && metric.benchmark !== null;
+      return {
+        label: metric.label,
+        value: metric.value,
+        benchmark: metric.benchmark ?? null,
+        trend: metric.trend as 'improving' | 'declining' | 'stable' | undefined,
+        belowBenchmark: hasBenchmark && !isNaN(numValue) ? numValue < Number(metric.benchmark) : undefined,
+      };
+    });
 
     return {
       headline: insight.headline,
@@ -1183,10 +1215,12 @@ export class CoachHelmIntelligence {
       callToAction: insight.recommendation,
       tone: toneMap[insight.priority] ?? 'neutral',
       confidence: insight.confidence,
+      strokeImpact: insight.strokeImpact > 0 ? insight.strokeImpact : undefined,
+      evidenceMetrics: structuredEvidence.length > 0 ? structuredEvidence : undefined,
       reasoning: {
         conclusion: `${insight.headline}: ${insight.body}`,
         confidence: insight.confidence,
-        calibratedConfidence: insight.confidence, // Will be calibrated later if needed
+        calibratedConfidence: insight.confidence,
         reasoningChain,
         alternatives: [],
         sensitivities: [],

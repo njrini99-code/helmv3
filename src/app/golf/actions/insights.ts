@@ -2363,11 +2363,17 @@ function buildStatInsightsForTeam(
         (entry.value as number) < (worst.value as number) ? entry : worst
       );
       if ((teamWeakness.value as number) < -0.3) {
+        const teamDrillMap: Record<string, string> = {
+          'Off the Tee': `Dedicate 30% of team practice to driving accuracy. Run a team fairway-hit competition: 10 drives each, track percentage. Players below 50% should consider strategy clubs on narrow holes.`,
+          'Approach': `Run a team proximity challenge: everyone hits from 150 yds, measure average proximity. Set a team target of 30 ft avg. Focus practice on distance control — most approach misses are distance, not direction.`,
+          'Around the Green': `Implement a weekly scramble drill: 10 up-and-down attempts from varied lies. Track team scrambling %. Set a team goal (e.g., 55% up-and-down rate). Focus on landing zone selection over shot creativity.`,
+          'Putting': `Weekly putting combine: 10 putts from 6 ft (make %), 10 from 30 ft (inside 3 ft %). Post results. The team that tracks putting metrics improves 2x faster. Focus on eliminating 3-putts before chasing makes.`,
+        };
         insightsWithSeverity.push({
           insight: {
             headline: `Team SG ${teamWeakness.label}: ${formatSigned(teamWeakness.value as number)} per round`,
-            body: `${teamWeakness.label} is the biggest drag on team scoring. Team SG ${teamWeakness.label} averages ${formatSigned(teamWeakness.value as number)} per round — the weakest category across the roster.`,
-            callToAction: `Prioritize practice plans that lift ${teamWeakness.label.toLowerCase()} performance across the roster.`,
+            body: `${teamWeakness.label} is the biggest drag on team scoring. Team SG ${teamWeakness.label} averages ${formatSigned(teamWeakness.value as number)} per round — the weakest category across the roster. Improving this one area would have the highest team-wide scoring impact.`,
+            callToAction: teamDrillMap[teamWeakness.label] ?? `Prioritize practice plans that lift ${teamWeakness.label.toLowerCase()} performance across the roster.`,
             tone: 'cautionary',
             confidence: 0.7,
             category: 'team_trend',
@@ -2396,28 +2402,28 @@ function buildStatInsightsForTeam(
           key: 'strokes_gained_tee',
           label: 'Off the Tee',
           value: stats.strokes_gained_tee,
-          action: 'Emphasize fairway-finding lines and tee shot dispersion control.',
+          action: `Drill: 10-ball dispersion test on the range — aim at a fairway-width target (30 yds) from 250 yds. Track hit rate. Goal: 7/10. Also practice tee shot strategy: pick a specific miss side for each hole shape.`,
           teamAvg: teamAverages.sgTee,
         },
         {
           key: 'strokes_gained_approach',
           label: 'Approach',
           value: stats.strokes_gained_approach,
-          action: 'Focus on approach proximity and GIR conversion.',
+          action: `Drill: Proximity ladder — hit 5 shots each from 100, 125, 150, 175 yds. Measure average distance to pin. Goal: inside 25 ft from 150 yds. Focus on distance control over direction.`,
           teamAvg: teamAverages.sgApproach,
         },
         {
           key: 'strokes_gained_around_green',
           label: 'Around the Green',
           value: stats.strokes_gained_around_green,
-          action: 'Sharpen short game reps and up-and-down efficiency.',
+          action: `Drill: Up-and-down challenge from 4 spots (short-sided rough, fringe, bunker, long-sided). 10 balls each spot. Track up-and-down %. Goal: 50%+ from each lie. Emphasize landing spot selection.`,
           teamAvg: teamAverages.sgAround,
         },
         {
           key: 'strokes_gained_putting',
           label: 'Putting',
           value: stats.strokes_gained_putting,
-          action: 'Reduce three-putts with speed control and start-line work.',
+          action: `Drill: 3-putt eliminator — putt 10 balls from 30-40 ft, count how many finish inside 3 ft. Goal: 8/10. Also run gate drill for start line: two tees just wider than ball, 3 ft away. 20 putts, track makes.`,
           teamAvg: teamAverages.sgPutting,
         },
       ].filter((metric) => metric.value !== null);
@@ -2446,6 +2452,7 @@ function buildStatInsightsForTeam(
               callToAction: worst.action,
               tone: severity >= 1.0 ? 'urgent' : 'cautionary',
               confidence,
+              strokeImpact: severity,
               playerId: player.id,
               playerName,
               category: mapMetricKeyToCategory(worst.key),
@@ -2489,7 +2496,7 @@ function buildStatInsightsForTeam(
           thresholdDiff: 8,
           thresholdAbsolute: 50,
           higherIsBetter: true,
-          action: 'Dial in approach targets to raise greens-in-regulation.',
+          action: `Drill: Approach accuracy circuit — pick 6 approach distances (80-180 yds), hit 5 shots each, track how many land on the green. Focus on club selection: most GIR misses come from wrong club, not bad swings. Consider going one club more.`,
         },
         {
           key: 'driving_accuracy_percentage',
@@ -2499,7 +2506,7 @@ function buildStatInsightsForTeam(
           thresholdDiff: 8,
           thresholdAbsolute: 50,
           higherIsBetter: true,
-          action: 'Prioritize tee shot accuracy to set up scoring chances.',
+          action: `Drill: Corridor driving — set alignment sticks 30 yds apart on the range and hit 20 drives. Track hit rate. If below 60%, evaluate: is the miss pattern one-sided? May need a strategy club (3W/hybrid) on tight holes instead of driver.`,
         },
         {
           key: 'scrambling_percentage',
@@ -2509,7 +2516,7 @@ function buildStatInsightsForTeam(
           thresholdDiff: 8,
           thresholdAbsolute: 45,
           higherIsBetter: true,
-          action: 'Work on up-and-down conversion from inside 40 yards.',
+          action: `Drill: Scramble circuit — drop balls in 6 different short-game situations (buried lie, tight lie, uphill, downhill, bunker, rough). Play each to the hole and track up-and-down %. Goal: save par 50%+ overall. Focus on getting the first putt inside 5 ft.`,
         },
         {
           key: 'putts_per_round',
@@ -2519,7 +2526,7 @@ function buildStatInsightsForTeam(
           thresholdDiff: 1,
           thresholdAbsolute: 33.5,
           higherIsBetter: false,
-          action: 'Focus on lag putting and three-putt avoidance.',
+          action: `Drill: Lag putt challenge — 10 putts from 30+ ft, all must stop inside a 3-ft circle. Then 10 putts from 6-10 ft to build confidence on makeable range. Track 3-putts per round as the #1 putting KPI to reduce.`,
         },
       ].filter((metric) => metric.value !== null);
 

@@ -301,6 +301,18 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
   const tone = TONE_CONFIG[insight.tone] || TONE_CONFIG.neutral;
   const confidencePct = Math.round(insight.confidence * 100);
 
+  // Extract stroke impact from reasoning chain (last deductive step with "strokes/round")
+  const strokeImpactStep = insight.reasoning?.reasoningChain?.find(
+    (s: ReasoningStep) => s.type === 'deductive' && s.conclusion?.includes('strokes/round')
+  );
+  const strokeImpactMatch = strokeImpactStep?.conclusion?.match(/([\d.]+)\s*strokes\/round/);
+  const strokeImpact = strokeImpactMatch?.[1] ? parseFloat(strokeImpactMatch[1]) : null;
+
+  // Extract evidence metrics (non-stroke-impact reasoning steps)
+  const evidenceSteps = (insight.reasoning?.reasoningChain || []).filter(
+    (s: ReasoningStep) => s.type !== 'deductive' || !s.conclusion?.includes('strokes/round')
+  );
+
   return (
     <motion.div
       layout
@@ -337,7 +349,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
 
         <div className="flex-1 min-w-0">
           {/* Badge row */}
-          <div className={cn('flex items-center gap-1.5', isPage ? 'mb-2' : 'mb-1')}>
+          <div className={cn('flex items-center gap-1.5 flex-wrap', isPage ? 'mb-2' : 'mb-1')}>
             <span className={cn(
               'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
               isPage ? 'text-[10px] px-2 py-1' : 'text-[9px]',
@@ -345,6 +357,20 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
             )}>
               {tone.badgeText}
             </span>
+            {/* Stroke impact badge */}
+            {strokeImpact !== null && strokeImpact > 0 && (
+              <span className={cn(
+                'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
+                isPage ? 'text-[10px] px-2 py-1' : 'text-[9px]',
+                strokeImpact >= 1.0
+                  ? 'bg-red-100 text-red-700'
+                  : strokeImpact >= 0.5
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-slate-100 text-slate-600'
+              )}>
+                {strokeImpact >= 1.0 ? 'Major' : strokeImpact >= 0.5 ? 'Significant' : 'Minor'}: {strokeImpact.toFixed(1)} strokes/rd
+              </span>
+            )}
             <span className={cn('text-slate-400', isPage ? 'text-xs' : 'text-[10px]')}>
               {confidencePct}% confidence
             </span>
@@ -392,51 +418,100 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                 {insight.body}
               </p>
 
-              {/* Reasoning chain */}
-              {insight.reasoning?.reasoningChain && insight.reasoning.reasoningChain.length > 0 && (
+              {/* Evidence metrics as visual data grid */}
+              {evidenceSteps.length > 0 && (
                 <div>
                   <h5 className={cn(
                     'font-bold text-slate-400 uppercase tracking-wider',
                     isPage ? 'text-xs mb-2' : 'text-[9px] mb-1.5'
                   )}>
-                    AI Reasoning
+                    Evidence
                   </h5>
-                  <div className={cn('space-y-1', isPage && 'space-y-2')}>
-                    {insight.reasoning.reasoningChain.slice(0, isPage ? 5 : 3).map((step: ReasoningStep, i: number) => (
+                  <div className={cn(
+                    'grid gap-1.5',
+                    isPage
+                      ? evidenceSteps.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'
+                      : 'grid-cols-2'
+                  )}>
+                    {evidenceSteps.slice(0, isPage ? 8 : 4).map((step: ReasoningStep, i: number) => (
                       <div
                         key={i}
                         className={cn(
-                          'flex items-start gap-2 bg-white/60 rounded-lg border border-white/50',
-                          isPage ? 'text-sm p-3' : 'text-[11px] p-2'
+                          'bg-white/60 rounded-lg border border-white/50 text-center',
+                          isPage ? 'p-3' : 'p-2'
                         )}
                       >
                         <div className={cn(
-                          'flex-shrink-0 rounded-full flex items-center justify-center font-bold',
-                          isPage ? 'w-6 h-6 text-[10px]' : 'w-4 h-4 text-[8px]',
-                          step.type === 'deductive' ? 'bg-blue-100 text-blue-600' :
-                          step.type === 'inductive' ? 'bg-green-100 text-green-600' :
-                          'bg-purple-100 text-purple-600'
+                          'font-bold text-slate-800 tabular-nums',
+                          isPage ? 'text-base' : 'text-sm'
                         )}>
-                          {step.stepNumber}
+                          {/* Extract the value from premise "Label: Value" */}
+                          {step.premise?.split(':').slice(1).join(':').trim() || step.premise}
                         </div>
-                        <div className="min-w-0">
-                          <span className={cn(
-                            'font-medium text-slate-400 uppercase',
-                            isPage ? 'text-[10px]' : 'text-[9px]'
+                        <div className={cn(
+                          'text-slate-400 leading-tight mt-0.5',
+                          isPage ? 'text-[11px]' : 'text-[9px]'
+                        )}>
+                          {/* Extract the label from premise */}
+                          {step.premise?.split(':')[0]?.trim() || 'Metric'}
+                        </div>
+                        {step.inference?.startsWith('Benchmark:') && (
+                          <div className={cn(
+                            'mt-1 font-medium',
+                            isPage ? 'text-[10px]' : 'text-[8px]',
+                            step.conclusion?.includes('below') ? 'text-red-500' :
+                            step.conclusion?.includes('above') ? 'text-green-500' :
+                            'text-slate-400'
                           )}>
-                            {step.type}
-                          </span>
-                          <p className="text-slate-600 leading-relaxed">
-                            {step.conclusion}
-                          </p>
-                        </div>
+                            vs {step.inference.replace('Benchmark: ', '')}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Call to action */}
+              {/* Stroke impact visual bar (if present) */}
+              {strokeImpact !== null && strokeImpact > 0 && (
+                <div className={cn(
+                  'bg-white/60 rounded-lg border border-white/50',
+                  isPage ? 'p-3' : 'p-2'
+                )}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className={cn(
+                      'font-bold text-slate-500 uppercase tracking-wider',
+                      isPage ? 'text-[10px]' : 'text-[9px]'
+                    )}>
+                      Stroke Impact
+                    </span>
+                    <span className={cn(
+                      'font-bold tabular-nums',
+                      isPage ? 'text-sm' : 'text-xs',
+                      strokeImpact >= 1.0 ? 'text-red-600' : strokeImpact >= 0.5 ? 'text-amber-600' : 'text-slate-600'
+                    )}>
+                      +{strokeImpact.toFixed(1)} strokes/round
+                    </span>
+                  </div>
+                  <div className={cn('bg-slate-100 rounded-full overflow-hidden', isPage ? 'h-2' : 'h-1.5')}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(100, (strokeImpact / 2) * 100)}%` }}
+                      transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+                      className={cn(
+                        'h-full rounded-full',
+                        strokeImpact >= 1.0
+                          ? 'bg-gradient-to-r from-red-400 to-red-500'
+                          : strokeImpact >= 0.5
+                            ? 'bg-gradient-to-r from-amber-400 to-amber-500'
+                            : 'bg-gradient-to-r from-slate-300 to-slate-400'
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Call to action / Recommendation */}
               {insight.callToAction && (
                 <div className={cn(
                   'bg-white/60 rounded-lg border border-white/50',
@@ -448,7 +523,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                       'font-bold text-green-700 uppercase tracking-wider',
                       isPage ? 'text-xs' : 'text-[9px]'
                     )}>
-                      Next Step
+                      Coach Action Plan
                     </span>
                   </div>
                   <p className={cn('text-slate-700 leading-relaxed', isPage ? 'text-sm' : 'text-[11px]')}>
@@ -721,7 +796,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                       'font-bold text-green-700 uppercase tracking-wider',
                       isPage ? 'text-xs' : 'text-[9px]'
                     )}>
-                      Next Step
+                      Coach Action Plan
                     </span>
                   </div>
                   <p className={cn('text-slate-700 leading-relaxed', isPage ? 'text-sm' : 'text-[11px]')}>
@@ -1590,10 +1665,10 @@ export function IntelligenceCommandCenter({
               'text-slate-400 leading-relaxed',
               isPage ? 'text-base max-w-md mb-6' : 'text-[11px] max-w-[220px] mb-3'
             )}>
-              CoachHelm AI will mine patterns, discover causal relationships, and predict performance trends across your team.
+              CoachHelm AI will analyze every shot, cross-reference related stats, identify root causes of stroke leakage, and rank practice priorities by ROI.
             </p>
             <div className={cn('flex flex-wrap justify-center', isPage ? 'gap-2' : 'gap-1.5')}>
-              {['Pattern Mining', 'Causal Discovery', 'Predictions', 'Shot Analysis'].map(feature => (
+              {['Root Cause Chains', 'Stroke Leakage ROI', 'Break Analysis', 'Par-Type Profiling', 'Predictions'].map(feature => (
                 <span key={feature} className={cn(
                   'font-medium text-primary-600 bg-primary-50 rounded-full',
                   isPage ? 'text-xs px-3 py-1' : 'text-[9px] px-2 py-0.5'

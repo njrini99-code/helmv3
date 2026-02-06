@@ -6122,6 +6122,60 @@ export type Database = {
           },
         ]
       }
+      golf_task_assignments: {
+        Row: {
+          assigned_at: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          player_id: string
+          status: string | null
+          task_id: string
+          updated_at: string | null
+          upload_url: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          player_id: string
+          status?: string | null
+          task_id: string
+          updated_at?: string | null
+          upload_url?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          player_id?: string
+          status?: string | null
+          task_id?: string
+          updated_at?: string | null
+          upload_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_task_assignments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_task_assignments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "golf_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_task_reminders: {
         Row: {
           created_at: string
@@ -6966,8 +7020,8 @@ export type Database = {
       }
       notifications: {
         Row: {
-          body: string | null
           action_url: string | null
+          body: string | null
           created_at: string | null
           data: Json | null
           id: string
@@ -7513,12 +7567,12 @@ export type Database = {
         | "video_view"
         | "message"
         | "team_invite"
-        | "team_join"
         | "team_join_request"
         | "team_join_approved"
-        | "team_join_rejected"
         | "event_reminder"
         | "dev_plan_assigned"
+        | "team_join"
+        | "team_join_rejected"
       organization_type: "college" | "juco" | "high_school" | "showcase"
       reminder_type: "in_app" | "email" | "push" | "all"
       team_member_status: "pending" | "active" | "inactive" | "removed"
@@ -7679,12 +7733,12 @@ export const Constants = {
         "video_view",
         "message",
         "team_invite",
-        "team_join",
         "team_join_request",
         "team_join_approved",
-        "team_join_rejected",
         "event_reminder",
         "dev_plan_assigned",
+        "team_join",
+        "team_join_rejected",
       ],
       organization_type: ["college", "juco", "high_school", "showcase"],
       reminder_type: ["in_app", "email", "push", "all"],

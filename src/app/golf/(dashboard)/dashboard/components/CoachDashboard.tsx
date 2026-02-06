@@ -32,11 +32,6 @@ const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: 
     ssr: false // Chart doesn't need SSR
 });
 
-const IntelligenceCommandCenter = dynamic(() => import('@/components/golf/coachhelm/v2').then(mod => ({ default: mod.IntelligenceCommandCenter })), {
-    loading: () => <div className="h-[400px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
-    ssr: true
-});
-
 const CoachAlertCenter = dynamic(() => import('@/components/golf/coachhelm/alerts').then(mod => ({ default: mod.CoachAlertCenter })), {
     loading: () => <div className="h-[200px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
     ssr: true
@@ -417,15 +412,32 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                     />
                 </motion.div>
 
-                {/* CoachHelm Intelligence Command Center - Full Width Hero Section */}
+                {/* Quick Alerts + Recent Activity - Full Width Hero Section */}
                 {team && coach && (
-                    <motion.div className="mb-5 md:mb-8" variants={itemVariants}>
-                        <PremiumGlassCard className="!p-0 overflow-hidden">
-                            <IntelligenceCommandCenter
-                                teamId={team.id}
-                                coachId={coach.id}
+                    <motion.div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-5 md:mb-8" variants={itemVariants}>
+                        {/* Quick Alerts */}
+                        <div>
+                            <SectionHeader
+                                title="Quick Alerts"
+                                icon={<IconBell size={14} />}
+                                action={{ label: 'View All', href: '/golf/dashboard/alerts' }}
                             />
-                        </PremiumGlassCard>
+                            <CoachAlertCenter
+                                coachId={coach.id}
+                                teamId={team.id}
+                                maxVisible={4}
+                                compact
+                            />
+                        </div>
+
+                        {/* Recent Activity */}
+                        <div>
+                            <SectionHeader title="Recent Activity" />
+                            <PremiumGlassCard>
+                                <ShineEffect />
+                                <RecentActivityFeed teamId={team.id} limit={6} />
+                            </PremiumGlassCard>
+                        </div>
                     </motion.div>
                 )}
 
@@ -506,25 +518,8 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                         </div>
                     </motion.div>
 
-                    {/* Right Column - Alerts, Trend, Rounds, Activity */}
+                    {/* Right Column - Trend, Rounds */}
                     <motion.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
-                        {/* Player Alerts */}
-                        {team && coach && (
-                            <div>
-                                <SectionHeader
-                                    title="Player Alerts"
-                                    icon={<IconBell size={14} />}
-                                    action={{ label: 'View All', href: '/golf/dashboard/alerts' }}
-                                />
-                                <CoachAlertCenter
-                                    coachId={coach.id}
-                                    teamId={team.id}
-                                    maxVisible={3}
-                                    compact
-                                />
-                            </div>
-                        )}
-
                         {/* Team Performance Chart */}
                         <div>
                             <SectionHeader title="Team Performance Trend" />
@@ -608,17 +603,6 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                                 )}
                             </PremiumGlassCard>
                         </div>
-
-                        {/* Activity Feed */}
-                        {team && (
-                            <div>
-                                <SectionHeader title="Recent Activity" />
-                                <PremiumGlassCard>
-                                    <ShineEffect />
-                                    <RecentActivityFeed teamId={team.id} limit={5} />
-                                </PremiumGlassCard>
-                            </div>
-                        )}
                     </motion.div>
                 </div>
             </motion.div>

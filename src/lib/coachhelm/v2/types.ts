@@ -450,6 +450,16 @@ export interface CalibrationReport {
 /** Tone for insight composition */
 export type InsightTone = 'neutral' | 'encouraging' | 'cautionary' | 'celebratory' | 'urgent';
 
+/** Evidence metric attached to an insight */
+export interface InsightEvidenceMetric {
+  label: string;
+  value: string | number;
+  benchmark?: number | null;
+  trend?: 'improving' | 'declining' | 'stable';
+  /** Whether value is worse than benchmark (true = needs work) */
+  belowBenchmark?: boolean;
+}
+
 /** Composed insight */
 export interface ComposedInsight {
   headline: string;
@@ -458,6 +468,10 @@ export interface ComposedInsight {
   tone: InsightTone;
   confidence: number;
   reasoning?: ReasoningResult;
+  /** Strokes per round this issue costs — higher = more impactful */
+  strokeImpact?: number;
+  /** Structured evidence metrics for visual display */
+  evidenceMetrics?: InsightEvidenceMetric[];
 }
 
 /** Categories for insight deduplication and grouping */
@@ -488,6 +502,8 @@ export interface InsightGroup {
   body: string;
   callToAction?: string;
   confidence: number;
+  /** Max stroke impact across member insights */
+  strokeImpact?: number;
   players: Array<{ playerId: string; playerName: string }>;
   memberInsights: TeamComposedInsight[];
   playerCount: number;
