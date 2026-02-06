@@ -47,12 +47,16 @@ import type {
 // TYPES
 // ============================================================================
 
+type ICCVariant = 'widget' | 'page';
+
 interface IntelligenceCommandCenterProps {
   teamId: string;
   coachId: string;
   initialInsights?: ComposedInsight[];
   initialPatterns?: MinedPattern[];
   initialPredictions?: Array<PerformancePrediction & { playerName?: string }>;
+  /** 'widget' = compact dashboard card, 'page' = full intelligence page */
+  variant?: ICCVariant;
 }
 
 type TabId = 'overview' | 'insights' | 'patterns' | 'predictions';
@@ -138,10 +142,13 @@ const TONE_CONFIG: Record<InsightTone, {
 const OverviewSummary = memo(function OverviewSummary({
   insights,
   patterns,
+  variant = 'widget',
 }: {
   insights: ComposedInsight[];
   patterns: MinedPattern[];
+  variant?: ICCVariant;
 }) {
+  const isPage = variant === 'page';
   const urgentCount = insights.filter(i => i.tone === 'urgent').length;
   const cautionCount = insights.filter(i => i.tone === 'cautionary').length;
   const positiveCount = insights.filter(i => i.tone === 'encouraging' || i.tone === 'celebratory').length;
@@ -171,53 +178,106 @@ const OverviewSummary = memo(function OverviewSummary({
   };
 
   return (
-    <motion.div {...fadeIn} className="grid grid-cols-2 gap-2 mb-3">
+    <motion.div {...fadeIn} className={cn(
+      'grid gap-2 mb-3',
+      isPage ? 'grid-cols-2 md:grid-cols-4 gap-4 mb-6' : 'grid-cols-2'
+    )}>
       {/* Team Health Score */}
       {healthScore !== null && (
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-white/40 p-3 shadow-sm">
-          <div className="flex items-center gap-2 mb-1.5">
-            <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center">
-              <IconUsers size={12} className="text-slate-500" />
+        <div className={cn(
+          'bg-white/80 backdrop-blur-sm rounded-xl border border-white/40 shadow-sm',
+          isPage ? 'p-5 rounded-2xl' : 'p-3'
+        )}>
+          <div className={cn('flex items-center gap-2', isPage ? 'mb-3' : 'mb-1.5')}>
+            <div className={cn(
+              'rounded-md bg-slate-100 flex items-center justify-center',
+              isPage ? 'w-9 h-9 rounded-lg' : 'w-6 h-6'
+            )}>
+              <IconUsers size={isPage ? 16 : 12} className="text-slate-500" />
             </div>
-            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Team Health</span>
+            <span className={cn(
+              'font-medium text-slate-400 uppercase tracking-wider',
+              isPage ? 'text-xs' : 'text-[10px]'
+            )}>Team Health</span>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className={cn('text-2xl font-bold tabular-nums', getHealthColor(healthScore))}>{healthScore}</span>
-            <span className="text-[10px] text-slate-400">/100</span>
+            <span className={cn('font-bold tabular-nums', getHealthColor(healthScore), isPage ? 'text-4xl' : 'text-2xl')}>{healthScore}</span>
+            <span className={cn('text-slate-400', isPage ? 'text-sm' : 'text-[10px]')}>/100</span>
           </div>
-          <span className={cn('text-[10px] font-medium', getHealthColor(healthScore))}>
+          <span className={cn('font-medium', getHealthColor(healthScore), isPage ? 'text-sm' : 'text-[10px]')}>
             {getHealthLabel(healthScore)}
           </span>
         </div>
       )}
 
       {/* Quick Counts */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-white/40 p-3 shadow-sm">
-        <div className="flex items-center gap-2 mb-1.5">
-          <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center">
-            <IconSparkles size={12} className="text-slate-500" />
+      <div className={cn(
+        'bg-white/80 backdrop-blur-sm rounded-xl border border-white/40 shadow-sm',
+        isPage ? 'p-5 rounded-2xl' : 'p-3'
+      )}>
+        <div className={cn('flex items-center gap-2', isPage ? 'mb-3' : 'mb-1.5')}>
+          <div className={cn(
+            'rounded-md bg-slate-100 flex items-center justify-center',
+            isPage ? 'w-9 h-9 rounded-lg' : 'w-6 h-6'
+          )}>
+            <IconSparkles size={isPage ? 16 : 12} className="text-slate-500" />
           </div>
-          <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">AI Analysis</span>
+          <span className={cn(
+            'font-medium text-slate-400 uppercase tracking-wider',
+            isPage ? 'text-xs' : 'text-[10px]'
+          )}>AI Analysis</span>
         </div>
-        <div className="space-y-1">
+        <div className={cn('space-y-1', isPage && 'space-y-2')}>
           {urgentCount > 0 && (
             <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-xs text-red-600 font-medium">{urgentCount} urgent</span>
+              <div className={cn('rounded-full bg-red-500 animate-pulse', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
+              <span className={cn('text-red-600 font-medium', isPage ? 'text-sm' : 'text-xs')}>{urgentCount} urgent</span>
             </div>
           )}
           {cautionCount > 0 && (
             <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              <span className="text-xs text-amber-600 font-medium">{cautionCount} watch</span>
+              <div className={cn('rounded-full bg-amber-500', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
+              <span className={cn('text-amber-600 font-medium', isPage ? 'text-sm' : 'text-xs')}>{cautionCount} watch</span>
             </div>
           )}
           <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            <span className="text-xs text-slate-500">{positiveCount} positive</span>
+            <div className={cn('rounded-full bg-green-500', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
+            <span className={cn('text-slate-500', isPage ? 'text-sm' : 'text-xs')}>{positiveCount} positive</span>
           </div>
         </div>
       </div>
+
+      {/* Page-only: extra stat cards */}
+      {isPage && (
+        <>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/40 p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
+                <IconTrendingUp size={16} className="text-slate-500" />
+              </div>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Patterns</span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-4xl font-bold tabular-nums text-slate-900">{patterns.length}</span>
+            </div>
+            <span className="text-sm text-slate-400">
+              {highImpactPatterns} high-impact
+            </span>
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/40 p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
+                <IconTarget size={16} className="text-slate-500" />
+              </div>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Insights</span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-4xl font-bold tabular-nums text-slate-900">{insights.length}</span>
+            </div>
+            <span className="text-sm text-slate-400">total active</span>
+          </div>
+        </>
+      )}
     </motion.div>
   );
 });
@@ -228,11 +288,14 @@ const OverviewSummary = memo(function OverviewSummary({
 const EnhancedInsightCard = memo(function EnhancedInsightCard({
   insight,
   onAction,
+  variant = 'widget',
 }: {
   insight: ComposedInsight;
   onAction?: (action: 'acknowledge' | 'dismiss') => void;
+  variant?: ICCVariant;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(variant === 'page');
+  const isPage = variant === 'page';
   const tone = TONE_CONFIG[insight.tone] || TONE_CONFIG.neutral;
   const confidencePct = Math.round(insight.confidence * 100);
 
@@ -244,45 +307,60 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className={cn(
-        'rounded-xl border overflow-hidden transition-shadow',
+        'border overflow-hidden transition-shadow',
+        isPage ? 'rounded-2xl' : 'rounded-xl',
         tone.bg, tone.border,
         expanded ? 'shadow-md' : 'shadow-sm hover:shadow-md'
       )}
     >
       {/* Accent bar */}
-      <div className={cn('h-0.5', tone.accentBar)} />
+      <div className={cn(isPage ? 'h-1' : 'h-0.5', tone.accentBar)} />
 
       {/* Header - always visible */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full text-left p-3 flex items-start gap-2.5"
+        className={cn(
+          'w-full text-left flex items-start',
+          isPage ? 'p-5 gap-4' : 'p-3 gap-2.5'
+        )}
       >
         {/* Tone icon */}
         <div className={cn(
-          'flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center',
-          'bg-white/80 shadow-sm border border-white/50'
+          'flex-shrink-0 rounded-lg flex items-center justify-center',
+          'bg-white/80 shadow-sm border border-white/50',
+          isPage ? 'w-10 h-10' : 'w-7 h-7'
         )}>
-          <IconSparkles size={14} className={tone.icon} />
+          <IconSparkles size={isPage ? 18 : 14} className={tone.icon} />
         </div>
 
         <div className="flex-1 min-w-0">
           {/* Badge row */}
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className={cn('text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full', tone.badge)}>
+          <div className={cn('flex items-center gap-1.5', isPage ? 'mb-2' : 'mb-1')}>
+            <span className={cn(
+              'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
+              isPage ? 'text-[10px] px-2 py-1' : 'text-[9px]',
+              tone.badge
+            )}>
               {tone.badgeText}
             </span>
-            <span className="text-[10px] text-slate-400">
+            <span className={cn('text-slate-400', isPage ? 'text-xs' : 'text-[10px]')}>
               {confidencePct}% confidence
             </span>
           </div>
 
           {/* Headline */}
-          <h4 className="text-[13px] font-semibold text-slate-900 leading-snug mb-0.5">
+          <h4 className={cn(
+            'font-semibold text-slate-900 leading-snug mb-0.5',
+            isPage ? 'text-base' : 'text-[13px]'
+          )}>
             {insight.headline}
           </h4>
 
           {/* Body preview */}
-          <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+          <p className={cn(
+            'text-slate-500 line-clamp-2 leading-relaxed',
+            isPage ? 'text-sm' : 'text-[11px]'
+          )}>
             {insight.body}
           </p>
         </div>
@@ -292,7 +370,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
           animate={{ rotate: expanded ? 180 : 0 }}
           className="flex-shrink-0 mt-1 text-slate-300"
         >
-          <IconChevronDown size={14} />
+          <IconChevronDown size={isPage ? 18 : 14} />
         </motion.div>
       </button>
 
@@ -306,26 +384,33 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-3 pb-3 pt-0 space-y-2.5">
+            <div className={cn('pt-0 space-y-2.5', isPage ? 'px-5 pb-5 space-y-4' : 'px-3 pb-3')}>
               {/* Full body */}
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className={cn('text-slate-600 leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
                 {insight.body}
               </p>
 
               {/* Reasoning chain */}
               {insight.reasoning?.reasoningChain && insight.reasoning.reasoningChain.length > 0 && (
                 <div>
-                  <h5 className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  <h5 className={cn(
+                    'font-bold text-slate-400 uppercase tracking-wider',
+                    isPage ? 'text-xs mb-2' : 'text-[9px] mb-1.5'
+                  )}>
                     AI Reasoning
                   </h5>
-                  <div className="space-y-1">
-                    {insight.reasoning.reasoningChain.slice(0, 3).map((step: ReasoningStep, i: number) => (
+                  <div className={cn('space-y-1', isPage && 'space-y-2')}>
+                    {insight.reasoning.reasoningChain.slice(0, isPage ? 5 : 3).map((step: ReasoningStep, i: number) => (
                       <div
                         key={i}
-                        className="flex items-start gap-2 text-[11px] bg-white/60 rounded-lg p-2 border border-white/50"
+                        className={cn(
+                          'flex items-start gap-2 bg-white/60 rounded-lg border border-white/50',
+                          isPage ? 'text-sm p-3' : 'text-[11px] p-2'
+                        )}
                       >
                         <div className={cn(
-                          'flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold',
+                          'flex-shrink-0 rounded-full flex items-center justify-center font-bold',
+                          isPage ? 'w-6 h-6 text-[10px]' : 'w-4 h-4 text-[8px]',
                           step.type === 'deductive' ? 'bg-blue-100 text-blue-600' :
                           step.type === 'inductive' ? 'bg-green-100 text-green-600' :
                           'bg-purple-100 text-purple-600'
@@ -333,7 +418,10 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                           {step.stepNumber}
                         </div>
                         <div className="min-w-0">
-                          <span className="text-[9px] font-medium text-slate-400 uppercase">
+                          <span className={cn(
+                            'font-medium text-slate-400 uppercase',
+                            isPage ? 'text-[10px]' : 'text-[9px]'
+                          )}>
                             {step.type}
                           </span>
                           <p className="text-slate-600 leading-relaxed">
@@ -348,14 +436,20 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
 
               {/* Call to action */}
               {insight.callToAction && (
-                <div className="p-2.5 bg-white/60 rounded-lg border border-white/50">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <IconTarget size={12} className="text-green-600" />
-                    <span className="text-[9px] font-bold text-green-700 uppercase tracking-wider">
+                <div className={cn(
+                  'bg-white/60 rounded-lg border border-white/50',
+                  isPage ? 'p-4' : 'p-2.5'
+                )}>
+                  <div className={cn('flex items-center gap-1.5', isPage ? 'mb-2' : 'mb-1')}>
+                    <IconTarget size={isPage ? 14 : 12} className="text-green-600" />
+                    <span className={cn(
+                      'font-bold text-green-700 uppercase tracking-wider',
+                      isPage ? 'text-xs' : 'text-[9px]'
+                    )}>
                       Next Step
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-700 leading-relaxed">
+                  <p className={cn('text-slate-700 leading-relaxed', isPage ? 'text-sm' : 'text-[11px]')}>
                     {insight.callToAction}
                   </p>
                 </div>
@@ -363,18 +457,24 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
 
               {/* Action buttons */}
               {onAction && (
-                <div className="flex gap-1.5 pt-1">
+                <div className={cn('flex gap-1.5 pt-1', isPage && 'gap-2 pt-2')}>
                   <button
                     onClick={(e) => { e.stopPropagation(); onAction('acknowledge'); }}
-                    className="flex items-center gap-1 text-[10px] font-semibold text-green-700 bg-green-100 hover:bg-green-200 px-2.5 py-1.5 rounded-lg transition-colors"
+                    className={cn(
+                      'flex items-center gap-1 font-semibold text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors',
+                      isPage ? 'text-xs px-4 py-2' : 'text-[10px] px-2.5 py-1.5'
+                    )}
                   >
-                    <IconCheck size={12} /> Got It
+                    <IconCheck size={isPage ? 14 : 12} /> Got It
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); onAction('dismiss'); }}
-                    className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-700 hover:bg-white/60 px-2.5 py-1.5 rounded-lg transition-colors"
+                    className={cn(
+                      'flex items-center gap-1 text-slate-500 hover:text-slate-700 hover:bg-white/60 rounded-lg transition-colors',
+                      isPage ? 'text-xs px-4 py-2' : 'text-[10px] px-2.5 py-1.5'
+                    )}
                   >
-                    <IconX size={12} /> Dismiss
+                    <IconX size={isPage ? 14 : 12} /> Dismiss
                   </button>
                 </div>
               )}
@@ -391,10 +491,13 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
  */
 const EnhancedPatternCard = memo(function EnhancedPatternCard({
   pattern,
+  variant = 'widget',
 }: {
   pattern: MinedPattern;
+  variant?: ICCVariant;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const isPage = variant === 'page';
+  const [expanded, setExpanded] = useState(isPage);
   const isNegative = pattern.strokeImpact > 0;
   const impactAbs = Math.abs(pattern.strokeImpact);
   const impactWidth = Math.min(100, (impactAbs / 2) * 100); // Scale: 2 strokes = 100%
@@ -417,18 +520,22 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       className={cn(
-        'bg-white/80 rounded-xl border border-slate-200/60 overflow-hidden',
+        'bg-white/80 border border-slate-200/60 overflow-hidden',
+        isPage ? 'rounded-2xl' : 'rounded-xl',
         'shadow-sm hover:shadow-md transition-shadow'
       )}
     >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full text-left p-3"
+        className={cn('w-full text-left', isPage ? 'p-5' : 'p-3')}
       >
         {/* Top row: type + trend */}
-        <div className="flex items-center gap-1.5 mb-1.5">
+        <div className={cn('flex items-center gap-1.5', isPage ? 'mb-2' : 'mb-1.5')}>
           {getTypeIcon()}
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className={cn(
+            'font-bold text-slate-400 uppercase tracking-wider',
+            isPage ? 'text-xs' : 'text-[9px]'
+          )}>
             {pattern.patternType}
           </span>
           {pattern.trend === 'strengthening' && (
@@ -446,7 +553,10 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
         </div>
 
         {/* Description */}
-        <p className="text-[12px] font-medium text-slate-800 leading-snug mb-2 line-clamp-2">
+        <p className={cn(
+          'font-medium text-slate-800 leading-snug mb-2 line-clamp-2',
+          isPage ? 'text-sm' : 'text-[12px]'
+        )}>
           {pattern.description || 'Pattern detected in performance data'}
         </p>
 
@@ -454,16 +564,17 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <span className={cn(
-              'text-xs font-bold tabular-nums',
+              'font-bold tabular-nums',
+              isPage ? 'text-sm' : 'text-xs',
               isNegative ? 'text-red-600' : 'text-green-600'
             )}>
               {isNegative ? '+' : '-'}{impactAbs.toFixed(1)} strokes/round
             </span>
-            <span className="text-[10px] text-slate-400">
+            <span className={cn('text-slate-400', isPage ? 'text-xs' : 'text-[10px]')}>
               {confidencePct}%
             </span>
           </div>
-          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className={cn('bg-slate-100 rounded-full overflow-hidden', isPage ? 'h-2' : 'h-1.5')}>
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${impactWidth}%` }}
@@ -553,10 +664,13 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
 const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
   prediction,
   playerName,
+  variant = 'widget',
 }: {
   prediction: PerformancePrediction & { playerName?: string };
   playerName?: string;
+  variant?: ICCVariant;
 }) {
+  const isPage = variant === 'page';
   const name = playerName || prediction.playerName;
   const confidencePct = Math.round((prediction.calibratedConfidence ?? prediction.confidence) * 100);
   const rangeLow = prediction.predictionRange?.low ?? prediction.predictedRangeLow;
@@ -577,20 +691,29 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
       layout
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white/80 rounded-xl border border-slate-200/60 p-3 shadow-sm hover:shadow-md transition-shadow"
+      className={cn(
+        'bg-white/80 border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow',
+        isPage ? 'rounded-2xl p-5' : 'rounded-xl p-3'
+      )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-2.5">
+      <div className={cn('flex items-center justify-between', isPage ? 'mb-4' : 'mb-2.5')}>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center">
-            <IconTarget size={12} className="text-blue-600" />
+          <div className={cn(
+            'rounded-md bg-blue-50 flex items-center justify-center',
+            isPage ? 'w-9 h-9 rounded-lg' : 'w-6 h-6'
+          )}>
+            <IconTarget size={isPage ? 16 : 12} className="text-blue-600" />
           </div>
           <div>
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+            <span className={cn(
+              'font-bold text-slate-400 uppercase tracking-wider block',
+              isPage ? 'text-xs' : 'text-[9px]'
+            )}>
               Next Round
             </span>
             {name && (
-              <span className="text-[11px] text-slate-600 font-medium">{name}</span>
+              <span className={cn('text-slate-600 font-medium', isPage ? 'text-sm' : 'text-[11px]')}>{name}</span>
             )}
           </div>
         </div>
@@ -606,9 +729,10 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
       </div>
 
       {/* Score prediction + confidence gauge */}
-      <div className="flex items-center gap-3 mb-3">
+      <div className={cn('flex items-center gap-3', isPage ? 'mb-4' : 'mb-3')}>
         <span className={cn(
-          'text-2xl font-bold tabular-nums',
+          'font-bold tabular-nums',
+          isPage ? 'text-4xl' : 'text-2xl',
           isNeutral ? 'text-slate-700' : isPositive ? 'text-green-600' : 'text-red-600'
         )}>
           {formatScore(prediction.predictedValue)}
@@ -616,11 +740,11 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
 
         {/* Mini confidence gauge */}
         <div className="flex-1">
-          <div className="flex justify-between text-[9px] text-slate-400 mb-0.5">
+          <div className={cn('flex justify-between text-slate-400 mb-0.5', isPage ? 'text-xs' : 'text-[9px]')}>
             <span>Confidence</span>
             <span className="font-medium">{confidencePct}%</span>
           </div>
-          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className={cn('bg-slate-100 rounded-full overflow-hidden', isPage ? 'h-2' : 'h-1.5')}>
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${confidencePct}%` }}
@@ -687,14 +811,18 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
 /**
  * Empty state for tabs
  */
-function TabEmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+function TabEmptyState({ icon, title, description, variant = 'widget' }: { icon: React.ReactNode; title: string; description: string; variant?: ICCVariant }) {
+  const isPage = variant === 'page';
   return (
-    <div className="flex flex-col items-center py-8 text-center">
-      <div className="w-10 h-10 rounded-xl bg-white/80 shadow-sm flex items-center justify-center mb-2.5 border border-white/50">
+    <div className={cn('flex flex-col items-center text-center', isPage ? 'py-16' : 'py-8')}>
+      <div className={cn(
+        'rounded-xl bg-white/80 shadow-sm flex items-center justify-center border border-white/50',
+        isPage ? 'w-16 h-16 rounded-2xl mb-4' : 'w-10 h-10 mb-2.5'
+      )}>
         {icon}
       </div>
-      <h4 className="text-[13px] font-semibold text-slate-700 mb-0.5">{title}</h4>
-      <p className="text-[11px] text-slate-400 max-w-[200px] leading-relaxed">{description}</p>
+      <h4 className={cn('font-semibold text-slate-700', isPage ? 'text-lg mb-1' : 'text-[13px] mb-0.5')}>{title}</h4>
+      <p className={cn('text-slate-400 leading-relaxed', isPage ? 'text-sm max-w-xs' : 'text-[11px] max-w-[200px]')}>{description}</p>
     </div>
   );
 }
@@ -709,7 +837,9 @@ export function IntelligenceCommandCenter({
   initialInsights = [],
   initialPatterns = [],
   initialPredictions = [],
+  variant = 'widget',
 }: IntelligenceCommandCenterProps) {
+  const isPage = variant === 'page';
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [insights, setInsights] = useState<ComposedInsight[]>(initialInsights);
@@ -774,31 +904,55 @@ export function IntelligenceCommandCenter({
   ];
 
   return (
-    <div className="space-y-2.5 overflow-hidden p-3 md:p-4">
+    <div className={cn(
+      'overflow-hidden',
+      isPage ? 'space-y-6 p-6 md:p-8 max-w-6xl mx-auto' : 'space-y-2.5 p-3 md:p-4'
+    )}>
       {/* Command Center Header */}
-      <div className="relative overflow-hidden rounded-xl border border-white/50 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-3 shadow-lg">
+      <div className={cn(
+        'relative overflow-hidden border border-white/50 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-lg',
+        isPage ? 'rounded-2xl p-6 md:p-8' : 'rounded-xl p-3'
+      )}>
         {/* Ambient effects */}
-        <div className="absolute -right-6 -top-6 w-20 h-20 rounded-full bg-primary-500/20 blur-2xl pointer-events-none" />
-        <div className="absolute -left-4 -bottom-4 w-16 h-16 rounded-full bg-blue-500/15 blur-xl pointer-events-none" />
+        <div className={cn(
+          'absolute rounded-full bg-primary-500/20 blur-2xl pointer-events-none',
+          isPage ? '-right-12 -top-12 w-40 h-40' : '-right-6 -top-6 w-20 h-20'
+        )} />
+        <div className={cn(
+          'absolute rounded-full bg-blue-500/15 blur-xl pointer-events-none',
+          isPage ? '-left-8 -bottom-8 w-32 h-32' : '-left-4 -bottom-4 w-16 h-16'
+        )} />
 
         <div className="relative z-10">
           {/* Top row */}
-          <div className="flex items-center justify-between mb-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-primary-500/25">
-                <IconSparkles size={14} className="text-white" />
+          <div className={cn('flex items-center justify-between', isPage ? 'mb-6' : 'mb-2.5')}>
+            <div className={cn('flex items-center', isPage ? 'gap-4' : 'gap-2')}>
+              <div className={cn(
+                'rounded-lg bg-gradient-to-br from-primary-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-primary-500/25',
+                isPage ? 'w-12 h-12 rounded-xl' : 'w-8 h-8'
+              )}>
+                <IconSparkles size={isPage ? 22 : 14} className="text-white" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white leading-tight">CoachHelm AI</h3>
-                <p className="text-[9px] text-white/40 uppercase tracking-[0.15em]">Intelligence Engine</p>
+                <h3 className={cn(
+                  'font-bold text-white leading-tight',
+                  isPage ? 'text-xl' : 'text-sm'
+                )}>CoachHelm AI</h3>
+                <p className={cn(
+                  'text-white/40 uppercase',
+                  isPage ? 'text-xs tracking-[0.2em]' : 'text-[9px] tracking-[0.15em]'
+                )}>Intelligence Engine</p>
               </div>
             </div>
             <Link
               href="/golf/dashboard/settings/coaching-intelligence"
-              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+              className={cn(
+                'rounded-lg hover:bg-white/10 transition-colors',
+                isPage ? 'p-2.5' : 'p-1.5'
+              )}
               aria-label="CoachHelm Settings"
             >
-              <IconSettings size={14} className="text-white/40" />
+              <IconSettings size={isPage ? 18 : 14} className="text-white/40" />
             </Link>
           </div>
 
@@ -807,7 +961,8 @@ export function IntelligenceCommandCenter({
             onClick={handleAnalyze}
             disabled={isPending}
             className={cn(
-              'w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all',
+              'w-full flex items-center justify-center gap-2 rounded-lg font-bold uppercase tracking-wider transition-all',
+              isPage ? 'px-6 py-3.5 text-sm rounded-xl' : 'px-3 py-2 text-[11px]',
               isPending
                 ? 'bg-white/10 text-white/40 cursor-not-allowed'
                 : 'bg-gradient-to-r from-primary-500 to-emerald-500 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 active:scale-[0.98]'
@@ -816,13 +971,13 @@ export function IntelligenceCommandCenter({
             {isPending ? (
               <>
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                  <IconRefresh size={13} />
+                  <IconRefresh size={isPage ? 16 : 13} />
                 </motion.div>
                 Analyzing Team...
               </>
             ) : (
               <>
-                <IconSparkles size={13} />
+                <IconSparkles size={isPage ? 16 : 13} />
                 {hasData ? 'Re-Analyze Team' : 'Analyze Team'}
               </>
             )}
@@ -830,7 +985,10 @@ export function IntelligenceCommandCenter({
 
           {/* Status line */}
           {lastAnalyzed && (
-            <p className="text-[9px] text-white/30 text-center mt-1.5 uppercase tracking-wider">
+            <p className={cn(
+              'text-white/30 text-center uppercase tracking-wider',
+              isPage ? 'text-xs mt-3' : 'text-[9px] mt-1.5'
+            )}>
               Last analyzed {lastAnalyzed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </p>
           )}
@@ -846,13 +1004,17 @@ export function IntelligenceCommandCenter({
 
       {/* Tabs */}
       {hasData && (
-        <div className="flex gap-0.5 rounded-lg border border-white/50 bg-white/60 backdrop-blur-sm p-0.5 shadow-sm">
+        <div className={cn(
+          'flex border border-white/50 bg-white/60 backdrop-blur-sm shadow-sm',
+          isPage ? 'gap-1 rounded-xl p-1' : 'gap-0.5 rounded-lg p-0.5'
+        )}>
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'flex-1 flex items-center justify-center gap-1 px-1.5 py-1.5 text-[10px] font-bold rounded-md transition-all uppercase tracking-wider',
+                'flex-1 flex items-center justify-center gap-1 font-bold rounded-md transition-all uppercase tracking-wider',
+                isPage ? 'px-4 py-3 text-xs rounded-lg' : 'px-1.5 py-1.5 text-[10px]',
                 activeTab === tab.id
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-400 hover:text-slate-600'
@@ -861,7 +1023,8 @@ export function IntelligenceCommandCenter({
               <span className="truncate">{tab.label}</span>
               {tab.count > 0 && (
                 <span className={cn(
-                  'text-[8px] min-w-[16px] h-4 flex items-center justify-center px-1 rounded-full',
+                  'flex items-center justify-center px-1 rounded-full',
+                  isPage ? 'text-[10px] min-w-[20px] h-5' : 'text-[8px] min-w-[16px] h-4',
                   activeTab === tab.id
                     ? 'bg-primary-100 text-primary-700'
                     : 'bg-slate-200/60 text-slate-500'
@@ -877,88 +1040,168 @@ export function IntelligenceCommandCenter({
       {/* Tab Content */}
       <AnimatePresence mode="wait">
         {activeTab === 'overview' && hasData && (
-          <motion.div key="overview" {...fadeIn} className="space-y-2.5">
-            <OverviewSummary insights={insights} patterns={patterns} />
+          <motion.div key="overview" {...fadeIn} className={cn(isPage ? 'space-y-6' : 'space-y-2.5')}>
+            <OverviewSummary insights={insights} patterns={patterns} variant={variant} />
 
-            {/* Top insight */}
-            {sortedInsights[0] && (() => {
-              const topInsight = sortedInsights[0];
-              return (
-                <EnhancedInsightCard
-                  insight={topInsight}
-                  onAction={(action) => handleInsightAction(topInsight, action)}
-                />
-              );
-            })()}
-
-            {/* Top pattern */}
-            {sortedPatterns[0] && (
-              <EnhancedPatternCard pattern={sortedPatterns[0]} />
+            {isPage ? (
+              /* Page: two-column layout for top items */
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Top Insight</h3>
+                  {sortedInsights[0] && (() => {
+                    const topInsight = sortedInsights[0];
+                    return (
+                      <EnhancedInsightCard
+                        insight={topInsight}
+                        onAction={(action) => handleInsightAction(topInsight, action)}
+                        variant={variant}
+                      />
+                    );
+                  })()}
+                  {sortedInsights[1] && (() => {
+                    const secondInsight = sortedInsights[1];
+                    return (
+                      <EnhancedInsightCard
+                        insight={secondInsight}
+                        onAction={(action) => handleInsightAction(secondInsight, action)}
+                        variant={variant}
+                      />
+                    );
+                  })()}
+                </div>
+                <div className="space-y-4">
+                  {sortedPatterns[0] && (
+                    <>
+                      <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Top Pattern</h3>
+                      <EnhancedPatternCard pattern={sortedPatterns[0]} variant={variant} />
+                    </>
+                  )}
+                  {predictions[0] && (
+                    <>
+                      <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mt-4">Next Round Forecast</h3>
+                      <EnhancedPredictionCard prediction={predictions[0]} variant={variant} />
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Widget: compact single-column */
+              <>
+                {sortedInsights[0] && (() => {
+                  const topInsight = sortedInsights[0];
+                  return (
+                    <EnhancedInsightCard
+                      insight={topInsight}
+                      onAction={(action) => handleInsightAction(topInsight, action)}
+                    />
+                  );
+                })()}
+                {sortedPatterns[0] && (
+                  <EnhancedPatternCard pattern={sortedPatterns[0]} />
+                )}
+                {predictions[0] && (
+                  <EnhancedPredictionCard prediction={predictions[0]} />
+                )}
+                <Link
+                  href="/golf/dashboard/intelligence"
+                  className="flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-primary-600 hover:text-primary-700 transition-colors"
+                >
+                  View Full Intelligence Dashboard
+                  <IconChevronRight size={14} />
+                </Link>
+              </>
             )}
-
-            {/* Top prediction */}
-            {predictions[0] && (
-              <EnhancedPredictionCard prediction={predictions[0]} />
-            )}
-
-            {/* View all link */}
-            <Link
-              href="/golf/dashboard/insights"
-              className="flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-primary-600 hover:text-primary-700 transition-colors"
-            >
-              View Full Intelligence Dashboard
-              <IconChevronRight size={14} />
-            </Link>
           </motion.div>
         )}
 
         {activeTab === 'insights' && (
-          <motion.div key="insights" {...fadeIn} className="space-y-2">
+          <motion.div key="insights" {...fadeIn} className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
+            {isPage && (
+              <h3 className="text-lg font-semibold text-slate-800">All Insights ({sortedInsights.length})</h3>
+            )}
             {sortedInsights.length > 0 ? (
-              sortedInsights.map((insight, i) => (
-                <EnhancedInsightCard
-                  key={i}
-                  insight={insight}
-                  onAction={(action) => handleInsightAction(insight, action)}
-                />
-              ))
+              isPage ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {sortedInsights.map((insight, i) => (
+                    <EnhancedInsightCard
+                      key={i}
+                      insight={insight}
+                      onAction={(action) => handleInsightAction(insight, action)}
+                      variant={variant}
+                    />
+                  ))}
+                </div>
+              ) : (
+                sortedInsights.map((insight, i) => (
+                  <EnhancedInsightCard
+                    key={i}
+                    insight={insight}
+                    onAction={(action) => handleInsightAction(insight, action)}
+                  />
+                ))
+              )
             ) : (
               <TabEmptyState
-                icon={<IconSparkles size={20} className="text-slate-300" />}
+                icon={<IconSparkles size={isPage ? 28 : 20} className="text-slate-300" />}
                 title="No insights yet"
                 description="Click 'Analyze Team' to generate AI-powered coaching insights"
+                variant={variant}
               />
             )}
           </motion.div>
         )}
 
         {activeTab === 'patterns' && (
-          <motion.div key="patterns" {...fadeIn} className="space-y-2">
+          <motion.div key="patterns" {...fadeIn} className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
+            {isPage && (
+              <h3 className="text-lg font-semibold text-slate-800">All Patterns ({sortedPatterns.length})</h3>
+            )}
             {sortedPatterns.length > 0 ? (
-              sortedPatterns.map(pattern => (
-                <EnhancedPatternCard key={pattern.id} pattern={pattern} />
-              ))
+              isPage ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {sortedPatterns.map(pattern => (
+                    <EnhancedPatternCard key={pattern.id} pattern={pattern} variant={variant} />
+                  ))}
+                </div>
+              ) : (
+                sortedPatterns.map(pattern => (
+                  <EnhancedPatternCard key={pattern.id} pattern={pattern} />
+                ))
+              )
             ) : (
               <TabEmptyState
-                icon={<IconStar size={20} className="text-slate-300" />}
+                icon={<IconStar size={isPage ? 28 : 20} className="text-slate-300" />}
                 title="No patterns detected"
                 description="Patterns emerge from analyzing recurring trends in player data"
+                variant={variant}
               />
             )}
           </motion.div>
         )}
 
         {activeTab === 'predictions' && (
-          <motion.div key="predictions" {...fadeIn} className="space-y-2">
+          <motion.div key="predictions" {...fadeIn} className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
+            {isPage && (
+              <h3 className="text-lg font-semibold text-slate-800">All Forecasts ({predictions.length})</h3>
+            )}
             {predictions.length > 0 ? (
-              predictions.map((pred, i) => (
-                <EnhancedPredictionCard key={i} prediction={pred} />
-              ))
+              isPage ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {predictions.map((pred, i) => (
+                    <EnhancedPredictionCard key={i} prediction={pred} variant={variant} />
+                  ))}
+                </div>
+              ) : (
+                predictions.map((pred, i) => (
+                  <EnhancedPredictionCard key={i} prediction={pred} />
+                ))
+              )
             ) : (
               <TabEmptyState
-                icon={<IconTarget size={20} className="text-slate-300" />}
+                icon={<IconTarget size={isPage ? 28 : 20} className="text-slate-300" />}
                 title="No predictions yet"
                 description="Predictions require sufficient round history to generate forecasts"
+                variant={variant}
               />
             )}
           </motion.div>
@@ -967,20 +1210,35 @@ export function IntelligenceCommandCenter({
 
       {/* No data state */}
       {!hasData && !isPending && (
-        <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-white/40 p-4">
+        <div className={cn(
+          'bg-white/60 backdrop-blur-sm border border-white/40',
+          isPage ? 'rounded-2xl p-8 md:p-12' : 'rounded-xl p-4'
+        )}>
           <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-3 shadow-sm">
-              <IconSparkles size={22} className="text-primary-500" />
+            <div className={cn(
+              'rounded-xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center shadow-sm',
+              isPage ? 'w-20 h-20 rounded-2xl mb-5' : 'w-12 h-12 mb-3'
+            )}>
+              <IconSparkles size={isPage ? 36 : 22} className="text-primary-500" />
             </div>
-            <h4 className="text-[13px] font-semibold text-slate-800 mb-1">
+            <h4 className={cn(
+              'font-semibold text-slate-800',
+              isPage ? 'text-xl mb-2' : 'text-[13px] mb-1'
+            )}>
               Ready to Analyze
             </h4>
-            <p className="text-[11px] text-slate-400 max-w-[220px] leading-relaxed mb-3">
+            <p className={cn(
+              'text-slate-400 leading-relaxed',
+              isPage ? 'text-base max-w-md mb-6' : 'text-[11px] max-w-[220px] mb-3'
+            )}>
               CoachHelm AI will mine patterns, discover causal relationships, and predict performance trends across your team.
             </p>
-            <div className="flex flex-wrap gap-1.5 justify-center">
+            <div className={cn('flex flex-wrap justify-center', isPage ? 'gap-2' : 'gap-1.5')}>
               {['Pattern Mining', 'Causal Discovery', 'Predictions', 'Shot Analysis'].map(feature => (
-                <span key={feature} className="text-[9px] font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
+                <span key={feature} className={cn(
+                  'font-medium text-primary-600 bg-primary-50 rounded-full',
+                  isPage ? 'text-xs px-3 py-1' : 'text-[9px] px-2 py-0.5'
+                )}>
                   {feature}
                 </span>
               ))}
