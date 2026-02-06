@@ -20,7 +20,6 @@ import {
 import { cn } from '@/lib/utils';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { useSidebar } from '@/contexts/sidebar-context';
-import { EmptyState } from '@/components/ui/empty-state';
 import { TrendChart } from './TrendChart';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
 import {
@@ -191,142 +190,241 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                 {/* Join Team Banner - show if player has no team */}
                 {!team && <JoinTeamBanner />}
 
-                {/* Stats Grid - tighter gap on mobile */}
-                <motion.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 mb-5 md:mb-8" variants={itemVariants}>
-                    <PremiumStatCard
-                        icon={<IconGolf size={20} />}
-                        iconColor="text-primary-600"
-                        iconBg="bg-primary-50"
-                        label="Rounds Played"
-                        value={stats.roundsPlayed}
-                        href="/golf/dashboard/rounds"
-                        accent
-                    />
-                    <PremiumStatCard
-                        icon={<IconChartBar size={20} />}
-                        iconColor="text-slate-600"
-                        iconBg="bg-slate-100"
-                        label="Scoring Average"
-                        value={stats.scoringAverage ? stats.scoringAverage.toFixed(1) : '--'}
-                        trend={stats.recentTrend === 'up'
-                            ? { value: 0.5, positive: false }
-                            : stats.recentTrend === 'down'
-                                ? { value: 0.5, positive: true }
-                                : null}
-                        href="/golf/dashboard/stats"
-                    />
-                    <PremiumStatCard
-                        icon={<IconFlag size={20} />}
-                        iconColor="text-amber-600"
-                        iconBg="bg-amber-50"
-                        label="Best Round"
-                        value={stats.bestRound || '--'}
-                        href="/golf/dashboard/rounds"
-                    />
-                    <PremiumStatCard
-                        icon={<IconSparkles size={20} />}
-                        iconColor="text-violet-600"
-                        iconBg="bg-violet-50"
-                        label="Handicap"
-                        value={stats.handicap !== null ? stats.handicap.toFixed(1) : '--'}
-                        href="/golf/dashboard/stats"
-                    />
-                </motion.div>
+                {stats.roundsPlayed === 0 ? (
+                    /* ============================================================
+                     * EMPTY STATE — player has no rounds yet
+                     * Show a welcoming getting-started experience
+                     * ============================================================ */
+                    <>
+                        <motion.div className="mb-5 md:mb-8" variants={itemVariants}>
+                            <PremiumGlassCard glow className="!p-0 overflow-hidden">
+                                <div className="relative p-6 md:p-10 text-center">
+                                    {/* Ambient glow */}
+                                    <div className="absolute right-0 top-0 w-48 h-48 bg-primary-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+                                    <div className="absolute left-0 bottom-0 w-36 h-36 bg-violet-500/8 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
-                {/* Two Column Layout - reduced gap on mobile */}
-                <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
-                    {/* Left Column - Quick Actions & Focus Areas */}
-                    <motion.div className="space-y-4 md:space-y-6" variants={itemVariants}>
-                        <div>
-                            <SectionHeader title="Quick Actions" />
-                            <div className="space-y-2">
-                                <QuickActionCard
-                                    icon={<IconPlus size={18} className="text-white" />}
-                                    label="Submit Round"
-                                    description="Log your score"
-                                    href="/golf/dashboard/rounds/new"
-                                    variant="primary"
-                                />
-                                <QuickActionCard
-                                    icon={<IconChartBar size={18} className="text-slate-600" />}
-                                    label="View My Stats"
-                                    description="Performance analytics"
-                                    href="/golf/dashboard/stats"
-                                />
-                                <QuickActionCard
-                                    icon={<IconCalendar size={18} className="text-slate-600" />}
-                                    label="View Calendar"
-                                    description="Upcoming events"
-                                    href="/golf/dashboard/calendar"
-                                />
-                                <QuickActionCard
-                                    icon={<IconMessage size={18} className="text-slate-600" />}
-                                    label="Messages"
-                                    description="Chat with coaches"
-                                    href="/golf/dashboard/messages"
-                                />
-                            </div>
-                        </div>
+                                    <div className="relative z-10">
+                                        <div className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 md:mb-5 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center shadow-sm">
+                                            <IconGolf size={32} className="text-primary-500 md:hidden" />
+                                            <IconGolf size={40} className="text-primary-500 hidden md:block" />
+                                        </div>
+                                        <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-2">
+                                            Ready to Track Your Game
+                                        </h3>
+                                        <p className="text-sm md:text-base text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
+                                            Submit your first round to unlock scoring averages, performance trends, and AI-powered coaching insights.
+                                        </p>
+                                        <Link
+                                            href="/golf/dashboard/rounds/new"
+                                            className={cn(
+                                                'inline-flex items-center gap-2 px-5 py-3 rounded-xl',
+                                                'bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm',
+                                                'shadow-[0_4px_16px_rgba(22,163,74,0.3)]',
+                                                'transition-all duration-200 active:scale-[0.97]'
+                                            )}
+                                        >
+                                            <IconPlus size={16} />
+                                            Submit Your First Round
+                                        </Link>
 
-                        {/* Focus Areas */}
-                        <div>
-                            <SectionHeader
-                                title="My Focus Areas"
-                                icon={<IconTarget size={14} />}
-                            />
-                            <PremiumGlassCard glow>
-                                <ShineEffect />
-                                <PlayerFocusAreas playerId={player.id} />
-                            </PremiumGlassCard>
-                        </div>
-                    </motion.div>
-
-                    {/* Right Column - Recent Rounds & Charts */}
-                    <motion.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
-                        {/* Scoring Trend Chart */}
-                        {chartData.length >= 2 && (
-                            <div>
-                                <SectionHeader title="Scoring Trend" />
-                                <PremiumGlassCard glow>
-                                    <TrendChart
-                                        data={chartData}
-                                        reverse={true}
-                                    />
-                                </PremiumGlassCard>
-                            </div>
-                        )}
-
-                        {/* Recent Rounds */}
-                        <div>
-                            <SectionHeader
-                                title="My Recent Rounds"
-                                action={{ label: 'View All', href: '/golf/dashboard/rounds' }}
-                            />
-                            <PremiumGlassCard noPadding>
-                                <ShineEffect />
-                                {recentRounds.length > 0 ? (
-                                    <div className="divide-y divide-white/20">
-                                        {recentRounds.map((round) => (
-                                            <RoundRow
-                                                key={round.id}
-                                                courseName={round.course_name}
-                                                score={round.total_score}
-                                                toPar={round.total_to_par}
-                                                date={round.round_date}
-                                            />
-                                        ))}
+                                        {/* What you'll unlock */}
+                                        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                                            {[
+                                                { icon: <IconChartBar size={18} />, label: 'Scoring Average' },
+                                                { icon: <IconFlag size={18} />, label: 'Best Round' },
+                                                { icon: <IconTarget size={18} />, label: 'Performance Trends' },
+                                                { icon: <IconSparkles size={18} />, label: 'AI Coaching' },
+                                            ].map((item) => (
+                                                <div key={item.label} className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl bg-white/40 border border-white/30">
+                                                    <div className="text-slate-400">{item.icon}</div>
+                                                    <span className="text-[11px] md:text-xs font-medium text-slate-500">{item.label}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                ) : (
-                                    <EmptyState
-                                        type="rounds"
-                                        variant="compact"
-                                        action={{ label: 'Submit First Round', href: '/golf/dashboard/rounds/new' }}
-                                    />
-                                )}
+                                </div>
                             </PremiumGlassCard>
+                        </motion.div>
+
+                        {/* Quick Actions + Focus Areas below the empty state */}
+                        <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
+                            <motion.div className="space-y-4 md:space-y-6" variants={itemVariants}>
+                                <div>
+                                    <SectionHeader title="Quick Actions" />
+                                    <div className="space-y-2">
+                                        <QuickActionCard
+                                            icon={<IconPlus size={18} className="text-white" />}
+                                            label="Submit Round"
+                                            description="Log your score"
+                                            href="/golf/dashboard/rounds/new"
+                                            variant="primary"
+                                        />
+                                        <QuickActionCard
+                                            icon={<IconCalendar size={18} className="text-slate-600" />}
+                                            label="View Calendar"
+                                            description="Upcoming events"
+                                            href="/golf/dashboard/calendar"
+                                        />
+                                        <QuickActionCard
+                                            icon={<IconMessage size={18} className="text-slate-600" />}
+                                            label="Messages"
+                                            description="Chat with coaches"
+                                            href="/golf/dashboard/messages"
+                                        />
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            <motion.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
+                                <div>
+                                    <SectionHeader
+                                        title="My Focus Areas"
+                                        icon={<IconTarget size={14} />}
+                                    />
+                                    <PremiumGlassCard glow>
+                                        <ShineEffect />
+                                        <PlayerFocusAreas playerId={player.id} />
+                                    </PremiumGlassCard>
+                                </div>
+                            </motion.div>
                         </div>
-                    </motion.div>
-                </div>
+                    </>
+                ) : (
+                    /* ============================================================
+                     * NORMAL STATE — player has rounds
+                     * Show full stats grid, charts, and recent rounds
+                     * ============================================================ */
+                    <>
+                        {/* Stats Grid */}
+                        <motion.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 mb-5 md:mb-8" variants={itemVariants}>
+                            <PremiumStatCard
+                                icon={<IconGolf size={20} />}
+                                iconColor="text-primary-600"
+                                iconBg="bg-primary-50"
+                                label="Rounds Played"
+                                value={stats.roundsPlayed}
+                                href="/golf/dashboard/rounds"
+                                accent
+                            />
+                            <PremiumStatCard
+                                icon={<IconChartBar size={20} />}
+                                iconColor="text-slate-600"
+                                iconBg="bg-slate-100"
+                                label="Scoring Average"
+                                value={stats.scoringAverage ? stats.scoringAverage.toFixed(1) : '--'}
+                                trend={stats.recentTrend === 'up'
+                                    ? { value: 0.5, positive: false }
+                                    : stats.recentTrend === 'down'
+                                        ? { value: 0.5, positive: true }
+                                        : null}
+                                href="/golf/dashboard/stats"
+                            />
+                            <PremiumStatCard
+                                icon={<IconFlag size={20} />}
+                                iconColor="text-amber-600"
+                                iconBg="bg-amber-50"
+                                label="Best Round"
+                                value={stats.bestRound || '--'}
+                                href="/golf/dashboard/rounds"
+                            />
+                            <PremiumStatCard
+                                icon={<IconSparkles size={20} />}
+                                iconColor="text-violet-600"
+                                iconBg="bg-violet-50"
+                                label="Handicap"
+                                value={stats.handicap !== null ? stats.handicap.toFixed(1) : '--'}
+                                href="/golf/dashboard/stats"
+                            />
+                        </motion.div>
+
+                        {/* Two Column Layout */}
+                        <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
+                            {/* Left Column - Quick Actions & Focus Areas */}
+                            <motion.div className="space-y-4 md:space-y-6" variants={itemVariants}>
+                                <div>
+                                    <SectionHeader title="Quick Actions" />
+                                    <div className="space-y-2">
+                                        <QuickActionCard
+                                            icon={<IconPlus size={18} className="text-white" />}
+                                            label="Submit Round"
+                                            description="Log your score"
+                                            href="/golf/dashboard/rounds/new"
+                                            variant="primary"
+                                        />
+                                        <QuickActionCard
+                                            icon={<IconChartBar size={18} className="text-slate-600" />}
+                                            label="View My Stats"
+                                            description="Performance analytics"
+                                            href="/golf/dashboard/stats"
+                                        />
+                                        <QuickActionCard
+                                            icon={<IconCalendar size={18} className="text-slate-600" />}
+                                            label="View Calendar"
+                                            description="Upcoming events"
+                                            href="/golf/dashboard/calendar"
+                                        />
+                                        <QuickActionCard
+                                            icon={<IconMessage size={18} className="text-slate-600" />}
+                                            label="Messages"
+                                            description="Chat with coaches"
+                                            href="/golf/dashboard/messages"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Focus Areas */}
+                                <div>
+                                    <SectionHeader
+                                        title="My Focus Areas"
+                                        icon={<IconTarget size={14} />}
+                                    />
+                                    <PremiumGlassCard glow>
+                                        <ShineEffect />
+                                        <PlayerFocusAreas playerId={player.id} />
+                                    </PremiumGlassCard>
+                                </div>
+                            </motion.div>
+
+                            {/* Right Column - Recent Rounds & Charts */}
+                            <motion.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
+                                {/* Scoring Trend Chart */}
+                                {chartData.length >= 2 && (
+                                    <div>
+                                        <SectionHeader title="Scoring Trend" />
+                                        <PremiumGlassCard glow>
+                                            <TrendChart
+                                                data={chartData}
+                                                reverse={true}
+                                            />
+                                        </PremiumGlassCard>
+                                    </div>
+                                )}
+
+                                {/* Recent Rounds */}
+                                <div>
+                                    <SectionHeader
+                                        title="My Recent Rounds"
+                                        action={{ label: 'View All', href: '/golf/dashboard/rounds' }}
+                                    />
+                                    <PremiumGlassCard noPadding>
+                                        <ShineEffect />
+                                        <div className="divide-y divide-white/20">
+                                            {recentRounds.map((round) => (
+                                                <RoundRow
+                                                    key={round.id}
+                                                    courseName={round.course_name}
+                                                    score={round.total_score}
+                                                    toPar={round.total_to_par}
+                                                    date={round.round_date}
+                                                />
+                                            ))}
+                                        </div>
+                                    </PremiumGlassCard>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
             </motion.div>
         </div>
     );
