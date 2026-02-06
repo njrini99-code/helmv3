@@ -460,6 +460,40 @@ export interface ComposedInsight {
   reasoning?: ReasoningResult;
 }
 
+/** Categories for insight deduplication and grouping */
+export type InsightCategory =
+  | 'putting'
+  | 'ball_striking'
+  | 'short_game'
+  | 'course_management'
+  | 'mental_game'
+  | 'scoring'
+  | 'shot_pattern'
+  | 'team_trend'
+  | 'general';
+
+/** A composed insight enriched with player context for team-level display */
+export interface TeamComposedInsight extends ComposedInsight {
+  playerId?: string;
+  playerName?: string;
+  category?: InsightCategory;
+}
+
+/** A group of related insights across players */
+export interface InsightGroup {
+  id: string;
+  category: InsightCategory;
+  tone: InsightTone;
+  headline: string;
+  body: string;
+  callToAction?: string;
+  confidence: number;
+  players: Array<{ playerId: string; playerName: string }>;
+  memberInsights: TeamComposedInsight[];
+  playerCount: number;
+  isTeamWide: boolean;
+}
+
 /** Context for insight composition */
 export interface InsightContext {
   playerId: string;

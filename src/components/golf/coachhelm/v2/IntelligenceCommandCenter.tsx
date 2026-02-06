@@ -41,6 +41,8 @@ import type {
   TailRiskProbabilities,
   InsightTone,
   ReasoningStep,
+  InsightGroup,
+  InsightCategory,
 } from '@/lib/coachhelm/v2/types';
 
 // ============================================================================
@@ -486,6 +488,283 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
   );
 });
 
+// ============================================================================
+// CATEGORY LABELS (mirror server-side labels)
+// ============================================================================
+
+const CATEGORY_LABELS: Record<InsightCategory, string> = {
+  putting: 'Putting',
+  ball_striking: 'Ball Striking',
+  short_game: 'Short Game',
+  course_management: 'Course Management',
+  mental_game: 'Mental Game',
+  scoring: 'Scoring Trends',
+  shot_pattern: 'Shot Patterns',
+  team_trend: 'Team Trends',
+  general: 'General',
+};
+
+const CATEGORY_ICONS: Record<InsightCategory, typeof IconTarget> = {
+  putting: IconTarget,
+  ball_striking: IconTrendingUp,
+  short_game: IconTarget,
+  course_management: IconStar,
+  mental_game: IconSparkles,
+  scoring: IconTrendingDown,
+  shot_pattern: IconTarget,
+  team_trend: IconUsers,
+  general: IconSparkles,
+};
+
+/**
+ * InsightGroupCard - Groups related insights by category with player chips
+ */
+const InsightGroupCard = memo(function InsightGroupCard({
+  group,
+  onDismissGroup,
+  onAcknowledgeGroup,
+  variant = 'widget',
+}: {
+  group: InsightGroup;
+  onDismissGroup?: (group: InsightGroup) => void;
+  onAcknowledgeGroup?: (group: InsightGroup) => void;
+  variant?: ICCVariant;
+}) {
+  const [expanded, setExpanded] = useState(variant === 'page');
+  const isPage = variant === 'page';
+  const tone = TONE_CONFIG[group.tone] || TONE_CONFIG.neutral;
+  const confidencePct = Math.round(group.confidence * 100);
+  const CategoryIcon = CATEGORY_ICONS[group.category] || IconSparkles;
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      className={cn(
+        'border overflow-hidden transition-shadow',
+        isPage ? 'rounded-2xl' : 'rounded-xl',
+        tone.bg, tone.border,
+        expanded ? 'shadow-md' : 'shadow-sm hover:shadow-md'
+      )}
+    >
+      {/* Accent bar */}
+      <div className={cn(isPage ? 'h-1' : 'h-0.5', tone.accentBar)} />
+
+      {/* Header */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className={cn(
+          'w-full text-left flex items-start',
+          isPage ? 'p-5 gap-4' : 'p-3 gap-2.5'
+        )}
+      >
+        {/* Category icon */}
+        <div className={cn(
+          'flex-shrink-0 rounded-lg flex items-center justify-center',
+          'bg-white/80 shadow-sm border border-white/50',
+          isPage ? 'w-10 h-10' : 'w-7 h-7'
+        )}>
+          <CategoryIcon size={isPage ? 18 : 14} className={tone.icon} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          {/* Badge row */}
+          <div className={cn('flex items-center gap-1.5 flex-wrap', isPage ? 'mb-2' : 'mb-1')}>
+            <span className={cn(
+              'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
+              isPage ? 'text-[10px] px-2 py-1' : 'text-[9px]',
+              tone.badge
+            )}>
+              {tone.badgeText}
+            </span>
+            <span className={cn(
+              'font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500',
+              isPage ? 'text-[10px] px-2 py-1' : 'text-[9px]'
+            )}>
+              {CATEGORY_LABELS[group.category]}
+            </span>
+            <span className={cn('text-slate-400', isPage ? 'text-xs' : 'text-[10px]')}>
+              {confidencePct}%
+            </span>
+          </div>
+
+          {/* Headline */}
+          <h4 className={cn(
+            'font-semibold text-slate-900 leading-snug mb-1',
+            isPage ? 'text-base' : 'text-[13px]'
+          )}>
+            {group.headline}
+          </h4>
+
+          {/* Player chips */}
+          {group.players.length > 0 && (
+            <div className={cn('flex items-center gap-1 flex-wrap', isPage ? 'mb-1.5' : 'mb-1')}>
+              {group.isTeamWide && (
+                <span className={cn(
+                  'inline-flex items-center gap-1 font-semibold rounded-full border',
+                  isPage ? 'text-[11px] px-2.5 py-0.5' : 'text-[9px] px-2 py-0.5',
+                  'bg-primary-50 text-primary-700 border-primary-200/60'
+                )}>
+                  <IconUsers size={isPage ? 12 : 10} />
+                  Team-wide
+                </span>
+              )}
+              {group.players.slice(0, isPage ? 8 : 4).map((p) => (
+                <span
+                  key={p.playerId}
+                  className={cn(
+                    'inline-flex items-center font-medium rounded-full border',
+                    isPage ? 'text-[11px] px-2.5 py-0.5' : 'text-[9px] px-2 py-0.5',
+                    'bg-white/70 text-slate-600 border-slate-200/60'
+                  )}
+                >
+                  {p.playerName}
+                </span>
+              ))}
+              {group.players.length > (isPage ? 8 : 4) && (
+                <span className={cn(
+                  'text-slate-400 font-medium',
+                  isPage ? 'text-[11px]' : 'text-[9px]'
+                )}>
+                  +{group.players.length - (isPage ? 8 : 4)} more
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Body preview */}
+          <p className={cn(
+            'text-slate-500 line-clamp-2 leading-relaxed',
+            isPage ? 'text-sm' : 'text-[11px]'
+          )}>
+            {group.body}
+          </p>
+        </div>
+
+        {/* Expand chevron */}
+        <motion.div
+          animate={{ rotate: expanded ? 180 : 0 }}
+          className="flex-shrink-0 mt-1 text-slate-300"
+        >
+          <IconChevronDown size={isPage ? 18 : 14} />
+        </motion.div>
+      </button>
+
+      {/* Expanded content */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className={cn('pt-0 space-y-2.5', isPage ? 'px-5 pb-5 space-y-4' : 'px-3 pb-3')}>
+              {/* Full body */}
+              <p className={cn('text-slate-600 leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
+                {group.body}
+              </p>
+
+              {/* Member insights (drill-down) */}
+              {group.memberInsights.length > 1 && (
+                <div>
+                  <h5 className={cn(
+                    'font-bold text-slate-400 uppercase tracking-wider',
+                    isPage ? 'text-xs mb-2' : 'text-[9px] mb-1.5'
+                  )}>
+                    Individual Details
+                  </h5>
+                  <div className={cn('space-y-1.5', isPage && 'space-y-2')}>
+                    {group.memberInsights.slice(0, isPage ? 6 : 3).map((mi, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          'flex items-start gap-2 bg-white/60 rounded-lg border border-white/50',
+                          isPage ? 'text-sm p-3' : 'text-[11px] p-2'
+                        )}
+                      >
+                        {mi.playerName && (
+                          <span className={cn(
+                            'flex-shrink-0 inline-flex items-center font-semibold rounded-full border bg-white/80 text-slate-700 border-slate-200/60',
+                            isPage ? 'text-[10px] px-2 py-0.5' : 'text-[8px] px-1.5 py-0.5'
+                          )}>
+                            {mi.playerName}
+                          </span>
+                        )}
+                        <p className="text-slate-600 leading-relaxed min-w-0">
+                          {mi.body || mi.headline}
+                        </p>
+                      </div>
+                    ))}
+                    {group.memberInsights.length > (isPage ? 6 : 3) && (
+                      <p className={cn('text-slate-400', isPage ? 'text-xs' : 'text-[9px]')}>
+                        +{group.memberInsights.length - (isPage ? 6 : 3)} more insights
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Call to action */}
+              {group.callToAction && (
+                <div className={cn(
+                  'bg-white/60 rounded-lg border border-white/50',
+                  isPage ? 'p-4' : 'p-2.5'
+                )}>
+                  <div className={cn('flex items-center gap-1.5', isPage ? 'mb-2' : 'mb-1')}>
+                    <IconTarget size={isPage ? 14 : 12} className="text-green-600" />
+                    <span className={cn(
+                      'font-bold text-green-700 uppercase tracking-wider',
+                      isPage ? 'text-xs' : 'text-[9px]'
+                    )}>
+                      Next Step
+                    </span>
+                  </div>
+                  <p className={cn('text-slate-700 leading-relaxed', isPage ? 'text-sm' : 'text-[11px]')}>
+                    {group.callToAction}
+                  </p>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              {(onAcknowledgeGroup || onDismissGroup) && (
+                <div className={cn('flex gap-1.5 pt-1', isPage && 'gap-2 pt-2')}>
+                  {onAcknowledgeGroup && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onAcknowledgeGroup(group); }}
+                      className={cn(
+                        'flex items-center gap-1 font-semibold text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors',
+                        isPage ? 'text-xs px-4 py-2' : 'text-[10px] px-2.5 py-1.5'
+                      )}
+                    >
+                      <IconCheck size={isPage ? 14 : 12} /> Got It
+                    </button>
+                  )}
+                  {onDismissGroup && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDismissGroup(group); }}
+                      className={cn(
+                        'flex items-center gap-1 text-slate-500 hover:text-slate-700 hover:bg-white/60 rounded-lg transition-colors',
+                        isPage ? 'text-xs px-4 py-2' : 'text-[10px] px-2.5 py-1.5'
+                      )}
+                    >
+                      <IconX size={isPage ? 14 : 12} /> Dismiss
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+});
+
 /**
  * Enhanced Pattern Card - Visual pattern with stroke impact bar
  */
@@ -843,6 +1122,7 @@ export function IntelligenceCommandCenter({
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [insights, setInsights] = useState<ComposedInsight[]>(initialInsights);
+  const [insightGroups, setInsightGroups] = useState<InsightGroup[]>([]);
   const [patterns, setPatterns] = useState<MinedPattern[]>(initialPatterns);
   const [predictions, setPredictions] = useState<Array<PerformancePrediction & { playerName?: string }>>(initialPredictions);
   const [error, setError] = useState<string | null>(null);
@@ -866,6 +1146,7 @@ export function IntelligenceCommandCenter({
         const result = await generateTeamInsight();
         if (result.success) {
           setInsights(result.insights || []);
+          setInsightGroups(result.insightGroups || []);
           setPatterns(result.patterns || []);
           setPredictions(result.predictions || []);
           setLastAnalyzed(new Date());
@@ -894,11 +1175,33 @@ export function IntelligenceCommandCenter({
     }
   }, []);
 
-  const hasData = insights.length > 0 || patterns.length > 0 || predictions.length > 0;
+  const handleGroupAction = useCallback(async (group: InsightGroup, action: 'acknowledge' | 'dismiss') => {
+    setInsightGroups(prev => prev.filter(g => g.id !== group.id));
+    // Also remove the individual member insights
+    const memberHeadlines = new Set(group.memberInsights.map(m => m.headline));
+    setInsights(prev => prev.filter(i => !memberHeadlines.has(i.headline)));
+    // Persist the action for the primary insight
+    try {
+      const primaryInsight = group.memberInsights[0];
+      if (primaryInsight) {
+        const result = action === 'acknowledge'
+          ? await acknowledgeComposedInsight(primaryInsight)
+          : await dismissComposedInsight(primaryInsight);
+        if (!result.success) {
+          setInsightGroups(prev => [...prev, group]);
+        }
+      }
+    } catch {
+      setInsightGroups(prev => [...prev, group]);
+    }
+  }, []);
+
+  const hasData = insights.length > 0 || insightGroups.length > 0 || patterns.length > 0 || predictions.length > 0;
+  const displayGroups = insightGroups.length > 0;
 
   const tabs: { id: TabId; label: string; count: number }[] = [
     { id: 'overview', label: 'Overview', count: 0 },
-    { id: 'insights', label: 'Insights', count: insights.length },
+    { id: 'insights', label: 'Insights', count: displayGroups ? insightGroups.length : insights.length },
     { id: 'patterns', label: 'Patterns', count: patterns.length },
     { id: 'predictions', label: 'Forecasts', count: predictions.length },
   ];
@@ -1047,27 +1350,41 @@ export function IntelligenceCommandCenter({
               /* Page: two-column layout for top items */
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Top Insight</h3>
-                  {sortedInsights[0] && (() => {
-                    const topInsight = sortedInsights[0];
-                    return (
-                      <EnhancedInsightCard
-                        insight={topInsight}
-                        onAction={(action) => handleInsightAction(topInsight, action)}
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Top Insights</h3>
+                  {displayGroups ? (
+                    insightGroups.slice(0, 2).map((group) => (
+                      <InsightGroupCard
+                        key={group.id}
+                        group={group}
+                        onAcknowledgeGroup={(g) => handleGroupAction(g, 'acknowledge')}
+                        onDismissGroup={(g) => handleGroupAction(g, 'dismiss')}
                         variant={variant}
                       />
-                    );
-                  })()}
-                  {sortedInsights[1] && (() => {
-                    const secondInsight = sortedInsights[1];
-                    return (
-                      <EnhancedInsightCard
-                        insight={secondInsight}
-                        onAction={(action) => handleInsightAction(secondInsight, action)}
-                        variant={variant}
-                      />
-                    );
-                  })()}
+                    ))
+                  ) : (
+                    <>
+                      {sortedInsights[0] && (() => {
+                        const first = sortedInsights[0];
+                        return (
+                          <EnhancedInsightCard
+                            insight={first}
+                            onAction={(action) => handleInsightAction(first, action)}
+                            variant={variant}
+                          />
+                        );
+                      })()}
+                      {sortedInsights[1] && (() => {
+                        const second = sortedInsights[1];
+                        return (
+                          <EnhancedInsightCard
+                            insight={second}
+                            onAction={(action) => handleInsightAction(second, action)}
+                            variant={variant}
+                          />
+                        );
+                      })()}
+                    </>
+                  )}
                 </div>
                 <div className="space-y-4">
                   {sortedPatterns[0] && (
@@ -1087,15 +1404,25 @@ export function IntelligenceCommandCenter({
             ) : (
               /* Widget: compact single-column */
               <>
-                {sortedInsights[0] && (() => {
-                  const topInsight = sortedInsights[0];
-                  return (
-                    <EnhancedInsightCard
-                      insight={topInsight}
-                      onAction={(action) => handleInsightAction(topInsight, action)}
+                {displayGroups ? (
+                  insightGroups[0] && (
+                    <InsightGroupCard
+                      group={insightGroups[0]}
+                      onAcknowledgeGroup={(g) => handleGroupAction(g, 'acknowledge')}
+                      onDismissGroup={(g) => handleGroupAction(g, 'dismiss')}
                     />
-                  );
-                })()}
+                  )
+                ) : (
+                  sortedInsights[0] && (() => {
+                    const topInsight = sortedInsights[0];
+                    return (
+                      <EnhancedInsightCard
+                        insight={topInsight}
+                        onAction={(action) => handleInsightAction(topInsight, action)}
+                      />
+                    );
+                  })()
+                )}
                 {sortedPatterns[0] && (
                   <EnhancedPatternCard pattern={sortedPatterns[0]} />
                 )}
@@ -1116,30 +1443,62 @@ export function IntelligenceCommandCenter({
 
         {activeTab === 'insights' && (
           <motion.div key="insights" {...fadeIn} className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
-            {isPage && (
-              <h3 className="text-lg font-semibold text-slate-800">All Insights ({sortedInsights.length})</h3>
-            )}
-            {sortedInsights.length > 0 ? (
-              isPage ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {sortedInsights.map((insight, i) => (
+            {displayGroups ? (
+              <>
+                {isPage && (
+                  <h3 className="text-lg font-semibold text-slate-800">
+                    Insights ({insightGroups.length} {insightGroups.length === 1 ? 'group' : 'groups'})
+                  </h3>
+                )}
+                {isPage ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {insightGroups.map((group) => (
+                      <InsightGroupCard
+                        key={group.id}
+                        group={group}
+                        onAcknowledgeGroup={(g) => handleGroupAction(g, 'acknowledge')}
+                        onDismissGroup={(g) => handleGroupAction(g, 'dismiss')}
+                        variant={variant}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  insightGroups.map((group) => (
+                    <InsightGroupCard
+                      key={group.id}
+                      group={group}
+                      onAcknowledgeGroup={(g) => handleGroupAction(g, 'acknowledge')}
+                      onDismissGroup={(g) => handleGroupAction(g, 'dismiss')}
+                    />
+                  ))
+                )}
+              </>
+            ) : sortedInsights.length > 0 ? (
+              <>
+                {isPage && (
+                  <h3 className="text-lg font-semibold text-slate-800">All Insights ({sortedInsights.length})</h3>
+                )}
+                {isPage ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {sortedInsights.map((insight, i) => (
+                      <EnhancedInsightCard
+                        key={i}
+                        insight={insight}
+                        onAction={(action) => handleInsightAction(insight, action)}
+                        variant={variant}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  sortedInsights.map((insight, i) => (
                     <EnhancedInsightCard
                       key={i}
                       insight={insight}
                       onAction={(action) => handleInsightAction(insight, action)}
-                      variant={variant}
                     />
-                  ))}
-                </div>
-              ) : (
-                sortedInsights.map((insight, i) => (
-                  <EnhancedInsightCard
-                    key={i}
-                    insight={insight}
-                    onAction={(action) => handleInsightAction(insight, action)}
-                  />
-                ))
-              )
+                  ))
+                )}
+              </>
             ) : (
               <TabEmptyState
                 icon={<IconSparkles size={isPage ? 28 : 20} className="text-slate-300" />}

@@ -29,6 +29,10 @@ import type {
   MinedPattern,
   PerformancePrediction,
   PlayerAnalysis,
+  TeamComposedInsight,
+  InsightCategory,
+  InsightGroup,
+  InsightTone,
 } from '@/lib/coachhelm/v2/types';
 import type { InsightType, InsightPriority } from '@/lib/coachhelm/insight-types';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
@@ -1340,12 +1344,173 @@ export async function generatePlayerInsight(playerId: string): Promise<{
 }
 
 // ============================================================================
+// INSIGHT CATEGORIZATION & GROUPING HELPERS
+// ============================================================================
+
+const CATEGORY_LABELS: Record<InsightCategory, string> = {
+  putting: 'Putting',
+  ball_striking: 'Ball Striking',
+  short_game: 'Short Game',
+  course_management: 'Course Management',
+  mental_game: 'Mental Game',
+  scoring: 'Scoring Trends',
+  shot_pattern: 'Shot Patterns',
+  team_trend: 'Team Trends',
+  general: 'General',
+};
+
+function categorizeComposedInsight(insight: ComposedInsight): InsightCategory {
+  const text = (insight.headline + ' ' + insight.body).toLowerCase();
+
+  if (text.includes('putt') || text.includes('three-putt') || text.includes('green reading') || text.includes('lag putt'))
+    return 'putting';
+  if (text.includes('approach') || text.includes('gir') || text.includes('iron') || text.includes('tee') || text.includes('fairway') || text.includes('driving') || text.includes('off the tee') || text.includes('ball striking'))
+    return 'ball_striking';
+  if (text.includes('scrambl') || text.includes('short game') || text.includes('chip') || text.includes('around the green') || text.includes('sand') || text.includes('bunker') || text.includes('up-and-down'))
+    return 'short_game';
+  if (text.includes('penalty') || text.includes('course manage') || text.includes('decision') || text.includes('strategy'))
+    return 'course_management';
+  if (text.includes('pressure') || text.includes('closing') || text.includes('mental') || text.includes('momentum') || text.includes('tournament') || text.includes('composure'))
+    return 'mental_game';
+  if (text.includes('scoring') || text.includes('score') || text.includes('handicap'))
+    return 'scoring';
+  if (text.includes('shot pattern') || text.includes('dispersion') || text.includes('miss pattern'))
+    return 'shot_pattern';
+
+  return 'general';
+}
+
+/** Map SG metric keys from buildStatInsightsForTeam to InsightCategory */
+function mapMetricKeyToCategory(key: string): InsightCategory {
+  switch (key) {
+    case 'strokes_gained_tee':
+    case 'driving_accuracy_percentage':
+      return 'ball_striking';
+    case 'strokes_gained_approach':
+    case 'gir_percentage':
+      return 'ball_striking';
+    case 'strokes_gained_around_green':
+    case 'scrambling_percentage':
+      return 'short_game';
+    case 'strokes_gained_putting':
+    case 'putts_per_round':
+      return 'putting';
+    default:
+      return 'general';
+  }
+}
+
+function toneBucket(tone: InsightTone): string {
+  if (tone === 'urgent' || tone === 'cautionary') return 'concern';
+  if (tone === 'encouraging' || tone === 'celebratory') return 'positive';
+  return 'info';
+}
+
+function groupAndDeduplicateInsights(
+  insights: TeamComposedInsight[],
+  totalPlayers: number
+): InsightGroup[] {
+  const groupMap = new Map<string, TeamComposedInsight[]>();
+
+  for (const insight of insights) {
+    const cat = insight.category || 'general';
+    const bucket = toneBucket(insight.tone);
+    const key = `${cat}::${bucket}`;
+
+    if (!groupMap.has(key)) groupMap.set(key, []);
+    groupMap.get(key)!.push(insight);
+  }
+
+  const toneRank: Record<string, number> = {
+    urgent: 0, cautionary: 1, neutral: 2, encouraging: 3, celebratory: 4,
+  };
+
+  const groups: InsightGroup[] = [];
+
+  for (const [key, members] of groupMap) {
+    // Deduplicate players
+    const playerMap = new Map<string, string>();
+    for (const m of members) {
+      if (m.playerId && m.playerName) {
+        playerMap.set(m.playerId, m.playerName);
+      }
+    }
+    const players = Array.from(playerMap, ([playerId, playerName]) => ({ playerId, playerName }));
+
+    // Sort members by severity then confidence
+    members.sort((a, b) => {
+      const toneDiff = (toneRank[a.tone] ?? 5) - (toneRank[b.tone] ?? 5);
+      if (toneDiff !== 0) return toneDiff;
+      return b.confidence - a.confidence;
+    });
+
+    const topInsight = members[0];
+    if (!topInsight) continue;
+    const [category] = key.split('::');
+    const isTeamWide = totalPlayers > 2 && players.length >= Math.ceil(totalPlayers * 0.5);
+    const catLabel = CATEGORY_LABELS[category as InsightCategory] || 'Insights';
+
+    // Synthesize headline
+    let headline: string;
+    if (players.length === 0) {
+      headline = topInsight.headline;
+    } else if (players.length === 1) {
+      // Single player — use original headline, ensure player name is there
+      const singlePlayer = players[0]!;
+      headline = topInsight.headline.includes(singlePlayer.playerName)
+        ? topInsight.headline
+        : `${singlePlayer.playerName}: ${catLabel}`;
+    } else if (isTeamWide) {
+      headline = `Team-wide: ${catLabel}`;
+    } else {
+      headline = `${players.length} players: ${catLabel}`;
+    }
+
+    // Synthesize body
+    let body: string;
+    if (members.length === 1 || players.length <= 1) {
+      body = topInsight.body;
+    } else {
+      const names = players.map(p => p.playerName.split(' ')[0]);
+      const nameList = names.length <= 3
+        ? names.join(', ')
+        : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+      body = `Affecting ${nameList}. ${topInsight.body}`;
+    }
+
+    groups.push({
+      id: key,
+      category: category as InsightCategory,
+      tone: topInsight.tone,
+      headline,
+      body,
+      callToAction: topInsight.callToAction,
+      confidence: Math.max(...members.map(m => m.confidence)),
+      players,
+      memberInsights: members,
+      playerCount: players.length,
+      isTeamWide,
+    });
+  }
+
+  // Sort groups: urgent first, then by player count desc
+  groups.sort((a, b) => {
+    const toneDiff = (toneRank[a.tone] ?? 5) - (toneRank[b.tone] ?? 5);
+    if (toneDiff !== 0) return toneDiff;
+    return b.playerCount - a.playerCount;
+  });
+
+  return groups;
+}
+
+// ============================================================================
 // GENERATE TEAM INSIGHT (Returns insights, patterns, predictions)
 // ============================================================================
 
 export async function generateTeamInsight(): Promise<{
   success: boolean;
-  insights?: ComposedInsight[];
+  insights?: TeamComposedInsight[];
+  insightGroups?: InsightGroup[];
   patterns?: MinedPattern[];
   predictions?: Array<PerformancePrediction & { playerName?: string }>;
   playersAnalyzed?: number;
@@ -1428,7 +1593,7 @@ export async function generateTeamInsight(): Promise<{
     const philosophy = await getCoachPhilosophy(coach.id);
 
     // 4. Analyze each player with V2 engine - BATCHED to avoid connection pool exhaustion
-    const allInsights: ComposedInsight[] = [];
+    const allInsights: TeamComposedInsight[] = [];
     const allPatterns: MinedPattern[] = [];
     const allPredictions: Array<PerformancePrediction & { playerName?: string }> = [];
 
@@ -1472,9 +1637,16 @@ export async function generateTeamInsight(): Promise<{
       if (result.success && result.analysis) {
         playersAnalyzed++;
 
-        // Collect insights
+        // Collect insights — tag with player context and category
         if (result.analysis.insights) {
-          allInsights.push(...result.analysis.insights);
+          for (const insight of result.analysis.insights) {
+            allInsights.push({
+              ...insight,
+              playerId: result.player.id,
+              playerName: result.playerName || undefined,
+              category: categorizeComposedInsight(insight),
+            });
+          }
         }
 
         // Collect patterns
@@ -1518,10 +1690,15 @@ export async function generateTeamInsight(): Promise<{
       allInsights.push(...statInsights);
     }
 
-    // 5. Generate team-level alerts
+    // 5. Generate team-level alerts — tag as team_trend
     const teamAlerts = await coachHelmIntelligence.generateAlerts(coach.id, teamId);
     if (teamAlerts.length > 0) {
-      allInsights.push(...teamAlerts);
+      for (const alert of teamAlerts) {
+        allInsights.push({
+          ...alert,
+          category: 'team_trend' as InsightCategory,
+        });
+      }
     }
 
     // 6. Log generation
@@ -1545,12 +1722,16 @@ export async function generateTeamInsight(): Promise<{
       console.warn('Insight generation log skipped:', logError.message);
     }
 
-    // 7. Revalidate dashboard
+    // 7. Group and deduplicate insights
+    const insightGroups = groupAndDeduplicateInsights(allInsights, players.length);
+
+    // 8. Revalidate dashboard
     revalidatePath('/golf/dashboard');
 
     return {
       success: true,
       insights: allInsights,
+      insightGroups,
       patterns: allPatterns,
       predictions: allPredictions,
       playersAnalyzed,
@@ -2058,7 +2239,7 @@ function buildStatInsightsForTeam(
   players: TeamPlayerRow[],
   statsRows: PlayerStatsCacheRow[],
   philosophy: CoachPhilosophy
-): ComposedInsight[] {
+): TeamComposedInsight[] {
   if (!statsRows || statsRows.length === 0) return [];
 
   const playerNameById = new Map<string, string>();
@@ -2083,7 +2264,7 @@ function buildStatInsightsForTeam(
     putts: averageNumber(statsRows.map((row) => row.putts_per_round)),
   };
 
-  const insightsWithSeverity: Array<{ insight: ComposedInsight; severity: number }> = [];
+  const insightsWithSeverity: Array<{ insight: TeamComposedInsight; severity: number }> = [];
 
   if (philosophy.showStrokesGained) {
     const teamSgEntries = [
@@ -2105,6 +2286,7 @@ function buildStatInsightsForTeam(
             callToAction: `Prioritize practice plans that lift ${teamWeakness.label.toLowerCase()} performance.`,
             tone: 'cautionary',
             confidence: 0.7,
+            category: 'team_trend',
           },
           severity: Math.abs(teamWeakness.value as number),
         });
@@ -2122,7 +2304,7 @@ function buildStatInsightsForTeam(
     const playerName = playerNameById.get(player.id) ?? 'Player';
     const confidence = computeInsightConfidence(rounds);
 
-    const playerInsights: Array<{ insight: ComposedInsight; severity: number }> = [];
+    const playerInsights: Array<{ insight: TeamComposedInsight; severity: number }> = [];
 
     if (philosophy.showStrokesGained) {
       const sgMetrics = [
@@ -2176,6 +2358,9 @@ function buildStatInsightsForTeam(
               callToAction: worst.action,
               tone: 'cautionary',
               confidence,
+              playerId: player.id,
+              playerName,
+              category: mapMetricKeyToCategory(worst.key),
             },
             severity: Math.abs(worst.value as number),
           });
@@ -2193,6 +2378,9 @@ function buildStatInsightsForTeam(
               callToAction: `Keep reinforcing ${best.label.toLowerCase()} strengths in practice plans.`,
               tone: 'celebratory',
               confidence,
+              playerId: player.id,
+              playerName,
+              category: mapMetricKeyToCategory(best.key),
             },
             severity: Math.abs(best.value as number),
           });
@@ -2276,6 +2464,9 @@ function buildStatInsightsForTeam(
               callToAction: metric.action,
               tone: 'cautionary',
               confidence,
+              playerId: player.id,
+              playerName,
+              category: mapMetricKeyToCategory(metric.key),
             },
             severity,
           });
