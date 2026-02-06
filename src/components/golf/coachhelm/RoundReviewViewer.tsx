@@ -2,7 +2,15 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { IconSparkles, IconRefresh, IconAlertCircle } from '@/components/icons';
+import {
+  IconSparkles,
+  IconRefresh,
+  IconAlertCircle,
+  IconChartBar,
+  IconTrendingUp,
+  IconTarget,
+  IconWarning,
+} from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { useRoundReviewV2 } from '@/hooks/coachhelm/useRoundReviewV2';
 
@@ -27,11 +35,11 @@ const gradeColors: Record<string, { bg: string; text: string; border: string }> 
   F: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
 };
 
-// Sentiment emoji
-const sentimentEmoji: Record<string, string> = {
-  positive: '🟢',
-  neutral: '🟡',
-  challenging: '🔴',
+// Sentiment color dot
+const sentimentColor: Record<string, string> = {
+  positive: 'bg-green-500',
+  neutral: 'bg-amber-400',
+  challenging: 'bg-red-500',
 };
 
 /**
@@ -250,9 +258,10 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm">
-                      {sentimentEmoji[ruleBasedContent.sentiment] ?? '⚪'}
-                    </span>
+                    <span className={cn(
+                      'w-2.5 h-2.5 rounded-full',
+                      sentimentColor[ruleBasedContent.sentiment] ?? 'bg-slate-300',
+                    )} />
                     <span className="text-xs font-medium text-slate-500 capitalize">
                       {ruleBasedContent.sentiment} round
                     </span>
@@ -271,7 +280,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                 style={{ animation: 'fadeInUp 0.5s ease-out 0.2s both' }}
               >
                 <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <span className="text-lg">📊</span>
+                  <IconChartBar size={18} className="text-slate-500" />
                   Key Stats
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -310,7 +319,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                 style={{ animation: 'fadeInUp 0.5s ease-out 0.3s both' }}
               >
                 <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <span className="text-lg">✨</span>
+                  <IconTrendingUp size={18} className="text-green-600" />
                   Highlights
                 </h3>
                 <div className="space-y-3">
@@ -322,7 +331,9 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                         animation: `fadeInUp 0.4s ease-out ${300 + index * 80}ms both`,
                       }}
                     >
-                      <span className="text-2xl">🌟</span>
+                      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                        <IconTrendingUp size={16} className="text-green-600" />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <span className="font-medium text-slate-900">{highlight.title}</span>
                         <p className="text-sm text-slate-600 mt-0.5">{highlight.description}</p>
@@ -340,7 +351,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                 style={{ animation: 'fadeInUp 0.5s ease-out 0.4s both' }}
               >
                 <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <span className="text-lg">🔍</span>
+                  <IconTarget size={18} className="text-amber-600" />
                   Areas to Work On
                 </h3>
                 <div className="space-y-3">
@@ -353,7 +364,9 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                       }}
                     >
                       <div className="flex items-start gap-3">
-                        <span className="text-xl">⚠️</span>
+                        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                          <IconWarning size={16} className="text-amber-600" />
+                        </div>
                         <div className="flex-1">
                           <span className="font-medium text-slate-900">{area.area}</span>
                           <p className="text-sm text-slate-600 mt-1">{area.recommendation}</p>
@@ -372,7 +385,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                 style={{ animation: 'fadeInUp 0.5s ease-out 0.5s both' }}
               >
                 <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <span className="text-lg">💡</span>
+                  <IconSparkles size={18} className="text-green-600" />
                   Recommendations
                 </h3>
                 <div className="space-y-2">
