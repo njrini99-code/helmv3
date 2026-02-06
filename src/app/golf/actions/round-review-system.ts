@@ -244,12 +244,23 @@ function generateReviewContent(
         description: `${putts} putts demonstrates exceptional touch on the greens. Your lag putting and short putt conversion were both strong.`,
       });
       summary += `Your putting was the star of this round. `;
+    } else if (putts <= 30) {
+      highlights.push({
+        title: 'Solid Putting',
+        description: `${putts} putts is a good day on the greens. Consistent green reading and pace control.`,
+      });
     } else if (putts >= 34) {
       areasForImprovement.push({
         area: 'Putting',
         recommendation: 'Focus on lag putting to reduce three-putts, and work on 4-6 foot putts to improve conversion rate.',
       });
       recommendations.push('Schedule a putting session focusing on distance control from 20+ feet');
+    } else if (putts >= 32) {
+      areasForImprovement.push({
+        area: 'Putting',
+        recommendation: `${putts} putts left some shots on the green. Work on reading speed and breaking putts in the 6-12 foot range.`,
+      });
+      recommendations.push('Spend time on lag putting from 25+ feet to tighten up two-putt conversions');
     }
   }
 
@@ -270,12 +281,24 @@ function generateReviewContent(
         title: 'Strong Ball Striking',
         description: `Hitting ${girPct}% of greens shows excellent approach play and iron precision.`,
       });
+    } else if (girPct >= 55) {
+      highlights.push({
+        title: 'Decent Approach Play',
+        description: `${girPct}% GIR is solid — tightening up approach distance control could push this higher.`,
+      });
     } else if (girPct < 45) {
       areasForImprovement.push({
         area: 'Approach Shots',
         recommendation: 'Work on distance control with your irons, particularly from 125-175 yards.',
       });
       recommendations.push('Practice approach shots from your most common yardages');
+    } else {
+      // 45-54% range — moderate area for improvement
+      areasForImprovement.push({
+        area: 'Approach Shots',
+        recommendation: `${girPct}% GIR means missed greens led to extra scrambling. Focus on picking the right club and committing to your target.`,
+      });
+      recommendations.push('Dial in your carry distances for each iron to improve green-hit consistency');
     }
   }
 
@@ -296,13 +319,46 @@ function generateReviewContent(
         title: 'Accurate Driving',
         description: `${fairwayPct}% fairways hit shows excellent control off the tee.`,
       });
+    } else if (fairwayPct >= 57) {
+      highlights.push({
+        title: 'Steady Off the Tee',
+        description: `${fairwayPct}% fairways is a solid base. A tighter miss pattern could unlock lower scores.`,
+      });
     } else if (fairwayPct < 45) {
       areasForImprovement.push({
         area: 'Driving Accuracy',
         recommendation: 'Consider using a more controlled swing or different club on tight holes.',
       });
       recommendations.push('Identify your miss pattern (left/right) and adjust your aim accordingly');
+    } else {
+      // 45-56% range — moderate area for improvement
+      areasForImprovement.push({
+        area: 'Driving Accuracy',
+        recommendation: `${fairwayPct}% fairways means too many tee shots put you in trouble. Focus on a consistent aim point and shot shape off the tee.`,
+      });
+      recommendations.push('Work on a go-to tee shot shape you can trust under pressure');
     }
+  }
+
+  // Build a more specific summary based on what was analyzed
+  const specificInsights: string[] = [];
+  if (putts !== null) {
+    if (putts <= 30) specificInsights.push(`putting was a strength (${putts} putts)`);
+    else if (putts >= 32) specificInsights.push(`putting was a factor (${putts} putts)`);
+  }
+  if (girPct !== null) {
+    if (girPct >= 55) specificInsights.push(`solid iron play (${girPct}% GIR)`);
+    else if (girPct < 55) specificInsights.push(`approach shots need work (${girPct}% GIR)`);
+  }
+  if (fairwayPct !== null) {
+    if (fairwayPct >= 57) specificInsights.push(`accurate driving (${fairwayPct}% fairways)`);
+    else if (fairwayPct < 57) specificInsights.push(`driving accuracy was a challenge (${fairwayPct}% fairways)`);
+  }
+
+  if (specificInsights.length > 0) {
+    summary += specificInsights.length === 1
+      ? `Key takeaway: ${specificInsights[0]}.`
+      : `Key takeaways: ${specificInsights.join(', ')}.`;
   }
 
   // Add default recommendations if needed
@@ -317,6 +373,11 @@ function generateReviewContent(
       recommendations.push('Focus on the fundamentals in your next practice session');
       recommendations.push('Consider a short game focused practice session');
     }
+  }
+
+  // Add score-based recommendation if not already covered
+  if (scoreToPar > 0 && scoreToPar <= 5) {
+    recommendations.push(`A +${scoreToPar} round is within striking distance of par — shaving ${Math.min(scoreToPar, 3)} strokes from your weakest area gets you there`);
   }
 
   // Add highlights if we have none
