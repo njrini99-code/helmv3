@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useGolfUser } from '@/contexts/golf-user-context';
 import type { GolfCoach, GolfPlayer, GolfTeam } from '@/lib/types/golf';
 import type { CalendarEvent } from '@/lib/types/calendar';
 import { CoachDashboard, type CoachDashboardData } from './components/CoachDashboard';
@@ -83,47 +83,27 @@ interface PlayerRound {
 const supabaseClient = createClient();
 
 export default function GolfDashboardPage() {
-    const router = useRouter();
+    const golfUser = useGolfUser();
     const supabase = useMemo(() => supabaseClient, []); // Reuse client instance
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [userRole, setUserRole] = useState<'coach' | 'player' | null>(null);
     const [coachData, setCoachData] = useState<CoachDashboardData | null>(null);
     const [playerData, setPlayerData] = useState<PlayerDashboardData | null>(null);
+
+    // PERF: Destructure primitive values for stable useEffect dependencies
+    // instead of depending on the entire golfUser object reference
+    const { role, userId, coachId, playerId, teamId, organizationId, name: userName, avatarUrl: userAvatar } = golfUser;
 
     useEffect(() => {
         let mounted = true;
 
         async function loadDashboard() {
             try {
-                const { data: { user } } = await supabase.auth.getUser();
 
-                if (!user) {
-                    if (mounted) router.push('/golf/login');
-                    return;
-                }
-
-                // OPTIMIZATION: Only select needed columns
-                const { data: coach } = await supabase
-                    .from('golf_coaches')
-                    .select('id, user_id, organization_id, full_name, avatar_url, created_at')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-
-                if (coach) {
+                if (role === 'coach' && coachId) {
                     if (!mounted) return;
-                    setUserRole('coach');
 
-                    // Get team via organization_id (golf_coaches doesn't have team_id directly)
-                    let teamId: string | null = null;
-                    if (coach.organization_id) {
-                        const { data: orgTeam } = await supabase
-                            .from('golf_teams')
-                            .select('id')
-                            .eq('organization_id', coach.organization_id)
-                            .maybeSingle();
-                        teamId = orgTeam?.id || null;
-                    }
+                    // Use destructured primitives from above
                     let team: GolfTeam | null = null;
                     const stats = {
                         rosterSize: 0,
@@ -178,7 +158,7 @@ export default function GolfDashboardPage() {
                             start_time: event.start_time,
                             end_time: event.end_time || event.start_time,
                             location: event.location,
-                            created_by_id: coach.user_id,
+                            created_by_id: userId,
                             is_recurring: false,
                             created_at: event.created_at || new Date().toISOString(),
                             updated_at: event.updated_at || new Date().toISOString(),
@@ -287,7 +267,7 @@ export default function GolfDashboardPage() {
 
                     if (mounted) {
                         setCoachData({
-                            coach: coach as GolfCoach,
+                            coach: { id: coachId, user_id: userId, organization_id: organizationId || null, full_name: userName, avatar_url: userAvatar || null, created_at: '' } as GolfCoach,
                             team,
                             stats,
                             recentRounds,
@@ -300,46 +280,35 @@ export default function GolfDashboardPage() {
                     return;
                 }
 
-                // OPTIMIZATION: Only select needed columns
-                const { data: player } = await supabase
-                    .from('golf_players')
-                    .select('id, user_id, first_name, last_name, avatar_url, handicap, created_at')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-
-                if (player) {
+                if (role === 'player' && playerId) {
                     if (!mounted) return;
-                    setUserRole('player');
 
                     let team: GolfTeam | null = null;
 
-                    // First get the player's team membership
-                    const { data: teamMembership } = await supabase
-                        .from('golf_team_members')
-                        .select('team_id')
-                        .eq('player_id', player.id)
-                        .eq('status', 'active')
-                        .maybeSingle();
-
-                    const playerTeamId = teamMembership?.team_id;
-
-                    // OPTIMIZATION: Fetch team and rounds in parallel
-                    const [teamResult, roundsResult] = await Promise.all([
-                        playerTeamId
-                            ? supabase.from('golf_teams').select('id, name, season, join_code, created_at').eq('id', playerTeamId).single()
+                    // OPTIMIZATION: Fetch team and rounds in parallel using teamId from context
+                    const [teamResult, roundsResult, playerDetailResult] = await Promise.all([
+                        teamId
+                            ? supabase.from('golf_teams').select('id, name, season, join_code, created_at').eq('id', teamId).single()
                             : Promise.resolve({ data: null }),
                         supabase
                             .from('golf_rounds')
                             .select('id, course_name, total_score, score_to_par, round_date')
-                            .eq('player_id', player.id)
+                            .eq('player_id', playerId)
                             .eq('status', 'completed')
                             .not('total_score', 'is', null)
                             .order('round_date', { ascending: false })
-                            .limit(50) // Sufficient for stats + display; prevents unbounded query
+                            .limit(50), // Sufficient for stats + display; prevents unbounded query
+                        // Fetch handicap (the only field not in layout context)
+                        supabase
+                            .from('golf_players')
+                            .select('handicap')
+                            .eq('id', playerId)
+                            .single()
                     ]);
 
                     team = teamResult.data as GolfTeam | null;
                     const rounds = roundsResult.data as PlayerRound[] | null;
+                    const playerHandicap = playerDetailResult.data?.handicap ?? null;
 
                     const playerRounds = rounds || [];
                     const scores = playerRounds.map((r) => r.total_score).filter((s): s is number => s !== null);
@@ -348,7 +317,7 @@ export default function GolfDashboardPage() {
                         roundsPlayed: playerRounds.length,
                         scoringAverage: scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : null,
                         bestRound: scores.length > 0 ? Math.min(...scores) : null,
-                        handicap: player.handicap,
+                        handicap: playerHandicap,
                         recentTrend: undefined as 'up' | 'down' | 'stable' | undefined
                     };
 
@@ -361,8 +330,9 @@ export default function GolfDashboardPage() {
                     }
 
                     if (mounted) {
+                        const nameParts = userName.split(' ');
                         setPlayerData({
-                            player: player as GolfPlayer,
+                            player: { id: playerId, user_id: userId, first_name: nameParts[0] || '', last_name: nameParts.slice(1).join(' ') || '', avatar_url: userAvatar || null, handicap: playerHandicap, created_at: '' } as GolfPlayer,
                             team,
                             stats,
                             recentRounds: playerRounds.slice(0, 5).map((r) => ({
@@ -378,15 +348,9 @@ export default function GolfDashboardPage() {
                     return;
                 }
 
-                // Not valid user - redirect to signup
+            } catch (err) {
                 if (mounted) {
-                    setLoading(false);
-                    router.push('/golf/signup');
-                }
-
-            } catch (error) {
-                if (mounted) {
-                    setError(error instanceof Error ? error.message : 'Failed to load dashboard');
+                    setError(err instanceof Error ? err.message : 'Failed to load dashboard');
                     setLoading(false);
                 }
             }
@@ -397,7 +361,8 @@ export default function GolfDashboardPage() {
         return () => {
             mounted = false;
         };
-    }, [supabase, router]);
+        // PERF: Depend on stable primitive values, not the golfUser object reference
+    }, [supabase, role, userId, coachId, playerId, teamId, organizationId, userName, userAvatar]);
 
     if (loading) return null;
 
@@ -422,11 +387,11 @@ export default function GolfDashboardPage() {
         );
     }
 
-    if (userRole === 'coach' && coachData) {
+    if (role === 'coach' && coachData) {
         return <CoachDashboard data={coachData} />;
     }
 
-    if (userRole === 'player' && playerData) {
+    if (role === 'player' && playerData) {
         return <PlayerDashboard data={playerData} />;
     }
 

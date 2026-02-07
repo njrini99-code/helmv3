@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown } from '@/components/icons';
 import { CreateTaskModal } from '@/components/golf/tasks/CreateTaskModal';
@@ -12,6 +11,7 @@ import { TaskTemplateList } from '@/components/golf/tasks/TaskTemplateList';
 import { CreateFromTemplateModal } from '@/components/golf/tasks/CreateFromTemplateModal';
 import { cn } from '@/lib/utils';
 import { fadeUp } from '@/lib/motion';
+import { useGolfUser } from '@/contexts/golf-user-context';
 import { useTaskRealtime } from '@/hooks/golf/use-task-realtime';
 import type { TaskTemplate } from '@/app/golf/actions/tasks';
 
@@ -44,16 +44,18 @@ interface Player {
 }
 
 export default function GolfTasksPage() {
-  const router = useRouter();
+  const golfUser = useGolfUser();
   const [initialLoading, setInitialLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
   const [players, setPlayers] = useState<Player[]>([]);
-  const [teamId, setTeamId] = useState<string | null>(null);
-  const [playerId, setPlayerId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<'coach' | 'player' | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
+
+  // Use IDs from context — no auth/role queries needed
+  const teamId = golfUser.teamId || null;
+  const playerId = golfUser.playerId || null;
+  const userRole = golfUser.role;
 
   // Real-time tasks subscription
   const { tasks: realtimeTasks, stats, loading: tasksLoading, refetch } = useTaskRealtime(teamId, {
@@ -83,77 +85,20 @@ export default function GolfTasksPage() {
   }));
 
   useEffect(() => {
-    loadInitialData();
+    if (userRole === 'coach' && teamId) {
+      loadPlayers(teamId);
+    }
+    setInitialLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadInitialData() {
-    setInitialLoading(true);
+  async function loadPlayers(tId: string) {
     const supabase = createClient();
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/golf/login');
-        return;
-      }
-
-      // Check if coach
-      const { data: coach } = await supabase
-        .from('golf_coaches')
-        .select('id, organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (coach?.organization_id) {
-        // Get team_id from golf_teams via organization_id
-        const { data: orgTeam } = await supabase
-          .from('golf_teams')
-          .select('id')
-          .eq('organization_id', coach.organization_id)
-          .maybeSingle();
-
-        if (orgTeam?.id) {
-          setUserRole('coach');
-          setTeamId(orgTeam.id);
-          await loadPlayers(orgTeam.id);
-        }
-      } else {
-        // Check if player - get team via golf_team_members
-        const { data: player } = await supabase
-          .from('golf_players')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-
-        if (player?.id) {
-          setPlayerId(player.id);
-          const { data: teamMember } = await supabase
-            .from('golf_team_members')
-            .select('team_id')
-            .eq('player_id', player.id)
-            .maybeSingle();
-
-          if (teamMember?.team_id) {
-            setUserRole('player');
-            setTeamId(teamMember.team_id);
-          }
-        }
-      }
-    } catch (err) {
-      console.error('[GolfHelm] Error loading tasks data:', err);
-    } finally {
-      setInitialLoading(false);
-    }
-  }
-
-  async function loadPlayers(teamId: string) {
-    const supabase = createClient();
-
-    // Load team players via golf_team_members
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', teamId);
+      .eq('team_id', tId);
 
     const playerIds = (teamMembers || []).map(tm => tm.player_id);
 

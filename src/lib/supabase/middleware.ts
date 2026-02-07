@@ -202,7 +202,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Check role-based authorization for authenticated users
-  if (user && isDashboardRoute) {
+  // PERF: Only run for baseball routes — golf handles auth in its own layout.
+  // This avoids an unnecessary baseball_coaches DB query on every golf request.
+  if (user && isDashboardRoute && sport === 'baseball') {
     const authResult = await checkRouteAuthorization(
       supabase as unknown as SupabaseClient,
       user,

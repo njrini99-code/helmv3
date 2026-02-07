@@ -37,6 +37,7 @@ import {
   IconMenu,
 } from '@/components/icons';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { useGolfUser } from '@/contexts/golf-user-context';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -350,7 +351,7 @@ export default function StatsClient({
   const [detailedStats, setDetailedStats] = useState<GolfStats | null>(null);
   const [selectedRoundId, setSelectedRoundId] = useState<string | 'overall'>('overall');
 
-  // Loading states
+  // Loading states — context is always available, but we still load player data
   const [loading, setLoading] = useState(!initialUserRole);
   const [loadingDetailed, setLoadingDetailed] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -372,6 +373,9 @@ export default function StatsClient({
 
   // Mobile navigation
   const { toggleMobile } = useSidebar();
+
+  // Shared context — eliminates auth/role/team queries
+  const golfUser = useGolfUser();
 
   // ============================================================================
   // COMPUTED VALUES
@@ -473,26 +477,13 @@ export default function StatsClient({
     if (!initialUserRole) {
       loadInitialData();
     }
-  }, [initialUserRole]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function loadInitialData() {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      window.location.href = '/golf/login';
-      return;
-    }
-
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (coach) {
+    if (golfUser.role === 'coach') {
       setUserRole('coach');
-      const loadedPlayers = await loadCoachPlayers(coach.organization_id);
+      const loadedPlayers = await loadCoachPlayers(golfUser.teamId);
 
       // If a specific player was requested via URL param, auto-select them
       if (initialPlayerId) {
@@ -508,37 +499,23 @@ export default function StatsClient({
       return;
     }
 
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id, first_name, last_name')
-      .eq('user_id', user.id)
-      .single();
-
-    if (player) {
+    if (golfUser.role === 'player' && golfUser.playerId) {
       setUserRole('player');
-      setPlayerName(`${player.first_name} ${player.last_name}`);
-      await loadPlayerSummary(player.id);
+      setPlayerName(golfUser.name);
+      await loadPlayerSummary(golfUser.playerId);
       setLoading(false);
     }
   }
 
-  async function loadCoachPlayers(organizationId: string | null): Promise<(Player & { stats?: PlayerStats })[]> {
-    if (!organizationId) return [];
+  async function loadCoachPlayers(teamId: string | undefined): Promise<(Player & { stats?: PlayerStats })[]> {
+    if (!teamId) return [];
 
     const supabase = createClient();
-
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', organizationId)
-      .maybeSingle();
-
-    if (!orgTeam?.id) return [];
 
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', orgTeam.id)
+      .eq('team_id', teamId)
       .eq('status', 'active');
 
     const playerIds = teamMembers?.map(tm => tm.player_id) || [];

@@ -1,321 +1,166 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { GolfDashboardShell } from './GolfDashboardShell';
+import type { GolfUserData } from '@/contexts/golf-user-context';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { GolfSidebar } from '@/components/golf/layout/GolfSidebar';
-import { PageLoading } from '@/components/ui/loading';
-import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
-import { ToastProvider } from '@/components/ui/toast';
-import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
-import { usePresence } from '@/hooks/use-presence';
-import { CommandPalette } from '@/components/golf/CommandPalette';
-import { MobileBottomNav } from '@/components/golf/MobileBottomNav';
-import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
-import { MobileNavProvider } from '@/contexts/mobile-nav-context';
-import { cn } from '@/lib/utils';
-
-interface UserData {
-  role: 'coach' | 'player';
-  name: string;
-  teamName?: string;
-  avatarUrl?: string;
-}
-
-function GolfDashboardContent({ children, userData }: { children: React.ReactNode; userData: UserData }) {
-  const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
-  const isCoach = userData.role === 'coach';
-
-  // Track user online presence
-  usePresence();
-
-  return (
-    <div className="flex h-dvh bg-dashboard-gradient" style={{ overscrollBehavior: 'none' }}>
-      {/* Skip to main content link for keyboard navigation */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-      >
-        Skip to main content
-      </a>
-
-      {/* Command Palette (Cmd+K) */}
-      <CommandPalette isCoach={isCoach} />
-      
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block" style={{ viewTransitionName: 'sidebar' }}>
-        <GolfSidebar
-          userRole={userData.role}
-          userName={userData.name}
-          teamName={userData.teamName}
-          avatarUrl={userData.avatarUrl}
-        />
-      </div>
-
-      {/* Mobile Sidebar Overlay */}
-      <div
-        className={cn(
-          'fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden',
-          'transition-opacity duration-300 ease-out',
-          mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}
-        onClick={() => setMobileOpen(false)}
-      />
-      
-      {/* Mobile Sidebar */}
-      <div
-        className={cn(
-          'fixed inset-y-0 left-0 z-50 lg:hidden',
-          'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        <GolfSidebar
-          userRole={userData.role}
-          userName={userData.name}
-          teamName={userData.teamName}
-          avatarUrl={userData.avatarUrl}
-          isMobile
-        />
-      </div>
-
-      {/* Main content */}
-      <main
-        id="main-content"
-        className={cn(
-          'flex-1 overflow-y-auto',
-          'pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0',
-          'transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          collapsed ? 'lg:ml-[72px]' : 'lg:ml-64',
-        )}
-        style={{
-          background: 'transparent',
-          viewTransitionName: 'page-content',
-          WebkitOverflowScrolling: 'touch',
-          overscrollBehaviorY: 'contain',
-        }}
-      >
-        <div className="animate-page-enter min-h-full" style={{ background: 'transparent' }}>
-          {children}
-        </div>
-      </main>
-
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav isCoach={isCoach} />
-
-      {/* Keyboard Shortcut Hint (shows once) */}
-      <KeyboardShortcutHint />
-    </div>
-  );
-}
-
-export default function GolfDashboardLayout({
+/**
+ * Golf Dashboard Layout — SERVER COMPONENT
+ *
+ * Resolves auth, user role, and team data on the server during SSR.
+ * This eliminates the client-side loading spinner and multi-stage
+ * data-fetching waterfall that previously added 1.5–3s of latency.
+ *
+ * All interactive UI (sidebar, providers, nav) lives in GolfDashboardShell
+ * which is a client component receiving the resolved userData as props.
+ */
+export default async function GolfDashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-  const supabase = createClient();
-  const [loading, setLoading] = useState(true);
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const supabase = await createClient();
 
-  useEffect(() => {
-    async function loadUser() {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+  // 1. Authenticate — server-side, uses cookies (refreshed by middleware)
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-      if (authError || !user) {
-        router.push('/golf/login');
-        return;
-      }
-
-      // Query role and profiles in parallel to resolve correct destination
-      // Use retry logic to handle database propagation delays after onboarding
-      let coach = null;
-      let player = null;
-      let userRole = null;
-
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const [userResult, coachResult, playerResult] = await Promise.all([
-          supabase
-            .from('users')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle(),
-          supabase
-            .from('golf_coaches')
-            .select('id, full_name, avatar_url, organization_id, onboarding_completed')
-            .eq('user_id', user.id)
-            .maybeSingle(),
-          supabase
-            .from('golf_players')
-            .select('id, first_name, last_name, avatar_url, onboarding_completed')
-            .eq('user_id', user.id)
-            .maybeSingle(),
-        ]);
-
-        userRole = userResult.data?.role;
-        coach = coachResult.data;
-        player = playerResult.data;
-
-        // If we have a completed profile, break immediately
-        if ((coach && coach.onboarding_completed) || (player && player.onboarding_completed)) {
-          break;
-        }
-
-        // Wait before retry to allow database propagation
-        if (attempt < 2) {
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      }
-
-      const declaredRole = (userRole === 'coach' || userRole === 'player') ? userRole : null;
-      const resolvedRole = coach && player
-        ? (declaredRole || 'coach')
-        : coach
-          ? 'coach'
-          : player
-            ? 'player'
-            : declaredRole;
-
-      if (resolvedRole === 'coach') {
-        // Only redirect to onboarding if coach record exists but onboarding is incomplete
-        // If no coach record at all, that's handled below in the "unknown state" branch
-        if (coach && !coach.onboarding_completed) {
-          router.push('/golf/coach');
-          return;
-        }
-
-        // If coach record doesn't exist at all, let them through to dashboard
-        // (this handles edge case where onboarding just completed but record isn't found yet)
-        if (!coach) {
-          // Check one more time with a longer delay
-          await new Promise(resolve => setTimeout(resolve, 500));
-          const { data: retryCoach } = await supabase
-            .from('golf_coaches')
-            .select('id, full_name, avatar_url, organization_id, onboarding_completed')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          if (retryCoach) {
-            coach = retryCoach;
-            if (!coach.onboarding_completed) {
-              router.push('/golf/coach');
-              return;
-            }
-          } else {
-            // Still no coach record - redirect to onboarding
-            router.push('/golf/coach');
-            return;
-          }
-        }
-
-        // Get team name via organization_id
-        let teamName: string | undefined;
-        if (coach.organization_id) {
-          const { data: team } = await supabase
-            .from('golf_teams')
-            .select('name')
-            .eq('organization_id', coach.organization_id)
-            .maybeSingle();
-          teamName = team?.name;
-        }
-
-        setUserData({
-          role: 'coach',
-          name: coach.full_name || 'Coach',
-          teamName,
-          avatarUrl: coach.avatar_url || undefined,
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (resolvedRole === 'player') {
-        // Only redirect to onboarding if player record exists but onboarding is incomplete
-        if (player && !player.onboarding_completed) {
-          router.push('/golf/player');
-          return;
-        }
-
-        // If player record doesn't exist at all, check again with delay
-        if (!player) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-          const { data: retryPlayer } = await supabase
-            .from('golf_players')
-            .select('id, first_name, last_name, avatar_url, onboarding_completed')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          if (retryPlayer) {
-            player = retryPlayer;
-            if (!player.onboarding_completed) {
-              router.push('/golf/player');
-              return;
-            }
-          } else {
-            // Still no player record - redirect to onboarding
-            router.push('/golf/player');
-            return;
-          }
-        }
-
-        // Get team name via golf_team_members
-        let teamName: string | undefined;
-        const { data: teamMember } = await supabase
-          .from('golf_team_members')
-          .select('team_id')
-          .eq('player_id', player.id)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (teamMember?.team_id) {
-          const { data: team } = await supabase
-            .from('golf_teams')
-            .select('name')
-            .eq('id', teamMember.team_id)
-            .maybeSingle();
-          teamName = team?.name;
-        }
-
-        setUserData({
-          role: 'player',
-          name: `${player.first_name} ${player.last_name}`,
-          teamName,
-          avatarUrl: player.avatar_url || undefined,
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Unknown state - check users table role to determine onboarding destination
-      if (declaredRole === 'coach') {
-        router.push('/golf/coach');
-      } else if (declaredRole === 'player') {
-        router.push('/golf/player');
-      } else {
-        // Truly unknown - go to signup
-        router.push('/golf/signup');
-      }
-    }
-
-    loadUser();
-  }, [router, supabase]);
-
-  if (loading || !userData) {
-    return <PageLoading />;
+  if (authError || !user) {
+    redirect('/golf/login');
   }
 
+  // 2. Fetch role + profiles in parallel
+  const [userResult, coachResult, playerResult] = await Promise.all([
+    supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('golf_coaches')
+      .select('id, full_name, avatar_url, organization_id, onboarding_completed')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('golf_players')
+      .select('id, first_name, last_name, avatar_url, onboarding_completed')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+  ]);
+
+  let userRole = userResult.data?.role;
+  let coach = coachResult.data;
+  let player = playerResult.data;
+
+  // Only retry if no completed profile was found (handles post-onboarding propagation).
+  // For already-onboarded users (the vast majority of page loads), this never executes.
+  if (!(coach && coach.onboarding_completed) && !(player && player.onboarding_completed)) {
+    // Brief wait for eventual consistency after onboarding write
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const [retryUserResult, retryCoachResult, retryPlayerResult] = await Promise.all([
+      supabase.from('users').select('role').eq('id', user.id).maybeSingle(),
+      supabase.from('golf_coaches')
+        .select('id, full_name, avatar_url, organization_id, onboarding_completed')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      supabase.from('golf_players')
+        .select('id, first_name, last_name, avatar_url, onboarding_completed')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
+
+    userRole = retryUserResult.data?.role ?? userRole;
+    coach = retryCoachResult.data ?? coach;
+    player = retryPlayerResult.data ?? player;
+  }
+
+  // 3. Resolve role
+  const declaredRole = (userRole === 'coach' || userRole === 'player') ? userRole : null;
+  const resolvedRole = coach && player
+    ? (declaredRole || 'coach')
+    : coach
+      ? 'coach'
+      : player
+        ? 'player'
+        : declaredRole;
+
+  // 4. Build userData based on resolved role, or redirect to onboarding
+  let userData: GolfUserData;
+
+  if (resolvedRole === 'coach') {
+    if (!coach || !coach.onboarding_completed) {
+      redirect('/golf/coach');
+    }
+
+    // Fetch coach's team via organization_id
+    let teamId: string | undefined;
+    let teamName: string | undefined;
+    if (coach.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id, name')
+        .eq('organization_id', coach.organization_id)
+        .maybeSingle();
+      teamId = team?.id;
+      teamName = team?.name;
+    }
+
+    userData = {
+      role: 'coach',
+      userId: user.id,
+      name: coach.full_name || 'Coach',
+      teamName,
+      avatarUrl: coach.avatar_url || undefined,
+      coachId: coach.id,
+      teamId,
+      organizationId: coach.organization_id || undefined,
+    };
+  } else if (resolvedRole === 'player') {
+    if (!player || !player.onboarding_completed) {
+      redirect('/golf/player');
+    }
+
+    // Fetch player's team via team membership
+    let teamId: string | undefined;
+    let teamName: string | undefined;
+    const { data: teamMember } = await supabase
+      .from('golf_team_members')
+      .select('team_id, golf_teams(id, name)')
+      .eq('player_id', player.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (teamMember) {
+      const teamData = teamMember.golf_teams as { id: string; name: string } | null;
+      teamId = teamData?.id || teamMember.team_id;
+      teamName = teamData?.name;
+    }
+
+    userData = {
+      role: 'player',
+      userId: user.id,
+      name: `${player.first_name} ${player.last_name}`,
+      teamName,
+      avatarUrl: player.avatar_url || undefined,
+      playerId: player.id,
+      teamId,
+    };
+  } else {
+    // Unknown state — redirect to onboarding
+    if (declaredRole === 'coach') {
+      redirect('/golf/coach');
+    } else if (declaredRole === 'player') {
+      redirect('/golf/player');
+    } else {
+      redirect('/golf/signup');
+    }
+    // TypeScript: redirect() throws, but TS doesn't know that — this is unreachable
+    return null;
+  }
+
+  // 5. Render the client shell with resolved data — no loading spinner needed
   return (
-    <MobileNavProvider>
-      <SidebarProvider>
-        <ToastProvider>
-          <SessionActivityProvider>
-            <GolfDashboardContent userData={userData}>
-              {children}
-            </GolfDashboardContent>
-          </SessionActivityProvider>
-        </ToastProvider>
-      </SidebarProvider>
-    </MobileNavProvider>
+    <GolfDashboardShell userData={userData}>
+      {children}
+    </GolfDashboardShell>
   );
 }

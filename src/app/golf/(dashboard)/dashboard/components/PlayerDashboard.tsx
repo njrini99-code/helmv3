@@ -19,11 +19,17 @@ import {
     IconClipboardList,
     IconBell,
 } from '@/components/icons';
+import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { useSidebar } from '@/contexts/sidebar-context';
-import { TrendChart } from './TrendChart';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
+
+// PERF: Code-split TrendChart (depends on recharts ~120KB) — only load when player has rounds
+const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: mod.TrendChart })), {
+    loading: () => <div className="h-[200px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
+    ssr: false
+});
 import {
     PremiumGlassCard,
     PremiumStatCard,
@@ -149,7 +155,6 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                     'border-b border-white/30',
                     'shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
                 )}
-                style={{ viewTransitionName: 'page-header' }}
             >
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
                     <div className="flex items-center gap-3">

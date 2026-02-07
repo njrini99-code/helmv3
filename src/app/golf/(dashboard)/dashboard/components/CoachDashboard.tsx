@@ -35,7 +35,7 @@ const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: 
 
 const CoachAlertCenter = dynamic(() => import('@/components/golf/coachhelm/alerts').then(mod => ({ default: mod.CoachAlertCenter })), {
     loading: () => <div className="h-[200px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
-    ssr: true
+    ssr: false // PERF: Parent layout is fully client-rendered, SSR adds no value here
 });
 import {
     PremiumGlassCard,
@@ -307,7 +307,6 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                     'border-b border-white/30',
                     'shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
                 )}
-                style={{ viewTransitionName: 'page-header' }}
             >
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
                     <div className="flex items-center justify-between gap-3">

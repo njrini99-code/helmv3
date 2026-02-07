@@ -31,6 +31,7 @@ import {
   IconCheck,
 } from '@/components/icons';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { useGolfUser } from '@/contexts/golf-user-context';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
 import {
@@ -90,67 +91,53 @@ export default function GolfSettingsPage() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const { showToast } = useToast();
   const { toggleMobile } = useSidebar();
+  const golfUser = useGolfUser();
 
   const loadProfile = useCallback(async () => {
     const supabase = createClient();
+
+    // Get email from auth (not in context)
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const email = user?.email || '';
 
-    // Check if coach
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id, full_name, organization_id, avatar_url')
-      .eq('user_id', user.id)
-      .single();
-
-    if (coach) {
-      let teamName: string | undefined;
-      let teamId: string | undefined;
-      if (coach.organization_id) {
-        const { data: team } = await supabase
-          .from('golf_teams')
-          .select('id, name')
-          .eq('organization_id', coach.organization_id)
-          .maybeSingle();
-        teamName = team?.name;
-        teamId = team?.id;
-      }
-
+    if (golfUser.role === 'coach') {
       setProfile({
-        userId: user.id,
-        coachId: coach.id,
-        name: coach.full_name || 'Coach',
-        email: user.email || '',
-        avatarUrl: coach.avatar_url,
+        userId: golfUser.userId,
+        coachId: golfUser.coachId,
+        name: golfUser.name,
+        email,
+        avatarUrl: golfUser.avatarUrl || null,
         role: 'coach',
-        teamName,
-        teamId,
-        organizationId: coach.organization_id ?? undefined,
+        teamName: golfUser.teamName,
+        teamId: golfUser.teamId,
+        organizationId: golfUser.organizationId,
       });
       setLoading(false);
       return;
     }
 
-    // Check if player
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id, first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state, phone')
-      .eq('user_id', user.id)
-      .single();
+    // Player — fetch extra player-specific fields not in context
+    if (golfUser.playerId) {
+      const [playerResult, teamResult] = await Promise.all([
+        supabase
+          .from('golf_players')
+          .select('first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state, phone')
+          .eq('id', golfUser.playerId)
+          .single(),
+        golfUser.teamId
+          ? supabase
+              .from('golf_teams')
+              .select('id, name, organization:golf_organizations(name)')
+              .eq('id', golfUser.teamId)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
 
-    if (player) {
-      let teamName: string | undefined;
+      const player = playerResult.data;
+      const team = teamResult.data;
+
       let currentTeam: UserProfile['currentTeam'] = null;
-
-      const { data: teamMembership } = await supabase
-        .from('golf_team_members')
-        .select('team:golf_teams(id, name, organization:golf_organizations(name))')
-        .eq('player_id', player.id)
-        .maybeSingle();
-
-      if (teamMembership?.team) {
-        const team = teamMembership.team;
-        teamName = team.name;
+      if (team) {
         const org = Array.isArray(team.organization)
           ? team.organization[0]
           : team.organization;
@@ -162,15 +149,15 @@ export default function GolfSettingsPage() {
       }
 
       setProfile({
-        userId: user.id,
-        name: `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Player',
-        email: user.email || '',
-        avatarUrl: player.avatar_url,
+        userId: golfUser.userId,
+        name: golfUser.name,
+        email,
+        avatarUrl: player?.avatar_url ?? golfUser.avatarUrl ?? null,
         role: 'player',
-        teamName,
-        playerId: player.id,
+        teamName: golfUser.teamName,
+        playerId: golfUser.playerId,
         currentTeam,
-        playerData: {
+        playerData: player ? {
           first_name: player.first_name,
           last_name: player.last_name,
           handicap: player.handicap,
@@ -179,11 +166,12 @@ export default function GolfSettingsPage() {
           hometown: player.hometown,
           state: player.state,
           phone: player.phone,
-        },
+        } : undefined,
       });
     }
 
     setLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

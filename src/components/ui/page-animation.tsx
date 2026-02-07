@@ -23,12 +23,13 @@ const itemVariants = {
   hidden: {
     opacity: 0,
     y: 16,
-    filter: 'blur(4px)'
+    // Removed filter: 'blur(4px)' — CSS filter is NOT GPU-accelerated and
+    // triggers a repaint on every animation frame. The opacity + y transform
+    // already provide a smooth entrance effect.
   },
   visible: {
     opacity: 1,
     y: 0,
-    filter: 'blur(0px)',
     transition: {
       type: 'spring' as const,
       stiffness: 300,

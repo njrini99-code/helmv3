@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
@@ -15,6 +14,7 @@ import {
   IconChevronLeft,
 } from '@/components/icons';
 import { GlassCard } from '@/components/ui/glass-card';
+import { useGolfUser } from '@/contexts/golf-user-context';
 import { AlertCard, type CoachAlert, type AlertLevel } from '@/components/golf/coachhelm/alerts';
 import {
   getCoachAlerts,
@@ -30,62 +30,28 @@ type FilterLevel = AlertLevel | 'all';
 
 export default function AlertsPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const golfUser = useGolfUser();
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
   const [alerts, setAlerts] = useState<CoachAlert[]>([]);
-  const [coachId, setCoachId] = useState<string | null>(null);
-  const [teamId, setTeamId] = useState<string | null>(null);
   const [filterLevel, setFilterLevel] = useState<FilterLevel>('all');
   const [showAcknowledged, setShowAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch coach and team data
+  // Use IDs from context
+  const coachId = golfUser.coachId || null;
+  const teamId = golfUser.teamId || null;
+
+  // Fetch alerts (coach/team IDs come from context)
   useEffect(() => {
     async function loadData() {
+      if (!coachId) {
+        router.push('/golf/dashboard');
+        return;
+      }
+
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          router.push('/golf/login');
-          return;
-        }
-
-        const { data: coach, error: coachError } = await supabase
-          .from('golf_coaches')
-          .select('id, organization_id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (coachError) {
-          setError('Failed to load coach profile. Please try again.');
-          setIsLoading(false);
-          return;
-        }
-
-        if (!coach) {
-          router.push('/golf/dashboard');
-          return;
-        }
-
-        setCoachId(coach.id);
-
-        // Get team via organization
-        let resolvedTeamId = teamId;
-        if (coach.organization_id) {
-          const { data: team } = await supabase
-            .from('golf_teams')
-            .select('id')
-            .eq('organization_id', coach.organization_id)
-            .maybeSingle();
-
-          if (team) {
-            setTeamId(team.id);
-            resolvedTeamId = team.id;
-          }
-        }
-
-        // Fetch alerts
-        const result = await getCoachAlerts(coach.id, resolvedTeamId || '', {
+        const result = await getCoachAlerts(coachId, teamId || '', {
           includeAcknowledged: showAcknowledged,
           limit: 100,
         });
@@ -104,7 +70,8 @@ export default function AlertsPage() {
     }
 
     loadData();
-  }, [supabase, router, showAcknowledged, teamId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAcknowledged]);
 
   const handleDismiss = async (alertId: string) => {
     const alertToRemove = alerts.find(a => a.id === alertId);

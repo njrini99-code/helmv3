@@ -24,8 +24,9 @@ export function usePresence() {
       }
     };
 
-    // Send heartbeat immediately
-    sendHeartbeat();
+    // PERF: Defer initial heartbeat by 5s so it doesn't compete with
+    // critical dashboard data fetching during page load
+    const initialTimeout = setTimeout(sendHeartbeat, 5000);
 
     // Set up interval for periodic heartbeats
     intervalRef.current = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
@@ -40,6 +41,7 @@ export function usePresence() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      clearTimeout(initialTimeout);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }

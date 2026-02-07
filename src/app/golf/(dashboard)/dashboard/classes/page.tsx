@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { IconBook, IconPlus, IconUpload, IconClock, IconMapPin, IconCalendar } from '@/components/icons';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { createClient } from '@/lib/supabase/client';
+import { useGolfUser } from '@/contexts/golf-user-context';
 import { AddClassModal, type ClassFormData } from '@/components/golf/classes/AddClassModal';
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
 import { ConfirmClassesModal } from '@/components/golf/classes/ConfirmClassesModal';
@@ -33,10 +34,13 @@ interface PlayerClass {
 }
 
 export default function GolfClassesPage() {
+  const golfUser = useGolfUser();
   const [classes, setClasses] = useState<PlayerClass[]>([]);
   const [loading, setLoading] = useState(true);
-  const [playerId, setPlayerId] = useState<string | null>(null);
-  const [teamId, setTeamId] = useState<string | null>(null);
+
+  // Use IDs from context
+  const playerId = golfUser.playerId || null;
+  const teamId = golfUser.teamId || null;
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -52,39 +56,20 @@ export default function GolfClassesPage() {
   // Fetch classes on load
   useEffect(() => {
     fetchClasses();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchClasses = async () => {
+    if (!playerId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Get player ID (team_id is not on golf_players)
-      const { data: player } = await supabase
-        .from('golf_players')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!player) return;
-      setPlayerId(player.id);
-
-      // Get team_id via golf_team_members junction table
-      const { data: membership } = await supabase
-        .from('golf_team_members')
-        .select('team_id')
-        .eq('player_id', player.id)
-        .maybeSingle();
-
-      setTeamId(membership?.team_id || null);
-
-      // Fetch classes
       const { data, error } = await supabase
         .from('golf_player_classes')
         .select('*')
-        .eq('player_id', player.id)
+        .eq('player_id', playerId)
         .order('start_time', { ascending: true });
 
       if (error) throw error;
