@@ -649,6 +649,21 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
         lastSuccessfulSync: state.lastSuccessfulSync,
         syncHistory: state.syncHistory.slice(0, 10), // Keep only recent history
       }),
+      // Rehydrate Date objects that become strings after JSON serialization
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Record<string, unknown>;
+        return {
+          ...current,
+          // Only merge the fields we persist (avoid overwriting actions)
+          ...(p.lastOnlineAt !== undefined && { lastOnlineAt: p.lastOnlineAt as string | null }),
+          ...(p.lastSyncAttempt !== undefined && { lastSyncAttempt: p.lastSyncAttempt as string | null }),
+          ...(p.syncHistory !== undefined && { syncHistory: p.syncHistory as OfflineSyncState['syncHistory'] }),
+          // Convert lastSuccessfulSync back to Date (JSON serializes Date → string)
+          lastSuccessfulSync: p.lastSuccessfulSync
+            ? new Date(p.lastSuccessfulSync as string)
+            : current.lastSuccessfulSync,
+        };
+      },
     }
   )
 );

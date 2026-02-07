@@ -214,7 +214,10 @@ export function OfflineSyncStatus({
   useEffect(() => {
     const updateTime = () => {
       // Convert Date to ISO string for formatTimeSince, or pass null
-      const syncTimeString = lastSuccessfulSync ? lastSuccessfulSync.toISOString() : null;
+      // Defensive: lastSuccessfulSync may be a string after store rehydration from localStorage
+      const syncTimeString = lastSuccessfulSync
+        ? (lastSuccessfulSync instanceof Date ? lastSuccessfulSync.toISOString() : String(lastSuccessfulSync))
+        : null;
       setLastSyncText(formatTimeSince(syncTimeString));
     };
 

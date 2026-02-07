@@ -30,6 +30,7 @@ import { ResumeDraftModal } from '@/components/golf/ResumeDraftModal';
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { useAutoSaveRound, type RoundDraftData } from '@/hooks/golf/use-auto-save-round';
+import { useMobileNav } from '@/contexts/mobile-nav-context';
 
 interface Hole {
   number: number;
@@ -69,6 +70,13 @@ interface RoundSummary {
 
 export default function NewRoundClient() {
   const router = useRouter();
+
+  // Hide mobile bottom nav for entire round flow (setup → holes → tracking → submit)
+  const { hide: hideMobileNav, show: showMobileNav } = useMobileNav();
+  useEffect(() => {
+    hideMobileNav();
+    return () => showMobileNav();
+  }, [hideMobileNav, showMobileNav]);
 
   // Auto-save hook with database persistence
   const {
@@ -1360,16 +1368,17 @@ export default function NewRoundClient() {
   // ============================================================================
   if (step === 'holes') {
     return (
-      <div className="min-h-full bg-transparent">
-        <div className="max-w-lg mx-auto px-4 py-6">
-          <div className="mb-4">
+      <div className="min-h-full bg-transparent flex items-start justify-center p-4 pt-6">
+        <div className="w-full max-w-2xl">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-5 sm:p-8">
+            <ShineEffect />
             <StepProgressBar />
+            <HoleConfigurationForm
+              courseName={setupData.courseName}
+              onSave={handleHolesSave}
+              onBack={() => setStep('setup')}
+            />
           </div>
-          <HoleConfigurationForm
-            courseName={setupData.courseName}
-            onSave={handleHolesSave}
-            onBack={() => setStep('setup')}
-          />
         </div>
       </div>
     );
@@ -1384,18 +1393,21 @@ export default function NewRoundClient() {
     const toPar = totalScore - totalPar;
 
     return (
-      <div className="min-h-full bg-transparent flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-8">
-          <div className="w-20 h-20 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Saving Round...
-          </h2>
-          <p className="text-slate-600 mb-4">
-            Score: {totalScore} ({toPar >= 0 ? '+' : ''}{toPar})
-          </p>
-          <p className="text-sm text-slate-500">
-            Calculating your 50+ statistics...
-          </p>
+      <div className="min-h-full bg-transparent flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-8 text-center">
+            <ShineEffect />
+            <div className="w-20 h-20 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              Saving Round...
+            </h2>
+            <p className="text-slate-600 mb-4">
+              Score: {totalScore} ({toPar >= 0 ? '+' : ''}{toPar})
+            </p>
+            <p className="text-sm text-slate-500">
+              Calculating your 50+ statistics...
+            </p>
+          </div>
         </div>
       </div>
     );

@@ -45,10 +45,12 @@ interface OfflineIndicatorProps {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-function formatTimeSince(date: Date | null): string {
+function formatTimeSince(date: Date | string | null): string {
   if (!date) return 'Never';
 
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  // Defensive: date may be a string after store rehydration from localStorage
+  const dateObj = date instanceof Date ? date : new Date(date);
+  const seconds = Math.floor((Date.now() - dateObj.getTime()) / 1000);
 
   if (seconds < 60) return 'Just now';
   if (seconds < 120) return '1 min ago';
