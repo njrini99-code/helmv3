@@ -235,13 +235,13 @@ export function CalendarDayViewSwipeable({
         >
           <RefreshCw
             className={cn(
-              'w-5 h-5 text-emerald-600',
+              'w-5 h-5 text-green-600',
               isRefreshing && 'animate-spin',
               pullDistance > 60 && !isRefreshing && 'scale-110'
             )}
           />
           {pullDistance > 60 && !isRefreshing && (
-            <span className="ml-2 text-sm text-emerald-600 font-medium">Release to refresh</span>
+            <span className="ml-2 text-sm text-green-600 font-medium">Release to refresh</span>
           )}
         </div>
       )}
@@ -254,12 +254,12 @@ export function CalendarDayViewSwipeable({
             <div className="flex items-center gap-2">
               <h2 className={cn(
                 'text-xl font-bold tracking-tight',
-                isTodayDate ? 'text-emerald-600' : 'text-slate-900'
+                isTodayDate ? 'text-green-600' : 'text-slate-900'
               )}>
                 {dateLabel}
               </h2>
               {isTodayDate && (
-                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700 rounded-full">
+                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-green-100 text-green-700 rounded-full">
                   Now
                 </span>
               )}
@@ -277,8 +277,8 @@ export function CalendarDayViewSwipeable({
                 className={cn(
                   'flex items-center justify-center',
                   'w-10 h-10 rounded-xl',
-                  'bg-emerald-100 text-emerald-700',
-                  'hover:bg-emerald-200 active:scale-95',
+                  'bg-green-100 text-green-700',
+                  'hover:bg-green-200 active:scale-95',
                   'transition-all duration-200',
                   'touch-manipulation mr-1'
                 )}
@@ -338,7 +338,7 @@ export function CalendarDayViewSwipeable({
             // Premium empty state
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="relative mb-6">
-                <div className="absolute inset-0 bg-emerald-500/10 rounded-3xl blur-2xl scale-150" />
+                <div className="absolute inset-0 bg-green-500/10 rounded-3xl blur-2xl scale-150" />
                 <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/50 flex items-center justify-center shadow-sm">
                   <Calendar className="w-10 h-10 text-slate-300" />
                 </div>
@@ -356,9 +356,9 @@ export function CalendarDayViewSwipeable({
                   className={cn(
                     'group flex items-center gap-2',
                     'px-6 py-3 rounded-2xl font-semibold text-sm',
-                    'bg-emerald-600 text-white',
-                    'shadow-lg shadow-emerald-600/25',
-                    'hover:bg-emerald-700 hover:shadow-emerald-600/30',
+                    'bg-green-600 text-white',
+                    'shadow-lg shadow-green-600/25',
+                    'hover:bg-green-700 hover:shadow-green-600/30',
                     'active:scale-95',
                     'transition-all duration-200',
                     'touch-manipulation'
@@ -484,9 +484,9 @@ export function MobileWeekPicker({
                 'transition-all duration-200 ease-out',
                 'touch-manipulation select-none',
                 isSelected
-                  ? 'bg-emerald-600 shadow-lg shadow-emerald-600/30 scale-105'
+                  ? 'bg-green-600 shadow-lg shadow-green-600/30 scale-105'
                   : isTodayDate
-                    ? 'bg-emerald-50 ring-2 ring-emerald-500/30'
+                    ? 'bg-green-50 ring-2 ring-green-500/30'
                     : 'bg-white/60 hover:bg-white/90',
                 isPastDate && !isSelected && 'opacity-50',
                 'active:scale-95'
@@ -496,9 +496,9 @@ export function MobileWeekPicker({
               <span className={cn(
                 'text-[10px] font-semibold uppercase tracking-wide',
                 isSelected
-                  ? 'text-emerald-100'
+                  ? 'text-green-100'
                   : isTodayDate
-                    ? 'text-emerald-600'
+                    ? 'text-green-600'
                     : 'text-slate-400'
               )}>
                 {format(day, 'EEE')}
@@ -510,7 +510,7 @@ export function MobileWeekPicker({
                 isSelected
                   ? 'text-white'
                   : isTodayDate
-                    ? 'text-emerald-700'
+                    ? 'text-green-700'
                     : 'text-slate-800'
               )}>
                 {format(day, 'd')}
@@ -526,7 +526,7 @@ export function MobileWeekPicker({
                         'w-1 h-1 rounded-full',
                         isSelected
                           ? 'bg-white/80'
-                          : 'bg-emerald-500'
+                          : 'bg-green-500'
                       )}
                     />
                   ))}
@@ -535,7 +535,7 @@ export function MobileWeekPicker({
 
               {/* Today ring indicator */}
               {isTodayDate && !isSelected && (
-                <div className="absolute inset-0 rounded-2xl ring-2 ring-emerald-500/40 pointer-events-none" />
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-green-500/40 pointer-events-none" />
               )}
             </button>
           );

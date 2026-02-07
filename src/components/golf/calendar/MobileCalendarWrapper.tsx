@@ -188,7 +188,7 @@ export function MobileCalendarWrapper({
                   'w-9 h-9 rounded-lg',
                   'transition-all duration-200',
                   currentView === 'day'
-                    ? 'bg-white text-emerald-600 shadow-sm'
+                    ? 'bg-white text-green-600 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
                 )}
               >
@@ -202,7 +202,7 @@ export function MobileCalendarWrapper({
                   'w-9 h-9 rounded-lg',
                   'transition-all duration-200',
                   currentView === 'list'
-                    ? 'bg-white text-emerald-600 shadow-sm'
+                    ? 'bg-white text-green-600 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
                 )}
               >

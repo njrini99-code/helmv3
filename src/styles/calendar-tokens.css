@@ -9,13 +9,15 @@
   /* ===================================================================
      EVENT TYPE COLORS
      Left border accent colors for instant event recognition
+     Canonical source: src/lib/calendar/event-styles.ts
+     Valid DB types: practice, tournament, qualifier, meeting, travel, other
      =================================================================== */
-  --event-practice: theme(colors.emerald.500);
-  --event-match: theme(colors.amber.500);
-  --event-tournament: theme(colors.rose.500);
-  --event-meeting: theme(colors.slate.400);
-  --event-social: theme(colors.violet.500);
-  --event-other: theme(colors.slate.400);
+  --event-practice: theme(colors.stone.400);
+  --event-tournament: theme(colors.emerald.600);
+  --event-qualifier: theme(colors.amber.500);
+  --event-meeting: theme(colors.sky.500);
+  --event-travel: theme(colors.purple.500);
+  --event-other: theme(colors.stone.400);
 
   /* ===================================================================
      EVENT STATUS COLORS
@@ -161,10 +163,11 @@
    =================================================================== */
 
 .event-type-practice { border-left-color: var(--event-practice); }
-.event-type-match { border-left-color: var(--event-match); }
 .event-type-tournament { border-left-color: var(--event-tournament); }
+.event-type-qualifier { border-left-color: var(--event-qualifier); }
 .event-type-meeting { border-left-color: var(--event-meeting); }
-.event-type-social { border-left-color: var(--event-social); }
+.event-type-travel { border-left-color: var(--event-travel); }
+.event-type-other { border-left-color: var(--event-other); }
 
 .status-draft {
   opacity: 0.6;
@@ -216,3 +219,15 @@
 .heat-medium { background-color: var(--heat-medium); }
 .heat-medium-high { background-color: var(--heat-medium-high); }
 .heat-high { background-color: var(--heat-high); }
+
+/* View transition animation */
+@keyframes calendarFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

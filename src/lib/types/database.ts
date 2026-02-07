@@ -3350,9 +3350,12 @@ export type Database = {
           change_notes: string | null
           created_at: string | null
           document_id: string
+          file_name: string | null
           file_size: number | null
           file_url: string
           id: string
+          mime_type: string | null
+          storage_path: string | null
           uploaded_by: string | null
           version_number: number
         }
@@ -3360,9 +3363,12 @@ export type Database = {
           change_notes?: string | null
           created_at?: string | null
           document_id: string
+          file_name?: string | null
           file_size?: number | null
           file_url: string
           id?: string
+          mime_type?: string | null
+          storage_path?: string | null
           uploaded_by?: string | null
           version_number: number
         }
@@ -3370,9 +3376,12 @@ export type Database = {
           change_notes?: string | null
           created_at?: string | null
           document_id?: string
+          file_name?: string | null
           file_size?: number | null
           file_url?: string
           id?: string
+          mime_type?: string | null
+          storage_path?: string | null
           uploaded_by?: string | null
           version_number?: number
         }
@@ -3382,13 +3391,6 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "golf_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_document_versions_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "golf_coaches"
             referencedColumns: ["id"]
           },
         ]
@@ -3402,10 +3404,12 @@ export type Database = {
           file_size: number | null
           file_type: string | null
           file_url: string
+          folder: string | null
           id: string
           is_public: boolean | null
           team_id: string
           title: string
+          updated_at: string | null
           uploaded_by: string | null
           version_count: number | null
         }
@@ -3417,10 +3421,12 @@ export type Database = {
           file_size?: number | null
           file_type?: string | null
           file_url: string
+          folder?: string | null
           id?: string
           is_public?: boolean | null
           team_id: string
           title: string
+          updated_at?: string | null
           uploaded_by?: string | null
           version_count?: number | null
         }
@@ -3432,10 +3438,12 @@ export type Database = {
           file_size?: number | null
           file_type?: string | null
           file_url?: string
+          folder?: string | null
           id?: string
           is_public?: boolean | null
           team_id?: string
           title?: string
+          updated_at?: string | null
           uploaded_by?: string | null
           version_count?: number | null
         }
@@ -3452,13 +3460,6 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "golf_teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_documents_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "golf_coaches"
             referencedColumns: ["id"]
           },
         ]

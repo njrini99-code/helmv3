@@ -393,7 +393,7 @@ export function MobileEventSheet({
                   }}
                   className={cn(
                     'relative w-11 h-6 rounded-full transition-colors duration-200',
-                    formData.allDay ? 'bg-emerald-500' : 'bg-slate-300',
+                    formData.allDay ? 'bg-green-500' : 'bg-slate-300',
                     (isViewMode || isSaving) && 'opacity-50'
                   )}
                 >
@@ -622,8 +622,8 @@ export function MobileEventSheet({
               disabled={isSaving}
               className={cn(
                 'w-full py-3.5 rounded-2xl font-semibold text-base',
-                'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white',
-                'shadow-lg shadow-emerald-600/25',
+                'bg-gradient-to-r from-green-600 to-green-500 text-white',
+                'shadow-lg shadow-green-600/25',
                 'active:scale-[0.98] transition-all min-h-[52px]',
                 isSaving && 'opacity-50'
               )}

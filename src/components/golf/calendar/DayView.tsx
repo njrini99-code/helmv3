@@ -35,17 +35,103 @@ function DroppableTimeSlot({ date, hour }: { date: Date; hour: number }) {
         'h-16 relative transition-all duration-200',
         'border-l border-t border-stone-100/30',
         'hover:bg-white/20',
-        isOver && 'bg-emerald-100/40 border-emerald-300/50'
+        isOver && 'bg-green-100/50 border-green-300/50'
       )}
     >
       {isOver && (
-        <div className="absolute inset-1 border-2 border-dashed border-emerald-400 rounded-lg bg-emerald-50/40" />
+        <div className="absolute inset-1 border-2 border-dashed border-green-400 rounded-lg bg-green-50/40" />
       )}
     </div>
   );
 }
 
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
+
+interface LayoutEvent {
+  event: CalendarEvent;
+  column: number;
+  totalColumns: number;
+}
+
+/**
+ * Extract total minutes from midnight from a date/time string.
+ * Handles both time-only ("HH:MM:SS") and full ISO datetime strings.
+ */
+function getMinutesFromMidnight(timeString: string): number {
+  if (timeString && !timeString.includes('T') && !timeString.includes(' ')) {
+    const parts = timeString.split(':').map(Number);
+    return (parts[0] ?? 0) * 60 + (parts[1] ?? 0);
+  }
+  const d = new Date(timeString);
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+/**
+ * Lay out overlapping events into side-by-side columns (Google Calendar style).
+ */
+function layoutOverlappingEvents(events: CalendarEvent[]): LayoutEvent[] {
+  if (events.length === 0) return [];
+
+  const sorted = [...events].sort(
+    (a, b) => getMinutesFromMidnight(a.start_date) - getMinutesFromMidnight(b.start_date)
+  );
+
+  const columns: CalendarEvent[][] = [];
+  const result: LayoutEvent[] = [];
+
+  for (const event of sorted) {
+    const startMin = getMinutesFromMidnight(event.start_date);
+    let placed = false;
+    for (let col = 0; col < columns.length; col++) {
+      const colEvents = columns[col];
+      if (!colEvents || colEvents.length === 0) continue;
+      const lastInCol = colEvents[colEvents.length - 1];
+      if (!lastInCol) continue;
+      const lastStart = getMinutesFromMidnight(lastInCol.start_date);
+      const lastEndRaw = lastInCol.end_date
+        ? getMinutesFromMidnight(lastInCol.end_date)
+        : lastStart + 60;
+      const lastEnd = lastEndRaw > lastStart ? lastEndRaw : lastStart + 60;
+
+      if (startMin >= lastEnd) {
+        colEvents.push(event);
+        result.push({ event, column: col, totalColumns: 0 });
+        placed = true;
+        break;
+      }
+    }
+
+    if (!placed) {
+      columns.push([event]);
+      result.push({ event, column: columns.length - 1, totalColumns: 0 });
+    }
+  }
+
+  // Determine totalColumns for each event based on its overlapping group
+  for (const item of result) {
+    const startMin = getMinutesFromMidnight(item.event.start_date);
+    const endMinRaw = item.event.end_date
+      ? getMinutesFromMidnight(item.event.end_date)
+      : startMin + 60;
+    const endMin = endMinRaw > startMin ? endMinRaw : startMin + 60;
+
+    let maxCol = item.column;
+    for (const other of result) {
+      const otherStart = getMinutesFromMidnight(other.event.start_date);
+      const otherEndRaw = other.event.end_date
+        ? getMinutesFromMidnight(other.event.end_date)
+        : otherStart + 60;
+      const otherEnd = otherEndRaw > otherStart ? otherEndRaw : otherStart + 60;
+
+      if (startMin < otherEnd && endMin > otherStart) {
+        maxCol = Math.max(maxCol, other.column);
+      }
+    }
+    item.totalColumns = maxCol + 1;
+  }
+
+  return result;
+}
 
 export function DayView({ date, events, onEventClick, isDraggable = false }: DayViewProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -67,6 +153,8 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
     );
   });
 
+  const layoutItems = layoutOverlappingEvents(dayEvents);
+
   const getCurrentTimePosition = () => {
     const hour = currentTime.getHours();
     const minutes = currentTime.getMinutes();
@@ -82,21 +170,14 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
   const isCurrentDay = isToday(date.toISOString());
 
   return (
-    <div className="flex-1 overflow-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+    <div className="flex-1 overflow-auto overscroll-contain touch-pan-y [--day-gutter:48px] md:[--day-gutter:80px]" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
       <div className="max-w-4xl mx-auto p-3 md:p-6">
         <div className="relative">
           <div className="grid grid-cols-[48px_1fr] md:grid-cols-[80px_1fr]">
             {HOURS.map((hour) => (
               <div key={hour} className="contents">
                 {/* Time label column - Compact on mobile */}
-                <div className="
-                  h-16
-                  border-r border-stone-100/20
-                  flex items-start justify-end pr-2 md:pr-4 pt-1
-
-                  /* Gradient fade from left edge */
-                  bg-gradient-to-r from-stone-50/40 to-transparent
-                ">
+                <div className="h-16 border-r border-stone-100/20 flex items-start justify-end pr-2 md:pr-4 pt-1 bg-gradient-to-r from-stone-50/40 to-transparent">
                   <span className="text-[10px] md:text-[11px] font-medium text-stone-400">
                     {/* Mobile: compact format (6a), Desktop: full format (6 AM) */}
                     <span className="md:hidden">
@@ -138,31 +219,35 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
           <div className="absolute inset-0 pointer-events-none grid grid-cols-[48px_1fr] md:grid-cols-[80px_1fr]">
             <div />
             <div className="relative pointer-events-none">
-              {dayEvents.map((event) => {
-                const top = calculateEventTop(event.start_date, 6);
-                const height = calculateEventHeight(event.start_date, event.end_date);
+              {layoutItems.map((item) => {
+                const top = calculateEventTop(item.event.start_date, 6);
+                const height = calculateEventHeight(item.event.start_date, item.event.end_date);
+                const widthPercent = (1 / item.totalColumns) * 100;
+                const leftPercent = (item.column / item.totalColumns) * 100;
 
                 return (
                   <div
-                    key={event.id}
-                    className="absolute left-2 right-2 pointer-events-auto"
+                    key={item.event.id}
+                    className="absolute pointer-events-auto"
                     style={{
                       top: `${top}px`,
                       height: `${height}px`,
+                      left: `calc(${leftPercent}% + 4px)`,
+                      width: `calc(${widthPercent}% - 8px)`,
                     }}
                   >
                     <PremiumEventBlock
                       event={{
-                        id: event.id,
-                        title: event.title,
-                        event_type: event.event_type,
-                        status: event.status || 'scheduled',
-                        start_time: event.start_time,
-                        end_time: event.end_time,
-                        location: event.location,
-                        recurring: event.recurring,
+                        id: item.event.id,
+                        title: item.event.title,
+                        event_type: item.event.event_type,
+                        status: item.event.status || 'scheduled',
+                        start_time: item.event.start_time,
+                        end_time: item.event.end_time,
+                        location: item.event.location,
+                        recurring: item.event.recurring,
                       }}
-                      onClick={() => onEventClick?.(event)}
+                      onClick={() => onEventClick?.(item.event)}
                       compact={height < 80}
                     />
                   </div>
@@ -171,33 +256,33 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
             </div>
           </div>
 
-          {/* Current Time Indicator - Premium red line with dot and glow */}
+          {/* Current Time Indicator — brand green line with glowing dot */}
           {currentTimeTop !== null && isCurrentDay && (
             <div
               className="absolute pointer-events-none z-10"
               style={{
                 top: `${currentTimeTop}px`,
-                left: '80px',
+                left: 'var(--day-gutter, 48px)',
                 right: 0,
               }}
             >
               <div className="flex items-center -ml-1.5">
-                {/* Red dot with white border */}
-                <div className="
-                  w-3 h-3
-                  rounded-full
-                  bg-red-500
-                  border-2 border-white
-                  shadow-lg shadow-red-500/50
-                  flex-shrink-0
-                " />
-                {/* Red line */}
-                <div className="
-                  h-0.5
-                  bg-red-500
-                  flex-1
-                  shadow-sm
-                " />
+                {/* Green dot with white border */}
+                <div
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{
+                    background: '#16a34a',
+                    border: '2px solid white',
+                    boxShadow: '0 0 8px rgba(22, 163, 74, 0.5), 0 2px 4px rgba(0,0,0,0.1)',
+                  }}
+                />
+                {/* Green line */}
+                <div
+                  className="h-[2px] flex-1"
+                  style={{
+                    background: 'linear-gradient(90deg, #16a34a, rgba(22, 163, 74, 0.4))',
+                  }}
+                />
               </div>
             </div>
           )}

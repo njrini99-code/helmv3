@@ -23,10 +23,10 @@ export interface ShotRecord {
   shotNumber: number;
   shotType: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty';
   clubType: 'driver' | 'non_driver' | 'putter';
-  lieBefore: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other';
+  lieBefore: 'tee' | 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'recovery' | 'other';
   distanceToHoleBefore: number;
   distanceUnitBefore: 'yards' | 'feet';
-  result: 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty';
+  result: 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'hole' | 'recovery' | 'other' | 'penalty';
   distanceToHoleAfter: number;
   distanceUnitAfter: 'yards' | 'feet';
   shotDistance: number;
@@ -151,11 +151,15 @@ function deriveLieAfterFromResult(result: ShotRecord['result'] | null | undefine
       return 'fairway';
     case 'rough':
       return 'rough';
+    case 'deep_rough':
+      return 'deep_rough';
     case 'sand':
       return 'sand';
     case 'green':
     case 'hole':
       return 'green';
+    case 'recovery':
+      return 'recovery';
     case 'penalty':
       return 'penalty';
     case 'other':
@@ -238,20 +242,22 @@ export default function ShotTrackingComprehensive({
     return 'yards';
   };
   
-  const getInitialLie = (): 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' => {
+  const getInitialLie = (): 'tee' | 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'recovery' | 'other' => {
     if (initialShots.length > 0) {
       const lastShot = initialShots[initialShots.length - 1];
       if (lastShot?.result === 'green') return 'green';
       if (lastShot?.result === 'rough') return 'rough';
+      if (lastShot?.result === 'deep_rough') return 'deep_rough';
       if (lastShot?.result === 'sand') return 'sand';
       if (lastShot?.result === 'fairway') return 'fairway';
+      if (lastShot?.result === 'recovery') return 'recovery';
     }
     return 'tee';
   };
-  
+
   const [distanceToHole, setDistanceToHole] = useState(getInitialDistance());
   const [distanceUnit, setDistanceUnit] = useState<'yards' | 'feet'>(getInitialDistanceUnit());
-  const [currentLie, setCurrentLie] = useState<'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other'>(getInitialLie());
+  const [currentLie, setCurrentLie] = useState<'tee' | 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'recovery' | 'other'>(getInitialLie());
   
   // Shot input state
   const [usedDriver, setUsedDriver] = useState<boolean | null>(null);
@@ -279,7 +285,7 @@ export default function ShotTrackingComprehensive({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editFormData, setEditFormData] = useState<{
     clubType: 'driver' | 'non_driver' | 'putter';
-    lieBefore: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other';
+    lieBefore: 'tee' | 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'recovery' | 'other';
     result: ShotRecord['result'];
     distanceToHoleBefore: string;
     distanceUnitBefore: 'yards' | 'feet';
@@ -856,7 +862,7 @@ export default function ShotTrackingComprehensive({
     }
 
     // Update state for next shot
-    const newLie = resultOfShot as 'fairway' | 'rough' | 'sand' | 'green' | 'other';
+    const newLie = resultOfShot as 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'recovery' | 'other';
     setCurrentLie(newLie);
     setCurrentShot(currentShot + 1);
     setDistanceToHole(distanceAfter);
@@ -1499,23 +1505,29 @@ export default function ShotTrackingComprehensive({
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {(() => {
+                    const formatLieLabel = (v: string) => v === 'deep_rough' ? 'Deep Rough' : v.charAt(0).toUpperCase() + v.slice(1);
                     let options: string[];
                     if (isPutting) {
-                      options = ['Hole', 'Green'];
+                      options = ['hole', 'green'];
                     } else if (isTeeShot && currentHole.par !== 3) {
-                      options = ['Fairway', 'Rough', 'Sand', 'Other'];
+                      options = ['fairway', 'rough', 'deep_rough', 'sand', 'recovery', 'other'];
                     } else if (isTeeShot && currentHole.par === 3) {
-                      options = ['Green', 'Rough', 'Sand', 'Other'];
+                      options = ['green', 'rough', 'deep_rough', 'sand', 'recovery', 'other'];
                     } else {
-                      options = ['Fairway', 'Rough', 'Sand', 'Green', 'Hole', 'Other'];
+                      options = ['fairway', 'rough', 'deep_rough', 'sand', 'green', 'hole', 'recovery', 'other'];
                     }
                     return options.map(r => (
-                      <button key={r} onClick={() => handleResultSelect(r.toLowerCase())}
+                      <button key={r} onClick={() => handleResultSelect(r)}
                         className={`py-3 rounded-lg font-semibold text-sm transition-all ${
-                          resultOfShot === r.toLowerCase()
+                          resultOfShot === r
                             ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
                             : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100'}`}>
-                        {r}
+                        {formatLieLabel(r)}
+                        {r === 'green' && (
+                          <span className={`block text-[10px] font-normal leading-tight ${
+                            resultOfShot === r ? 'text-emerald-100' : 'text-slate-400'
+                          }`}>(putting surface, not fringe)</span>
+                        )}
                       </button>
                     ));
                   })()}
@@ -1523,7 +1535,7 @@ export default function ShotTrackingComprehensive({
               </div>
 
               {/* Miss Direction */}
-              {((isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
+              {((isTeeShot && ['rough', 'deep_rough', 'sand', 'recovery', 'other'].includes(resultOfShot || '')) ||
                 (isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot)) ||
                 (isPutting && resultOfShot && resultOfShot !== 'hole')) && (
                 <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
@@ -2037,19 +2049,24 @@ export default function ShotTrackingComprehensive({
                       <div>
                         <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Lie Before</p>
                         <div className="grid grid-cols-3 gap-2">
-                          {(['tee', 'fairway', 'rough', 'sand', 'green', 'other'] as const).map(lie => (
+                          {(['tee', 'fairway', 'rough', 'deep_rough', 'sand', 'green', 'recovery', 'other'] as const).map(lie => {
+                            const lieLabel = lie === 'deep_rough' ? 'Deep Rough' : lie.charAt(0).toUpperCase() + lie.slice(1);
+                            return (
                             <button
                               key={lie}
                               onClick={() => setEditFormData(prev => prev ? {...prev, lieBefore: lie} : null)}
-                              className={`py-2.5 rounded-lg font-semibold text-sm capitalize transition-all ${
+                              className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
                                 editFormData.lieBefore === lie
                                   ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
                                   : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300'
                               }`}
                             >
-                              {lie}
-                            </button>
-                          ))}
+                              {lieLabel}
+                              {lie === 'green' && (
+                                <span className={`block text-[10px] font-normal leading-tight ${editFormData.lieBefore === 'green' ? 'text-emerald-100' : 'text-slate-400'}`}>(putting surface)</span>
+                              )}
+                            </button>);
+                          })}
                         </div>
                       </div>
 
@@ -2093,19 +2110,24 @@ export default function ShotTrackingComprehensive({
                       <div>
                         <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Result</p>
                         <div className="grid grid-cols-3 gap-2">
-                          {(['fairway', 'rough', 'sand', 'green', 'hole', 'other'] as const).map(r => (
+                          {(['fairway', 'rough', 'deep_rough', 'sand', 'green', 'hole', 'recovery', 'other'] as const).map(r => {
+                            const resultLabel = r === 'deep_rough' ? 'Deep Rough' : r.charAt(0).toUpperCase() + r.slice(1);
+                            return (
                             <button
                               key={r}
                               onClick={() => setEditFormData(prev => prev ? {...prev, result: r} : null)}
-                              className={`py-2.5 rounded-lg font-semibold text-sm capitalize transition-all ${
+                              className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
                                 editFormData.result === r
                                   ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
                                   : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300'
                               }`}
                             >
-                              {r}
-                            </button>
-                          ))}
+                              {resultLabel}
+                              {r === 'green' && (
+                                <span className={`block text-[10px] font-normal leading-tight ${editFormData.result === 'green' ? 'text-emerald-100' : 'text-slate-400'}`}>(putting surface, not fringe)</span>
+                              )}
+                            </button>);
+                          })}
                         </div>
                       </div>
 

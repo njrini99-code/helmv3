@@ -37,6 +37,12 @@ import {
   getNotificationPreferences,
   updateNotificationPreferences,
 } from '@/app/actions/notification-preferences';
+import {
+  BENCHMARK_METADATA,
+  BENCHMARK_LEVELS,
+  type BenchmarkLevel,
+  getDefaultBenchmarkForDivision,
+} from '@/lib/golf/sg-benchmarks';
 
 // ============================================================================
 // TYPES
@@ -1130,13 +1136,14 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
   const [handicapSystem, setHandicapSystem] = useState('usga');
   const [defaultTees, setDefaultTees] = useState('blue');
   const [timezone, setTimezone] = useState('America/New_York');
+  const [sgBenchmark, setSgBenchmark] = useState<BenchmarkLevel>('scratch');
 
   useEffect(() => {
     (async () => {
       const supabase = createClient();
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('golf_team_settings')
-        .select('scoring_format, handicap_system, default_tees, timezone')
+        .select('scoring_format, handicap_system, default_tees, timezone, sg_benchmark_level')
         .eq('team_id', teamId)
         .maybeSingle();
 
@@ -1145,6 +1152,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
         setHandicapSystem(data.handicap_system || 'usga');
         setDefaultTees(data.default_tees || 'blue');
         setTimezone(data.timezone || 'America/New_York');
+        setSgBenchmark((data.sg_benchmark_level as BenchmarkLevel) || 'scratch');
       }
       setLoaded(true);
     })();
@@ -1155,7 +1163,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
     const supabase = createClient();
     try {
       // Upsert — create if doesn't exist
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('golf_team_settings')
         .upsert({
           team_id: teamId,
@@ -1163,6 +1171,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           handicap_system: handicapSystem,
           default_tees: defaultTees,
           timezone,
+          sg_benchmark_level: sgBenchmark,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'team_id' });
 
@@ -1248,6 +1257,37 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           <option value="America/Anchorage">Alaska (AKT)</option>
           <option value="Pacific/Honolulu">Hawaii (HT)</option>
         </select>
+      </div>
+
+      {/* E-12: Strokes Gained Benchmark Level */}
+      <div className="border-t border-slate-100 pt-4">
+        <label className="text-sm font-medium text-slate-700 block mb-1">Strokes Gained Benchmark</label>
+        <p className="text-xs text-slate-500 mb-3">
+          Baseline skill level for SG calculations. Pick the level closest to your team.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {BENCHMARK_LEVELS.map((level) => {
+            const meta = BENCHMARK_METADATA[level];
+            return (
+              <button
+                key={level}
+                onClick={() => setSgBenchmark(level)}
+                className={cn(
+                  'p-2.5 rounded-lg border-2 text-left transition-all',
+                  sgBenchmark === level
+                    ? 'border-green-600 bg-green-50'
+                    : 'border-slate-200 hover:border-slate-300'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-slate-900">{meta.shortLabel}</p>
+                  <span className="text-[10px] text-slate-400">~{meta.approximateHandicap > 0 ? '+' : ''}{meta.approximateHandicap} hcp</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">{meta.description}</p>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <SaveBar onSave={handleSave} loading={saving} />

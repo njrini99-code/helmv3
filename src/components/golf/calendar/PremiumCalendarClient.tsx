@@ -28,6 +28,7 @@ import { CalendarDayViewSwipeable } from '@/components/golf/calendar/CalendarDay
 import { QuickAddEventFAB } from '@/components/golf/calendar/QuickAddEventFAB';
 import type { RSVPResponse } from '@/components/golf/calendar/MobileRSVPButtons';
 import { createGolfEvent, updateGolfEvent, deleteGolfEvent, respondToEvent } from '@/app/golf/actions/golf';
+import '@/styles/calendar-tokens.css';
 import { usePlayerEventRSVP, useEventRSVP } from '@/hooks/useRSVP';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
@@ -297,8 +298,16 @@ export function PremiumCalendarClient({
   // For backward compatibility - first selected player
   const selectedPlayer = selectedPlayers[0] || null;
 
-  // All events are shown (no filtering needed)
+  // When no players are selected (ALL mode), show all team events
+  // When players are selected, still show all team events (availability overlay handles the rest)
   const filteredEvents = initialEvents;
+
+  // When ALL is clicked (selection cleared), reset to week view if we were in day/availability mode
+  useEffect(() => {
+    if (selectedPlayerIds.length === 0 && !showMobileUI && view === 'day') {
+      setView('week');
+    }
+  }, [selectedPlayerIds.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNavigate = (direction: 'prev' | 'next' | 'today') => {
     if (direction === 'today') {
@@ -454,11 +463,28 @@ export function PremiumCalendarClient({
     const newHour = dropData.hour;
     const newStartTime = `${String(newHour).padStart(2, '0')}:00:00`;
 
-    // Calculate event duration if end_date exists
+    // Preserve original event duration
     let newEndTime: string | undefined;
-    if (draggedEvent.end_date) {
-      // Assume 1 hour duration for now
-      const endHour = newHour + 1;
+    if (draggedEvent.start_date && draggedEvent.end_date) {
+      const originalStart = new Date(draggedEvent.start_date);
+      const originalEnd = new Date(draggedEvent.end_date);
+      const durationMs = originalEnd.getTime() - originalStart.getTime();
+      const durationHours = durationMs / (1000 * 60 * 60);
+
+      if (durationHours > 0 && durationHours < 24) {
+        const endHour = newHour + Math.floor(durationHours);
+        const endMinute = Math.round((durationHours % 1) * 60);
+        const clampedHour = Math.min(endHour, 23);
+        const clampedMinute = endHour > 23 ? 59 : endMinute;
+        newEndTime = `${String(clampedHour).padStart(2, '0')}:${String(clampedMinute).padStart(2, '0')}:00`;
+      } else {
+        // Fallback: 1 hour duration
+        const endHour = Math.min(newHour + 1, 23);
+        newEndTime = `${String(endHour).padStart(2, '0')}:00:00`;
+      }
+    } else {
+      // No end date — default 1 hour
+      const endHour = Math.min(newHour + 1, 23);
       newEndTime = `${String(endHour).padStart(2, '0')}:00:00`;
     }
 
@@ -470,13 +496,13 @@ export function PremiumCalendarClient({
       });
 
       if (!result.success) {
-        // Reschedule failed - exit silently
+        console.error('Failed to reschedule event:', result.error);
         return;
       }
 
       router.refresh();
-    } catch {
-      // Reschedule failed - events will not update
+    } catch (err) {
+      console.error('Failed to reschedule event:', err);
     }
   };
 
@@ -501,15 +527,17 @@ export function PremiumCalendarClient({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex flex-col md:flex-row h-full gap-4">
+        <div className="flex flex-col md:flex-row h-full gap-4" style={{ minHeight: 0 }}>
           {/* Premium Avatar Sidebar - Hidden on mobile, shown on desktop */}
           {!isMobile && (
-            <CalendarAvatarSidebar
-              teamMembers={teamMembers}
-              selectedPlayerIds={selectedPlayerIds}
-              onPlayerSelect={setSelectedPlayerIds}
-              onSyncSettings={onSyncSettings}
-            />
+            <div style={{ display: 'flex', flexShrink: 0, minHeight: 0, maxHeight: '100%' }}>
+              <CalendarAvatarSidebar
+                teamMembers={teamMembers}
+                selectedPlayerIds={selectedPlayerIds}
+                onPlayerSelect={setSelectedPlayerIds}
+                onSyncSettings={onSyncSettings}
+              />
+            </div>
           )}
 
           {/* Premium Glass Calendar Container */}
@@ -617,68 +645,75 @@ export function PremiumCalendarClient({
               {!isMobile && <NotificationCenter />}
             </div>
 
-            {/* Availability Day View (when player selected) */}
-            {selectedPlayer && view === 'day' ? (
-              <div className="flex-1 overflow-y-auto p-6 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
-                <AvailabilityDayView
-                  date={currentDate}
-                  coachBusyPeriods={coachBusyPeriods as unknown as import('./AvailabilityDayView').BusyPeriod[]}
-                  playerBusyPeriods={playerBusyPeriods as unknown as import('./AvailabilityDayView').BusyPeriod[]}
-                  selectedPlayer={selectedPlayer}
-                  onTimeSlotClick={handleTimeSlotClick}
-                />
-              </div>
-            ) : (
-              <>
-                {view === 'week' && (
-                  <WeekView
-                    weekStart={weekStart}
-                    events={filteredEvents}
-                    onEventClick={handleEventClick}
-                    isDraggable={true}
-                    playerBusyPeriods={selectedPlayer ? (playerBusyPeriods as unknown as import('./WeekView').BusyPeriod[]) : []}
-                    selectedPlayerName={selectedPlayer ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}` : undefined}
+            {/* Calendar view content with fade transition */}
+            <div
+              key={`${view}-${selectedPlayer?.id ?? 'none'}`}
+              className="flex-1 flex flex-col min-h-0"
+              style={{ animation: 'calendarFadeIn 200ms ease-out' }}
+            >
+              {/* Availability Day View (when player selected) */}
+              {selectedPlayer && view === 'day' ? (
+                <div className="flex-1 overflow-y-auto p-6 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+                  <AvailabilityDayView
+                    date={currentDate}
+                    coachBusyPeriods={coachBusyPeriods as unknown as import('./AvailabilityDayView').BusyPeriod[]}
+                    playerBusyPeriods={playerBusyPeriods as unknown as import('./AvailabilityDayView').BusyPeriod[]}
+                    selectedPlayer={selectedPlayer}
+                    onTimeSlotClick={handleTimeSlotClick}
                   />
-                )}
-
-                {view === 'month' && (
-                  <MonthView
-                    month={currentDate}
-                    events={filteredEvents}
-                    onDateClick={handleDateClick}
-                    onEventClick={handleEventClick}
-                    isDraggable={true}
-                  />
-                )}
-
-                {view === 'day' && (
-                  showMobileUI ? (
-                    // Mobile: Use enhanced swipeable day view with RSVP buttons
-                    <CalendarDayViewSwipeable
-                      events={filteredEvents}
-                      currentDate={currentDate}
-                      onDateChange={setCurrentDate}
-                      isCoach={isCoach}
-                      userRsvpStatuses={userRsvpStatuses}
-                      onRsvp={!isCoach ? handleRsvp : undefined}
-                      onEventClick={handleEventClick}
-                      onAddEvent={isCoach ? handleAddEvent : undefined}
-                      onRefresh={async () => {
-                        router.refresh();
-                      }}
-                    />
-                  ) : (
-                    // Desktop: Use traditional day view
-                    <DayView
-                      date={currentDate}
+                </div>
+              ) : (
+                <>
+                  {view === 'week' && (
+                    <WeekView
+                      weekStart={weekStart}
                       events={filteredEvents}
                       onEventClick={handleEventClick}
                       isDraggable={true}
+                      playerBusyPeriods={selectedPlayer ? (playerBusyPeriods as unknown as import('./WeekView').BusyPeriod[]) : []}
+                      selectedPlayerName={selectedPlayer ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}` : undefined}
                     />
-                  )
-                )}
-              </>
-            )}
+                  )}
+
+                  {view === 'month' && (
+                    <MonthView
+                      month={currentDate}
+                      events={filteredEvents}
+                      onDateClick={handleDateClick}
+                      onEventClick={handleEventClick}
+                      isDraggable={true}
+                    />
+                  )}
+
+                  {view === 'day' && (
+                    showMobileUI ? (
+                      // Mobile: Use enhanced swipeable day view with RSVP buttons
+                      <CalendarDayViewSwipeable
+                        events={filteredEvents}
+                        currentDate={currentDate}
+                        onDateChange={setCurrentDate}
+                        isCoach={isCoach}
+                        userRsvpStatuses={userRsvpStatuses}
+                        onRsvp={!isCoach ? handleRsvp : undefined}
+                        onEventClick={handleEventClick}
+                        onAddEvent={isCoach ? handleAddEvent : undefined}
+                        onRefresh={async () => {
+                          router.refresh();
+                        }}
+                      />
+                    ) : (
+                      // Desktop: Use traditional day view
+                      <DayView
+                        date={currentDate}
+                        events={filteredEvents}
+                        onEventClick={handleEventClick}
+                        isDraggable={true}
+                      />
+                    )
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
 

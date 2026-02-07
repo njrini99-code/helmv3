@@ -17,6 +17,7 @@ import type {
   GolfRound as DbGolfRound,
 } from '@/lib/types/golf';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import { getBenchmarkData, type BenchmarkLevel } from './sg-benchmarks';
 
 // ============================================
 // LOCAL TYPE DEFINITIONS
@@ -106,6 +107,51 @@ export function convertDbShot(shot: DbGolfShot): SGShot {
     is_holed: shot.putt_made === true || shot.result === 'holed' || shot.result === 'hole',
     is_penalty: shot.is_penalty === true,
   };
+}
+
+/**
+ * E-2: Apply distance_to_hole_after fallback estimation.
+ *
+ * When a shot's distance_to_hole_after is null, we look at the NEXT shot
+ * in the same hole: if the next shot has distance_to_hole_before, we use
+ * that value as the current shot's ending distance.
+ *
+ * This rescues many null SG calculations, especially for approach shots
+ * that land on the green (next shot is a putt with recorded distance).
+ *
+ * Call this on the full array of database shots BEFORE converting to SGShot[].
+ */
+export function applyDistanceAfterFallback(shots: DbGolfShot[]): DbGolfShot[] {
+  // Sort by hole_id then shot_number to ensure correct ordering
+  const sorted = [...shots].sort((a, b) => {
+    if (a.hole_id !== b.hole_id) return (a.hole_id ?? '').localeCompare(b.hole_id ?? '');
+    return a.shot_number - b.shot_number;
+  });
+
+  return sorted.map((shot, index) => {
+    // Already has distance_to_hole_after — no fallback needed
+    if (shot.distance_to_hole_after != null) return shot;
+
+    // If holed, distance_after is 0 — convertDbShot handles this via is_holed
+    if (shot.result === 'holed' || shot.result === 'hole' || shot.putt_made === true) return shot;
+
+    // Look at the next shot in the same hole
+    const nextShot = sorted[index + 1];
+    if (!nextShot || nextShot.hole_id !== shot.hole_id) return shot;
+
+    // Use next shot's distance_to_hole_before as this shot's distance_to_hole_after
+    if (nextShot.distance_to_hole_before != null) {
+      return {
+        ...shot,
+        distance_to_hole_after: nextShot.distance_to_hole_before,
+        distance_unit_after: nextShot.distance_unit_before,
+        // Also infer lie_after from next shot's lie_before if missing
+        lie_after: shot.lie_after ?? nextShot.lie_before,
+      };
+    }
+
+    return shot;
+  });
 }
 
 /**
@@ -245,13 +291,22 @@ export const PGA_BASELINE_DATA: BaselineData = {
 /**
  * Get expected strokes from a given lie and distance
  * Uses linear interpolation between known data points
+ *
+ * @param lie - The lie type (tee, fairway, rough, sand, green, recovery)
+ * @param distanceYards - Distance to hole in yards
+ * @param isOnGreen - Whether the shot is on the green
+ * @param benchmarkLevel - Which benchmark set to use (default: pga_tour for backward compat)
  */
 export function getExpectedStrokes(
   lie: LieType,
   distanceYards: number,
-  isOnGreen: boolean = false
+  isOnGreen: boolean = false,
+  benchmarkLevel?: BenchmarkLevel
 ): number {
-  const baseline = PGA_BASELINE_DATA[lie];
+  const benchmarkData = benchmarkLevel
+    ? getBenchmarkData(benchmarkLevel)
+    : PGA_BASELINE_DATA;
+  const baseline = benchmarkData[lie];
   if (!baseline) return 3.0; // Default fallback
 
   // For putting, convert yards to feet
@@ -303,8 +358,14 @@ export function getExpectedStrokes(
 /**
  * Calculate strokes gained for a single shot.
  * Returns null if the shot has insufficient data for accurate calculation.
+ *
+ * @param shot - The shot data
+ * @param benchmarkLevel - Which benchmark set to use (default: pga_tour)
  */
-export function calculateShotStrokesGained(shot: SGShot): number | null {
+export function calculateShotStrokesGained(
+  shot: SGShot,
+  benchmarkLevel?: BenchmarkLevel
+): number | null {
   // Cannot calculate SG without a starting distance
   if (shot.starting_distance_yards <= 0 && shot.starting_lie !== 'green') {
     return null;
@@ -318,7 +379,8 @@ export function calculateShotStrokesGained(shot: SGShot): number | null {
   const expectedBefore = getExpectedStrokes(
     shot.starting_lie,
     shot.starting_distance_yards,
-    shot.starting_lie === 'green'
+    shot.starting_lie === 'green',
+    benchmarkLevel
   );
 
   let expectedAfter: number;
@@ -328,7 +390,8 @@ export function calculateShotStrokesGained(shot: SGShot): number | null {
     expectedAfter = getExpectedStrokes(
       shot.ending_lie,
       shot.ending_distance_yards,
-      shot.ending_lie === 'green'
+      shot.ending_lie === 'green',
+      benchmarkLevel
     );
   }
 
@@ -370,10 +433,15 @@ export function categorizeShot(shot: SGShot, holePar: number): keyof StrokesGain
 
 /**
  * Calculate strokes gained for an array of shots
+ *
+ * @param shots - Array of shots
+ * @param holes - Array of holes (for par values)
+ * @param benchmarkLevel - Which benchmark set to use (default: pga_tour)
  */
 export function calculateStrokesGained(
   shots: SGShot[],
-  holes: SGHole[]
+  holes: SGHole[],
+  benchmarkLevel?: BenchmarkLevel
 ): StrokesGainedResult {
   const result: StrokesGainedResult = {
     sg_off_tee: 0,
@@ -393,7 +461,7 @@ export function calculateStrokesGained(
     const category = categorizeShot(shot, hole.par);
     if (!category) continue;
 
-    const sg = calculateShotStrokesGained(shot);
+    const sg = calculateShotStrokesGained(shot, benchmarkLevel);
     if (sg == null) continue; // Skip shots with insufficient data
     result[category] += sg;
   }
@@ -409,10 +477,15 @@ export function calculateStrokesGained(
 
 /**
  * Calculate detailed strokes gained breakdown with per-shot averages
+ *
+ * @param shots - Array of shots
+ * @param holes - Array of holes (for par values)
+ * @param benchmarkLevel - Which benchmark set to use (default: pga_tour)
  */
 export function calculateStrokesGainedBreakdown(
   shots: SGShot[],
-  holes: SGHole[]
+  holes: SGHole[],
+  benchmarkLevel?: BenchmarkLevel
 ): StrokesGainedBreakdown {
   const counts = {
     off_tee: 0,
@@ -438,7 +511,7 @@ export function calculateStrokesGainedBreakdown(
     const category = categorizeShot(shot, hole.par);
     if (!category) continue;
 
-    const sg = calculateShotStrokesGained(shot);
+    const sg = calculateShotStrokesGained(shot, benchmarkLevel);
     if (sg == null) continue; // Skip shots with insufficient data
     result[category] += sg;
 
@@ -535,8 +608,14 @@ export function estimateStrokesGainedFromHoles(holes: SGHole[]): StrokesGainedRe
 
 /**
  * Calculate strokes gained for a complete round
+ *
+ * @param round - The round data with holes and shots
+ * @param benchmarkLevel - Which benchmark set to use (default: pga_tour)
  */
-export function calculateRoundStrokesGained(round: SGRound): StrokesGainedResult {
+export function calculateRoundStrokesGained(
+  round: SGRound,
+  benchmarkLevel?: BenchmarkLevel
+): StrokesGainedResult {
   // If we have shot-level data, use precise calculation
   const allShots: SGShot[] = [];
   const holes = round.holes || [];
@@ -548,7 +627,7 @@ export function calculateRoundStrokesGained(round: SGRound): StrokesGainedResult
   }
 
   if (allShots.length > 0) {
-    return calculateStrokesGained(allShots, holes);
+    return calculateStrokesGained(allShots, holes, benchmarkLevel);
   }
 
   // Fall back to hole-level estimation
@@ -568,8 +647,14 @@ export function calculateRoundStrokesGained(round: SGRound): StrokesGainedResult
 
 /**
  * Aggregate strokes gained across multiple rounds
+ *
+ * @param rounds - Array of rounds
+ * @param benchmarkLevel - Which benchmark set to use (default: pga_tour)
  */
-export function aggregateStrokesGained(rounds: SGRound[]): StrokesGainedResult {
+export function aggregateStrokesGained(
+  rounds: SGRound[],
+  benchmarkLevel?: BenchmarkLevel
+): StrokesGainedResult {
   if (rounds.length === 0) {
     return {
       sg_off_tee: 0,
@@ -589,7 +674,7 @@ export function aggregateStrokesGained(rounds: SGRound[]): StrokesGainedResult {
   };
 
   for (const round of rounds) {
-    const roundSG = calculateRoundStrokesGained(round);
+    const roundSG = calculateRoundStrokesGained(round, benchmarkLevel);
     totals.sg_off_tee += roundSG.sg_off_tee;
     totals.sg_approach += roundSG.sg_approach;
     totals.sg_around_green += roundSG.sg_around_green;
@@ -613,42 +698,33 @@ export function aggregateStrokesGained(rounds: SGRound[]): StrokesGainedResult {
 // ============================================
 
 /**
- * Compare player's strokes gained to a baseline
+ * Compare player's strokes gained to a baseline.
+ * Supports both legacy string baselines and new BenchmarkLevel system.
  */
 export function compareToBaseline(
   playerSG: StrokesGainedResult,
-  baseline: 'scratch' | 'tour_avg' | 'amateur'
+  baseline: 'scratch' | 'tour_avg' | 'amateur' | BenchmarkLevel
 ): StrokesGainedResult {
-  // Scratch golfer = 0 SG (by definition)
-  // Tour average is slightly positive (due to selection bias)
-  // Amateur is typically negative
-  const scratchBaseline: StrokesGainedResult = {
-    sg_off_tee: 0,
-    sg_approach: 0,
-    sg_around_green: 0,
-    sg_putting: 0,
-    sg_total: 0,
+  // Import comparison baselines from the benchmark config
+  const { SG_COMPARISON_BASELINES } = require('./sg-benchmarks');
+
+  // Map legacy baseline names to BenchmarkLevel
+  const benchmarkMap: Record<string, BenchmarkLevel> = {
+    scratch: 'scratch',
+    tour_avg: 'pga_tour',
+    amateur: 'break_90',
+    // All BenchmarkLevel values pass through as-is
+    pga_tour: 'pga_tour',
+    ncaa_d1: 'ncaa_d1',
+    ncaa_d2: 'ncaa_d2',
+    ncaa_d3: 'ncaa_d3',
+    break_80: 'break_80',
+    break_90: 'break_90',
+    break_100: 'break_100',
   };
 
-  const baselines: Record<'scratch' | 'tour_avg' | 'amateur', StrokesGainedResult> = {
-    scratch: scratchBaseline,
-    tour_avg: {
-      sg_off_tee: 0.5,
-      sg_approach: 0.5,
-      sg_around_green: 0.3,
-      sg_putting: 0.2,
-      sg_total: 1.5,
-    },
-    amateur: {
-      sg_off_tee: -0.8,
-      sg_approach: -1.2,
-      sg_around_green: -0.5,
-      sg_putting: -0.3,
-      sg_total: -2.8,
-    },
-  };
-
-  const baselineData = baselines[baseline];
+  const level = benchmarkMap[baseline] ?? 'scratch';
+  const baselineData = SG_COMPARISON_BASELINES[level] ?? SG_COMPARISON_BASELINES.scratch;
 
   return {
     sg_off_tee: playerSG.sg_off_tee - baselineData.sg_off_tee,

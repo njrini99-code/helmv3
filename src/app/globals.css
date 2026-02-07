@@ -2159,6 +2159,16 @@ body {
   }
 }
 
+/* Onboarding background blobs — replaces JS-driven framer-motion infinite animations */
+@keyframes blob-a {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.2) rotate(90deg); }
+}
+@keyframes blob-b {
+  0%, 100% { transform: scale(1.2) rotate(90deg); }
+  50% { transform: scale(1) rotate(0deg); }
+}
+
 /* ========================================
    MOTION DESIGN TOKENS
    ======================================== */

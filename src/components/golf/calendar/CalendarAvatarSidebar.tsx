@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronLeft, Settings2 } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronUp, ChevronDown, Settings2 } from 'lucide-react';
 import { Tooltip } from '@/components/ui/tooltip';
 import { CalendarSyncButton } from './CalendarSyncButton';
 
@@ -31,23 +31,41 @@ export interface CalendarAvatarSidebarProps {
   onSyncSettings?: () => void;
 }
 
-/**
- * Calendar Avatar Sidebar - Multi-Player Selection
- *
- * Allows selecting multiple players to compare their schedules.
- * Each selected player gets a unique color from the palette.
- * Shows a color legend when multiple players are selected.
- */
 export function CalendarAvatarSidebar({
   teamMembers,
   selectedPlayerIds,
   onPlayerSelect,
+  onSyncSettings,
 }: CalendarAvatarSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
 
   const isAllSelected = selectedPlayerIds.length === 0;
 
-  // Get color for a player based on their selection order
+  // Check scroll position for indicators
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollUp(el.scrollTop > 4);
+    setCanScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    checkScroll();
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    // Also check on resize
+    const observer = new ResizeObserver(checkScroll);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      observer.disconnect();
+    };
+  }, [checkScroll, teamMembers.length]);
+
   const getPlayerColor = (playerId: string) => {
     const index = selectedPlayerIds.indexOf(playerId);
     if (index === -1) return null;
@@ -55,23 +73,15 @@ export function CalendarAvatarSidebar({
   };
 
   const handleAllClick = () => {
-    onPlayerSelect([]); // Clear all selections - show team events only
+    onPlayerSelect([]);
   };
 
   const handleMemberClick = (memberId: string) => {
     if (selectedPlayerIds.includes(memberId)) {
-      // Deselect this player
       onPlayerSelect(selectedPlayerIds.filter(id => id !== memberId));
-    } else {
-      // Add this player to selection (max 8 for color variety)
-      if (selectedPlayerIds.length < 8) {
-        onPlayerSelect([...selectedPlayerIds, memberId]);
-      }
+    } else if (selectedPlayerIds.length < 8) {
+      onPlayerSelect([...selectedPlayerIds, memberId]);
     }
-  };
-
-  const isMemberSelected = (memberId: string) => {
-    return selectedPlayerIds.includes(memberId);
   };
 
   const getInitials = (member: TeamMember) => {
@@ -104,108 +114,133 @@ export function CalendarAvatarSidebar({
     .filter((m): m is TeamMember => m !== undefined);
 
   return (
-    <div className="flex flex-col gap-3" style={{ position: 'relative', zIndex: 20 }}>
-      {/* Main Sidebar */}
-      <aside
+    <aside
+      style={{
+        width: '80px',
+        padding: '16px 12px 12px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '10px',
+        background: 'rgba(255, 255, 255, 0.7)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255, 255, 255, 0.4)',
+        borderRadius: '20px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)',
+        flexShrink: 0,
+        position: 'relative',
+        overflow: 'visible',
+        zIndex: 20,
+        minHeight: 0,
+      }}
+    >
+      {/* Collapse Handle */}
+      <button
+        onClick={() => setIsCollapsed(true)}
+        title="Collapse sidebar"
         style={{
-          width: '80px',
-          padding: '16px 12px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-          background: 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
+          position: 'absolute',
+          right: '-12px',
+          top: '16px',
+          width: '24px',
+          height: '48px',
+          background: 'rgba(255, 255, 255, 0.9)',
           border: '1px solid rgba(255, 255, 255, 0.4)',
-          borderRadius: '20px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)',
-          flexShrink: 0,
-          position: 'relative',
-          overflow: 'visible',
+          borderRadius: '0 12px 12px 0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#a8a29e',
+          cursor: 'pointer',
+          boxShadow: '2px 0 8px rgba(0,0,0,0.06)',
         }}
       >
-        {/* Collapse Button */}
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+
+      {/* ALL Button */}
+      <Tooltip content="Show all team events" side="right">
         <button
-          onClick={() => setIsCollapsed(true)}
-          title="Collapse sidebar"
+          onClick={handleAllClick}
           style={{
-            position: 'absolute',
-            right: '-12px',
-            top: '16px',
-            width: '24px',
+            width: '48px',
             height: '48px',
-            background: 'rgba(255, 255, 255, 0.9)',
-            border: '1px solid rgba(255, 255, 255, 0.4)',
-            borderRadius: '0 12px 12px 0',
+            borderRadius: '14px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#a8a29e',
+            fontWeight: 700,
+            fontSize: '11px',
+            letterSpacing: '0.025em',
             cursor: 'pointer',
-            boxShadow: '2px 0 8px rgba(0,0,0,0.06)',
+            transition: 'all 0.2s ease-out',
+            border: 'none',
+            flexShrink: 0,
+            ...(isAllSelected
+              ? {
+                  background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                  color: 'white',
+                  boxShadow: '0 4px 14px rgba(22, 163, 74, 0.4)',
+                }
+              : {
+                  background: 'rgba(245, 245, 244, 0.9)',
+                  color: '#78716c',
+                }),
           }}
         >
-          <ChevronLeft className="w-4 h-4" />
+          ALL
         </button>
+      </Tooltip>
 
-        {/* ALL Button */}
-        <Tooltip content="Show team events only" side="right">
-          <button
-            onClick={handleAllClick}
+      {/* Divider */}
+      <div
+        style={{
+          width: '32px',
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, #d6d3d1, transparent)',
+          flexShrink: 0,
+        }}
+      />
+
+      {/* Scrollable Avatar List with Gradient Masks */}
+      <div style={{ flex: 1, minHeight: 0, width: '100%', position: 'relative' }}>
+        {/* Top scroll fade indicator */}
+        {canScrollUp && (
+          <div
             style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '14px',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '28px',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, transparent 100%)',
+              zIndex: 2,
+              pointerEvents: 'none',
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               justifyContent: 'center',
-              fontWeight: 700,
-              fontSize: '11px',
-              letterSpacing: '0.025em',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease-out',
-              border: 'none',
-              flexShrink: 0,
-              ...(isAllSelected
-                ? {
-                    background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                    color: 'white',
-                    boxShadow: '0 4px 14px rgba(22, 163, 74, 0.4)',
-                  }
-                : {
-                    background: 'rgba(245, 245, 244, 0.9)',
-                    color: '#78716c',
-                  }),
+              paddingTop: '2px',
+              borderRadius: '8px 8px 0 0',
             }}
           >
-            ALL
-          </button>
-        </Tooltip>
+            <ChevronUp className="w-3 h-3 text-stone-400" style={{ pointerEvents: 'none' }} />
+          </div>
+        )}
 
-        {/* Divider */}
+        {/* Avatar scroll container */}
         <div
+          ref={scrollRef}
           style={{
-            width: '32px',
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, #d6d3d1, transparent)',
-            flexShrink: 0,
-          }}
-        />
-
-        {/* Team Member Avatars */}
-        <div
-          style={{
-            flex: 1,
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            gap: '14px',
+            gap: '12px',
             overflowY: 'auto',
             overflowX: 'hidden',
             width: '100%',
             alignItems: 'center',
-            paddingTop: '4px',
-            paddingBottom: '4px',
+            padding: '4px 0',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
           }}
@@ -234,13 +269,13 @@ export function CalendarAvatarSidebar({
             </div>
           ) : (
             teamMembers.map((member) => {
-              const selected = isMemberSelected(member.id);
+              const selected = selectedPlayerIds.includes(member.id);
               const playerColor = getPlayerColor(member.id);
 
               return (
                 <Tooltip
                   key={member.id}
-                  content={selected ? `${getFullName(member)} (viewing schedule)` : `Click to view ${getFullName(member)}'s schedule`}
+                  content={selected ? `${getFullName(member)} (viewing schedule)` : `View ${getFullName(member)}'s schedule`}
                   side="right"
                   delayMs={300}
                 >
@@ -261,6 +296,7 @@ export function CalendarAvatarSidebar({
                       border: 'none',
                       flexShrink: 0,
                       position: 'relative',
+                      overflow: 'visible',
                       ...(selected && playerColor
                         ? {
                             background: `linear-gradient(135deg, ${playerColor.bg} 0%, ${playerColor.bg}dd 100%)`,
@@ -290,7 +326,7 @@ export function CalendarAvatarSidebar({
                       <span>{getInitials(member)}</span>
                     )}
 
-                    {/* Selection indicator with color */}
+                    {/* Selection indicator with color number */}
                     {selected && playerColor && (
                       <span
                         style={{
@@ -321,23 +357,113 @@ export function CalendarAvatarSidebar({
           )}
         </div>
 
-        {/* Bottom Divider */}
+        {/* Bottom scroll fade indicator */}
+        {canScrollDown && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '28px',
+              background: 'linear-gradient(0deg, rgba(255,255,255,0.95) 0%, transparent 100%)',
+              zIndex: 2,
+              pointerEvents: 'none',
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              paddingBottom: '2px',
+              borderRadius: '0 0 8px 8px',
+            }}
+          >
+            <ChevronDown className="w-3 h-3 text-stone-400" style={{ pointerEvents: 'none' }} />
+          </div>
+        )}
+      </div>
+
+      {/* Color Legend - Inline when players selected */}
+      {selectedPlayers.length > 0 && (
         <div
           style={{
             width: '100%',
-            borderTop: '1px solid rgba(214, 211, 209, 0.5)',
-            paddingTop: '12px',
-            marginTop: 'auto',
+            padding: '8px 4px',
+            borderTop: '1px solid rgba(214, 211, 209, 0.4)',
+            flexShrink: 0,
           }}
-        />
+        >
+          <p
+            style={{
+              fontSize: '8px',
+              fontWeight: 600,
+              color: '#a8a29e',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              marginBottom: '6px',
+              textAlign: 'center',
+            }}
+          >
+            Legend
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {selectedPlayers.map((player, index) => {
+              const color = PLAYER_COLORS[index % PLAYER_COLORS.length]!;
+              return (
+                <div
+                  key={player.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '0 2px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '3px',
+                      background: color.bg,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      color: '#57534e',
+                      fontWeight: 500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                    title={getFullName(player)}
+                  >
+                    {player.first_name}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-        {/* Calendar Sync Button - Always visible */}
+      {/* Bottom actions */}
+      <div
+        style={{
+          width: '100%',
+          borderTop: '1px solid rgba(214, 211, 209, 0.4)',
+          paddingTop: '10px',
+          marginTop: 'auto',
+          flexShrink: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '8px',
+        }}
+      >
         <CalendarSyncButton variant="icon" />
-
-        {/* Feed Settings Button - Opens advanced feed manager */}
         <Tooltip content="Manage feeds" side="right">
           <button
-            onClick={() => {/* onSyncSettings removed from being passed down */}}
+            onClick={() => onSyncSettings?.()}
             style={{
               width: '48px',
               height: '48px',
@@ -356,75 +482,7 @@ export function CalendarAvatarSidebar({
             <Settings2 className="w-5 h-5" />
           </button>
         </Tooltip>
-      </aside>
-
-      {/* Color Legend - Shows when multiple players selected */}
-      {selectedPlayers.length > 0 && (
-        <div
-          style={{
-            width: '80px',
-            padding: '12px',
-            background: 'rgba(255, 255, 255, 0.7)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.4)',
-            borderRadius: '16px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-          }}
-        >
-          <p
-            style={{
-              fontSize: '9px',
-              fontWeight: 600,
-              color: '#78716c',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              marginBottom: '8px',
-              textAlign: 'center',
-            }}
-          >
-            Legend
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {selectedPlayers.map((player, index) => {
-              const color = PLAYER_COLORS[index % PLAYER_COLORS.length]!;
-              return (
-                <div
-                  key={player.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '12px',
-                      height: '12px',
-                      borderRadius: '4px',
-                      background: color.bg,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      color: '#57534e',
-                      fontWeight: 500,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                    title={getFullName(player)}
-                  >
-                    {player.first_name}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </aside>
   );
 }

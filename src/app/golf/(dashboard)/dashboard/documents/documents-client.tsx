@@ -149,7 +149,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
-  const [editForm, setEditForm] = useState({ title: '', description: '', category: '', is_public: true });
+  const [editForm, setEditForm] = useState({ title: '', description: '', category: '', is_public: true, folder: '' });
   const [updating, setUpdating] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -324,10 +324,37 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
   const handleCreateFolder = () => {
     if (!newFolderName.trim()) return;
-    // We just set the current folder — the folder is created when a document is uploaded into it
-    setCurrentFolder(newFolderName.trim());
+    const folderName = newFolderName.trim();
+    setCurrentFolder(folderName);
+    setUploadFolder(folderName);
     setNewFolderName('');
     setShowNewFolderInput(false);
+  };
+
+  // ─── Move Document to Folder ─────────────────────────────────────
+  const [movingDocument, setMovingDocument] = useState<Document | null>(null);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [moveTargetFolder, setMoveTargetFolder] = useState('');
+
+  const openMoveModal = (doc: Document) => {
+    setMovingDocument(doc);
+    setMoveTargetFolder(doc.folder || '');
+    setShowMoveModal(true);
+    setActiveDropdown(null);
+  };
+
+  const handleMoveToFolder = async () => {
+    if (!movingDocument) return;
+    const newFolder = moveTargetFolder || null;
+    const result = await updateGolfDocument({ id: movingDocument.id, folder: newFolder });
+    if (result.success) {
+      setDocuments(docs =>
+        docs.map(d => d.id === movingDocument.id ? { ...d, folder: newFolder } : d)
+      );
+      router.refresh();
+    }
+    setShowMoveModal(false);
+    setMovingDocument(null);
   };
 
   // ─── Document Actions ────────────────────────────────────────────
@@ -350,6 +377,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       description: doc.description || '',
       category: doc.category || '',
       is_public: doc.is_public ?? true,
+      folder: doc.folder || '',
     });
     setEditError(null);
     setShowEditModal(true);
@@ -370,6 +398,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         description: editForm.description || undefined,
         category: editForm.category || undefined,
         player_visible: editForm.is_public,
+        folder: editForm.folder || null,
       });
       if (!result.success) {
         setEditError(result.error || 'Failed to update');
@@ -377,7 +406,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       }
       setDocuments(docs =>
         docs.map(d => d.id === editingDocument.id
-          ? { ...d, title: editForm.title, description: editForm.description || null, category: editForm.category || null, is_public: editForm.is_public }
+          ? { ...d, title: editForm.title, description: editForm.description || null, category: editForm.category || null, is_public: editForm.is_public, folder: editForm.folder || null }
           : d
         )
       );
@@ -491,32 +520,55 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           )}
         </div>
 
-        {/* New Folder Input */}
+        {/* Create Folder Modal */}
         {showNewFolderInput && (
-          <div className="mb-6 flex items-center gap-3 p-4 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm">
-            <IconFolder size={20} className="text-green-600 flex-shrink-0" />
-            <input
-              type="text"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
-              placeholder="Folder name..."
-              className="flex-1 px-3 py-2 bg-transparent border-b border-slate-200 focus:border-green-500 focus:outline-none text-slate-900 placeholder:text-slate-400"
-              autoFocus
-            />
-            <button
-              onClick={handleCreateFolder}
-              disabled={!newFolderName.trim()}
-              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              Create
-            </button>
-            <button
-              onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }}
-              className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <IconX size={16} />
-            </button>
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                    <IconFolderPlus size={16} className="text-green-600" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-slate-900">Create Folder</h2>
+                </div>
+                <button
+                  onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <IconX size={18} />
+                </button>
+              </div>
+              <div className="px-6 py-5">
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Folder Name</label>
+                <input
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && newFolderName.trim() && handleCreateFolder()}
+                  placeholder="e.g. Practice Plans"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500"
+                  autoFocus
+                />
+                {newFolderName.trim() && folders.includes(newFolderName.trim()) && (
+                  <p className="text-xs text-amber-600 mt-1.5">A folder with this name already exists</p>
+                )}
+              </div>
+              <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+                <button
+                  onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }}
+                  className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-700 hover:bg-white transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateFolder}
+                  disabled={!newFolderName.trim() || folders.includes(newFolderName.trim())}
+                  className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Create Folder
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -735,6 +787,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                                   className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                                 >
                                   <IconEdit size={14} /> Edit Details
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openMoveModal(doc); }}
+                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                >
+                                  <IconFolder size={14} /> Move to Folder
                                 </button>
                                 <div className="my-1 h-px bg-slate-100" />
                                 <button
@@ -998,16 +1056,32 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Category</label>
-                <select
-                  value={editForm.category}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500 bg-white"
-                >
-                  <option value="">No category</option>
-                  {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Category</label>
+                  <select
+                    value={editForm.category}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500 bg-white"
+                  >
+                    <option value="">No category</option>
+                    {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Folder</label>
+                  <select
+                    value={editForm.folder}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, folder: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500 bg-white"
+                  >
+                    <option value="">No folder</option>
+                    {folders.map(f => <option key={f} value={f}>{f}</option>)}
+                    {currentFolder && currentFolder !== '' && !folders.includes(currentFolder) && (
+                      <option value={currentFolder}>{currentFolder} (new)</option>
+                    )}
+                  </select>
+                </div>
               </div>
 
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
@@ -1092,6 +1166,54 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           currentFileType={uploadVersionDocument.file_type}
           onUpload={handleUploadNewVersion}
         />
+      )}
+
+      {/* ─── Move to Folder Modal ──────────────────────────────────── */}
+      {showMoveModal && movingDocument && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h2 className="text-lg font-semibold text-slate-900">Move to Folder</h2>
+              <button
+                onClick={() => { setShowMoveModal(false); setMovingDocument(null); }}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <IconX size={18} />
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-slate-500 mb-3">
+                Moving &ldquo;{movingDocument.title}&rdquo;
+              </p>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">Destination Folder</label>
+              <select
+                value={moveTargetFolder}
+                onChange={(e) => setMoveTargetFolder(e.target.value)}
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500 bg-white"
+              >
+                <option value="">No folder (unfiled)</option>
+                {folders.map(f => <option key={f} value={f}>{f}</option>)}
+                {currentFolder && currentFolder !== '' && !folders.includes(currentFolder) && (
+                  <option value={currentFolder}>{currentFolder} (new)</option>
+                )}
+              </select>
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+              <button
+                onClick={() => { setShowMoveModal(false); setMovingDocument(null); }}
+                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-700 hover:bg-white transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleMoveToFolder}
+                className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm"
+              >
+                Move
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

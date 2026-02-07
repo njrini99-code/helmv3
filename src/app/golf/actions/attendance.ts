@@ -18,6 +18,9 @@ import { revalidatePath } from 'next/cache';
 
 export type CheckInMethod = 'manual' | 'qr_code' | 'self';
 
+// golf_event_attendance.status enum: attending, not_attending, maybe, pending, excused, unexcused
+type AttendanceStatus = 'attending' | 'not_attending' | 'maybe' | 'pending' | 'excused' | 'unexcused';
+
 interface ActionResult<T = void> {
   success: boolean;
   data?: T;
@@ -34,51 +37,38 @@ interface AttendanceRecord {
   id: string;
   event_id: string;
   player_id: string;
-  status: string | null;
-  checked_in: boolean | null;
-  checked_in_at: string | null;
-  check_in_method: string | null;
-  checked_in_by: string | null;
+  status: AttendanceStatus | null;
+  absence_reason: string | null;
+  responded_at: string | null;
+  reminder_sent: boolean | null;
   player: AttendancePlayer | null;
 }
 
-interface AttendanceSummary {
-  event_id: string | null;
-  event_title: string | null;
-  start_date: string | null;
-  team_id: string | null;
-  total_rsvps: number | null;
-  rsvp_yes: number | null;
-  checked_in_count: number | null;
-  no_show_count: number | null;
-  attendance_percentage: number | null;
-}
-
 interface AttendanceReport {
-  summary: AttendanceSummary | null;
   attendance: AttendanceRecord[] | null;
-}
-
-interface PlayerAttendanceStats {
-  player_id: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  team_id: string | null;
-  total_events: number | null;
-  attended_count: number | null;
-  rsvp_yes_count: number | null;
-  no_show_count: number | null;
-  attendance_rate: number | null;
 }
 
 // ============================================================================
 // CHECK IN PLAYER
 // ============================================================================
 
+/**
+ * Check in a player for an event.
+ *
+ * golf_event_attendance schema only has: id, event_id, player_id, status
+ * (attending/not_attending/maybe/pending/excused/unexcused), absence_reason,
+ * responded_at, reminder_sent, created_at, updated_at.
+ *
+ * There are no checked_in, checked_in_at, checked_in_by, check_in_method columns.
+ * Check-in is represented by setting status to 'attending'.
+ *
+ * TODO: If full check-in tracking is needed (timestamps, method, who checked in),
+ * a migration should add these columns to golf_event_attendance.
+ */
 export async function checkInPlayer(
   eventId: string,
   playerId: string,
-  method: CheckInMethod = 'manual'
+  _method: CheckInMethod = 'manual'
 ): Promise<ActionResult> {
   try {
     const supabase = await createClient();
@@ -88,18 +78,10 @@ export async function checkInPlayer(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Get coach or player ID — maybeSingle() since user may be a player, not a coach
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    // Verify event exists - golf_events uses start_time (datetime), not separate date fields
-    // Note: check-in settings may be stored in metadata or a separate table
+    // Verify event exists
     const { data: event } = await supabase
       .from('golf_events')
-      .select('id, start_time, metadata')
+      .select('id, start_date, start_time')
       .eq('id', eventId)
       .maybeSingle();
 
@@ -107,75 +89,22 @@ export async function checkInPlayer(
       return { success: false, error: 'Event not found' };
     }
 
-    // Check-in settings stored in event metadata JSON field — cast needed for dynamic keys
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const metadata = (event.metadata || {}) as any;
-    const enableCheckIn = metadata.enable_check_in !== false; // Default to enabled
-
-    if (!enableCheckIn) {
-      return { success: false, error: 'Check-in is not enabled for this event' };
-    }
-
-    // Check if check-in window is open
-    const now = new Date();
-    const eventStart = new Date(event.start_time);
-    const checkInOpensMins = metadata.check_in_opens_minutes_before || 30;
-    const checkInClosesMins = metadata.check_in_closes_minutes_after || 15;
-    const checkInOpens = new Date(eventStart.getTime() - checkInOpensMins * 60000);
-    const checkInCloses = new Date(eventStart.getTime() + checkInClosesMins * 60000);
-
-    if (now < checkInOpens || now > checkInCloses) {
-      return { success: false, error: 'Check-in window is not currently open' };
-    }
-
-    // If self check-in and require_coach_check_in, deny
-    const requireCoachCheckIn = metadata.require_coach_check_in || false;
-    if (method === 'self' && requireCoachCheckIn && !coach) {
-      return { success: false, error: 'Coach approval required for check-in' };
-    }
-
-    // Get or create attendance record — maybeSingle() since record may not exist yet
-    const { data: attendance } = await supabase
+    // Upsert attendance record - set status to 'attending'
+    // UNIQUE(event_id, player_id) allows upsert
+    const { error: upsertError } = await supabase
       .from('golf_event_attendance')
-      .select('id')
-      .eq('event_id', eventId)
-      .eq('player_id', playerId)
-      .maybeSingle();
-
-    if (attendance) {
-      // Update existing record
-      // Note: no_show field may not exist in golf_event_attendance - using status instead
-      const { error: updateError } = await supabase
-        .from('golf_event_attendance')
-        .update({
-          checked_in: true,
-          checked_in_at: now.toISOString(),
-          checked_in_by: coach?.id || null,
-          check_in_method: method,
-          status: 'present', // Clear no-show by setting status
-        })
-        .eq('id', attendance.id);
-
-      if (updateError) {
-        return { success: false, error: updateError.message };
-      }
-    } else {
-      // Create new attendance record
-      const { error: insertError } = await supabase
-        .from('golf_event_attendance')
-        .insert({
+      .upsert(
+        {
           event_id: eventId,
           player_id: playerId,
-          status: 'accepted',
-          checked_in: true,
-          checked_in_at: now.toISOString(),
-          checked_in_by: coach?.id || null,
-          check_in_method: method,
-        });
+          status: 'attending' as AttendanceStatus,
+          responded_at: new Date().toISOString(),
+        },
+        { onConflict: 'event_id,player_id' }
+      );
 
-      if (insertError) {
-        return { success: false, error: insertError.message };
-      }
+    if (upsertError) {
+      return { success: false, error: upsertError.message };
     }
 
     revalidatePath('/golf/dashboard/calendar');
@@ -216,17 +145,14 @@ export async function bulkCheckIn(
     }
 
     // OPTIMIZED: Batch upsert instead of sequential individual check-ins
-    // Previously: 30 players = 30+ separate database operations
-    // Now: Single batch operation regardless of player count
+    // golf_event_attendance columns: event_id, player_id, status, absence_reason, responded_at
     const now = new Date().toISOString();
 
     const upsertRecords = playerIds.map((playerId) => ({
       event_id: eventId,
       player_id: playerId,
-      checked_in: true,
-      checked_in_at: now,
-      check_in_method: 'manual' as const,
-      checked_in_by: coach.id,
+      status: 'attending' as AttendanceStatus,
+      responded_at: now,
     }));
 
     const { error: upsertError, data: upsertedData } = await supabase
@@ -287,12 +213,13 @@ export async function markNoShow(
       return { success: false, error: 'Coach not found' };
     }
 
-    // Update attendance record - use status field instead of no_show
-    // Note: no_show, no_show_marked_at, no_show_marked_by may not exist in schema
+    // Update attendance record - mark as unexcused absence (no-show)
+    // golf_event_attendance.status enum: attending, not_attending, maybe, pending, excused, unexcused
+    // 'unexcused' is the closest match for a no-show
     const { error: updateError } = await supabase
       .from('golf_event_attendance')
       .update({
-        status: 'no_show',
+        status: 'unexcused' as AttendanceStatus,
         updated_at: new Date().toISOString(),
       })
       .eq('event_id', eventId)
@@ -328,13 +255,9 @@ export async function getAttendanceReport(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Get attendance summary
-    // maybeSingle() — summary may not exist for this event yet
-    const { data: summary } = await supabase
-      .from('golf_attendance_summary')
-      .select('*')
-      .eq('event_id', eventId)
-      .maybeSingle();
+    // TODO: golf_attendance_summary table/view does not exist yet.
+    // A migration is needed if summary aggregation is desired.
+    // For now, we only return the detailed attendance records.
 
     // Get detailed attendance records
     const { data: attendance } = await supabase
@@ -353,7 +276,6 @@ export async function getAttendanceReport(
     return {
       success: true,
       data: {
-        summary: summary as unknown as AttendanceSummary | null,
         attendance: attendance as unknown as AttendanceRecord[] | null,
       },
     };
@@ -370,9 +292,16 @@ export async function getAttendanceReport(
 // GET PLAYER ATTENDANCE STATS
 // ============================================================================
 
+/**
+ * Get attendance statistics for a player.
+ *
+ * TODO: golf_player_attendance_stats view does not exist yet.
+ * A migration is needed to create this view/materialized view.
+ * For now, we compute basic stats from golf_event_attendance directly.
+ */
 export async function getPlayerAttendanceStats(
   playerId?: string
-): Promise<ActionResult<PlayerAttendanceStats[]>> {
+): Promise<ActionResult<{ player_id: string; status: string; count: number }[]>> {
   try {
     const supabase = await createClient();
 
@@ -381,11 +310,10 @@ export async function getPlayerAttendanceStats(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Cast needed: golf_player_attendance_stats view is not in generated Supabase types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
-      .from('golf_player_attendance_stats')
-      .select('*');
+    // Query attendance records directly since the stats view doesn't exist
+    let query = supabase
+      .from('golf_event_attendance')
+      .select('player_id, status');
 
     if (playerId) {
       query = query.eq('player_id', playerId);
@@ -398,7 +326,24 @@ export async function getPlayerAttendanceStats(
       return { success: false, error: 'Operation failed. Please try again.' };
     }
 
-    return { success: true, data: data as unknown as PlayerAttendanceStats[] };
+    // Aggregate stats in-memory since we don't have a DB view
+    const statsMap = new Map<string, Map<string, number>>();
+    for (const record of (data || [])) {
+      const pid = record.player_id;
+      const status = record.status || 'pending';
+      if (!statsMap.has(pid)) statsMap.set(pid, new Map());
+      const playerStats = statsMap.get(pid)!;
+      playerStats.set(status, (playerStats.get(status) || 0) + 1);
+    }
+
+    const results: { player_id: string; status: string; count: number }[] = [];
+    for (const [pid, statusCounts] of statsMap) {
+      for (const [status, count] of statusCounts) {
+        results.push({ player_id: pid, status, count });
+      }
+    }
+
+    return { success: true, data: results };
   } catch (err) {
     console.error('[GolfHelm] Failed to get attendance stats:', err);
     return {
@@ -412,41 +357,21 @@ export async function getPlayerAttendanceStats(
 // VERIFY QR CODE CHECK-IN
 // ============================================================================
 
+/**
+ * Verify a QR code for check-in.
+ *
+ * TODO: golf_events does not have a metadata column for QR tokens.
+ * A migration is needed to add QR code support (e.g., a qr_token column
+ * or a separate golf_event_checkin_settings table).
+ * For now, this function is a stub that always returns an error.
+ */
 export async function verifyQRCodeCheckIn(
-  qrToken: string
+  _qrToken: string
 ): Promise<ActionResult<{ eventId: string; eventTitle: string }>> {
-  try {
-    const supabase = await createClient();
-
-    // Note: qr_code_token and enable_check_in may be in metadata
-    // maybeSingle() to avoid PGRST116 if no event found
-    const { data: event } = await supabase
-      .from('golf_events')
-      .select('id, title, metadata')
-      .maybeSingle();
-
-    // QR token and check-in settings stored in event metadata JSON — cast needed for dynamic keys
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const metadata = (event?.metadata || {}) as any;
-    const enableCheckIn = metadata.enable_check_in !== false;
-    const eventQrToken = metadata.qr_code_token;
-
-    if (!event || eventQrToken !== qrToken || !enableCheckIn) {
-      return { success: false, error: 'Invalid QR code or check-in disabled' };
-    }
-
-    return {
-      success: true,
-      data: {
-        eventId: event.id,
-        eventTitle: event.title,
-      },
-    };
-  } catch (err) {
-    console.error('[GolfHelm] Failed to verify QR code check-in:', err);
-    return {
-      success: false,
-      error: 'Invalid QR code. Please try again.',
-    };
-  }
+  // QR code check-in requires a metadata/qr_token column on golf_events
+  // which does not exist in the current schema.
+  return {
+    success: false,
+    error: 'QR code check-in is not yet supported. A database migration is required.',
+  };
 }

@@ -808,75 +808,74 @@ export function EventDetailModal({
               )}
             </div>
           )}
-        </form>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-          {/* Delete Button (left side) */}
-          <div>
-            {onDelete && !isCreating && (
-              <>
-                {showDeleteConfirm ? (
-                  <div className="flex items-center gap-2">
+          {/* Footer - inside form for proper submit semantics */}
+          <div className="border-t border-slate-100 flex items-center justify-between bg-slate-50/50 -mx-6 px-6 py-4 mt-4">
+            {/* Delete Button (left side) */}
+            <div>
+              {onDelete && !isCreating && (
+                <>
+                  {showDeleteConfirm ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={isSaving}
+                        className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        Confirm Delete
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(false)}
+                        disabled={isSaving}
+                        className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       type="button"
-                      onClick={handleDelete}
+                      onClick={() => setShowDeleteConfirm(true)}
                       disabled={isSaving}
-                      className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      Confirm Delete
+                      <Trash2 className="w-4 h-4" />
+                      Delete
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowDeleteConfirm(false)}
-                      disabled={isSaving}
-                      className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    disabled={isSaving}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+                  )}
+                </>
+              )}
+            </div>
 
-          {/* Save/Cancel Buttons (right side) */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSaving}
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
-            >
-              {isViewMode ? 'Close' : 'Cancel'}
-            </button>
-            {!isViewMode && (
+            {/* Save/Cancel Buttons (right side) */}
+            <div className="flex items-center gap-3">
               <button
-                type="submit"
-                onClick={handleSubmit}
+                type="button"
+                onClick={onClose}
                 disabled={isSaving}
-                className={cn(
-                  'px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all',
-                  'bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
-                  isSaving && 'animate-pulse'
-                )}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
               >
-                {isSaving ? 'Saving...' : isCreating ? 'Create Event' : 'Save Changes'}
+                {isViewMode ? 'Close' : 'Cancel'}
               </button>
-            )}
+              {!isViewMode && (
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className={cn(
+                    'px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all',
+                    'bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                    isSaving && 'animate-pulse'
+                  )}
+                >
+                  {isSaving ? 'Saving...' : isCreating ? 'Create Event' : 'Save Changes'}
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

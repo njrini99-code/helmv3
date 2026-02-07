@@ -139,7 +139,7 @@ export function MobileCalendarListView({
               <div className="flex items-center gap-2">
                 {/* Date circle for today */}
                 {group.isToday && (
-                  <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center shadow-sm shadow-emerald-600/20">
+                  <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center shadow-sm shadow-green-600/20">
                     <span className="text-xs font-bold text-white">
                       {format(group.date, 'd')}
                     </span>
@@ -149,7 +149,7 @@ export function MobileCalendarListView({
                   <h3
                     className={cn(
                       'text-sm font-semibold leading-tight',
-                      group.isToday ? 'text-emerald-700' : 'text-slate-800'
+                      group.isToday ? 'text-green-700' : 'text-slate-800'
                     )}
                   >
                     {group.label}
@@ -161,7 +161,7 @@ export function MobileCalendarListView({
                   )}
                 </div>
                 {group.isToday && group.events.length > 0 && (
-                  <span className="ml-auto px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700 rounded-md">
+                  <span className="ml-auto px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-green-100 text-green-700 rounded-md">
                     {group.events.length} event{group.events.length !== 1 ? 's' : ''}
                   </span>
                 )}
@@ -255,13 +255,13 @@ export function MobileWeekListView({
             <span
               className={cn(
                 'text-xs font-bold uppercase tracking-wide',
-                group.isToday ? 'text-emerald-600' : 'text-slate-500'
+                group.isToday ? 'text-green-600' : 'text-slate-500'
               )}
             >
               {format(group.date, 'EEE d')}
             </span>
             {group.isToday && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
             )}
           </div>
 

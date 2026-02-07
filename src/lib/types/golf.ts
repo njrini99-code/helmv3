@@ -902,7 +902,18 @@ export type GolfRoundWithDraft = GolfRound & GolfRoundDraftFields;
 
 export type RoundType = 'practice' | 'qualifier' | 'tournament' | 'all';
 
-export type ComparisonBaseline = 'pga' | 'scratch' | 'team' | 'personal_best';
+export type ComparisonBaseline =
+  | 'pga'
+  | 'scratch'
+  | 'team'
+  | 'personal_best'
+  | 'pga_tour'
+  | 'ncaa_d1'
+  | 'ncaa_d2'
+  | 'ncaa_d3'
+  | 'break_80'
+  | 'break_90'
+  | 'break_100';
 
 export interface DataQuality {
   roundCount: number;

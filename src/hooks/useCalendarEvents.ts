@@ -21,6 +21,11 @@ export interface CalendarEvent {
   requires_rsvp?: boolean;
   rsvp_deadline?: string | null;
   max_attendees?: number | null;
+  rsvp_confirmed_count?: number;
+  rsvp_maybe_count?: number;
+  rsvp_declined_count?: number;
+  rsvp_pending_count?: number;
+  rsvp_total_count?: number;
 }
 
 export interface UseCalendarEventsOptions {

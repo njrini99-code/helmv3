@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { ensurePlayerRecord, completePlayerOnboarding } from '@/app/golf/actions/onboarding';
 import { Button } from '@/components/ui/button';
@@ -192,40 +192,29 @@ export default function GolfPlayerOnboarding() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FAF6F1] via-[#F5F1EC] to-[#EAE6E1] relative overflow-hidden">
-      {/* Animated Background Elements */}
+      {/* Animated Background Elements — pure CSS for zero JS cost */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 90, 0],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-green-100/20 to-transparent rounded-full blur-3xl"
+        <div
+          className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-green-100/20 to-transparent rounded-full blur-3xl animate-[blob-a_20s_linear_infinite]"
         />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            rotate: [90, 0, 90],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-green-50/20 to-transparent rounded-full blur-3xl"
+        <div
+          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-green-50/20 to-transparent rounded-full blur-3xl animate-[blob-b_25s_linear_infinite]"
         />
       </div>
 
-      {/* Progress Bar */}
+      {/* Progress Bar — CSS transition, no JS animation needed */}
       <div className="fixed top-0 left-0 right-0 h-1 bg-slate-200/50 backdrop-blur-sm z-50">
-        <motion.div
-          className="h-full bg-gradient-to-r from-green-500 to-green-600"
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
+        <div
+          className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-[width] duration-500 ease-in-out"
+          style={{ width: `${progress}%` }}
         />
       </div>
 
       <div className="relative min-h-screen flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <LazyMotion features={domAnimation}>
         <AnimatePresence mode="wait">
           {step === 'welcome' && (
-            <motion.div
+            <m.div
               key="welcome"
               variants={pageVariants}
               initial="initial"
@@ -234,15 +223,15 @@ export default function GolfPlayerOnboarding() {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="w-full max-w-lg"
             >
-              <motion.div
+              <m.div
                 variants={staggerContainer}
                 initial="initial"
                 animate="animate"
                 className="space-y-8"
               >
                 {/* Logo & Header */}
-                <motion.div variants={staggerItem} className="text-center">
-                  <motion.div
+                <m.div variants={staggerItem} className="text-center">
+                  <m.div
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
@@ -258,17 +247,17 @@ export default function GolfPlayerOnboarding() {
                         />
                       </div>
                     </div>
-                  </motion.div>
+                  </m.div>
                   <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-3">
                     Welcome to GolfHelm!
                   </h1>
                   <p className="text-slate-600 text-lg max-w-md mx-auto leading-relaxed">
                     Let's set up your player profile. This will help your coach track your progress and manage the team.
                   </p>
-                </motion.div>
+                </m.div>
 
                 {/* Get Started Button */}
-                <motion.div variants={staggerItem} className="text-center">
+                <m.div variants={staggerItem} className="text-center">
                   <Button
                     size="lg"
                     onClick={() => setStep('basic')}
@@ -277,13 +266,13 @@ export default function GolfPlayerOnboarding() {
                     Get Started
                     <IconArrowRight size={16} className="ml-2" />
                   </Button>
-                </motion.div>
-              </motion.div>
-            </motion.div>
+                </m.div>
+              </m.div>
+            </m.div>
           )}
 
           {step === 'basic' && (
-            <motion.div
+            <m.div
               key="basic"
               variants={pageVariants}
               initial="initial"
@@ -292,25 +281,25 @@ export default function GolfPlayerOnboarding() {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="w-full max-w-md"
             >
-              <motion.div
+              <m.div
                 variants={staggerContainer}
                 initial="initial"
                 animate="animate"
                 className="space-y-6"
               >
-                <motion.div variants={staggerItem} className="text-center mb-8">
+                <m.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
                     Step 1 of 4
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Basic Information</h2>
-                </motion.div>
+                </m.div>
 
-                <motion.div
+                <m.div
                   variants={staggerItem}
                   className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
                 >
                   <div className="space-y-5">
-                    <motion.div
+                    <m.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
@@ -331,9 +320,9 @@ export default function GolfPlayerOnboarding() {
                         placeholder="Smith"
                         required
                       />
-                    </motion.div>
+                    </m.div>
 
-                    <motion.div
+                    <m.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 }}
@@ -345,9 +334,9 @@ export default function GolfPlayerOnboarding() {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
                       />
-                    </motion.div>
+                    </m.div>
 
-                    <motion.div
+                    <m.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.4 }}
@@ -359,9 +348,9 @@ export default function GolfPlayerOnboarding() {
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="(555) 123-4567"
                       />
-                    </motion.div>
+                    </m.div>
 
-                    <motion.div
+                    <m.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.5 }}
@@ -380,7 +369,7 @@ export default function GolfPlayerOnboarding() {
                         placeholder="TX"
                         maxLength={2}
                       />
-                    </motion.div>
+                    </m.div>
                   </div>
 
                   <div className="flex gap-3 mt-8">
@@ -399,13 +388,13 @@ export default function GolfPlayerOnboarding() {
                       Next
                     </Button>
                   </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
+                </m.div>
+              </m.div>
+            </m.div>
           )}
 
           {step === 'golf' && (
-            <motion.div
+            <m.div
               key="golf"
               variants={pageVariants}
               initial="initial"
@@ -414,25 +403,25 @@ export default function GolfPlayerOnboarding() {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="w-full max-w-md"
             >
-              <motion.div
+              <m.div
                 variants={staggerContainer}
                 initial="initial"
                 animate="animate"
                 className="space-y-6"
               >
-                <motion.div variants={staggerItem} className="text-center mb-8">
+                <m.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
                     Step 2 of 4
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">Golf Information</h2>
-                </motion.div>
+                </m.div>
 
-                <motion.div
+                <m.div
                   variants={staggerItem}
                   className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
                 >
                   <div className="space-y-5">
-                    <motion.div
+                    <m.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
@@ -446,9 +435,9 @@ export default function GolfPlayerOnboarding() {
                           <option key={y.value} value={y.value}>{y.label}</option>
                         ))}
                       </NativeSelect>
-                    </motion.div>
+                    </m.div>
 
-                    <motion.div
+                    <m.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 }}
@@ -462,9 +451,9 @@ export default function GolfPlayerOnboarding() {
                           <option key={y} value={y}>{y}</option>
                         ))}
                       </NativeSelect>
-                    </motion.div>
+                    </m.div>
 
-                    <motion.div
+                    <m.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.4 }}
@@ -478,7 +467,7 @@ export default function GolfPlayerOnboarding() {
                         placeholder="5.2"
                         hint="Your official USGA Handicap Index"
                       />
-                    </motion.div>
+                    </m.div>
                   </div>
 
                   <div className="flex gap-3 mt-8">
@@ -496,13 +485,13 @@ export default function GolfPlayerOnboarding() {
                       Next
                     </Button>
                   </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
+                </m.div>
+              </m.div>
+            </m.div>
           )}
 
           {step === 'academic' && (
-            <motion.div
+            <m.div
               key="academic"
               variants={pageVariants}
               initial="initial"
@@ -511,13 +500,13 @@ export default function GolfPlayerOnboarding() {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="w-full max-w-md"
             >
-              <motion.div
+              <m.div
                 variants={staggerContainer}
                 initial="initial"
                 animate="animate"
                 className="space-y-6"
               >
-                <motion.div variants={staggerItem} className="text-center mb-8">
+                <m.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
                     Step 3 of 4
                   </div>
@@ -525,14 +514,14 @@ export default function GolfPlayerOnboarding() {
                   <p className="text-sm text-slate-600 mt-2">
                     Optional, but helps your coach with scheduling and eligibility.
                   </p>
-                </motion.div>
+                </m.div>
 
-                <motion.div
+                <m.div
                   variants={staggerItem}
                   className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
                 >
                   <div className="space-y-5">
-                    <motion.div
+                    <m.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
@@ -543,9 +532,9 @@ export default function GolfPlayerOnboarding() {
                         onChange={(e) => setMajor(e.target.value)}
                         placeholder="Business Administration"
                       />
-                    </motion.div>
+                    </m.div>
 
-                    <motion.div
+                    <m.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 }}
@@ -560,7 +549,7 @@ export default function GolfPlayerOnboarding() {
                         onChange={(e) => setGpa(e.target.value)}
                         placeholder="3.50"
                       />
-                    </motion.div>
+                    </m.div>
                   </div>
 
                   <div className="flex gap-3 mt-8">
@@ -578,13 +567,13 @@ export default function GolfPlayerOnboarding() {
                       Next
                     </Button>
                   </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
+                </m.div>
+              </m.div>
+            </m.div>
           )}
 
           {step === 'photo' && (
-            <motion.div
+            <m.div
               key="photo"
               variants={pageVariants}
               initial="initial"
@@ -593,13 +582,13 @@ export default function GolfPlayerOnboarding() {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="w-full max-w-md"
             >
-              <motion.div
+              <m.div
                 variants={staggerContainer}
                 initial="initial"
                 animate="animate"
                 className="space-y-6"
               >
-                <motion.div variants={staggerItem} className="text-center mb-8">
+                <m.div variants={staggerItem} className="text-center mb-8">
                   <div className="text-sm font-medium text-slate-500 mb-2">
                     Step 4 of 4
                   </div>
@@ -607,13 +596,13 @@ export default function GolfPlayerOnboarding() {
                   <p className="text-sm text-slate-600 mt-2">
                     Add a profile photo so your coach and teammates can recognize you.
                   </p>
-                </motion.div>
+                </m.div>
 
-                <motion.div
+                <m.div
                   variants={staggerItem}
                   className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
                 >
-                  <motion.div
+                  <m.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.2 }}
@@ -627,7 +616,7 @@ export default function GolfPlayerOnboarding() {
                       Upload Photo
                     </Button>
                     <p className="text-xs text-slate-500 mt-2">JPG or PNG, max 5MB</p>
-                  </motion.div>
+                  </m.div>
 
                   <div className="flex gap-3 mt-8">
                     <Button
@@ -651,13 +640,13 @@ export default function GolfPlayerOnboarding() {
                       Next
                     </Button>
                   </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
+                </m.div>
+              </m.div>
+            </m.div>
           )}
 
           {step === 'complete' && (
-            <motion.div
+            <m.div
               key="complete"
               variants={pageVariants}
               initial="initial"
@@ -666,15 +655,15 @@ export default function GolfPlayerOnboarding() {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="w-full max-w-lg"
             >
-              <motion.div
+              <m.div
                 variants={staggerContainer}
                 initial="initial"
                 animate="animate"
                 className="space-y-8"
               >
                 {/* Success Icon */}
-                <motion.div variants={staggerItem} className="text-center">
-                  <motion.div
+                <m.div variants={staggerItem} className="text-center">
+                  <m.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
@@ -683,26 +672,26 @@ export default function GolfPlayerOnboarding() {
                     <div className="relative">
                       <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
                       <div className="relative w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-xl shadow-green-900/20">
-                        <motion.div
+                        <m.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ delay: 0.4 }}
                         >
                           <IconCheck size={40} className="text-white" />
-                        </motion.div>
+                        </m.div>
                       </div>
                     </div>
-                  </motion.div>
+                  </m.div>
                   <h1 className="text-3xl font-bold text-slate-900 mb-3">
                     You're all set!
                   </h1>
                   <p className="text-slate-600 text-lg max-w-md mx-auto leading-relaxed">
                     Your profile is ready. You can now access your team dashboard and start tracking your rounds.
                   </p>
-                </motion.div>
+                </m.div>
 
                 {/* CTA Button */}
-                <motion.div variants={staggerItem} className="text-center">
+                <m.div variants={staggerItem} className="text-center">
                   <Button
                     size="lg"
                     onClick={handleComplete}
@@ -712,19 +701,20 @@ export default function GolfPlayerOnboarding() {
                     Go to Dashboard
                   </Button>
                   {error && (
-                    <motion.p
+                    <m.p
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="text-sm text-red-600 mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3"
                     >
                       {error}
-                    </motion.p>
+                    </m.p>
                   )}
-                </motion.div>
-              </motion.div>
-            </motion.div>
+                </m.div>
+              </m.div>
+            </m.div>
           )}
         </AnimatePresence>
+        </LazyMotion>
       </div>
     </div>
   );

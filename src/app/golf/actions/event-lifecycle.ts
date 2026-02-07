@@ -18,7 +18,8 @@ import { formatSafeErrorResponse } from '@/lib/validation/server-action-validato
 // TYPES
 // ============================================================================
 
-export type EventStatus = 'draft' | 'scheduled' | 'cancelled';
+// Actual golf_event_status enum: draft, confirmed, cancelled, completed, pending
+export type EventStatus = 'draft' | 'confirmed' | 'cancelled' | 'completed' | 'pending';
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
 interface ActionResult<T = void> {
@@ -64,11 +65,11 @@ export async function publishEvent(eventId: string): Promise<ActionResult> {
       return { success: false, error: 'Coach not found' };
     }
 
-    // Update event status to scheduled
+    // Update event status to confirmed (published)
     const { error: updateError } = await supabase
       .from('golf_events')
       .update({
-        status: 'scheduled' as EventStatus,
+        status: 'confirmed' as EventStatus,
         updated_at: new Date().toISOString(),
       })
       .eq('id', eventId)
@@ -127,12 +128,13 @@ export async function cancelEvent(
     }
 
     // Update event status to cancelled
+    // Note: golf_events has is_cancelled (boolean) and cancellation_reason columns, no cancelled_at
     const { error: updateError } = await supabase
       .from('golf_events')
       .update({
         status: 'cancelled' as EventStatus,
-        cancelled_at: new Date().toISOString(),
-        cancellation_reason: reason,
+        is_cancelled: true,
+        cancellation_reason: reason || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', eventId)
@@ -163,21 +165,23 @@ export async function cancelEvent(
           .map(p => p.user_id)
           .filter((uid): uid is string => Boolean(uid));
 
-        if (userIds.length > 0) {
-          const notifications = userIds.map(userId => ({
-            user_id: userId,
-            event_id: eventId,
-            notification_type: 'event_cancelled',
-            title: `Event Cancelled: ${event.title}`,
-            message: reason || 'This event has been cancelled.',
-            action_url: `/golf/dashboard/calendar`,
-          }));
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any)
-            .from('golf_calendar_notifications')
-            .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
-        }
+        // TODO: golf_calendar_notifications table does not exist yet.
+        // A migration is needed to create this table before notifications can be sent.
+        // When the table is created, uncomment the code below.
+        // if (userIds.length > 0) {
+        //   const notifications = userIds.map(userId => ({
+        //     user_id: userId,
+        //     event_id: eventId,
+        //     notification_type: 'event_cancelled',
+        //     title: `Event Cancelled: ${event.title}`,
+        //     message: reason || 'This event has been cancelled.',
+        //     action_url: `/golf/dashboard/calendar`,
+        //   }));
+        //   await supabase
+        //     .from('golf_calendar_notifications')
+        //     .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
+        // }
+        void userIds; // Suppress unused variable warning until notifications table exists
       }
     }
 
@@ -212,12 +216,13 @@ export async function reinstateEvent(eventId: string): Promise<ActionResult> {
       return { success: false, error: 'Coach not found' };
     }
 
-    // Update event status back to scheduled
+    // Update event status back to confirmed
+    // Note: golf_events has is_cancelled (boolean) and cancellation_reason, no cancelled_at
     const { error: updateError } = await supabase
       .from('golf_events')
       .update({
-        status: 'scheduled' as EventStatus,
-        cancelled_at: null,
+        status: 'confirmed' as EventStatus,
+        is_cancelled: false,
         cancellation_reason: null,
         updated_at: new Date().toISOString(),
       })
@@ -253,24 +258,17 @@ export async function getEventStatusHistory(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Get status history with coach details
-    const { data: history, error: historyError } = await supabase
-      .from('golf_event_status_log')
-      .select(`
-        *,
-        coach:changed_by (
-          full_name
-        )
-      `)
-      .eq('event_id', eventId)
-      .order('changed_at', { ascending: false });
-
-    if (historyError) {
-      console.error('[getEventStatusHistory Error]', historyError);
-      return { success: false, error: 'Failed to fetch status history. Please try again.' };
-    }
-
-    return { success: true, data: (history || []) as unknown as EventStatusHistory[] };
+    // TODO: golf_event_status_log table does not exist yet.
+    // A migration is needed to create this table for status history tracking.
+    // For now, return an empty array.
+    // When the table is created, uncomment and use:
+    // const { data: history, error: historyError } = await supabase
+    //   .from('golf_event_status_log')
+    //   .select(`*, coach:changed_by ( full_name )`)
+    //   .eq('event_id', eventId)
+    //   .order('changed_at', { ascending: false });
+    void eventId; // Suppress unused warning until status log table exists
+    return { success: true, data: [] as EventStatusHistory[] };
   } catch (error) {
     console.error('[getEventStatusHistory Error]', error);
     return formatSafeErrorResponse(error);
@@ -326,15 +324,17 @@ export async function createDraftEvent(eventData: {
     }
 
     // Create event in draft state
-    // Note: golf_events uses start_time as the primary date/time field
+    // golf_events schema: start_date (DATE), end_date (DATE), start_time (TIME), end_time (TIME)
     const { data: event, error: createError } = await supabase
       .from('golf_events')
       .insert({
         title: eventData.title,
         description: eventData.description,
         event_type: eventData.eventType as GolfEventType,
-        start_time: eventData.startTime || eventData.startDate,
-        end_time: eventData.endTime,
+        start_date: eventData.startDate,
+        end_date: eventData.endDate || null,
+        start_time: eventData.startTime || null,
+        end_time: eventData.endTime || null,
         location: eventData.location,
         created_by: coach.id,
         team_id: teamId,

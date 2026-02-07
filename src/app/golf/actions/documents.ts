@@ -181,19 +181,28 @@ export async function updateDocument(
     description?: string;
     category?: string;
     playerVisible?: boolean;
+    folder?: string | null;
   }
 ): Promise<{ data: GolfDocument | null; error: string | null }> {
   try {
     const supabase = await createClient();
 
+    const updatePayload: {
+      title?: string;
+      description?: string;
+      category?: string;
+      is_public?: boolean;
+      folder?: string | null;
+    } = {};
+    if (updates.title !== undefined) updatePayload.title = updates.title;
+    if (updates.description !== undefined) updatePayload.description = updates.description;
+    if (updates.category !== undefined) updatePayload.category = updates.category;
+    if (updates.playerVisible !== undefined) updatePayload.is_public = updates.playerVisible;
+    if (updates.folder !== undefined) updatePayload.folder = updates.folder;
+
     const { data, error } = await supabase
       .from('golf_documents')
-      .update({
-        title: updates.title,
-        description: updates.description,
-        category: updates.category,
-        is_public: updates.playerVisible,
-      })
+      .update(updatePayload)
       .eq('id', documentId)
       .select()
       .single();
@@ -633,7 +642,7 @@ export async function createGolfDocument(data: {
         uploaded_by: user.id,
         version_count: 1,
         folder: data.folder || null,
-      } as any)
+      })
       .select()
       .single();
 
@@ -691,12 +700,14 @@ export async function updateGolfDocument(data: {
   description?: string;
   category?: string;
   player_visible?: boolean;
+  folder?: string | null;
 }): Promise<{ success: boolean; data?: GolfDocument; error?: string }> {
   const result = await updateDocument(data.id, {
     title: data.title,
     description: data.description,
     category: data.category,
     playerVisible: data.player_visible,
+    folder: data.folder,
   });
   return {
     success: !result.error,

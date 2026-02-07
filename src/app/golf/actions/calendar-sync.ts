@@ -34,8 +34,12 @@ interface ClassFormData {
 }
 
 /**
- * Sync a class to the golf calendar by creating recurring event entries
- * Creates one event per class occurrence (for each day the class meets)
+ * Sync a class to the golf calendar by creating event entries.
+ * Creates one event per class occurrence (for each day the class meets).
+ *
+ * NOTE: golf_events does NOT have a `class_id` column.
+ * We use the description field to tag class events for identification,
+ * and delete/recreate when syncing.
  */
 export async function syncClassToCalendar(
   classData: ClassFormData,
@@ -85,10 +89,17 @@ export async function syncClassToCalendar(
     return { success: true, skipped: true };
   }
 
-  // Delete existing calendar events for this class (if updating)
-  await supabase.from('golf_events').delete().eq('class_id', classId);
+  // Delete existing calendar events for this class (identified by description tag)
+  // Since there's no class_id column, we use a description marker
+  const classTag = `[class:${classId}]`;
+  await supabase
+    .from('golf_events')
+    .delete()
+    .eq('team_id', teamId)
+    .like('description', `%${classTag}%`);
 
   // Create calendar events for each day the class meets
+  // golf_events schema: start_date (DATE), end_date (DATE), start_time (TIME), end_time (TIME)
   const events = classData.days.map(day => {
     const dayOfWeek = getDayOfWeek(day);
     const firstOccurrence = getFirstOccurrenceDate(semesterDates.start, dayOfWeek);
@@ -96,7 +107,7 @@ export async function syncClassToCalendar(
     return {
       team_id: teamId,
       title: `${classData.course_code}: ${classData.course_name}`,
-      event_type: 'class' as const,
+      event_type: 'other' as const, // 'class' is not in golf_event_type enum; use 'other'
       start_date: firstOccurrence,
       end_date: semesterDates.end, // Classes recur until end of semester
       start_time: classData.start_time,
@@ -107,10 +118,11 @@ export async function syncClassToCalendar(
         classData.instructor && `Instructor: ${classData.instructor}`,
         classData.credits && `Credits: ${classData.credits}`,
         classData.notes,
+        classTag, // Tag to identify class events for future sync/delete
       ].filter(Boolean).join('\n') || null,
       is_mandatory: false,
       created_by: null, // Players can create events directly without coach
-      class_id: classId,
+      status: 'confirmed' as const,
     };
   });
 
@@ -132,7 +144,7 @@ export async function syncClassToCalendar(
 /**
  * Remove calendar events for a deleted class
  */
-export async function removeClassFromCalendar(classId: string): Promise<CalendarSyncResult> {
+export async function removeClassFromCalendar(classId: string, teamId?: string): Promise<CalendarSyncResult> {
   const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -140,7 +152,18 @@ export async function removeClassFromCalendar(classId: string): Promise<Calendar
     return { success: false, error: 'Not authenticated' };
   }
 
-  const { error } = await supabase.from('golf_events').delete().eq('class_id', classId);
+  // Delete events tagged with this class ID in description
+  const classTag = `[class:${classId}]`;
+  let query = supabase
+    .from('golf_events')
+    .delete()
+    .like('description', `%${classTag}%`);
+
+  if (teamId) {
+    query = query.eq('team_id', teamId);
+  }
+
+  const { error } = await query;
 
   if (error) {
     console.error('Failed to remove class from calendar:', error);

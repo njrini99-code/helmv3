@@ -3252,6 +3252,7 @@ export type Database = {
           file_size: number | null
           file_type: string | null
           file_url: string
+          folder: string | null
           id: string
           is_public: boolean | null
           team_id: string
@@ -3267,6 +3268,7 @@ export type Database = {
           file_size?: number | null
           file_type?: string | null
           file_url: string
+          folder?: string | null
           id?: string
           is_public?: boolean | null
           team_id: string
@@ -3282,6 +3284,7 @@ export type Database = {
           file_size?: number | null
           file_type?: string | null
           file_url?: string
+          folder?: string | null
           id?: string
           is_public?: boolean | null
           team_id?: string

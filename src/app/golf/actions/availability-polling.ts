@@ -59,13 +59,24 @@ interface SuggestedTime {
   score: number;
 }
 
-type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | 'class';
-type GolfEventStatus = 'draft' | 'confirmed' | 'cancelled';
+type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
+// Actual golf_event_status enum: draft, confirmed, cancelled, completed, pending
+type GolfEventStatus = 'draft' | 'confirmed' | 'cancelled' | 'completed' | 'pending';
 
 // ============================================================================
 // CREATE POLL
 // ============================================================================
 
+/**
+ * Create an availability poll.
+ *
+ * golf_availability_polls schema:
+ *   id, team_id, title, description, created_by, start_date, end_date,
+ *   time_slots (JSONB), status, response_deadline, created_at, updated_at
+ *
+ * We store dateOptions and timeOptions together in the time_slots JSONB column,
+ * since the table does not have separate date_options/time_options/duration_minutes columns.
+ */
 export async function createAvailabilityPoll(input: {
   title: string;
   description?: string;
@@ -93,6 +104,18 @@ export async function createAvailabilityPoll(input: {
       return { success: false, error: 'Coach not found' };
     }
 
+    // Derive start_date and end_date from dateOptions
+    const sortedDates = [...input.dateOptions].sort();
+    const startDate = sortedDates[0] || null;
+    const endDate = sortedDates[sortedDates.length - 1] || null;
+
+    // Store structured poll data in time_slots JSONB
+    const timeSlots = {
+      dateOptions: input.dateOptions,
+      timeOptions: input.timeOptions,
+      durationMinutes: input.durationMinutes,
+    };
+
     const { data: poll, error: createError } = await supabase
       .from('golf_availability_polls')
       .insert({
@@ -100,10 +123,10 @@ export async function createAvailabilityPoll(input: {
         description: input.description,
         created_by: coach.id,
         team_id: input.teamId,
-        duration_minutes: input.durationMinutes,
-        date_options: input.dateOptions,
-        time_options: input.timeOptions,
-        deadline: input.deadline,
+        start_date: startDate,
+        end_date: endDate,
+        time_slots: timeSlots,
+        response_deadline: input.deadline || null,
         status: 'open',
       })
       .select('id')
@@ -126,6 +149,16 @@ export async function createAvailabilityPoll(input: {
 // SUBMIT RESPONSES
 // ============================================================================
 
+/**
+ * Submit poll responses for a player.
+ *
+ * golf_poll_responses schema:
+ *   id, poll_id, player_id, responses (JSONB), notes, submitted_at, created_at, updated_at
+ *   UNIQUE(poll_id, player_id)
+ *
+ * All individual response data is stored in the responses JSONB column,
+ * since the table does not have date_option/time_option/is_available/preference_level columns.
+ */
 export async function submitPollResponses(
   pollId: string,
   playerId: string,
@@ -151,30 +184,33 @@ export async function submitPollResponses(
       return { success: false, error: 'Player not found or unauthorized' };
     }
 
-    // Delete existing responses for this player
-    await supabase
+    // Collect notes from all responses
+    const notes = responses
+      .filter(r => r.notes)
+      .map(r => `${r.dateOption} ${r.timeOption}: ${r.notes}`)
+      .join('; ') || null;
+
+    // Upsert a single row per (poll_id, player_id) with all responses in JSONB
+    const { error: upsertError } = await supabase
       .from('golf_poll_responses')
-      .delete()
-      .eq('poll_id', pollId)
-      .eq('player_id', playerId);
+      .upsert(
+        {
+          poll_id: pollId,
+          player_id: playerId,
+          responses: responses.map(r => ({
+            dateOption: r.dateOption,
+            timeOption: r.timeOption,
+            isAvailable: r.isAvailable,
+            preferenceLevel: r.preferenceLevel || 3,
+          })),
+          notes,
+          submitted_at: new Date().toISOString(),
+        },
+        { onConflict: 'poll_id,player_id' }
+      );
 
-    // Insert new responses
-    const responseData = responses.map(r => ({
-      poll_id: pollId,
-      player_id: playerId,
-      date_option: r.dateOption,
-      time_option: r.timeOption,
-      is_available: r.isAvailable,
-      preference_level: r.preferenceLevel || 3, // Default to neutral
-      notes: r.notes,
-    }));
-
-    const { error: insertError } = await supabase
-      .from('golf_poll_responses')
-      .insert(responseData);
-
-    if (insertError) {
-      console.error('[submitPollResponses Error]', insertError);
+    if (upsertError) {
+      console.error('[submitPollResponses Error]', upsertError);
       return { success: false, error: 'Failed to submit responses. Please try again.' };
     }
 
@@ -288,24 +324,25 @@ export async function scheduleEventFromPoll(
       return { success: false, error: 'Poll not found or unauthorized' };
     }
 
-    // Calculate end time
-    const endDate = new Date(`${selectedDate}T${selectedTime}`);
-    const durationMinutes = poll.duration_minutes || 60; // Default to 60 minutes if null
-    endDate.setMinutes(endDate.getMinutes() + durationMinutes);
-    const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+    // Calculate end time from duration stored in time_slots JSONB
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const timeSlots = (poll.time_slots || {}) as any;
+    const durationMinutes = timeSlots.durationMinutes || 60;
+    const endDateObj = new Date(`${selectedDate}T${selectedTime}`);
+    endDateObj.setMinutes(endDateObj.getMinutes() + durationMinutes);
+    const endTime = `${String(endDateObj.getHours()).padStart(2, '0')}:${String(endDateObj.getMinutes()).padStart(2, '0')}`;
 
-    // Create event - golf_events uses start_time as datetime, not separate date/time fields
-    const startDateTime = `${selectedDate}T${selectedTime}:00`;
-    const endDateTime = `${selectedDate}T${endTime}:00`;
-
+    // Create event - golf_events uses start_date (DATE), start_time (TIME), end_time (TIME)
     const { data: event, error: createError } = await supabase
       .from('golf_events')
       .insert({
         title: eventData.title || poll.title,
         description: eventData.description || poll.description,
         event_type: eventData.eventType as GolfEventType,
-        start_time: startDateTime,
-        end_time: endDateTime,
+        start_date: selectedDate,
+        end_date: selectedDate,
+        start_time: selectedTime,
+        end_time: endTime,
         location: eventData.location,
         created_by: coach.id,
         team_id: poll.team_id,
@@ -319,14 +356,12 @@ export async function scheduleEventFromPoll(
       return { success: false, error: 'Failed to schedule event. Please try again.' };
     }
 
-    // Update poll status
+    // Update poll status to closed (no 'scheduled' enum value; 'selected_date',
+    // 'selected_time', 'created_event_id' columns don't exist on golf_availability_polls)
     await supabase
       .from('golf_availability_polls')
       .update({
-        status: 'scheduled',
-        selected_date: selectedDate,
-        selected_time: selectedTime,
-        created_event_id: event.id,
+        status: 'closed',
       })
       .eq('id', pollId);
 

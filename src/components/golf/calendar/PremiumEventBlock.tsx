@@ -3,8 +3,9 @@
 /**
  * Premium Event Block Component
  *
- * Implements the premium event visualization from the UI guide:
+ * Glass-treatment event cards with:
  * - Type-based left border (category ribbon)
+ * - Frosted glass background
  * - Status overlays (draft, cancelled, confirmed)
  * - Hover micro-interactions
  * - RSVP count display
@@ -33,6 +34,10 @@ export interface PremiumEventBlockProps {
     end_time: string | null;
     location?: string | null;
     recurring?: boolean;
+    requires_rsvp?: boolean;
+    rsvp_confirmed_count?: number;
+    rsvp_total_count?: number;
+    max_attendees?: number | null;
   };
   onClick?: () => void;
   className?: string;
@@ -45,23 +50,33 @@ export function PremiumEventBlock({
   className,
   compact = false,
 }: PremiumEventBlockProps) {
-  // RSVP counts are no longer stored on the event; remove RSVP display for now
-  const hasRSVP = false;
+  // Show RSVP chip when the event requires RSVP and there's data to display
+  const hasRSVP = event.requires_rsvp && (event.rsvp_total_count ?? 0) > 0;
 
   return (
     <div
       onClick={onClick}
       className={cn(
-        // Base styles
-        'relative pl-2.5 pr-2 rounded-r-lg cursor-pointer',
-        'border-l-[3px] bg-white',
+        // Base glass styles
+        'relative pl-2.5 pr-2 cursor-pointer',
+        'border-l-[3px] rounded-lg',
+        // Glass treatment
+        'backdrop-blur-sm',
+        // Hover micro-interaction
+        'hover:shadow-sm hover:brightness-[1.02]',
+        'transition-all duration-150',
         // Premium event classes (type + status)
         getEventClasses(event),
         // Spacing
-        compact ? 'py-1' : 'py-1.5',
-        // Custom className
+        compact ? 'py-0.5' : 'py-1.5',
         className
       )}
+      style={{
+        // Frosted glass background — slightly translucent white
+        background: 'rgba(255, 255, 255, 0.75)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+      }}
     >
       {/* Main content */}
       <div className="flex items-center justify-between gap-2">
@@ -70,11 +85,11 @@ export function PremiumEventBlock({
           <div className="flex items-center gap-1.5">
             <span
               className={cn(
-                'font-medium truncate',
-                compact ? 'text-xs' : 'text-sm',
+                'font-semibold truncate leading-tight',
+                compact ? 'text-[11px]' : 'text-[13px]',
                 event.status === 'cancelled'
-                  ? 'text-slate-400 line-through'
-                  : 'text-slate-900'
+                  ? 'text-stone-400 line-through'
+                  : 'text-stone-800'
               )}
             >
               {event.title}
@@ -82,17 +97,17 @@ export function PremiumEventBlock({
 
             {/* Recurring indicator */}
             {event.recurring && (
-              <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+              <Calendar className="w-3 h-3 text-stone-400 shrink-0" />
             )}
           </div>
 
           {/* Time */}
-          {event.start_time && (
+          {!compact && event.start_time && (
             <div className="flex items-center gap-1 mt-0.5">
-              <Clock className="w-3 h-3 text-slate-400" />
-              <span className="text-xs text-slate-500">
+              <Clock className="w-3 h-3 text-stone-400" />
+              <span className="text-[11px] text-stone-500">
                 {formatTime(event.start_time)}
-                {event.end_time && ` - ${formatTime(event.end_time)}`}
+                {event.end_time && ` – ${formatTime(event.end_time)}`}
               </span>
             </div>
           )}
@@ -100,8 +115,8 @@ export function PremiumEventBlock({
           {/* Location (non-compact only) */}
           {!compact && event.location && (
             <div className="flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3 h-3 text-slate-400" />
-              <span className="text-xs text-slate-500 truncate">
+              <MapPin className="w-3 h-3 text-stone-400" />
+              <span className="text-[11px] text-stone-500 truncate">
                 {event.location}
               </span>
             </div>
@@ -111,10 +126,10 @@ export function PremiumEventBlock({
         {/* RSVP Count */}
         {hasRSVP && (
           <div className="shrink-0">
-            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 rounded">
-              <Users className="w-3 h-3 text-slate-500" />
-              <span className="text-xs text-slate-600 tabular-nums">
-                0/0
+            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-stone-50/80 rounded-md">
+              <Users className="w-3 h-3 text-stone-500" />
+              <span className="text-[11px] text-stone-600 tabular-nums">
+                {event.rsvp_confirmed_count ?? 0}/{event.max_attendees ?? event.rsvp_total_count ?? 0}
               </span>
             </div>
           </div>
@@ -123,7 +138,7 @@ export function PremiumEventBlock({
 
       {/* Status badge (for draft/cancelled) */}
       {(event.status === 'draft' || event.status === 'cancelled') && (
-        <div className="absolute top-1 right-1">
+        <div className="absolute top-0.5 right-1">
           <EventStatusBadge status={event.status} compact={compact} />
         </div>
       )}
@@ -145,27 +160,27 @@ function EventStatusBadge({ status, compact }: EventStatusBadgeProps) {
     draft: {
       icon: AlertCircle,
       label: 'Draft',
-      className: 'bg-slate-100 text-slate-600 border-slate-200',
+      className: 'bg-stone-100/80 text-stone-500 border-stone-200/60',
     },
     cancelled: {
       icon: XCircle,
       label: 'Cancelled',
-      className: 'bg-rose-100 text-rose-700 border-rose-200',
+      className: 'bg-rose-50/80 text-rose-600 border-rose-200/60',
     },
     confirmed: {
       icon: CheckCircle,
       label: 'Confirmed',
-      className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      className: 'bg-green-50/80 text-green-600 border-green-200/60',
     },
     scheduled: {
       icon: CheckCircle,
       label: 'Scheduled',
-      className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      className: 'bg-green-50/80 text-green-600 border-green-200/60',
     },
   }[status] || {
     icon: AlertCircle,
     label: status,
-    className: 'bg-slate-100 text-slate-600 border-slate-200',
+    className: 'bg-stone-100/80 text-stone-500 border-stone-200/60',
   };
 
   const Icon = config.icon;
@@ -173,7 +188,7 @@ function EventStatusBadge({ status, compact }: EventStatusBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-[10px] font-medium uppercase tracking-wide',
+        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-[9px] font-semibold uppercase tracking-wider',
         config.className
       )}
     >

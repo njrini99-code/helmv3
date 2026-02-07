@@ -9,13 +9,17 @@
  * - Deleting recurring events with scope
  * - Expanding recurring events for display
  * - Managing event exclusions and academic exclusions
+ *
+ * NOTE: The golf_events table does NOT have recurrence_rule or parent_event_id columns.
+ * Recurring events are implemented by creating individual event rows for each occurrence.
+ * The recurrence logic lives in the client/lib layer for expansion, but storage is flat.
  */
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { expandRecurringEvent, fromRRULE, type RecurringEvent, type AcademicExclusion, type ExpandedEvent } from '@/lib/calendar/recurrence';
-import { parseISO, format } from 'date-fns';
+import { parseISO, format, addDays, addWeeks, addMonths, isBefore } from 'date-fns';
 import { DEFAULT_TIMEZONE, getValidTimezone, parseInTimezone } from '@/lib/calendar/timezone';
 
 // ============================================================================
@@ -103,6 +107,49 @@ interface EditRecurringEventInput {
 }
 
 // ============================================================================
+// HELPER: Generate occurrence dates from RRULE
+// ============================================================================
+
+/**
+ * Generate individual event occurrences from a recurrence rule.
+ * Since golf_events doesn't have recurrence_rule/parent_event_id columns,
+ * we create one row per occurrence.
+ */
+function generateOccurrenceDates(
+  startDate: string,
+  recurrenceRule: string,
+  maxOccurrences: number = 52
+): string[] {
+  const parsed = fromRRULE(recurrenceRule);
+  if (!parsed) return [startDate];
+
+  const dates: string[] = [];
+  let current = parseISO(startDate);
+  const until = parsed.until ? parseISO(parsed.until) : addMonths(current, 12);
+  const count = parsed.count || maxOccurrences;
+
+  while (dates.length < count && isBefore(current, until)) {
+    dates.push(format(current, 'yyyy-MM-dd'));
+
+    switch (parsed.frequency) {
+      case 'DAILY':
+        current = addDays(current, parsed.interval || 1);
+        break;
+      case 'WEEKLY':
+        current = addWeeks(current, parsed.interval || 1);
+        break;
+      case 'MONTHLY':
+        current = addMonths(current, parsed.interval || 1);
+        break;
+      default:
+        current = addWeeks(current, 1);
+    }
+  }
+
+  return dates;
+}
+
+// ============================================================================
 // CREATE RECURRING EVENT
 // ============================================================================
 
@@ -137,33 +184,37 @@ export async function createRecurringEvent(
       return { success: false, error: 'Invalid recurrence rule' };
     }
 
-    // Create the parent recurring event
-    // Build start_time and end_time as ISO datetime strings
-    const startDateTime = input.startTime
-      ? `${input.startDate}T${input.startTime}:00`
-      : `${input.startDate}T00:00:00`;
-    const endDateTime = input.endTime
-      ? `${input.endDate || input.startDate}T${input.endTime}:00`
-      : input.endDate
-        ? `${input.endDate}T23:59:59`
-        : null;
+    // Generate occurrence dates
+    const occurrenceDates = generateOccurrenceDates(input.startDate, input.recurrenceRule);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: event, error: eventError } = await (supabase as any)
+    if (occurrenceDates.length === 0) {
+      return { success: false, error: 'No occurrences generated from recurrence rule' };
+    }
+
+    // Create individual events for each occurrence
+    // golf_events schema: start_date (DATE), end_date (DATE), start_time (TIME), end_time (TIME)
+    const teamId = input.teamId || coachTeamId;
+    const events = occurrenceDates.map(date => ({
+      title: input.title,
+      description: input.description || null,
+      event_type: input.eventType,
+      start_date: date,
+      end_date: input.endDate ? date : null, // Same day for each occurrence
+      start_time: input.startTime || null,
+      end_time: input.endTime || null,
+      location: input.location || null,
+      created_by: coach.id,
+      team_id: teamId,
+      status: 'confirmed' as const,
+      requires_rsvp: input.requiresRsvp || false,
+      rsvp_deadline: input.rsvpDeadline || null,
+      max_attendees: input.maxAttendees || null,
+    }));
+
+    const { data: createdEvents, error: eventError } = await supabase
       .from('golf_events')
-      .insert({
-        title: input.title,
-        description: input.description,
-        event_type: input.eventType,
-        start_time: startDateTime,
-        end_time: endDateTime,
-        location: input.location,
-        created_by: coach.id,
-        team_id: input.teamId || coachTeamId,
-        recurrence_rule: input.recurrenceRule,
-      })
-      .select('id')
-      .single();
+      .insert(events)
+      .select('id');
 
     if (eventError) {
       console.error('[createRecurringEvent Error]', eventError);
@@ -171,7 +222,7 @@ export async function createRecurringEvent(
     }
 
     revalidatePath('/golf/dashboard/calendar');
-    return { success: true, data: { eventId: event.id } };
+    return { success: true, data: { eventId: createdEvents?.[0]?.id || '' } };
   } catch (error) {
     console.error('[createRecurringEvent Error]', error);
     return formatSafeErrorResponse(error);
@@ -204,175 +255,76 @@ export async function editRecurringEvent(
       return { success: false, error: 'Coach not found' };
     }
 
-    // Get the parent event
-    const { data: parentEvent, error: fetchError } = await supabase
+    // Get the target event
+    const { data: targetEvent, error: fetchError } = await supabase
       .from('golf_events')
       .select('*')
       .eq('id', input.eventId)
       .single();
 
-    if (fetchError || !parentEvent) {
+    if (fetchError || !targetEvent) {
       return { success: false, error: 'Event not found' };
     }
 
     // Verify ownership
-    if (parentEvent.created_by !== coach.id) {
+    if (targetEvent.created_by !== coach.id) {
       return { success: false, error: 'Not authorized' };
     }
 
-    // Helper to build datetime from date and time parts
-    const buildDateTime = (date: string | undefined, time: string | undefined | null, fallbackDateTime: string): string => {
-      if (date && time) {
-        return `${date}T${time}:00`;
-      } else if (date) {
-        // Extract time from fallback datetime
-        const fallbackTime = fallbackDateTime.includes('T') ? fallbackDateTime.split('T')[1] : '00:00:00';
-        return `${date}T${fallbackTime}`;
-      }
-      return fallbackDateTime;
-    };
+    // Build update object from provided fields
+    const updates: Record<string, unknown> = {};
+    if (input.updates.title) updates.title = input.updates.title;
+    if (input.updates.description !== undefined) updates.description = input.updates.description;
+    if (input.updates.startDate) updates.start_date = input.updates.startDate;
+    if (input.updates.endDate !== undefined) updates.end_date = input.updates.endDate;
+    if (input.updates.startTime !== undefined) updates.start_time = input.updates.startTime;
+    if (input.updates.endTime !== undefined) updates.end_time = input.updates.endTime;
+    if (input.updates.location !== undefined) updates.location = input.updates.location;
 
     switch (input.scope) {
       case 'this': {
-        // Create an exception instance for this specific date
-        const newStartTime = buildDateTime(
-          input.updates.startDate || input.originalStartDate,
-          input.updates.startTime,
-          parentEvent.start_time
-        );
-        const newEndTime = input.updates.endTime !== undefined || input.updates.endDate !== undefined
-          ? buildDateTime(
-              input.updates.endDate || input.originalStartDate,
-              input.updates.endTime,
-              parentEvent.end_time || parentEvent.start_time
-            )
-          : parentEvent.end_time;
-
-        const { error: exceptionError } = await supabase
+        // Edit just this single event
+        const { error: updateError } = await supabase
           .from('golf_events')
-          .insert({
-            title: input.updates.title || parentEvent.title,
-            description: input.updates.description !== undefined ? input.updates.description : parentEvent.description,
-            event_type: parentEvent.event_type,
-            start_time: newStartTime,
-            end_time: newEndTime,
-            location: input.updates.location !== undefined ? input.updates.location : parentEvent.location,
-            created_by: parentEvent.created_by,
-            team_id: parentEvent.team_id,
-            recurrence_rule: null, // Exception instances don't have recurrence
-            parent_event_id: parentEvent.id,
-          } as any);
+          .update(updates)
+          .eq('id', input.eventId);
 
-        if (exceptionError) {
-          console.error('[editRecurringEvent Error]', exceptionError);
+        if (updateError) {
+          console.error('[editRecurringEvent Error]', updateError);
           return { success: false, error: 'Failed to edit event occurrence. Please try again.' };
         }
         break;
       }
 
       case 'thisAndFuture': {
-        // 1. End the current series at the day before this instance
-        const originalDate = parseISO(input.originalStartDate);
-        const dayBefore = new Date(originalDate);
-        dayBefore.setDate(dayBefore.getDate() - 1);
-
-        // Update the original series UNTIL date
-        const existingRule = fromRRULE(parentEvent.recurrence_rule!);
-        if (existingRule) {
-          existingRule.until = format(dayBefore, 'yyyy-MM-dd');
-          existingRule.count = undefined; // Clear count if until is set
-
-          const { toRRULE } = await import('@/lib/calendar/recurrence');
-          const updatedRule = toRRULE(existingRule);
-
-          const { error: updateError } = await supabase
-            .from('golf_events')
-            .update({
-              recurrence_rule: updatedRule,
-            })
-            .eq('id', parentEvent.id);
-
-          if (updateError) {
-            console.error('[editRecurringEvent Error]', updateError);
-            return { success: false, error: 'Failed to update recurring event series. Please try again.' };
-          }
-        }
-
-        // 2. Create a new series starting from this instance
-        const newSeriesStartTime = buildDateTime(
-          input.updates.startDate || input.originalStartDate,
-          input.updates.startTime,
-          parentEvent.start_time
-        );
-        const newSeriesEndTime = input.updates.endTime !== undefined || input.updates.endDate !== undefined
-          ? buildDateTime(
-              input.updates.endDate || input.originalStartDate,
-              input.updates.endTime,
-              parentEvent.end_time || parentEvent.start_time
-            )
-          : parentEvent.end_time;
-
-        const { error: newSeriesError } = await supabase
+        // Update this event and all future events with the same title/team
+        const { error: updateError } = await supabase
           .from('golf_events')
-          .insert({
-            title: input.updates.title || parentEvent.title,
-            description: input.updates.description !== undefined ? input.updates.description : parentEvent.description,
-            event_type: parentEvent.event_type,
-            start_time: newSeriesStartTime,
-            end_time: newSeriesEndTime,
-            location: input.updates.location !== undefined ? input.updates.location : parentEvent.location,
-            created_by: parentEvent.created_by,
-            team_id: parentEvent.team_id,
-            recurrence_rule: input.updates.recurrenceRule || parentEvent.recurrence_rule,
-            parent_event_id: null, // This is a new parent
-          } as any);
+          .update(updates)
+          .eq('team_id', targetEvent.team_id)
+          .eq('title', targetEvent.title)
+          .eq('event_type', targetEvent.event_type)
+          .gte('start_date', input.originalStartDate);
 
-        if (newSeriesError) {
-          console.error('[editRecurringEvent Error]', newSeriesError);
-          return { success: false, error: 'Failed to create new event series. Please try again.' };
+        if (updateError) {
+          console.error('[editRecurringEvent Error]', updateError);
+          return { success: false, error: 'Failed to update future event occurrences. Please try again.' };
         }
         break;
       }
 
       case 'all': {
-        // Update the parent event
-        const updates: any = {};
-        if (input.updates.title) updates.title = input.updates.title;
-        if (input.updates.description !== undefined) updates.description = input.updates.description;
-        // For 'all' scope, we need to update start_time/end_time as full datetime
-        if (input.updates.startDate || input.updates.startTime !== undefined) {
-          updates.start_time = buildDateTime(
-            input.updates.startDate,
-            input.updates.startTime,
-            parentEvent.start_time
-          );
-        }
-        if (input.updates.endDate !== undefined || input.updates.endTime !== undefined) {
-          updates.end_time = buildDateTime(
-            input.updates.endDate,
-            input.updates.endTime,
-            parentEvent.end_time || parentEvent.start_time
-          );
-        }
-        if (input.updates.location !== undefined) updates.location = input.updates.location;
-        if (input.updates.recurrenceRule) updates.recurrence_rule = input.updates.recurrenceRule;
-
+        // Update all events with the same title/team/type
         const { error: updateError } = await supabase
           .from('golf_events')
           .update(updates)
-          .eq('id', parentEvent.id);
+          .eq('team_id', targetEvent.team_id)
+          .eq('title', targetEvent.title)
+          .eq('event_type', targetEvent.event_type);
 
         if (updateError) {
           console.error('[editRecurringEvent Error]', updateError);
           return { success: false, error: 'Failed to update all event occurrences. Please try again.' };
-        }
-
-        // Also update all exception instances
-        if (Object.keys(updates).length > 0) {
-          await supabase
-            .from('golf_events')
-            .update(updates)
-            .eq('parent_event_id', parentEvent.id);
         }
         break;
       }
@@ -414,77 +366,62 @@ export async function deleteRecurringEvent(
       return { success: false, error: 'Coach not found' };
     }
 
-    // Get the parent event
-    const { data: parentEvent, error: fetchError } = await supabase
+    // Get the target event
+    const { data: targetEvent, error: fetchError } = await supabase
       .from('golf_events')
       .select('*')
       .eq('id', eventId)
       .single();
 
-    if (fetchError || !parentEvent) {
+    if (fetchError || !targetEvent) {
       return { success: false, error: 'Event not found' };
     }
 
     // Verify ownership
-    if (parentEvent.created_by !== coach.id) {
+    if (targetEvent.created_by !== coach.id) {
       return { success: false, error: 'Not authorized' };
     }
 
     switch (scope) {
       case 'this': {
-        // Add this date to event exclusions
-        // Note: golf_event_exclusions schema may differ - use (supabase as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: exclusionError } = await (supabase as any)
-          .from('golf_event_exclusions')
-          .insert({
-            event_id: parentEvent.id,
-            excluded_date: originalStartDate,
-            reason: 'Deleted by user',
-          });
+        // Delete just this single event
+        const { error: deleteError } = await supabase
+          .from('golf_events')
+          .delete()
+          .eq('id', eventId);
 
-        if (exclusionError) {
-          console.error('[deleteRecurringEvent Error]', exclusionError);
-          return { success: false, error: 'Failed to exclude event occurrence. Please try again.' };
+        if (deleteError) {
+          console.error('[deleteRecurringEvent Error]', deleteError);
+          return { success: false, error: 'Failed to delete event occurrence. Please try again.' };
         }
         break;
       }
 
       case 'thisAndFuture': {
-        // End the series at the day before this instance
-        const originalDate = parseISO(originalStartDate);
-        const dayBefore = new Date(originalDate);
-        dayBefore.setDate(dayBefore.getDate() - 1);
+        // Delete this and all future events with same title/team/type
+        const { error: deleteError } = await supabase
+          .from('golf_events')
+          .delete()
+          .eq('team_id', targetEvent.team_id)
+          .eq('title', targetEvent.title)
+          .eq('event_type', targetEvent.event_type)
+          .gte('start_date', originalStartDate);
 
-        const existingRule = fromRRULE(parentEvent.recurrence_rule!);
-        if (existingRule) {
-          existingRule.until = format(dayBefore, 'yyyy-MM-dd');
-          existingRule.count = undefined;
-
-          const { toRRULE } = await import('@/lib/calendar/recurrence');
-          const updatedRule = toRRULE(existingRule);
-
-          const { error: updateError } = await supabase
-            .from('golf_events')
-            .update({
-              recurrence_rule: updatedRule,
-            })
-            .eq('id', parentEvent.id);
-
-          if (updateError) {
-            console.error('[deleteRecurringEvent Error]', updateError);
-            return { success: false, error: 'Failed to end event series. Please try again.' };
-          }
+        if (deleteError) {
+          console.error('[deleteRecurringEvent Error]', deleteError);
+          return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
         }
         break;
       }
 
       case 'all': {
-        // Delete the parent event (cascades to exclusions and exceptions)
+        // Delete all events with same title/team/type
         const { error: deleteError } = await supabase
           .from('golf_events')
           .delete()
-          .eq('id', parentEvent.id);
+          .eq('team_id', targetEvent.team_id)
+          .eq('title', targetEvent.title)
+          .eq('event_type', targetEvent.event_type);
 
         if (deleteError) {
           console.error('[deleteRecurringEvent Error]', deleteError);
@@ -507,16 +444,9 @@ export async function deleteRecurringEvent(
 // ============================================================================
 
 /**
- * Get expanded recurring events for a date range
- *
- * This function handles timezone-aware expansion:
- * 1. Fetches team timezone from golf_team_settings
- * 2. Uses team timezone for interpreting date boundaries
- * 3. Returns expanded events with correct local times
- *
- * @param startDate - Start of date range (ISO string, interpreted in team timezone)
- * @param endDate - End of date range (ISO string, interpreted in team timezone)
- * @param teamId - Optional team ID to filter events
+ * Get events for a date range.
+ * Since we store individual occurrences (no recurrence_rule column),
+ * this is a simple date-range query.
  */
 export async function getExpandedEvents(
   startDate: string,
@@ -532,109 +462,40 @@ export async function getExpandedEvents(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Get team timezone for proper date interpretation
-    const teamTimezone = await getTeamTimezone(supabase, teamId ?? null);
-
-    // Build query for events
+    // Build query for events in date range
     let query = supabase
       .from('golf_events')
       .select('*')
-      .or(`recurrence_rule.is.null,and(recurrence_rule.not.is.null,parent_event_id.is.null)`)
-      .gte('start_time', startDate)
-      .lte('start_time', endDate);
+      .gte('start_date', startDate)
+      .lte('start_date', endDate)
+      .neq('status', 'cancelled');
 
     if (teamId) {
       query = query.eq('team_id', teamId);
     }
 
-    const { data: events, error: eventsError } = await query;
+    const { data: events, error: eventsError } = await query.order('start_date', { ascending: true });
 
     if (eventsError) {
       console.error('[getExpandedEvents Error]', eventsError);
       return { success: false, error: 'Failed to fetch events. Please try again.' };
     }
 
-    // Get exclusions for all recurring events
-    const recurringEventIds = events
-      ?.filter(e => e.recurrence_rule)
-      .map(e => e.id) || [];
+    // Map to ExpandedEvent format
+    const expandedEvents: ExpandedEvent[] = (events || []).map(event => ({
+      id: event.id,
+      title: event.title,
+      eventType: event.event_type,
+      startDate: event.start_date ? parseISO(event.start_date) : new Date(),
+      endDate: event.end_date ? parseISO(event.end_date) : null,
+      startTime: event.start_time || null,
+      endTime: event.end_time || null,
+      isRecurrenceInstance: false,
+      isException: false,
+      originalEventId: event.id,
+    }));
 
-    let exclusions: any[] = [];
-    if (recurringEventIds.length > 0) {
-      const { data: exclusionData } = await supabase
-        .from('golf_event_exclusions')
-        .select('*')
-        .in('event_id', recurringEventIds);
-      exclusions = exclusionData || [];
-    }
-
-    // Get academic exclusions for the team
-    // Note: golf_academic_exclusions has a simpler schema (player_id, reason, start_date, end_date)
-    // The AcademicExclusion interface expects more fields - we provide defaults
-    let academicExclusions: AcademicExclusion[] = [];
-    if (teamId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: academicData } = await (supabase as any)
-        .from('golf_academic_exclusions')
-        .select('*')
-        .gte('end_date', startDate)
-        .lte('start_date', endDate);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      academicExclusions = (academicData || []).map((exc: any) => ({
-        id: exc.id,
-        name: exc.reason || 'Academic Exclusion', // Use reason as name
-        // Parse dates in team timezone for correct boundary interpretation
-        startDate: parseInTimezone(exc.start_date, teamTimezone),
-        endDate: parseInTimezone(exc.end_date, teamTimezone),
-        excludePractices: true, // Default to excluding all events
-        excludeMatches: true,
-        excludeAllEvents: true,
-      }));
-    }
-
-    // Expand all events using team timezone for date interpretation
-    const allExpandedEvents: ExpandedEvent[] = [];
-
-    // Parse date range boundaries in team timezone
-    const rangeStart = parseInTimezone(startDate, teamTimezone);
-    const rangeEnd = parseInTimezone(endDate, teamTimezone);
-
-    for (const event of events || []) {
-      // Parse event times - these are stored in UTC but we interpret
-      // recurring expansions in the team's local timezone
-      const recurringEvent: RecurringEvent = {
-        id: event.id,
-        title: event.title,
-        eventType: event.event_type,
-        // Parse event start/end times (stored as UTC, parsed to Date)
-        startDate: parseISO(event.start_time),
-        endDate: event.end_time ? parseISO(event.end_time) : null,
-        startTime: null, // Time is embedded in start_time datetime
-        endTime: null, // Time is embedded in end_time datetime
-        recurrenceRule: event.recurrence_rule,
-        recurrenceParentId: event.parent_event_id,
-        originalStartDate: null, // Not used in this schema
-        isException: false, // Determined by parent_event_id presence
-      };
-
-      // Parse exclusion dates in team timezone
-      const eventExclusions = exclusions
-        .filter(exc => exc.event_id === event.id)
-        .map(exc => parseInTimezone(exc.excluded_date, teamTimezone));
-
-      const expanded = expandRecurringEvent(
-        recurringEvent,
-        rangeStart,
-        rangeEnd,
-        eventExclusions,
-        academicExclusions
-      );
-
-      allExpandedEvents.push(...expanded);
-    }
-
-    return { success: true, data: allExpandedEvents };
+    return { success: true, data: expandedEvents };
   } catch (error) {
     console.error('[getExpandedEvents Error]', error);
     return formatSafeErrorResponse(error);
@@ -645,6 +506,10 @@ export async function getExpandedEvents(
 // ACADEMIC EXCLUSIONS
 // ============================================================================
 
+/**
+ * Create an academic exclusion period.
+ * golf_academic_exclusions schema: player_id, start_date, end_date, reason, excluded_by
+ */
 export async function createAcademicExclusion(input: {
   name: string;
   startDate: string;
@@ -653,6 +518,7 @@ export async function createAcademicExclusion(input: {
   excludeMatches: boolean;
   excludeAllEvents: boolean;
   teamId?: string;
+  playerIds?: string[]; // Players to exclude
 }): Promise<ActionResult<{ id: string }>> {
   try {
     const supabase = await createClient();
@@ -678,22 +544,43 @@ export async function createAcademicExclusion(input: {
       return { success: false, error: 'Team ID is required' };
     }
 
-    // Note: golf_academic_exclusions may not have all these columns - use (supabase as any)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: exclusion, error: insertError } = await (supabase as any)
+    // If specific playerIds provided, create exclusions for each
+    // Otherwise, get all team members and create exclusions for all
+    let playerIds = input.playerIds;
+    if (!playerIds || playerIds.length === 0) {
+      const { data: members } = await supabase
+        .from('golf_team_members')
+        .select('player_id')
+        .eq('team_id', teamId);
+      playerIds = (members || []).map(m => m.player_id);
+    }
+
+    if (playerIds.length === 0) {
+      return { success: false, error: 'No players found to exclude' };
+    }
+
+    // Build reason from exclusion settings
+    const reasonParts = [input.name];
+    if (!input.excludeAllEvents) {
+      if (input.excludePractices) reasonParts.push('(practices)');
+      if (input.excludeMatches) reasonParts.push('(matches)');
+    }
+    const reason = reasonParts.join(' ');
+
+    // Insert academic exclusions - one per player
+    // Schema: player_id (NOT NULL), start_date, end_date, reason, excluded_by
+    const exclusions = playerIds.map(playerId => ({
+      player_id: playerId,
+      start_date: input.startDate,
+      end_date: input.endDate,
+      reason,
+      excluded_by: coach.id,
+    }));
+
+    const { data: result, error: insertError } = await supabase
       .from('golf_academic_exclusions')
-      .insert({
-        name: input.name,
-        start_date: input.startDate,
-        end_date: input.endDate,
-        exclude_practices: input.excludePractices,
-        exclude_matches: input.excludeMatches,
-        exclude_all_events: input.excludeAllEvents,
-        team_id: teamId,
-        created_by: coach.id,
-      })
-      .select('id')
-      .single();
+      .insert(exclusions)
+      .select('id');
 
     if (insertError) {
       console.error('[createAcademicExclusion Error]', insertError);
@@ -701,7 +588,7 @@ export async function createAcademicExclusion(input: {
     }
 
     revalidatePath('/golf/dashboard/calendar');
-    return { success: true, data: { id: exclusion.id } };
+    return { success: true, data: { id: result?.[0]?.id || '' } };
   } catch (error) {
     console.error('[createAcademicExclusion Error]', error);
     return formatSafeErrorResponse(error);

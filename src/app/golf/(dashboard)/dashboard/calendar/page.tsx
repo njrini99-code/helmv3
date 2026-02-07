@@ -73,7 +73,7 @@ export default async function GolfCalendarPage() {
     ? await Promise.all([
         supabase
           .from('golf_events')
-          .select('id, team_id, title, event_type, start_time, end_time, location, description, status, all_day, recurring, created_by, requires_rsvp, rsvp_deadline, max_attendees')
+          .select('id, team_id, title, event_type, start_time, end_time, location, description, status, all_day, created_by, requires_rsvp, rsvp_deadline, max_attendees')
           .eq('team_id', teamId)
           .neq('status', 'cancelled')
           .order('start_time', { ascending: true }),
@@ -121,7 +121,6 @@ export default async function GolfCalendarPage() {
       description: event.description,
       status: event.status ?? undefined,
       all_day: event.all_day ?? undefined,
-      recurring: event.recurring ?? undefined,
       created_by: event.created_by,
       requires_rsvp: event.requires_rsvp ?? false,
       rsvp_deadline: event.rsvp_deadline,
