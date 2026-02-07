@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import {
@@ -120,6 +120,11 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState(initialDocuments);
+
+  // Sync local state when server data updates (e.g. after router.refresh())
+  useEffect(() => {
+    setDocuments(initialDocuments);
+  }, [initialDocuments]);
 
   // Upload state
   const [showUploadModal, setShowUploadModal] = useState(false);
