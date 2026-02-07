@@ -125,7 +125,7 @@ export function GolfDashboardShell({
         <ToastProvider>
           <SessionActivityProvider>
             <GolfUserProvider userData={userData}>
-              <OfflineProvider>
+              <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
                 <GolfDashboardContent userData={userData}>
                   {children}
                 </GolfDashboardContent>
