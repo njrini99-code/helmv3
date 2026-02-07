@@ -299,7 +299,7 @@ export function MobileEventSheet({
           {/* Event Type Pills - scrollable row */}
           {canEdit && (
             <div className="px-5 pb-4">
-              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+              <div className="pills-scroll pb-1 -mx-1 px-1">
                 {MOBILE_EVENT_TYPE_PILLS.map((pill) => {
                   const Icon = pill.icon;
                   const isActive = formData.eventType === pill.type;
@@ -513,22 +513,22 @@ export function MobileEventSheet({
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 mx-auto mb-0.5" />
                     <p className="text-lg font-bold text-emerald-700">{rsvpSummary.accepted}</p>
-                    <p className="text-[10px] text-emerald-600 font-medium">Going</p>
+                    <p className="text-xs text-emerald-600 font-medium">Going</p>
                   </div>
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <HelpCircle className="w-4 h-4 text-amber-600 mx-auto mb-0.5" />
                     <p className="text-lg font-bold text-amber-700">{rsvpSummary.tentative}</p>
-                    <p className="text-[10px] text-amber-600 font-medium">Maybe</p>
+                    <p className="text-xs text-amber-600 font-medium">Maybe</p>
                   </div>
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <XCircle className="w-4 h-4 text-rose-600 mx-auto mb-0.5" />
                     <p className="text-lg font-bold text-rose-700">{rsvpSummary.declined}</p>
-                    <p className="text-[10px] text-rose-600 font-medium">No</p>
+                    <p className="text-xs text-rose-600 font-medium">No</p>
                   </div>
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <Clock className="w-4 h-4 text-slate-500 mx-auto mb-0.5" />
                     <p className="text-lg font-bold text-slate-700">{rsvpSummary.pending}</p>
-                    <p className="text-[10px] text-slate-500 font-medium">Pending</p>
+                    <p className="text-xs text-slate-500 font-medium">Pending</p>
                   </div>
                 </div>
               </div>

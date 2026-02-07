@@ -125,7 +125,8 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         'transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         'will-change-[width]',
         isCollapsed ? 'w-[72px]' : 'w-64',
-        !isMobile && 'fixed left-0 top-0 z-40'
+        !isMobile && 'fixed left-0 top-0 z-40',
+        isMobile && 'pt-[env(safe-area-inset-top)]'
       )}
     >
       {/* Collapse Toggle Button (desktop only) */}
@@ -250,7 +251,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         {/* Primary Navigation */}
         <div className="space-y-0.5">
           {!isCollapsed && (
-            <p className="px-3 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
+            <p className="px-3 py-2 text-xs font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
               {userRole === 'coach' ? 'Team Management' : 'My Golf'}
             </p>
           )}
@@ -267,7 +268,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
+                  'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium',
                   'transition-all duration-150 ease-out will-change-transform',
                   'active:scale-[0.98]',
                   active
@@ -286,7 +287,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                   {item.name}
                 </span>
                 {item.badge && !isCollapsed && (
-                  <span className="ml-auto px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-primary-600 text-white">
+                  <span className="ml-auto px-1.5 py-0.5 text-xs font-semibold rounded-full bg-primary-600 text-white">
                     {item.badge}
                   </span>
                 )}
@@ -301,7 +302,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         {/* Secondary Navigation */}
         <div className="space-y-0.5">
           {!isCollapsed && (
-            <p className="px-3 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
+            <p className="px-3 py-2 text-xs font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
               {userRole === 'coach' ? 'More' : 'Team'}
             </p>
           )}
@@ -318,7 +319,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
+                  'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium',
                   'transition-all duration-150 ease-out',
                   active
                     ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
@@ -355,7 +356,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           aria-label={isCollapsed ? 'Settings' : undefined}
           aria-current={pathname === '/golf/dashboard/settings' ? 'page' : undefined}
           className={cn(
-            'flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
+            'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium',
             'transition-all duration-150 ease-out',
             pathname === '/golf/dashboard/settings'
               ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
@@ -379,7 +380,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           title={isCollapsed ? 'Sign out' : undefined}
           aria-label={isCollapsed ? (isSigningOut ? 'Signing out' : 'Sign out') : undefined}
           className={cn(
-            'w-full flex items-center gap-3 py-2.5 rounded-[10px] text-[13px] font-medium',
+            'w-full flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium',
             'text-white/60 hover:bg-red-500/10 hover:text-red-400',
             'transition-all duration-150 ease-out disabled:opacity-50 active:scale-[0.98]',
             isCollapsed ? 'justify-center px-2' : 'px-3'

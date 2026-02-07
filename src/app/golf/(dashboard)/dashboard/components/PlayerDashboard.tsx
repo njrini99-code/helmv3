@@ -244,7 +244,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                             ].map((item) => (
                                                 <div key={item.label} className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl bg-white/40 border border-white/30">
                                                     <div className="text-slate-400">{item.icon}</div>
-                                                    <span className="text-[11px] md:text-xs font-medium text-slate-500">{item.label}</span>
+                                                    <span className="text-xs md:text-xs font-medium text-slate-500">{item.label}</span>
                                                 </div>
                                             ))}
                                         </div>

@@ -48,7 +48,7 @@ export function AnimatedTabs({
           role="tablist"
           aria-label="Content tabs"
           className={cn(
-            'relative flex',
+            'relative flex overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-nowrap snap-x snap-mandatory',
             variant === 'segment' && 'bg-slate-100 p-1 rounded-xl gap-1',
             variant === 'underline' && 'border-b border-slate-200 gap-1',
             variant === 'pill' && 'gap-2'
@@ -64,7 +64,7 @@ export function AnimatedTabs({
               onClick={() => setActiveTab(tab.id)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               className={cn(
-                'relative px-4 py-2.5 text-sm font-medium transition-colors z-10',
+                'relative px-4 py-2.5 text-sm font-medium transition-colors z-10 flex-shrink-0 snap-center',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2',
                 variant === 'segment' && 'rounded-lg flex-1',
                 variant === 'underline' && 'pb-3',

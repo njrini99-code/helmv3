@@ -255,7 +255,7 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
                 return (
                   <div
                     key={i}
-                    className="text-[10px] text-slate-400 font-medium"
+                    className="text-xs text-slate-400 font-medium"
                     style={{ marginLeft }}
                   >
                     {pos.month}

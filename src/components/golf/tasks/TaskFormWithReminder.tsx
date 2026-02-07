@@ -178,8 +178,10 @@ export function TaskFormWithReminder({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter task title..."
+          enterKeyHint="next"
+          autoComplete="off"
           disabled={isPending}
-          className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
+          className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
         />
       </div>
 
@@ -192,9 +194,11 @@ export function TaskFormWithReminder({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Add more details..."
+          enterKeyHint="done"
+          autoComplete="off"
           rows={3}
           disabled={isPending}
-          className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 resize-none disabled:opacity-50"
+          className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 resize-none disabled:opacity-50"
         />
       </div>
 
@@ -235,7 +239,7 @@ export function TaskFormWithReminder({
             value={assignedTo}
             onChange={(e) => setAssignedTo(e.target.value)}
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
           >
             <option value="">Unassigned</option>
             {teamMembers.map((member) => (
@@ -258,7 +262,7 @@ export function TaskFormWithReminder({
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
           />
         </div>
         <div>
@@ -270,7 +274,7 @@ export function TaskFormWithReminder({
             value={dueTime}
             onChange={(e) => setDueTime(e.target.value)}
             disabled={isPending || !dueDate}
-            className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
           />
         </div>
       </div>

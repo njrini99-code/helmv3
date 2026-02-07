@@ -76,7 +76,7 @@ const STATUS_CONFIGS: Record<StatusBadgeProps['status'], StatusConfig> = {
 
 const SIZE_CONFIGS = {
   sm: {
-    container: 'px-1.5 py-0.5 text-[10px] gap-0.5',
+    container: 'px-1.5 py-0.5 text-xs gap-0.5',
     icon: 'w-2.5 h-2.5',
   },
   md: {

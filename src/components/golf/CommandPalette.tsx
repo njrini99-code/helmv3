@@ -235,6 +235,8 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
               }}
               onKeyDown={handleKeyDown}
               placeholder="Search commands..."
+              enterKeyHint="go"
+              autoComplete="off"
               aria-label="Search commands"
               aria-autocomplete="list"
               aria-controls="command-list"
@@ -251,7 +253,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
             id="command-list"
             role="listbox"
             aria-label="Available commands"
-            className="max-h-80 overflow-y-auto p-2"
+            className="max-h-80 overflow-y-auto p-2" data-scroll-container
           >
             {filteredCommands.length === 0 ? (
               <div className="text-center py-8 text-sm text-slate-500" role="status">

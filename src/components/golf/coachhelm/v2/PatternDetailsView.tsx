@@ -297,7 +297,7 @@ function MetricCard({
       >
         {value}
       </p>
-      <p className="text-[10px] text-slate-400 mt-1">{description}</p>
+      <p className="text-xs text-slate-400 mt-1">{description}</p>
     </div>
   );
 }

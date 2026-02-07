@@ -364,7 +364,52 @@ export default function GolfDashboardPage() {
         // PERF: Depend on stable primitive values, not the golfUser object reference
     }, [supabase, role, userId, coachId, playerId, teamId, organizationId, userName, userAvatar]);
 
-    if (loading) return null;
+    if (loading) {
+        return (
+            <div className="min-h-full bg-transparent">
+                <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+                    {/* Header skeleton */}
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="h-7 w-48 bg-slate-200/60 rounded-lg animate-pulse" />
+                            <div className="h-4 w-32 bg-slate-200/40 rounded-md animate-pulse mt-2" />
+                        </div>
+                        <div className="h-9 w-24 bg-slate-200/50 rounded-lg animate-pulse" />
+                    </div>
+                    {/* Stats grid skeleton */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-4 md:p-6">
+                                <div className="h-3 w-20 bg-slate-200/50 rounded animate-pulse mb-3" />
+                                <div className="h-8 w-16 bg-slate-200/60 rounded-lg animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
+                    {/* Content skeleton */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 space-y-4">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-5">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="h-10 w-10 bg-slate-200/50 rounded-full animate-pulse" />
+                                        <div>
+                                            <div className="h-4 w-32 bg-slate-200/50 rounded animate-pulse" />
+                                            <div className="h-3 w-24 bg-slate-200/40 rounded animate-pulse mt-1.5" />
+                                        </div>
+                                    </div>
+                                    <div className="h-3 w-full bg-slate-200/30 rounded animate-pulse" />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="space-y-4">
+                            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-5 h-48 animate-pulse" />
+                            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-5 h-36 animate-pulse" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (error) {
         return (

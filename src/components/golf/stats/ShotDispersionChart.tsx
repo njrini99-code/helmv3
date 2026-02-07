@@ -1114,7 +1114,7 @@ export function ApproachDispersionVisualLegacy({
                       transition={{ delay: 0.95 + idx * 0.05 }}
                     >
                       <span style={{ color: dir.color }} className="text-xs">{arrowMap[dir.type] || '•'}</span>
-                      <span className="text-[10px] text-slate-500 mt-0.5">{dir.pct.toFixed(0)}%</span>
+                      <span className="text-xs text-slate-500 mt-0.5">{dir.pct.toFixed(0)}%</span>
                     </motion.div>
                   );
                 })}

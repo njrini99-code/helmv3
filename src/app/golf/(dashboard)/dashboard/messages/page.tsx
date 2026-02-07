@@ -294,7 +294,7 @@ export default function GolfMessagesPage() {
               <button
                 onClick={toggleMobile}
                 className={cn(
-                  'lg:hidden p-2 -ml-2 rounded-xl',
+                  'lg:hidden p-2.5 -ml-2 rounded-xl',
                   'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
                   'transition-colors duration-150 active:scale-95',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
@@ -478,7 +478,7 @@ export default function GolfMessagesPage() {
                           {/* Edit/Delete buttons for own messages (appear on hover) */}
                           {isOwn && editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
                             <div className={cn(
-                              'absolute flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity',
+                              'absolute flex items-center gap-0.5 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity',
                               'right-full mr-1'
                             )}>
                               <button
@@ -574,7 +574,7 @@ export default function GolfMessagesPage() {
                               {/* Edited indicator - check if property exists on message */}
                               {'edited_at' in msg && (msg as MessageWithReadStatus & { edited_at?: string }).edited_at && (
                                 <span className={cn(
-                                  'text-[10px] mt-1 block',
+                                  'text-xs mt-1 block',
                                   isOwn ? 'text-emerald-200' : 'text-slate-400'
                                 )}>
                                   (edited)
@@ -590,7 +590,7 @@ export default function GolfMessagesPage() {
                             'flex items-center gap-1 pb-1',
                             isOwn ? 'flex-row-reverse' : ''
                           )}>
-                            <span className="text-[10px] text-slate-400">
+                            <span className="text-xs text-slate-400">
                               {formatTime(msg.created_at)}
                             </span>
                             {/* Read receipt indicator for own messages */}
@@ -817,7 +817,7 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
           type="submit"
           disabled={!message.trim() || sending}
           className={cn(
-            'h-10 w-10 rounded-xl flex items-center justify-center',
+            'h-11 w-11 md:h-10 md:w-10 rounded-xl flex items-center justify-center',
             'transition-all duration-200',
             message.trim() && !sending
               ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
@@ -831,7 +831,7 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
           )}
         </button>
       </div>
-      <p className="text-[10px] text-slate-400 mt-1.5 px-2">
+      <p className="text-xs text-slate-400 mt-1.5 px-2">
         Press Enter to send, Shift+Enter for new line
       </p>
     </form>
@@ -905,7 +905,7 @@ function ConversationGroup({
 }) {
   return (
     <div className="mb-2">
-      <h3 className="px-4 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+      <h3 className="px-4 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">
         {label}
       </h3>
       <div className="space-y-0.5 px-2">
@@ -968,7 +968,7 @@ function ConversationRow({
           <span className="absolute -top-1 -right-1 w-5 h-5
                           bg-emerald-500 rounded-full
                           flex items-center justify-center
-                          text-[10px] font-bold text-white
+                          text-xs font-bold text-white
                           ring-2 ring-white shadow-sm">
             {conv.unread_count > 9 ? '9+' : conv.unread_count}
           </span>
@@ -993,7 +993,7 @@ function ConversationRow({
           </div>
           {conv.last_message && (
             <span className={cn(
-              'text-[11px] flex-shrink-0',
+              'text-xs flex-shrink-0',
               hasUnread ? 'text-emerald-600 font-medium' : 'text-slate-400'
             )}>
               {formatTime(conv.last_message.created_at)}

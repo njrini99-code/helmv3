@@ -24,7 +24,7 @@
  */
 
 import { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   containerVariants,
@@ -41,6 +41,12 @@ interface AnimatedPageProps {
 }
 
 export function AnimatedPage({ children, className }: AnimatedPageProps) {
+  const prefersReducedMotion = useReducedMotion();
+
+  if (prefersReducedMotion) {
+    return <div className={cn('min-h-full', className)}>{children}</div>;
+  }
+
   return (
     <motion.div
       variants={containerVariants}
@@ -63,6 +69,12 @@ interface AnimatedItemProps {
 }
 
 export function AnimatedItem({ children, className }: AnimatedItemProps) {
+  const prefersReducedMotion = useReducedMotion();
+
+  if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
   return (
     <motion.div variants={itemVariants} className={className}>
       {children}
@@ -81,6 +93,12 @@ interface AnimatedListProps {
 }
 
 export function AnimatedList({ children, className, staggerDelay = 0.04 }: AnimatedListProps) {
+  const prefersReducedMotion = useReducedMotion();
+
+  if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
   return (
     <motion.div
       variants={{

@@ -2833,7 +2833,7 @@ export default function GolfStatsDisplay({
 
         {/* Category Pills with enhanced animation */}
         <motion.div
-          className="flex gap-2 overflow-x-auto pb-4 mb-4 -mx-4 px-4 scrollbar-hide"
+          className="pills-scroll pb-4 mb-4 -mx-4 px-4"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}

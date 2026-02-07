@@ -598,7 +598,7 @@ function HoleNavigationDots({
   return (
     <div
       ref={containerRef}
-      className="flex gap-2 px-4 py-3 bg-slate-800 overflow-x-auto scrollbar-hide"
+      className="pills-scroll px-4 py-3 bg-slate-800"
     >
       {holes.map((hole, index) => {
         const isActive = index === currentHoleIndex;

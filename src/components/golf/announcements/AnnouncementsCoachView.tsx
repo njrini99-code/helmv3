@@ -124,7 +124,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-sm font-semibold text-slate-900 truncate">{ann.title}</h3>
               {isRecent && (
-                <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-green-50 text-green-600 flex-shrink-0">
+                <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-600 flex-shrink-0">
                   New
                 </span>
               )}
@@ -132,16 +132,16 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
             <p className="text-sm text-slate-500 line-clamp-2">{ann.body}</p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <span className="text-xs text-slate-400">{publishedDate}</span>
-              <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider', urgencyBadge.bg, urgencyBadge.text)}>
+              <span className={cn('px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider', urgencyBadge.bg, urgencyBadge.text)}>
                 {ann.urgency}
               </span>
               {ann.recipient_count > 0 ? (
-                <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
                   <IconUsers size={10} />
                   {ann.recipient_count} players
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
                   <IconUsers size={10} />
                   All team
                 </span>
@@ -150,13 +150,13 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                 <AcknowledgementPill count={ann.acknowledged_count} total={ann.total_recipients} />
               )}
               {ann.document_count > 0 && (
-                <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
                   <IconFile size={10} />
                   {ann.document_count} doc{ann.document_count !== 1 ? 's' : ''}
                 </span>
               )}
               {ann.task_count > 0 && (
-                <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
                   <IconCheck size={10} />
                   {ann.completed_task_count}/{ann.task_count} tasks
                 </span>
@@ -242,7 +242,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                       <span
                                         key={a.player_id}
                                         className={cn(
-                                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium',
+                                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium',
                                           a.status === 'completed'
                                             ? 'bg-green-50 text-green-700'
                                             : 'bg-slate-100 text-slate-500'
@@ -289,7 +289,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                   <span className="text-xs text-slate-600 flex-1">
                                     {player ? `${player.first_name || ''} ${player.last_name || ''}` : 'Player'}
                                   </span>
-                                  <span className="text-[10px] text-slate-400">
+                                  <span className="text-xs text-slate-400">
                                     {new Date(ack.acknowledged_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                   </span>
                                 </div>

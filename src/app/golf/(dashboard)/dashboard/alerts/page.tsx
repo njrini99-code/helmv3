@@ -12,7 +12,9 @@ import {
   IconRefresh,
   IconSparkles,
   IconChevronLeft,
+  IconMenu,
 } from '@/components/icons';
+import { useSidebar } from '@/contexts/sidebar-context';
 import { GlassCard } from '@/components/ui/glass-card';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { AlertCard, type CoachAlert, type AlertLevel } from '@/components/golf/coachhelm/alerts';
@@ -29,6 +31,7 @@ import { containerVariants, itemVariants } from '@/components/golf/dashboard/pre
 type FilterLevel = AlertLevel | 'all';
 
 export default function AlertsPage() {
+  const { toggleMobile } = useSidebar();
   const router = useRouter();
   const golfUser = useGolfUser();
   const [isPending, startTransition] = useTransition();
@@ -201,7 +204,34 @@ export default function AlertsPage() {
   };
 
   if (isLoading) {
-    return null;
+    return (
+      <div className="min-h-full bg-transparent">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="h-8 w-8 skeleton-sweep rounded-lg" />
+            <div>
+              <div className="h-6 w-36 skeleton-sweep rounded-lg" />
+              <div className="h-3 w-56 skeleton-sweep rounded mt-2" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-8 w-20 skeleton-sweep rounded-full" />
+            ))}
+          </div>
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white/70 rounded-2xl border border-white/20 p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-3 w-3 skeleton-sweep rounded-full" />
+                <div className="h-4 w-40 skeleton-sweep rounded" />
+              </div>
+              <div className="h-3 w-full skeleton-sweep rounded" />
+              <div className="h-3 w-2/3 skeleton-sweep rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -218,12 +248,24 @@ export default function AlertsPage() {
         'border-b border-white/30',
         'shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
       )}>
-        <div className="max-w-4xl mx-auto px-6 py-5">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
+                onClick={toggleMobile}
+                className={cn(
+                  'lg:hidden p-2.5 -ml-2 rounded-xl',
+                  'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                  'transition-colors duration-150 active:scale-95',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+                )}
+                aria-label="Open navigation menu"
+              >
+                <IconMenu size={22} />
+              </button>
+              <button
                 onClick={() => router.back()}
-                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/50 transition-colors"
+                className="hidden lg:block p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/50 transition-colors"
               >
                 <IconChevronLeft size={20} />
               </button>
@@ -270,7 +312,7 @@ export default function AlertsPage() {
       </motion.div>
 
       {/* Main Content */}
-      <motion.div variants={itemVariants} className="max-w-4xl mx-auto px-6 py-8">
+      <motion.div variants={itemVariants} className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Error Banner */}
         <AnimatePresence>
           {error && (
@@ -293,13 +335,13 @@ export default function AlertsPage() {
           {/* Level Filters */}
           <div className="flex items-center gap-2">
             <IconFilter size={16} className="text-slate-400" />
-            <div className="flex gap-1 p-1 bg-white/60 backdrop-blur-sm rounded-xl border border-white/30">
+            <div className="flex gap-1 p-1 bg-white/60 backdrop-blur-sm rounded-xl border border-white/30 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-nowrap snap-x snap-mandatory">
               {(['all', 'critical', 'warning', 'info', 'suggestion'] as FilterLevel[]).map((level) => (
                 <button
                   key={level}
                   onClick={() => setFilterLevel(level)}
                   className={cn(
-                    'px-3 py-1.5 text-sm font-medium rounded-lg transition-all',
+                    'px-3 py-1.5 text-sm font-medium rounded-lg transition-all flex-shrink-0 snap-center',
                     filterLevel === level
                       ? 'bg-white text-slate-900 shadow-sm'
                       : 'text-slate-500 hover:text-slate-700'

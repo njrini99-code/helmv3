@@ -136,7 +136,7 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
                         <IconUsers size={16} className="text-primary-400 hidden sm:block" />
                         Team Invite Code
                     </h3>
-                    <p className="text-white/50 text-[10px] sm:text-xs">Share this code with players to join</p>
+                    <p className="text-white/50 text-xs sm:text-xs">Share this code with players to join</p>
                 </div>
                 <motion.button
                     onClick={handleCopy}

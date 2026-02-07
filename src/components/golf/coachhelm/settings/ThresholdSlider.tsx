@@ -78,7 +78,7 @@ export function ThresholdSlider({
             {/* Marks */}
             <div className="flex justify-between px-1">
                 {marks.map((mark) => (
-                    <span key={mark} className="text-[10px] text-slate-400">
+                    <span key={mark} className="text-xs text-slate-400">
                         {mark}
                     </span>
                 ))}

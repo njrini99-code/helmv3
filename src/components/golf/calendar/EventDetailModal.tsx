@@ -677,7 +677,7 @@ export function EventDetailModal({
                           <img src={player.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
                         ) : (
                           <div className={cn(
-                            'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold',
+                            'w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold',
                             isSelected ? 'bg-white/20 text-white' : 'bg-slate-300 text-slate-500'
                           )}>
                             {player.first_name[0]}{player.last_name[0]}

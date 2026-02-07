@@ -153,7 +153,7 @@ export function CoachHelmAnalyticsDashboard({
                   value={selectedRange}
                   onChange={(e) => handleDateRangeChange(e.target.value as DateRangeType)}
                   disabled={isPending}
-                  className="text-sm px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+                  className="text-base md:text-sm px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
                 >
                   {dateRanges.map((range) => (
                     <option key={range.id} value={range.id}>

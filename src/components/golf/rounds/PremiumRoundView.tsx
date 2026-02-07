@@ -367,7 +367,7 @@ function HoleCard({
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-slate-900">Par {hole.par}</span>
               <span className={cn(
-                'px-2 py-0.5 rounded-full text-[11px] font-semibold',
+                'px-2 py-0.5 rounded-full text-xs font-semibold',
                 styles.bg, styles.text
               )}>
                 {label}
@@ -462,7 +462,7 @@ function HoleCard({
                     </p>
                   </div>
                   <div className={cn(
-                    'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0',
+                    'px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider flex-shrink-0',
                     insight.severity === 'minor' ? 'bg-amber-200/60 text-amber-700' :
                     insight.severity === 'moderate' ? 'bg-orange-200/60 text-orange-700' :
                     'bg-red-200/60 text-red-700'
@@ -507,7 +507,7 @@ function HoleCard({
                 {/* Shot data detail if available */}
                 {shotData && shotData.shots && shotData.shots.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-current/10">
-                    <p className={cn('text-[11px] font-medium uppercase tracking-wider mb-2', severityColors[insight.severity].detail)}>
+                    <p className={cn('text-xs font-medium uppercase tracking-wider mb-2', severityColors[insight.severity].detail)}>
                       Shot sequence
                     </p>
                     <div className="flex flex-wrap gap-1.5">
@@ -517,7 +517,7 @@ function HoleCard({
                           <div
                             key={i}
                             className={cn(
-                              'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium',
+                              'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium',
                               isProblematic
                                 ? 'bg-white/80 text-red-600 ring-1 ring-red-200'
                                 : shot.result === 'hole' || shot.result === 'holed'
@@ -688,18 +688,18 @@ export function PremiumRoundView({
                 </div>
                 <div className="flex items-center gap-3 mt-2">
                   {roundType && (
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 capitalize">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 capitalize">
                       {roundType.replace(/_/g, ' ')}
                     </span>
                   )}
                   {courseRating && (
-                    <span className="text-[11px] text-slate-400">Rating: {courseRating}</span>
+                    <span className="text-xs text-slate-400">Rating: {courseRating}</span>
                   )}
                   {courseSlope && (
-                    <span className="text-[11px] text-slate-400">Slope: {courseSlope}</span>
+                    <span className="text-xs text-slate-400">Slope: {courseSlope}</span>
                   )}
                   {teesPlayed && (
-                    <span className="text-[11px] text-slate-400">Tees: {teesPlayed}</span>
+                    <span className="text-xs text-slate-400">Tees: {teesPlayed}</span>
                   )}
                 </div>
               </div>
@@ -735,7 +735,7 @@ export function PremiumRoundView({
                   : '--'}
               </p>
               {totalFairwaysHit !== null && totalFairways && totalFairways > 0 && (
-                <p className="text-[11px] text-slate-400">{Math.round((totalFairwaysHit / totalFairways) * 100)}%</p>
+                <p className="text-xs text-slate-400">{Math.round((totalFairwaysHit / totalFairways) * 100)}%</p>
               )}
             </div>
             <div>
@@ -746,7 +746,7 @@ export function PremiumRoundView({
                   : '--'}
               </p>
               {totalGir !== null && totalGirPossible && totalGirPossible > 0 && (
-                <p className="text-[11px] text-slate-400">{Math.round((totalGir / totalGirPossible) * 100)}%</p>
+                <p className="text-xs text-slate-400">{Math.round((totalGir / totalGirPossible) * 100)}%</p>
               )}
             </div>
             <div>

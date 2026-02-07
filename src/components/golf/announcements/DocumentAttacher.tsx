@@ -97,7 +97,7 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
                   <span className="text-xs font-medium text-slate-700 max-w-[140px] truncate">
                     {doc.title}
                   </span>
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-xs text-slate-400">
                     {formatFileSize(doc.file_size)}
                   </span>
                   <button
@@ -170,13 +170,13 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
                           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-50 text-left transition-colors"
                         >
                           <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', colors.bg)}>
-                            <span className={cn('text-[10px] font-bold', colors.text)}>
+                            <span className={cn('text-xs font-bold', colors.text)}>
                               {getFileIcon(doc.file_type)}
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-slate-700 truncate">{doc.title}</p>
-                            <p className="text-[11px] text-slate-400">{formatFileSize(doc.file_size)}</p>
+                            <p className="text-xs text-slate-400">{formatFileSize(doc.file_size)}</p>
                           </div>
                           <IconPlus size={14} className="text-slate-400 flex-shrink-0" />
                         </button>

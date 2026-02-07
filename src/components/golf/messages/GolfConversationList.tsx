@@ -50,7 +50,7 @@ export function GolfConversationList({
       </div>
 
       {/* Conversation List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" data-scroll-container>
         {conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
             <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
@@ -70,8 +70,8 @@ export function GolfConversationList({
                 key={conversation.id}
                 onClick={() => onSelect(conversation.id)}
                 className={cn(
-                  'w-full px-4 py-3 flex items-start gap-3 text-left transition-colors',
-                  'hover:bg-slate-50',
+                  'w-full px-4 py-3 flex items-start gap-3 text-left transition-all',
+                  'hover:bg-slate-50 active:scale-[0.98]',
                   selectedId === conversation.id && 'bg-green-50 hover:bg-green-50'
                 )}
               >
@@ -103,7 +103,7 @@ export function GolfConversationList({
                   </div>
                   <div className="flex items-center gap-1">
                     {conversation.other_participant?.type === 'coach' && (
-                      <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-medium rounded flex-shrink-0">
+                      <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded flex-shrink-0">
                         Coach
                       </span>
                     )}

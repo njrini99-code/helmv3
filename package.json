@@ -79,6 +79,7 @@
     "topojson-client": "^3.1.0",
     "typescript": "^5.9.3",
     "us-atlas": "^3.0.1",
+    "vaul": "^1.1.2",
     "zod": "^4.2.1",
     "zustand": "^5.0.9"
   },

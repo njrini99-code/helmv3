@@ -133,12 +133,12 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-sm font-semibold text-slate-900 truncate">{ann.title}</h3>
             {isRecent && (
-              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-green-50 text-green-600 flex-shrink-0">
+              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-600 flex-shrink-0">
                 New
               </span>
             )}
             {needsAck && (
-              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-600 flex-shrink-0">
+              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-amber-50 text-amber-600 flex-shrink-0">
                 Needs Acknowledgement
               </span>
             )}
@@ -146,23 +146,23 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
           <p className="text-sm text-slate-500 line-clamp-2">{ann.body}</p>
           <div className="flex items-center gap-3 mt-2 flex-wrap">
             <span className="text-xs text-slate-400">{publishedDate}</span>
-            <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider', urgencyBadge.bg, urgencyBadge.text)}>
+            <span className={cn('px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider', urgencyBadge.bg, urgencyBadge.text)}>
               {ann.urgency}
             </span>
             {ann.document_count > 0 && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+              <span className="inline-flex items-center gap-1 text-xs text-slate-500">
                 <IconFile size={10} />
                 {ann.document_count} doc{ann.document_count !== 1 ? 's' : ''}
               </span>
             )}
             {ann.task_count > 0 && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+              <span className="inline-flex items-center gap-1 text-xs text-slate-500">
                 <IconCheck size={10} />
                 Tasks
               </span>
             )}
             {hasAcknowledged && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-green-600 font-medium">
+              <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
                 <IconCheck size={10} />
                 Acknowledged
               </span>
@@ -216,7 +216,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-slate-700 truncate">{d.document?.title || 'Document'}</p>
-                              <p className="text-[11px] text-slate-400">
+                              <p className="text-xs text-slate-400">
                                 {d.document?.file_type || 'File'}
                                 {d.document?.file_size ? ` - ${(d.document.file_size / 1024).toFixed(1)} KB` : ''}
                               </p>

@@ -158,7 +158,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
                       )}
                     </div>
                     {task.priority && task.priority !== 'normal' && (
-                      <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded uppercase tracking-wider flex-shrink-0 ${
+                      <span className={`px-1.5 py-0.5 text-xs font-semibold rounded uppercase tracking-wider flex-shrink-0 ${
                         task.priority === 'high' || task.priority === 'urgent'
                           ? 'bg-red-50 text-red-600'
                           : 'bg-slate-100 text-slate-500'

@@ -161,7 +161,7 @@ export function MobileCalendarListView({
                   )}
                 </div>
                 {group.isToday && group.events.length > 0 && (
-                  <span className="ml-auto px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-green-100 text-green-700 rounded-md">
+                  <span className="ml-auto px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide bg-green-100 text-green-700 rounded-md">
                     {group.events.length} event{group.events.length !== 1 ? 's' : ''}
                   </span>
                 )}

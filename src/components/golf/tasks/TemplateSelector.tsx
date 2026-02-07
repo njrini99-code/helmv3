@@ -355,7 +355,7 @@ export function TemplateSelector({
                           {template.name}
                         </span>
                         {template.is_active && (
-                          <span className="text-[10px] px-1 py-0.5 rounded bg-brand-50 text-brand-600 flex-shrink-0">
+                          <span className="text-xs px-1 py-0.5 rounded bg-brand-50 text-brand-600 flex-shrink-0">
                             Active
                           </span>
                         )}
@@ -365,7 +365,7 @@ export function TemplateSelector({
                         {template.category && (
                           <span
                             className={cn(
-                              'inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded',
+                              'inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded',
                               getCategoryColor(template.category)
                             )}
                           >
@@ -373,7 +373,7 @@ export function TemplateSelector({
                           </span>
                         )}
                         {template.default_due_days && (
-                          <span className="text-[10px] text-gray-400">
+                          <span className="text-xs text-gray-400">
                             {template.default_due_days}d
                           </span>
                         )}
@@ -396,7 +396,7 @@ export function TemplateSelector({
 
           {/* Footer hint */}
           <div className="px-3 py-2 border-t border-gray-100 bg-gray-50">
-            <p className="text-[10px] text-gray-500 flex items-center gap-2">
+            <p className="text-xs text-gray-500 flex items-center gap-2">
               <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-gray-600">
                 ↑↓
               </kbd>

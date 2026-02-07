@@ -7,8 +7,10 @@ import {
   IconFolder, IconFolderPlus, IconDownload, IconTrash, IconUpload, IconX,
   IconSearch, IconEdit, IconClock, IconEye, IconLayers, IconPlus,
   IconFile, IconFileText, IconImage, IconVideo, IconFileSpreadsheet,
-  IconCheck, IconMoreVertical,
+  IconCheck, IconMoreVertical, IconMenu,
 } from '@/components/icons';
+import { useSidebar } from '@/contexts/sidebar-context';
+import { cn } from '@/lib/utils';
 import {
   uploadGolfDocument,
   createGolfDocument,
@@ -118,6 +120,7 @@ interface PendingFile {
 
 export function DocumentsClient({ documents: initialDocuments, coachId, teamId, isCoach }: DocumentsClientProps) {
   const router = useRouter();
+  const { toggleMobile } = useSidebar();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState(initialDocuments);
 
@@ -483,14 +486,28 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Documents</h1>
-            <p className="text-slate-500 mt-1">
-              {documents.length} file{documents.length !== 1 ? 's' : ''} {folders.length > 0 ? `across ${folders.length} folder${folders.length !== 1 ? 's' : ''}` : ''}
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-8">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleMobile}
+              className={cn(
+                'lg:hidden p-2.5 -ml-2 rounded-xl',
+                'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                'transition-colors duration-150 active:scale-95',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+              )}
+              aria-label="Open navigation menu"
+            >
+              <IconMenu size={22} />
+            </button>
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900">Documents</h1>
+              <p className="text-slate-500 mt-1">
+                {documents.length} file{documents.length !== 1 ? 's' : ''} {folders.length > 0 ? `across ${folders.length} folder${folders.length !== 1 ? 's' : ''}` : ''}
+              </p>
+            </div>
           </div>
           {isCoach && (
             <div className="flex items-center gap-2">
@@ -546,6 +563,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   onChange={(e) => setNewFolderName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && newFolderName.trim() && handleCreateFolder()}
                   placeholder="e.g. Practice Plans"
+                  enterKeyHint="done"
+                  autoComplete="off"
                   className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500"
                   autoFocus
                 />
@@ -574,7 +593,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
         {/* Folder Navigation */}
         {(folders.length > 0 || currentFolder !== null) && (
-          <div className="flex items-center gap-2 mb-6 overflow-x-auto scrollbar-hide pb-1">
+          <div className="pills-scroll mb-6 pb-1">
             <button
               onClick={() => setCurrentFolder(null)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
@@ -608,7 +627,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               >
                 <IconFolder size={12} />
                 {folder}
-                <span className="text-[10px] opacity-60">
+                <span className="text-xs opacity-60">
                   ({documents.filter(d => d.folder === folder).length})
                 </span>
               </button>
@@ -619,7 +638,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         {/* Category Quick Filters & Search */}
         {documents.length > 0 && (
           <div className="space-y-4 mb-6">
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+            <div className="pills-scroll pb-1">
               <button
                 onClick={() => setCategoryFilter('')}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
@@ -652,10 +671,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             <div className="relative">
               <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
-                type="text"
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search documents..."
+                enterKeyHint="search"
+                autoComplete="off"
                 className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200/60 focus:ring-2 focus:ring-green-600/20 focus:border-green-500 text-slate-900 placeholder:text-slate-400 bg-white/60 backdrop-blur-sm transition-all"
               />
               {searchQuery && (
@@ -673,7 +694,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         {/* Content */}
         {documents.length === 0 ? (
           <div
-            className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-16 text-center"
+            className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-8 md:p-16 text-center"
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
           >
@@ -700,7 +721,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             </div>
           </div>
         ) : filteredDocuments.length === 0 ? (
-          <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-12 text-center">
+          <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-8 md:p-12 text-center">
             <ShineEffect />
             <div className="relative">
               <IconSearch size={36} className="mx-auto text-slate-300 mb-4" />
@@ -719,7 +740,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="group relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden hover:shadow-md hover:bg-white/80 transition-all duration-200 cursor-pointer"
+                className="group relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden hover:shadow-md hover:bg-white/80 transition-all duration-200 cursor-pointer active:scale-[0.98]"
                 onClick={() => openPreview(doc)}
               >
                 {/* Color accent bar */}
@@ -742,7 +763,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                     <div className="flex items-center gap-1">
                       {/* Version badge */}
                       {doc.version_count && doc.version_count > 1 && (
-                        <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-slate-100 text-slate-600 flex items-center gap-0.5">
+                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 text-slate-600 flex items-center gap-0.5">
                           <IconLayers size={10} />
                           v{doc.version_count}
                         </span>
@@ -821,21 +842,21 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
                   {/* Tags */}
                   <div className="flex flex-wrap items-center gap-1.5 mb-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-md ${getFileTypeColor(doc.file_type)}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md ${getFileTypeColor(doc.file_type)}`}>
                       {getFileTypeLabel(doc.file_type)}
                     </span>
                     {doc.category && (
-                      <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-md bg-green-50 text-green-700">
+                      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-green-50 text-green-700">
                         {doc.category}
                       </span>
                     )}
                     {doc.folder && (
-                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-medium rounded-md bg-slate-100 text-slate-600">
+                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-medium rounded-md bg-slate-100 text-slate-600">
                         <IconFolder size={9} /> {doc.folder}
                       </span>
                     )}
                     {isCoach && doc.is_public === false && (
-                      <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-md bg-amber-50 text-amber-700">
+                      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-amber-50 text-amber-700">
                         Coach only
                       </span>
                     )}
@@ -843,7 +864,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
                   {/* Footer */}
                   <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                    <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-3 text-xs text-slate-400">
                       <span>{formatFileSize(doc.file_size)}</span>
                       <span>{timeAgo(doc.created_at)}</span>
                     </div>
@@ -927,7 +948,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                           className="w-full bg-transparent text-sm font-medium text-slate-900 border-b border-transparent focus:border-green-500 focus:outline-none px-0 py-0.5"
                           placeholder="Document title"
                         />
-                        <p className="text-[10px] text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-400 mt-0.5">
                           {pf.file.name} &middot; {formatFileSize(pf.file.size)}
                         </p>
                       </div>
@@ -1041,7 +1062,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   type="text"
                   value={editForm.title}
                   onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500"
+                  className="w-full px-3 py-2 text-base md:text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500"
                 />
               </div>
 

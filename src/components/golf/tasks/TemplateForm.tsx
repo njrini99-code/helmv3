@@ -148,7 +148,7 @@ export function TemplateForm({
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Tournament Prep Checklist"
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
           />
           <p className="mt-1 text-xs text-gray-500">
             A descriptive name to identify this template
@@ -166,7 +166,7 @@ export function TemplateForm({
             placeholder="Brief description of when to use this template and what it's for..."
             rows={3}
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 resize-none disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 resize-none disabled:opacity-50"
           />
         </div>
 
@@ -179,7 +179,7 @@ export function TemplateForm({
             value={category}
             onChange={(e) => setCategory(e.target.value as TaskCategory)}
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
           >
             <option value="">Select category...</option>
             {CATEGORIES.map((cat) => (
@@ -239,7 +239,7 @@ export function TemplateForm({
             }
             placeholder="e.g., 7"
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
           />
           <p className="mt-1 text-xs text-gray-500">
             Leave empty to set manually when creating tasks

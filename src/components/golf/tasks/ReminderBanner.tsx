@@ -295,7 +295,7 @@ export function ReminderIndicator({
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
       </svg>
       {count > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-brand-600 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
+        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-brand-600 text-white text-xs font-medium rounded-full flex items-center justify-center">
           {count > 9 ? '9+' : count}
         </span>
       )}

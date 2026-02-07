@@ -208,7 +208,7 @@ export function GolfChatWindow({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" data-scroll-container>
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
@@ -299,14 +299,16 @@ export function GolfChatWindow({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1 px-4 py-2 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40"
+            enterKeyHint="send"
+            autoComplete="off"
+            className="flex-1 px-4 py-2 border border-slate-200 rounded-full text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40"
             disabled={sending}
           />
           <Button
             type="submit"
             size="sm"
             disabled={!canSend}
-            className="rounded-full w-10 h-10 p-0"
+            className="rounded-full w-10 h-10 p-0 active:scale-[0.98] transition-transform"
           >
             {sending ? (
               <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />

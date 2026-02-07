@@ -411,7 +411,7 @@ export default function RoundReviewPage() {
       </motion.div>
 
       {/* Bottom actions */}
-      <motion.div variants={itemVariants} className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent lg:relative lg:bg-none lg:p-0 lg:mt-6">
+      <motion.div variants={itemVariants} className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-white via-white to-transparent lg:relative lg:bg-none lg:p-0 lg:pb-0 lg:mt-6">
         <div className="max-w-2xl mx-auto flex gap-3">
           <Link
             href={`/golf/dashboard/rounds/${roundId}`}

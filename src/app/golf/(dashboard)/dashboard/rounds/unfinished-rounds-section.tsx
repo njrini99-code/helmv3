@@ -76,7 +76,7 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
                       <span className="text-2xl font-bold text-amber-600">
                         {round.current_hole || 1}
                       </span>
-                      <span className="text-[10px] font-medium text-amber-500">
+                      <span className="text-xs font-medium text-amber-500">
                         of {round.holes_played || 18}
                       </span>
                     </div>

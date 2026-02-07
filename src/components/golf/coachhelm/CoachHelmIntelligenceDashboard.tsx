@@ -381,25 +381,25 @@ function InsightCard({
               {/* Header row */}
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className={cn(
-                  'inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full',
+                  'inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-full',
                   config.badge
                 )}>
                   {config.icon}
                   {insight.priority}
                 </span>
                 {insight.matchesCoachPriority && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-primary-500 text-white">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-full bg-primary-500 text-white">
                     <IconTarget size={12} />
                     Your Priority
                   </span>
                 )}
                 {insight.strokeImpact && insight.strokeImpact > 0 && (
-                  <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium text-warm-600 bg-warm-100/80 rounded-full">
+                  <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-warm-600 bg-warm-100/80 rounded-full">
                     {insight.strokeImpact.toFixed(1)} strokes/round
                   </span>
                 )}
                 {insight.philosophyScore !== undefined && insight.philosophyScore > 70 && (
-                  <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium text-primary-700 bg-primary-50/80 rounded-full">
+                  <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-primary-700 bg-primary-50/80 rounded-full">
                     Score: {insight.philosophyScore}
                   </span>
                 )}
@@ -521,7 +521,7 @@ function PlayerSummaryCard({ summary, index = 0 }: { summary: TeamInsightSummary
             <div className="flex items-start justify-between mb-1">
               <h4 className="font-semibold text-warm-900 truncate">{summary.playerName}</h4>
               <span className={cn(
-                'inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full',
+                'inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full',
                 config.bg,
                 config.color
               )}>
@@ -620,14 +620,14 @@ function CorrelationCard({ correlation, index = 0 }: { correlation: CorrelationD
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className={cn(
-                'px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full',
+                'px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-full',
                 strengthColor === 'primary' && 'bg-primary-100 text-primary-700',
                 strengthColor === 'amber' && 'bg-amber-100 text-amber-700',
                 strengthColor === 'warm' && 'bg-warm-100 text-warm-600'
               )}>
                 {strengthLabel}
               </span>
-              <span className="text-[10px] text-warm-400">
+              <span className="text-xs text-warm-400">
                 {isPositive ? 'Positive' : 'Negative'} correlation
               </span>
             </div>
@@ -645,13 +645,13 @@ function CorrelationCard({ correlation, index = 0 }: { correlation: CorrelationD
               {correlation.metrics.slice(0, 3).map((metric) => (
                 <span
                   key={metric}
-                  className="px-2 py-0.5 text-[10px] font-medium text-warm-600 bg-warm-100/80 rounded-md"
+                  className="px-2 py-0.5 text-xs font-medium text-warm-600 bg-warm-100/80 rounded-md"
                 >
                   {metric}
                 </span>
               ))}
               {correlation.metrics.length > 3 && (
-                <span className="px-2 py-0.5 text-[10px] font-medium text-warm-400">
+                <span className="px-2 py-0.5 text-xs font-medium text-warm-400">
                   +{correlation.metrics.length - 3} more
                 </span>
               )}

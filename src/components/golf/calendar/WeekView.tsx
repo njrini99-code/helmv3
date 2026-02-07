@@ -284,7 +284,7 @@ export function WeekView({
                 )}
               >
                 <p className={cn(
-                  'text-[11px] font-semibold uppercase tracking-wider',
+                  'text-xs font-semibold uppercase tracking-wider',
                   isCurrentDay ? 'text-green-600' : 'text-stone-400'
                 )}>
                   {dayName}
@@ -324,7 +324,7 @@ export function WeekView({
                       borderBottom: '1px solid rgba(214, 211, 209, 0.08)',
                     }}
                   >
-                    <span className="text-[11px] font-medium text-stone-350 tabular-nums" style={{ color: 'rgba(120, 113, 108, 0.7)' }}>
+                    <span className="text-xs font-medium text-stone-350 tabular-nums" style={{ color: 'rgba(120, 113, 108, 0.7)' }}>
                       {hour === 0
                         ? '12 AM'
                         : hour < 12
@@ -407,7 +407,7 @@ export function WeekView({
                       >
                         <div className="px-2 py-1 h-full">
                           <p
-                            className="text-[10px] font-medium truncate"
+                            className="text-xs font-medium truncate"
                             style={{ color: textColor }}
                           >
                             {period.title || (isClass ? 'Class' : 'Busy')}

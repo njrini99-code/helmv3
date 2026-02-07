@@ -96,12 +96,12 @@ export default async function TeamStatsPage() {
     return (
       <div className="min-h-full">
         <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Team Stats Overview</h1>
             <p className="text-slate-500 mt-0.5">{team?.name || 'Your Team'}</p>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-6 py-16 text-center">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-16 text-center">
           <p className="text-slate-500">No players on your roster yet.</p>
         </div>
       </div>
@@ -245,7 +245,7 @@ export default async function TeamStatsPage() {
       {/* Header */}
       <AnimatedItem>
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-5">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Team Stats Overview</h1>
@@ -260,7 +260,7 @@ export default async function TeamStatsPage() {
 
       {/* Table */}
       <AnimatedItem>
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         <TeamStatsTable players={playersWithStats} />
       </div>
       </AnimatedItem>

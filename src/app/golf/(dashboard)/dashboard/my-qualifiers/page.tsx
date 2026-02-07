@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import Link from 'next/link';
 import { getPlayerQualifiers, type PlayerQualifierInfo } from '@/app/golf/actions/golf';
-import { IconTrophy, IconChevronRight, IconCalendar, IconMapPin, IconGolf } from '@/components/icons';
+import { IconTrophy, IconChevronRight, IconCalendar, IconMapPin, IconGolf, IconMenu } from '@/components/icons';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { useSidebar } from '@/contexts/sidebar-context';
+import { cn } from '@/lib/utils';
 
 export default function MyQualifiersPage() {
+  const { toggleMobile } = useSidebar();
   const router = useRouter();
   const [qualifiers, setQualifiers] = useState<PlayerQualifierInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,9 +64,21 @@ export default function MyQualifiersPage() {
 
   return (
     <AnimatedPage className="min-h-full bg-transparent">
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Header */}
         <AnimatedItem className="flex items-center gap-3 mb-8">
+          <button
+            onClick={toggleMobile}
+            className={cn(
+              'lg:hidden p-2.5 -ml-2 rounded-xl',
+              'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+              'transition-colors duration-150 active:scale-95',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+            )}
+            aria-label="Open navigation menu"
+          >
+            <IconMenu size={22} />
+          </button>
           <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
             <IconTrophy size={20} className="text-amber-600" />
           </div>
@@ -80,7 +95,7 @@ export default function MyQualifiersPage() {
             <p className="text-red-600">{error}</p>
           </div>
         ) : qualifiers.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-12 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-12 text-center">
             <ShineEffect />
             <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <IconTrophy size={32} className="text-slate-400" />
@@ -91,7 +106,7 @@ export default function MyQualifiersPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 mobile-stagger">
             {qualifiers.map(qualifier => {
               const statusBadge = getStatusBadge(qualifier.status, qualifier.roundsCompleted, qualifier.numRounds);
               const canEnterRounds = qualifier.status !== 'completed' && qualifier.roundsCompleted < qualifier.numRounds;

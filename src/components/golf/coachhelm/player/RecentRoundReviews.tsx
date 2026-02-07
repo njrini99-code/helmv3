@@ -79,7 +79,7 @@ function RoundReviewCard({
             {round.score}
           </span>
           <span className={cn(
-            'text-[10px] font-medium',
+            'text-xs font-medium',
             isUnderPar ? 'text-green-500' :
             isOverPar ? 'text-amber-500' :
             'text-slate-400'

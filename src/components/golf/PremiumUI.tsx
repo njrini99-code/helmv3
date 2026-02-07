@@ -130,7 +130,7 @@ export function MetricCard({
             <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{value}</p>
             {trend && (
               <span className={cn(
-                'flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
+                'flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-full',
                 trend.positive 
                   ? 'text-emerald-700 bg-emerald-50' 
                   : 'text-red-600 bg-red-50'
@@ -149,7 +149,7 @@ export function MetricCard({
             )}
           </div>
           {subValue && (
-            <p className="text-[11px] text-slate-400 mt-0.5">{subValue}</p>
+            <p className="text-xs text-slate-400 mt-0.5">{subValue}</p>
           )}
         </div>
         {icon && (
@@ -235,7 +235,7 @@ export function DataTable<T extends { id: string }>({
                 <th 
                   key={col.key}
                   className={cn(
-                    'px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider',
+                    'px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider',
                     col.align === 'center' && 'text-center',
                     col.align === 'right' && 'text-right'
                   )}
@@ -426,7 +426,7 @@ export function ListCard({ avatar, title, subtitle, value, valueLabel, badge, on
         <div className="flex items-center gap-2">
           <p className="font-medium text-sm text-slate-900 truncate">{title}</p>
           {badge && (
-            <span className={cn('px-1.5 py-0.5 text-[10px] font-medium rounded', badge.color)}>
+            <span className={cn('px-1.5 py-0.5 text-xs font-medium rounded', badge.color)}>
               {badge.label}
             </span>
           )}
@@ -441,7 +441,7 @@ export function ListCard({ avatar, title, subtitle, value, valueLabel, badge, on
             <p className="font-semibold text-sm text-slate-900 tabular-nums">{value}</p>
           )}
           {valueLabel && (
-            <p className="text-[10px] text-slate-400">{valueLabel}</p>
+            <p className="text-xs text-slate-400">{valueLabel}</p>
           )}
         </div>
       )}
@@ -550,7 +550,7 @@ export function ScoreBadge({ score, toPar, size = 'md' }: ScoreBadgeProps) {
         {score}
       </span>
       <span className={cn(
-        'text-[10px] font-medium mt-0.5',
+        'text-xs font-medium mt-0.5',
         toPar < 0 ? 'text-emerald-500' : toPar === 0 ? 'text-slate-500' : 'text-amber-500'
       )}>
         {toPar > 0 ? '+' : ''}{toPar}

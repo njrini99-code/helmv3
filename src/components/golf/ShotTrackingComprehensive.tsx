@@ -1187,7 +1187,7 @@ export default function ShotTrackingComprehensive({
           <div className="flex items-center gap-2">
             {/* Mobile auto-save indicator */}
             {onAutoSave && autoSaveStatus !== 'idle' && (
-              <span className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded transition-all ${
+              <span className={`flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded transition-all ${
                 autoSaveStatus === 'saving' ? 'text-amber-300 bg-amber-900/30' :
                 autoSaveStatus === 'saved' ? 'text-emerald-300 bg-emerald-900/30' :
                 'text-red-300 bg-red-900/30'
@@ -1259,7 +1259,7 @@ export default function ShotTrackingComprehensive({
                     {hasScore ? hole.score : '-'}
                   </div>
                   {canNavigate && !isCurrent && (
-                    <div className="text-[10px] text-slate-400 mt-0.5">✎ Edit</div>
+                    <div className="text-xs text-slate-400 mt-0.5">✎ Edit</div>
                   )}
                 </button>
               );
@@ -1308,7 +1308,7 @@ export default function ShotTrackingComprehensive({
                     {hasScore ? hole.score : '-'}
                   </div>
                   {canNavigate && !isCurrent && (
-                    <div className="text-[10px] text-slate-400 mt-0.5">✎ Edit</div>
+                    <div className="text-xs text-slate-400 mt-0.5">✎ Edit</div>
                   )}
                 </button>
               );
@@ -1524,7 +1524,7 @@ export default function ShotTrackingComprehensive({
                             : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-slate-100'}`}>
                         {formatLieLabel(r)}
                         {r === 'green' && (
-                          <span className={`block text-[10px] font-normal leading-tight ${
+                          <span className={`block text-xs font-normal leading-tight ${
                             resultOfShot === r ? 'text-emerald-100' : 'text-slate-400'
                           }`}>(putting surface, not fringe)</span>
                         )}
@@ -1686,11 +1686,11 @@ export default function ShotTrackingComprehensive({
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hole {currentHole.number}</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hole {currentHole.number}</p>
                 <p className="text-lg font-bold text-slate-800">Par {currentHole.par}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shot</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Shot</p>
                 <p className="text-lg font-bold text-emerald-600">{currentShot}</p>
               </div>
             </div>
@@ -1865,7 +1865,7 @@ export default function ShotTrackingComprehensive({
                           setSelectedShotNumber(shot.shotNumber);
                           handleEditShot(shot);
                         }}
-                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded text-[11px] transition-all ${
+                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded text-xs transition-all ${
                           isSelected
                             ? 'bg-emerald-100 ring-1 ring-emerald-400'
                             : shot.isPenalty
@@ -2063,7 +2063,7 @@ export default function ShotTrackingComprehensive({
                             >
                               {lieLabel}
                               {lie === 'green' && (
-                                <span className={`block text-[10px] font-normal leading-tight ${editFormData.lieBefore === 'green' ? 'text-emerald-100' : 'text-slate-400'}`}>(putting surface)</span>
+                                <span className={`block text-xs font-normal leading-tight ${editFormData.lieBefore === 'green' ? 'text-emerald-100' : 'text-slate-400'}`}>(putting surface)</span>
                               )}
                             </button>);
                           })}
@@ -2124,7 +2124,7 @@ export default function ShotTrackingComprehensive({
                             >
                               {resultLabel}
                               {r === 'green' && (
-                                <span className={`block text-[10px] font-normal leading-tight ${editFormData.result === 'green' ? 'text-emerald-100' : 'text-slate-400'}`}>(putting surface, not fringe)</span>
+                                <span className={`block text-xs font-normal leading-tight ${editFormData.result === 'green' ? 'text-emerald-100' : 'text-slate-400'}`}>(putting surface, not fringe)</span>
                               )}
                             </button>);
                           })}

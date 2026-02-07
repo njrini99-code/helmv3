@@ -113,7 +113,7 @@ function ReviewSummaryCard({ review, onUpdateSummary }: ReviewSummaryCardProps) 
           <textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-warm-50 border border-warm-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+            className="w-full px-3 py-2 text-base md:text-sm bg-warm-50 border border-warm-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
             rows={3}
           />
         </div>
@@ -124,7 +124,7 @@ function ReviewSummaryCard({ review, onUpdateSummary }: ReviewSummaryCardProps) 
             type="text"
             value={takeaway}
             onChange={(e) => setTakeaway(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+            className="w-full px-3 py-2 text-base md:text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
           />
         </div>
 
@@ -135,7 +135,7 @@ function ReviewSummaryCard({ review, onUpdateSummary }: ReviewSummaryCardProps) 
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
             placeholder="What should they focus on in practice?"
-            className="w-full px-3 py-2 text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+            className="w-full px-3 py-2 text-base md:text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
           />
         </div>
       </div>
@@ -321,7 +321,7 @@ function CoachNotesSection({ notes, rating, onUpdate }: CoachNotesSectionProps) 
           value={localNotes}
           onChange={(e) => setLocalNotes(e.target.value)}
           placeholder="Add notes that will be visible to the player..."
-          className="w-full px-3 py-2 text-sm bg-warm-50 border border-warm-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+          className="w-full px-3 py-2 text-base md:text-sm bg-warm-50 border border-warm-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
           rows={4}
         />
       </div>
@@ -399,7 +399,7 @@ function CreateFocusAreaModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+              className="w-full px-3 py-2 text-base md:text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
             />
           </div>
 
@@ -408,7 +408,7 @@ function CreateFocusAreaModal({
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-warm-50 border border-warm-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+              className="w-full px-3 py-2 text-base md:text-sm bg-warm-50 border border-warm-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
               rows={3}
             />
           </div>
@@ -418,7 +418,7 @@ function CreateFocusAreaModal({
             <select
               value={areaType}
               onChange={(e) => setAreaType(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+              className="w-full px-3 py-2 text-base md:text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
             >
               <option value="general">General</option>
               <option value="putting">Putting</option>
@@ -440,7 +440,7 @@ function CreateFocusAreaModal({
                 value={targetMetric}
                 onChange={(e) => setTargetMetric(e.target.value)}
                 placeholder="e.g., GIR %"
-                className="w-full px-3 py-2 text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                className="w-full px-3 py-2 text-base md:text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
               />
             </div>
             <div>
@@ -452,7 +452,7 @@ function CreateFocusAreaModal({
                 value={targetValue}
                 onChange={(e) => setTargetValue(e.target.value)}
                 placeholder="e.g., 65"
-                className="w-full px-3 py-2 text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                className="w-full px-3 py-2 text-base md:text-sm bg-warm-50 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
                 step="0.1"
               />
             </div>

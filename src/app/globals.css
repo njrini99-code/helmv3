@@ -1728,12 +1728,31 @@
       border-radius: 4px;
     }
 
-    /* Prevent text selection on buttons */
+    /* Prevent text selection on buttons and UI chrome */
     button,
-    a {
+    a,
+    nav,
+    aside,
+    header,
+    footer,
+    [role="tablist"],
+    [role="toolbar"] {
       -webkit-tap-highlight-color: rgba(34, 197, 94, 0.1);
       -webkit-touch-callout: none;
+      -webkit-user-select: none;
       user-select: none;
+    }
+
+    /* Mobile blur reduction for glass surfaces - improves scroll performance */
+    .glass-subtle {
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .glass-standard,
+    .glass-prominent,
+    .glass-card {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
 
     /* Allow text selection in inputs */
@@ -1751,6 +1770,73 @@
         height: -webkit-fill-available;
       }
     }
+
+    /* ===== MOBILE ANIMATION POLISH ===== */
+
+    /* Pull-to-refresh visual polish */
+    .mobile-refresh-indicator {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 60;
+      pointer-events: none;
+    }
+
+    /* Smooth page entrance for mobile */
+    @keyframes mobile-slide-up {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .mobile-entrance {
+      animation: mobile-slide-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    /* Stagger children on mobile for lists */
+    .mobile-stagger > * {
+      animation: mobile-slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .mobile-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+    .mobile-stagger > *:nth-child(2) { animation-delay: 0.04s; }
+    .mobile-stagger > *:nth-child(3) { animation-delay: 0.06s; }
+    .mobile-stagger > *:nth-child(4) { animation-delay: 0.08s; }
+    .mobile-stagger > *:nth-child(5) { animation-delay: 0.10s; }
+    .mobile-stagger > *:nth-child(6) { animation-delay: 0.12s; }
+    .mobile-stagger > *:nth-child(7) { animation-delay: 0.14s; }
+    .mobile-stagger > *:nth-child(8) { animation-delay: 0.16s; }
+
+    /* Smooth skeleton pulse with gradient sweep */
+    @keyframes skeleton-sweep {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .skeleton-sweep {
+      background: linear-gradient(90deg,
+        rgba(226,232,240,0.3) 25%,
+        rgba(226,232,240,0.6) 50%,
+        rgba(226,232,240,0.3) 75%
+      );
+      background-size: 200% 100%;
+      animation: skeleton-sweep 1.8s ease-in-out infinite;
+    }
+  }
+
+  /* Skeleton sweep - global (loading states at all viewports) */
+  @keyframes skeleton-sweep-global {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .skeleton-sweep {
+    background: linear-gradient(90deg,
+      rgba(226,232,240,0.3) 25%,
+      rgba(226,232,240,0.6) 50%,
+      rgba(226,232,240,0.3) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-sweep-global 1.8s ease-in-out infinite;
   }
 
   /* Text gradient utility */
@@ -1766,6 +1852,23 @@
   .glow-field {
     box-shadow: 0 0 40px rgba(22, 101, 52, 0.2);
   }
+}
+
+/* Horizontal pill scroll utility for mobile */
+.pills-scroll {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 0.5rem;
+}
+.pills-scroll::-webkit-scrollbar {
+  display: none;
+}
+.pills-scroll > * {
+  scroll-snap-align: center;
+  flex-shrink: 0;
 }
 
 /* Smooth scroll - only on desktop; mobile native momentum is better */

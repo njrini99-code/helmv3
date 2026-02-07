@@ -297,7 +297,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                       <p className="text-xs font-medium text-slate-500">{stat.label}</p>
                       <p className="text-lg font-semibold text-slate-900 mt-0.5">{stat.value}</p>
                       <p className={cn(
-                        'text-[11px] font-medium mt-0.5',
+                        'text-xs font-medium mt-0.5',
                         stat.comparison === 'above' && 'text-green-600',
                         stat.comparison === 'below' && 'text-red-600',
                         stat.comparison === 'average' && 'text-slate-400',

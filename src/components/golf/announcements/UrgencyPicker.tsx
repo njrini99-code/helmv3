@@ -84,7 +84,7 @@ export function UrgencyPicker({ value, onChange }: UrgencyPickerProps) {
                   {opt.label}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 leading-tight">
+              <p className="text-xs text-slate-500 leading-tight">
                 {opt.description}
               </p>
             </motion.button>

@@ -17,6 +17,7 @@ import {
   IconActivity,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { MobileMenuButton } from '@/components/golf/layout/MobileMenuButton';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
@@ -108,8 +109,9 @@ export default async function MyDevelopmentPage() {
     <AnimatedPage className="min-h-full">
       <AnimatedItem>
         <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-          <div className="max-w-5xl mx-auto px-6 py-5">
+          <div className="max-w-5xl mx-auto px-4 md:px-6 py-5">
             <div className="flex items-center gap-3">
+              <MobileMenuButton />
               <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
                 <IconTarget size={20} className="text-green-600" />
               </div>
@@ -151,9 +153,9 @@ export default async function MyDevelopmentPage() {
       </AnimatedItem>
 
       <AnimatedItem>
-        <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {(focusAreas || []).length === 0 ? (
-          <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-16 text-center">
+          <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-8 md:p-16 text-center">
             <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={28} className="text-slate-400" />
@@ -175,7 +177,7 @@ export default async function MyDevelopmentPage() {
                     {activeAreas.length} {activeAreas.length === 1 ? 'area' : 'areas'}
                   </span>
                 </h2>
-                <div className="space-y-4">
+                <div className="space-y-4 mobile-stagger">
                   {activeAreas.map((fa) => {
                     const areaConfig = AREA_TYPES[fa.area_type || 'other'] ?? DEFAULT_AREA;
                     const progress = getProgressPercent(fa.current_value, fa.target_value);

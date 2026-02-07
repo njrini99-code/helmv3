@@ -270,7 +270,7 @@ export default async function RoundsPage() {
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-slate-900 tabular-nums">{roundStats.totalRounds}</p>
-                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">Rounds</p>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">Rounds</p>
                 </div>
               </div>
 
@@ -284,7 +284,7 @@ export default async function RoundsPage() {
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-slate-900 tabular-nums">{roundStats.avg.toFixed(1)}</p>
-                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">Avg Score</p>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">Avg Score</p>
                 </div>
               </div>
 
@@ -301,7 +301,7 @@ export default async function RoundsPage() {
                     'text-2xl font-bold tabular-nums',
                     roundStats.best < 72 ? 'text-green-600' : 'text-slate-900'
                   )}>{roundStats.best}</p>
-                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">Best Round</p>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">Best Round</p>
                 </div>
               </div>
 
@@ -329,7 +329,7 @@ export default async function RoundsPage() {
                       : '--'
                     }
                   </p>
-                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">Avg to Par</p>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">Avg to Par</p>
                 </div>
               </div>
 
@@ -340,7 +340,7 @@ export default async function RoundsPage() {
                   <div className="flex items-center gap-2 mb-2">
                     {roundStats.trend && (
                       <span className={cn(
-                        'text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                        'text-xs font-semibold px-2 py-0.5 rounded-full',
                         roundStats.trend === 'improving' ? 'text-green-700 bg-green-100' :
                         roundStats.trend === 'declining' ? 'text-red-600 bg-red-50' :
                         'text-slate-500 bg-slate-100'
@@ -354,7 +354,7 @@ export default async function RoundsPage() {
                   <p className="text-2xl font-bold tabular-nums text-slate-900">
                     {roundStats.underParPct}%
                   </p>
-                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">Under Par</p>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">Under Par</p>
                 </div>
               </div>
             </div>
@@ -409,7 +409,7 @@ export default async function RoundsPage() {
                       {monthYear}
                     </h2>
                     <div className="h-px flex-1 bg-slate-200/60" />
-                    <span className="text-[11px] font-medium text-slate-300">
+                    <span className="text-xs font-medium text-slate-300">
                       {monthRounds.length} round{monthRounds.length !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -472,7 +472,7 @@ export default async function RoundsPage() {
                                     </h3>
                                   )}
                                   <span className={cn(
-                                    'px-2 py-0.5 text-[10px] font-semibold rounded-full capitalize flex-shrink-0 border',
+                                    'px-2 py-0.5 text-xs font-semibold rounded-full capitalize flex-shrink-0 border',
                                     roundTypeMeta.bg, roundTypeMeta.text, roundTypeMeta.border
                                   )}>
                                     {roundTypeMeta.label}

@@ -127,7 +127,7 @@ function PlayerBracketCard({
             {entry.playerName}
           </p>
           {isOnBubble && (
-            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 rounded">
+            <span className="px-1.5 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 rounded">
               BUBBLE
             </span>
           )}

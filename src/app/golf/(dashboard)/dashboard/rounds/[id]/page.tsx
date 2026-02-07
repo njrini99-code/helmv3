@@ -146,7 +146,7 @@ export default async function RoundDetailPage({
   const playerAvatarUrl = roundData.player?.avatar_url || null;
 
   return (
-    <AnimatedPage className="p-6 max-w-5xl mx-auto">
+    <AnimatedPage className="p-4 md:p-6 max-w-5xl mx-auto">
       {/* Navigation */}
       <AnimatedItem>
       <div className="flex items-center justify-between mb-6">

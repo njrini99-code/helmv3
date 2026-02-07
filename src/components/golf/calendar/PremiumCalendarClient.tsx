@@ -575,8 +575,7 @@ export function PremiumCalendarClient({
 
             {/* Mobile Player Filter Chips */}
             {isMobile && showPlayerFilter && (
-              <div className="px-4 py-3 border-b border-white/20 overflow-x-auto scrollbar-hide">
-                <div className="flex gap-2">
+              <div className="pills-scroll px-4 py-3 border-b border-white/20">
                   <button
                     onClick={() => {
                       setSelectedPlayerIds([]);
@@ -629,7 +628,6 @@ export function PremiumCalendarClient({
                       </button>
                     );
                   })}
-                </div>
               </div>
             )}
 

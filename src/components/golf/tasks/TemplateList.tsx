@@ -188,7 +188,7 @@ export function TemplateList({
 
       {/* Category filter */}
       {categories.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="pills-scroll pb-2">
           {categories.map((category) => (
             <button
               key={category}

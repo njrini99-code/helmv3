@@ -388,7 +388,7 @@ export default function GolfClassesPage() {
   const totalCredits = classes.reduce((sum, cls) => sum + (cls.credits || 0), 0);
 
   return (
-    <AnimatedPage className="p-6 max-w-7xl mx-auto">
+    <AnimatedPage className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
       <AnimatedItem className="flex items-center justify-between mb-8">
         <div>

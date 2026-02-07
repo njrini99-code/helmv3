@@ -7,6 +7,7 @@ import { getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { AnnouncementsCoachView } from '@/components/golf/announcements/AnnouncementsCoachView';
 import { AnnouncementsPlayerView } from '@/components/golf/announcements/AnnouncementsPlayerView';
 import { CreateAnnouncementFlow } from '@/components/golf/announcements/CreateAnnouncementFlow';
+import { MobileMenuButton } from '@/components/golf/layout/MobileMenuButton';
 
 export const metadata: Metadata = {
   title: 'Team Announcements | Helm Sports',
@@ -109,20 +110,23 @@ export default async function GolfAnnouncementsPage() {
     <AnimatedPage>
       {/* Header */}
       <AnimatedItem className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-5">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Announcements</h1>
-                {recentCount > 0 && (
-                  <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-700">
-                    {recentCount} new
-                  </span>
-                )}
+            <div className="flex items-center gap-3">
+              <MobileMenuButton />
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Announcements</h1>
+                  {recentCount > 0 && (
+                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-700">
+                      {recentCount} new
+                    </span>
+                  )}
+                </div>
+                <p className="text-slate-500 mt-0.5">
+                  {isCoach ? 'Share updates with your team' : 'Team news and updates'}
+                </p>
               </div>
-              <p className="text-slate-500 mt-0.5">
-                {isCoach ? 'Share updates with your team' : 'Team news and updates'}
-              </p>
             </div>
             {isCoach && (
               <CreateAnnouncementFlow
@@ -135,9 +139,9 @@ export default async function GolfAnnouncementsPage() {
       </AnimatedItem>
 
       {/* Content */}
-      <AnimatedItem className="max-w-4xl mx-auto px-6 py-8">
+      <AnimatedItem className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {announcements.length === 0 ? (
-          <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-sm p-16 text-center">
+          <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-sm p-8 md:p-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <IconBell size={28} className="text-slate-400" />
             </div>

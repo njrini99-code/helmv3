@@ -104,6 +104,8 @@ export function PersonalInfoModal({
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="John Smith"
+            autoComplete="name"
+            enterKeyHint="done"
             required
           />
         ) : (
@@ -113,6 +115,8 @@ export function PersonalInfoModal({
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="John"
+              autoComplete="given-name"
+              enterKeyHint="next"
               required
             />
             <Input
@@ -120,6 +124,8 @@ export function PersonalInfoModal({
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               placeholder="Smith"
+              autoComplete="family-name"
+              enterKeyHint="done"
               required
             />
           </>

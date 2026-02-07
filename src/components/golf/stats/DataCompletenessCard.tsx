@@ -162,7 +162,7 @@ function QualityRing({
         >
           {score}%
         </motion.span>
-        <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">
+        <span className="text-xs text-slate-500 uppercase tracking-wider font-medium">
           Quality
         </span>
       </div>
@@ -254,7 +254,7 @@ export function DataCompletenessCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-slate-900">Data Quality</span>
-            <Badge className={cn('text-[10px]', quality.bgColor, quality.color)}>
+            <Badge className={cn('text-xs', quality.bgColor, quality.color)}>
               {quality.label}
             </Badge>
           </div>
@@ -350,7 +350,7 @@ export function DataCompletenessCard({
             <FieldBar label="Club Used" count={data.hasClub} total={data.totalShots} />
             <FieldBar label="Shot Result" count={data.hasResult} total={data.totalShots} />
           </div>
-          <p className="text-[10px] text-slate-400 mt-2">
+          <p className="text-xs text-slate-400 mt-2">
             * Required for Strokes Gained calculations
           </p>
         </div>

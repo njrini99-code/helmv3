@@ -1269,7 +1269,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
               >
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-slate-900">{meta.shortLabel}</p>
-                  <span className="text-[10px] text-slate-400">~{meta.approximateHandicap > 0 ? '+' : ''}{meta.approximateHandicap} hcp</span>
+                  <span className="text-xs text-slate-400">~{meta.approximateHandicap > 0 ? '+' : ''}{meta.approximateHandicap} hcp</span>
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">{meta.description}</p>
               </button>

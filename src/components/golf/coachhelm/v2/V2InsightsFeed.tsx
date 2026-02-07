@@ -138,7 +138,7 @@ export function InsightsFeed({
                 <span className="text-sm font-semibold text-slate-900">
                   CoachHelm AI
                 </span>
-                <span className="text-[10px] font-medium text-primary-700 bg-primary-100/70 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                <span className="text-xs font-medium text-primary-700 bg-primary-100/70 px-1.5 py-0.5 rounded-full whitespace-nowrap">
                   AI-Powered
                 </span>
               </div>
@@ -149,7 +149,7 @@ export function InsightsFeed({
             onClick={handleGenerate}
             disabled={isPending}
             className={cn(
-              'w-full inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wide transition-all',
+              'w-full inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all',
               isPending
                 ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
                 : 'bg-gradient-to-r from-primary-500 to-emerald-500 text-white shadow-glass hover:shadow-glass-hover'
@@ -189,7 +189,7 @@ export function InsightsFeed({
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-semibold rounded-md transition-all truncate',
+              'flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all truncate',
               activeTab === tab.id
                 ? 'bg-white text-slate-900 shadow-glass-sm'
                 : 'text-slate-500 hover:text-slate-700'
@@ -293,7 +293,7 @@ export function InsightsFeed({
 
       {/* Last Generated */}
       {lastGenerated && (
-        <p className="text-[11px] uppercase tracking-wide text-slate-400 text-center">
+        <p className="text-xs uppercase tracking-wide text-slate-400 text-center">
           Last analyzed: {lastGenerated.toLocaleTimeString()}
         </p>
       )}
@@ -318,7 +318,7 @@ function EmptyState({
           {icon}
         </div>
         <h4 className="text-sm font-semibold text-slate-700 mb-0.5">{title}</h4>
-        <p className="text-[11px] text-slate-500 max-w-[200px] leading-relaxed">{description}</p>
+        <p className="text-xs text-slate-500 max-w-[200px] leading-relaxed">{description}</p>
       </div>
     </div>
   );

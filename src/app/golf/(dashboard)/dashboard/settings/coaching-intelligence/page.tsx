@@ -13,7 +13,9 @@ import {
 import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { IconArrowLeft, IconCheck } from '@/components/icons';
+import { IconArrowLeft, IconCheck, IconMenu } from '@/components/icons';
+import { useSidebar } from '@/contexts/sidebar-context';
+import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Toaster } from 'sonner';
 
@@ -31,6 +33,7 @@ type DisplayKey = DisplayToggleKey | 'insightVerbosity';
 
 export default function CoachingIntelligenceSettingsPage() {
     const [coachId, setCoachId] = useState<string | null>(null);
+    const { toggleMobile } = useSidebar();
     const supabase = createClient();
 
     useEffect(() => {
@@ -92,9 +95,21 @@ export default function CoachingIntelligenceSettingsPage() {
             <AnimatedItem className="bg-white border-b border-slate-200 sticky top-0 z-20">
                 <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
+                        <button
+                            onClick={toggleMobile}
+                            className={cn(
+                                'lg:hidden p-2.5 -ml-2 rounded-xl',
+                                'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                                'transition-colors duration-150 active:scale-95',
+                                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+                            )}
+                            aria-label="Open navigation menu"
+                        >
+                            <IconMenu size={22} />
+                        </button>
                         <Link
                             href="/golf/dashboard/settings"
-                            className="p-2 -ml-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+                            className="hidden lg:flex p-2 -ml-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
                         >
                             <IconArrowLeft size={20} />
                         </Link>
@@ -114,7 +129,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </div>
             </AnimatedItem>
 
-            <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+            <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-8">
 
                 {/* Intro */}
                 <AnimatedItem className="prose prose-sm prose-slate max-w-none">

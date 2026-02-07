@@ -18,14 +18,14 @@ interface InlineTabsProps {
 
 export function InlineTabs({ tabs, activeTab, onTabChange, size = 'md' }: InlineTabsProps) {
   return (
-    <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl">
+    <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-nowrap snap-x snap-mandatory">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
           className={cn(
-            'relative transition-colors rounded-lg font-medium',
-            size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm',
+            'relative transition-colors rounded-lg font-medium flex-shrink-0 snap-center',
+            size === 'sm' ? 'px-3 py-2.5 md:py-1.5 text-xs' : 'px-4 py-2.5 md:py-2 text-sm',
             activeTab === tab.id ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'
           )}
         >

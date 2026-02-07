@@ -288,7 +288,7 @@ export function QuickCreateFeed({
   onSelect: (type: FeedType) => void;
 }) {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-2">
+    <div className="pills-scroll pb-2">
       {FEED_TYPE_OPTIONS.map((option) => {
         const Icon = option.icon;
         return (

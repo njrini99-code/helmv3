@@ -69,6 +69,8 @@ export function EmailModal({ isOpen, onClose, currentEmail, onUpdate }: EmailMod
           value={newEmail}
           onChange={(e) => setNewEmail(e.target.value)}
           placeholder="newemail@example.com"
+          autoComplete="email"
+          enterKeyHint="done"
           required
         />
 

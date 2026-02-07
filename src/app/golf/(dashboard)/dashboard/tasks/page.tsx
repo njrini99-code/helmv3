@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
-import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown } from '@/components/icons';
+import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown, IconMenu } from '@/components/icons';
+import { useSidebar } from '@/contexts/sidebar-context';
 import { CreateTaskModal } from '@/components/golf/tasks/CreateTaskModal';
 import { TasksList } from '@/components/golf/tasks/TasksList';
 import { TaskTemplateList } from '@/components/golf/tasks/TaskTemplateList';
@@ -44,6 +45,7 @@ interface Player {
 }
 
 export default function GolfTasksPage() {
+  const { toggleMobile } = useSidebar();
   const golfUser = useGolfUser();
   const [initialLoading, setInitialLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -119,11 +121,36 @@ export default function GolfTasksPage() {
   const completedCount = tasks.filter(t => t.status === 'completed').length;
   const loading = initialLoading || tasksLoading;
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="min-h-full bg-transparent">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="h-7 w-28 skeleton-sweep rounded-lg" />
+            <div className="h-9 w-24 skeleton-sweep rounded-lg" />
+          </div>
+          <div className="flex gap-2">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-8 w-20 skeleton-sweep rounded-full" />
+            ))}
+          </div>
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white/70 rounded-2xl border border-white/20 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="h-4 w-48 skeleton-sweep rounded" />
+                <div className="h-5 w-16 skeleton-sweep rounded-full" />
+              </div>
+              <div className="h-3 w-32 skeleton-sweep rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-transparent">
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Header */}
         <motion.div
           variants={fadeUp}
@@ -133,6 +160,18 @@ export default function GolfTasksPage() {
         >
           <div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={toggleMobile}
+                className={cn(
+                  'lg:hidden p-2.5 -ml-2 rounded-xl',
+                  'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                  'transition-colors duration-150 active:scale-95',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+                )}
+                aria-label="Open navigation menu"
+              >
+                <IconMenu size={22} />
+              </button>
               <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
               {/* Real-time indicator */}
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
@@ -193,7 +232,7 @@ export default function GolfTasksPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="flex items-center gap-2 mb-6 overflow-x-auto scrollbar-hide"
+          className="pills-scroll mb-6"
         >
           <motion.button
             onClick={() => setFilter('all')}
@@ -221,7 +260,7 @@ export default function GolfTasksPage() {
           >
             Active ({activeCount})
             {stats.overdue_tasks > 0 && filter !== 'active' && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                 {stats.overdue_tasks}
               </span>
             )}

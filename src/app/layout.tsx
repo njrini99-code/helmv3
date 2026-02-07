@@ -42,6 +42,15 @@ export const metadata: Metadata = {
     icon: '/Helm-Logo-New-Main.png',
     apple: '/Helm-Logo-New-Main.png',
   },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'GolfHelm',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   // Viewport settings - allows zoom for accessibility (WCAG 2.1 Level AA compliance)
   viewport: {
     width: 'device-width',

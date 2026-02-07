@@ -48,7 +48,7 @@ function DayCellContent({
         {/* Event count badge for days with many events */}
         {dayEvents.length > 3 && (
           <span
-            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+            className="text-xs font-semibold px-1.5 py-0.5 rounded-full"
             style={{
               background: 'rgba(22, 163, 74, 0.08)',
               color: 'rgba(22, 163, 74, 0.7)',
@@ -87,7 +87,7 @@ function DayCellContent({
 
         {/* +N more indicator */}
         {dayEvents.length > 3 && (
-          <p className="text-[10px] text-stone-400 pl-2.5 font-medium">
+          <p className="text-xs text-stone-400 pl-2.5 font-medium">
             +{dayEvents.length - 3} more
           </p>
         )}
@@ -189,7 +189,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
         {DAYS.map((day) => (
           <div
             key={day}
-            className="px-3 py-2.5 text-center text-[11px] font-semibold uppercase tracking-wider rounded-lg"
+            className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider rounded-lg"
             style={{ color: 'rgba(120, 113, 108, 0.6)' }}
           >
             {day}

@@ -334,7 +334,7 @@ const DetailedStatsTabs = memo(function DetailedStatsTabs({ stats }: { stats: Go
       />
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 p-2 border-b border-slate-100 overflow-x-auto">
+      <div className="pills-scroll p-2 border-b border-slate-100">
         {tabs.map(tab => (
           <button
             key={tab.id}

@@ -104,7 +104,7 @@ export function AnnouncementTaskItem({
             isOverdue ? 'text-red-500' : isCompleted ? 'text-green-500' : 'text-slate-400'
           )}>
             <IconCalendar size={10} />
-            <span className="text-[11px] font-medium">
+            <span className="text-xs font-medium">
               {isOverdue ? 'Overdue - ' : ''}
               {new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>

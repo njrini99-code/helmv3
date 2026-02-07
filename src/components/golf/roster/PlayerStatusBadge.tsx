@@ -83,7 +83,7 @@ export function PlayerStatusBadge({
     return (
       <span className={cn(
         'inline-flex items-center gap-1.5 px-2 py-0.5',
-        'text-[11px] font-medium rounded-full',
+        'text-xs font-medium rounded-full',
         'ring-1 ring-inset',
         currentStatusObj.badgeStyle
       )}>
@@ -100,7 +100,7 @@ export function PlayerStatusBadge({
         disabled={loading}
         className={cn(
           'inline-flex items-center gap-1.5 px-2 py-0.5',
-          'text-[11px] font-medium rounded-full',
+          'text-xs font-medium rounded-full',
           'ring-1 ring-inset',
           'transition-all duration-150',
           'hover:ring-2 focus:outline-none focus:ring-2',

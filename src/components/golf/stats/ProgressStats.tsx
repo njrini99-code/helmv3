@@ -835,7 +835,7 @@ const InsightCard = memo(function InsightCard({ stats }: { stats: GolfStats }) {
       <div className="space-y-4">
         {strengths.length > 0 && (
           <div>
-            <div className="text-[11px] font-medium text-green-600 uppercase tracking-wider mb-2">Strengths</div>
+            <div className="text-xs font-medium text-green-600 uppercase tracking-wider mb-2">Strengths</div>
             <div className="space-y-2">
               {strengths.map((insight, i) => (
                 <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-green-50/60 border border-green-100/80">
@@ -851,7 +851,7 @@ const InsightCard = memo(function InsightCard({ stats }: { stats: GolfStats }) {
         )}
         {opportunities.length > 0 && (
           <div>
-            <div className="text-[11px] font-medium text-amber-600 uppercase tracking-wider mb-2">Opportunities</div>
+            <div className="text-xs font-medium text-amber-600 uppercase tracking-wider mb-2">Opportunities</div>
             <div className="space-y-2">
               {opportunities.map((insight, i) => (
                 <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-amber-50/60 border border-amber-100/80">

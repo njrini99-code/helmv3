@@ -187,7 +187,7 @@ function EvidenceRoundCard({ round, index }: EvidenceRoundCardProps) {
                 {round.course_name || 'Unknown Course'}
               </h4>
               {isTournament && (
-                <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full font-medium">
+                <span className="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full font-medium">
                   Tournament
                 </span>
               )}

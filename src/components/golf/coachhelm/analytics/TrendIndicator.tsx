@@ -42,7 +42,7 @@ export function TrendIndicator({
   };
 
   const textSizes = {
-    xs: 'text-[10px]',
+    xs: 'text-xs',
     sm: 'text-xs',
     md: 'text-sm',
   };
@@ -156,7 +156,7 @@ export function TrendBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium',
+        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium',
         isFlat && 'bg-slate-100 text-slate-500',
         isImprovement && !isFlat && 'bg-green-100 text-green-700',
         !isImprovement && !isFlat && 'bg-red-100 text-red-700',

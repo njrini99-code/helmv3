@@ -208,7 +208,7 @@ const StatComparisonCard = memo(function StatComparisonCard({
           {teamAverage?.value !== null && teamAverage?.value !== undefined && teamComparison && (
             <div className={`flex flex-col items-center p-2 rounded-lg ${getBgClass(teamComparison)}`}>
               <IconUsers size={14} className="text-slate-400 mb-1" />
-              <span className="text-[10px] text-slate-500 mb-0.5">vs Team</span>
+              <span className="text-xs text-slate-500 mb-0.5">vs Team</span>
               <span className={`text-xs font-semibold ${getColorClass(teamComparison)}`}>
                 {teamComparison === 'better' && (lowerIsBetter ? '-' : '+')}
                 {teamComparison === 'worse' && (lowerIsBetter ? '+' : '-')}
@@ -221,7 +221,7 @@ const StatComparisonCard = memo(function StatComparisonCard({
           {previousPeriod?.value !== null && previousPeriod?.value !== undefined && prevComparison && (
             <div className={`flex flex-col items-center p-2 rounded-lg ${getBgClass(prevComparison)}`}>
               <IconClock size={14} className="text-slate-400 mb-1" />
-              <span className="text-[10px] text-slate-500 mb-0.5">vs Prev</span>
+              <span className="text-xs text-slate-500 mb-0.5">vs Prev</span>
               <span className={`text-xs font-semibold ${getColorClass(prevComparison)}`}>
                 {prevComparison === 'better' && (lowerIsBetter ? '-' : '+')}
                 {prevComparison === 'worse' && (lowerIsBetter ? '+' : '-')}
@@ -234,7 +234,7 @@ const StatComparisonCard = memo(function StatComparisonCard({
           {tourAverage?.value !== null && tourAverage?.value !== undefined && tourComparison && (
             <div className={`flex flex-col items-center p-2 rounded-lg ${getBgClass(tourComparison)}`}>
               <IconTrendingUp size={14} className="text-slate-400 mb-1" />
-              <span className="text-[10px] text-slate-500 mb-0.5">vs Tour</span>
+              <span className="text-xs text-slate-500 mb-0.5">vs Tour</span>
               <span className={`text-xs font-semibold ${getColorClass(tourComparison)}`}>
                 {tourComparison === 'better' && (lowerIsBetter ? '-' : '+')}
                 {tourComparison === 'worse' && (lowerIsBetter ? '+' : '-')}
@@ -423,7 +423,7 @@ export const PeriodComparisonCard = memo(function PeriodComparisonCard({
 
             return (
               <div key={stat.key} className="text-center p-3 rounded-xl bg-slate-50">
-                <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
                   {stat.label}
                 </p>
                 <p className="text-lg font-bold text-slate-900 tabular-nums">

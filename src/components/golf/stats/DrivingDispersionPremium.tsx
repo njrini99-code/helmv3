@@ -309,7 +309,7 @@ function ZoneStatCard({
         {percentage.toFixed(0)}%
       </span>
       <span className="text-xs font-medium text-slate-600 mt-1.5">{label}</span>
-      <span className="text-[10px] text-slate-400 mt-0.5 tabular-nums">{count} shots</span>
+      <span className="text-xs text-slate-400 mt-0.5 tabular-nums">{count} shots</span>
     </motion.button>
   );
 }

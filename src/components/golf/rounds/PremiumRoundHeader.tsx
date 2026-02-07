@@ -86,20 +86,20 @@ export function PremiumRoundHeader({
                     <span className="text-xs text-slate-400">{courseCity}, {courseState}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-3 mt-2">
+                <div className="flex flex-wrap items-center gap-3 mt-2">
                   {roundType && (
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 capitalize">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 capitalize">
                       {roundType.replace(/_/g, ' ')}
                     </span>
                   )}
                   {courseRating && (
-                    <span className="text-[11px] text-slate-400">Rating: {courseRating}</span>
+                    <span className="text-xs text-slate-400">Rating: {courseRating}</span>
                   )}
                   {courseSlope && (
-                    <span className="text-[11px] text-slate-400">Slope: {courseSlope}</span>
+                    <span className="text-xs text-slate-400">Slope: {courseSlope}</span>
                   )}
                   {teesPlayed && (
-                    <span className="text-[11px] text-slate-400">Tees: {teesPlayed}</span>
+                    <span className="text-xs text-slate-400">Tees: {teesPlayed}</span>
                   )}
                 </div>
               </div>
@@ -135,7 +135,7 @@ export function PremiumRoundHeader({
                   : '--'}
               </p>
               {totalFairwaysHit !== null && totalFairways && totalFairways > 0 && (
-                <p className="text-[11px] text-slate-400">{Math.round((totalFairwaysHit / totalFairways) * 100)}%</p>
+                <p className="text-xs text-slate-400">{Math.round((totalFairwaysHit / totalFairways) * 100)}%</p>
               )}
             </div>
             <div>
@@ -146,7 +146,7 @@ export function PremiumRoundHeader({
                   : '--'}
               </p>
               {totalGir !== null && totalGirPossible && totalGirPossible > 0 && (
-                <p className="text-[11px] text-slate-400">{Math.round((totalGir / totalGirPossible) * 100)}%</p>
+                <p className="text-xs text-slate-400">{Math.round((totalGir / totalGirPossible) * 100)}%</p>
               )}
             </div>
             <div>

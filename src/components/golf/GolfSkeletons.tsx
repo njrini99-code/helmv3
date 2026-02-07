@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 export function MetricCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
+      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -37,7 +37,7 @@ export function MetricCardSkeleton({ delay = 0 }: { delay?: number }) {
 export function PlayerCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-4 overflow-hidden"
+      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-4 overflow-hidden"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -91,7 +91,7 @@ export function RoundRowSkeleton({ delay = 0, showPlayer = true }: { delay?: num
 export function QuickActionSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-[16px] border border-white/30 rounded-2xl p-4 overflow-hidden"
+      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[16px] border border-white/30 rounded-2xl p-4 overflow-hidden"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -115,7 +115,7 @@ export function QuickActionSkeleton({ delay = 0 }: { delay?: number }) {
 export function StatsCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-6 overflow-hidden"
+      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-6 overflow-hidden"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -143,7 +143,7 @@ export function StatsCardSkeleton({ delay = 0 }: { delay?: number }) {
 export function QualifierCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
+      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -190,7 +190,7 @@ export function MessageThreadSkeleton({ delay = 0 }: { delay?: number }) {
 export function AnnouncementCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-hidden border-l-[3px] border-l-slate-200"
+      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-hidden border-l-[3px] border-l-slate-200"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -243,7 +243,7 @@ export function CalendarEventSkeleton({ delay = 0 }: { delay?: number }) {
 export function DocumentCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-4 overflow-hidden"
+      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-4 overflow-hidden"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -306,7 +306,7 @@ export function DashboardSkeleton() {
             {/* Top Performers */}
             <div>
               <div className="h-4 w-32 bg-slate-200/60 rounded mb-4 skeleton-shimmer" />
-              <div className="bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-hidden">
+              <div className="bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-hidden">
                 <div className="divide-y divide-white/20">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-3 px-4 py-3.5">
@@ -328,7 +328,7 @@ export function DashboardSkeleton() {
             {/* Chart Skeleton */}
             <div>
               <div className="h-4 w-40 bg-slate-200/60 rounded mb-4 skeleton-shimmer" />
-              <div className="bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-6">
+              <div className="bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-6">
                 <div className="h-64 bg-slate-100/40 rounded-lg skeleton-shimmer" />
               </div>
             </div>
@@ -336,7 +336,7 @@ export function DashboardSkeleton() {
             {/* Recent Rounds */}
             <div>
               <div className="h-4 w-32 bg-slate-200/60 rounded mb-4 skeleton-shimmer" />
-              <div className="bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-hidden">
+              <div className="bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-hidden">
                 <div className="divide-y divide-white/20">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <RoundRowSkeleton key={i} delay={i * 30} showPlayer={false} />
@@ -483,7 +483,7 @@ export function StatsPageSkeleton() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-xl overflow-hidden"
+              className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-xl overflow-hidden"
               style={{ animationDelay: `${i * 40}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -552,7 +552,7 @@ export function DetailedStatsSkeleton() {
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-xl overflow-hidden p-4"
+                className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-xl overflow-hidden p-4"
                 style={{ animationDelay: `${i * 50}ms` }}
               >
                 <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -569,7 +569,7 @@ export function DetailedStatsSkeleton() {
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-hidden p-4"
+              className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-hidden p-4"
               style={{ animationDelay: `${(i + 4) * 50}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -604,7 +604,7 @@ export function ShotStatsTabSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-xl overflow-hidden p-4"
+            className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-xl overflow-hidden p-4"
           >
             <div className="h-3 w-20 bg-slate-200/60 rounded mb-2" />
             <div className="h-8 w-16 bg-slate-200/60 rounded" />
@@ -613,7 +613,7 @@ export function ShotStatsTabSkeleton() {
       </div>
 
       {/* Stats Section */}
-      <div className="bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-4">
+      <div className="bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-4">
         <div className="h-4 w-32 bg-slate-200/60 rounded mb-4" />
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -626,7 +626,7 @@ export function ShotStatsTabSkeleton() {
       </div>
 
       {/* Another Section */}
-      <div className="bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-4">
+      <div className="bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-4">
         <div className="h-4 w-40 bg-slate-200/60 rounded mb-4" />
         <div className="grid grid-cols-3 gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -649,7 +649,7 @@ export function MessagesPageSkeleton() {
   return (
     <div className="h-[calc(100vh-64px)] flex">
       {/* Conversation List */}
-      <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-slate-200/60 bg-white/45 backdrop-blur-[20px] flex flex-col">
+      <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-slate-200/60 bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-slate-100">
           <div className="flex items-center justify-between mb-1">
@@ -744,7 +744,7 @@ export function RosterPageSkeleton() {
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-xl overflow-hidden"
+              className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-xl overflow-hidden"
               style={{ animationDelay: `${i * 30}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -812,7 +812,7 @@ export function GenericPageSkeleton() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
+            className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
             style={{ animationDelay: `${i * 60}ms` }}
           >
             <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -851,7 +851,7 @@ export function FormPageSkeleton() {
 
       {/* Form card */}
       <div className="max-w-2xl mx-auto px-6 py-8">
-        <div className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-6 overflow-hidden">
+        <div className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-6 overflow-hidden">
           <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
           <div className="relative space-y-6">
             {[1, 2, 3, 4].map((i) => (
@@ -903,7 +903,7 @@ export function DetailPageSkeleton() {
             {[1, 2].map((i) => (
               <div
                 key={i}
-                className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
+                className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -924,7 +924,7 @@ export function DetailPageSkeleton() {
 
           {/* Sidebar */}
           <div className="space-y-4">
-            <div className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden">
+            <div className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden">
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
               <div className="relative space-y-3">
                 <div className="h-4 w-24 bg-slate-200/60 rounded skeleton-shimmer" />
@@ -971,7 +971,7 @@ export function DevelopmentPageSkeleton() {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
+            className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
             style={{ animationDelay: `${i * 60}ms` }}
           >
             <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -1027,7 +1027,7 @@ export function AlertsPageSkeleton() {
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-4 overflow-hidden"
+              className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-4 overflow-hidden"
               style={{ animationDelay: `${i * 50}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -1073,7 +1073,7 @@ export function ClassesPageSkeleton() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
+              className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[20px] border border-white/30 rounded-2xl p-5 overflow-hidden"
               style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />

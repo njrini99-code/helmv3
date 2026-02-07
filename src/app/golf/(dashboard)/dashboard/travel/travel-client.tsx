@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShineEffect } from '@/components/ui/shine-effect';
+import { cn } from '@/lib/utils';
 import {
   IconAirplane,
   IconMapPin,
@@ -15,7 +16,9 @@ import {
   IconEdit,
   IconDownload,
   IconChartBar,
+  IconMenu,
 } from '@/components/icons';
+import { useSidebar } from '@/contexts/sidebar-context';
 import {
   createGolfTravelItinerary,
   updateGolfTravelItinerary,
@@ -66,6 +69,7 @@ interface TravelClientProps {
 type TabType = 'details' | 'expenses';
 
 export function TravelClient({ itineraries: initialItineraries, coachId, teamId, isCoach }: TravelClientProps) {
+  const { toggleMobile } = useSidebar();
   const router = useRouter();
   const [itineraries, setItineraries] = useState(initialItineraries);
   const [showModal, setShowModal] = useState(false);
@@ -337,9 +341,22 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
     <div className="min-h-full">
       {/* Header */}
       <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-5">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleMobile}
+                className={cn(
+                  'lg:hidden p-2.5 -ml-2 rounded-xl',
+                  'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                  'transition-colors duration-150 active:scale-95',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+                )}
+                aria-label="Open navigation menu"
+              >
+                <IconMenu size={22} />
+              </button>
+              <div>
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Travel</h1>
               <p className="text-slate-500 mt-0.5">
                 {itineraries.length === 0
@@ -352,6 +369,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                     })()
                 }
               </p>
+              </div>
             </div>
             {isCoach && (
               <button
@@ -370,9 +388,9 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {itineraries.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-16 text-center">
             <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <IconAirplane size={28} className="text-slate-400" />
@@ -675,7 +693,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                <div className="bg-white rounded-2xl border border-slate-200 p-8 md:p-12 text-center">
                   <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
                     <IconAirplane size={28} className="text-slate-400" />
                   </div>

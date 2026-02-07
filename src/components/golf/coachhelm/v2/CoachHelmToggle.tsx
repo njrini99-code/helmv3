@@ -83,17 +83,17 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-sm font-semibold text-slate-900">CoachHelm AI</h3>
               {enabled ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary-100/80 px-2 py-0.5 text-[11px] font-semibold text-primary-700">
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary-100/80 px-2 py-0.5 text-xs font-semibold text-primary-700">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
                   Active
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
                   <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
                   Off
                 </span>
               )}
-              <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400">
+              <span className="text-xs uppercase tracking-[0.2em] text-slate-400">
                 Premium Insights
               </span>
             </div>
@@ -212,7 +212,7 @@ function FeaturePill({ label, detail, enabled }: { label: string; detail: string
         <p className={cn('text-xs font-semibold', enabled ? 'text-slate-700' : 'text-slate-400')}>
           {label}
         </p>
-        <p className={cn('text-[11px] leading-snug', enabled ? 'text-slate-500' : 'text-slate-400')}>
+        <p className={cn('text-xs leading-snug', enabled ? 'text-slate-500' : 'text-slate-400')}>
           {detail}
         </p>
       </div>

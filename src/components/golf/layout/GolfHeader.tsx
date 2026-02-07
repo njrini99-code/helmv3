@@ -48,7 +48,7 @@ export function GolfHeader({ title, subtitle, children, backHref }: GolfHeaderPr
           <button
             onClick={handleMenuToggle}
             className={cn(
-              'p-2 -ml-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100',
+              'p-2.5 -ml-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100',
               'transition-colors duration-150 active:scale-95',
               'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40'
             )}

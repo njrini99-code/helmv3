@@ -74,7 +74,7 @@ const EventCardInner = forwardRef<
         {...dragAttributes}
         {...dragListeners}
       >
-        <p className="font-semibold text-[10px] truncate leading-tight">{title}</p>
+        <p className="font-semibold text-xs truncate leading-tight">{title}</p>
       </button>
     );
   }
@@ -110,11 +110,11 @@ const EventCardInner = forwardRef<
         )}
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-xs truncate leading-tight mb-1">{title}</p>
-          <p className="text-[10px] opacity-75 leading-tight font-medium">
+          <p className="text-xs opacity-75 leading-tight font-medium">
             {formatTime(startTime)}
           </p>
           {location && (
-            <p className="text-[10px] opacity-60 leading-tight flex items-center gap-0.5 mt-0.5">
+            <p className="text-xs opacity-60 leading-tight flex items-center gap-0.5 mt-0.5">
               <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
               <span className="truncate">{location}</span>
             </p>

@@ -188,7 +188,7 @@ export function Modal({
         </button>
 
         {/* Body — scrollable when content is tall */}
-        <div className="px-6 pb-6 overflow-y-auto flex-1 min-h-0">
+        <div className="px-6 pb-6 overflow-y-auto flex-1 min-h-0" data-scroll-container>
           {children}
         </div>
       </div>

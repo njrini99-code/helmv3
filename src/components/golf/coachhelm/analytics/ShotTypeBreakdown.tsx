@@ -98,7 +98,7 @@ function BarItem({
           {performanceLabel && (
             <span
               className={cn(
-                'text-[10px] font-medium px-1.5 py-0.5 rounded',
+                'text-xs font-medium px-1.5 py-0.5 rounded',
                 performanceLabel === 'Excellent' && 'bg-green-100 text-green-700',
                 performanceLabel === 'Good' && 'bg-green-50 text-green-600',
                 performanceLabel === 'Needs Work' && 'bg-amber-100 text-amber-700',

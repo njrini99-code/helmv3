@@ -788,7 +788,7 @@ export default function NewRoundClient() {
     return (
       <div className="min-h-full bg-transparent flex items-center justify-center p-4">
         <div className="w-full max-w-2xl">
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-8">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-5 sm:p-8">
             <ShineEffect />
             <StepProgressBar />
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-2">
@@ -887,11 +887,13 @@ export default function NewRoundClient() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                           </svg>
                           <input
-                            type="text"
+                            type="search"
                             value={courseSearchQuery}
                             onChange={(e) => setCourseSearchQuery(e.target.value)}
                             placeholder="Search saved courses..."
-                            className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200/70 bg-white/80 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-colors"
+                            enterKeyHint="search"
+                            autoComplete="off"
+                            className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200/70 bg-white/80 text-base md:text-sm text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-colors"
                           />
                         </div>
                       )}
@@ -952,21 +954,21 @@ export default function NewRoundClient() {
                                     {/* Stats row */}
                                     <div className="flex items-center gap-2 mt-2">
                                       {totalPar !== null && (
-                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${
                                           isSelected ? 'bg-emerald-100/80 text-emerald-700' : 'bg-slate-100 text-slate-600'
                                         }`}>
                                           Par {totalPar}
                                         </span>
                                       )}
                                       {course.holeConfigs.length > 0 && (
-                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${
                                           isSelected ? 'bg-emerald-100/80 text-emerald-700' : 'bg-slate-100 text-slate-600'
                                         }`}>
                                           {course.holeConfigs.length} holes
                                         </span>
                                       )}
                                       {course.courseRating !== null && (
-                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+                                        <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${
                                           isSelected ? 'bg-emerald-100/80 text-emerald-700' : 'bg-slate-100 text-slate-600'
                                         }`}>
                                           {course.courseRating}/{course.courseSlope ?? '—'}
@@ -976,7 +978,7 @@ export default function NewRoundClient() {
                                   </div>
 
                                   {/* Last played */}
-                                  <span className="text-[11px] text-slate-400 whitespace-nowrap flex-shrink-0 pt-0.5">
+                                  <span className="text-xs text-slate-400 whitespace-nowrap flex-shrink-0 pt-0.5">
                                     {formatRelativeTime(course.lastUsedAt)}
                                   </span>
                                 </div>
@@ -1051,6 +1053,8 @@ export default function NewRoundClient() {
                         type="text"
                         value={setupData.courseName}
                         onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
+                        enterKeyHint="next"
+                        autoComplete="off"
                         className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
                         placeholder="Pebble Beach Golf Links"
                         required
@@ -1067,6 +1071,8 @@ export default function NewRoundClient() {
                           type="text"
                           value={setupData.courseCity}
                           onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
+                          enterKeyHint="next"
+                          autoComplete="off"
                           className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
                           placeholder="Pebble Beach"
                         />
@@ -1080,6 +1086,8 @@ export default function NewRoundClient() {
                           type="text"
                           value={setupData.courseState}
                           onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
+                          enterKeyHint="next"
+                          autoComplete="off"
                           className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
                           placeholder="CA"
                           maxLength={2}
@@ -1087,7 +1095,7 @@ export default function NewRoundClient() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       <div>
                         <label htmlFor="courseRating" className="text-sm font-medium text-slate-700 block mb-2">
                           Rating
@@ -1096,6 +1104,8 @@ export default function NewRoundClient() {
                           id="courseRating"
                           type="number"
                           step="0.1"
+                          inputMode="decimal"
+                          enterKeyHint="next"
                           value={setupData.courseRating}
                           onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
                           className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
@@ -1109,6 +1119,8 @@ export default function NewRoundClient() {
                         <input
                           id="courseSlope"
                           type="number"
+                          inputMode="numeric"
+                          enterKeyHint="next"
                           value={setupData.courseSlope}
                           onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
                           className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"

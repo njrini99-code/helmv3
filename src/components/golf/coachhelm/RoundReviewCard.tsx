@@ -164,7 +164,7 @@ export function RoundReviewCard({
             </span>
             <span
               className={cn(
-                'text-[10px] font-medium',
+                'text-xs font-medium',
                 isUnderPar
                   ? 'text-green-500'
                   : isOverPar
@@ -180,7 +180,7 @@ export function RoundReviewCard({
           <div
             className={cn(
               'absolute -top-1 -right-1 w-5 h-5 rounded-md flex items-center justify-center',
-              'text-[10px] font-bold shadow-sm',
+              'text-xs font-bold shadow-sm',
               gradeColors[grade]
             )}
           >

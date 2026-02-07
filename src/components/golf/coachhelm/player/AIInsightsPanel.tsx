@@ -124,11 +124,11 @@ function InsightCard({
 
           {/* Meta info */}
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-[10px] text-warm-400 tabular-nums">
+            <span className="text-xs text-warm-400 tabular-nums">
               {confidencePercent}% confidence
             </span>
             {insight.reasoning && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-white/70 rounded-full text-warm-500">
+              <span className="text-xs px-1.5 py-0.5 bg-white/70 rounded-full text-warm-500">
                 AI Reasoning
               </span>
             )}
@@ -164,13 +164,13 @@ function InsightCard({
               {/* Reasoning chain */}
               {insight.reasoning?.reasoningChain && insight.reasoning.reasoningChain.length > 0 && (
                 <div className="p-3 bg-white/60 rounded-lg">
-                  <h5 className="text-[10px] font-semibold text-warm-500 uppercase tracking-wide mb-2">
+                  <h5 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">
                     How we reached this
                   </h5>
                   <div className="space-y-1.5">
                     {insight.reasoning.reasoningChain.slice(0, 3).map((step, i) => (
                       <div key={i} className="flex items-start gap-2">
-                        <span className="w-4 h-4 rounded-full bg-primary-100 text-primary-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="w-4 h-4 rounded-full bg-primary-100 text-primary-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                           {step.stepNumber}
                         </span>
                         <p className="text-xs text-warm-600">{step.conclusion}</p>
@@ -183,7 +183,7 @@ function InsightCard({
               {/* Call to action */}
               {insight.callToAction && (
                 <div className="p-3 bg-primary-50/50 border border-primary-100 rounded-lg">
-                  <h5 className="text-[10px] font-semibold text-primary-600 uppercase tracking-wide mb-1">
+                  <h5 className="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-1">
                     Suggested Action
                   </h5>
                   <p className="text-sm text-warm-700">{insight.callToAction}</p>

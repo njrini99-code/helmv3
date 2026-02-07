@@ -109,7 +109,7 @@ export function CausalRelationshipView({
               <IconArrowRight size={20} className="text-slate-500" />
               <div className="w-8 h-0.5 bg-slate-300" />
             </div>
-            <span className="text-[10px] text-slate-400">{typeInfo.desc}</span>
+            <span className="text-xs text-slate-400">{typeInfo.desc}</span>
           </div>
 
           {/* Effect */}
@@ -161,7 +161,7 @@ export function CausalRelationshipView({
               style={{ width: `${relationship.strength * 100}%` }}
             />
           </div>
-          <p className="text-[10px] text-slate-400 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             {relationship.strength >= 0.7
               ? 'Strong effect'
               : relationship.strength >= 0.4
@@ -190,7 +190,7 @@ export function CausalRelationshipView({
               style={{ width: `${relationship.confidence * 100}%` }}
             />
           </div>
-          <p className="text-[10px] text-slate-400 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             How confident we are this is causal
           </p>
         </div>
@@ -246,7 +246,7 @@ export function CausalRelationshipView({
               {relationship.evidence.confoundersControlled.map((c, i) => (
                 <span
                   key={i}
-                  className="px-2 py-0.5 bg-green-100 text-green-600 text-[10px] rounded"
+                  className="px-2 py-0.5 bg-green-100 text-green-600 text-xs rounded"
                 >
                   {c}
                 </span>
@@ -346,7 +346,7 @@ function EvidenceIndicator({
         >
           {label}
         </p>
-        <p className="text-[10px] text-slate-400">{description}</p>
+        <p className="text-xs text-slate-400">{description}</p>
       </div>
     </div>
   );

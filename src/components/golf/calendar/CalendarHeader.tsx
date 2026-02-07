@@ -71,7 +71,7 @@ export function CalendarHeader({
           type="button"
           onClick={toggleMobile}
           className={cn(
-            'lg:hidden p-2 -ml-2 rounded-xl',
+            'lg:hidden p-2.5 -ml-2 rounded-xl',
             'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
             'transition-colors duration-150 active:scale-95',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
@@ -95,7 +95,7 @@ export function CalendarHeader({
             className={cn(
               'rounded-lg transition-all duration-150 active:scale-95',
               'text-stone-500 hover:text-stone-700 hover:bg-stone-100/60',
-              isMobile ? 'w-10 h-10' : 'w-8 h-8',
+              isMobile ? 'w-11 h-11' : 'w-8 h-8',
               'flex items-center justify-center'
             )}
           >
@@ -108,7 +108,7 @@ export function CalendarHeader({
             className={cn(
               'rounded-lg transition-all duration-150 active:scale-95',
               'text-stone-500 hover:text-stone-700 hover:bg-stone-100/60',
-              isMobile ? 'w-10 h-10' : 'w-8 h-8',
+              isMobile ? 'w-11 h-11' : 'w-8 h-8',
               'flex items-center justify-center'
             )}
           >

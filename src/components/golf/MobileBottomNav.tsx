@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { IconHome, IconUsers, IconCalendar, IconChartBar, IconMessage, IconSettings, IconGolf } from '@/components/icons';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
+import { useHapticFeedback } from '@/hooks/use-haptic-feedback';
 
 interface NavItem {
   href: string;
@@ -14,19 +15,19 @@ interface NavItem {
 }
 
 const coachNavItems: NavItem[] = [
-  { href: '/golf/dashboard', label: 'Home', icon: <IconHome size={22} /> },
-  { href: '/golf/dashboard/roster', label: 'Roster', icon: <IconUsers size={22} /> },
-  { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={22} /> },
-  { href: '/golf/dashboard/stats', label: 'Stats', icon: <IconChartBar size={22} /> },
-  { href: '/golf/dashboard/settings', label: 'More', icon: <IconSettings size={22} /> },
+  { href: '/golf/dashboard', label: 'Home', icon: <IconHome size={24} /> },
+  { href: '/golf/dashboard/roster', label: 'Roster', icon: <IconUsers size={24} /> },
+  { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={24} /> },
+  { href: '/golf/dashboard/stats', label: 'Stats', icon: <IconChartBar size={24} /> },
+  { href: '/golf/dashboard/settings', label: 'More', icon: <IconSettings size={24} /> },
 ];
 
 const playerNavItems: NavItem[] = [
-  { href: '/golf/dashboard', label: 'Home', icon: <IconHome size={22} /> },
-  { href: '/golf/dashboard/rounds', label: 'Rounds', icon: <IconGolf size={22} /> },
-  { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={22} /> },
-  { href: '/golf/dashboard/messages', label: 'Messages', icon: <IconMessage size={22} /> },
-  { href: '/golf/dashboard/settings', label: 'More', icon: <IconSettings size={22} /> },
+  { href: '/golf/dashboard', label: 'Home', icon: <IconHome size={24} /> },
+  { href: '/golf/dashboard/rounds', label: 'Rounds', icon: <IconGolf size={24} /> },
+  { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={24} /> },
+  { href: '/golf/dashboard/messages', label: 'Messages', icon: <IconMessage size={24} /> },
+  { href: '/golf/dashboard/settings', label: 'More', icon: <IconSettings size={24} /> },
 ];
 
 interface MobileBottomNavProps {
@@ -37,10 +38,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
   const pathname = usePathname();
   const navItems = isCoach ? coachNavItems : playerNavItems;
   const { isVisible } = useMobileNav();
-
-  if (!isVisible) {
-    return null;
-  }
+  const { triggerHaptic } = useHapticFeedback();
 
   return (
     <nav
@@ -49,7 +47,9 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
         'fixed bottom-0 left-0 right-0 z-40 lg:hidden',
         'bg-white/95 backdrop-blur-xl',
         'border-t border-slate-200/60',
-        'shadow-[0_-4px_20px_rgba(0,0,0,0.05)]'
+        'shadow-[0_-4px_20px_rgba(0,0,0,0.05)]',
+        'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+        isVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
       )}
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
@@ -62,6 +62,14 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={(e) => {
+                triggerHaptic('light');
+                if (isActive) {
+                  e.preventDefault();
+                  document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
               className={cn(
                 'flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl transition-all duration-200',
                 'min-w-[56px] min-h-[52px]',

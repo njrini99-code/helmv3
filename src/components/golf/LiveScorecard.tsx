@@ -128,7 +128,7 @@ export function LiveScorecard({
         </div>
 
         {/* Mini Hole Grid */}
-        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="pills-scroll pb-1">
           {holes.map(hole => {
             const score = scores.find(s => s.holeNumber === hole.holeNumber);
             const isCurrentHole = hole.holeNumber === currentHole;
@@ -238,7 +238,7 @@ export function LiveScorecard({
                 `}
               >
                 <span className="font-bold">{score?.score || '-'}</span>
-                <span className={`text-[10px] ${score?.score ? 'opacity-75' : 'text-slate-400'}`}>
+                <span className={`text-xs ${score?.score ? 'opacity-75' : 'text-slate-400'}`}>
                   {hole.holeNumber}
                 </span>
               </button>
@@ -268,7 +268,7 @@ export function LiveScorecard({
                 `}
               >
                 <span className="font-bold">{score?.score || '-'}</span>
-                <span className={`text-[10px] ${score?.score ? 'opacity-75' : 'text-slate-400'}`}>
+                <span className={`text-xs ${score?.score ? 'opacity-75' : 'text-slate-400'}`}>
                   {hole.holeNumber}
                 </span>
               </button>

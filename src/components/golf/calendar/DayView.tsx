@@ -178,7 +178,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
               <div key={hour} className="contents">
                 {/* Time label column - Compact on mobile */}
                 <div className="h-16 border-r border-stone-100/20 flex items-start justify-end pr-2 md:pr-4 pt-1 bg-gradient-to-r from-stone-50/40 to-transparent">
-                  <span className="text-[10px] md:text-[11px] font-medium text-stone-400">
+                  <span className="text-xs md:text-xs font-medium text-stone-400">
                     {/* Mobile: compact format (6a), Desktop: full format (6 AM) */}
                     <span className="md:hidden">
                       {hour === 0

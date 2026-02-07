@@ -559,18 +559,18 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                             {hasStats && (
                                 <div className="flex items-center gap-1.5">
                                     {totalPutts !== null && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-[11px] font-medium text-slate-500 tabular-nums">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-xs font-medium text-slate-500 tabular-nums">
                                             <svg className="w-3 h-3 text-slate-400" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg>
                                             {totalPutts} putts
                                         </span>
                                     )}
                                     {firPct !== null && (
-                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-[11px] font-medium text-slate-500 tabular-nums">
+                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-xs font-medium text-slate-500 tabular-nums">
                                             FIR {firPct}%
                                         </span>
                                     )}
                                     {girPct !== null && (
-                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-[11px] font-medium text-slate-500 tabular-nums">
+                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-xs font-medium text-slate-500 tabular-nums">
                                             GIR {girPct}%
                                         </span>
                                     )}

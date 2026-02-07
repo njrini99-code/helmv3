@@ -342,7 +342,7 @@ function LifecycleFunnel({ data }: { data: PatternImpactData['lifecycle'] }) {
             </motion.div>
             {conversionToNext !== null && nextStage && (
               <div className="flex items-center gap-1 mt-1 ml-2">
-                <span className="text-[10px] text-slate-400">
+                <span className="text-xs text-slate-400">
                   {conversionToNext}% to {nextStage.label.toLowerCase()}
                 </span>
               </div>
@@ -448,7 +448,7 @@ function PatternRow({
                 {pattern.strokesImpact.toFixed(1)}
               </span>
             </div>
-            <span className="text-[10px] text-slate-400">strokes/round</span>
+            <span className="text-xs text-slate-400">strokes/round</span>
           </div>
 
           {/* State Badge */}
@@ -466,7 +466,7 @@ function PatternRow({
       </div>
 
       {/* Dates */}
-      <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-400">
+      <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
         <span>Detected: {formatDate(pattern.detectedAt)}</span>
         {pattern.resolvedAt && <span>Resolved: {formatDate(pattern.resolvedAt)}</span>}
       </div>
@@ -507,7 +507,7 @@ function EmptyState({ compact = false }: { compact?: boolean }) {
       <h4 className={cn('font-medium text-slate-700 mb-1', compact ? 'text-xs' : 'text-sm')}>
         No Patterns Detected
       </h4>
-      <p className={cn('text-slate-500 max-w-xs mx-auto', compact ? 'text-[10px]' : 'text-xs')}>
+      <p className={cn('text-slate-500 max-w-xs mx-auto', compact ? 'text-xs' : 'text-xs')}>
         Pattern detection requires round data. As players log more rounds, patterns will emerge.
       </p>
     </div>

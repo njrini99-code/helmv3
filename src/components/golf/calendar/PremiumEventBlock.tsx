@@ -86,7 +86,7 @@ export function PremiumEventBlock({
             <span
               className={cn(
                 'font-semibold truncate leading-tight',
-                compact ? 'text-[11px]' : 'text-[13px]',
+                compact ? 'text-xs' : 'text-[13px]',
                 event.status === 'cancelled'
                   ? 'text-stone-400 line-through'
                   : 'text-stone-800'
@@ -105,7 +105,7 @@ export function PremiumEventBlock({
           {!compact && event.start_time && (
             <div className="flex items-center gap-1 mt-0.5">
               <Clock className="w-3 h-3 text-stone-400" />
-              <span className="text-[11px] text-stone-500">
+              <span className="text-xs text-stone-500">
                 {formatTime(event.start_time)}
                 {event.end_time && ` – ${formatTime(event.end_time)}`}
               </span>
@@ -116,7 +116,7 @@ export function PremiumEventBlock({
           {!compact && event.location && (
             <div className="flex items-center gap-1 mt-0.5">
               <MapPin className="w-3 h-3 text-stone-400" />
-              <span className="text-[11px] text-stone-500 truncate">
+              <span className="text-xs text-stone-500 truncate">
                 {event.location}
               </span>
             </div>
@@ -128,7 +128,7 @@ export function PremiumEventBlock({
           <div className="shrink-0">
             <div className="flex items-center gap-1 px-1.5 py-0.5 bg-stone-50/80 rounded-md">
               <Users className="w-3 h-3 text-stone-500" />
-              <span className="text-[11px] text-stone-600 tabular-nums">
+              <span className="text-xs text-stone-600 tabular-nums">
                 {event.rsvp_confirmed_count ?? 0}/{event.max_attendees ?? event.rsvp_total_count ?? 0}
               </span>
             </div>

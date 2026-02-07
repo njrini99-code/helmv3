@@ -154,7 +154,7 @@ export function AvailabilityCellLegend({ className }: { className?: string }) {
           <div key={level.level} className="flex flex-col items-center gap-1">
             <div className={cn('w-6 h-6 rounded', level.className)} />
             {level.level === 0 || level.level === 5 ? (
-              <span className="text-[10px] text-slate-500">{level.label}</span>
+              <span className="text-xs text-slate-500">{level.label}</span>
             ) : null}
           </div>
         ))}

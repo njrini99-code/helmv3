@@ -234,16 +234,16 @@ export function MissPatternChart({
           />
 
           {/* Direction labels around the chart */}
-          <text x={center} y={center - radius - 8} textAnchor="middle" className="fill-slate-500 text-[10px] font-medium">
+          <text x={center} y={center - radius - 8} textAnchor="middle" className="fill-slate-500 text-xs font-medium">
             LONG
           </text>
-          <text x={center} y={center + radius + 16} textAnchor="middle" className="fill-slate-500 text-[10px] font-medium">
+          <text x={center} y={center + radius + 16} textAnchor="middle" className="fill-slate-500 text-xs font-medium">
             SHORT
           </text>
-          <text x={center - radius - 8} y={center + 4} textAnchor="end" className="fill-slate-500 text-[10px] font-medium">
+          <text x={center - radius - 8} y={center + 4} textAnchor="end" className="fill-slate-500 text-xs font-medium">
             LEFT
           </text>
-          <text x={center + radius + 8} y={center + 4} textAnchor="start" className="fill-slate-500 text-[10px] font-medium">
+          <text x={center + radius + 8} y={center + 4} textAnchor="start" className="fill-slate-500 text-xs font-medium">
             RIGHT
           </text>
         </svg>
@@ -260,7 +260,7 @@ export function MissPatternChart({
               <div className="text-2xl font-bold text-slate-900">
                 {primaryMiss.percentage}%
               </div>
-              <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
                 {DIRECTION_LABELS[primaryMiss.direction] || primaryMiss.direction}
               </div>
             </div>

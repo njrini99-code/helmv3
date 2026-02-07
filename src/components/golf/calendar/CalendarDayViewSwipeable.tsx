@@ -259,7 +259,7 @@ export function CalendarDayViewSwipeable({
                 {dateLabel}
               </h2>
               {isTodayDate && (
-                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-green-100 text-green-700 rounded-full">
+                <span className="px-2 py-0.5 text-xs font-bold uppercase tracking-wide bg-green-100 text-green-700 rounded-full">
                   Now
                 </span>
               )}
@@ -458,12 +458,7 @@ export function MobileWeekPicker({
   return (
     <div
       ref={scrollRef}
-      className="overflow-x-auto scrollbar-hide"
-      style={{
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
-        WebkitOverflowScrolling: 'touch'
-      }}
+      className="pills-scroll"
     >
       <div className="flex gap-1.5 px-3 py-2" style={{ width: 'max-content' }}>
         {days.map((day) => {
@@ -494,7 +489,7 @@ export function MobileWeekPicker({
             >
               {/* Day of week */}
               <span className={cn(
-                'text-[10px] font-semibold uppercase tracking-wide',
+                'text-xs font-semibold uppercase tracking-wide',
                 isSelected
                   ? 'text-green-100'
                   : isTodayDate

@@ -95,7 +95,7 @@ export function AcknowledgementTracker({
               <span className="text-sm text-slate-700 flex-1 truncate">
                 {playerNames[ack.player_id] || 'Unknown Player'}
               </span>
-              <span className="text-[11px] text-slate-400 flex-shrink-0">
+              <span className="text-xs text-slate-400 flex-shrink-0">
                 {new Date(ack.acknowledged_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
             </div>
@@ -111,7 +111,7 @@ export function AcknowledgementPill({ count, total }: { count: number; total: nu
   const isComplete = count >= total && total > 0;
   return (
     <span className={cn(
-      'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium tabular-nums',
+      'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium tabular-nums',
       isComplete
         ? 'bg-green-50 text-green-700'
         : 'bg-slate-100 text-slate-500'

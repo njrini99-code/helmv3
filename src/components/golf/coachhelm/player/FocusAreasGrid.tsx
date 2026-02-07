@@ -93,7 +93,7 @@ function FocusAreaCard({
     >
       {/* Priority indicator */}
       <div className={cn(
-        'absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
+        'absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
         index === 0 ? 'bg-primary-100 text-primary-700' :
         index === 1 ? 'bg-primary-50 text-primary-600' :
         'bg-slate-100 text-slate-500'
@@ -113,7 +113,7 @@ function FocusAreaCard({
           <h4 className="font-semibold text-warm-900 text-sm truncate group-hover:text-primary-600 transition-colors">
             {focusArea.area}
           </h4>
-          <span className={cn('text-[10px] font-medium', trendConfig.color)}>
+          <span className={cn('text-xs font-medium', trendConfig.color)}>
             {trendConfig.label}
           </span>
         </div>
@@ -226,11 +226,11 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
       >
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full bg-green-400" />
-          <span className="text-[10px] text-warm-500">Gaining strokes</span>
+          <span className="text-xs text-warm-500">Gaining strokes</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full bg-red-400" />
-          <span className="text-[10px] text-warm-500">Losing strokes</span>
+          <span className="text-xs text-warm-500">Losing strokes</span>
         </div>
       </motion.div>
     </GlassCard>

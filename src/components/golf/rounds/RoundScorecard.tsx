@@ -207,23 +207,23 @@ export function RoundScorecard({ holeScores }: RoundScorecardProps) {
       <div className="px-6 py-3 border-t border-border-light bg-cream-50">
         <div className="flex flex-wrap items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-white text-[10px]">E</span>
+            <span className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-white text-xs">E</span>
             <span className="text-gray-500">Eagle</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-[10px]">B</span>
+            <span className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-xs">B</span>
             <span className="text-gray-500">Birdie</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 text-[10px]">P</span>
+            <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 text-xs">P</span>
             <span className="text-gray-500">Par</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-[10px]">+1</span>
+            <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs">+1</span>
             <span className="text-gray-500">Bogey</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-blue-200 flex items-center justify-center text-blue-800 text-[10px]">+2</span>
+            <span className="w-5 h-5 rounded-full bg-blue-200 flex items-center justify-center text-blue-800 text-xs">+2</span>
             <span className="text-gray-500">Double+</span>
           </div>
         </div>

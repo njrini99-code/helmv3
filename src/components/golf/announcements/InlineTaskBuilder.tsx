@@ -62,7 +62,7 @@ export function InlineTaskBuilder({ tasks, onChange }: InlineTaskBuilderProps) {
 
               {/* Task number badge */}
               <div className="flex items-center gap-2 mb-2">
-                <span className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                <span className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">
                   {index + 1}
                 </span>
                 <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Task</span>

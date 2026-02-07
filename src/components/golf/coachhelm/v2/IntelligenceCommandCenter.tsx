@@ -199,14 +199,14 @@ const OverviewSummary = memo(function OverviewSummary({
             </div>
             <span className={cn(
               'font-medium text-slate-400 uppercase tracking-wider',
-              isPage ? 'text-xs' : 'text-[10px]'
+              isPage ? 'text-xs' : 'text-xs'
             )}>Team Health</span>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className={cn('font-bold tabular-nums', getHealthColor(healthScore), isPage ? 'text-4xl' : 'text-2xl')}>{healthScore}</span>
-            <span className={cn('text-slate-400', isPage ? 'text-sm' : 'text-[10px]')}>/100</span>
+            <span className={cn('text-slate-400', isPage ? 'text-sm' : 'text-xs')}>/100</span>
           </div>
-          <span className={cn('font-medium', getHealthColor(healthScore), isPage ? 'text-sm' : 'text-[10px]')}>
+          <span className={cn('font-medium', getHealthColor(healthScore), isPage ? 'text-sm' : 'text-xs')}>
             {getHealthLabel(healthScore)}
           </span>
         </div>
@@ -226,7 +226,7 @@ const OverviewSummary = memo(function OverviewSummary({
           </div>
           <span className={cn(
             'font-medium text-slate-400 uppercase tracking-wider',
-            isPage ? 'text-xs' : 'text-[10px]'
+            isPage ? 'text-xs' : 'text-xs'
           )}>AI Analysis</span>
         </div>
         <div className={cn('space-y-1', isPage && 'space-y-2')}>
@@ -358,7 +358,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
           <div className={cn('flex items-center gap-1.5 flex-wrap', isPage ? 'mb-2' : 'mb-1')}>
             <span className={cn(
               'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
-              isPage ? 'text-[10px] px-2 py-1' : 'text-[9px]',
+              isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
               tone.badge
             )}>
               {tone.badgeText}
@@ -367,7 +367,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
             {strokeImpact !== null && strokeImpact > 0 && (
               <span className={cn(
                 'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
-                isPage ? 'text-[10px] px-2 py-1' : 'text-[9px]',
+                isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
                 strokeImpact >= 1.0
                   ? 'bg-red-100 text-red-700'
                   : strokeImpact >= 0.5
@@ -377,7 +377,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                 {strokeImpact >= 1.0 ? 'Major' : strokeImpact >= 0.5 ? 'Significant' : 'Minor'}: {strokeImpact.toFixed(1)} strokes/rd
               </span>
             )}
-            <span className={cn('text-slate-400', isPage ? 'text-xs' : 'text-[10px]')}>
+            <span className={cn('text-slate-400', isPage ? 'text-xs' : 'text-xs')}>
               {confidencePct}% confidence
             </span>
           </div>
@@ -393,7 +393,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
           {/* Body preview */}
           <p className={cn(
             'text-slate-500 line-clamp-2 leading-relaxed',
-            isPage ? 'text-sm' : 'text-[11px]'
+            isPage ? 'text-sm' : 'text-xs'
           )}>
             {insight.body}
           </p>
@@ -455,14 +455,14 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                         </div>
                         <div className={cn(
                           'text-slate-400 leading-tight mt-0.5',
-                          isPage ? 'text-[11px]' : 'text-[9px]'
+                          isPage ? 'text-xs' : 'text-[9px]'
                         )}>
                           {metric.label}
                         </div>
                         {metric.benchmark != null && (
                           <div className={cn(
                             'mt-1 font-medium',
-                            isPage ? 'text-[10px]' : 'text-[8px]',
+                            isPage ? 'text-xs' : 'text-[8px]',
                             metric.belowBenchmark ? 'text-red-500' : 'text-green-500'
                           )}>
                             vs {metric.benchmark}{String(metric.value).includes('%') ? '%' : ''}
@@ -471,7 +471,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                         {metric.trend && (
                           <div className={cn(
                             'mt-0.5 font-medium',
-                            isPage ? 'text-[10px]' : 'text-[8px]',
+                            isPage ? 'text-xs' : 'text-[8px]',
                             metric.trend === 'improving' ? 'text-green-500' :
                             metric.trend === 'declining' ? 'text-red-500' :
                             'text-slate-400'
@@ -516,14 +516,14 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                         </div>
                         <div className={cn(
                           'text-slate-400 leading-tight mt-0.5',
-                          isPage ? 'text-[11px]' : 'text-[9px]'
+                          isPage ? 'text-xs' : 'text-[9px]'
                         )}>
                           {step.premise?.split(':')[0]?.trim() || 'Metric'}
                         </div>
                         {step.inference?.startsWith('Benchmark:') && (
                           <div className={cn(
                             'mt-1 font-medium',
-                            isPage ? 'text-[10px]' : 'text-[8px]',
+                            isPage ? 'text-xs' : 'text-[8px]',
                             step.conclusion?.includes('below') ? 'text-red-500' :
                             step.conclusion?.includes('above') ? 'text-green-500' :
                             'text-slate-400'
@@ -546,7 +546,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                   <div className="flex items-center justify-between mb-1.5">
                     <span className={cn(
                       'font-bold text-slate-500 uppercase tracking-wider',
-                      isPage ? 'text-[10px]' : 'text-[9px]'
+                      isPage ? 'text-xs' : 'text-[9px]'
                     )}>
                       Stroke Impact
                     </span>
@@ -591,7 +591,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                       Coach Action Plan
                     </span>
                   </div>
-                  <p className={cn('text-slate-700 leading-relaxed', isPage ? 'text-sm' : 'text-[11px]')}>
+                  <p className={cn('text-slate-700 leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
                     {insight.callToAction}
                   </p>
                 </div>
@@ -604,7 +604,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                     onClick={(e) => { e.stopPropagation(); onAction('acknowledge'); }}
                     className={cn(
                       'flex items-center gap-1 font-semibold text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors',
-                      isPage ? 'text-xs px-4 py-2' : 'text-[10px] px-2.5 py-1.5'
+                      isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                     )}
                   >
                     <IconCheck size={isPage ? 14 : 12} /> Got It
@@ -613,7 +613,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                     onClick={(e) => { e.stopPropagation(); onAction('dismiss'); }}
                     className={cn(
                       'flex items-center gap-1 text-slate-500 hover:text-slate-700 hover:bg-white/60 rounded-lg transition-colors',
-                      isPage ? 'text-xs px-4 py-2' : 'text-[10px] px-2.5 py-1.5'
+                      isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                     )}
                   >
                     <IconX size={isPage ? 14 : 12} /> Dismiss
@@ -715,21 +715,21 @@ const InsightGroupCard = memo(function InsightGroupCard({
           <div className={cn('flex items-center gap-1.5 flex-wrap', isPage ? 'mb-2' : 'mb-1')}>
             <span className={cn(
               'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
-              isPage ? 'text-[10px] px-2 py-1' : 'text-[9px]',
+              isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
               tone.badge
             )}>
               {tone.badgeText}
             </span>
             <span className={cn(
               'font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500',
-              isPage ? 'text-[10px] px-2 py-1' : 'text-[9px]'
+              isPage ? 'text-xs px-2 py-1' : 'text-[9px]'
             )}>
               {CATEGORY_LABELS[group.category]}
             </span>
             {group.strokeImpact != null && group.strokeImpact > 0 && (
               <span className={cn(
                 'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
-                isPage ? 'text-[10px] px-2 py-1' : 'text-[9px]',
+                isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
                 group.strokeImpact >= 1.0
                   ? 'bg-red-100 text-red-700'
                   : group.strokeImpact >= 0.5
@@ -739,7 +739,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                 {group.strokeImpact >= 1.0 ? 'Major' : group.strokeImpact >= 0.5 ? 'Significant' : 'Minor'}: {group.strokeImpact.toFixed(1)} strokes/rd
               </span>
             )}
-            <span className={cn('text-slate-400', isPage ? 'text-xs' : 'text-[10px]')}>
+            <span className={cn('text-slate-400', isPage ? 'text-xs' : 'text-xs')}>
               {confidencePct}%
             </span>
           </div>
@@ -758,7 +758,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {group.isTeamWide && (
                 <span className={cn(
                   'inline-flex items-center gap-1 font-semibold rounded-full border',
-                  isPage ? 'text-[11px] px-2.5 py-0.5' : 'text-[9px] px-2 py-0.5',
+                  isPage ? 'text-xs px-2.5 py-0.5' : 'text-[9px] px-2 py-0.5',
                   'bg-primary-50 text-primary-700 border-primary-200/60'
                 )}>
                   <IconUsers size={isPage ? 12 : 10} />
@@ -770,7 +770,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                   key={p.playerId}
                   className={cn(
                     'inline-flex items-center font-medium rounded-full border',
-                    isPage ? 'text-[11px] px-2.5 py-0.5' : 'text-[9px] px-2 py-0.5',
+                    isPage ? 'text-xs px-2.5 py-0.5' : 'text-[9px] px-2 py-0.5',
                     'bg-white/70 text-slate-600 border-slate-200/60'
                   )}
                 >
@@ -780,7 +780,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {group.players.length > (isPage ? 8 : 4) && (
                 <span className={cn(
                   'text-slate-400 font-medium',
-                  isPage ? 'text-[11px]' : 'text-[9px]'
+                  isPage ? 'text-xs' : 'text-[9px]'
                 )}>
                   +{group.players.length - (isPage ? 8 : 4)} more
                 </span>
@@ -791,7 +791,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
           {/* Body preview */}
           <p className={cn(
             'text-slate-500 line-clamp-2 leading-relaxed',
-            isPage ? 'text-sm' : 'text-[11px]'
+            isPage ? 'text-sm' : 'text-xs'
           )}>
             {group.body}
           </p>
@@ -837,13 +837,13 @@ const InsightGroupCard = memo(function InsightGroupCard({
                         key={i}
                         className={cn(
                           'flex items-start gap-2 bg-white/60 rounded-lg border border-white/50',
-                          isPage ? 'text-sm p-3' : 'text-[11px] p-2'
+                          isPage ? 'text-sm p-3' : 'text-xs p-2'
                         )}
                       >
                         {mi.playerName && (
                           <span className={cn(
                             'flex-shrink-0 inline-flex items-center font-semibold rounded-full border bg-white/80 text-slate-700 border-slate-200/60',
-                            isPage ? 'text-[10px] px-2 py-0.5' : 'text-[8px] px-1.5 py-0.5'
+                            isPage ? 'text-xs px-2 py-0.5' : 'text-[8px] px-1.5 py-0.5'
                           )}>
                             {mi.playerName}
                           </span>
@@ -877,7 +877,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                       Coach Action Plan
                     </span>
                   </div>
-                  <p className={cn('text-slate-700 leading-relaxed', isPage ? 'text-sm' : 'text-[11px]')}>
+                  <p className={cn('text-slate-700 leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
                     {group.callToAction}
                   </p>
                 </div>
@@ -891,7 +891,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                       onClick={(e) => { e.stopPropagation(); onAcknowledgeGroup(group); }}
                       className={cn(
                         'flex items-center gap-1 font-semibold text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors',
-                        isPage ? 'text-xs px-4 py-2' : 'text-[10px] px-2.5 py-1.5'
+                        isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                       )}
                     >
                       <IconCheck size={isPage ? 14 : 12} /> Got It
@@ -902,7 +902,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                       onClick={(e) => { e.stopPropagation(); onDismissGroup(group); }}
                       className={cn(
                         'flex items-center gap-1 text-slate-500 hover:text-slate-700 hover:bg-white/60 rounded-lg transition-colors',
-                        isPage ? 'text-xs px-4 py-2' : 'text-[10px] px-2.5 py-1.5'
+                        isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                       )}
                     >
                       <IconX size={isPage ? 14 : 12} /> Dismiss
@@ -1002,7 +1002,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
             )}>
               {isNegative ? '+' : '-'}{impactAbs.toFixed(1)} strokes/round
             </span>
-            <span className={cn('text-slate-400', isPage ? 'text-xs' : 'text-[10px]')}>
+            <span className={cn('text-slate-400', isPage ? 'text-xs' : 'text-xs')}>
               {confidencePct}%
             </span>
           </div>
@@ -1040,7 +1040,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
                   </span>
                   <div className="mt-1 space-y-1">
                     {pattern.conditions.map((c, i) => (
-                      <div key={i} className="text-[11px] text-slate-600 bg-slate-50/80 rounded-lg px-2.5 py-1.5">
+                      <div key={i} className="text-xs text-slate-600 bg-slate-50/80 rounded-lg px-2.5 py-1.5">
                         {c.label || `${c.field} ${c.operator} ${c.value}`}
                       </div>
                     ))}
@@ -1077,7 +1077,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
                     <IconTarget size={10} className="text-green-600" />
                     <span className="text-[9px] font-bold text-green-700 uppercase">Recommendation</span>
                   </div>
-                  <p className="text-[11px] text-green-800 leading-relaxed">
+                  <p className="text-xs text-green-800 leading-relaxed">
                     {pattern.recommendation}
                   </p>
                 </div>
@@ -1145,12 +1145,12 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
               Next Round
             </span>
             {name && (
-              <span className={cn('text-slate-600 font-medium', isPage ? 'text-sm' : 'text-[11px]')}>{name}</span>
+              <span className={cn('text-slate-600 font-medium', isPage ? 'text-sm' : 'text-xs')}>{name}</span>
             )}
           </div>
         </div>
         <span className={cn(
-          'text-[10px] font-medium px-1.5 py-0.5 rounded-full',
+          'text-xs font-medium px-1.5 py-0.5 rounded-full',
           prediction.trend === 'improving' ? 'bg-green-100 text-green-700' :
           prediction.trend === 'declining' ? 'bg-red-100 text-red-700' :
           'bg-slate-100 text-slate-600'
@@ -1193,7 +1193,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
 
       {/* Range bar */}
       {hasRange && (
-        <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2.5">
+        <div className="flex items-center justify-between text-xs text-slate-400 mb-2.5">
           <span className="tabular-nums">{formatScore(rangeLow)}</span>
           <div className="flex-1 mx-2 h-px bg-slate-200 relative">
             <div className="absolute left-1/2 -translate-x-1/2 -top-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
@@ -1206,7 +1206,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
       {factors.length > 0 && (
         <div className="space-y-1">
           {factors.slice(0, 3).map((f: { name: string; contribution: number }, i: number) => (
-            <div key={i} className="flex items-center justify-between text-[11px]">
+            <div key={i} className="flex items-center justify-between text-xs">
               <span className="text-slate-500">{f.name}</span>
               <span className={cn(
                 'font-medium tabular-nums',
@@ -1223,13 +1223,13 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
       {isTailRiskProbs(prediction.tailRisks) && (
         <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-slate-100">
           <div className="flex-1 text-center bg-red-50/60 rounded-lg py-1.5">
-            <div className="text-[10px] text-red-400">Blowup</div>
+            <div className="text-xs text-red-400">Blowup</div>
             <div className="text-xs font-bold text-red-600 tabular-nums">
               {Math.round(prediction.tailRisks.blowupProbability * 100)}%
             </div>
           </div>
           <div className="flex-1 text-center bg-green-50/60 rounded-lg py-1.5">
-            <div className="text-[10px] text-green-400">Great Round</div>
+            <div className="text-xs text-green-400">Great Round</div>
             <div className="text-xs font-bold text-green-600 tabular-nums">
               {Math.round(prediction.tailRisks.greatRoundProbability * 100)}%
             </div>
@@ -1254,7 +1254,7 @@ function TabEmptyState({ icon, title, description, variant = 'widget' }: { icon:
         {icon}
       </div>
       <h4 className={cn('font-semibold text-slate-700', isPage ? 'text-lg mb-1' : 'text-[13px] mb-0.5')}>{title}</h4>
-      <p className={cn('text-slate-400 leading-relaxed', isPage ? 'text-sm max-w-xs' : 'text-[11px] max-w-[200px]')}>{description}</p>
+      <p className={cn('text-slate-400 leading-relaxed', isPage ? 'text-sm max-w-xs' : 'text-xs max-w-[200px]')}>{description}</p>
     </div>
   );
 }
@@ -1418,7 +1418,7 @@ export function IntelligenceCommandCenter({
             disabled={isPending}
             className={cn(
               'w-full flex items-center justify-center gap-2 rounded-lg font-bold uppercase tracking-wider transition-all',
-              isPage ? 'px-6 py-3.5 text-sm rounded-xl' : 'px-3 py-2 text-[11px]',
+              isPage ? 'px-6 py-3.5 text-sm rounded-xl' : 'px-3 py-2 text-xs',
               isPending
                 ? 'bg-white/10 text-white/40 cursor-not-allowed'
                 : 'bg-gradient-to-r from-primary-500 to-emerald-500 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 active:scale-[0.98]'
@@ -1453,7 +1453,7 @@ export function IntelligenceCommandCenter({
 
       {/* Error */}
       {error && (
-        <div className="rounded-lg border border-red-200/60 bg-red-50/80 px-3 py-2 text-[11px] text-red-600">
+        <div className="rounded-lg border border-red-200/60 bg-red-50/80 px-3 py-2 text-xs text-red-600">
           {error}
         </div>
       )}
@@ -1470,7 +1470,7 @@ export function IntelligenceCommandCenter({
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 'flex-1 flex items-center justify-center gap-1 font-bold rounded-md transition-all uppercase tracking-wider',
-                isPage ? 'px-4 py-3 text-xs rounded-lg' : 'px-1.5 py-1.5 text-[10px]',
+                isPage ? 'px-4 py-3 text-xs rounded-lg' : 'px-1.5 py-1.5 text-xs',
                 activeTab === tab.id
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-400 hover:text-slate-600'
@@ -1480,7 +1480,7 @@ export function IntelligenceCommandCenter({
               {tab.count > 0 && (
                 <span className={cn(
                   'flex items-center justify-center px-1 rounded-full',
-                  isPage ? 'text-[10px] min-w-[20px] h-5' : 'text-[8px] min-w-[16px] h-4',
+                  isPage ? 'text-xs min-w-[20px] h-5' : 'text-[8px] min-w-[16px] h-4',
                   activeTab === tab.id
                     ? 'bg-primary-100 text-primary-700'
                     : 'bg-slate-200/60 text-slate-500'
@@ -1584,7 +1584,7 @@ export function IntelligenceCommandCenter({
                 )}
                 <Link
                   href="/golf/dashboard/intelligence"
-                  className="flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-primary-600 hover:text-primary-700 transition-colors"
+                  className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors"
                 >
                   View Full Intelligence Dashboard
                   <IconChevronRight size={14} />
@@ -1741,7 +1741,7 @@ export function IntelligenceCommandCenter({
             </h4>
             <p className={cn(
               'text-slate-400 leading-relaxed',
-              isPage ? 'text-base max-w-md mb-6' : 'text-[11px] max-w-[220px] mb-3'
+              isPage ? 'text-base max-w-md mb-6' : 'text-xs max-w-[220px] mb-3'
             )}>
               CoachHelm AI will analyze every shot, cross-reference related stats, identify root causes of stroke leakage, and rank practice priorities by ROI.
             </p>

@@ -65,7 +65,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
                 calibrationDiff > 0 ? 'text-green-600' : 'text-amber-600'
               )}>
                 {Math.round(reasoning.calibratedConfidence * 100)}%
-                <span className="text-[10px] ml-1">
+                <span className="text-xs ml-1">
                   ({calibrationDiff > 0 ? '+' : ''}{Math.round(calibrationDiff * 100)}%)
                 </span>
               </span>
