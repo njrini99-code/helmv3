@@ -21,7 +21,7 @@ import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useOfflineSyncStore, useOfflineSyncStatus, useOfflineSyncActions } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { saveOfflineShot, saveOfflineHole, saveOfflineRound } from '@/lib/offline/shot-storage';
-import { OfflineSyncStatus } from './OfflineSyncStatus';
+// OfflineSyncStatus removed — was popping up during normal online use
 import { OfflineWarningBanner } from './OfflineWarningBanner';
 import type { ShotRecord, HoleStats } from './ShotTrackingComprehensive';
 
@@ -409,15 +409,7 @@ export default function ShotTrackingWithOffline({
         autoSaveInterval={autoSaveInterval}
       />
 
-      {/* Floating Sync Status */}
-      <OfflineSyncStatus
-        position="floating"
-        showWhenOnline={false}
-        autoHideDelay={5000}
-        onSyncNow={handleSyncNow}
-        onRetryFailed={handleRetryFailed}
-        onDismissError={() => useOfflineSyncStore.getState().clearError()}
-      />
+      {/* Floating Sync Status removed — was popping up during normal online use */}
     </div>
   );
 }

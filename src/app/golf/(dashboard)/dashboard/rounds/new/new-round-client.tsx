@@ -21,7 +21,7 @@ import { checkForDraft, clearRoundDraft } from '@/app/golf/actions/round-drafts'
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
-import { OfflineSyncStatus, OfflineWarningBanner } from '@/components/golf';
+import { OfflineWarningBanner } from '@/components/golf';
 import { IconBookmark, IconCheck, IconChartBar, IconMapPin, IconPlus, IconTrophy } from '@/components/icons';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
@@ -1447,25 +1447,7 @@ export default function NewRoundClient() {
         />
       )}
 
-      {/* Floating Sync Status - shows sync progress and pending items */}
-      {step === 'tracking' && (
-        <OfflineSyncStatus
-          position="floating"
-          showWhenOnline={false}
-          autoHideDelay={5000}
-          onSyncNow={async () => {
-            if (connectionStatus.isOnline) {
-              const syncEngine = getSyncEngine();
-              await syncEngine.syncNow();
-            }
-          }}
-          onRetryFailed={async () => {
-            const syncEngine = getSyncEngine();
-            await syncEngine.retryFailed();
-          }}
-          onDismissError={() => useOfflineSyncStore.getState().clearSyncError()}
-        />
-      )}
+      {/* Floating Sync Status removed — was popping up during normal online use */}
 
       {/* Draft Auto-Save Indicator removed - was too noisy */}
 
