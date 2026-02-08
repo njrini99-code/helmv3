@@ -49,8 +49,17 @@ export function VideoIntro({
     <div className="relative min-h-screen overflow-hidden bg-black">
       <video
         ref={videoRef}
-        className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-out"
-        style={{ opacity: isRevealing ? 1 : 0 }}
+        className="absolute transition-opacity duration-700 ease-out"
+        style={{
+          opacity: isRevealing ? 1 : 0,
+          // Scale up and shift right+up to crop out bottom-right Veo watermark
+          top: '-5%',
+          left: '0',
+          width: '110%',
+          height: '115%',
+          objectFit: 'cover',
+          objectPosition: '60% 40%',
+        }}
         muted
         playsInline
         preload="auto"
@@ -66,13 +75,6 @@ export function VideoIntro({
         style={{ opacity: isRevealing ? 0 : 1 }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/25 to-black/50" />
-      {/* Mask bottom-right video watermark */}
-      <div
-        className="absolute bottom-0 right-0 w-48 h-32 pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at 100% 100%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 40%, transparent 70%)',
-        }}
-      />
 
       <div
         className="relative z-10 transition-[opacity,filter,transform] duration-700 ease-out"
