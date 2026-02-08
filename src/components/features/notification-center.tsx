@@ -108,7 +108,7 @@ export function NotificationCenter({
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute right-0 top-full mt-2 w-96 glass-prominent rounded-xl shadow-2xl overflow-hidden animate-fade-in z-50"
+          className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 glass-prominent rounded-xl shadow-2xl overflow-hidden animate-fade-in z-50"
         >
           <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
             style={{
@@ -167,7 +167,7 @@ export function NotificationCenter({
           </div>
 
           {/* Notifications List */}
-          <div className="relative max-h-[480px] overflow-y-auto custom-scrollbar">
+          <div className="relative max-h-[min(480px,60vh)] overflow-y-auto custom-scrollbar">
             {filteredNotifications.length === 0 ? (
               <div className="relative p-8 text-center">
                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">

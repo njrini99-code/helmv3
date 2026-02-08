@@ -108,7 +108,7 @@ export function NotificationCenter() {
           />
 
           {/* Popover */}
-          <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 overflow-hidden">
+          <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 overflow-hidden">
             {/* Header */}
             <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
@@ -124,7 +124,7 @@ export function NotificationCenter() {
             </div>
 
             {/* Notification List */}
-            <div className="max-h-[480px] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+            <div className="max-h-[min(480px,60vh)] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
               {loading ? (
                 <div className="p-4 space-y-3">
                   {[1, 2, 3].map(i => (

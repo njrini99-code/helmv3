@@ -1040,10 +1040,11 @@ export default function StatsClient({
       <button
         onClick={toggleMobile}
         className={cn(
-          'fixed top-6 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 shadow-lg hover:shadow-xl hover:bg-white transition-all group',
+          'fixed z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 shadow-lg hover:shadow-xl hover:bg-white transition-all group',
           'lg:hidden',
-          userRole === 'coach' ? 'left-20' : 'left-6'
+          userRole === 'coach' ? 'left-20' : 'left-4'
         )}
+        style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
         aria-label="Open navigation menu"
       >
         <IconMenu size={20} className="text-slate-600 group-hover:text-green-600 transition-colors" />
@@ -1053,7 +1054,8 @@ export default function StatsClient({
       {userRole === 'coach' && (
         <button
           onClick={handleBackClick}
-          className="fixed top-6 left-6 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 shadow-lg hover:shadow-xl hover:bg-white transition-all group"
+          className="fixed left-4 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 shadow-lg hover:shadow-xl hover:bg-white transition-all group"
+          style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
         >
           <IconChevronLeft size={20} className="text-slate-600 group-hover:text-green-600 transition-colors" />
         </button>
@@ -1063,7 +1065,8 @@ export default function StatsClient({
       <button
         onClick={handleRefresh}
         disabled={loadingDetailed}
-        className="fixed top-6 right-6 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 shadow-lg hover:shadow-xl hover:bg-white transition-all group disabled:opacity-50"
+        className="fixed right-4 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 shadow-lg hover:shadow-xl hover:bg-white transition-all group disabled:opacity-50"
+        style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
         title="Refresh stats"
       >
         <IconRefresh
@@ -1108,7 +1111,27 @@ export default function StatsClient({
           statisticalStrengths={strengthsWeaknesses?.strengths}
           statisticalWeaknesses={strengthsWeaknesses?.weaknesses}
         />
-      ) : null}
+      ) : (
+        /* Empty state when no stats available */
+        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-8">
+          <div className="relative bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-8 md:p-12 shadow-glass-sm text-center">
+            <ShineEffect />
+            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-5">
+              <IconChart size={36} className="text-slate-300" />
+            </div>
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">No Stats Yet</h2>
+            <p className="text-slate-500 max-w-sm mx-auto mb-6">
+              Complete rounds with shot tracking to see your detailed performance statistics here.
+            </p>
+            <a
+              href="/golf/dashboard/rounds/new"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium transition-colors"
+            >
+              Start a Round
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Recent Rounds Section */}
       {rounds.length > 0 && (
