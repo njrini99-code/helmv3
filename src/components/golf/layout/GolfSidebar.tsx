@@ -112,7 +112,9 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
     if (href === '/golf/dashboard') {
       return pathname === href;
     }
-    return pathname.startsWith(href);
+    // Segment-based matching: ensure the path matches at a segment boundary
+    // e.g. /golf/dashboard/stats should not match /golf/dashboard/stats-overview
+    return pathname === href || pathname.startsWith(href + '/');
   };
 
   return (

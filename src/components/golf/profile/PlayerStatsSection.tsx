@@ -465,6 +465,9 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
           <div className="relative">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
+              onKeyDown={(e) => { if (e.key === 'Escape') setDropdownOpen(false); }}
+              aria-haspopup="listbox"
+              aria-expanded={dropdownOpen}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
             >
               {selectedRoundId === 'overall' ? 'Overall' : 'Single Round'}
@@ -474,8 +477,15 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
             {dropdownOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-slate-200 shadow-lg z-20 py-2 max-h-80 overflow-auto">
+                <div
+                  role="listbox"
+                  aria-label="Select round"
+                  onKeyDown={(e) => { if (e.key === 'Escape') setDropdownOpen(false); }}
+                  className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-slate-200 shadow-lg z-20 py-2 max-h-80 overflow-auto"
+                >
                   <button
+                    role="option"
+                    aria-selected={selectedRoundId === 'overall'}
                     onClick={() => { setSelectedRoundId('overall'); setDropdownOpen(false); }}
                     className={cn(
                       'w-full px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors',
@@ -488,6 +498,8 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
                   {rounds.slice(0, 15).map(round => (
                     <button
                       key={round.id}
+                      role="option"
+                      aria-selected={selectedRoundId === round.id}
                       onClick={() => { setSelectedRoundId(round.id); setDropdownOpen(false); }}
                       className={cn(
                         'w-full px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors',

@@ -171,8 +171,7 @@ export default function GolfSettingsPage() {
     }
 
     setLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [golfUser]);
 
   useEffect(() => {
     loadProfile();
@@ -211,7 +210,40 @@ export default function GolfSettingsPage() {
     }
   }
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <AnimatedPage className="min-h-full">
+        <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+          <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 md:py-5">
+            <div className="h-7 w-32 bg-slate-200 rounded-lg animate-pulse" />
+            <div className="h-4 w-56 bg-slate-100 rounded mt-2 animate-pulse" />
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+          <div className="glass-standard rounded-2xl p-5 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-slate-200" />
+              <div className="flex-1">
+                <div className="h-5 w-40 bg-slate-200 rounded mb-2" />
+                <div className="h-4 w-24 bg-slate-100 rounded" />
+              </div>
+            </div>
+          </div>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass-standard rounded-2xl p-4 animate-pulse">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-slate-200" />
+                <div className="flex-1">
+                  <div className="h-4 w-36 bg-slate-200 rounded mb-2" />
+                  <div className="h-3 w-48 bg-slate-100 rounded" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </AnimatedPage>
+    );
+  }
   if (!profile) return null;
 
   return (
@@ -957,6 +989,9 @@ function AppearancePanel() {
     } catch { /* defaults */ }
   }, []);
 
+  // TODO: These preferences are saved to localStorage but not yet consumed by
+  // other components. Planned for a future pass to wire up density, dateFormat,
+  // showAnimations, and scoreDisplay across the dashboard.
   function handleSave() {
     setSaving(true);
     try {
@@ -1129,6 +1164,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
   useEffect(() => {
     (async () => {
       const supabase = createClient();
+      // Cast needed: sg_benchmark_level column was added after type generation
       const { data } = await (supabase as any)
         .from('golf_team_settings')
         .select('scoring_format, handicap_system, default_tees, timezone, sg_benchmark_level')
@@ -1151,6 +1187,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
     const supabase = createClient();
     try {
       // Upsert — create if doesn't exist
+      // Cast needed: sg_benchmark_level column was added after type generation
       const { error } = await (supabase as any)
         .from('golf_team_settings')
         .upsert({

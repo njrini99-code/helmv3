@@ -11,6 +11,17 @@ export default async function NewRoundPage() {
     redirect('/golf/login');
   }
 
+  // Verify user is a player (coaches cannot submit rounds)
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!player) {
+    redirect('/golf/dashboard?message=Only players can submit rounds');
+  }
+
   return (
     <AnimatedPage>
       <AnimatedItem>

@@ -73,6 +73,9 @@ export default function ContinueRoundClient({
     return { [startHoleIndex]: initialShots };
   });
 
+  const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats) => {
     // Update holes with score
     const updatedHoles = [...holes];
@@ -95,12 +98,13 @@ export default function ContinueRoundClient({
       return next;
     });
 
-    // Move to next hole or finish
+    // Move to next hole or prompt for finish confirmation
     if (holeIndex < holes.length - 1) {
       setCurrentHoleIndex(holeIndex + 1);
     } else {
-      // All holes complete, submit round
-      await handleRoundSubmit(updatedStats);
+      // Last hole - ask for confirmation before submitting
+      setPendingFinalStats(updatedStats);
+      setShowFinishConfirm(true);
     }
   };
 
@@ -348,6 +352,36 @@ export default function ContinueRoundClient({
         currentHole={currentHoleIndex + 1}
         totalHoles={holes.length}
       />
+
+      {/* Finish Round Confirmation */}
+      {showFinishConfirm && pendingFinalStats && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setShowFinishConfirm(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Submit Round?</h3>
+            <p className="text-sm text-slate-500 mb-6">
+              All {holes.length} holes are complete. Submit your round for scoring?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowFinishConfirm(false)}
+                className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-medium hover:bg-slate-200 transition-colors"
+              >
+                Review
+              </button>
+              <button
+                onClick={async () => {
+                  setShowFinishConfirm(false);
+                  await handleRoundSubmit(pendingFinalStats);
+                }}
+                className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </>
   );

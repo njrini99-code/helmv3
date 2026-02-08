@@ -26,23 +26,26 @@ interface StaggeredListProps {
   delay?: number;
 }
 
-export function StaggeredList({ 
-  children, 
-  className, 
+export function StaggeredList({
+  children,
+  className,
   itemClassName,
-  delay = 50 
+  delay = 50
 }: StaggeredListProps) {
   return (
     <div className={className}>
-      {children.map((child, index) => (
-        <div
-          key={index}
-          className={cn('animate-slide-in-up', itemClassName)}
-          style={{ animationDelay: `${index * delay}ms` }}
-        >
-          {child}
-        </div>
-      ))}
+      {children.map((child, index) => {
+        const key = (child as React.ReactElement)?.key ?? index;
+        return (
+          <div
+            key={key}
+            className={cn('animate-slide-in-up', itemClassName)}
+            style={{ animationDelay: `${index * delay}ms` }}
+          >
+            {child}
+          </div>
+        );
+      })}
     </div>
   );
 }

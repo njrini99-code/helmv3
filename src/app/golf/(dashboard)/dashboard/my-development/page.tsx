@@ -161,9 +161,15 @@ export default async function MyDevelopmentPage() {
               <IconTarget size={28} className="text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">No Development Plans Yet</h3>
-            <p className="text-slate-500 max-w-sm mx-auto">
+            <p className="text-slate-500 max-w-sm mx-auto mb-4">
               Your coach hasn&apos;t assigned any focus areas yet. Check back later or talk to your coach about your development goals.
             </p>
+            <a
+              href="/golf/dashboard/messages"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Message Coach
+            </a>
           </div>
         ) : (
           <div className="space-y-8">

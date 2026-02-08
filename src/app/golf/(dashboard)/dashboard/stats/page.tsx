@@ -1,6 +1,3 @@
-'use client';
-
-import { useSearchParams } from 'next/navigation';
 import StatsClient from './stats-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
@@ -15,9 +12,14 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
  *
  * This results in 3-5x faster initial page load for players with many rounds.
  */
-export default function GolfStatsPage() {
-  const searchParams = useSearchParams();
-  const playerId = searchParams.get('player');
+
+interface GolfStatsPageProps {
+  searchParams: Promise<{ player?: string }>;
+}
+
+export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps) {
+  const params = await searchParams;
+  const playerId = params.player ?? null;
 
   return (
     <AnimatedPage>

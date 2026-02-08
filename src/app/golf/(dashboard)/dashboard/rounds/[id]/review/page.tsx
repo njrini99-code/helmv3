@@ -8,7 +8,7 @@
  */
 
 import { useParams } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
 import Link from 'next/link';
@@ -100,7 +100,7 @@ export default function RoundReviewPage() {
     generating: v1Generating,
   } = useRoundReviewV2(roundId);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   // Fetch round data
   useEffect(() => {
@@ -193,12 +193,14 @@ export default function RoundReviewPage() {
     }
   }, [round, roundId, addToast]);
 
-  // Auto-generate if no review exists
+  // Auto-generate if no review exists (only once)
+  const [autoGenerateAttempted, setAutoGenerateAttempted] = useState(false);
   useEffect(() => {
-    if (!loadingRound && !loadingStoredReview && round && !storedReview && !generatingReview) {
+    if (!loadingRound && !loadingStoredReview && round && !storedReview && !generatingReview && !autoGenerateAttempted) {
+      setAutoGenerateAttempted(true);
       generateReview();
     }
-  }, [loadingRound, loadingStoredReview, round, storedReview, generatingReview, generateReview]);
+  }, [loadingRound, loadingStoredReview, round, storedReview, generatingReview, generateReview, autoGenerateAttempted]);
 
   // Handle share with coach
   const handleShare = async () => {

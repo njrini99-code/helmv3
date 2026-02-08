@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { Avatar } from '@/components/ui/avatar';
@@ -270,22 +269,11 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                 {/* Player */}
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    {player.avatar_url ? (
-                      <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 ring-1 ring-black/5">
-                        <Image
-                          src={player.avatar_url}
-                          alt={`${player.first_name} ${player.last_name}`}
-                          width={36}
-                          height={36}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <Avatar
-                        name={`${player.first_name} ${player.last_name}`}
-                        size="sm"
-                      />
-                    )}
+                    <Avatar
+                      src={player.avatar_url}
+                      name={`${player.first_name} ${player.last_name}`}
+                      size="sm"
+                    />
                     <div className="min-w-0">
                       <p className="font-medium text-slate-900 truncate">
                         {player.first_name} {player.last_name}
@@ -384,7 +372,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                 <td className="px-3 py-3">
                   <Link
                     href={`/golf/dashboard/stats?player=${player.id}`}
-                    className="p-2 rounded-lg text-slate-400 hover:text-green-600 hover:bg-slate-100 transition-colors inline-flex opacity-0 group-hover:opacity-100"
+                    className="p-2 rounded-lg text-slate-400 hover:text-green-600 hover:bg-slate-100 transition-colors inline-flex sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <IconChevronRight size={16} />
                   </Link>
@@ -419,6 +407,8 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
         </div>
       </div>
 
+      {/* style jsx used here because each row has a dynamic animationDelay
+         that cannot be expressed with Tailwind utility classes */}
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; }

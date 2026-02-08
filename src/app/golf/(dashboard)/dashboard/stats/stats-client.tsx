@@ -18,7 +18,7 @@ import {
   type WorstHoleResponse,
   type TrendAnalysisResponse,
 } from '@/app/golf/actions/stats-data';
-import GolfStatsDisplay from '@/components/golf/stats/GolfStatsDisplay';
+import GolfStatsDisplay, { Sparkline } from '@/components/golf/stats/GolfStatsDisplay';
 import { generateStatisticalStrengthsWeaknesses } from '@/lib/golf/strokes-gained';
 import { DetailedStatsSkeleton } from '@/components/golf/GolfSkeletons';
 import {
@@ -28,7 +28,6 @@ import {
   IconSearch,
   IconChart,
   IconChevronRight,
-  IconMessageSquare,
   IconCalendar,
   IconUsers,
   IconTrendingUp,
@@ -64,55 +63,7 @@ interface PlayerStats {
   last_played?: string;
 }
 
-// ============================================================================
-// SPARKLINE COMPONENT
-// ============================================================================
-
-function Sparkline({ data, trend }: { data: number[]; trend: 'up' | 'down' | 'stable' }) {
-  if (data.length < 2) return null;
-
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const height = 24;
-  const width = 60;
-
-  const points = data.map((val, i) => {
-    const x = (i / (data.length - 1)) * width;
-    const y = height - ((val - min) / range) * height;
-    return `${x},${y}`;
-  }).join(' ');
-
-  const color = trend === 'up' ? '#22c55e' : trend === 'down' ? '#ef4444' : '#94a3b8';
-
-  return (
-    <svg width={width} height={height} className="overflow-visible">
-      <polyline
-        points={points}
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {data.map((val, i) => {
-        const x = (i / (data.length - 1)) * width;
-        const y = height - ((val - min) / range) * height;
-        return (
-          <circle
-            key={i}
-            cx={x}
-            cy={y}
-            r={i === data.length - 1 ? 3 : 2}
-            fill={i === data.length - 1 ? color : 'white'}
-            stroke={color}
-            strokeWidth="1.5"
-          />
-        );
-      })}
-    </svg>
-  );
-}
+// Sparkline is imported from GolfStatsDisplay
 
 // ============================================================================
 // AVATAR WITH PERFORMANCE RING
@@ -260,14 +211,14 @@ function PlayerCard({
             )}
           </div>
           <p className="text-sm text-slate-500 truncate">
-            {player.handicap !== null ? `+${player.handicap.toFixed(1)} HCP` : 'No handicap'}
+            {player.handicap !== null ? `${player.handicap < 0 ? '+' : ''}${player.handicap < 0 ? Math.abs(player.handicap).toFixed(1) : player.handicap.toFixed(1)} HCP` : 'No handicap'}
           </p>
         </div>
 
         {/* Sparkline */}
         {recentScores.length >= 2 && (
           <div className="hidden sm:flex flex-col items-center px-4">
-            <Sparkline data={recentScores} trend={trend} />
+            <Sparkline data={recentScores} width={60} showDots lowerIsBetter />
             <span className="text-xs text-slate-400 mt-1">Last {recentScores.length} rounds</span>
           </div>
         )}
@@ -296,15 +247,9 @@ function PlayerCard({
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="hidden md:flex items-center gap-1 pl-4 border-l border-white/30">
-          <span className="p-2 rounded-lg text-slate-400 group-hover:text-slate-600 transition-colors">
-            <IconChart size={20} />
-          </span>
-          <span className="p-2 rounded-lg text-slate-400 group-hover:text-slate-600 transition-colors">
-            <IconMessageSquare size={20} />
-          </span>
-          <IconChevronRight size={20} className="text-slate-300 ml-2" />
+        {/* Arrow indicator */}
+        <div className="hidden md:flex items-center pl-4 border-l border-white/30">
+          <IconChevronRight size={20} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
         </div>
       </div>
     </button>
@@ -329,7 +274,7 @@ export default function StatsClient({
   initialUserRole,
   initialPlayerId,
   initialPlayerName = '',
-  initialSummary,
+  initialSummary: _initialSummary,
   initialRounds = [],
 }: StatsClientProps) {
   // Core state
@@ -345,8 +290,6 @@ export default function StatsClient({
   const [sortBy, setSortBy] = useState<'avg' | 'name' | 'improved' | 'recent'>('avg');
 
   // Stats state
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_summary, setSummary] = useState<StatsSummary | null>(initialSummary ?? null);
   const [rounds, setRounds] = useState<RoundSummary[]>(initialRounds);
   const [detailedStats, setDetailedStats] = useState<GolfStats | null>(null);
   const [selectedRoundId, setSelectedRoundId] = useState<string | 'overall'>('overall');
@@ -354,6 +297,7 @@ export default function StatsClient({
   // Loading states — context is always available, but we still load player data
   const [loading, setLoading] = useState(!initialUserRole);
   const [loadingDetailed, setLoadingDetailed] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [activeTab, _setActiveTab] = useState<StatsCategory>('scoring');
 
@@ -415,7 +359,21 @@ export default function StatsClient({
         });
         break;
       case 'recent':
-        // Sort by last played (would need actual dates)
+        result.sort((a, b) => {
+          const aDate = a.stats?.last_played || '';
+          const bDate = b.stats?.last_played || '';
+          if (!aDate && !bDate) return 0;
+          if (!aDate) return 1;
+          if (!bDate) return -1;
+          // Parse "X days ago" or "Today"/"Yesterday" for comparison
+          const parseDaysAgo = (s: string) => {
+            if (s === 'Today') return 0;
+            if (s === 'Yesterday') return 1;
+            const match = s.match(/^(\d+) days ago$/);
+            return match?.[1] ? parseInt(match[1], 10) : 9999;
+          };
+          return parseDaysAgo(aDate) - parseDaysAgo(bDate);
+        });
         break;
     }
 
@@ -624,7 +582,8 @@ export default function StatsClient({
         total_fairways,
         total_gir,
         total_gir_possible,
-        total_putts
+        total_putts,
+        holes_played
       `)
       .eq('player_id', playerId)
       .eq('status', 'completed')
@@ -632,77 +591,9 @@ export default function StatsClient({
       .order('round_date', { ascending: false });
 
     if (!roundsData || roundsData.length === 0) {
-      setSummary({
-        roundsPlayed: 0,
-        holesPlayed: 0,
-        scoringAverage: null,
-        bestRound: null,
-        worstRound: null,
-        girPercentage: null,
-        fairwayPercentage: null,
-        puttsPerRound: null,
-        scramblingPercentage: null,
-      });
       setRounds([]);
       return;
     }
-
-    const roundIds = roundsData.map(r => r.id);
-    const { data: statsCache } = await supabase
-      .from('golf_round_stats_cache')
-      .select('scramble_attempts, scrambles_converted')
-      .in('round_id', roundIds);
-
-    const scores = roundsData.map(r => r.total_score).filter((s): s is number => s !== null);
-    let totalFairwaysHit = 0, totalFairwayOpp = 0;
-    let totalGir = 0, totalGirOpp = 0;
-    let totalPutts = 0;
-
-    for (const round of roundsData) {
-      if (round.total_fairways_hit !== null && round.total_fairways !== null) {
-        totalFairwaysHit += round.total_fairways_hit;
-        totalFairwayOpp += round.total_fairways;
-      }
-      if (round.total_gir !== null && round.total_gir_possible !== null) {
-        totalGir += round.total_gir;
-        totalGirOpp += round.total_gir_possible;
-      }
-      if (round.total_putts !== null) {
-        totalPutts += round.total_putts;
-      }
-    }
-
-    let totalScrambleAttempts = 0;
-    let totalScramblesMade = 0;
-    if (statsCache) {
-      for (const cache of statsCache) {
-        if (cache.scramble_attempts !== null) totalScrambleAttempts += cache.scramble_attempts;
-        if (cache.scrambles_converted !== null) totalScramblesMade += cache.scrambles_converted;
-      }
-    }
-    const scramblingPercentage = totalScrambleAttempts > 0
-      ? Math.round((totalScramblesMade / totalScrambleAttempts) * 1000) / 10
-      : null;
-
-    setSummary({
-      roundsPlayed: scores.length,
-      holesPlayed: scores.length * 18,
-      scoringAverage: scores.length > 0
-        ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
-        : null,
-      bestRound: scores.length > 0 ? Math.min(...scores) : null,
-      worstRound: scores.length > 0 ? Math.max(...scores) : null,
-      girPercentage: totalGirOpp > 0
-        ? Math.round((totalGir / totalGirOpp) * 1000) / 10
-        : null,
-      fairwayPercentage: totalFairwayOpp > 0
-        ? Math.round((totalFairwaysHit / totalFairwayOpp) * 1000) / 10
-        : null,
-      puttsPerRound: scores.length > 0
-        ? Math.round((totalPutts / scores.length) * 10) / 10
-        : null,
-      scramblingPercentage,
-    });
 
     setRounds(roundsData.map(r => ({
       id: r.id,
@@ -713,6 +604,8 @@ export default function StatsClient({
       score_to_par: r.score_to_par,
     })));
   }
+
+  const loadingDetailedRef = useRef(false);
 
   const loadDetailedStats = useCallback(async (
     playerId: string,
@@ -727,24 +620,28 @@ export default function StatsClient({
       return;
     }
 
-    if (lastFetchedPlayerId.current === playerId && lastFetchedRoundId.current === roundId && loadingDetailed) {
+    if (lastFetchedPlayerId.current === playerId && lastFetchedRoundId.current === roundId && loadingDetailedRef.current) {
       return;
     }
 
+    loadingDetailedRef.current = true;
     setLoadingDetailed(true);
     lastFetchedPlayerId.current = playerId;
     lastFetchedRoundId.current = roundId;
 
+    setStatsError(null);
     try {
       const stats = await getDetailedStats(playerId, roundId, filter || undefined);
       detailedStatsCache.current.set(cacheKey, stats);
       setDetailedStats(stats);
     } catch (error) {
       console.error('Failed to load detailed stats:', error);
+      setStatsError('Failed to load stats. Please try again.');
     } finally {
+      loadingDetailedRef.current = false;
       setLoadingDetailed(false);
     }
-  }, [loadingDetailed]);
+  }, []);
 
   const loadPlayerAnalytics = useCallback(async (playerId: string) => {
     try {
@@ -793,7 +690,7 @@ export default function StatsClient({
     } else if (detailedStats) {
       loadDetailedStats(resolvedPlayerId, selectedRoundId, activeFilter);
     }
-  }, [selectedRoundId, activeFilter]);
+  }, [selectedRoundId, activeFilter, resolvedPlayerId, detailedStats, loadDetailedStats]);
 
   useEffect(() => {
     if (!resolvedPlayerId) return;
@@ -825,7 +722,6 @@ export default function StatsClient({
     setSelectedPlayerId(null);
     setSelectedPlayer(null);
     setDetailedStats(null);
-    setSummary(null);
     setRounds([]);
     setActiveFilter(null);
     setCourseBreakdown(null);
@@ -835,7 +731,7 @@ export default function StatsClient({
   }
 
   function handleRefresh() {
-    const playerId = selectedPlayerId || (userRole === 'player' ? initialPlayerId : null);
+    const playerId = resolvedPlayerId;
     if (!playerId) return;
 
     for (const key of detailedStatsCache.current.keys()) {
@@ -1011,14 +907,23 @@ export default function StatsClient({
           </div>
 
           {/* Player Cards */}
-          {players.length === 0 ? (
+          {filteredPlayers.length === 0 ? (
             <div className="relative bg-white/70 backdrop-blur-xl rounded-2xl border border-white/30 overflow-hidden p-8 md:p-16 text-center shadow-glass-sm">
               <ShineEffect />
               <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <IconUser size={28} className="text-slate-400" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No Players Yet</h3>
-              <p className="text-slate-500">Add players to your team to view their statistics.</p>
+              {players.length === 0 ? (
+                <>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No Players Yet</h3>
+                  <p className="text-slate-500">Add players to your team to view their statistics.</p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No Matching Players</h3>
+                  <p className="text-slate-500">Try adjusting your search or filters.</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
@@ -1124,6 +1029,24 @@ export default function StatsClient({
           statisticalStrengths={strengthsWeaknesses?.strengths}
           statisticalWeaknesses={strengthsWeaknesses?.weaknesses}
         />
+      ) : statsError ? (
+        /* Error state when server action fails */
+        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-8">
+          <div className="relative bg-white/70 backdrop-blur-xl border border-red-200/50 rounded-2xl p-8 md:p-12 shadow-glass-sm text-center">
+            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-5">
+              <IconChart size={36} className="text-red-300" />
+            </div>
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Something Went Wrong</h2>
+            <p className="text-slate-500 max-w-sm mx-auto mb-6">{statsError}</p>
+            <button
+              onClick={handleRefresh}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium transition-colors"
+            >
+              <IconRefresh size={16} />
+              Try Again
+            </button>
+          </div>
+        </div>
       ) : (
         /* Empty state when no stats available */
         <div className="max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-8">

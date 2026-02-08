@@ -85,8 +85,8 @@ export default function NewRoundClient() {
   const syncStatus = useOfflineSyncStatus();
   // Note: We access store directly via useOfflineSyncStore.getState() to avoid dependency issues in useEffects
 
-  // Track offline warning banner visibility
-  const [showOfflineWarning, setShowOfflineWarning] = useState(false);
+  // Track offline warning banner visibility (initialize based on current connection)
+  const [showOfflineWarning, setShowOfflineWarning] = useState(!connectionStatus.isOnline);
 
   // Initialize sync engine on mount
   useEffect(() => {
@@ -626,7 +626,11 @@ export default function NewRoundClient() {
     setSavedRoundId(result.data.roundId);
 
     // Clear local draft since it's saved to database
-    clearDraft();
+    try {
+      clearDraft();
+    } catch {
+      // Draft cleanup failure is non-critical - round is already saved to DB
+    }
     setShowExitModal(false);
 
     // Redirect to rounds page and refresh to show the new unfinished round
@@ -637,10 +641,15 @@ export default function NewRoundClient() {
   const handleDeleteRound = async () => {
     if (savedRoundId) {
       // Delete from database if it exists
-      await deleteInProgressRound(savedRoundId);
+      const result = await deleteInProgressRound(savedRoundId);
+      if (!result.success) {
+        setError(result.error || 'Failed to delete round');
+        setShowExitModal(false);
+        return;
+      }
     }
 
-    // Clear local draft
+    // Clear local draft only after successful server delete (or no server round)
     clearDraft();
     setShowExitModal(false);
 
@@ -1345,6 +1354,17 @@ export default function NewRoundClient() {
             <p className="text-sm text-slate-500">
               Calculating your 50+ statistics...
             </p>
+            {error && (
+              <div className="mt-4">
+                <p className="text-sm text-red-600 mb-3">{error}</p>
+                <button
+                  onClick={() => setStep('tracking')}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors"
+                >
+                  Go Back
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1388,6 +1408,24 @@ export default function NewRoundClient() {
       {/* Floating Sync Status removed — was popping up during normal online use */}
 
       {/* Draft Auto-Save Indicator removed - was too noisy */}
+
+      {/* Back to Setup - shown when no holes have been completed */}
+      {completedHoleStats.filter(s => s?.score != null).length === 0 && (
+        <div className="fixed top-4 left-4 z-40">
+          <button
+            onClick={() => {
+              setStep(preloadedHoleConfigs ? 'setup' : 'holes');
+              setCurrentHoleIndex(0);
+            }}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm border border-slate-200 text-sm font-medium text-slate-600 hover:bg-white shadow-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+        </div>
+      )}
 
       {/* Save Round Modal */}
       <SaveRoundModal

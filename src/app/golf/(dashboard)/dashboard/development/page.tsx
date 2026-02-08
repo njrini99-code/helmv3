@@ -27,7 +27,7 @@ export default async function DevelopmentPlansPage() {
     .single();
 
   if (!coach) {
-    redirect('/golf/dashboard');
+    redirect('/golf/dashboard?message=Development+plans+is+a+coach-only+feature');
   }
 
   // Get team_id from organization

@@ -12,23 +12,27 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
  */
 function ErrorState({ error }: { error: string }) {
   return (
-    <div className="min-h-full flex items-center justify-center p-4 md:p-6 bg-gradient-to-br from-red-500/5 via-transparent to-transparent">
-      <GlassCard className="max-w-md w-full text-center">
-        <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
-          <IconInfo size={32} className="text-red-500" />
+    <AnimatedPage>
+      <AnimatedItem>
+        <div className="min-h-full flex items-center justify-center p-4 md:p-6 bg-gradient-to-br from-red-500/5 via-transparent to-transparent">
+          <GlassCard className="max-w-md w-full text-center">
+            <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <IconInfo size={32} className="text-red-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-warm-900 mb-2">
+              Unable to Load AI Dashboard
+            </h2>
+            <p className="text-warm-600 mb-6">{error}</p>
+            <a
+              href="/golf/dashboard/coachhelm"
+              className="inline-block px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Try Again
+            </a>
+          </GlassCard>
         </div>
-        <h2 className="text-xl font-semibold text-warm-900 mb-2">
-          Unable to Load AI Dashboard
-        </h2>
-        <p className="text-warm-600 mb-6">{error}</p>
-        <a
-          href="/golf/dashboard/coachhelm"
-          className="inline-block px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          Try Again
-        </a>
-      </GlassCard>
-    </div>
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }
 
@@ -37,26 +41,30 @@ function ErrorState({ error }: { error: string }) {
  */
 function NotPlayerState() {
   return (
-    <div className="min-h-full flex items-center justify-center p-4 md:p-6">
-      <GlassCard className="max-w-md w-full text-center">
-        <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
-          <IconSparkles size={32} className="text-amber-500" />
+    <AnimatedPage>
+      <AnimatedItem>
+        <div className="min-h-full flex items-center justify-center p-4 md:p-6">
+          <GlassCard className="max-w-md w-full text-center">
+            <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
+              <IconSparkles size={32} className="text-amber-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-warm-900 mb-2">
+              Player Dashboard Only
+            </h2>
+            <p className="text-warm-600 mb-6">
+              This CoachHelm dashboard is designed for players. As a coach, you can access
+              player insights from the roster page.
+            </p>
+            <a
+              href="/golf/dashboard"
+              className="inline-block px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Go to Dashboard
+            </a>
+          </GlassCard>
         </div>
-        <h2 className="text-xl font-semibold text-warm-900 mb-2">
-          Player Dashboard Only
-        </h2>
-        <p className="text-warm-600 mb-6">
-          This CoachHelm dashboard is designed for players. As a coach, you can access
-          player insights from the roster page.
-        </p>
-        <a
-          href="/golf/dashboard"
-          className="inline-block px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          Go to Dashboard
-        </a>
-      </GlassCard>
-    </div>
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }
 
@@ -65,25 +73,29 @@ function NotPlayerState() {
  */
 function CoachHelmDisabledState({ reason }: { reason: string }) {
   return (
-    <div className="min-h-full flex items-center justify-center p-4 md:p-6">
-      <GlassCard className="max-w-md w-full text-center">
-        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-          <IconSparkles size={32} className="text-slate-400" />
+    <AnimatedPage>
+      <AnimatedItem>
+        <div className="min-h-full flex items-center justify-center p-4 md:p-6">
+          <GlassCard className="max-w-md w-full text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <IconSparkles size={32} className="text-slate-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-warm-900 mb-2">
+              CoachHelm AI Not Available
+            </h2>
+            <p className="text-warm-600 mb-6">
+              {reason || 'CoachHelm is currently disabled for your team. Contact your coach for more information.'}
+            </p>
+            <a
+              href="/golf/dashboard"
+              className="inline-block px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Return to Dashboard
+            </a>
+          </GlassCard>
         </div>
-        <h2 className="text-xl font-semibold text-warm-900 mb-2">
-          CoachHelm AI Not Available
-        </h2>
-        <p className="text-warm-600 mb-6">
-          {reason || 'CoachHelm is currently disabled for your team. Contact your coach for more information.'}
-        </p>
-        <a
-          href="/golf/dashboard"
-          className="inline-block px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          Return to Dashboard
-        </a>
-      </GlassCard>
-    </div>
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }
 

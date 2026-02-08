@@ -56,7 +56,7 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
     .single();
 
   if (!coach) {
-    redirect('/golf/login');
+    redirect('/golf/dashboard?message=Insights+is+a+coach-only+feature');
   }
 
   // Get filter options (players, etc.)

@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 
@@ -34,10 +35,11 @@ export function TrendChart({
     color = 'green',
     reverse = false
 }: TrendChartProps) {
+    const uid = useId();
     const colors = {
-        green: { stroke: '#16A34A', fill: 'url(#colorGreen)', gradient: '#16A34A' }, // emerald-600
-        blue: { stroke: '#2563EB', fill: 'url(#colorBlue)', gradient: '#2563EB' },   // blue-600
-        amber: { stroke: '#D97706', fill: 'url(#colorAmber)', gradient: '#D97706' }, // amber-600
+        green: { stroke: '#16A34A', fill: `url(#colorGreen-${uid})`, gradient: '#16A34A' },
+        blue: { stroke: '#2563EB', fill: `url(#colorBlue-${uid})`, gradient: '#2563EB' },
+        amber: { stroke: '#D97706', fill: `url(#colorAmber-${uid})`, gradient: '#D97706' },
     };
 
     const currentTheme = colors[color];
@@ -66,9 +68,9 @@ export function TrendChart({
 
     const minValue = Math.min(...data.map(d => d.value));
     const maxValue = Math.max(...data.map(d => d.value));
-    // Add some padding to the domain
-    const domainMin = Math.max(0, minValue - (minValue * 0.1));
-    const domainMax = maxValue + (maxValue * 0.05);
+    const range = maxValue - minValue || 1;
+    const domainMin = minValue - range * 0.1;
+    const domainMax = maxValue + range * 0.05;
 
     return (
         <motion.div 
@@ -108,15 +110,15 @@ export function TrendChart({
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={data} margin={{ top: 8, right: 8, left: -25, bottom: 0 }}>
                         <defs>
-                            <linearGradient id="colorGreen" x1="0" y1="0" x2="0" y2="1">
+                            <linearGradient id={`colorGreen-${uid}`} x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#16A34A" stopOpacity={0.2} />
                                 <stop offset="95%" stopColor="#16A34A" stopOpacity={0} />
                             </linearGradient>
-                            <linearGradient id="colorBlue" x1="0" y1="0" x2="0" y2="1">
+                            <linearGradient id={`colorBlue-${uid}`} x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2} />
                                 <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
                             </linearGradient>
-                            <linearGradient id="colorAmber" x1="0" y1="0" x2="0" y2="1">
+                            <linearGradient id={`colorAmber-${uid}`} x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#D97706" stopOpacity={0.2} />
                                 <stop offset="95%" stopColor="#D97706" stopOpacity={0} />
                             </linearGradient>

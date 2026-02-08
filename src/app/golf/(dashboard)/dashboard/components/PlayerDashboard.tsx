@@ -53,7 +53,7 @@ export interface PlayerDashboardData {
         scoringAverage: number | null;
         bestRound: number | null;
         handicap: number | null;
-        recentTrend?: 'up' | 'down' | 'stable';
+        recentTrend?: 'improving' | 'declining' | 'stable';
     };
     recentRounds: Array<{
         id: string;
@@ -129,6 +129,8 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
     const { player, team, stats, recentRounds } = data;
     const { toggleMobile } = useSidebar();
 
+    // Greeting is computed once on mount. Acceptable since users rarely keep
+    // the dashboard open long enough for the time-of-day to change.
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Good morning';
@@ -178,7 +180,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                             </h1>
                             <p className="text-slate-500 mt-0.5 flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
                                 <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary-500 animate-pulse flex-shrink-0" />
-                                <span className="truncate">{team?.name || 'Golf Team'}</span>
+                                <span className="truncate">{team?.name || 'Your Team'}</span>
                                 <span className="text-slate-300 hidden sm:inline">•</span>
                                 <span className="capitalize hidden sm:inline">{player.graduation_year ? `Class of ${player.graduation_year}` : 'Player'}</span>
                             </p>
@@ -331,9 +333,9 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                 iconBg="bg-slate-100"
                                 label="Scoring Average"
                                 value={stats.scoringAverage ? stats.scoringAverage.toFixed(1) : '--'}
-                                trend={stats.recentTrend === 'up'
+                                trend={stats.recentTrend === 'declining'
                                     ? { value: 0.5, positive: false }
-                                    : stats.recentTrend === 'down'
+                                    : stats.recentTrend === 'improving'
                                         ? { value: 0.5, positive: true }
                                         : null}
                                 href="/golf/dashboard/stats"
@@ -343,7 +345,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                 iconColor="text-amber-600"
                                 iconBg="bg-amber-50"
                                 label="Best Round"
-                                value={stats.bestRound || '--'}
+                                value={stats.bestRound ?? '--'}
                                 href="/golf/dashboard/rounds"
                             />
                             <PremiumStatCard

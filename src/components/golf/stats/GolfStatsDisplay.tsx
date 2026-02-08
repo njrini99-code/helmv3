@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward, IconChartBar, IconCrosshair, IconFilter, IconChevronDown, IconDownload, IconPrinter, IconHome } from '@/components/icons';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
+import { useAnimatedNumber } from '@/hooks/useAnimatedNumber';
 import ProgressStats from './ProgressStats';
 import ShotDispersionChart from './ShotDispersionChart';
 
@@ -57,46 +58,7 @@ const tabContentVariants = {
   exit: { opacity: 0, x: -20 },
 };
 
-// ============================================================================
-// ANIMATED NUMBER HOOK
-// ============================================================================
-
-function useAnimatedNumber(value: number | null, duration: number = 800): number {
-  const [displayValue, setDisplayValue] = useState(0);
-  const previousValue = useRef(0);
-
-  useEffect(() => {
-    if (value === null) {
-      setDisplayValue(0);
-      return;
-    }
-
-    const startValue = previousValue.current;
-    const endValue = value;
-    const startTime = performance.now();
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      // Ease out cubic
-      const easeOut = 1 - Math.pow(1 - progress, 3);
-
-      const currentValue = startValue + (endValue - startValue) * easeOut;
-      setDisplayValue(currentValue);
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        previousValue.current = endValue;
-      }
-    };
-
-    requestAnimationFrame(animate);
-  }, [value, duration]);
-
-  return displayValue;
-}
+// useAnimatedNumber is imported from @/hooks/useAnimatedNumber
 
 // ============================================================================
 // SPARKLINE COMPONENT
@@ -111,14 +73,15 @@ interface SparklineProps {
   lowerIsBetter?: boolean;
 }
 
-function Sparkline({
+export function Sparkline({
   data,
   width = 80,
   height = 24,
-  color = '#16A34A',
+  color: _color = '#16A34A',
   showDots = false,
   lowerIsBetter = false,
 }: SparklineProps) {
+  const instanceId = useId();
   if (!data || data.length < 2) return null;
 
   const padding = 2;
@@ -165,7 +128,7 @@ function Sparkline({
     >
       {/* Gradient fill */}
       <defs>
-        <linearGradient id={`sparkGradient-${color}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`sparkGradient-${instanceId}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={trendColor} stopOpacity={0.3} />
           <stop offset="100%" stopColor={trendColor} stopOpacity={0} />
         </linearGradient>
@@ -174,7 +137,7 @@ function Sparkline({
       {/* Area fill */}
       <path
         d={`${pathD} L ${lastPoint.x} ${height} L ${firstPoint.x} ${height} Z`}
-        fill={`url(#sparkGradient-${color})`}
+        fill={`url(#sparkGradient-${instanceId})`}
       />
 
       {/* Line */}

@@ -375,8 +375,8 @@ export function MultiTrendLineChart({
   height?: number;
   className?: string;
 }) {
-  // Similar implementation but with multiple lines
-  // Placeholder for now
+  // TODO: Implement full multi-line chart with shared axes and unified tooltip.
+  // Currently renders individual TrendLineCharts in a grid as a placeholder.
   return (
     <div className={cn('', className)}>
       <div className="text-sm text-gray-500 mb-2">Multi-metric comparison</div>

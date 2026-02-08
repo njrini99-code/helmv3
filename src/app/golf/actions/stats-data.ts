@@ -184,7 +184,8 @@ export async function getStatsSummary(
       total_fairways,
       total_gir,
       total_gir_possible,
-      total_putts
+      total_putts,
+      holes_played
     `)
     .eq('player_id', playerId)
     .eq('status', 'completed')
@@ -253,7 +254,7 @@ export async function getStatsSummary(
 
   const summary: StatsSummary = {
     roundsPlayed,
-    holesPlayed: roundsPlayed * 18, // Approximate
+    holesPlayed: filteredRounds.reduce((sum, r) => sum + (r.holes_played ?? 18), 0),
     scoringAverage: scores.length > 0
       ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
       : null,
@@ -1156,7 +1157,7 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
   // Sort by average to par (worst first)
   const sortedByToPar = [...holes].sort((a, b) => b.averageToPar - a.averageToPar);
   const worstHoles = sortedByToPar.slice(0, 3);
-  const bestHoles = sortedByToPar.slice(-3).reverse();
+  const bestHoles = [...sortedByToPar].reverse().slice(0, 3);
 
   // Calculate par-specific averages
   const par3s = holes.filter(h => h.par === 3);

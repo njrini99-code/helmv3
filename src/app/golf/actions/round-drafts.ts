@@ -94,9 +94,10 @@ export async function saveRoundDraft(
     const totalHoles = data.holes.length || 18;
 
     // Round data for the record
-    // Note: Draft fields (is_draft, draft_data, last_auto_save, holes_to_play, total_to_par)
-    // may require database migration. These columns may not exist in the current schema.
-    // Using notes field to store draft JSON data as a workaround.
+    // KNOWN WORKAROUND: Draft data is stored in the notes field as JSON.
+    // This collides with user-entered notes. A dedicated draft_data column
+    // should be added via migration. Until then, notes are overwritten for
+    // in_progress rounds and restored to null when the draft is converted.
     const draftJsonString = JSON.stringify(data);
 
     // Extract setup data with defaults
@@ -133,7 +134,7 @@ export async function saveRoundDraft(
       status: 'in_progress',
       current_hole: data.currentHoleIndex !== undefined ? data.currentHoleIndex + 1 : null,
       holes_played: totalHoles,
-      notes: draftJsonString, // Store draft data in notes field until migration
+      notes: draftJsonString, // WORKAROUND: collides with user notes - see comment above
       // Clear stats for drafts
       total_score: null,
       score_to_par: null,

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { GolfSidebar } from '@/components/golf/layout/GolfSidebar';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
@@ -25,9 +26,46 @@ const CommandPalette = dynamic(
 function GolfDashboardContent({ children, userData }: { children: React.ReactNode; userData: GolfUserData }) {
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
   const isCoach = userData.role === 'coach';
+  const mobileSidebarRef = useRef<HTMLDivElement>(null);
 
   // Track user online presence (deferred by 5s so it doesn't compete with page load)
   usePresence();
+
+  // Close mobile sidebar on Escape key
+  useEffect(() => {
+    if (!mobileOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMobileOpen(false);
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [mobileOpen, setMobileOpen]);
+
+  // Focus trap for mobile sidebar
+  useEffect(() => {
+    if (!mobileOpen || !mobileSidebarRef.current) return;
+    const sidebar = mobileSidebarRef.current;
+    const focusable = sidebar.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable[0];
+    if (first) first.focus();
+
+    function trapFocus(e: KeyboardEvent) {
+      if (e.key !== 'Tab' || focusable.length === 0) return;
+      const firstEl = focusable[0]!;
+      const lastEl = focusable[focusable.length - 1]!;
+      if (e.shiftKey && document.activeElement === firstEl) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && document.activeElement === lastEl) {
+        e.preventDefault();
+        firstEl.focus();
+      }
+    }
+    document.addEventListener('keydown', trapFocus);
+    return () => document.removeEventListener('keydown', trapFocus);
+  }, [mobileOpen]);
 
   return (
     <div className="flex h-dvh bg-dashboard-gradient" style={{ overscrollBehavior: 'none' }}>
@@ -60,10 +98,15 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         )}
         onClick={() => setMobileOpen(false)}
+        aria-hidden="true"
       />
 
       {/* Mobile Sidebar */}
       <div
+        ref={mobileSidebarRef}
+        role="dialog"
+        aria-label="Navigation menu"
+        aria-modal="true"
         className={cn(
           'fixed inset-y-0 left-0 z-50 lg:hidden',
           'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
@@ -95,7 +138,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           overscrollBehaviorY: 'contain',
         }}
       >
-        <div className="animate-page-enter min-h-full" style={{ background: 'transparent' }}>
+        <div className="min-h-full" style={{ background: 'transparent' }}>
           {children}
         </div>
       </main>
@@ -125,7 +168,7 @@ export function GolfDashboardShell({
         <ToastProvider>
           <SessionActivityProvider>
             <GolfUserProvider userData={userData}>
-              <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
+              <OfflineProvider showSyncStatus showWarningBanner>
                 <GolfDashboardContent userData={userData}>
                   {children}
                 </GolfDashboardContent>

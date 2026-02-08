@@ -126,6 +126,9 @@ export function ActivityFeed({
             hover:text-primary-700
             transition-colors duration-200
           "
+            onClick={() => {
+              // TODO: Implement navigation to full activity view
+            }}
           >
             View all activity →
           </button>

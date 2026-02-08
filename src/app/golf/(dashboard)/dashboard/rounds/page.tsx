@@ -51,7 +51,14 @@ function formatRelativeDate(dateStr: string): string {
 
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 7 && diffDays > 0) return `${diffDays} days ago`;
+
+  // Future dates
+  if (diffDays < 0) {
+    const futureDays = Math.abs(diffDays);
+    if (futureDays === 1) return 'Tomorrow';
+    if (futureDays < 14) return `In ${futureDays} days`;
+  }
 
   return date.toLocaleDateString('en-US', {
     month: 'short',
@@ -361,7 +368,7 @@ export default async function RoundsPage() {
           )}
 
           {/* Unfinished Rounds Section */}
-          {inProgressRounds.length > 0 && userRole === 'player' && (
+          {inProgressRounds.length > 0 && (
             <>
               <UnfinishedRoundsSection rounds={inProgressRounds} />
               {rounds.length > 0 && (

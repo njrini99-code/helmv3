@@ -285,7 +285,7 @@ const golfRoundSchema = z.object({
   qualifierId: z.string().uuid().optional(),
   courseName: z.string().min(1).max(200),
   courseCity: z.string().max(100).optional(),
-  courseState: z.string().length(2).optional(),
+  courseState: z.string().length(2).regex(/^[A-Z]{2}$/, 'Must be a valid 2-letter state code (e.g. TX, CA)').optional(),
   courseRating: z.number().min(60).max(80).optional(),
   courseSlope: z.number().int().min(55).max(155).optional(),
   teesPlayed: z.string().max(50).optional(),

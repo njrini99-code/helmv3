@@ -96,6 +96,11 @@ export default async function RoundDetailPage({
     notFound();
   }
 
+  // Redirect to continue page if round is still in progress
+  if (round.status === 'in_progress') {
+    redirect(`/golf/dashboard/rounds/continue/${id}`);
+  }
+
   const roundData = {
     ...round,
     player: Array.isArray(round.player) ? round.player[0] : round.player,

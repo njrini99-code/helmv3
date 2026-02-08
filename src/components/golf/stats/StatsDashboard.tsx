@@ -261,7 +261,7 @@ export function StatsDashboard({
 
         {/* Overview Tab */}
         <TabsContent value="overview">
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Main Stats */}
             <div className="col-span-2 space-y-6">
               {/* Scoring Summary */}
@@ -453,9 +453,18 @@ export function StatsDashboard({
         <TabsContent value="trends">
           {trends ? (
             <TrendVisualization
-              // TrendVisualization expects an object with metric keys, not MultiMetricTrend type
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              trends={trends as any}
+              trends={Object.fromEntries(
+                Object.entries(trends)
+                  .filter(([, val]) => val && val.dataPoints && val.dataPoints.length > 0)
+                  .map(([key, val]) => [
+                    key,
+                    {
+                      trend: val!.trend,
+                      current_value: val!.current_value ?? 0,
+                      data: val!.dataPoints!,
+                    },
+                  ])
+              )}
               insights={trendInsights}
               prediction={prediction}
             />

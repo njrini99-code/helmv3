@@ -233,7 +233,7 @@ export function KPIRow({
   ];
 
   return (
-    <div className={cn('grid grid-cols-5 gap-4', className)}>
+    <div className={cn('grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4', className)}>
       {stats.map((stat, i) => (
         <GolfStatCard key={i} {...stat} size="md" />
       ))}

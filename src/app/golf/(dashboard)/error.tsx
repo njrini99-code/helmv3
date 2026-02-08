@@ -14,9 +14,9 @@ export default function Error({
       error={error}
       reset={reset}
       route="/golf/dashboard"
-      component="GolfDashboard"
-      title="Failed to load dashboard"
-      message="We couldn't load your golf dashboard. Please try again."
+      component="GolfDashboardLayout"
+      title="Something went wrong"
+      message="We encountered an unexpected error. Please try again."
       homePath="/golf"
     />
   );

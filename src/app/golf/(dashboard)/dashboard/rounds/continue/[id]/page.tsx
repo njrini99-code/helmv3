@@ -134,11 +134,12 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     notFound();
   }
 
-  // Load holes and shots in parallel (performance optimization)
+  // Load holes, shots, and course hole yardages in parallel
   // Note: We fetch shots separately instead of using relation query due to missing FK in types
   const [
     { data: holes },
-    { data: allShots }
+    { data: allShots },
+    { data: courseHoles }
   ] = await Promise.all([
     supabase
       .from('golf_holes')
@@ -150,8 +151,21 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       .select('*')
       .eq('round_id', id)
       .order('hole_number', { ascending: true })
-      .order('shot_number', { ascending: true })
+      .order('shot_number', { ascending: true }),
+    round.course_id
+      ? supabase
+          .from('golf_course_holes')
+          .select('hole_number, yardage')
+          .eq('course_id', round.course_id)
+          .order('hole_number', { ascending: true })
+      : Promise.resolve({ data: null }),
   ]);
+
+  // Build yardage lookup from course config
+  const courseYardageMap = new Map<number, number>();
+  for (const ch of (courseHoles || [])) {
+    if (ch.yardage != null) courseYardageMap.set(ch.hole_number, ch.yardage);
+  }
 
   // Errors are handled gracefully - holes/shots will be empty if fetch fails
 
@@ -163,46 +177,46 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     shotsByHole.set(shot.hole_number, holeShots);
   }
 
-  // Transform database holes to HoleStats format (completed holes only)
-  // Note: golf_holes only stores basic data (par, score, putts, fairway_hit, gir, penalty_strokes, sand_save, up_and_down)
-  // Detailed shot data comes from golf_shots table
-  const completedHoleStats: HoleStats[] = ((holes || []) as GolfHoleRow[])
-    .filter((hole) => hole.score !== null)
-    .map((hole) => {
-      // Use shots grouped by hole number (we fetch separately due to missing FK)
-      const holeShots = shotsByHole.get(hole.hole_number) || [];
-      const shots = [...holeShots].sort((a, b) => a.shot_number - b.shot_number);
+  // Transform database holes to HoleStats format, indexed by hole position (0-based)
+  // Each entry is placed at index (hole_number - 1) so the client component
+  // can look up stats by currentHoleIndex without misalignment.
+  const completedHoleStats: HoleStats[] = [];
+  for (const hole of ((holes || []) as GolfHoleRow[])) {
+    if (hole.score === null) continue;
 
-      return {
-        holeNumber: hole.hole_number,
-        par: hole.par,
-        yardage: 0, // Not stored in golf_holes - would need course data
-        score: hole.score!,
-        putts: hole.putts || 0,
-        fairwayHit: hole.fairway_hit,
-        greenInRegulation: hole.gir || false,
-        drivingDistance: null, // Computed from shots if needed
-        usedDriver: null,
-        driveMissDirection: null,
-        approachDistance: null,
-        approachLie: null,
-        approachProximity: null,
-        approachMissDirection: null,
-        scrambleAttempt: hole.up_and_down !== null,
-        scrambleMade: hole.up_and_down || false,
-        sandSaveAttempt: hole.sand_save !== null,
-        sandSaveMade: hole.sand_save || false,
-        penaltyStrokes: hole.penalty_strokes ?? 0,
-        firstPuttDistance: null,
-        firstPuttLeave: null,
-        firstPuttBreak: null,
-        firstPuttSlope: null,
-        firstPuttMissDirection: null,
-        holedOutDistance: null,
-        holedOutType: null,
-        shots: shots.map(mapShotToRecord),
-      };
-    });
+    const holeShots = shotsByHole.get(hole.hole_number) || [];
+    const shots = [...holeShots].sort((a, b) => a.shot_number - b.shot_number);
+
+    completedHoleStats[hole.hole_number - 1] = {
+      holeNumber: hole.hole_number,
+      par: hole.par,
+      yardage: courseYardageMap.get(hole.hole_number) ?? 0,
+      score: hole.score!,
+      putts: hole.putts || 0,
+      fairwayHit: hole.fairway_hit,
+      greenInRegulation: hole.gir || false,
+      drivingDistance: null,
+      usedDriver: null,
+      driveMissDirection: null,
+      approachDistance: null,
+      approachLie: null,
+      approachProximity: null,
+      approachMissDirection: null,
+      scrambleAttempt: hole.up_and_down !== null,
+      scrambleMade: hole.up_and_down || false,
+      sandSaveAttempt: hole.sand_save !== null,
+      sandSaveMade: hole.sand_save || false,
+      penaltyStrokes: hole.penalty_strokes ?? 0,
+      firstPuttDistance: null,
+      firstPuttLeave: null,
+      firstPuttBreak: null,
+      firstPuttSlope: null,
+      firstPuttMissDirection: null,
+      holedOutDistance: null,
+      holedOutType: null,
+      shots: shots.map(mapShotToRecord),
+    };
+  }
 
   const holeConfigMap = new Map<number, { par: number; score: number | null }>();
   for (const hole of (holes || []) as GolfHoleRow[]) {
@@ -219,12 +233,26 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   const hasBackNineHoles = maxHoleNumber > 9;
   const isLikely18HoleRound = hasBackNineHoles || (round.back_nine !== null);
   const totalHoles = isLikely18HoleRound ? 18 : 9;
+  // Try to load hole configs from draft data stored in notes field
+  let draftHoleConfigs: Array<{ number: number; par: number; yardage: number }> | null = null;
+  if (round.notes) {
+    try {
+      const draftData = JSON.parse(round.notes);
+      if (draftData?.holes && Array.isArray(draftData.holes)) {
+        draftHoleConfigs = draftData.holes;
+      }
+    } catch {
+      // notes field may not contain valid JSON
+    }
+  }
+
   const allHoles = Array.from({ length: totalHoles }, (_, i) => {
     const existingHole = holeConfigMap.get(i + 1);
+    const draftHole = draftHoleConfigs?.find(h => h.number === i + 1);
     return {
       number: i + 1,
-      par: existingHole?.par || 4, // Default par if not found
-      yardage: 400, // Default yardage - course data not stored in golf_holes
+      par: existingHole?.par ?? draftHole?.par ?? 4,
+      yardage: draftHole?.yardage ?? courseYardageMap.get(i + 1) ?? 0,
       score: existingHole?.score ?? null,
     };
   });

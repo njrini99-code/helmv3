@@ -20,7 +20,7 @@ interface QuickHoleEntry {
   score: number;
   putts: number;
   fairwayHit: boolean | null; // null for par 3s
-  greenInRegulation: boolean;
+  greenInRegulation: boolean | null; // null = unset
 }
 
 interface MobileScoreEntryProps {
@@ -154,7 +154,7 @@ export default function MobileScoreEntry({
     score: existingStats?.score ?? currentHole?.par ?? 4,
     putts: existingStats?.putts ?? 2,
     fairwayHit: existingStats?.fairwayHit ?? (currentHole?.par === 3 ? null : null),
-    greenInRegulation: existingStats?.greenInRegulation ?? false,
+    greenInRegulation: existingStats?.greenInRegulation ?? null,
   }));
 
   // Reset entry when hole changes
@@ -167,7 +167,7 @@ export default function MobileScoreEntry({
       score: stats?.score ?? hole.par,
       putts: stats?.putts ?? 2,
       fairwayHit: stats?.fairwayHit ?? (hole.par === 3 ? null : null),
-      greenInRegulation: stats?.greenInRegulation ?? false,
+      greenInRegulation: stats?.greenInRegulation ?? null,
     });
   }, [currentHoleIndex, completedHoleStats, holes]);
 
@@ -233,6 +233,7 @@ export default function MobileScoreEntry({
     triggerHaptic('success');
 
     // Build minimal HoleStats for quick entry
+    const gir = entry.greenInRegulation ?? false;
     const holeStats: HoleStats = {
       holeNumber: currentHole.number,
       par: currentHole.par,
@@ -240,7 +241,7 @@ export default function MobileScoreEntry({
       score: entry.score,
       putts: entry.putts,
       fairwayHit: entry.fairwayHit,
-      greenInRegulation: entry.greenInRegulation,
+      greenInRegulation: gir,
       drivingDistance: null,
       usedDriver: null,
       driveMissDirection: null,
@@ -248,8 +249,8 @@ export default function MobileScoreEntry({
       approachLie: null,
       approachProximity: null,
       approachMissDirection: null,
-      scrambleAttempt: !entry.greenInRegulation,
-      scrambleMade: !entry.greenInRegulation && entry.score <= currentHole.par,
+      scrambleAttempt: !gir,
+      scrambleMade: !gir && entry.score <= currentHole.par,
       sandSaveAttempt: false,
       sandSaveMade: false,
       penaltyStrokes: 0,
@@ -481,7 +482,7 @@ export default function MobileScoreEntry({
               <button
                 onClick={() => toggleGIR(true)}
                 className={`py-3.5 rounded-xl font-semibold text-base transition-all active:scale-95
-                  ${entry.greenInRegulation
+                  ${entry.greenInRegulation === true
                     ? 'bg-emerald-500 text-white shadow-md'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
@@ -491,7 +492,7 @@ export default function MobileScoreEntry({
               <button
                 onClick={() => toggleGIR(false)}
                 className={`py-3.5 rounded-xl font-semibold text-base transition-all active:scale-95
-                  ${!entry.greenInRegulation
+                  ${entry.greenInRegulation === false
                     ? 'bg-red-500 text-white shadow-md'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
@@ -510,14 +511,21 @@ export default function MobileScoreEntry({
               {[1, 2, 3, 0].map((p) => (
                 <button
                   key={p}
-                  onClick={() => setPutts(p === 0 ? 4 : p)}
+                  onClick={() => {
+                    if (p === 0) {
+                      // 4+ button: set to 4, or increment if already >= 4
+                      setPutts(entry.putts >= 4 ? entry.putts + 1 : 4);
+                    } else {
+                      setPutts(p);
+                    }
+                  }}
                   className={`py-3.5 rounded-xl font-semibold text-base transition-all active:scale-95
                     ${(p === 0 ? entry.putts >= 4 : entry.putts === p)
                       ? 'bg-emerald-500 text-white shadow-md'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                 >
-                  {p === 0 ? '4+' : p}
+                  {p === 0 ? (entry.putts >= 4 ? `${entry.putts}+` : '4+') : p}
                 </button>
               ))}
             </div>

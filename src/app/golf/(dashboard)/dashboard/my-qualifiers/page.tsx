@@ -250,7 +250,7 @@ export default function MyQualifiersPage() {
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              router.push('/golf/dashboard/rounds/new');
+                              router.push(`/golf/dashboard/rounds/new?qualifier=${qualifier.id}`);
                             }}
                             className="px-3 py-1.5 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
                           >

@@ -26,12 +26,14 @@ export function SaveRoundModal({
   const { show } = useMobileNav();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const { modalRef } = useFocusTrap(isOpen, onClose);
 
   // Show nav when modal closes (after save or delete)
   useEffect(() => {
     if (!isOpen) {
       show();
+      setConfirmingDelete(false);
     }
   }, [isOpen, show]);
 
@@ -64,6 +66,10 @@ export function SaveRoundModal({
   };
 
   const handleDelete = () => {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
     // Show nav after delete
     show();
     onDelete();
@@ -161,20 +167,35 @@ export function SaveRoundModal({
                 className={cn(
                   'w-full p-4 rounded-xl border-2 transition-all duration-200',
                   'flex items-center gap-4',
-                  'border-slate-200 bg-white hover:bg-slate-50',
+                  confirmingDelete
+                    ? 'border-rose-300 bg-rose-50 hover:bg-rose-100'
+                    : 'border-slate-200 bg-white hover:bg-slate-50',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-                  <IconTrash size={20} className="text-slate-600" />
+                <div className={cn(
+                  'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
+                  confirmingDelete ? 'bg-rose-500' : 'bg-slate-100'
+                )}>
+                  <IconTrash size={20} className={confirmingDelete ? 'text-white' : 'text-slate-600'} />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-semibold text-slate-900">Delete Round</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Discard this round completely
+                  <p className={cn('font-semibold', confirmingDelete ? 'text-rose-900' : 'text-slate-900')}>
+                    {confirmingDelete ? 'Tap again to confirm' : 'Delete Round'}
+                  </p>
+                  <p className={cn('text-xs mt-0.5', confirmingDelete ? 'text-rose-600' : 'text-slate-500')}>
+                    {confirmingDelete ? 'This cannot be undone' : 'Discard this round completely'}
                   </p>
                 </div>
               </button>
+              {confirmingDelete && (
+                <button
+                  onClick={() => setConfirmingDelete(false)}
+                  className="w-full text-sm text-slate-500 hover:text-slate-700 py-1"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
 
             {/* Note about stats */}

@@ -138,11 +138,11 @@ const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: 
               trend.direction === 'up' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
             }`}>
               {trend.direction === 'up' ? (
-                <IconTrendingDown size={14} />
-              ) : (
                 <IconTrendingUp size={14} />
+              ) : (
+                <IconTrendingDown size={14} />
               )}
-              {trend.percentage.toFixed(1)}%
+              {trend.direction === 'up' ? 'Improving' : 'Declining'} {trend.percentage.toFixed(1)}%
             </div>
           )}
           <button
@@ -327,6 +327,8 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
         ))}
       </div>
 
+      {/* style jsx: each item uses dynamic animationDelay via inline style,
+         which cannot be expressed with Tailwind utility classes */}
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(5px); }
@@ -364,6 +366,8 @@ const ProgressMetrics = memo(function ProgressMetrics({ stats }: { stats: GolfSt
         </div>
       ))}
 
+      {/* style jsx: each metric card uses dynamic animationDelay via inline style,
+         which cannot be expressed with Tailwind utility classes */}
       <style jsx>{`
         @keyframes scaleIn {
           from { opacity: 0; transform: scale(0.95); }

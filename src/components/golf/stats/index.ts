@@ -18,3 +18,16 @@ export { TrendLineChart, MultiTrendLineChart } from './TrendLineChart';
 // Cards
 export { GolfStatCard, StatCardGrid, KPIRow, ScoringDistribution } from './StatCard';
 export { PlayerStatsCard, PlayerStatsCardList, PlayerStatsMini } from './PlayerStatsCard';
+export { DataCompletenessCard, computeCompleteness } from './DataCompletenessCard';
+export { default as StatComparisonCard, StatComparisonGrid, PeriodComparisonCard } from './StatComparisonCard';
+
+// Dispersion Charts
+export { PuttingDispersionPremium } from './PuttingDispersionPremium';
+export { ApproachDispersionPremium } from './ApproachDispersionPremium';
+export { DrivingDispersionPremium } from './DrivingDispersionPremium';
+export { ShotDispersionChart, DrivingDispersionVisualLegacy, ApproachDispersionVisualLegacy, PuttingDispersionVisualLegacy } from './ShotDispersionChart';
+
+// Display & Analysis
+export { default as GolfStatsDisplay, Sparkline } from './GolfStatsDisplay';
+export { default as ProgressStats } from './ProgressStats';
+export { default as PerformanceHeatmap } from './PerformanceHeatmap';

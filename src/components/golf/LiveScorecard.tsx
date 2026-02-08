@@ -247,35 +247,37 @@ export function LiveScorecard({
         </div>
       </div>
 
-      {/* Back Nine */}
-      <div className="p-2 border-t border-slate-100">
-        <div className="text-xs font-semibold text-slate-500 uppercase mb-1 px-1">Back 9</div>
-        <div className="grid grid-cols-9 gap-1">
-          {backNine.map(hole => {
-            const score = scores.find(s => s.holeNumber === hole.holeNumber);
-            const isCurrentHole = hole.holeNumber === currentHole;
+      {/* Back Nine - only show for 18-hole rounds */}
+      {backNine.length > 0 && (
+        <div className="p-2 border-t border-slate-100">
+          <div className="text-xs font-semibold text-slate-500 uppercase mb-1 px-1">Back 9</div>
+          <div className="grid grid-cols-9 gap-1">
+            {backNine.map(hole => {
+              const score = scores.find(s => s.holeNumber === hole.holeNumber);
+              const isCurrentHole = hole.holeNumber === currentHole;
 
-            return (
-              <button
-                key={hole.holeNumber}
-                onClick={() => onHoleSelect(hole.holeNumber)}
-                aria-label={`Hole ${hole.holeNumber}, par ${hole.par}${score?.score ? `, score ${score.score}` : ''}`}
-                aria-current={isCurrentHole ? 'true' : undefined}
-                className={`aspect-square rounded-lg flex flex-col items-center justify-center
-                  text-xs transition-all
-                  ${isCurrentHole ? 'ring-2 ring-green-500' : ''}
-                  ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-slate-50 hover:bg-slate-100'}
-                `}
-              >
-                <span className="font-bold">{score?.score || '-'}</span>
-                <span className={`text-xs ${score?.score ? 'opacity-75' : 'text-slate-400'}`}>
-                  {hole.holeNumber}
-                </span>
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={hole.holeNumber}
+                  onClick={() => onHoleSelect(hole.holeNumber)}
+                  aria-label={`Hole ${hole.holeNumber}, par ${hole.par}${score?.score ? `, score ${score.score}` : ''}`}
+                  aria-current={isCurrentHole ? 'true' : undefined}
+                  className={`aspect-square rounded-lg flex flex-col items-center justify-center
+                    text-xs transition-all
+                    ${isCurrentHole ? 'ring-2 ring-green-500' : ''}
+                    ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-slate-50 hover:bg-slate-100'}
+                  `}
+                >
+                  <span className="font-bold">{score?.score || '-'}</span>
+                  <span className={`text-xs ${score?.score ? 'opacity-75' : 'text-slate-400'}`}>
+                    {hole.holeNumber}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

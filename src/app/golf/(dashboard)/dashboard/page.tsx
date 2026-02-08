@@ -79,16 +79,14 @@ interface PlayerRound {
     round_date: string;
 }
 
-// Cache client instance to avoid recreating
-const supabaseClient = createClient();
-
 export default function GolfDashboardPage() {
     const golfUser = useGolfUser();
-    const supabase = useMemo(() => supabaseClient, []); // Reuse client instance
+    const supabase = useMemo(() => createClient(), []);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [coachData, setCoachData] = useState<CoachDashboardData | null>(null);
     const [playerData, setPlayerData] = useState<PlayerDashboardData | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
 
     // PERF: Destructure primitive values for stable useEffect dependencies
     // instead of depending on the entire golfUser object reference
@@ -180,7 +178,7 @@ export default function GolfDashboardPage() {
                                     .eq('status', 'completed')
                                     .not('total_score', 'is', null)
                                     .order('round_date', { ascending: false })
-                                    .limit(6),
+                                    .limit(50),
                                 // OPTIMIZATION: Limit stats calculation to last 100 rounds (sufficient for averages)
                                 supabase
                                     .from('golf_rounds')
@@ -199,8 +197,8 @@ export default function GolfDashboardPage() {
                                     player_name: `${r.player?.first_name || ''} ${r.player?.last_name || ''}`.trim() || 'Unknown',
                                     player_avatar_url: r.player?.avatar_url || null,
                                     course_name: r.course_name || 'Unknown Course',
-                                    total_score: r.total_score || 0,
-                                    total_to_par: r.score_to_par || 0,
+                                    total_score: r.total_score ?? 0,
+                                    total_to_par: r.score_to_par ?? 0,
                                     round_date: r.round_date,
                                     round_type: r.round_type || null,
                                     total_putts: r.total_putts,
@@ -237,7 +235,7 @@ export default function GolfDashboardPage() {
                                         const avg = pScores.length > 0 ? pScores.reduce((a, b) => a + b, 0) / pScores.length : 0;
                                         playerAvgs.push({
                                             id: p.id,
-                                            name: `${p.first_name} ${p.last_name}`,
+                                            name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
                                             avg_score: avg,
                                             rounds: pScores.length
                                         });
@@ -251,7 +249,7 @@ export default function GolfDashboardPage() {
                                     if (!round.round_date || round.total_score === null) return;
                                     const d = new Date(round.round_date);
                                     const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                                    const label = d.toLocaleString('default', { month: 'short' });
+                                    const label = d.toLocaleString('default', { month: 'short', year: '2-digit' });
                                     if (!roundsByYearMonth[sortKey]) roundsByYearMonth[sortKey] = { label, scores: [] };
                                     roundsByYearMonth[sortKey].scores.push(round.total_score);
                                 });
@@ -318,14 +316,15 @@ export default function GolfDashboardPage() {
                         scoringAverage: scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : null,
                         bestRound: scores.length > 0 ? Math.min(...scores) : null,
                         handicap: playerHandicap,
-                        recentTrend: undefined as 'up' | 'down' | 'stable' | undefined
+                        recentTrend: undefined as 'improving' | 'declining' | 'stable' | undefined
                     };
 
                     if (scores.length >= 6) {
                         const recent5 = scores.slice(0, 5).reduce((a: number, b: number) => a + b, 0) / 5;
                         const prev5 = scores.slice(5, 10).reduce((a: number, b: number) => a + b, 0) / Math.min(5, scores.length - 5);
-                        if (recent5 < prev5 - 0.5) stats.recentTrend = 'down';
-                        else if (recent5 > prev5 + 0.5) stats.recentTrend = 'up';
+                        // In golf, lower scores = improving
+                        if (recent5 < prev5 - 0.5) stats.recentTrend = 'improving';
+                        else if (recent5 > prev5 + 0.5) stats.recentTrend = 'declining';
                         else stats.recentTrend = 'stable';
                     }
 
@@ -338,8 +337,8 @@ export default function GolfDashboardPage() {
                             recentRounds: playerRounds.slice(0, 5).map((r) => ({
                                 id: r.id,
                                 course_name: r.course_name,
-                                total_score: r.total_score || 0,
-                                total_to_par: r.score_to_par || 0,
+                                total_score: r.total_score ?? 0,
+                                total_to_par: r.score_to_par ?? 0,
                                 round_date: r.round_date,
                             }))
                         });
@@ -348,6 +347,10 @@ export default function GolfDashboardPage() {
                     return;
                 }
 
+                // Fallthrough: role/ID mismatch — stop loading
+                if (mounted) {
+                    setLoading(false);
+                }
             } catch (err) {
                 if (mounted) {
                     setError(err instanceof Error ? err.message : 'Failed to load dashboard');
@@ -362,7 +365,11 @@ export default function GolfDashboardPage() {
             mounted = false;
         };
         // PERF: Depend on stable primitive values, not the golfUser object reference
-    }, [supabase, role, userId, coachId, playerId, teamId, organizationId, userName, userAvatar]);
+        // Note: userName/userAvatar intentionally excluded — they are only used for display
+        // in the constructed data objects, not for queries. Including them would cause
+        // unnecessary refetches on profile updates.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [supabase, role, userId, coachId, playerId, teamId, organizationId, retryCount]);
 
     if (loading) {
         return (
@@ -421,7 +428,7 @@ export default function GolfDashboardPage() {
                         onClick={() => {
                             setError(null);
                             setLoading(true);
-                            window.location.reload();
+                            setRetryCount(c => c + 1);
                         }}
                         className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
                     >
@@ -440,5 +447,18 @@ export default function GolfDashboardPage() {
         return <PlayerDashboard data={playerData} />;
     }
 
-    return null;
+    return (
+        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+            <div className="text-center">
+                <h2 className="text-xl font-semibold text-slate-900 mb-2">Dashboard Unavailable</h2>
+                <p className="text-slate-600 mb-4">Unable to load your dashboard. Please check your account setup.</p>
+                <a
+                    href="/golf"
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 inline-block"
+                >
+                    Go to Golf Home
+                </a>
+            </div>
+        </div>
+    );
 }

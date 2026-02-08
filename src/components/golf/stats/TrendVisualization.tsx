@@ -161,11 +161,8 @@ export function TrendVisualization({
   const getTrendBadge = (trendData?: MetricTrendData) => {
     if (!trendData) return null;
 
-    const metricConfig = METRICS_CONFIG[selectedMetric];
     const direction = trendData.trend;
-    const isGood = metricConfig.isHigherBetter
-      ? direction === 'improving'
-      : direction === 'improving';
+    const isGood = direction === 'improving';
 
     return {
       icon: direction === 'improving' ? '↑' : direction === 'declining' ? '↓' : '→',
@@ -238,9 +235,7 @@ export function TrendVisualization({
         {/* Quick Stats Row */}
         <div className="flex items-center gap-3">
           {quickStats.map((stat, i) => {
-            const isGood = stat.isHigherBetter
-              ? stat.trend === 'improving'
-              : stat.trend === 'improving';
+            const isGood = stat.trend === 'improving';
 
             return (
               <div
@@ -464,7 +459,7 @@ export function TrendVisualization({
 export function TrendIndicator({
   trend,
   value,
-  isHigherBetter = false,
+  isHigherBetter: _isHigherBetter = false,
   showValue = true,
   className,
 }: {
@@ -474,7 +469,7 @@ export function TrendIndicator({
   showValue?: boolean;
   className?: string;
 }) {
-  const isGood = isHigherBetter ? trend === 'improving' : trend === 'improving';
+  const isGood = trend === 'improving';
 
   return (
     <div

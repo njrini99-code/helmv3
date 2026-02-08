@@ -117,7 +117,7 @@ export function UnfinishedRoundModal({
               </div>
               <div className="flex items-center gap-2 text-sm text-slate-600">
                 <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
-                  Hole {round.current_hole || 1} of {round.holes_played || 18}
+                  On hole {round.current_hole || 1} of {round.holes_played || 18}
                 </span>
                 <span className="text-slate-400">•</span>
                 <span className="text-slate-500">Last updated {timeAgo}</span>

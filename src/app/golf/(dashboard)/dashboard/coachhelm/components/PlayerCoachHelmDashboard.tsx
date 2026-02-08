@@ -136,7 +136,7 @@ export function PlayerCoachHelmDashboard({
       />
 
       {/* Main Content */}
-      <div className="relative max-w-7xl mx-auto px-6 py-8">
+      <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Empty state */}
         {!hasData && (
           <motion.div

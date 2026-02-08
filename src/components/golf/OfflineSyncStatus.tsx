@@ -334,7 +334,7 @@ export function OfflineSyncStatus({
 
   // Position classes
   const positionClasses = {
-    floating: 'fixed bottom-20 right-4 z-50 md:bottom-6',
+    floating: 'fixed bottom-24 right-4 z-50 md:bottom-6',
     inline: '',
     sidebar: 'mb-4',
   };

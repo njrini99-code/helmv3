@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, memo } from 'react';
+import { useMemo, useState, useEffect, useRef, memo } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -104,9 +104,21 @@ export interface CoachDashboardData {
 const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode?: string }) {
     const [copied, setCopied] = useState(false);
 
-    const handleCopy = () => {
+    const handleCopy = async () => {
         if (!inviteCode) return;
-        navigator.clipboard.writeText(inviteCode);
+        try {
+            await navigator.clipboard.writeText(inviteCode);
+        } catch {
+            // Fallback for browsers/contexts without clipboard API
+            const textarea = document.createElement('textarea');
+            textarea.value = inviteCode;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
@@ -190,9 +202,22 @@ const DateRangeSelector = memo(function DateRangeSelector({
 }) {
     const [open, setOpen] = useState(false);
     const selected = DATE_RANGE_OPTIONS.find(o => o.value === value);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Close on Escape key
+    useEffect(() => {
+        if (!open) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setOpen(false);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [open]);
 
     return (
-        <div className="relative">
+        <div className="relative" ref={containerRef}>
             <button
                 onClick={() => setOpen(!open)}
                 className={cn(
@@ -203,6 +228,8 @@ const DateRangeSelector = memo(function DateRangeSelector({
                     'shadow-sm'
                 )}
                 aria-label="Select date range"
+                aria-haspopup="listbox"
+                aria-expanded={open}
             >
                 <IconClock size={14} className="text-slate-400" />
                 <span className="hidden sm:inline">{selected?.label}</span>
@@ -219,6 +246,8 @@ const DateRangeSelector = memo(function DateRangeSelector({
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -4, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
+                            role="listbox"
+                            aria-label="Date range options"
                             className={cn(
                                 'absolute right-0 top-full mt-1 z-40',
                                 'bg-white/90 backdrop-blur-xl rounded-xl',
@@ -229,6 +258,8 @@ const DateRangeSelector = memo(function DateRangeSelector({
                             {DATE_RANGE_OPTIONS.map((option) => (
                                 <button
                                     key={option.value}
+                                    role="option"
+                                    aria-selected={option.value === value}
                                     onClick={() => {
                                         onChange(option.value);
                                         setOpen(false);
@@ -260,6 +291,8 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
     const { toggleMobile } = useSidebar();
     const [dateRange, setDateRange] = useState<DateRange>('all');
 
+    // Greeting is computed once on mount. Acceptable since users rarely keep
+    // the dashboard open long enough for the time-of-day to change.
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Good morning';
@@ -369,6 +402,11 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                 {team?.join_code && stats.rosterSize < 20 && (
                     <InviteCodeCard inviteCode={team.join_code} />
                 )}
+                {team?.join_code && stats.rosterSize >= 20 && (
+                    <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-700">
+                        Invite code is hidden because your roster has reached the 20-player limit. Remove a player to re-enable invites.
+                    </div>
+                )}
 
                 {/* Stats Grid - tighter gap on mobile */}
                 <motion.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 mb-5 md:mb-8" variants={itemVariants}>
@@ -388,7 +426,7 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                         iconBg="bg-slate-100"
                         label="Upcoming Events"
                         value={stats.upcomingEvents}
-                        subValue="This month"
+                        subValue="Scheduled"
                         href="/golf/dashboard/calendar"
                     />
                     <PremiumStatCard

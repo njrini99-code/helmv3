@@ -217,9 +217,11 @@ export default async function TeamStatsPage() {
       ? totalPutts / roundsPlayed
       : null;
 
-    // Estimate birdies per round (rough approximation)
-    // A proper implementation would query golf_holes for score per hole
-    const birdiesPerRound = null; // Would need additional data
+    // TODO: birdies_per_round requires per-hole score data (golf_holes.score column).
+    // Currently golf_holes only tracks par, fairway_hit, gir, and putts — not the
+    // actual stroke count per hole, so birdies cannot be computed here.
+    // Once per-hole scores are stored, count holes where score < par.
+    const birdiesPerRound = null;
 
     return {
       id: player.id,
