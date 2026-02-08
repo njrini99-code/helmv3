@@ -66,6 +66,13 @@ export function VideoIntro({
         style={{ opacity: isRevealing ? 0 : 1 }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/70" />
+      {/* Mask bottom-right video watermark */}
+      <div
+        className="absolute bottom-0 right-0 w-48 h-32 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at 100% 100%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 40%, transparent 70%)',
+        }}
+      />
 
       <div
         className="relative z-10 transition-[opacity,filter,transform] duration-700 ease-out"
