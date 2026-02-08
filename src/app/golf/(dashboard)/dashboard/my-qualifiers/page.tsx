@@ -59,7 +59,63 @@ export default function MyQualifiersPage() {
   };
 
   if (loading) {
-    return null;
+    return (
+      <AnimatedPage className="min-h-full bg-transparent">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
+          <AnimatedItem className="flex items-center gap-3 mb-8">
+            <button
+              onClick={toggleMobile}
+              className={cn(
+                'lg:hidden p-2.5 -ml-2 rounded-xl',
+                'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                'transition-colors duration-150 active:scale-95',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+              )}
+              aria-label="Open navigation menu"
+            >
+              <IconMenu size={22} />
+            </button>
+            <div className="w-10 h-10 rounded-full bg-amber-100/70 flex items-center justify-center">
+              <IconTrophy size={20} className="text-amber-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900">My Qualifiers</h1>
+              <p className="text-slate-500 text-sm">View your qualifier progress and leaderboards</p>
+            </div>
+          </AnimatedItem>
+
+          <AnimatedItem>
+            <div className="space-y-4">
+              {[0, 1, 2].map((idx) => (
+                <div key={idx} className="glass-standard rounded-2xl overflow-hidden p-6 animate-pulse">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="h-6 w-56 max-w-full bg-slate-200/70 rounded-lg mb-3" />
+                      <div className="flex flex-wrap gap-3 mb-4">
+                        <div className="h-4 w-32 bg-slate-200/60 rounded" />
+                        <div className="h-4 w-28 bg-slate-200/60 rounded" />
+                        <div className="h-4 w-20 bg-slate-200/60 rounded" />
+                      </div>
+                      <div className="flex gap-6">
+                        <div>
+                          <div className="h-3 w-12 bg-slate-200/60 rounded mb-2" />
+                          <div className="h-6 w-16 bg-slate-200/70 rounded" />
+                        </div>
+                        <div>
+                          <div className="h-3 w-16 bg-slate-200/60 rounded mb-2" />
+                          <div className="h-6 w-12 bg-slate-200/70 rounded" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="h-6 w-24 bg-slate-200/70 rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </AnimatedItem>
+        </div>
+      </AnimatedPage>
+    );
   }
 
   return (

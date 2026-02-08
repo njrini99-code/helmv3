@@ -503,6 +503,17 @@ export default function StatsClient({
       setUserRole('player');
       setPlayerName(golfUser.name);
       await loadPlayerSummary(golfUser.playerId);
+
+      // Eagerly load detailed stats so the stats display renders immediately
+      try {
+        const stats = await getDetailedStats(golfUser.playerId, 'overall');
+        const cacheKey = `${golfUser.playerId}-overall-none`;
+        detailedStatsCache.current.set(cacheKey, stats);
+        setDetailedStats(stats);
+      } catch (err) {
+        console.error('Failed to load initial detailed stats:', err);
+      }
+
       setLoading(false);
     }
   }
@@ -757,35 +768,37 @@ export default function StatsClient({
     setDetailedStats(null);
   }, []);
 
+  // Resolve the active player ID — for coaches it's the selected player,
+  // for players it's their own ID from context (or URL param)
+  const resolvedPlayerId = selectedPlayerId
+    || (userRole === 'player' ? (initialPlayerId || golfUser.playerId) : null);
+
   useEffect(() => {
-    const playerId = selectedPlayerId || (userRole === 'player' ? initialPlayerId : null);
-    if (!playerId) return;
+    if (!resolvedPlayerId) return;
 
     const detailedTabs: StatsCategory[] = ['scoring', 'driving', 'approach', 'putting', 'scrambling', 'strokes-gained', 'progress'];
     if (detailedTabs.includes(activeTab) && !detailedStats) {
-      loadDetailedStats(playerId, selectedRoundId, activeFilter);
+      loadDetailedStats(resolvedPlayerId, selectedRoundId, activeFilter);
     }
-  }, [activeTab, selectedPlayerId, selectedRoundId, initialPlayerId, userRole, detailedStats, loadDetailedStats, activeFilter]);
+  }, [activeTab, resolvedPlayerId, selectedRoundId, detailedStats, loadDetailedStats, activeFilter]);
 
   useEffect(() => {
-    const playerId = selectedPlayerId || (userRole === 'player' ? initialPlayerId : null);
-    if (!playerId) return;
+    if (!resolvedPlayerId) return;
 
     const filterKey = activeFilter ? JSON.stringify(activeFilter) : 'none';
-    const cacheKey = `${playerId}-${selectedRoundId}-${filterKey}`;
+    const cacheKey = `${resolvedPlayerId}-${selectedRoundId}-${filterKey}`;
 
     if (detailedStatsCache.current.has(cacheKey)) {
       setDetailedStats(detailedStatsCache.current.get(cacheKey)!);
     } else if (detailedStats) {
-      loadDetailedStats(playerId, selectedRoundId, activeFilter);
+      loadDetailedStats(resolvedPlayerId, selectedRoundId, activeFilter);
     }
   }, [selectedRoundId, activeFilter]);
 
   useEffect(() => {
-    const playerId = selectedPlayerId || (userRole === 'player' ? initialPlayerId : null);
-    if (!playerId) return;
-    loadPlayerAnalytics(playerId);
-  }, [selectedPlayerId, initialPlayerId, userRole, loadPlayerAnalytics]);
+    if (!resolvedPlayerId) return;
+    loadPlayerAnalytics(resolvedPlayerId);
+  }, [resolvedPlayerId, loadPlayerAnalytics]);
 
   // ============================================================================
   // EVENT HANDLERS

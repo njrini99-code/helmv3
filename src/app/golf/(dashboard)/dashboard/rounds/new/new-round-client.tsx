@@ -24,7 +24,7 @@ import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { OfflineWarningBanner } from '@/components/golf';
 import { IconBookmark, IconCheck, IconChartBar, IconMapPin, IconPlus, IconTrophy } from '@/components/icons';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
-import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
+
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
 import { ResumeDraftModal } from '@/components/golf/ResumeDraftModal';
 // DraftIndicator removed - was too noisy
@@ -50,23 +50,6 @@ interface RoundSetupForm {
   roundDate: string;
 }
 
-interface RoundSummary {
-  id: string;
-  courseName: string;
-  roundDate: string;
-  totalScore: number;
-  totalToPar: number;
-  totalPutts: number;
-  fairwaysHit: number;
-  fairwaysTotal: number;
-  greensInReg: number;
-  greensTotal: number;
-  birdies: number;
-  eagles: number;
-  pars: number;
-  bogeys: number;
-  doublePlus: number;
-}
 
 export default function NewRoundClient() {
   const router = useRouter();
@@ -197,8 +180,6 @@ export default function NewRoundClient() {
   const [holes, setHoles] = useState<Hole[]>([]);
   const [completedHoleStats, setCompletedHoleStats] = useState<HoleStats[]>([]);
   const [error, setError] = useState('');
-  const [showSummary, setShowSummary] = useState(false);
-  const [summaryData, setSummaryData] = useState<RoundSummary | null>(null);
   const [showExitModal, setShowExitModal] = useState(false);
   const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
   const [inProgressShotsByHole, setInProgressShotsByHole] = useState<Record<number, ShotRecord[]>>({});
@@ -596,55 +577,12 @@ export default function NewRoundClient() {
         throw new Error(result.error);
       }
 
-      // Calculate summary stats
-      const totalScore = allHoleStats.reduce((sum, h) => sum + h.score, 0);
-      const totalPar = allHoleStats.reduce((sum, h) => sum + h.par, 0);
-      const totalToPar = totalScore - totalPar;
-      const totalPutts = allHoleStats.reduce((sum, h) => sum + h.putts, 0);
-      const fairwaysHit = allHoleStats.reduce((sum, h) => sum + (h.fairwayHit ? 1 : 0), 0);
-      const fairwaysTotal = allHoleStats.filter(h => h.par >= 4).length; // Par 4s and 5s
-      const greensInReg = allHoleStats.reduce((sum, h) => sum + (h.greenInRegulation ? 1 : 0), 0);
-      const greensTotal = allHoleStats.length;
-
-      // Score distribution
-      let eagles = 0;
-      let birdies = 0;
-      let pars = 0;
-      let bogeys = 0;
-      let doublePlus = 0;
-
-      allHoleStats.forEach(hole => {
-        const toPar = hole.score - hole.par;
-        if (toPar <= -2) eagles++;
-        else if (toPar === -1) birdies++;
-        else if (toPar === 0) pars++;
-        else if (toPar === 1) bogeys++;
-        else doublePlus++;
-      });
-
       // Clear draft after successful submission
       clearDraft();
 
-      // Show summary modal
-      setSummaryData({
-        id: result.success ? result.data.roundId : '',
-        courseName: setupData.courseName,
-        roundDate: setupData.roundDate,
-        totalScore,
-        totalToPar,
-        totalPutts,
-        fairwaysHit,
-        fairwaysTotal,
-        greensInReg,
-        greensTotal,
-        birdies,
-        eagles,
-        pars,
-        bogeys,
-        doublePlus,
-      });
-      setStep('tracking'); // Change step back so modal can render
-      setShowSummary(true);
+      // Navigate to round detail page for full review
+      const roundId = result.data.roundId;
+      router.push(`/golf/dashboard/rounds/${roundId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit round');
       setStep('tracking');
@@ -1460,14 +1398,6 @@ export default function NewRoundClient() {
         currentHole={currentHoleIndex + 1}
         totalHoles={holes.length}
       />
-
-      {/* Round Completion Summary Modal */}
-      {showSummary && summaryData && (
-        <RoundCompletionSummary
-          summary={summaryData}
-          onClose={() => setShowSummary(false)}
-        />
-      )}
 
       {/* Resume Draft Modal */}
       {showResumeDraftModal && existingDraftInfo && (

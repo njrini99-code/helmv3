@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive, { type HoleStats, type ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound } from '@/app/golf/actions/golf';
-import { RoundCompletionSummary } from '@/components/golf/RoundCompletionSummary';
+
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
 import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
@@ -27,23 +27,6 @@ interface RoundSetupData {
   roundDate: string;
 }
 
-interface RoundSummary {
-  id: string;
-  courseName: string;
-  roundDate: string;
-  totalScore: number;
-  totalToPar: number;
-  totalPutts: number;
-  fairwaysHit: number;
-  fairwaysTotal: number;
-  greensInReg: number;
-  greensTotal: number;
-  birdies: number;
-  eagles: number;
-  pars: number;
-  bogeys: number;
-  doublePlus: number;
-}
 
 interface ContinueRoundClientProps {
   roundId: string;
@@ -82,8 +65,6 @@ export default function ContinueRoundClient({
   const [completedHoleStats, setCompletedHoleStats] = useState<HoleStats[]>(initialCompletedStats);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
-  const [summaryData, setSummaryData] = useState<RoundSummary | null>(null);
   const [showExitModal, setShowExitModal] = useState(false);
   const [inProgressShotsByHole, setInProgressShotsByHole] = useState<Record<number, ShotRecord[]>>(() => {
     if (initialShots.length === 0) {
@@ -201,52 +182,9 @@ export default function ContinueRoundClient({
         throw new Error(result.error);
       }
 
-      // Calculate summary stats
-      const totalScore = allHoleStats.reduce((sum, h) => sum + h.score, 0);
-      const totalPar = allHoleStats.reduce((sum, h) => sum + h.par, 0);
-      const totalToPar = totalScore - totalPar;
-      const totalPutts = allHoleStats.reduce((sum, h) => sum + h.putts, 0);
-      const fairwaysHit = allHoleStats.reduce((sum, h) => sum + (h.fairwayHit ? 1 : 0), 0);
-      const fairwaysTotal = allHoleStats.filter(h => h.par >= 4).length; // Par 4s and 5s
-      const greensInReg = allHoleStats.reduce((sum, h) => sum + (h.greenInRegulation ? 1 : 0), 0);
-      const greensTotal = allHoleStats.length;
-
-      // Score distribution
-      let eagles = 0;
-      let birdies = 0;
-      let pars = 0;
-      let bogeys = 0;
-      let doublePlus = 0;
-
-      allHoleStats.forEach(hole => {
-        const toPar = hole.score - hole.par;
-        if (toPar <= -2) eagles++;
-        else if (toPar === -1) birdies++;
-        else if (toPar === 0) pars++;
-        else if (toPar === 1) bogeys++;
-        else doublePlus++;
-      });
-
-      // Show summary modal
-      setSummaryData({
-        id: result.success ? result.data.roundId : roundId,
-        courseName: setupData.courseName,
-        roundDate: setupData.roundDate,
-        totalScore,
-        totalToPar,
-        totalPutts,
-        fairwaysHit,
-        fairwaysTotal,
-        greensInReg,
-        greensTotal,
-        birdies,
-        eagles,
-        pars,
-        bogeys,
-        doublePlus,
-      });
-      setSubmitting(false);
-      setShowSummary(true);
+      // Navigate to round detail page for full review
+      const completedRoundId = result.data.roundId || roundId;
+      router.push(`/golf/dashboard/rounds/${completedRoundId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit round');
       setSubmitting(false);
@@ -411,13 +349,6 @@ export default function ContinueRoundClient({
         totalHoles={holes.length}
       />
 
-      {/* Round Completion Summary Modal */}
-      {showSummary && summaryData && (
-        <RoundCompletionSummary
-          summary={summaryData}
-          onClose={() => setShowSummary(false)}
-        />
-      )}
     </>
   );
 }

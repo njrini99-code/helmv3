@@ -101,8 +101,32 @@ export function useRoundReview(roundId: string | null, isCoach?: boolean): UseRo
       return;
     }
 
+    let cancelled = false;
     const currentRoundId = roundId;
     const supabase = supabaseRef.current;
+
+    async function fetchReview(): Promise<boolean> {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: fetchError } = await (supabase as any)
+        .from('golf_round_reviews')
+        .select('*')
+        .eq('round_id', currentRoundId)
+        .maybeSingle();
+
+      if (!fetchError && data && data.summary) {
+        if (!cancelled) {
+          setReview(dbToReview(data as Record<string, unknown>));
+
+          // If the review has rule-based content stored in round_stats, extract it
+          const roundStats = data.round_stats;
+          if (roundStats && typeof roundStats === 'object' && 'summary' in roundStats) {
+            setRuleBasedContent(roundStats as RoundReviewContent);
+          }
+        }
+        return true;
+      }
+      return false;
+    }
 
     async function fetchReviewAndCheckStatus() {
       setLoading(true);
@@ -122,7 +146,7 @@ export function useRoundReview(roundId: string | null, isCoach?: boolean): UseRo
           return;
         }
 
-        setPlayerId(round.player_id);
+        if (!cancelled) setPlayerId(round.player_id);
 
         // Check CoachHelm status - for coaches, also check coach-level
         let enabled = false;
@@ -148,38 +172,33 @@ export function useRoundReview(roundId: string | null, isCoach?: boolean): UseRo
         } catch {
           // CoachHelm status check failed, continue without it
         }
-        setIsCoachHelmEnabled(enabled);
+        if (!cancelled) setIsCoachHelmEnabled(enabled);
 
         // Fetch existing review - wrapped in try/catch for RLS issues
         try {
-          const { data, error: fetchError } = await (supabase as unknown as {
-            from: (table: string) => {
-              select: (columns: string) => {
-                eq: (column: string, value: string) => {
-                  maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
-                };
-              };
-            };
-          }).from('golf_round_reviews')
-            .select('*')
-            .eq('round_id', currentRoundId)
-            .maybeSingle();
+          const found = await fetchReview();
 
-          if (!fetchError && data) {
-            setReview(dbToReview(data));
+          // If no review found, the background generation may still be running.
+          // Retry once after a short delay.
+          if (!found && !cancelled) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            if (!cancelled) {
+              await fetchReview();
+            }
           }
-          // If fetchError (e.g. RLS blocking coach), just skip - they can generate
         } catch {
           // Silently skip if table doesn't exist or RLS blocks
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load review');
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load review');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     fetchReviewAndCheckStatus();
+
+    return () => { cancelled = true; };
   }, [roundId, isCoach]);
 
   // Generate review - uses rule-based generator (always works) with optional AI enhancement

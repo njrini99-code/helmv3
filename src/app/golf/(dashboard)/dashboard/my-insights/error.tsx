@@ -13,7 +13,7 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/golf/dashboard/my-insights"
+      route="/golf/dashboard/coachhelm"
       component="MyInsightsPage"
       title="Failed to load insights"
       message="We couldn't load your insights. Please try again."

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { IconUsers, IconMail, IconCalendar, IconUser, IconClipboardList } from '@/components/icons';
 import { PremiumGlassCard, SectionHeader } from '@/components/golf/dashboard';
+import { MobileMenuButton } from '@/components/golf/layout/MobileMenuButton';
 
 interface TeamInfoPlayerProps {
   team: {
@@ -66,8 +67,13 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-2xl font-semibold text-warm-900">{team.name}</h1>
-        <p className="text-warm-500 mt-1">Season: {team.season || 'Current'}</p>
+        <div className="flex items-center gap-3 min-w-0">
+          <MobileMenuButton />
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-semibold text-warm-900 truncate">{team.name}</h1>
+            <p className="text-warm-500 mt-1 text-sm md:text-base">Season: {team.season || 'Current'}</p>
+          </div>
+        </div>
       </motion.div>
 
       <motion.div

@@ -27,16 +27,16 @@ export function ApproachMissSelector({
     <div className="space-y-3">
       <p className="text-sm text-slate-600 font-medium">Where did it miss?</p>
       
-      <div className="relative aspect-square max-w-[280px] mx-auto">
+      <div className="relative max-w-[280px] mx-auto">
         {/* Grid container */}
-        <div className="grid grid-cols-3 gap-2 h-full">
+        <div className="grid grid-cols-3 gap-2">
           {gridLayout.flat().map((cell, index) => {
             if (cell === 'green') {
               // Center cell represents the green (target)
               return (
                 <div
                   key={index}
-                  className="flex items-center justify-center rounded-xl bg-emerald-500/20 border-2 border-emerald-500/40"
+                  className="flex items-center justify-center rounded-xl bg-emerald-500/20 border-2 border-emerald-500/40 aspect-square"
                 >
                   <div className="text-center">
                     <div className="w-4 h-4 mx-auto rounded-full bg-emerald-500/60 mb-1" />
@@ -61,8 +61,8 @@ export function ApproachMissSelector({
                 disabled={disabled}
                 whileTap={{ scale: 0.95 }}
                 className={cn(
-                  'relative flex flex-col items-center justify-center rounded-xl border transition-all duration-200',
-                  'text-sm font-medium p-2',
+                  'relative flex flex-col items-center justify-center rounded-xl border transition-all duration-200 aspect-square',
+                  'font-medium',
                   isSelected
                     ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm shadow-emerald-950/10'
                     : 'bg-white/70 backdrop-blur-sm border-slate-200 hover:border-emerald-300 hover:bg-emerald-50',
@@ -70,18 +70,18 @@ export function ApproachMissSelector({
                 )}
               >
                 <span className={cn(
-                  'text-2xl mb-1',
+                  'text-lg leading-none',
                   isSelected ? 'text-white' : 'text-slate-600'
                 )}>
                   {config.icon}
                 </span>
                 <span className={cn(
-                  'text-xs font-semibold',
+                  'text-[10px] font-semibold leading-none mt-1.5',
                   isSelected ? 'text-white' : config.color
                 )}>
                   {config.shortLabel}
                 </span>
-                
+
                 {/* Selection indicator */}
                 {isSelected && (
                   <motion.div
@@ -96,25 +96,26 @@ export function ApproachMissSelector({
           })}
         </div>
 
-        {/* Player position indicator */}
-        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 text-slate-500">
-          <span className="text-xs">You</span>
-          <span>⛳</span>
+        {/* Player position indicator + selected direction label */}
+        <div className="mt-3 text-center">
+          {selectedDirection ? (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-sm text-slate-700 font-medium"
+            >
+              Missed <span className={APPROACH_MISS_CONFIG[selectedDirection].color}>
+                {APPROACH_MISS_CONFIG[selectedDirection].label}
+              </span>
+            </motion.p>
+          ) : (
+            <div className="flex items-center justify-center gap-1 text-slate-400">
+              <span className="text-xs">You</span>
+              <span className="text-sm">⛳</span>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Selected direction label */}
-      {selectedDirection && (
-        <motion.p
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center text-sm text-slate-700 font-medium"
-        >
-          Missed <span className={APPROACH_MISS_CONFIG[selectedDirection].color}>
-            {APPROACH_MISS_CONFIG[selectedDirection].label}
-          </span>
-        </motion.p>
-      )}
     </div>
   );
 }

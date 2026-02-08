@@ -636,6 +636,12 @@ export async function submitGolfRoundComprehensive(
     // Server-calculate GIR from shot data for accuracy
     const greensInReg = data.holes.filter(h => calculateGirFromShots(h.shots, h.par)).length;
 
+    // Calculate front nine / back nine splits
+    const frontNineHoles = data.holes.filter(h => h.holeNumber <= 9);
+    const backNineHoles = data.holes.filter(h => h.holeNumber > 9);
+    const frontNine = frontNineHoles.length > 0 ? frontNineHoles.reduce((sum, h) => sum + h.score, 0) : null;
+    const backNine = backNineHoles.length > 0 ? backNineHoles.reduce((sum, h) => sum + h.score, 0) : null;
+
     // Convert frontend round type to database format
     const roundTypeDb = roundTypeToDb(data.roundType);
 
@@ -661,6 +667,8 @@ export async function submitGolfRoundComprehensive(
       total_fairways: fairwaysTotal,
       total_gir: greensInReg,
       total_gir_possible: data.holes.length,
+      front_nine: frontNine,
+      back_nine: backNine,
       status: 'completed' as const, // Mark as completed when all holes are done
     };
 

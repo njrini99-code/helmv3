@@ -11,6 +11,7 @@ import { AddClassModal, type ClassFormData } from '@/components/golf/classes/Add
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
 import { ConfirmClassesModal } from '@/components/golf/classes/ConfirmClassesModal';
 import { ClassDetailModal } from '@/components/golf/classes/ClassDetailModal';
+import { MobileMenuButton } from '@/components/golf/layout/MobileMenuButton';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
 
@@ -390,34 +391,39 @@ export default function GolfClassesPage() {
   return (
     <AnimatedPage className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <AnimatedItem className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">My Classes</h1>
-          <p className="text-slate-500 mt-1">
-            {classes.length > 0 
-              ? `${classes.length} class${classes.length !== 1 ? 'es' : ''} • ${totalCredits} credits`
-              : 'Academic schedule'
-            }
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {classes.length > 0 && (
-            <Button
-              variant="danger"
-              onClick={handleDeleteAllClasses}
-              className="gap-2"
-            >
-              Delete All
+      <AnimatedItem className="mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <MobileMenuButton />
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900 truncate">My Classes</h1>
+              <p className="text-slate-500 mt-1 text-sm md:text-base truncate">
+                {classes.length > 0
+                  ? `${classes.length} class${classes.length !== 1 ? 'es' : ''} • ${totalCredits} credits`
+                  : 'Academic schedule'
+                }
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end">
+            {classes.length > 0 && (
+              <Button
+                variant="danger"
+                onClick={handleDeleteAllClasses}
+                className="gap-2"
+              >
+                Delete All
+              </Button>
+            )}
+            <Button variant="secondary" onClick={() => setShowUploadModal(true)} className="gap-2">
+              <IconUpload size={18} />
+              Import Schedule
             </Button>
-          )}
-          <Button variant="secondary" onClick={() => setShowUploadModal(true)} className="gap-2">
-            <IconUpload size={18} />
-            Import Schedule
-          </Button>
-          <Button onClick={() => { setEditingClass(null); setShowAddModal(true); }} className="gap-2">
-            <IconPlus size={18} />
-            Add Class
-          </Button>
+            <Button onClick={() => { setEditingClass(null); setShowAddModal(true); }} className="gap-2">
+              <IconPlus size={18} />
+              Add Class
+            </Button>
+          </div>
         </div>
       </AnimatedItem>
 

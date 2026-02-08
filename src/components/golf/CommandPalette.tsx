@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   IconSearch, IconUsers, IconCalendar, IconChartBar, IconMessage,
-  IconSettings, IconGolf, IconFlag, IconBook, IconAirplane,
+  IconSettings, IconGolf, IconFlag, IconBook, IconAirplane, IconSparkles,
+  IconTarget, IconTrophy, IconClipboardList, IconBell,
   IconChevronRight
 } from '@/components/icons';
 
@@ -98,12 +99,36 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
   const playerCommands: CommandItem[] = [
     {
+      id: 'insights',
+      label: 'CoachHelm AI',
+      description: 'Personalized AI insights',
+      icon: <IconSparkles size={18} />,
+      action: () => router.push('/golf/dashboard/coachhelm'),
+      keywords: ['ai', 'insights', 'coachhelm', 'focus'],
+    },
+    {
       id: 'rounds',
       label: 'My Rounds',
       description: 'View and submit rounds',
       icon: <IconGolf size={18} />,
       action: () => router.push('/golf/dashboard/rounds'),
       keywords: ['scores', 'games'],
+    },
+    {
+      id: 'development',
+      label: 'My Development',
+      description: 'Assigned focus areas',
+      icon: <IconTarget size={18} />,
+      action: () => router.push('/golf/dashboard/my-development'),
+      keywords: ['focus', 'improvement', 'plan'],
+    },
+    {
+      id: 'qualifiers',
+      label: 'My Qualifiers',
+      description: 'Progress and leaderboards',
+      icon: <IconTrophy size={18} />,
+      action: () => router.push('/golf/dashboard/my-qualifiers'),
+      keywords: ['leaderboard', 'tournament', 'qualifying'],
     },
     {
       id: 'stats',
@@ -130,12 +155,36 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       keywords: ['chat'],
     },
     {
+      id: 'tasks',
+      label: 'My Tasks',
+      description: 'Pending assignments',
+      icon: <IconClipboardList size={18} />,
+      action: () => router.push('/golf/dashboard/tasks'),
+      keywords: ['assignments', 'todo', 'checklist'],
+    },
+    {
+      id: 'announcements',
+      label: 'Announcements',
+      description: 'Team updates',
+      icon: <IconBell size={18} />,
+      action: () => router.push('/golf/dashboard/announcements'),
+      keywords: ['news', 'updates', 'notices'],
+    },
+    {
       id: 'classes',
       label: 'My Classes',
       description: 'Class schedule',
       icon: <IconBook size={18} />,
       action: () => router.push('/golf/dashboard/classes'),
       keywords: ['schedule', 'school'],
+    },
+    {
+      id: 'team',
+      label: 'Team Info',
+      description: 'Roster and coach details',
+      icon: <IconUsers size={18} />,
+      action: () => router.push('/golf/dashboard/team'),
+      keywords: ['roster', 'team', 'coach'],
     },
     {
       id: 'settings',
