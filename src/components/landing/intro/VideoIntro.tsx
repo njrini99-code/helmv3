@@ -65,7 +65,7 @@ export function VideoIntro({
         className="absolute inset-0 bg-black transition-opacity duration-700 ease-out"
         style={{ opacity: isRevealing ? 0 : 1 }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/70" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/25 to-black/50" />
       {/* Mask bottom-right video watermark */}
       <div
         className="absolute bottom-0 right-0 w-48 h-32 pointer-events-none"
