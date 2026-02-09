@@ -128,20 +128,13 @@ export async function loginAction(
   const coachProfile = coachResult.data;
   const playerProfile = playerResult.data;
 
-  // Default to dashboard, but redirect to onboarding if profile is missing/incomplete
-  const adminAllowlist = (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-
   let redirectTo = '/golf/dashboard';
 
-  // Note: user_role enum only has 'coach' | 'player', not 'admin'
-  // Admin access is determined by email allowlist only
-  if (adminAllowlist.includes(normalizedEmail)) {
+  // Admin users go straight to the admin command center
+  if (userData?.role === 'admin') {
     return {
       success: true,
-      redirectTo: '/admin/command-center',
+      redirectTo: '/golf/admin',
     };
   }
 

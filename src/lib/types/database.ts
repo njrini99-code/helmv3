@@ -8563,7 +8563,7 @@ export type Database = {
       organization_type: "college" | "juco" | "high_school" | "showcase"
       reminder_type: "in_app" | "email" | "push" | "all"
       team_member_status: "pending" | "active" | "inactive" | "removed"
-      user_role: "coach" | "player"
+      user_role: "admin" | "coach" | "player"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -8730,7 +8730,7 @@ export const Constants = {
       organization_type: ["college", "juco", "high_school", "showcase"],
       reminder_type: ["in_app", "email", "push", "all"],
       team_member_status: ["pending", "active", "inactive", "removed"],
-      user_role: ["coach", "player"],
+      user_role: ["admin", "coach", "player"],
     },
   },
 } as const
