@@ -10,8 +10,9 @@ interface V2PredictionCardProps {
 }
 
 export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
-  const predictedValue = prediction.predictedValue;
-  const confidencePercent = Math.round(prediction.confidence * 100);
+  const predictedValue = Number.isFinite(prediction.predictedValue) ? prediction.predictedValue : 0;
+  const rawConfidence = prediction.confidence;
+  const confidencePercent = Number.isFinite(rawConfidence) ? Math.round(rawConfidence * 100) : 0;
   const lowerBound = prediction.lowerBound ?? prediction.predictedRangeLow;
   const upperBound = prediction.upperBound ?? prediction.predictedRangeHigh;
   const hasRange = Number.isFinite(lowerBound) && Number.isFinite(upperBound);
@@ -72,7 +73,7 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
             )}
           </div>
           <div className="text-xs text-warm-400 mt-1">
-            Range: {hasRange ? `${lowerBound.toFixed(1)} - ${upperBound.toFixed(1)}` : '--'}
+            Range: {hasRange ? `${Number(lowerBound).toFixed(1)} - ${Number(upperBound).toFixed(1)}` : '--'}
           </div>
         </div>
 

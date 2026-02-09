@@ -64,20 +64,20 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
             {/* Metrics */}
             <div className="flex items-center gap-4 text-xs">
               <span className="text-warm-500">
-                Strength: 
+                Strength:
                 <span className={cn(
                   'ml-1 font-medium',
-                  insight.strength >= 0.7 ? 'text-green-600' :
-                  insight.strength >= 0.4 ? 'text-amber-600' :
+                  Number.isFinite(insight.strength) && insight.strength >= 0.7 ? 'text-green-600' :
+                  Number.isFinite(insight.strength) && insight.strength >= 0.4 ? 'text-amber-600' :
                   'text-warm-600'
                 )}>
-                  {Math.round(insight.strength * 100)}%
+                  {Number.isFinite(insight.strength) ? `${Math.round(insight.strength * 100)}%` : '--'}
                 </span>
               </span>
               <span className="text-warm-500">
-                Confidence: 
+                Confidence:
                 <span className="ml-1 font-medium text-warm-700">
-                  {Math.round(insight.confidence * 100)}%
+                  {Number.isFinite(insight.confidence) ? `${Math.round(insight.confidence * 100)}%` : '--'}
                 </span>
               </span>
               {insight.doseResponse && (

@@ -11,7 +11,11 @@ interface V2ReviewSummaryProps {
 
 export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
   const { composedReview, reasoning, focusAreas, practicePriority } = review;
-  const calibratedConfidence = reasoning.calibratedConfidence ?? reasoning.confidence;
+  const rawConfidence = reasoning.calibratedConfidence ?? reasoning.confidence;
+  const calibratedConfidence = Number.isFinite(rawConfidence) ? rawConfidence : 0;
+
+  // Guard: don't render if headline is empty/generic
+  if (!composedReview?.headline || !composedReview?.body) return null;
 
   return (
     <motion.div
