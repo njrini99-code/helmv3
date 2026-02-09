@@ -160,15 +160,20 @@ export class ReasoningEngine {
         .map((c) => c.label || `${c.field} ${c.operator} ${c.value}`)
         .join(' and ');
 
+      const confidence = Number.isFinite(pattern.confidence) ? pattern.confidence : 0;
+      const support = Number.isFinite(pattern.support) ? pattern.support : 0;
+      const lift = Number.isFinite(pattern.lift) ? pattern.lift : 1;
+      const strokeImpact = Number.isFinite(pattern.strokeImpact) ? pattern.strokeImpact : 0;
+
       steps.push({
         type: 'inductive',
         premise: `Pattern observed: When ${conditionText}`,
-        inference: `This pattern has occurred ${pattern.occurrenceCount} times with ${(pattern.confidence * 100).toFixed(0)}% reliability`,
-        conclusion: pattern.description || `Expect ${pattern.strokeImpact > 0 ? 'higher' : 'lower'} scores`,
-        confidence: pattern.confidence,
+        inference: `This pattern has occurred ${pattern.occurrenceCount ?? 0} times with ${(confidence * 100).toFixed(0)}% reliability`,
+        conclusion: pattern.description || `Expect ${strokeImpact > 0 ? 'higher' : 'lower'} scores`,
+        confidence,
         evidence: [
-          `Support: ${(pattern.support * 100).toFixed(0)}%`,
-          `Lift: ${pattern.lift.toFixed(2)}x`,
+          `Support: ${(support * 100).toFixed(0)}%`,
+          `Lift: ${lift.toFixed(2)}x`,
         ],
       });
     }

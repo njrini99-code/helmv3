@@ -266,29 +266,42 @@ export class InsightComposer {
     // Main insight
     if (insight.type === 'pattern') {
       const pattern = insight.data as unknown as MinedPattern;
-      parts.push(pattern.description || 'A notable pattern has been detected.');
 
-      if (verbosity !== 'brief') {
-        parts.push(
-          `This occurs in ${(pattern.support * 100).toFixed(0)}% of rounds with ${(pattern.confidence * 100).toFixed(0)}% reliability.`
-        );
-      }
+      // Guard: only compose pattern text if pattern has valid data
+      if (pattern.description && pattern.conditions && pattern.conditions.length > 0) {
+        parts.push(pattern.description);
 
-      if (verbosity === 'detailed') {
-        parts.push(
-          `Impact: ${pattern.strokeImpact > 0 ? '+' : ''}${pattern.strokeImpact.toFixed(1)} strokes per round.`
-        );
-        if (pattern.recommendation) {
-          parts.push(pattern.recommendation);
+        const support = Number.isFinite(pattern.support) ? pattern.support : 0;
+        const confidence = Number.isFinite(pattern.confidence) ? pattern.confidence : 0;
+
+        if (verbosity !== 'brief' && support > 0) {
+          parts.push(
+            `This occurs in ${(support * 100).toFixed(0)}% of rounds with ${(confidence * 100).toFixed(0)}% reliability.`
+          );
+        }
+
+        if (verbosity === 'detailed') {
+          const strokeImpact = Number.isFinite(pattern.strokeImpact) ? pattern.strokeImpact : 0;
+          if (Math.abs(strokeImpact) > 0) {
+            parts.push(
+              `Impact: ${strokeImpact > 0 ? '+' : ''}${strokeImpact.toFixed(1)} strokes per round.`
+            );
+          }
+          if (pattern.recommendation) {
+            parts.push(pattern.recommendation);
+          }
         }
       }
     }
 
     if (insight.type === 'prediction') {
       const pred = insight.data as unknown as PerformancePrediction;
-      const score = pred.predictedValue >= 0 ? `+${pred.predictedValue.toFixed(1)}` : pred.predictedValue.toFixed(1);
+      const predictedValue = Number.isFinite(pred.predictedValue) ? pred.predictedValue : 0;
+      const rangeLow = Number.isFinite(pred.predictedRangeLow) ? pred.predictedRangeLow : 0;
+      const rangeHigh = Number.isFinite(pred.predictedRangeHigh) ? pred.predictedRangeHigh : 0;
+      const score = predictedValue >= 0 ? `+${predictedValue.toFixed(1)}` : predictedValue.toFixed(1);
 
-      parts.push(`Expected score: ${score} (range: ${pred.predictedRangeLow.toFixed(1)} to ${pred.predictedRangeHigh.toFixed(1)})`);
+      parts.push(`Expected score: ${score} (range: ${rangeLow.toFixed(1)} to ${rangeHigh.toFixed(1)})`);
 
       if (verbosity !== 'brief' && pred.keyFactors && pred.keyFactors.length > 0) {
         const topFactor = pred.keyFactors[0];
@@ -298,7 +311,8 @@ export class InsightComposer {
       }
 
       if (verbosity === 'detailed' && insight.reasoning) {
-        parts.push(`Confidence: ${(pred.confidence * 100).toFixed(0)}%`);
+        const confPct = Number.isFinite(pred.confidence) ? pred.confidence : 0;
+        parts.push(`Confidence: ${(confPct * 100).toFixed(0)}%`);
       }
     }
 

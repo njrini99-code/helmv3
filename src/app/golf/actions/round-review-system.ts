@@ -858,8 +858,14 @@ export async function generateAndStoreRoundReview(
     try {
       const aiResult = await generateAIRoundReview(roundId, playerId);
       if (aiResult.success && aiResult.review) {
-        if (aiResult.review.summary) reviewContent.summary = aiResult.review.summary;
-        if (aiResult.review.primaryTakeaway) reviewContent.recommendations.unshift(aiResult.review.primaryTakeaway);
+        // Only use AI summary if it's substantive and doesn't contain NaN artifacts
+        const aiSummary = aiResult.review.summary;
+        if (aiSummary && !aiSummary.includes('NaN') && aiSummary.length > 20) {
+          reviewContent.summary = aiSummary;
+        }
+        if (aiResult.review.primaryTakeaway && !aiResult.review.primaryTakeaway.includes('NaN')) {
+          reviewContent.recommendations.unshift(aiResult.review.primaryTakeaway);
+        }
         aiEnhanced = true;
       }
     } catch {

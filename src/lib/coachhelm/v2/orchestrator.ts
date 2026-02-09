@@ -240,10 +240,12 @@ export class CoachHelmIntelligence {
       recentPerformance: this.inferRecentPerformance(features),
     };
 
+    // Only compose from patterns if we have valid pattern data
+    const primaryPattern = patterns.length > 0 ? patterns[0] : null;
     const composedReview = this.insightComposer.compose(
       {
-        type: 'pattern',
-        data: patterns[0] ?? {},
+        type: primaryPattern ? 'pattern' : 'prediction',
+        data: (primaryPattern ?? prediction ?? {}) as unknown as Record<string, unknown>,
         reasoning,
         features,
       },
