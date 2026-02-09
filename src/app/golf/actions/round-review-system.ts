@@ -208,6 +208,16 @@ interface RoundData {
   status?: string;
 }
 
+// Hole-level data from golf_holes table (carries known par, score, etc.)
+interface HoleParRow {
+  hole_number: number;
+  par: number;
+  score: number | null;
+  putts: number | null;
+  fairway_hit: boolean | null;
+  green_in_regulation: boolean | null;
+}
+
 // Shot row from golf_shots table
 interface ShotRow {
   hole_number: number;
@@ -231,9 +241,19 @@ interface ShotRow {
 // ============================================================================
 
 /**
- * Build per-hole breakdowns from shot-level data
+ * Build per-hole breakdowns from shot-level data.
+ *
+ * Key design decisions:
+ * - Score is computed by checking if the last shot holed out. If shot data is
+ *   incomplete (ball never reaches hole), we detect this and estimate score
+ *   from the shots we have + likely remaining shots.
+ * - Chip-ins (around_green with result 'hole') are properly handled — 0 putts.
+ * - GIR detection checks for both lie_after='green' AND result='hole' (chip-in
+ *   from approach counts as GIR).
+ * - Par 3 tee shots that hit the green count as GIR (shot 1 reaching green on
+ *   par 3 satisfies girShotLimit of 1).
  */
-function buildHoleBreakdowns(shots: ShotRow[], _round: RoundData): HoleBreakdown[] {
+function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: HoleParRow[]): HoleBreakdown[] {
   const byHole = new Map<number, ShotRow[]>();
   for (const s of shots) {
     const arr = byHole.get(s.hole_number) ?? [];
@@ -241,26 +261,101 @@ function buildHoleBreakdowns(shots: ShotRow[], _round: RoundData): HoleBreakdown
     byHole.set(s.hole_number, arr);
   }
 
+  // Build a lookup for known hole par/score from golf_holes table
+  const knownHoles = new Map<number, HoleParRow>();
+  if (holePars) {
+    for (const hp of holePars) {
+      knownHoles.set(hp.hole_number, hp);
+    }
+  }
+
   const holes: HoleBreakdown[] = [];
   for (let h = 1; h <= 18; h++) {
     const holeShots = (byHole.get(h) ?? []).sort((a, b) => a.shot_number - b.shot_number);
-    if (holeShots.length === 0) continue;
+    const knownHole = knownHoles.get(h);
+
+    // If no shot data AND no hole-level data, skip entirely
+    if (holeShots.length === 0 && !knownHole) continue;
+
+    // If no shot data but we have golf_holes data, build a minimal breakdown
+    if (holeShots.length === 0 && knownHole) {
+      const par = knownHole.par;
+      const score = knownHole.score ?? par;
+      const scoreToPar = score - par;
+      const puttCount = knownHole.putts ?? 2;
+      const fairwayHit = par >= 4 ? (knownHole.fairway_hit ?? null) : null;
+      const gir = knownHole.green_in_regulation ?? false;
+      holes.push({
+        hole: h, par, score, scoreToPar,
+        putts: puttCount, fairwayHit, gir,
+        threePutt: puttCount >= 3, onePutt: puttCount === 1,
+        penalties: 0,
+        scrambleAttempt: !gir,
+        scrambleSuccess: !gir && scoreToPar <= 0,
+        sandSaveAttempt: false, sandSaveSuccess: false,
+        driveClub: null, driveDist: null, driveMiss: null,
+        firstPuttFeet: null, approachClub: null, approachDist: null, approachMiss: null,
+      });
+      continue;
+    }
 
     const teeShot = holeShots.find(s => s.shot_type === 'tee');
     const putts = holeShots.filter(s => s.shot_type === 'putting');
     const penalties = holeShots.filter(s => s.is_penalty).length;
 
-    // Infer par from tee distance
-    const teeDistYards = teeShot ? parseFloat(teeShot.distance_to_hole_before ?? '0') : 400;
-    const par = teeDistYards <= 250 ? 3 : teeDistYards >= 470 ? 5 : 4;
+    // Use known par from golf_holes if available; otherwise infer from tee distance
+    // (knownHole was already looked up above)
+    let par: number;
+    if (knownHole) {
+      par = knownHole.par;
+    } else {
+      const teeDistYards = teeShot ? parseFloat(teeShot.distance_to_hole_before ?? '0') : 400;
+      par = teeDistYards <= 250 ? 3 : teeDistYards >= 470 ? 5 : 4;
+    }
 
-    const score = holeShots.length;
+    // Determine if the hole was completed (ball holed out)
+    const lastShot = holeShots[holeShots.length - 1];
+    const holedOut = lastShot?.result === 'hole' || lastShot?.putt_made === true;
+
+    // Score calculation priority:
+    // 1. If golf_holes has a known score, use that (ground truth)
+    // 2. If shot data shows ball holed out, use shot count
+    // 3. Otherwise estimate from shots + likely remaining
+    let score: number;
+    if (knownHole?.score) {
+      score = knownHole.score;
+    } else if (holedOut) {
+      score = holeShots.length;
+    } else {
+      // Incomplete hole data — shots stop before holing out.
+      // Estimate: recorded shots + likely chip/putt to finish.
+      const onGreen = lastShot?.lie_after === 'green';
+      if (onGreen) {
+        // On green but no holing putt — assume 2-putt
+        score = holeShots.length + 2;
+      } else {
+        // Not on green — assume chip on + 2-putt
+        score = holeShots.length + 3;
+      }
+      // Clamp to reasonable range: at least par-2, at most par+6
+      score = Math.max(par - 2, Math.min(par + 6, score));
+    }
+
     const scoreToPar = score - par;
 
     const fairwayHit = par >= 4 && teeShot ? (teeShot.lie_after === 'fairway') : null;
 
+    // GIR: reached green within par-2 shots. Also counts chip-ins from
+    // approach distance and par 3 tee shots hitting the green.
     const girShotLimit = par - 2;
-    const greenReachedAt = holeShots.findIndex(s => s.lie_after === 'green') + 1;
+    let greenReachedAt = -1;
+    for (let i = 0; i < holeShots.length; i++) {
+      const s = holeShots[i]!;
+      if (s.lie_after === 'green' || s.result === 'hole') {
+        greenReachedAt = i + 1; // 1-based
+        break;
+      }
+    }
     const gir = greenReachedAt > 0 && greenReachedAt <= girShotLimit;
 
     const scrambleAttempt = !gir;
@@ -300,7 +395,55 @@ function buildHoleBreakdowns(shots: ShotRow[], _round: RoundData): HoleBreakdown
       approachMiss,
     });
   }
+
+  // ── Cross-reference with round-level stats ──
+  // If the round table has a known total_score, distribute any score
+  // discrepancy across incomplete holes so the total matches.
+  if (round.total_score && holes.length > 0) {
+    const computedTotal = holes.reduce((s, h) => s + h.score, 0);
+    const diff = round.total_score - computedTotal;
+    if (diff !== 0) {
+      // Find holes where data was incomplete (no holed-out shot)
+      const incompleteHoles = holes.filter(h => {
+        const holeShots2 = byHole.get(h.hole) ?? [];
+        const last = holeShots2[holeShots2.length - 1];
+        return !(last?.result === 'hole' || last?.putt_made === true);
+      });
+
+      if (incompleteHoles.length > 0) {
+        // Distribute the difference evenly across incomplete holes
+        const perHole = Math.round(diff / incompleteHoles.length);
+        let remaining = diff;
+        for (const h of incompleteHoles) {
+          const adjustment = remaining === 0 ? 0 :
+            Math.abs(remaining) < Math.abs(perHole) ? remaining : perHole;
+          h.score += adjustment;
+          h.scoreToPar = h.score - h.par;
+          // Recalculate derived fields that depend on scoreToPar
+          h.scrambleSuccess = h.scrambleAttempt && h.scoreToPar <= 0;
+          h.sandSaveSuccess = h.sandSaveAttempt && h.scoreToPar <= 0;
+          remaining -= adjustment;
+        }
+      }
+    }
+  }
+
   return holes;
+}
+
+/**
+ * Check whether a stored round_stats object is a valid RoundReviewContent
+ * (as opposed to an older V1 ReviewKeyStats format or null).
+ */
+function isValidReviewContent(obj: unknown): obj is RoundReviewContent {
+  if (!obj || typeof obj !== 'object') return false;
+  const r = obj as Record<string, unknown>;
+  // RoundReviewContent always has summary, holeByHole, and scoringDistribution
+  return (
+    typeof r.summary === 'string' &&
+    Array.isArray(r.holeByHole) &&
+    r.scoringDistribution !== undefined
+  );
 }
 
 function determineSentiment(scoreToPar: number): ReviewSentiment {
@@ -352,11 +495,15 @@ function generateReviewContent(
   const keyStats: RoundReviewKeyStat[] = [];
   const recommendations: string[] = [];
 
+  // Always use round-level totals as ground truth — shot data may be incomplete
   const scoreToPar = round.score_to_par ?? 0;
   const totalScore = round.total_score ?? 72;
 
-  // ===== Compute stats from hole breakdowns =====
-  const totalPutts = holes.reduce((s, h) => s + h.putts, 0);
+  // ===== Compute stats from hole breakdowns, cross-referenced with round-level data =====
+  const shotPutts = holes.reduce((s, h) => s + h.putts, 0);
+  // Use round-level total_putts as ground truth if available, since shot data
+  // may be missing putting shots on some holes
+  const totalPutts = round.total_putts ?? shotPutts;
   const threePutts = holes.filter(h => h.threePutt);
   const onePutts = holes.filter(h => h.onePutt);
   const birdieHoles = holes.filter(h => h.scoreToPar === -1);
@@ -365,12 +512,19 @@ function generateReviewContent(
   const doublePlusHoles = holes.filter(h => h.scoreToPar >= 2);
   const eagleHoles = holes.filter(h => h.scoreToPar <= -2);
 
+  // Fairways — prefer round-level data when available
   const fairwayEligible = holes.filter(h => h.fairwayHit !== null);
-  const fairwaysHit = fairwayEligible.filter(h => h.fairwayHit).length;
-  const fairwayPct = fairwayEligible.length > 0 ? Math.round((fairwaysHit / fairwayEligible.length) * 100) : null;
+  const shotFairwaysHit = fairwayEligible.filter(h => h.fairwayHit).length;
+  const fairwaysHit = round.total_fairways_hit ?? shotFairwaysHit;
+  const fairwayTotal = round.total_fairways ?? fairwayEligible.length;
+  const fairwayPct = fairwayTotal > 0 ? Math.round((fairwaysHit / fairwayTotal) * 100) : null;
 
-  const girHits = holes.filter(h => h.gir);
-  const girPct = holes.length > 0 ? Math.round((girHits.length / holes.length) * 100) : 0;
+  // GIR — prefer round-level data when available
+  const shotGirHits = holes.filter(h => h.gir);
+  const girHitsCount = round.total_gir ?? shotGirHits.length;
+  const girTotal = round.total_gir_possible ?? holes.length;
+  const girPct = girTotal > 0 ? Math.round((girHitsCount / girTotal) * 100) : 0;
+  // shotGirHits used for highlight descriptions (hole numbers)
 
   const scrambleAttemptsList = holes.filter(h => h.scrambleAttempt);
   const scrambleSuccessList = holes.filter(h => h.scrambleSuccess);
@@ -526,13 +680,13 @@ function generateReviewContent(
       strokesToGain.push({
         category: 'Short Game',
         potentialStrokes: potentialSaves,
-        description: `Converting ${potentialSaves} more scramble${potentialSaves > 1 ? 's' : ''} of ${missedScrambles} missed saves ${potentialSaves} stroke${potentialSaves > 1 ? 's' : ''}`,
+        description: `Converting ${potentialSaves} more scramble${potentialSaves > 1 ? 's' : ''} of ${missedScrambles} missed would save ${potentialSaves} stroke${potentialSaves > 1 ? 's' : ''}`,
       });
     }
   }
-  if (girPct < 50 && holes.length > 0) {
-    const improvedGir = Math.round(holes.length * 0.5);
-    const additionalGIRs = improvedGir - girHits.length;
+  if (girPct < 50 && girTotal > 0) {
+    const improvedGir = Math.round(girTotal * 0.5);
+    const additionalGIRs = improvedGir - girHitsCount;
     if (additionalGIRs > 0) {
       strokesToGain.push({
         category: 'Approach Shots',
@@ -586,9 +740,9 @@ function generateReviewContent(
   };
 
   keyStats.push({ label: 'Total Putts', value: `${totalPutts}`, comparison: cmp(totalPutts, playerAvgs?.avgPutts, 'lower') });
-  keyStats.push({ label: 'Greens in Reg', value: `${girHits.length}/${holes.length} (${girPct}%)`, comparison: cmp(girPct, playerAvgs?.avgGirPct, 'higher') });
+  keyStats.push({ label: 'Greens in Reg', value: `${girHitsCount}/${girTotal} (${girPct}%)`, comparison: cmp(girPct, playerAvgs?.avgGirPct, 'higher') });
   if (fairwayPct !== null) {
-    keyStats.push({ label: 'Fairways', value: `${fairwaysHit}/${fairwayEligible.length} (${fairwayPct}%)`, comparison: cmp(fairwayPct, playerAvgs?.avgFairwayPct, 'higher') });
+    keyStats.push({ label: 'Fairways', value: `${fairwaysHit}/${fairwayTotal} (${fairwayPct}%)`, comparison: cmp(fairwayPct, playerAvgs?.avgFairwayPct, 'higher') });
   }
   if (scramblePct !== null) {
     keyStats.push({ label: 'Scrambling', value: `${scrambleSuccessList.length}/${scrambleAttemptsList.length} (${scramblePct}%)`, comparison: scramblePct >= 50 ? 'above' : scramblePct >= 33 ? 'average' : 'below' });
@@ -628,7 +782,7 @@ function generateReviewContent(
   if (fairwayPct !== null && fairwayPct >= 65) {
     highlights.push({
       title: 'Accurate Driving',
-      description: `Hit ${fairwaysHit}/${fairwayEligible.length} fairways (${fairwayPct}%).`,
+      description: `Hit ${fairwaysHit}/${fairwayTotal} fairways (${fairwayPct}%).`,
     });
   }
   if (sandSuccessList.length > 0) {
@@ -690,7 +844,7 @@ function generateReviewContent(
   if (girPct < 40) {
     areasForImprovement.push({
       area: `Low GIR (${girPct}%)`,
-      recommendation: `Only hit ${girHits.length} of ${holes.length} greens. This put constant pressure on your short game.`,
+      recommendation: `Only hit ${girHitsCount} of ${girTotal} greens. This put constant pressure on your short game.`,
     });
     recommendations.push('Practice approach shots from your 3 most common approach yardages');
   }
@@ -765,7 +919,12 @@ export async function getRoundReview(roundId: string): Promise<{
       id: existingReview.id,
       player_id: existingReview.player_id,
       round_id: existingReview.round_id,
-      review_content: (existingReview.round_stats as unknown as RoundReviewContent) || generateReviewContent(roundData, [], null),
+      // round_stats stores the full RoundReviewContent. If it's missing or an
+      // older format (e.g. V1 ReviewKeyStats), return undefined so the UI can
+      // trigger a regeneration rather than showing an empty/broken review.
+      review_content: isValidReviewContent(existingReview.round_stats)
+        ? (existingReview.round_stats as unknown as RoundReviewContent)
+        : generateReviewContent(roundData, [], null),
       generated_at: existingReview.created_at ?? new Date().toISOString(),
       ai_model_version: existingReview.engine_version ?? 'v1.0',
       shared_with_coach: existingReview.shared_with_coach ?? false,
@@ -814,6 +973,7 @@ export async function generateAndStoreRoundReview(
       return { success: false, error: 'Round must be completed before generating a review' };
     }
 
+    // Fetch shot-level data
     const { data: shots } = await supabase
       .from('golf_shots')
       .select('hole_number, shot_number, shot_type, club_used, distance_to_hole_before, distance_unit_before, result, lie_before, lie_after, miss_direction, putt_distance_feet, shot_distance, is_penalty, putt_made')
@@ -821,8 +981,21 @@ export async function generateAndStoreRoundReview(
       .order('hole_number', { ascending: true })
       .order('shot_number', { ascending: true });
 
+    // Fetch hole-level data (par, recorded score) — used as ground truth for
+    // par values and scores when shot data is incomplete
+    const { data: holeRows } = await supabase
+      .from('golf_holes')
+      .select('hole_number, par, score, putts, fairway_hit, green_in_regulation')
+      .eq('round_id', roundId)
+      .order('hole_number', { ascending: true });
+
     const shotRows = (shots ?? []) as unknown as ShotRow[];
-    const holeBreakdowns = shotRows.length > 0 ? buildHoleBreakdowns(shotRows, roundData) : [];
+    const holeParRows = (holeRows ?? []) as unknown as HoleParRow[];
+    // Build hole breakdowns if we have ANY data (shots or hole-level records)
+    const hasData = shotRows.length > 0 || holeParRows.length > 0;
+    const holeBreakdowns = hasData
+      ? buildHoleBreakdowns(shotRows, roundData, holeParRows.length > 0 ? holeParRows : undefined)
+      : [];
 
     const { data: playerRounds } = await supabase
       .from('golf_rounds')
@@ -853,19 +1026,36 @@ export async function generateAndStoreRoundReview(
 
     const reviewContent = generateReviewContent(roundData, holeBreakdowns, playerAvgs);
 
-    // Optional AI enhancement
+    // Optional AI enhancement — never overwrite the rule-based summary.
+    // AI predictions (e.g. "Expected score: +0.6") are NOT round summaries.
+    // The AI review is stored separately and displayed in its own section.
     let aiEnhanced = false;
     try {
       const aiResult = await generateAIRoundReview(roundId, playerId);
       if (aiResult.success && aiResult.review) {
-        // Only use AI summary if it's substantive and doesn't contain NaN artifacts
-        const aiSummary = aiResult.review.summary;
-        if (aiSummary && !aiSummary.includes('NaN') && aiSummary.length > 20) {
+        // Extract prediction for the recommendations list, but guard against
+        // prediction-style strings replacing the descriptive round summary.
+        const aiSummary = aiResult.review.summary ?? '';
+        const isPredictionText = /expected score|range:|key factor/i.test(aiSummary);
+
+        // Only use AI summary if it's a genuine narrative (not a prediction) and clean
+        if (aiSummary && !aiSummary.includes('NaN') && aiSummary.length > 40 && !isPredictionText) {
           reviewContent.summary = aiSummary;
         }
+
+        // Add AI primary takeaway to recommendations if it's actionable
         if (aiResult.review.primaryTakeaway && !aiResult.review.primaryTakeaway.includes('NaN')) {
-          reviewContent.recommendations.unshift(aiResult.review.primaryTakeaway);
+          const takeaway = aiResult.review.primaryTakeaway;
+          const isPredTakeaway = /expected score|range:|forecast/i.test(takeaway);
+          if (!isPredTakeaway) {
+            reviewContent.recommendations.unshift(takeaway);
+          }
         }
+
+        // Note: AI prediction is displayed separately via V2PredictionCard.
+        // Do NOT inject forecast into recommendations — it's not actionable advice
+        // and would be confusing mixed in with practice tips.
+
         aiEnhanced = true;
       }
     } catch {
