@@ -446,6 +446,454 @@ export function RoundReviewDisplay({
           </div>
         </ExpandableSection>
       )}
+
+      {/* ================================================================ */}
+      {/* Section 2.1: Visual Scorecard */}
+      {/* ================================================================ */}
+      {review.holeByHole && review.holeByHole.length > 0 && (
+        <ExpandableSection
+          title="Scorecard"
+          icon={<IconTarget size={16} />}
+          defaultExpanded={true}
+          badge={
+            <span className="px-2 py-0.5 bg-warm-100 text-warm-600 text-xs rounded-full font-medium">
+              {review.holeByHole.length} holes
+            </span>
+          }
+        >
+          <div className="space-y-3">
+            {/* Front 9 */}
+            <div>
+              <div className="text-xs font-semibold text-warm-500 mb-1.5 uppercase tracking-wider">Front 9</div>
+              <div className="grid grid-cols-10 gap-1">
+                {review.holeByHole.filter(h => h.hole <= 9).map((h) => {
+                  const bg =
+                    h.scoreToPar <= -2 ? 'bg-amber-400/80 text-amber-900' :
+                    h.scoreToPar === -1 ? 'bg-green-500/80 text-white' :
+                    h.scoreToPar === 0 ? 'bg-warm-100 text-warm-700' :
+                    h.scoreToPar === 1 ? 'bg-orange-400/80 text-white' :
+                    'bg-red-500/80 text-white';
+                  return (
+                    <div key={h.hole} className={cn('rounded-lg text-center py-1.5 px-0.5', bg)}>
+                      <div className="text-[10px] opacity-70">H{h.hole}</div>
+                      <div className="text-sm font-bold">{h.score}</div>
+                      <div className="flex justify-center gap-0.5 mt-0.5 min-h-[12px]">
+                        {h.threePutt && <span className="text-[8px]">3P</span>}
+                        {h.onePutt && <span className="text-[8px]">1P</span>}
+                        {h.penalties > 0 && <span className="text-[8px]">P</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* Front 9 total */}
+                <div className="rounded-lg text-center py-1.5 px-0.5 bg-warm-200/60 text-warm-800 border border-warm-300/50">
+                  <div className="text-[10px] opacity-70">OUT</div>
+                  <div className="text-sm font-bold">
+                    {review.holeByHole.filter(h => h.hole <= 9).reduce((s, h) => s + h.score, 0)}
+                  </div>
+                  <div className="min-h-[12px]" />
+                </div>
+              </div>
+            </div>
+            {/* Back 9 */}
+            {review.holeByHole.filter(h => h.hole >= 10).length > 0 && (
+              <div>
+                <div className="text-xs font-semibold text-warm-500 mb-1.5 uppercase tracking-wider">Back 9</div>
+                <div className="grid grid-cols-10 gap-1">
+                  {review.holeByHole.filter(h => h.hole >= 10).map((h) => {
+                    const bg =
+                      h.scoreToPar <= -2 ? 'bg-amber-400/80 text-amber-900' :
+                      h.scoreToPar === -1 ? 'bg-green-500/80 text-white' :
+                      h.scoreToPar === 0 ? 'bg-warm-100 text-warm-700' :
+                      h.scoreToPar === 1 ? 'bg-orange-400/80 text-white' :
+                      'bg-red-500/80 text-white';
+                    return (
+                      <div key={h.hole} className={cn('rounded-lg text-center py-1.5 px-0.5', bg)}>
+                        <div className="text-[10px] opacity-70">H{h.hole}</div>
+                        <div className="text-sm font-bold">{h.score}</div>
+                        <div className="flex justify-center gap-0.5 mt-0.5 min-h-[12px]">
+                          {h.threePutt && <span className="text-[8px]">3P</span>}
+                          {h.onePutt && <span className="text-[8px]">1P</span>}
+                          {h.penalties > 0 && <span className="text-[8px]">P</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* Back 9 total */}
+                  <div className="rounded-lg text-center py-1.5 px-0.5 bg-warm-200/60 text-warm-800 border border-warm-300/50">
+                    <div className="text-[10px] opacity-70">IN</div>
+                    <div className="text-sm font-bold">
+                      {review.holeByHole.filter(h => h.hole >= 10).reduce((s, h) => s + h.score, 0)}
+                    </div>
+                    <div className="min-h-[12px]" />
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3 pt-1 text-[10px] text-warm-500">
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-400/80" /> Eagle+</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-500/80" /> Birdie</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-warm-100" /> Par</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-orange-400/80" /> Bogey</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-500/80" /> Double+</span>
+            </div>
+          </div>
+        </ExpandableSection>
+      )}
+
+      {/* ================================================================ */}
+      {/* Section 2.2: Front 9 / Back 9 Split */}
+      {/* ================================================================ */}
+      {review.frontBackSplit && (
+        <ExpandableSection
+          title="Front 9 vs Back 9"
+          icon={<IconTrendingUp size={16} />}
+          defaultExpanded={false}
+        >
+          {(() => {
+            const { front, back } = review.frontBackSplit;
+            const frontBetter = front.score <= back.score;
+            return (
+              <div className="grid grid-cols-2 gap-3">
+                {/* Front 9 */}
+                <div className={cn(
+                  'p-3 rounded-xl border',
+                  frontBetter ? 'bg-green-50/50 border-green-200/50' : 'bg-white/60 border-white/30'
+                )}>
+                  <div className="text-xs font-semibold text-warm-500 mb-2 uppercase">Front 9</div>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-warm-600">Score</span>
+                      <span className="font-semibold text-warm-900">{front.score}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-warm-600">Putts</span>
+                      <span className="font-semibold text-warm-900">{front.putts}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-warm-600">GIR</span>
+                      <span className="font-semibold text-warm-900">{front.gir}/{front.girTotal}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-warm-600">Fairways</span>
+                      <span className="font-semibold text-warm-900">{front.fairways}/{front.fairwayTotal}</span>
+                    </div>
+                  </div>
+                </div>
+                {/* Back 9 */}
+                <div className={cn(
+                  'p-3 rounded-xl border',
+                  !frontBetter ? 'bg-green-50/50 border-green-200/50' : 'bg-white/60 border-white/30'
+                )}>
+                  <div className="text-xs font-semibold text-warm-500 mb-2 uppercase">Back 9</div>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-warm-600">Score</span>
+                      <span className="font-semibold text-warm-900">{back.score}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-warm-600">Putts</span>
+                      <span className="font-semibold text-warm-900">{back.putts}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-warm-600">GIR</span>
+                      <span className="font-semibold text-warm-900">{back.gir}/{back.girTotal}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-warm-600">Fairways</span>
+                      <span className="font-semibold text-warm-900">{back.fairways}/{back.fairwayTotal}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </ExpandableSection>
+      )}
+
+      {/* ================================================================ */}
+      {/* Section 2.3: Putting Distance Breakdown */}
+      {/* ================================================================ */}
+      {review.puttingBreakdown && review.puttingBreakdown.ranges.some(r => r.attempts > 0) && (
+        <ExpandableSection
+          title="Putting Breakdown"
+          icon={<IconTarget size={16} />}
+          defaultExpanded={false}
+          badge={
+            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+              {review.puttingBreakdown.totalPutts} putts
+            </span>
+          }
+        >
+          <div className="space-y-4">
+            {/* Distance breakdown bars */}
+            <div className="space-y-2">
+              {review.puttingBreakdown.ranges.filter(r => r.attempts > 0).map((range, i) => (
+                <motion.div
+                  key={range.label}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                >
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="font-medium text-warm-700">{range.label}</span>
+                    <span className="text-warm-500">{range.made}/{range.attempts} ({range.pct}%)</span>
+                  </div>
+                  <div className="h-3 bg-warm-100 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-green-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${range.pct}%` }}
+                      transition={{ delay: i * 0.08 + 0.2, duration: 0.5 }}
+                    />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Summary stats */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/20">
+              {review.puttingBreakdown.avgFirstPuttDist !== null && (
+                <div className="p-2 rounded-lg bg-white/60 text-center">
+                  <div className="text-xs text-warm-500">Avg 1st Putt</div>
+                  <div className="text-lg font-bold text-warm-900">{review.puttingBreakdown.avgFirstPuttDist}ft</div>
+                </div>
+              )}
+              <div className="p-2 rounded-lg bg-white/60 text-center">
+                <div className="text-xs text-warm-500">One-Putts</div>
+                <div className="text-lg font-bold text-green-600">{review.puttingBreakdown.onePuttCount}</div>
+              </div>
+            </div>
+
+            {/* Three-putt detail */}
+            {review.puttingBreakdown.threePuttHoles.length > 0 && (
+              <div className="pt-2 border-t border-white/20">
+                <div className="text-xs font-medium text-amber-700 mb-1">Three-Putts</div>
+                <div className="flex flex-wrap gap-2">
+                  {review.puttingBreakdown.threePuttHoles.map(tp => (
+                    <span key={tp.hole} className="px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                      #{tp.hole} {tp.firstPuttFeet ? `from ${Math.round(tp.firstPuttFeet)}ft` : ''}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </ExpandableSection>
+      )}
+
+      {/* ================================================================ */}
+      {/* Section 2.4: Strokes-to-Gain Priority */}
+      {/* ================================================================ */}
+      {review.strokesToGain && review.strokesToGain.length > 0 && (
+        <ExpandableSection
+          title="Improvement Priorities"
+          icon={<IconTrendingUp size={16} />}
+          defaultExpanded={false}
+          badge={
+            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
+              {review.strokesToGain.reduce((s, item) => s + item.potentialStrokes, 0).toFixed(1)} strokes
+            </span>
+          }
+        >
+          <div className="space-y-2">
+            {review.strokesToGain.map((item, index) => (
+              <motion.div
+                key={item.category}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex items-start gap-3 p-3 rounded-lg bg-white/60 border border-white/30"
+              >
+                <div className={cn(
+                  'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold',
+                  index === 0 ? 'bg-red-100 text-red-700' :
+                  index === 1 ? 'bg-amber-100 text-amber-700' :
+                  'bg-warm-100 text-warm-600'
+                )}>
+                  {index + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm text-warm-900">{item.category}</span>
+                    <span className={cn(
+                      'text-sm font-bold',
+                      item.potentialStrokes >= 2 ? 'text-red-600' :
+                      item.potentialStrokes >= 1 ? 'text-amber-600' :
+                      'text-warm-600'
+                    )}>
+                      {item.potentialStrokes.toFixed(1)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-warm-600 mt-0.5">{item.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </ExpandableSection>
+      )}
+
+      {/* ================================================================ */}
+      {/* Section 2.5: Momentum Chart */}
+      {/* ================================================================ */}
+      {review.momentumData && review.momentumData.length > 0 && (
+        <ExpandableSection
+          title="Momentum"
+          icon={<IconTrendingUp size={16} />}
+          defaultExpanded={false}
+        >
+          {(() => {
+            const data = review.momentumData;
+            const maxVal = Math.max(...data.map(d => Math.abs(d.rollingScoreToPar)), 1);
+            const chartHeight = 120;
+            const midY = chartHeight / 2;
+            return (
+              <div className="space-y-2">
+                {/* Chart */}
+                <div className="relative" style={{ height: chartHeight }}>
+                  {/* Zero line */}
+                  <div
+                    className="absolute left-0 right-0 border-t border-warm-300 border-dashed"
+                    style={{ top: midY }}
+                  />
+                  <div className="absolute left-0 text-[10px] text-warm-400" style={{ top: midY - 14 }}>E</div>
+                  {/* Bars */}
+                  <div className="flex items-end justify-between h-full pl-4">
+                    {data.map((d) => {
+                      const val = d.rollingScoreToPar;
+                      const barH = Math.abs(val) / maxVal * (chartHeight / 2 - 4);
+                      const isOver = val > 0;
+                      return (
+                        <div
+                          key={d.hole}
+                          className="flex flex-col items-center relative"
+                          style={{ flex: 1 }}
+                        >
+                          {/* Bar above or below zero */}
+                          <div
+                            className="absolute left-1/2 -translate-x-1/2"
+                            style={{
+                              top: isOver ? midY - barH : midY,
+                              height: barH || 1,
+                              width: '60%',
+                              maxWidth: 20,
+                            }}
+                          >
+                            <div className={cn(
+                              'w-full h-full rounded-sm',
+                              isOver ? 'bg-red-400/70' : val < 0 ? 'bg-green-500/70' : 'bg-warm-300'
+                            )} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Hole labels */}
+                <div className="flex justify-between pl-4 text-[9px] text-warm-400">
+                  {data.map(d => (
+                    <span key={d.hole} className="text-center" style={{ flex: 1 }}>{d.hole}</span>
+                  ))}
+                </div>
+                {/* Current status */}
+                <div className="text-center text-xs text-warm-500 pt-1">
+                  Finished at{' '}
+                  <span className={cn(
+                    'font-semibold',
+                    data[data.length - 1]!.rollingScoreToPar < 0 ? 'text-green-600' :
+                    data[data.length - 1]!.rollingScoreToPar > 0 ? 'text-red-600' :
+                    'text-warm-700'
+                  )}>
+                    {data[data.length - 1]!.rollingScoreToPar === 0 ? 'E' :
+                     data[data.length - 1]!.rollingScoreToPar > 0 ? `+${data[data.length - 1]!.rollingScoreToPar}` :
+                     `${data[data.length - 1]!.rollingScoreToPar}`}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+        </ExpandableSection>
+      )}
+
+      {/* ================================================================ */}
+      {/* Section 2.6: Driving & Penalty Analysis */}
+      {/* ================================================================ */}
+      {(review.drivingAnalysis || review.penaltyAnalysis) && (
+        <ExpandableSection
+          title="Driving & Penalties"
+          icon={<IconTarget size={16} />}
+          defaultExpanded={false}
+        >
+          <div className="space-y-4">
+            {/* Driving stats */}
+            {review.drivingAnalysis && (
+              <div>
+                <div className="text-xs font-semibold text-warm-500 mb-2 uppercase tracking-wider">Driving</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {review.drivingAnalysis.avgDistance !== null && (
+                    <div className="p-2.5 rounded-lg bg-white/60 border border-white/30">
+                      <div className="text-xs text-warm-500">Avg Distance</div>
+                      <div className="text-lg font-bold text-warm-900">{review.drivingAnalysis.avgDistance}y</div>
+                    </div>
+                  )}
+                  {review.drivingAnalysis.longestDrive && (
+                    <div className="p-2.5 rounded-lg bg-white/60 border border-white/30">
+                      <div className="text-xs text-warm-500">Longest Drive</div>
+                      <div className="text-lg font-bold text-warm-900">{review.drivingAnalysis.longestDrive.distance}y</div>
+                      <div className="text-[10px] text-warm-400">Hole #{review.drivingAnalysis.longestDrive.hole}</div>
+                    </div>
+                  )}
+                </div>
+                {/* Miss pattern */}
+                {review.drivingAnalysis.missPattern.total > 0 && (
+                  <div className="mt-3">
+                    <div className="text-xs text-warm-500 mb-1.5">Miss Pattern</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-warm-600 w-8">L: {review.drivingAnalysis.missPattern.left}</span>
+                      <div className="flex-1 h-4 bg-warm-100 rounded-full overflow-hidden flex">
+                        {review.drivingAnalysis.missPattern.total > 0 && (
+                          <>
+                            <div
+                              className="h-full bg-blue-400 rounded-l-full"
+                              style={{ width: `${(review.drivingAnalysis.missPattern.left / review.drivingAnalysis.missPattern.total) * 100}%` }}
+                            />
+                            <div
+                              className="h-full bg-orange-400 rounded-r-full"
+                              style={{ width: `${(review.drivingAnalysis.missPattern.right / review.drivingAnalysis.missPattern.total) * 100}%` }}
+                            />
+                          </>
+                        )}
+                      </div>
+                      <span className="text-xs text-warm-600 w-8 text-right">R: {review.drivingAnalysis.missPattern.right}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Penalty analysis */}
+            {review.penaltyAnalysis && review.penaltyAnalysis.total > 0 && (
+              <div className="pt-3 border-t border-white/20">
+                <div className="text-xs font-semibold text-warm-500 mb-2 uppercase tracking-wider">Penalties</div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-lg bg-red-50/50 border border-red-200/50">
+                    <div className="text-xs text-red-600">Strokes Lost</div>
+                    <div className="text-xl font-bold text-red-700">{review.penaltyAnalysis.strokesLost}</div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 flex-1">
+                    {review.penaltyAnalysis.holes.map(p => (
+                      <span key={p.hole} className="px-2 py-1 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium">
+                        #{p.hole} ({p.count})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </ExpandableSection>
+      )}
     </div>
   );
 }

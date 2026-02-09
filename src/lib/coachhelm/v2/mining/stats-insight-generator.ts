@@ -643,7 +643,7 @@ export class StatsInsightGenerator {
         strokeImpact: Math.abs(worstArea.value),
         recommendation: this.getSGRecommendation(worstArea.name, worstArea.value),
         priority: Math.abs(worstArea.value) > 1 ? 'critical' : 'high',
-        confidence: Math.min(0.9, 0.5 + stats.roundsPlayed * 0.04),
+        confidence: stats.roundsPlayed <= 5 ? 0.55 : stats.roundsPlayed <= 10 ? 0.70 : stats.roundsPlayed <= 20 ? 0.85 : 0.95,
         evidenceMetrics: [
           { label: `SG ${worstArea.name}`, value: worstArea.value.toFixed(2), benchmark: 0 },
           { label: 'Rounds Analyzed', value: stats.roundsPlayed },
@@ -668,7 +668,7 @@ export class StatsInsightGenerator {
         strokeImpact: 0, // Positive contribution
         recommendation: `Maintain your ${bestArea.name.toLowerCase()} advantage while addressing weaker areas.`,
         priority: 'low',
-        confidence: Math.min(0.9, 0.5 + stats.roundsPlayed * 0.04),
+        confidence: stats.roundsPlayed <= 5 ? 0.55 : stats.roundsPlayed <= 10 ? 0.70 : stats.roundsPlayed <= 20 ? 0.85 : 0.95,
         evidenceMetrics: [
           { label: `SG ${bestArea.name}`, value: `+${bestArea.value.toFixed(2)}`, benchmark: 0 },
         ],
@@ -751,7 +751,7 @@ export class StatsInsightGenerator {
         strokeImpact: excessThreePutts,
         recommendation: 'Focus on lag putting. From 25+ feet, prioritize leaving the ball within 3 feet. Practice pace control drills.',
         priority: excessThreePutts > 0.5 ? 'high' : 'medium',
-        confidence: Math.min(0.9, 0.5 + stats.roundsPlayed * 0.04),
+        confidence: stats.roundsPlayed <= 5 ? 0.55 : stats.roundsPlayed <= 10 ? 0.70 : stats.roundsPlayed <= 20 ? 0.85 : 0.95,
         evidenceMetrics: [
           { label: '3-Putts/Round', value: stats.threePuttsPerRound.toFixed(1), benchmark: BENCHMARKS.threePuttsPerRound },
           { label: 'Total 3-Putts', value: stats.threePuttsTotal },
@@ -880,7 +880,7 @@ export class StatsInsightGenerator {
         strokeImpact: strokesLost,
         recommendation: 'Focus on approach shot consistency. Consider club selection - taking one more club often improves GIR without sacrificing much proximity.',
         priority: strokesLost > 1 ? 'high' : 'medium',
-        confidence: Math.min(0.9, 0.5 + stats.roundsPlayed * 0.04),
+        confidence: stats.roundsPlayed <= 5 ? 0.55 : stats.roundsPlayed <= 10 ? 0.70 : stats.roundsPlayed <= 20 ? 0.85 : 0.95,
         evidenceMetrics: [
           { label: 'GIR %', value: `${stats.girPercentage.toFixed(0)}%`, benchmark: BENCHMARKS.girPct },
           { label: 'GIR/Round', value: stats.girPerRound?.toFixed(1) ?? 'N/A' },
@@ -953,7 +953,7 @@ export class StatsInsightGenerator {
     }
 
     // Approach miss direction
-    if (stats.approachMissTotal > 20) {
+    if (stats.approachMissTotal > 30) {
       const missDirections = [
         { dir: 'Short', pct: stats.approachMissShortPct },
         { dir: 'Long', pct: stats.approachMissLongPct },
@@ -1038,7 +1038,7 @@ export class StatsInsightGenerator {
     // Miss direction pattern
     if (stats.missLeftPct !== null && stats.missRightPct !== null) {
       const totalMisses = stats.missLeftCount + stats.missRightCount;
-      if (totalMisses >= 10) {
+      if (totalMisses >= 15) {
         const dominantMiss = stats.missLeftPct > stats.missRightPct ? 'left' : 'right';
         const dominantPct = Math.max(stats.missLeftPct, stats.missRightPct);
 
@@ -1355,8 +1355,8 @@ export class StatsInsightGenerator {
             id: 'root-cause-driving-cascade',
             playerId: this.playerId,
             category: 'driving',
-            headline: 'Root Cause: Driving Accuracy Is Costing You Everywhere',
-            body: `Your scoring issues trace back to the tee. ${chainSteps.join('. ')}. Estimated cascade cost: ${strokeCostFromChain.toFixed(1)} strokes per round. Fixing fairway accuracy would improve your approach play, reduce scrambling pressure, and cut big numbers — all from one root fix.`,
+            headline: 'Likely Root Cause: Driving Accuracy Impact',
+            body: `Data suggests your scoring issues likely trace back to the tee. ${chainSteps.join('. ')}. Estimated cascade cost: ~${strokeCostFromChain.toFixed(1)} strokes per round. Improving fairway accuracy would likely improve your approach play, reduce scrambling pressure, and cut big numbers.`,
             strokeImpact: strokeCostFromChain,
             recommendation: `Priority #1 is hitting more fairways. Consider: (1) Hitting 3-wood on tight holes — fairway from 260 yards beats rough from 285. (2) Aim for the wide side of fairways, not the center. (3) Work on consistent tee shot shape rather than chasing distance.`,
             priority: strokeCostFromChain > 1 ? 'critical' : 'high',
@@ -1395,13 +1395,13 @@ export class StatsInsightGenerator {
         if (stats.puttMakePct5_10 < BENCHMARKS.puttMake5_10 - 5) {
           bodyParts.push(`Key issue: only making ${stats.puttMakePct5_10.toFixed(0)}% from 5-10 feet (benchmark: ${BENCHMARKS.puttMake5_10}%) — these are your birdie putts.`);
         }
-        bodyParts.push(`You're wasting ~${strokesWasted.toFixed(1)} strokes per round by not converting the opportunities your iron play creates.`);
+        bodyParts.push(`Based on your data, you're likely leaving ~${strokesWasted.toFixed(1)} strokes per round on the table by not converting the opportunities your iron play creates.`);
 
         insights.push({
           id: 'root-cause-wasted-approach',
           playerId: this.playerId,
           category: 'putting',
-          headline: 'Root Cause: Good Iron Play Wasted by Putting',
+          headline: 'Likely Root Cause: Putting Conversion Limiting Iron Play',
           body: bodyParts.join(' '),
           strokeImpact: strokesWasted,
           recommendation: `Your approach game is a strength — don't change it. Focus ALL practice improvement on putting: (1) 5-10 foot make rate is your biggest ROI zone. (2) Work on start line consistency with gate drills. (3) Speed control: practice leaving every putt 6-12 inches past the cup.`,
@@ -1422,7 +1422,7 @@ export class StatsInsightGenerator {
     // it's a club selection issue, not a swing issue.
     if (
       stats.approachMissShortPct !== null &&
-      stats.approachMissTotal > 20
+      stats.approachMissTotal > 30
     ) {
       const shortMissPct = stats.approachMissShortPct;
       // Combine short-left and short-right with short
@@ -1452,7 +1452,7 @@ export class StatsInsightGenerator {
           id: 'root-cause-club-selection',
           playerId: this.playerId,
           category: 'approach',
-          headline: 'Root Cause: Club Selection — You\'re Coming Up Short',
+          headline: 'Likely Root Cause: Club Selection Pattern',
           body,
           strokeImpact: totalShortMissPct / 100 * (stats.approachMissTotal / stats.roundsPlayed) * 0.4,
           recommendation: `Rule of thumb: when between clubs, ALWAYS take more club and swing smooth. Specific drills: (1) On the range, note your AVERAGE carry, not your best carry — that's your real number. (2) From rough, add 1 full club. (3) Front pin = aim middle of green. Back pin = aim at pin. Never short-side yourself.`,

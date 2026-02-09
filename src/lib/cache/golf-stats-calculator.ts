@@ -318,8 +318,6 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
     // Function may not exist yet if migration hasn't run - that's okay
   }
 
-  // Log for debugging
-  console.log(`[Stats Cache] Invalidated and refreshed cache for player ${playerId} after round ${roundId}`);
 }
 
 // ============================================================================

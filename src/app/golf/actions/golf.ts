@@ -295,6 +295,59 @@ const golfRoundSchema = z.object({
   holes: z.array(holeSchema).min(1).max(18),
 });
 
+const comprehensiveShotSchema = z.object({
+  shotNumber: z.number().int().min(1),
+  shotType: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']),
+  clubType: z.string().min(1),
+  lieBefore: z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other']),
+  distanceToHoleBefore: z.number().min(0),
+  distanceUnitBefore: z.enum(['yards', 'feet']),
+  result: z.enum(['fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty']),
+  distanceToHoleAfter: z.number().min(0),
+  distanceUnitAfter: z.enum(['yards', 'feet']),
+  shotDistance: z.number().min(0),
+  missDirection: z.string().optional(),
+  puttBreak: z.enum(['right_to_left', 'left_to_right', 'straight', 'multiple']).optional(),
+  puttSlope: z.enum(['uphill', 'downhill', 'level', 'severe']).optional(),
+  isPenalty: z.boolean(),
+  penaltyType: z.enum(['ob', 'water', 'unplayable', 'lost']).optional(),
+  puttMissTags: z.array(z.string()).optional(),
+  puttDistanceFeet: z.number().min(0).optional(),
+  approachMissDirection: z.string().optional(),
+  approachMissLieType: z.enum(['fairway', 'rough', 'bunker', 'hazard']).optional(),
+});
+
+const comprehensiveHoleSchema = z.object({
+  holeNumber: z.number().int().min(1).max(18),
+  par: z.number().int().min(3).max(6),
+  yardage: z.number().min(0),
+  score: z.number().int().min(1).max(15),
+  putts: z.number().int().min(0).max(10),
+  fairwayHit: z.boolean().nullable(),
+  greenInRegulation: z.boolean(),
+  penaltyStrokes: z.number().int().min(0),
+  scrambleAttempt: z.boolean(),
+  scrambleMade: z.boolean(),
+  sandSaveAttempt: z.boolean(),
+  sandSaveMade: z.boolean(),
+  shots: z.array(comprehensiveShotSchema).min(1),
+}).passthrough(); // Allow extra stat fields like drivingDistance, approachDistance, etc.
+
+const golfRoundComprehensiveSchema = z.object({
+  courseName: z.string().min(1).max(200),
+  courseCity: z.string().max(100).optional(),
+  courseState: z.string().max(2).optional(),
+  courseRating: z.number().min(60).max(80).optional(),
+  courseSlope: z.number().int().min(55).max(155).optional(),
+  teesPlayed: z.string().max(50).optional(),
+  courseId: z.string().uuid().optional(),
+  roundType: z.enum(['practice', 'tournament', 'qualifier']),
+  roundDate: z.string(),
+  holes: z.array(comprehensiveHoleSchema).min(1).max(18),
+  qualifierId: z.string().uuid().optional(),
+  qualifierRoundNumber: z.number().int().min(1).optional(),
+});
+
 const golfEventSchema = z.object({
   title: z.string().min(1).max(200),
   eventType: z.enum(['practice', 'tournament', 'qualifier', 'meeting', 'travel', 'other']),
@@ -571,8 +624,11 @@ type GolfEventUpdateData = {
 export async function submitGolfRoundComprehensive(
   data: GolfRoundInputComprehensive,
   existingRoundId?: string
-): Promise<ActionResult<{ roundId: string }>> {
+): Promise<ActionResult<{ roundId: string; shotsSaved?: boolean }>> {
   try {
+    // Validate input
+    golfRoundComprehensiveSchema.parse(data);
+
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -670,6 +726,8 @@ export async function submitGolfRoundComprehensive(
       front_nine: frontNine,
       back_nine: backNine,
       status: 'completed' as const, // Mark as completed when all holes are done
+      qualifier_id: data.qualifierId || null,
+      qualifier_round_number: data.qualifierRoundNumber || null,
     };
 
     // Insert or update round
@@ -765,6 +823,7 @@ export async function submitGolfRoundComprehensive(
       }
     }
 
+    let shotsSaved = true;
     if (allShots.length > 0) {
       const { data: insertedShots, error: shotsError } = await supabase
         .from('golf_shots')
@@ -772,7 +831,8 @@ export async function submitGolfRoundComprehensive(
         .select('id, hole_number, shot_number, shot_type');
 
       if (shotsError) {
-        // Don't throw - shots are supplementary data
+        console.error('[Golf Action] Shot insertion failed — round saved without shot data:', shotsError.message);
+        shotsSaved = false;
       } else if (insertedShots) {
         // Create maps to find shot IDs for putt and approach miss details
         const shotIdMap = new Map<string, string>();
@@ -811,9 +871,11 @@ export async function submitGolfRoundComprehensive(
                 shot_id: shotId,
                 miss_direction: shot.approachMissDirection,
                 lie_type: shot.approachMissLieType || null,
-                distance_from_green_yards: shot.distanceUnitAfter === 'feet' 
-                  ? Math.round((shot.distanceToHoleAfter || 0) / 3)
-                  : shot.distanceToHoleAfter || null,
+                distance_from_green_yards: shot.distanceToHoleAfter != null
+                  ? (shot.distanceUnitAfter === 'feet'
+                    ? Math.round(shot.distanceToHoleAfter / 3)
+                    : shot.distanceToHoleAfter)
+                  : null,
               });
             }
           }
@@ -821,14 +883,28 @@ export async function submitGolfRoundComprehensive(
 
         // Insert putt details (table may not be in types)
         if (puttDetails.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any).from('putt_details').insert(puttDetails);
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: puttError } = await (supabase as any).from('putt_details').insert(puttDetails);
+            if (puttError) {
+              console.error('[Golf Action] putt_details insert failed:', puttError.message);
+            }
+          } catch {
+            // Table may not exist — non-critical
+          }
         }
 
         // Insert approach miss details (table may not be in types)
         if (approachMissDetails.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any).from('approach_miss_details').insert(approachMissDetails);
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: approachError } = await (supabase as any).from('approach_miss_details').insert(approachMissDetails);
+            if (approachError) {
+              console.error('[Golf Action] approach_miss_details insert failed:', approachError.message);
+            }
+          } catch {
+            // Table may not exist — non-critical
+          }
         }
       }
     }
@@ -837,9 +913,20 @@ export async function submitGolfRoundComprehensive(
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath('/golf/dashboard/stats');
 
-    // Invalidate stats cache for instant dashboard updates
-    // This triggers the database cache to be refreshed
-    await invalidateOnRoundComplete(player.id, round.id);
+    // If this is a qualifier round, update the qualifier entry stats and revalidate
+    if (data.qualifierId) {
+      revalidatePath('/golf/dashboard/qualifiers');
+      revalidatePath(`/golf/dashboard/qualifiers/${data.qualifierId}`);
+      updateQualifierEntryStats(supabase, data.qualifierId, player.id).catch((err) => {
+        console.error('[Qualifier] Post-round entry stats update failed:', err);
+      });
+    }
+
+    // Fire-and-forget: invalidate stats cache for dashboard updates
+    // Round is already saved — no need to block the response
+    invalidateOnRoundComplete(player.id, round.id).catch((err) => {
+      console.error('[Stats Cache] Post-round cache invalidation failed:', err);
+    });
 
     // Fire-and-forget: trigger CoachHelm insight generation for this player
     triggerPlayerInsightsAfterRound(player.id).catch((err) => {
@@ -853,9 +940,12 @@ export async function submitGolfRoundComprehensive(
       console.error('[CoachHelm] Post-round review generation failed:', err);
     });
 
-    return { success: true, data: { roundId: round.id } };
+    return { success: true, data: { roundId: round.id, shotsSaved } };
 
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: 'Invalid round data. Please check your inputs.' };
+    }
     console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
@@ -900,6 +990,12 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
   const roundTypeDb = roundTypeToDb(validatedData.roundType);
   const teamId = await getPlayerTeamId(supabase, player.id);
 
+  // Calculate front nine / back nine splits
+  const legacyFrontNineHoles = validatedData.holes.filter(h => h.holeNumber <= 9);
+  const legacyBackNineHoles = validatedData.holes.filter(h => h.holeNumber > 9);
+  const legacyFrontNine = legacyFrontNineHoles.length > 0 ? legacyFrontNineHoles.reduce((sum, h) => sum + h.score, 0) : null;
+  const legacyBackNine = legacyBackNineHoles.length > 0 ? legacyBackNineHoles.reduce((sum, h) => sum + h.score, 0) : null;
+
   // Insert round
   const { data: round, error: roundError } = await supabase
     .from('golf_rounds')
@@ -915,6 +1011,7 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
       course_id: validatedData.courseId || null,
       round_type: roundTypeDb,
       round_date: validatedData.roundDate,
+      holes_played: validatedData.holes.length,
       total_score: totalScore,
       score_to_par: totalToPar,
       total_putts: totalPutts,
@@ -922,6 +1019,9 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
       total_fairways: fairwaysTotal,
       total_gir: greensInReg,
       total_gir_possible: validatedData.holes.length,
+      front_nine: legacyFrontNine,
+      back_nine: legacyBackNine,
+      status: 'completed' as const,
     })
     .select()
     .single();
@@ -957,8 +1057,10 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath('/golf/dashboard/stats');
 
-    // Invalidate stats cache for instant dashboard updates
-    await invalidateOnRoundComplete(player.id, round.id);
+    // Fire-and-forget: invalidate stats cache for dashboard updates
+    invalidateOnRoundComplete(player.id, round.id).catch((err) => {
+      console.error('[Stats Cache] Post-round cache invalidation failed:', err);
+    });
 
     // Fire-and-forget: trigger CoachHelm insight generation
     triggerPlayerInsightsAfterRound(player.id).catch((err) => {
@@ -2455,6 +2557,7 @@ export async function savePartialRound(
       status: 'in_progress' as const,
       current_hole: data.currentHole || null,
       holes_played: data.holesToPlay || 18,
+      qualifier_id: data.qualifierId || null,
       // Leave stats null for incomplete rounds
       total_score: null,
       score_to_par: null,

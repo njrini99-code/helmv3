@@ -606,6 +606,7 @@ export default function NewRoundClient() {
       teesPlayed: setupData.teesPlayed || undefined,
       roundType: setupData.roundType,
       roundDate: setupData.roundDate,
+      qualifierId: setupData.roundType === 'qualifier' ? selectedQualifierId ?? undefined : undefined,
       currentHole: currentHoleIndex + 1, // Next hole player will resume on
       holesToPlay: holes.length as 9 | 18,
       holes: completedHoleStats,

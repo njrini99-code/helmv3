@@ -265,6 +265,8 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     teesPlayed: round.tees_played || '',
     roundType: roundTypeFromDb(round.round_type || 'practice'),
     roundDate: round.round_date,
+    qualifierId: round.qualifier_id || undefined,
+    qualifierRoundNumber: round.qualifier_round_number || undefined,
   };
 
   // Determine the starting hole index

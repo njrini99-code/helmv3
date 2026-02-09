@@ -351,7 +351,7 @@ function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: Hole
     let greenReachedAt = -1;
     for (let i = 0; i < holeShots.length; i++) {
       const s = holeShots[i]!;
-      if (s.lie_after === 'green' || s.result === 'hole') {
+      if (s.lie_after === 'green' || s.result === 'hole' || s.result === 'green' || s.result === 'gir') {
         greenReachedAt = i + 1; // 1-based
         break;
       }
@@ -411,18 +411,49 @@ function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: Hole
       });
 
       if (incompleteHoles.length > 0) {
-        // Distribute the difference evenly across incomplete holes
-        const perHole = Math.round(diff / incompleteHoles.length);
+        // Weight adjustment by confidence: holes with more recorded shots
+        // are more likely to have an accurate estimate already, so they
+        // receive less adjustment. Holes with fewer shots get more.
+        const shotCounts = incompleteHoles.map(h => (byHole.get(h.hole) ?? []).length);
+        const totalShots = shotCounts.reduce((a, b) => a + b, 0);
+
+        // Compute inverse-confidence weights (fewer shots = higher weight)
+        const weights = shotCounts.map(sc =>
+          totalShots > 0 ? 1 - sc / totalShots : 1 / incompleteHoles.length
+        );
+        const weightSum = weights.reduce((a, b) => a + b, 0);
+
         let remaining = diff;
-        for (const h of incompleteHoles) {
-          const adjustment = remaining === 0 ? 0 :
-            Math.abs(remaining) < Math.abs(perHole) ? remaining : perHole;
-          h.score += adjustment;
+        for (let i = 0; i < incompleteHoles.length; i++) {
+          if (remaining === 0) break;
+          const h = incompleteHoles[i]!;
+          const normalizedWeight = weightSum > 0 ? weights[i]! / weightSum : 1 / incompleteHoles.length;
+          const adjustment = Math.round(diff * normalizedWeight);
+          const clampedAdj = Math.max(-3, Math.min(3, adjustment));
+          const finalAdj = Math.abs(remaining) < Math.abs(clampedAdj) ? remaining : clampedAdj;
+          h.score += finalAdj;
           h.scoreToPar = h.score - h.par;
-          // Recalculate derived fields that depend on scoreToPar
           h.scrambleSuccess = h.scrambleAttempt && h.scoreToPar <= 0;
           h.sandSaveSuccess = h.sandSaveAttempt && h.scoreToPar <= 0;
-          remaining -= adjustment;
+          remaining -= finalAdj;
+        }
+
+        // If any remainder, distribute 1 stroke at a time to least-confident holes
+        if (remaining !== 0) {
+          const sortedByConfidence = [...incompleteHoles].sort((a, b) => {
+            const aShots = (byHole.get(a.hole) ?? []).length;
+            const bShots = (byHole.get(b.hole) ?? []).length;
+            return aShots - bShots; // fewest shots first = least confident
+          });
+          for (const h of sortedByConfidence) {
+            if (remaining === 0) break;
+            const adj = remaining > 0 ? 1 : -1;
+            h.score += adj;
+            h.scoreToPar = h.score - h.par;
+            h.scrambleSuccess = h.scrambleAttempt && h.scoreToPar <= 0;
+            h.sandSaveSuccess = h.sandSaveAttempt && h.scoreToPar <= 0;
+            remaining -= adj;
+          }
         }
       }
     }
@@ -452,27 +483,69 @@ function determineSentiment(scoreToPar: number): ReviewSentiment {
   return 'challenging';
 }
 
-function determineGrade(scoreToPar: number, girPct: number, fairwayPct: number | null, putts: number): OverallGrade {
+function determineGrade(
+  scoreToPar: number,
+  girPct: number,
+  fairwayPct: number | null,
+  putts: number,
+  playerAvgs?: { avgScore: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number } | null
+): OverallGrade {
   let score = 0;
   let factors = 0;
 
-  const scoreVal = scoreToPar <= -3 ? 5 : scoreToPar <= -1 ? 4 : scoreToPar <= 1 ? 3.5 : scoreToPar <= 3 ? 3 : scoreToPar <= 5 ? 2 : 1;
-  score += scoreVal * 2;
-  factors += 2;
+  // Helper: grade a stat relative to the player's own average
+  // Returns 1-5 where 5 = exceptional for this player
+  const relativeGrade = (val: number, avg: number, better: 'lower' | 'higher'): number => {
+    const pctDiff = avg !== 0 ? ((val - avg) / Math.abs(avg)) * 100 : 0;
+    // For "lower is better" stats, invert the difference
+    const adjustedDiff = better === 'lower' ? -pctDiff : pctDiff;
+    if (adjustedDiff > 15) return 5;
+    if (adjustedDiff > 5) return 4;
+    if (adjustedDiff >= -5) return 3;
+    if (adjustedDiff >= -15) return 2;
+    return 1;
+  };
 
-  const girVal = girPct >= 70 ? 5 : girPct >= 60 ? 4 : girPct >= 50 ? 3 : girPct >= 40 ? 2 : 1;
-  score += girVal;
-  factors++;
+  if (playerAvgs) {
+    // Player-relative grading: compare to their own history
+    const avgScoreToPar = playerAvgs.avgScore - 72; // approximate course par
+    const scoreVal = relativeGrade(scoreToPar, avgScoreToPar, 'lower');
+    score += scoreVal * 2;
+    factors += 2;
 
-  if (fairwayPct !== null) {
-    const fwVal = fairwayPct >= 70 ? 5 : fairwayPct >= 60 ? 4 : fairwayPct >= 50 ? 3 : fairwayPct >= 40 ? 2 : 1;
-    score += fwVal;
+    const girVal = relativeGrade(girPct, playerAvgs.avgGirPct, 'higher');
+    score += girVal;
+    factors++;
+
+    if (fairwayPct !== null) {
+      const fwVal = relativeGrade(fairwayPct, playerAvgs.avgFairwayPct, 'higher');
+      score += fwVal;
+      factors++;
+    }
+
+    const puttVal = relativeGrade(putts, playerAvgs.avgPutts, 'lower');
+    score += puttVal;
+    factors++;
+  } else {
+    // Fallback: fixed benchmarks (college-level)
+    const scoreVal = scoreToPar <= -3 ? 5 : scoreToPar <= -1 ? 4 : scoreToPar <= 1 ? 3.5 : scoreToPar <= 3 ? 3 : scoreToPar <= 5 ? 2 : 1;
+    score += scoreVal * 2;
+    factors += 2;
+
+    const girVal = girPct >= 70 ? 5 : girPct >= 60 ? 4 : girPct >= 50 ? 3 : girPct >= 40 ? 2 : 1;
+    score += girVal;
+    factors++;
+
+    if (fairwayPct !== null) {
+      const fwVal = fairwayPct >= 70 ? 5 : fairwayPct >= 60 ? 4 : fairwayPct >= 50 ? 3 : fairwayPct >= 40 ? 2 : 1;
+      score += fwVal;
+      factors++;
+    }
+
+    const puttVal = putts <= 28 ? 5 : putts <= 30 ? 4 : putts <= 32 ? 3 : putts <= 34 ? 2 : 1;
+    score += puttVal;
     factors++;
   }
-
-  const puttVal = putts <= 28 ? 5 : putts <= 30 ? 4 : putts <= 32 ? 3 : putts <= 34 ? 2 : 1;
-  score += puttVal;
-  factors++;
 
   const avg = score / factors;
   if (avg >= 4.2) return 'A';
@@ -534,16 +607,25 @@ function generateReviewContent(
   const sandSuccessList = holes.filter(h => h.sandSaveSuccess);
   const sandSavePct = sandAttemptsList.length > 0 ? Math.round((sandSuccessList.length / sandAttemptsList.length) * 100) : null;
 
-  // Driving miss pattern
+  // Driving miss pattern — use exact match or startsWith/endsWith to avoid
+  // double-counting compound values like "left_short"
   const driveMisses = holes.filter(h => h.driveMiss && h.fairwayHit === false);
-  const leftMisses = driveMisses.filter(h => h.driveMiss?.includes('left')).length;
-  const rightMisses = driveMisses.filter(h => h.driveMiss?.includes('right')).length;
+  const leftMisses = driveMisses.filter(h =>
+    h.driveMiss === 'left' || h.driveMiss?.startsWith('left_') || h.driveMiss?.endsWith('_left')
+  ).length;
+  const rightMisses = driveMisses.filter(h =>
+    h.driveMiss === 'right' || h.driveMiss?.startsWith('right_') || h.driveMiss?.endsWith('_right')
+  ).length;
   const dominantMiss = leftMisses > rightMisses ? 'left' : rightMisses > leftMisses ? 'right' : null;
 
-  // Approach miss pattern
+  // Approach miss pattern — same exact/startsWith/endsWith logic
   const approachMisses = holes.filter(h => !h.gir && h.approachMiss);
-  const approachShort = approachMisses.filter(h => h.approachMiss?.includes('short')).length;
-  const approachLong = approachMisses.filter(h => h.approachMiss?.includes('long')).length;
+  const approachShort = approachMisses.filter(h =>
+    h.approachMiss === 'short' || h.approachMiss?.startsWith('short_') || h.approachMiss?.endsWith('_short')
+  ).length;
+  const approachLong = approachMisses.filter(h =>
+    h.approachMiss === 'long' || h.approachMiss?.startsWith('long_') || h.approachMiss?.endsWith('_long')
+  ).length;
 
   // First putt distances
   const firstPuttDists = holes.filter(h => h.firstPuttFeet !== null).map(h => h.firstPuttFeet!);
@@ -657,13 +739,24 @@ function generateReviewContent(
     strokesLost: penaltyHoles.reduce((s, h) => s + h.penalties, 0),
   };
 
-  // ===== STROKES TO GAIN =====
+  // ===== STROKES TO GAIN (distance-aware estimates) =====
   const strokesToGain: StrokesToGainItem[] = [];
   if (threePutts.length > 0) {
+    // Estimate savings based on first putt distance for each three-putt
+    let threePuttSavings = 0;
+    for (const tp of threePutts) {
+      const dist = tp.firstPuttFeet ?? 20;
+      // Three-putt from far = less savings (still hard to 2-putt)
+      // Three-putt from close = more savings (should definitely 2-putt)
+      if (dist >= 25) threePuttSavings += 0.5;
+      else if (dist >= 15) threePuttSavings += 0.7;
+      else threePuttSavings += 1.0;
+    }
+    const roundedSavings = Math.round(threePuttSavings * 10) / 10;
     strokesToGain.push({
       category: 'Putting',
-      potentialStrokes: threePutts.length,
-      description: `Eliminating ${threePutts.length} three-putt${threePutts.length > 1 ? 's' : ''} saves ${threePutts.length} stroke${threePutts.length > 1 ? 's' : ''}`,
+      potentialStrokes: roundedSavings,
+      description: `Eliminating ${threePutts.length} three-putt${threePutts.length > 1 ? 's' : ''} saves ~${roundedSavings} stroke${roundedSavings !== 1 ? 's' : ''}`,
     });
   }
   if (penaltyAnalysis.total > 0) {
@@ -675,12 +768,15 @@ function generateReviewContent(
   }
   const missedScrambles = scrambleAttemptsList.length - scrambleSuccessList.length;
   if (missedScrambles > 0 && scramblePct !== null && scramblePct < 50) {
-    const potentialSaves = Math.round(missedScrambles * 0.5);
-    if (potentialSaves > 0) {
+    // Use actual scramble rate to estimate realistic improvement
+    const currentRate = scramblePct / 100;
+    const targetRate = Math.min(0.5, currentRate + 0.15); // aim for 15% improvement or 50%, whichever is lower
+    const extraSaves = Math.round(scrambleAttemptsList.length * (targetRate - currentRate) * 10) / 10;
+    if (extraSaves > 0) {
       strokesToGain.push({
         category: 'Short Game',
-        potentialStrokes: potentialSaves,
-        description: `Converting ${potentialSaves} more scramble${potentialSaves > 1 ? 's' : ''} of ${missedScrambles} missed would save ${potentialSaves} stroke${potentialSaves > 1 ? 's' : ''}`,
+        potentialStrokes: Math.round(extraSaves * 10) / 10,
+        description: `Improving scramble rate to ${Math.round(targetRate * 100)}% saves ~${extraSaves.toFixed(1)} strokes from ${scrambleAttemptsList.length} attempts`,
       });
     }
   }
@@ -688,10 +784,12 @@ function generateReviewContent(
     const improvedGir = Math.round(girTotal * 0.5);
     const additionalGIRs = improvedGir - girHitsCount;
     if (additionalGIRs > 0) {
+      // GIR holes typically score 0.7 strokes better than non-GIR holes
+      const potentialSaves = Math.round(additionalGIRs * 0.7 * 10) / 10;
       strokesToGain.push({
         category: 'Approach Shots',
-        potentialStrokes: Math.round(additionalGIRs * 0.5),
-        description: `Hitting ${additionalGIRs} more green${additionalGIRs > 1 ? 's' : ''} in regulation reduces scramble pressure`,
+        potentialStrokes: potentialSaves,
+        description: `Hitting ${additionalGIRs} more green${additionalGIRs > 1 ? 's' : ''} in regulation saves ~${potentialSaves} strokes`,
       });
     }
   }
@@ -699,7 +797,7 @@ function generateReviewContent(
 
   // ===== SENTIMENT & GRADE =====
   const sentiment = determineSentiment(scoreToPar);
-  const overallGrade = determineGrade(scoreToPar, girPct, fairwayPct, totalPutts);
+  const overallGrade = determineGrade(scoreToPar, girPct, fairwayPct, totalPutts, playerAvgs);
 
   // ===== SUMMARY =====
   let summary = '';
@@ -732,17 +830,18 @@ function generateReviewContent(
   }
 
   // ===== KEY STATS =====
-  const cmp = (val: number, avg: number | undefined, better: 'lower' | 'higher'): StatComparison => {
+  // Use stat-appropriate thresholds instead of a universal ±1
+  const cmp = (val: number, avg: number | undefined, better: 'lower' | 'higher', threshold: number = 1): StatComparison => {
     if (!avg) return 'average';
     const diff = val - avg;
-    if (better === 'lower') return diff < -1 ? 'above' : diff > 1 ? 'below' : 'average';
-    return diff > 1 ? 'above' : diff < -1 ? 'below' : 'average';
+    if (better === 'lower') return diff < -threshold ? 'above' : diff > threshold ? 'below' : 'average';
+    return diff > threshold ? 'above' : diff < -threshold ? 'below' : 'average';
   };
 
-  keyStats.push({ label: 'Total Putts', value: `${totalPutts}`, comparison: cmp(totalPutts, playerAvgs?.avgPutts, 'lower') });
-  keyStats.push({ label: 'Greens in Reg', value: `${girHitsCount}/${girTotal} (${girPct}%)`, comparison: cmp(girPct, playerAvgs?.avgGirPct, 'higher') });
+  keyStats.push({ label: 'Total Putts', value: `${totalPutts}`, comparison: cmp(totalPutts, playerAvgs?.avgPutts, 'lower', 2) });
+  keyStats.push({ label: 'Greens in Reg', value: `${girHitsCount}/${girTotal} (${girPct}%)`, comparison: cmp(girPct, playerAvgs?.avgGirPct, 'higher', 5) });
   if (fairwayPct !== null) {
-    keyStats.push({ label: 'Fairways', value: `${fairwaysHit}/${fairwayTotal} (${fairwayPct}%)`, comparison: cmp(fairwayPct, playerAvgs?.avgFairwayPct, 'higher') });
+    keyStats.push({ label: 'Fairways', value: `${fairwaysHit}/${fairwayTotal} (${fairwayPct}%)`, comparison: cmp(fairwayPct, playerAvgs?.avgFairwayPct, 'higher', 5) });
   }
   if (scramblePct !== null) {
     keyStats.push({ label: 'Scrambling', value: `${scrambleSuccessList.length}/${scrambleAttemptsList.length} (${scramblePct}%)`, comparison: scramblePct >= 50 ? 'above' : scramblePct >= 33 ? 'average' : 'below' });

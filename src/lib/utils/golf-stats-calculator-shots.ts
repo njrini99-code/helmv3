@@ -1357,8 +1357,9 @@ function aggregateRoundStats(rounds: Array<{
         }
 
         if (!hole.fairwayHit && hole.driveMissDirection) {
-          if (hole.driveMissDirection.includes('left')) stats.missLeftCount++;
-          if (hole.driveMissDirection.includes('right')) stats.missRightCount++;
+          const dm = hole.driveMissDirection;
+          if (dm === 'left' || dm.startsWith('left_') || dm.endsWith('_left')) stats.missLeftCount++;
+          if (dm === 'right' || dm.startsWith('right_') || dm.endsWith('_right')) stats.missRightCount++;
         }
       }
 
@@ -1464,13 +1465,13 @@ function aggregateRoundStats(rounds: Array<{
           // Determine miss direction from shots
           const firstPuttShot = hole.shots.find(s => s.shot_type === 'putting');
           if (firstPuttShot?.miss_direction) {
-            if (firstPuttShot.miss_direction.includes('left')) puttMissLeft++;
-            if (firstPuttShot.miss_direction.includes('right')) puttMissRight++;
-            if (firstPuttShot.miss_direction.includes('short')) puttMissShort++;
-            if (firstPuttShot.miss_direction.includes('long')) puttMissLong++;
-            // Miss direction values for putting (use includes for compound tags like 'low_short')
-            if (firstPuttShot.miss_direction.includes('low')) puttMissLow++;
-            if (firstPuttShot.miss_direction.includes('high')) puttMissHigh++;
+            const pm = firstPuttShot.miss_direction;
+            if (pm === 'left' || pm.startsWith('left_') || pm.endsWith('_left')) puttMissLeft++;
+            if (pm === 'right' || pm.startsWith('right_') || pm.endsWith('_right')) puttMissRight++;
+            if (pm === 'short' || pm.startsWith('short_') || pm.endsWith('_short')) puttMissShort++;
+            if (pm === 'long' || pm.startsWith('long_') || pm.endsWith('_long')) puttMissLong++;
+            if (pm === 'low' || pm.startsWith('low_') || pm.endsWith('_low')) puttMissLow++;
+            if (pm === 'high' || pm.startsWith('high_') || pm.endsWith('_high')) puttMissHigh++;
           }
         }
 

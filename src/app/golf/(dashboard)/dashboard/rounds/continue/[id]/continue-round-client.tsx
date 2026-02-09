@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive, { type HoleStats, type ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound } from '@/app/golf/actions/golf';
+import { deleteOfflineRound } from '@/lib/offline/indexed-db';
 
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
 import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
@@ -25,6 +26,8 @@ interface RoundSetupData {
   teesPlayed: string;
   roundType: 'practice' | 'tournament' | 'qualifier';
   roundDate: string;
+  qualifierId?: string;
+  qualifierRoundNumber?: number;
 }
 
 
@@ -179,6 +182,8 @@ export default function ContinueRoundClient({
         roundType: setupData.roundType,
         roundDate: setupData.roundDate,
         holes: allHoleStats,
+        qualifierId: setupData.qualifierId,
+        qualifierRoundNumber: setupData.qualifierRoundNumber,
       };
 
       const result = await submitGolfRoundComprehensive(roundData, roundId);
@@ -186,12 +191,19 @@ export default function ContinueRoundClient({
         throw new Error(result.error);
       }
 
+      // Clean up IndexedDB draft data for this round
+      try {
+        await deleteOfflineRound(roundId);
+      } catch {
+        // Non-critical — round is already saved
+      }
+
       // Navigate to round detail page for full review
       const completedRoundId = result.data.roundId || roundId;
       router.push(`/golf/dashboard/rounds/${completedRoundId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit round');
-      setSubmitting(false);
+      // Keep submitting=true so error shows on the spinner screen with "Go Back"
     }
   };
 
@@ -212,6 +224,7 @@ export default function ContinueRoundClient({
       teesPlayed: setupData.teesPlayed || undefined,
       roundType: setupData.roundType,
       roundDate: setupData.roundDate,
+      qualifierId: setupData.qualifierId,
       currentHole: currentHoleIndex + 1, // Next hole player will resume on
       holesToPlay: holes.length as 9 | 18,
       holes: completedHoleStats,
@@ -270,6 +283,17 @@ export default function ContinueRoundClient({
           <p className="text-sm text-slate-500">
             Calculating your 50+ statistics...
           </p>
+          {error && (
+            <div className="mt-4">
+              <p className="text-sm text-red-600 mb-3">{error}</p>
+              <button
+                onClick={() => setSubmitting(false)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors"
+              >
+                Go Back
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
