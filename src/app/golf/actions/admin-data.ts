@@ -293,10 +293,10 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     cohortWeek2Res,
     cohortWeek1Res,
   ] = await Promise.all([
-    // --- Health ---
-    supabase.from('golf_rounds').select('player_id', { count: 'exact', head: true }).gte('created_at', ago24h),
-    supabase.from('golf_rounds').select('player_id', { count: 'exact', head: true }).gte('created_at', ago7d),
-    supabase.from('golf_rounds').select('player_id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    // --- Health (active users = distinct players with rounds) ---
+    supabase.from('golf_rounds').select('player_id').gte('created_at', ago24h),
+    supabase.from('golf_rounds').select('player_id').gte('created_at', ago7d),
+    supabase.from('golf_rounds').select('player_id').gte('created_at', ago30d),
     supabase.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
     supabase.from('golf_round_reviews').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
     supabase.from('golf_insight_generation_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
@@ -347,12 +347,12 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     // --- Engagement ---
     supabase.from('golf_rounds').select('created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
     supabase.from('golf_rounds').select('player_id').gte('created_at', ago7d),
-    supabase.from('golf_players').select('id').eq('status', 'active'),
+    supabase.from('golf_players').select('id'),
     supabase.from('golf_coach_insights').select('coach_id').gte('created_at', ago30d),
     supabase.from('golf_attendance_summary').select('attendance_percentage'),
     // --- Growth / Demographics ---
-    supabase.from('golf_players').select('status, year'),
-    supabase.from('golf_players').select('year'),
+    supabase.from('golf_team_members').select('status, golf_players(graduation_year)').not('status', 'is', null),
+    supabase.from('golf_players').select('graduation_year'),
     supabase.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', ago14d).lt('created_at', ago7d),
     supabase.from('golf_teams').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
     supabase.from('golf_rounds').select('player_id').gte('created_at', ago30d),
@@ -372,11 +372,13 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     teamMembersRes,
     teamRoundsRes,
     playerStatsRes,
+    playerTeamMapRes,
     scoringDistRes,
     bestRoundsRes,
     insightsWeeklyRes,
     reviewsWeeklyRes,
     errorsRes,
+    userToPlayerMapRes,
   ] = await Promise.all([
     // Teams with org
     supabase.from('golf_teams').select('id, name, organization_id, organizations(name)'),
@@ -386,6 +388,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     supabase.from('golf_rounds').select('player_id, team_id').gte('created_at', ago7d),
     // Player stats cache for platform averages and top performers
     supabase.from('golf_player_stats_cache').select('player_id, scoring_average, driving_accuracy_percentage, gir_percentage, putts_per_round, rounds_played, golf_players(first_name, last_name)').not('scoring_average', 'is', null).order('scoring_average', { ascending: true }).limit(50),
+    // Player-to-team mapping for team name resolution
+    supabase.from('golf_team_members').select('player_id, golf_teams(id, name)').eq('status', 'active'),
     // Scoring distribution
     supabase.from('golf_rounds').select('total_score').not('total_score', 'is', null).eq('status', 'completed'),
     // Best recent rounds
@@ -395,6 +399,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     supabase.from('golf_round_reviews').select('created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
     // System errors
     supabase.from('golf_insight_generation_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d).eq('insights_generated', 0),
+    // User ID to Player ID mapping (for cohort retention)
+    supabase.from('golf_players').select('id, user_id'),
   ]);
 
   // ============================================
@@ -491,12 +497,21 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     ? validPutts.reduce((s, r) => s + Number(r.putts_per_round), 0) / validPutts.length
     : null;
 
+  // --- Player-to-team name map ---
+  const playerTeamNameMap = new Map<string, string>();
+  for (const m of (playerTeamMapRes.data ?? [])) {
+    const team = m.golf_teams as { id: string; name: string } | null;
+    if (team) {
+      playerTeamNameMap.set(m.player_id, team.name);
+    }
+  }
+
   // --- Top performers ---
   const topPerformers = validScoring.slice(0, 10).map((r) => {
-    const player = r.golf_players as { first_name: string; last_name: string; team_id: string | null; golf_teams: { name: string } | null } | null;
+    const player = r.golf_players as { first_name: string; last_name: string } | null;
     return {
       name: player ? `${player.first_name} ${player.last_name}` : 'Unknown',
-      teamName: player?.golf_teams?.name ?? null,
+      teamName: playerTeamNameMap.get(r.player_id) ?? null,
       scoringAvg: Number(r.scoring_average),
       roundsPlayed: (r.rounds_played as number | null) ?? 0,
     };
@@ -552,18 +567,28 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     }
   }
 
+  // Build player_id -> team_id map from team members
+  const playerToTeamId = new Map<string, string>();
+  for (const m of (playerTeamMapRes.data ?? [])) {
+    const team = m.golf_teams as { id: string; name: string } | null;
+    if (team) {
+      playerToTeamId.set(m.player_id, team.id);
+    }
+  }
+
   // Avg score per team from stats cache
   const teamAvgScores: Record<string, number[]> = {};
   const teamTopPlayer: Record<string, { name: string; avg: number }> = {};
   for (const r of statsRows) {
-    const player = r.golf_players as { first_name: string; last_name: string; team_id: string | null; golf_teams: { name: string } | null } | null;
-    if (player?.team_id && r.scoring_average != null) {
-      if (!teamAvgScores[player.team_id]) teamAvgScores[player.team_id] = [];
-      teamAvgScores[player.team_id]!.push(Number(r.scoring_average));
+    const player = r.golf_players as { first_name: string; last_name: string } | null;
+    const teamId = playerToTeamId.get(r.player_id);
+    if (teamId && r.scoring_average != null) {
+      if (!teamAvgScores[teamId]) teamAvgScores[teamId] = [];
+      teamAvgScores[teamId]!.push(Number(r.scoring_average));
       // Track top player per team (lowest scoring avg)
-      if (!teamTopPlayer[player.team_id] || Number(r.scoring_average) < teamTopPlayer[player.team_id]!.avg) {
-        teamTopPlayer[player.team_id] = {
-          name: `${player.first_name} ${player.last_name}`,
+      if (!teamTopPlayer[teamId] || Number(r.scoring_average) < teamTopPlayer[teamId]!.avg) {
+        teamTopPlayer[teamId] = {
+          name: player ? `${player.first_name} ${player.last_name}` : 'Unknown',
           avg: Number(r.scoring_average),
         };
       }
@@ -594,7 +619,10 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const playersWithNoRounds = activePlayers.filter((id) => !playersThisWeek.has(id)).length;
 
   const avgRoundsPerPlayer = totalPlayers > 0 ? totalRoundsCount / totalPlayers : 0;
-  const weeklyRetention = totalPlayers > 0 ? (playersThisWeek.size / totalPlayers) * 100 : 0;
+  // Weekly retention: players active this week out of players active in last 30d
+  const playersActiveLast30d = new Set((activeUsers30dRes.data ?? []).map(r => r.player_id));
+  const activeDenominator = playersActiveLast30d.size || 1;
+  const weeklyRetention = (playersThisWeek.size / activeDenominator) * 100;
 
   const coachIdsUsingInsights = new Set((coachesUsingInsightsRes.data ?? []).map((r) => r.coach_id));
   const attendanceSummaries = attendanceSummaryRes.data ?? [];
@@ -606,7 +634,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const avgOnboarding = (coachOnboarded + playerOnboarded) / Math.max(totalCoaches + totalPlayers, 1) * 100;
 
   // --- Player demographics ---
-  const playerStatusData = (playerStatusRes.data ?? []) as unknown as { status: string; year: string }[];
+  const playerStatusData = (playerStatusRes.data ?? []) as { status: string; golf_players: { graduation_year: number | null } | null }[];
   const statusCounts: Record<string, number> = {};
   for (const p of playerStatusData) {
     const s = p.status || 'unknown';
@@ -614,10 +642,10 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   }
   const playersByStatus = Object.entries(statusCounts).map(([status, count]) => ({ status, count })).filter(s => s.count > 0);
 
-  const playerYearData = (playerYearRes.data ?? []) as unknown as { year: string }[];
+  const playerYearData = (playerYearRes.data ?? []) as { graduation_year: number | null }[];
   const yearCounts: Record<string, number> = {};
   for (const p of playerYearData) {
-    const y = p.year || 'unknown';
+    const y = p.graduation_year ? String(p.graduation_year) : 'unknown';
     yearCounts[y] = (yearCounts[y] || 0) + 1;
   }
   const playersByYear = Object.entries(yearCounts).map(([year, count]) => ({ year, count })).filter(y => y.count > 0);
@@ -632,17 +660,27 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     ? Math.round(((roundsThisWeekCount - roundsLastWeekCount) / roundsLastWeekCount) * 100)
     : roundsThisWeekCount > 0 ? 100 : 0;
 
+  // Build user_id -> player_id mapping for cohort retention
+  const userIdToPlayerId = new Map<string, string>();
+  for (const p of (userToPlayerMapRes.data ?? [])) {
+    if (p.user_id) userIdToPlayerId.set(p.user_id, p.id);
+  }
+
   // Churned players: active 30-60d ago but NOT in last 30d
   const playersActive30d = new Set((playersActive30dRes.data ?? []).map(r => r.player_id));
   const playersActive30_60d = new Set((playersActive30_60dRes.data ?? []).map(r => r.player_id));
   const churnedPlayers30d = [...playersActive30_60d].filter(id => !playersActive30d.has(id)).length;
 
   // Cohort retention: for each week's signups, how many submitted a round?
-  const allPlayerRounds30d = new Set((weeklyRetentionPlayerRes.data ?? []).map(r => r.player_id));
+  // Map user IDs to player IDs since golf_rounds.player_id = golf_players.id, not users.id
+  const allPlayerRounds7d = new Set((weeklyRetentionPlayerRes.data ?? []).map(r => r.player_id));
   const cohortWeeks = [cohortWeek4Res, cohortWeek3Res, cohortWeek2Res, cohortWeek1Res];
   const retentionCohorts = cohortWeeks.map((cohortRes, i) => {
     const cohortUsers = (cohortRes.data ?? []).map(u => u.id);
-    const retained = cohortUsers.filter(id => allPlayerRounds30d.has(id)).length;
+    const retained = cohortUsers.filter(userId => {
+      const playerId = userIdToPlayerId.get(userId);
+      return playerId && allPlayerRounds7d.has(playerId);
+    }).length;
     return {
       week: i + 1,
       retained,
@@ -748,9 +786,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
   return {
     health: {
-      activeUsers24h: activeUsers24hRes.count ?? 0,
-      activeUsers7d: activeUsers7dRes.count ?? 0,
-      activeUsers30d: activeUsers30dRes.count ?? 0,
+      activeUsers24h: new Set((activeUsers24hRes.data ?? []).map(r => r.player_id)).size,
+      activeUsers7d: new Set((activeUsers7dRes.data ?? []).map(r => r.player_id)).size,
+      activeUsers30d: new Set((activeUsers30dRes.data ?? []).map(r => r.player_id)).size,
       roundsThisWeek: roundsThisWeekRes.count ?? 0,
       roundReviewsThisWeek: reviewsThisWeekRes.count ?? 0,
       insightsThisWeek: insightsThisWeekRes.count ?? 0,
