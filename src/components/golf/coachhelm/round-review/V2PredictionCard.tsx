@@ -2,11 +2,19 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { IconTarget, IconTrendingUp, IconTrendingDown, IconChartBar } from '@/components/icons';
+import { IconTarget, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import type { PerformancePrediction } from '@/lib/coachhelm/v2/types';
 
 interface V2PredictionCardProps {
   prediction: PerformancePrediction;
+}
+
+/** Convert snake_case or camelCase to readable Title Case */
+function formatLabel(text: string): string {
+  return text
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\b\w/g, c => c.toUpperCase());
 }
 
 export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
@@ -29,90 +37,118 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
     prediction.keyDrivers ??
     prediction.keyFactors?.map((factor) => factor.name).filter(Boolean) ??
     [];
-  
-  // Determine if prediction is positive or negative based on type
+
   const isPositive =
     prediction.predictionType === 'round_score'
       ? predictedValue < 0
       : trend === 'improving';
 
+  const trendLabel = trend === 'improving' ? 'Improving' : trend === 'declining' ? 'Declining' : 'Stable';
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-      className="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5"
+      transition={{ delay: 0.3, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className="rounded-2xl bg-white/80 backdrop-blur-sm border border-warm-200 overflow-hidden shadow-sm"
     >
-      <h3 className="text-sm font-semibold text-warm-900 mb-4 flex items-center gap-2">
-        <div className="p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+      {/* Header */}
+      <div className="px-5 py-3.5 bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-100/60 flex items-center gap-3">
+        <div className="p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-sm shadow-blue-500/20">
           <IconTarget size={14} className="text-white" />
         </div>
-        Performance Prediction
+        <h3 className="text-sm font-semibold text-warm-900">Performance Forecast</h3>
         <span className={cn(
-          'text-xs px-2 py-0.5 rounded-full font-medium ml-auto',
+          'text-[11px] font-semibold px-2.5 py-0.5 rounded-full ml-auto',
           confidencePercent >= 75 ? 'bg-green-100 text-green-700' :
           confidencePercent >= 50 ? 'bg-amber-100 text-amber-700' :
           'bg-warm-100 text-warm-600'
         )}>
           {confidencePercent}% confidence
         </span>
-      </h3>
-
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        {/* Predicted Score */}
-        <div className="p-4 bg-white rounded-lg border border-warm-200">
-          <div className="text-xs text-warm-500 mb-1">Next Round Prediction</div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-warm-900">
-              {predictedValue.toFixed(1)}
-            </span>
-            {isPositive ? (
-              <IconTrendingDown size={18} className="text-green-500" />
-            ) : (
-              <IconTrendingUp size={18} className="text-red-500" />
-            )}
-          </div>
-          <div className="text-xs text-warm-400 mt-1">
-            Range: {hasRange ? `${Number(lowerBound).toFixed(1)} - ${Number(upperBound).toFixed(1)}` : '--'}
-          </div>
-        </div>
-
-        {/* Trend */}
-        <div className="p-4 bg-white rounded-lg border border-warm-200">
-          <div className="text-xs text-warm-500 mb-1">Current Trend</div>
-          <div className={cn(
-            'text-lg font-semibold capitalize',
-            trend === 'improving' && 'text-green-600',
-            trend === 'declining' && 'text-red-600',
-            trend === 'stable' && 'text-warm-600',
-          )}>
-            {trend}
-          </div>
-          <div className="text-xs text-warm-400 mt-1">
-            Based on {inputFeatureCount} factors
-          </div>
-        </div>
       </div>
 
-      {/* Key Drivers */}
-      {keyDrivers.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-warm-100">
-          <div className="text-xs font-medium text-warm-600 mb-2 flex items-center gap-2">
-            <IconChartBar size={12} />
-            Key Performance Drivers
+      <div className="p-5">
+        <div className="flex items-center gap-6">
+          {/* Predicted Score */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.45, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-center gap-3"
+          >
+            <div className={cn(
+              'text-3xl font-bold tabular-nums',
+              isPositive ? 'text-green-600' : predictedValue === 0 ? 'text-warm-800' : 'text-red-500',
+            )}>
+              {predictedValue > 0 ? '+' : ''}{predictedValue.toFixed(1)}
+            </div>
+            {isPositive ? (
+              <IconTrendingDown size={20} className="text-green-500" />
+            ) : predictedValue !== 0 ? (
+              <IconTrendingUp size={20} className="text-red-500" />
+            ) : null}
+          </motion.div>
+
+          {/* Separator */}
+          <div className="h-10 w-px bg-warm-100" />
+
+          {/* Trend */}
+          <div>
+            <div className="text-[11px] text-warm-500 mb-0.5">Trend</div>
+            <div className={cn(
+              'text-sm font-semibold',
+              trend === 'improving' && 'text-green-600',
+              trend === 'declining' && 'text-red-500',
+              trend === 'stable' && 'text-warm-600',
+            )}>
+              {trendLabel}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+
+          {/* Range */}
+          {hasRange && (
+            <>
+              <div className="h-10 w-px bg-warm-100" />
+              <div>
+                <div className="text-[11px] text-warm-500 mb-0.5">Range</div>
+                <div className="text-sm font-medium text-warm-700 tabular-nums">
+                  {Number(lowerBound).toFixed(1)} to {Number(upperBound).toFixed(1)}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Factors */}
+          {inputFeatureCount > 0 && (
+            <>
+              <div className="h-10 w-px bg-warm-100" />
+              <div>
+                <div className="text-[11px] text-warm-500 mb-0.5">Factors</div>
+                <div className="text-sm font-medium text-warm-700">{inputFeatureCount}</div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Key Drivers */}
+        {keyDrivers.length > 0 && (
+          <div className="mt-4 pt-3.5 border-t border-warm-100 flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-medium text-warm-500">Drivers:</span>
             {keyDrivers.slice(0, 4).map((driver: string, i: number) => (
-              <span
+              <motion.span
                 key={i}
-                className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-md"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 + i * 0.06, duration: 0.25 }}
+                className="text-[11px] px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded-md font-medium border border-blue-100/50"
               >
-                {driver}
-              </span>
+                {formatLabel(driver)}
+              </motion.span>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </motion.div>
   );
 }

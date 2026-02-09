@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 
@@ -26,6 +27,15 @@ interface PremiumRoundHeaderProps {
   teesPlayed: string | null;
   notes: string | null;
 }
+
+const statReveal = {
+  hidden: { opacity: 0, y: 10 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: 0.35 + i * 0.08, duration: 0.45, ease: [0.16, 1, 0.3, 1] as const },
+  }),
+};
 
 export function PremiumRoundHeader({
   playerName,
@@ -64,14 +74,46 @@ export function PremiumRoundHeader({
     day: 'numeric',
   });
 
+  const stats = [
+    {
+      label: 'Putts',
+      value: totalPutts ?? '--',
+      sub: null,
+    },
+    {
+      label: 'Fairways',
+      value: totalFairwaysHit !== null && totalFairways ? `${totalFairwaysHit}/${totalFairways}` : '--',
+      sub: totalFairwaysHit !== null && totalFairways && totalFairways > 0
+        ? `${Math.round((totalFairwaysHit / totalFairways) * 100)}%`
+        : null,
+    },
+    {
+      label: 'Greens',
+      value: totalGir !== null && totalGirPossible ? `${totalGir}/${totalGirPossible}` : '--',
+      sub: totalGir !== null && totalGirPossible && totalGirPossible > 0
+        ? `${Math.round((totalGir / totalGirPossible) * 100)}%`
+        : null,
+    },
+    {
+      label: 'Front / Back',
+      value: `${frontNine ?? '--'} / ${backNine ?? '--'}`,
+      sub: null,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header Card */}
-      <Card variant="glass" padding="none" className="overflow-hidden">
+      <Card variant="glass" padding="none" className="overflow-hidden shadow-sm">
         <div className="p-6 sm:p-8">
           {/* Player info + score */}
           <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
+            <motion.div
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="flex items-center gap-4"
+            >
               <Avatar
                 src={playerAvatarUrl}
                 name={playerName}
@@ -80,7 +122,7 @@ export function PremiumRoundHeader({
               <div>
                 <h2 className="text-xl font-semibold text-warm-900">{playerName}</h2>
                 <p className="text-sm text-warm-500 mt-0.5">{formattedDate}</p>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1.5">
                   <span className="text-sm font-medium text-warm-700">{courseName}</span>
                   {courseCity && courseState && (
                     <span className="text-xs text-warm-400">{courseCity}, {courseState}</span>
@@ -88,7 +130,7 @@ export function PremiumRoundHeader({
                 </div>
                 <div className="flex flex-wrap items-center gap-3 mt-2">
                   {roundType && (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-warm-100 text-warm-600 capitalize">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-warm-100 text-warm-600 capitalize border border-warm-200/50">
                       {roundType.replace(/_/g, ' ')}
                     </span>
                   )}
@@ -103,70 +145,75 @@ export function PremiumRoundHeader({
                   )}
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Score display */}
-            <div className="text-right flex-shrink-0">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="text-right flex-shrink-0"
+            >
               <div className="text-5xl font-bold text-warm-900 tabular-nums">
                 {totalScore ?? '--'}
               </div>
-              <div className={cn('text-xl font-semibold', scoreColor)}>
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35, duration: 0.35 }}
+                className={cn('text-xl font-semibold', scoreColor)}
+              >
                 {scoreDisplay}
-              </div>
+              </motion.div>
               {frontNine !== null && backNine !== null && (
-                <p className="text-xs text-warm-400 mt-1 tabular-nums">
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.45, duration: 0.3 }}
+                  className="text-xs text-warm-400 mt-1 tabular-nums"
+                >
                   {frontNine} / {backNine}
-                </p>
+                </motion.p>
               )}
-            </div>
+            </motion.div>
           </div>
 
           {/* Stats row */}
           <div className="mt-6 pt-6 border-t border-warm-200/60 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs text-warm-400 font-medium">Putts</p>
-              <p className="text-xl font-semibold text-warm-900 tabular-nums">{totalPutts ?? '--'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-warm-400 font-medium">Fairways</p>
-              <p className="text-xl font-semibold text-warm-900 tabular-nums">
-                {totalFairwaysHit !== null && totalFairways
-                  ? `${totalFairwaysHit}/${totalFairways}`
-                  : '--'}
-              </p>
-              {totalFairwaysHit !== null && totalFairways && totalFairways > 0 && (
-                <p className="text-xs text-warm-400">{Math.round((totalFairwaysHit / totalFairways) * 100)}%</p>
-              )}
-            </div>
-            <div>
-              <p className="text-xs text-warm-400 font-medium">Greens</p>
-              <p className="text-xl font-semibold text-warm-900 tabular-nums">
-                {totalGir !== null && totalGirPossible
-                  ? `${totalGir}/${totalGirPossible}`
-                  : '--'}
-              </p>
-              {totalGir !== null && totalGirPossible && totalGirPossible > 0 && (
-                <p className="text-xs text-warm-400">{Math.round((totalGir / totalGirPossible) * 100)}%</p>
-              )}
-            </div>
-            <div>
-              <p className="text-xs text-warm-400 font-medium">Front / Back</p>
-              <p className="text-xl font-semibold text-warm-900 tabular-nums">
-                {frontNine ?? '--'} / {backNine ?? '--'}
-              </p>
-            </div>
+            {stats.map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                custom={i}
+                variants={statReveal}
+                initial="hidden"
+                animate="visible"
+                className="rounded-xl bg-warm-50/50 p-3"
+              >
+                <p className="text-xs text-warm-400 font-medium">{stat.label}</p>
+                <p className="text-xl font-semibold text-warm-900 tabular-nums mt-0.5">{stat.value}</p>
+                {stat.sub && (
+                  <p className="text-xs text-warm-400 mt-0.5">{stat.sub}</p>
+                )}
+              </motion.div>
+            ))}
           </div>
         </div>
       </Card>
 
       {/* Notes */}
       {notes && (
-        <Card variant="glass">
-          <div className="p-5">
-            <p className="text-sm font-medium text-warm-700 mb-2">Round Notes</p>
-            <p className="text-sm text-warm-600">{notes}</p>
-          </div>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <Card variant="glass">
+            <div className="p-5">
+              <p className="text-sm font-medium text-warm-700 mb-2">Round Notes</p>
+              <p className="text-sm text-warm-600 leading-relaxed">{notes}</p>
+            </div>
+          </Card>
+        </motion.div>
       )}
     </div>
   );
