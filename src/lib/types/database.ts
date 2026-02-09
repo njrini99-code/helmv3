@@ -8485,6 +8485,7 @@ export type Database = {
       get_user_golf_organization_id: { Args: never; Returns: string }
       get_user_golf_team_ids: { Args: never; Returns: string[] }
       heartbeat: { Args: never; Returns: undefined }
+      is_admin: { Args: never; Returns: boolean }
       is_baseball_team_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_baseball_team_member: { Args: { team_uuid: string }; Returns: boolean }
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
@@ -8563,7 +8564,7 @@ export type Database = {
       organization_type: "college" | "juco" | "high_school" | "showcase"
       reminder_type: "in_app" | "email" | "push" | "all"
       team_member_status: "pending" | "active" | "inactive" | "removed"
-      user_role: "admin" | "coach" | "player"
+      user_role: "coach" | "player" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -8730,7 +8731,7 @@ export const Constants = {
       organization_type: ["college", "juco", "high_school", "showcase"],
       reminder_type: ["in_app", "email", "push", "all"],
       team_member_status: ["pending", "active", "inactive", "removed"],
-      user_role: ["admin", "coach", "player"],
+      user_role: ["coach", "player", "admin"],
     },
   },
 } as const
