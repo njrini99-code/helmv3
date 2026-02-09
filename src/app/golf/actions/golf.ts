@@ -3403,7 +3403,7 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
   const { data: courses, error } = await supabase.from('golf_player_courses')
     .select('*')
     .eq('player_id', player.id)
-    .order('last_used_at', { ascending: false });
+    .order('last_played_at', { ascending: false });
 
   if (error) {
     return { success: false, error: 'Failed to load saved courses' };
@@ -4097,6 +4097,7 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
       distance_unit_after: string;
       shot_distance: number;
       is_penalty: boolean;
+      miss_direction?: string | null;
       putt_made?: boolean;
       putt_distance_feet?: number;
       putt_break?: string;
@@ -4146,6 +4147,7 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
         let distanceUnitBefore: 'yards' | 'feet' = currentDistance <= 30 ? 'feet' : 'yards';
         let distanceUnitAfter: 'yards' | 'feet';
         const isPenalty = false;
+        let shotMissDirection: string | null = null;
         let puttMade: boolean | undefined;
         let puttDistanceFeet: number | undefined;
         let puttBreak: 'left_to_right' | 'right_to_left' | 'straight' | 'multiple' | undefined;
@@ -4168,6 +4170,13 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
             result = 'green';
             distanceAfter = Math.max(1, Math.floor(puttDistBefore * (0.1 + Math.random() * 0.3)));
             puttMade = false;
+            // Generate miss_direction for missed putts
+            const puttMissRoll = Math.random() * 100;
+            if (puttMissRoll < 40) shotMissDirection = 'short';
+            else if (puttMissRoll < 65) shotMissDirection = 'low';
+            else if (puttMissRoll < 85) shotMissDirection = 'high';
+            else if (puttMissRoll < 93) shotMissDirection = 'left';
+            else shotMissDirection = 'right';
           }
 
           shotDistance = puttDistBefore - distanceAfter;
@@ -4250,6 +4259,12 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
           }
           currentDistance = distanceAfter;
 
+          // Generate miss_direction for tee shots that missed the fairway
+          // Realistic pattern: ~55% left, ~45% right (slight left bias common in golf)
+          if (result !== 'fairway' && result !== 'green' && par >= 4) {
+            shotMissDirection = Math.random() < 0.55 ? 'left' : 'right';
+          }
+
         } else if (currentDistance > 100) {
           // Approach shot (far from green)
           shotType = 'approach';
@@ -4293,6 +4308,18 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
               distanceAfter = Math.floor(Math.random() * 15) + 10;
             }
             distanceUnitAfter = 'yards';
+
+            // Generate miss_direction for approach shots that missed the green
+            // Realistic distribution: short 30%, right 20%, left 15%, long 12%, short_right 8%, short_left 7%, long_right 5%, long_left 3%
+            const approachMissRoll = Math.random() * 100;
+            if (approachMissRoll < 30) shotMissDirection = 'short';
+            else if (approachMissRoll < 50) shotMissDirection = 'right';
+            else if (approachMissRoll < 65) shotMissDirection = 'left';
+            else if (approachMissRoll < 77) shotMissDirection = 'long';
+            else if (approachMissRoll < 85) shotMissDirection = 'short_right';
+            else if (approachMissRoll < 92) shotMissDirection = 'short_left';
+            else if (approachMissRoll < 97) shotMissDirection = 'long_right';
+            else shotMissDirection = 'long_left';
           }
           currentDistance = distanceAfter;
 
@@ -4339,18 +4366,24 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
               currentLie = result as 'rough' | 'sand';
               distanceAfter = Math.floor(Math.random() * 15) + 5; // 5-20 yards
               distanceUnitAfter = 'yards';
+              shotMissDirection = Math.random() < 0.5 ? 'short' : (Math.random() < 0.5 ? 'short_left' : 'short_right');
             } else if (missResult < 0.7) {
               // Thin/bladed - went too far
               result = 'rough';
               currentLie = 'rough';
               distanceAfter = Math.floor(Math.random() * 20) + 10; // 10-30 yards through green
               distanceUnitAfter = 'yards';
+              shotMissDirection = Math.random() < 0.5 ? 'long' : (Math.random() < 0.5 ? 'long_left' : 'long_right');
             } else {
               // Landed on green but rolled off
               result = 'rough';
               currentLie = 'rough';
               distanceAfter = Math.floor(Math.random() * 10) + 8; // 8-18 yards
               distanceUnitAfter = 'yards';
+              const rollDir = Math.random();
+              if (rollDir < 0.33) shotMissDirection = 'long';
+              else if (rollDir < 0.66) shotMissDirection = 'right';
+              else shotMissDirection = 'left';
             }
           }
           currentDistance = distanceAfter;
@@ -4372,6 +4405,7 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
           distance_unit_after: string;
           shot_distance: number;
           is_penalty: boolean;
+          miss_direction?: string | null;
           putt_made?: boolean;
           putt_distance_feet?: number;
           putt_break?: string;
@@ -4398,6 +4432,11 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
           shotData.putt_made = puttMade;
           shotData.putt_distance_feet = puttDistanceFeet;
           shotData.putt_break = puttBreak;
+        }
+
+        // Add miss_direction for any shots that missed their target
+        if (shotMissDirection) {
+          shotData.miss_direction = shotMissDirection;
         }
 
         // Fix lie_before for first shot

@@ -210,7 +210,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
     }
     // Note: coach cleanup happens in individual error handlers above
     if (createdOrgId) {
-      await supabase.from('golf_organizations').delete().eq('id', createdOrgId);
+      await supabase.from('organizations').delete().eq('id', createdOrgId);
     }
 
     console.error('[Onboarding] Unexpected error:', error);
