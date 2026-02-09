@@ -103,7 +103,6 @@ const SHOT_TYPE_LABELS: Record<string, string> = {
   putt: 'Putt',
   putting: 'Putt',
   bunker: 'Bunker Shot',
-  recovery: 'Recovery',
   layup: 'Layup',
   penalty: 'Penalty',
 };

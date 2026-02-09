@@ -224,7 +224,7 @@ function generateHoleInsightFromShotData(
   }
 
   // Analyze scrambling
-  const chipPitchShots = shots.filter(s => ['chip', 'pitch', 'bunker', 'recovery'].includes(s.shot_type));
+  const chipPitchShots = shots.filter(s => ['chip', 'pitch', 'bunker'].includes(s.shot_type));
   if (chipPitchShots.length > 0 && hole.green_in_regulation === false) {
     const failedChips = chipPitchShots.filter(s => s.result !== 'green' && s.result !== 'hole' && s.result !== 'holed');
     if (failedChips.length > 0) {
@@ -236,15 +236,6 @@ function generateHoleInsightFromShotData(
     }
   }
 
-  // Recovery shots indicate trouble
-  const recoveryShots = shots.filter(s => s.shot_type === 'recovery');
-  if (recoveryShots.length > 0) {
-    details.push(`Needed ${recoveryShots.length} recovery shot${recoveryShots.length > 1 ? 's' : ''}`);
-    if (!headline) {
-      headline = 'Had to play a recovery shot';
-      icon = 'tee';
-    }
-  }
 
   // Fallback
   if (!headline) {

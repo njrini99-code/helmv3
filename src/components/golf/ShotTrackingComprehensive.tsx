@@ -23,10 +23,10 @@ export interface ShotRecord {
   shotNumber: number;
   shotType: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty';
   clubType: 'driver' | 'non_driver' | 'putter';
-  lieBefore: 'tee' | 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'recovery' | 'other';
+  lieBefore: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other';
   distanceToHoleBefore: number;
   distanceUnitBefore: 'yards' | 'feet';
-  result: 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'hole' | 'recovery' | 'other' | 'penalty';
+  result: 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty';
   distanceToHoleAfter: number;
   distanceUnitAfter: 'yards' | 'feet';
   shotDistance: number;
@@ -151,19 +151,15 @@ function deriveLieAfterFromResult(result: ShotRecord['result'] | null | undefine
       return 'fairway';
     case 'rough':
       return 'rough';
-    case 'deep_rough':
-      return 'deep_rough';
     case 'sand':
       return 'sand';
     case 'green':
     case 'hole':
       return 'green';
-    case 'recovery':
-      return 'recovery';
     case 'penalty':
       return 'penalty';
     case 'other':
-      return 'recovery';
+      return 'rough';
     default:
       return null;
   }
@@ -242,22 +238,20 @@ export default function ShotTrackingComprehensive({
     return 'yards';
   };
   
-  const getInitialLie = (): 'tee' | 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'recovery' | 'other' => {
+  const getInitialLie = (): 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' => {
     if (initialShots.length > 0) {
       const lastShot = initialShots[initialShots.length - 1];
       if (lastShot?.result === 'green') return 'green';
       if (lastShot?.result === 'rough') return 'rough';
-      if (lastShot?.result === 'deep_rough') return 'deep_rough';
       if (lastShot?.result === 'sand') return 'sand';
       if (lastShot?.result === 'fairway') return 'fairway';
-      if (lastShot?.result === 'recovery') return 'recovery';
     }
     return 'tee';
   };
 
   const [distanceToHole, setDistanceToHole] = useState(getInitialDistance());
   const [distanceUnit, setDistanceUnit] = useState<'yards' | 'feet'>(getInitialDistanceUnit());
-  const [currentLie, setCurrentLie] = useState<'tee' | 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'recovery' | 'other'>(getInitialLie());
+  const [currentLie, setCurrentLie] = useState<'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other'>(getInitialLie());
   
   // Shot input state
   const [usedDriver, setUsedDriver] = useState<boolean | null>(null);
@@ -285,7 +279,7 @@ export default function ShotTrackingComprehensive({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editFormData, setEditFormData] = useState<{
     clubType: 'driver' | 'non_driver' | 'putter';
-    lieBefore: 'tee' | 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'recovery' | 'other';
+    lieBefore: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other';
     result: ShotRecord['result'];
     distanceToHoleBefore: string;
     distanceUnitBefore: 'yards' | 'feet';
@@ -547,7 +541,7 @@ export default function ShotTrackingComprehensive({
       if (!puttBreak) return false;
     }
 
-    // Miss direction required for tee shot misses
+    // Miss direction required for tee shot misses (left/right)
     if (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot) && !missDirection) return false;
 
     // Miss direction required for approach/around-green shots that miss the green
@@ -862,7 +856,7 @@ export default function ShotTrackingComprehensive({
     }
 
     // Update state for next shot
-    const newLie = resultOfShot as 'fairway' | 'rough' | 'deep_rough' | 'sand' | 'green' | 'recovery' | 'other';
+    const newLie = resultOfShot as 'fairway' | 'rough' | 'sand' | 'green' | 'other';
     setCurrentLie(newLie);
     setCurrentShot(currentShot + 1);
     setDistanceToHole(distanceAfter);
@@ -1074,9 +1068,17 @@ export default function ShotTrackingComprehensive({
       setApproachMissDirection(null);
       setApproachMissLieType(undefined);
     } else if (isApproachOrAroundGreen) {
-      // For approach shots, clear tee/putt miss states
+      // For approach shots, clear tee/putt miss states and auto-set lie type from result
       setMissDirection(null);
       setPuttMissTags([]);
+      // Auto-derive approach miss lie type from shot result
+      if (result === 'rough' || result === 'other') {
+        setApproachMissLieType('rough');
+      } else if (result === 'sand') {
+        setApproachMissLieType('bunker');
+      } else if (result === 'fairway') {
+        setApproachMissLieType('fairway');
+      }
     }
   };
 
@@ -1505,16 +1507,16 @@ export default function ShotTrackingComprehensive({
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {(() => {
-                    const formatLieLabel = (v: string) => v === 'deep_rough' ? 'Deep Rough' : v.charAt(0).toUpperCase() + v.slice(1);
+                    const formatLieLabel = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
                     let options: string[];
                     if (isPutting) {
                       options = ['hole', 'green'];
                     } else if (isTeeShot && currentHole.par !== 3) {
-                      options = ['fairway', 'rough', 'deep_rough', 'sand', 'recovery', 'other'];
+                      options = ['fairway', 'rough', 'sand', 'other'];
                     } else if (isTeeShot && currentHole.par === 3) {
-                      options = ['green', 'rough', 'deep_rough', 'sand', 'recovery', 'other'];
+                      options = ['green', 'rough', 'sand', 'other'];
                     } else {
-                      options = ['fairway', 'rough', 'deep_rough', 'sand', 'green', 'hole', 'recovery', 'other'];
+                      options = ['fairway', 'rough', 'sand', 'green', 'hole', 'other'];
                     }
                     return options.map(r => (
                       <button key={r} onClick={() => handleResultSelect(r)}
@@ -1535,7 +1537,7 @@ export default function ShotTrackingComprehensive({
               </div>
 
               {/* Miss Direction */}
-              {((isTeeShot && ['rough', 'deep_rough', 'sand', 'recovery', 'other'].includes(resultOfShot || '')) ||
+              {((isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
                 (isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot)) ||
                 (isPutting && resultOfShot && resultOfShot !== 'hole')) && (
                 <div className="relative glass-standard rounded-2xl overflow-hidden p-6 transition-all duration-300">
@@ -2049,8 +2051,8 @@ export default function ShotTrackingComprehensive({
                       <div>
                         <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Lie Before</p>
                         <div className="grid grid-cols-3 gap-2">
-                          {(['tee', 'fairway', 'rough', 'deep_rough', 'sand', 'green', 'recovery', 'other'] as const).map(lie => {
-                            const lieLabel = lie === 'deep_rough' ? 'Deep Rough' : lie.charAt(0).toUpperCase() + lie.slice(1);
+                          {(['tee', 'fairway', 'rough', 'sand', 'green', 'other'] as const).map(lie => {
+                            const lieLabel = lie.charAt(0).toUpperCase() + lie.slice(1);
                             return (
                             <button
                               key={lie}
@@ -2110,8 +2112,8 @@ export default function ShotTrackingComprehensive({
                       <div>
                         <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Result</p>
                         <div className="grid grid-cols-3 gap-2">
-                          {(['fairway', 'rough', 'deep_rough', 'sand', 'green', 'hole', 'recovery', 'other'] as const).map(r => {
-                            const resultLabel = r === 'deep_rough' ? 'Deep Rough' : r.charAt(0).toUpperCase() + r.slice(1);
+                          {(['fairway', 'rough', 'sand', 'green', 'hole', 'other'] as const).map(r => {
+                            const resultLabel = r.charAt(0).toUpperCase() + r.slice(1);
                             return (
                             <button
                               key={r}

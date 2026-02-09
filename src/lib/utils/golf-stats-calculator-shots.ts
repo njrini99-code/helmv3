@@ -143,6 +143,8 @@ export interface GolfStats {
   girPctFromFairway: number | null;
   girPctFromRough: number | null;
   girPctFromSand: number | null;
+  girCountFromFairway: number;
+  girCountFromRough: number;
 
   // Approach miss direction (when missing green)
   approachMissShortPct: number | null;
@@ -174,6 +176,13 @@ export interface GolfStats {
   puttMakePct25_30: number | null;
   puttMakePct30_35: number | null;
   puttMakePct35Plus: number | null;
+
+  // Putting sample counts (number of first putts in each distance bucket)
+  puttMakeCount0_3: number;
+  puttMakeCount3_5: number;
+  puttMakeCount5_10: number;
+  puttMakeCount10_15: number;
+  puttMakeCount15_20: number;
 
   // Putting proximity (average distance left after first putt)
   puttProximity0_5: number | null;
@@ -306,6 +315,9 @@ export interface PuttingBreakStats {
   makePct25_30: number | null;
   makePct30_35: number | null;
   makePct35Plus: number | null;
+
+  // Sample counts by distance (number of first putts in each bucket)
+  count5_10: number;
 
   // Overall make %
   overallMakePct: number | null;
@@ -446,12 +458,6 @@ const STROKES_GAINED_BENCHMARKS = {
     175: 3.26, 200: 3.39, 225: 3.53, 250: 3.68, 275: 3.84,
   },
 
-  // From deep rough (by distance in yards) - higher expected strokes than rough
-  deep_rough: {
-    50: 2.95, 75: 3.10, 100: 3.22, 125: 3.35, 150: 3.50,
-    175: 3.65, 200: 3.82, 225: 4.00, 250: 4.20, 275: 4.40,
-  },
-
   // From sand (by distance in yards)
   sand: {
     20: 2.53, 30: 2.60, 40: 2.73, 50: 2.90, 75: 3.20,
@@ -466,8 +472,6 @@ const STROKES_GAINED_BENCHMARKS = {
     50: 2.12, 60: 2.18,
   },
 
-  // Recovery (from trouble)
-  recovery: 3.50,
 };
 
 // Helper to get expected strokes from position
@@ -484,7 +488,8 @@ function getExpectedStrokes(lie: string | null, distanceYards: number, distanceF
 
   const benchmarkTable = STROKES_GAINED_BENCHMARKS[lie as keyof typeof STROKES_GAINED_BENCHMARKS];
   if (!benchmarkTable || typeof benchmarkTable !== 'object') {
-    return STROKES_GAINED_BENCHMARKS.recovery;
+    // Fallback to rough benchmarks for unknown lie types
+    return 3.50;
   }
 
   const distances = Object.keys(benchmarkTable).map(Number).sort((a, b) => a - b);
@@ -953,6 +958,8 @@ function aggregateRoundStats(rounds: Array<{
     girPctFromFairway: null,
     girPctFromRough: null,
     girPctFromSand: null,
+    girCountFromFairway: 0,
+    girCountFromRough: 0,
     approachMissShortPct: null,
     approachMissLongPct: null,
     approachMissLeftPct: null,
@@ -978,6 +985,11 @@ function aggregateRoundStats(rounds: Array<{
     puttMakePct25_30: null,
     puttMakePct30_35: null,
     puttMakePct35Plus: null,
+    puttMakeCount0_3: 0,
+    puttMakeCount3_5: 0,
+    puttMakeCount5_10: 0,
+    puttMakeCount10_15: 0,
+    puttMakeCount15_20: 0,
     puttProximity0_5: null,
     puttProximity5_10: null,
     puttProximity10_15: null,
@@ -1003,6 +1015,7 @@ function aggregateRoundStats(rounds: Array<{
         makePct0_3: null,
         makePct3_5: null,
         makePct5_10: null,
+        count5_10: 0,
         makePct10_15: null,
         makePct15_20: null,
         makePct20_25: null,
@@ -1019,6 +1032,7 @@ function aggregateRoundStats(rounds: Array<{
         makePct0_3: null,
         makePct3_5: null,
         makePct5_10: null,
+        count5_10: 0,
         makePct10_15: null,
         makePct15_20: null,
         makePct20_25: null,
@@ -1035,6 +1049,7 @@ function aggregateRoundStats(rounds: Array<{
         makePct0_3: null,
         makePct3_5: null,
         makePct5_10: null,
+        count5_10: 0,
         makePct10_15: null,
         makePct15_20: null,
         makePct20_25: null,
@@ -1051,6 +1066,7 @@ function aggregateRoundStats(rounds: Array<{
         makePct0_3: null,
         makePct3_5: null,
         makePct5_10: null,
+        count5_10: 0,
         makePct10_15: null,
         makePct15_20: null,
         makePct20_25: null,
@@ -1389,9 +1405,8 @@ function aggregateRoundStats(rounds: Array<{
       }
 
       // GIR by approach lie
-      // deep_rough and recovery are grouped with rough for GIR stats
       if (hole.approachLie) {
-        const girLie = (hole.approachLie === 'deep_rough' || hole.approachLie === 'recovery') ? 'rough' : hole.approachLie;
+        const girLie = hole.approachLie;
         if (girLie === 'fairway' || girLie === 'rough' || girLie === 'sand') {
           girByLie[girLie].total++;
           if (hole.greenInRegulation) {
@@ -1506,7 +1521,7 @@ function aggregateRoundStats(rounds: Array<{
         else if (hole.par === 5) approachProxPar5.push(hole.approachProximity);
 
         if (hole.approachLie === 'fairway') approachProxFairway.push(hole.approachProximity);
-        else if (hole.approachLie === 'rough' || hole.approachLie === 'deep_rough' || hole.approachLie === 'recovery') approachProxRough.push(hole.approachProximity);
+        else if (hole.approachLie === 'rough') approachProxRough.push(hole.approachProximity);
         else if (hole.approachLie === 'sand') approachProxSand.push(hole.approachProximity);
 
         // Only push proximity if BOTH distance and proximity are known (prevents NaN from null in array)
@@ -1534,9 +1549,7 @@ function aggregateRoundStats(rounds: Array<{
           approachEffByDistanceLie[bucket] = { fairway: [], rough: [], sand: [] };
         }
         // Default to 'fairway' when lie is unknown - most approach shots are from fairway
-        // Normalize deep_rough/recovery to rough for approach efficiency stats
-        const rawApproachLie = (hole.approachLie || 'fairway') as string;
-        const approachEffLie = (rawApproachLie === 'deep_rough' || rawApproachLie === 'recovery') ? 'rough' : rawApproachLie;
+        const approachEffLie = (hole.approachLie || 'fairway') as string;
         if (bucket && (approachEffLie === 'fairway' || approachEffLie === 'rough' || approachEffLie === 'sand')) {
           const bucketData = approachEffByDistanceLie[bucket];
           if (bucketData && bucketData[approachEffLie]) {
@@ -1553,18 +1566,11 @@ function aggregateRoundStats(rounds: Array<{
         if (hole.scrambleMade) stats.scramblesMade++;
 
         // Scrambling by lie - use chipLie (where the chip/pitch was FROM)
-        // deep_rough and recovery are grouped with rough for scrambling stats
         if (hole.chipLie === 'fairway') {
           scrambleFairway.total++;
           if (hole.scrambleMade) scrambleFairway.made++;
         } else if (hole.chipLie === 'rough') {
           scrambleRough.total++;
-          if (hole.scrambleMade) scrambleRough.made++;
-        } else if (hole.chipLie === 'deep_rough') {
-          scrambleRough.total++; // Group with rough for scrambling stats
-          if (hole.scrambleMade) scrambleRough.made++;
-        } else if (hole.chipLie === 'recovery') {
-          scrambleRough.total++; // Group with rough for scrambling stats
           if (hole.scrambleMade) scrambleRough.made++;
         } else if (hole.chipLie === 'sand') {
           scrambleSand.total++;
@@ -1629,16 +1635,13 @@ function aggregateRoundStats(rounds: Array<{
         else atgEff20_30.push(shotsToHoleOut);
 
         // Track by lie (use the around_green shot's lie_before)
-        // deep_rough and recovery are grouped with rough for ATG stats
         const lie = atgShot.lie_before;
         if (lie === 'fairway') atgEffFairway.push(shotsToHoleOut);
         else if (lie === 'rough') atgEffRough.push(shotsToHoleOut);
-        else if (lie === 'deep_rough' || lie === 'recovery') atgEffRough.push(shotsToHoleOut);
         else if (lie === 'sand') atgEffSand.push(shotsToHoleOut);
 
         // Populate the distance x lie matrix
-        // Normalize deep_rough/recovery to rough for the matrix
-        const matrixLie = (lie === 'deep_rough' || lie === 'recovery') ? 'rough' : lie;
+        const matrixLie = lie;
         if (matrixLie === 'fairway' || matrixLie === 'rough' || matrixLie === 'sand') {
           const bucketData = atgEffByDistanceLie[bucket];
           if (bucketData && bucketData[matrixLie]) {
@@ -1746,6 +1749,13 @@ function aggregateRoundStats(rounds: Array<{
   stats.puttMakePct5_10 = safePercent(puttMake['5_10']?.made || 0, puttMake['5_10']?.total || 0);
   stats.puttMakePct10_15 = safePercent(puttMake['10_15']?.made || 0, puttMake['10_15']?.total || 0);
   stats.puttMakePct15_20 = safePercent(puttMake['15_20']?.made || 0, puttMake['15_20']?.total || 0);
+
+  // Putt sample counts (how many first putts in each distance bucket)
+  stats.puttMakeCount0_3 = puttMake['0_3']?.total || 0;
+  stats.puttMakeCount3_5 = puttMake['3_5']?.total || 0;
+  stats.puttMakeCount5_10 = puttMake['5_10']?.total || 0;
+  stats.puttMakeCount10_15 = puttMake['10_15']?.total || 0;
+  stats.puttMakeCount15_20 = puttMake['15_20']?.total || 0;
   stats.puttMakePct20_25 = safePercent(puttMake['20_25']?.made || 0, puttMake['20_25']?.total || 0);
   stats.puttMakePct25_30 = safePercent(puttMake['25_30']?.made || 0, puttMake['25_30']?.total || 0);
   stats.puttMakePct30_35 = safePercent(puttMake['30_35']?.made || 0, puttMake['30_35']?.total || 0);
@@ -1833,6 +1843,8 @@ function aggregateRoundStats(rounds: Array<{
   stats.girPctFromFairway = safePercent(girByLie.fairway.made, girByLie.fairway.total);
   stats.girPctFromRough = safePercent(girByLie.rough.made, girByLie.rough.total);
   stats.girPctFromSand = safePercent(girByLie.sand.made, girByLie.sand.total);
+  stats.girCountFromFairway = girByLie.fairway.total;
+  stats.girCountFromRough = girByLie.rough.total;
 
   // Approach miss direction (when missing green)
   stats.approachMissTotal = approachMissTotal;
@@ -1866,6 +1878,7 @@ function aggregateRoundStats(rounds: Array<{
         makePct0_3: safePercent(breakData.make['0_3']?.made || 0, breakData.make['0_3']?.total || 0),
         makePct3_5: safePercent(breakData.make['3_5']?.made || 0, breakData.make['3_5']?.total || 0),
         makePct5_10: safePercent(breakData.make['5_10']?.made || 0, breakData.make['5_10']?.total || 0),
+        count5_10: breakData.make['5_10']?.total || 0,
         makePct10_15: safePercent(breakData.make['10_15']?.made || 0, breakData.make['10_15']?.total || 0),
         makePct15_20: safePercent(breakData.make['15_20']?.made || 0, breakData.make['15_20']?.total || 0),
         makePct20_25: safePercent(breakData.make['20_25']?.made || 0, breakData.make['20_25']?.total || 0),

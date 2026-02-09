@@ -160,7 +160,7 @@ function analyzeDoubleCause(hole: GolfHole): string {
     return `Three-putt added strokes`;
   }
   if (!hole.fairway_hit && (hole.par ?? 0) >= 4) {
-    return `Missed fairway led to difficult recovery`;
+    return `Missed fairway led to a tough approach`;
   }
   if (!hole.gir) {
     return `Missed green and couldn't save par`;

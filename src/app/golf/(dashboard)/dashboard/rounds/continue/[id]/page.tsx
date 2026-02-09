@@ -53,9 +53,7 @@ function parseApproachMissLieType(shot: GolfShot): ShotRecord['approachMissLieTy
     case 'sand':
       return 'bunker';
     case 'hazard':
-    case 'recovery':
     case 'penalty':
-      return 'hazard';
     case 'other':
       return 'hazard';
     default:

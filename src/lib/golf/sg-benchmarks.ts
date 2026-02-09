@@ -15,7 +15,7 @@
  * Record<LieType, Record<distance, expectedStrokes>>
  *
  * Distances:
- * - tee/fairway/rough/sand/recovery: yards
+ * - tee/fairway/rough/sand: yards
  * - green: feet
  */
 
@@ -144,15 +144,15 @@ export const BENCHMARK_LEVELS: BenchmarkLevel[] = [
  *
  * - From longer distances, the penalty grows proportionally
  * - From the green, the penalty is smaller (putting is more universal)
- * - Sand/recovery have amplified penalties for weaker players
+ * - Sand has amplified penalties for weaker players
  */
 function scaleBaseline(pgaData: BaselineData, scaleFactor: number, puttingScale: number): BaselineData {
   const scaled: Partial<Record<LieType, Record<number, number>>> = {};
 
   for (const [lie, distances] of Object.entries(pgaData) as [LieType, Record<number, number>][]) {
     const isGreen = lie === 'green';
-    const isSandOrRecovery = lie === 'sand' || lie === 'recovery';
-    const factor = isGreen ? puttingScale : isSandOrRecovery ? scaleFactor * 1.1 : scaleFactor;
+    const isSand = lie === 'sand';
+    const factor = isGreen ? puttingScale : isSand ? scaleFactor * 1.1 : scaleFactor;
 
     const scaledDistances: Record<number, number> = {};
     for (const [dist, strokes] of Object.entries(distances)) {
@@ -205,10 +205,6 @@ const PGA_TOUR_BASELINE: BaselineData = {
     18: 1.58, 16: 1.53, 14: 1.47, 12: 1.42, 10: 1.32,
     9: 1.28, 8: 1.24, 7: 1.20, 6: 1.16, 5: 1.12,
     4: 1.08, 3: 1.04, 2: 1.00, 1: 1.00, 0: 0,
-  },
-  recovery: {
-    200: 3.80, 175: 3.55, 150: 3.35, 125: 3.15, 100: 2.95,
-    75: 2.75, 50: 2.55, 40: 2.45, 30: 2.35, 20: 2.25,
   },
 };
 

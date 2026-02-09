@@ -492,7 +492,7 @@ function deriveLieAfterFromResult(result: string | null | undefined): string | n
     case 'penalty':
       return 'penalty';
     case 'other':
-      return 'recovery';
+      return 'rough';
     default:
       return null;
   }
@@ -503,7 +503,7 @@ function normalizeApproachMissLieType(
 ): string | null {
   if (!lieType) return null;
   if (lieType === 'bunker') return 'sand';
-  if (lieType === 'hazard') return 'recovery';
+  if (lieType === 'hazard') return 'rough';
   return lieType;
 }
 

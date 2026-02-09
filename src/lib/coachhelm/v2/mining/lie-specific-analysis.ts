@@ -317,9 +317,9 @@ export interface DispersionPattern {
 /** Miss severity classification */
 export interface MissSeverityBreakdown {
   perfect: number;                  // hit target (green/fairway)
-  minor: number;                    // small miss, easy recovery
-  moderate: number;                 // medium miss, challenging recovery
-  severe: number;                   // big miss, difficult recovery
+  minor: number;                    // small miss, easy up-and-down
+  moderate: number;                 // medium miss, challenging position
+  severe: number;                   // big miss, difficult position
   disaster: number;                 // penalty or unplayable
 }
 
@@ -464,7 +464,7 @@ function normalizeLie(lie: string | null): LieType {
   const lower = lie.toLowerCase();
   if (lower === 'tee' || lower === 'teebox') return 'tee';
   if (lower === 'fairway' || lower === 'fw') return 'fairway';
-  if (lower === 'rough' || lower === 'primary_rough' || lower === 'secondary_rough' || lower === 'deep_rough') return 'rough';
+  if (lower === 'rough' || lower === 'primary_rough' || lower === 'secondary_rough') return 'rough';
   if (lower === 'sand' || lower === 'bunker' || lower === 'greenside_bunker' || lower === 'fairway_bunker') return 'sand';
   if (lower === 'green' || lower === 'fringe') return 'green';
   return 'other';

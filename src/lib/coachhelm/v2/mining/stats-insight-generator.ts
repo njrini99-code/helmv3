@@ -765,8 +765,9 @@ export class StatsInsightGenerator {
       });
     }
 
-    // Inside 5 feet make percentage
-    if (stats.puttMakePct0_3 !== null && stats.puttMakePct0_3 < BENCHMARKS.puttMake0_3) {
+    // Inside 3 feet make percentage — require minimum 10 first putts in this bucket
+    // to avoid misleading insights from tiny samples (e.g., only 3 putts)
+    if (stats.puttMakePct0_3 !== null && stats.puttMakeCount0_3 >= 10 && stats.puttMakePct0_3 < BENCHMARKS.puttMake0_3) {
       const missedShortPutts = (BENCHMARKS.puttMake0_3 - stats.puttMakePct0_3) / 100 * 10; // Assume ~10 short putts/round
       insights.push({
         id: 'putting-short-misses',
@@ -927,8 +928,9 @@ export class StatsInsightGenerator {
       }
     }
 
-    // GIR from fairway vs rough
-    if (stats.girPctFromFairway !== null && stats.girPctFromRough !== null) {
+    // GIR from fairway vs rough — require minimum 20 approach attempts from each lie
+    if (stats.girPctFromFairway !== null && stats.girPctFromRough !== null &&
+        stats.girCountFromFairway >= 20 && stats.girCountFromRough >= 20) {
       const fwRoughGap = stats.girPctFromFairway - stats.girPctFromRough;
       if (fwRoughGap > 25) {
         insights.push({
@@ -1323,6 +1325,7 @@ export class StatsInsightGenerator {
       stats.fairwayPercentage !== null &&
       stats.girPctFromFairway !== null &&
       stats.girPctFromRough !== null &&
+      stats.girCountFromFairway >= 20 && stats.girCountFromRough >= 15 &&
       stats.scramblingPercentage !== null
     ) {
       const fwPct = stats.fairwayPercentage;
@@ -1488,8 +1491,15 @@ export class StatsInsightGenerator {
     if (totalAnalyzed < 30) return insights;
 
     // Find the weakest break type in the scoring zone (5-10 feet)
+    // Require at least 15 total putts per break type AND at least 8 putts
+    // specifically in the 5-10ft range to produce a meaningful comparison
     const scoringZoneStats = breakTypes
-      .filter(bt => bt.data.makePct5_10 !== null && bt.data.totalPutts >= 8)
+      .filter(bt => {
+        if (bt.data.makePct5_10 === null || bt.data.totalPutts < 15) return false;
+        // Require minimum 8 putts in the 5-10ft range for this break type
+        if (bt.data.count5_10 < 8) return false;
+        return true;
+      })
       .map(bt => ({
         ...bt,
         makePct5_10: bt.data.makePct5_10!,
@@ -1786,8 +1796,8 @@ export class StatsInsightGenerator {
       });
     }
 
-    // Short putts
-    if (stats.puttMakePct0_3 !== null && stats.puttMakePct0_3 < BENCHMARKS.puttMake0_3) {
+    // Short putts — require minimum 10 first putts in this bucket
+    if (stats.puttMakePct0_3 !== null && stats.puttMakeCount0_3 >= 10 && stats.puttMakePct0_3 < BENCHMARKS.puttMake0_3) {
       const delta = BENCHMARKS.puttMake0_3 - stats.puttMakePct0_3;
       leakages.push({
         area: 'Short Putt Conversion (0-3ft)',

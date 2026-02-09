@@ -26,7 +26,7 @@ import { getBenchmarkData, SG_COMPARISON_BASELINES, type BenchmarkLevel } from '
 /**
  * Lie types for strokes gained calculation
  */
-export type LieType = 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'recovery';
+export type LieType = 'tee' | 'fairway' | 'rough' | 'sand' | 'green';
 
 /**
  * Baseline data structure for expected strokes from each lie type
@@ -182,11 +182,10 @@ export function mapLieType(lie: string | null): LieType {
   const normalized = lie.toLowerCase();
   if (normalized === 'tee' || normalized === 'teebox') return 'tee';
   if (normalized === 'fairway') return 'fairway';
-  if (normalized === 'rough' || normalized === 'primary_rough' || normalized === 'deep_rough') return 'rough';
+  if (normalized === 'rough' || normalized === 'primary_rough') return 'rough';
   if (normalized === 'sand' || normalized === 'bunker' || normalized === 'greenside_bunker' || normalized === 'fairway_bunker') return 'sand';
   if (normalized === 'green' || normalized === 'fringe') return 'green';
-  if (normalized === 'recovery' || normalized === 'hazard' || normalized === 'penalty') return 'recovery';
-  if (normalized === 'other') return 'rough';
+  if (normalized === 'recovery' || normalized === 'hazard' || normalized === 'penalty' || normalized === 'other') return 'rough';
   return 'fairway';
 }
 
@@ -277,11 +276,6 @@ export const PGA_BASELINE_DATA: BaselineData = {
     9: 1.28, 8: 1.24, 7: 1.20, 6: 1.16, 5: 1.12,
     4: 1.08, 3: 1.04, 2: 1.00, 1: 1.00, 0: 0,
   },
-  recovery: {
-    // Trees, deep rough, etc.
-    200: 3.80, 175: 3.55, 150: 3.35, 125: 3.15, 100: 2.95,
-    75: 2.75, 50: 2.55, 40: 2.45, 30: 2.35, 20: 2.25,
-  },
 };
 
 // ============================================
@@ -292,7 +286,7 @@ export const PGA_BASELINE_DATA: BaselineData = {
  * Get expected strokes from a given lie and distance
  * Uses linear interpolation between known data points
  *
- * @param lie - The lie type (tee, fairway, rough, sand, green, recovery)
+ * @param lie - The lie type (tee, fairway, rough, sand, green)
  * @param distanceYards - Distance to hole in yards
  * @param isOnGreen - Whether the shot is on the green
  * @param benchmarkLevel - Which benchmark set to use (default: pga_tour for backward compat)
