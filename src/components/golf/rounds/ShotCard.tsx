@@ -320,10 +320,10 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetr
             </div>
           )}
 
-          {/* Lie before */}
+          {/* Lie info */}
           {shot.lie_before && shot.lie_before !== 'tee' && (
             <div className="mt-2 text-xs text-warm-400">
-              Lie: <span className="text-warm-600 capitalize">{shot.lie_before.replace(/_/g, ' ')}</span>
+              From: <span className="text-warm-600 capitalize">{shot.lie_before.replace(/_/g, ' ')}</span>
             </div>
           )}
 

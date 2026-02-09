@@ -4137,6 +4137,9 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
       while (shotNumber < score && currentDistance > 0) {
         shotNumber++;
 
+        // Capture lie BEFORE this shot (before mutations)
+        const lieBefore = shotNumber === 1 ? 'tee' : currentLie;
+
         // Determine shot type based on current position
         let shotType: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty';
         let clubType: 'driver' | 'non_driver' | 'putter';
@@ -4144,7 +4147,8 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
         let result: 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty';
         let shotDistance: number;
         let distanceAfter: number;
-        let distanceUnitBefore: 'yards' | 'feet' = currentDistance <= 30 ? 'feet' : 'yards';
+        const distanceBefore = shotNumber === 1 ? yardage : currentDistance;
+        let distanceUnitBefore: 'yards' | 'feet' = currentLie === 'green' ? 'feet' : 'yards';
         let distanceUnitAfter: 'yards' | 'feet';
         const isPenalty = false;
         let shotMissDirection: string | null = null;
@@ -4152,8 +4156,8 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
         let puttDistanceFeet: number | undefined;
         let puttBreak: 'left_to_right' | 'right_to_left' | 'straight' | 'multiple' | undefined;
 
-        if (currentLie === 'green' || (currentDistance <= 30 && currentLie !== 'sand')) {
-          // Putting
+        if (currentLie === 'green') {
+          // Putting — only when actually on the green
           shotType = 'putting';
           clubType = 'putter';
           clubUsed = clubs.putter;
@@ -4389,6 +4393,15 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
           currentDistance = distanceAfter;
         }
 
+        // Derive lie_after from result
+        const resultStr = result as string;
+        const lieAfter = resultStr === 'fairway' ? 'fairway'
+          : resultStr === 'rough' ? 'rough'
+          : resultStr === 'sand' ? 'sand'
+          : resultStr === 'green' || resultStr === 'hole' ? 'green'
+          : resultStr === 'penalty' ? 'penalty'
+          : 'rough';
+
         const shotData: {
           hole_id: string;
           round_id: string;
@@ -4398,6 +4411,7 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
           club_type: string;
           club_used: string;
           lie_before: string;
+          lie_after: string;
           result: string;
           distance_to_hole_before: number;
           distance_unit_before: string;
@@ -4417,9 +4431,10 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
           shot_type: shotType,
           club_type: clubType,
           club_used: clubUsed,
-          lie_before: (currentLie as string) === 'tee' ? 'tee' : shotNumber === 1 ? 'tee' : currentLie,
+          lie_before: lieBefore,
+          lie_after: lieAfter,
           result: result,
-          distance_to_hole_before: distanceUnitBefore === 'feet' ? currentDistance : (shotNumber === 1 ? yardage : currentDistance + shotDistance),
+          distance_to_hole_before: distanceBefore,
           distance_unit_before: distanceUnitBefore,
           distance_to_hole_after: distanceAfter,
           distance_unit_after: distanceUnitAfter,
