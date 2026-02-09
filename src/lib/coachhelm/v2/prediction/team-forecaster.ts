@@ -39,16 +39,14 @@ export function generateTeamForecasts(
 
   const playerMap = new Map(players.map(p => [p.id, p]));
   const statsMap = new Map(statsCache.map(s => [s.player_id, s]));
-  const now = new Date().toISOString();
-
   const predictions: Array<PerformancePrediction & { playerName?: string }> = [];
 
-  predictions.push(...forecastTeamScoringAverage(playerMap, statsMap, now));
-  predictions.push(...forecastLineupStrength(playerMap, statsMap, now));
-  predictions.push(...forecastImprovementTrajectory(playerMap, statsMap, now));
-  predictions.push(...forecastNextRoundPerPlayer(playerMap, statsMap, rounds, now));
-  predictions.push(...forecastRiskAssessment(playerMap, statsMap, rounds, now));
-  predictions.push(...forecastBreakoutCandidates(playerMap, statsMap, now));
+  predictions.push(...forecastTeamScoringAverage(statsMap));
+  predictions.push(...forecastLineupStrength(playerMap, statsMap));
+  predictions.push(...forecastImprovementTrajectory(playerMap, statsMap));
+  predictions.push(...forecastNextRoundPerPlayer(playerMap, statsMap, rounds));
+  predictions.push(...forecastRiskAssessment(playerMap, statsMap, rounds));
+  predictions.push(...forecastBreakoutCandidates(playerMap, statsMap));
 
   return predictions;
 }
@@ -119,9 +117,7 @@ function buildPrediction(
  * 1. Team Scoring Average — Project next tournament team average (score-to-par)
  */
 function forecastTeamScoringAverage(
-  _playerMap: Map<string, PlayerInfo>,
-  statsMap: Map<string, StatsRow>,
-  _now: string
+  statsMap: Map<string, StatsRow>
 ): Array<PerformancePrediction & { playerName?: string }> {
   const scoresToPar: number[] = [];
   for (const stats of statsMap.values()) {
@@ -186,8 +182,7 @@ function forecastTeamScoringAverage(
  */
 function forecastLineupStrength(
   playerMap: Map<string, PlayerInfo>,
-  statsMap: Map<string, StatsRow>,
-  _now: string
+  statsMap: Map<string, StatsRow>
 ): Array<PerformancePrediction & { playerName?: string }> {
   const playerScores: Array<{ id: string; scoreToPar: number }> = [];
   for (const [id, stats] of statsMap) {
@@ -250,8 +245,7 @@ function forecastLineupStrength(
  */
 function forecastImprovementTrajectory(
   playerMap: Map<string, PlayerInfo>,
-  statsMap: Map<string, StatsRow>,
-  _now: string
+  statsMap: Map<string, StatsRow>
 ): Array<PerformancePrediction & { playerName?: string }> {
   const predictions: Array<PerformancePrediction & { playerName?: string }> = [];
 
@@ -326,8 +320,7 @@ function forecastImprovementTrajectory(
 function forecastNextRoundPerPlayer(
   playerMap: Map<string, PlayerInfo>,
   statsMap: Map<string, StatsRow>,
-  rounds: RoundRow[],
-  _now: string
+  rounds: RoundRow[]
 ): Array<PerformancePrediction & { playerName?: string }> {
   const predictions: Array<PerformancePrediction & { playerName?: string }> = [];
 
@@ -425,8 +418,7 @@ function forecastNextRoundPerPlayer(
 function forecastRiskAssessment(
   playerMap: Map<string, PlayerInfo>,
   statsMap: Map<string, StatsRow>,
-  rounds: RoundRow[],
-  _now: string
+  rounds: RoundRow[]
 ): Array<PerformancePrediction & { playerName?: string }> {
   const predictions: Array<PerformancePrediction & { playerName?: string }> = [];
 
@@ -531,8 +523,7 @@ function forecastRiskAssessment(
  */
 function forecastBreakoutCandidates(
   playerMap: Map<string, PlayerInfo>,
-  statsMap: Map<string, StatsRow>,
-  _now: string
+  statsMap: Map<string, StatsRow>
 ): Array<PerformancePrediction & { playerName?: string }> {
   const predictions: Array<PerformancePrediction & { playerName?: string }> = [];
 

@@ -18,6 +18,17 @@ import type {
   ExtractedFeatures,
 } from '../types';
 
+/** Strip NaN artifacts from generated text */
+function sanitizeText(text: string): string {
+  return text
+    .replace(/This occurs in NaN% of rounds with NaN% reliability\.?\s*/gi, '')
+    .replace(/\bNaN%/g, '—')
+    .replace(/\bNaN\b/g, '—')
+    .replace(/\s+—\s+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 /**
  * Insight Composer class for natural language generation
  */
@@ -52,7 +63,7 @@ export class InsightComposer {
     const headline = this.composeHeadline(internalInsight, tone);
 
     // Compose body based on verbosity
-    const body = this.composeBody(internalInsight, context.verbosity, tone);
+    const body = this.composeBody(internalInsight, context.verbosity);
 
     // Generate call to action
     const callToAction = this.generateCallToAction(internalInsight, context);
@@ -61,8 +72,8 @@ export class InsightComposer {
     const confidence = this.extractConfidence(internalInsight);
 
     return {
-      headline,
-      body,
+      headline: sanitizeText(headline),
+      body: sanitizeText(body),
       callToAction,
       tone,
       confidence,
@@ -218,7 +229,7 @@ export class InsightComposer {
 
     if (insight.type === 'prediction') {
       const pred = insight.data as unknown as PerformancePrediction;
-      if (pred.predictedValue !== undefined) {
+      if (Number.isFinite(pred.predictedValue)) {
         const score = pred.predictedValue >= 0
           ? `+${pred.predictedValue.toFixed(1)}`
           : pred.predictedValue.toFixed(1);
@@ -258,8 +269,7 @@ export class InsightComposer {
    */
   private composeBody(
     insight: { type: string; data: Record<string, unknown>; reasoning?: ReasoningResult },
-    verbosity: 'brief' | 'balanced' | 'detailed',
-    _tone: InsightTone
+    verbosity: 'brief' | 'balanced' | 'detailed'
   ): string {
     const parts: string[] = [];
 
@@ -319,7 +329,8 @@ export class InsightComposer {
     // Join content — keep body focused on data, not filler wrappers
     const body = parts.join(' ');
 
-    return body;
+    // Strip any NaN artifacts that leaked from upstream computations
+    return sanitizeText(body);
   }
 
   /**
@@ -401,21 +412,19 @@ export class InsightComposer {
     data: Record<string, unknown>;
     reasoning?: ReasoningResult;
   }): number {
+    let raw: number | undefined;
+
     if (insight.reasoning) {
-      return insight.reasoning.calibratedConfidence;
-    }
-
-    if (insight.type === 'pattern') {
+      raw = insight.reasoning.calibratedConfidence;
+    } else if (insight.type === 'pattern') {
       const pattern = insight.data as unknown as MinedPattern;
-      return pattern.confidence;
-    }
-
-    if (insight.type === 'prediction') {
+      raw = pattern.confidence;
+    } else if (insight.type === 'prediction') {
       const pred = insight.data as unknown as PerformancePrediction;
-      return pred.calibratedConfidence;
+      raw = pred.calibratedConfidence;
     }
 
-    return 0.7; // Default confidence
+    return Number.isFinite(raw) ? raw! : 0.7; // Default confidence
   }
 
   /**
@@ -450,6 +459,6 @@ export class InsightComposer {
       }
     }
 
-    return parts.join(' ');
+    return sanitizeText(parts.join(' '));
   }
 }

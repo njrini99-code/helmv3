@@ -1856,8 +1856,7 @@ export class LieSpecificAnalyzer {
     const overallSeverity = this.calculateOverallSeverity();
     const comparisonToBenchmark = this.generateBenchmarkComparisons(
       drivingDispersion,
-      approachDispersion,
-      aroundGreenDispersion
+      approachDispersion
     );
 
     const insights = this.generateDispersionInsights(
@@ -2070,8 +2069,7 @@ export class LieSpecificAnalyzer {
    */
   private generateBenchmarkComparisons(
     driving: DispersionPattern | null,
-    approaches: DispersionPattern[],
-    _aroundGreen: DispersionPattern | null  // Reserved for future around-green benchmark comparisons
+    approaches: DispersionPattern[]
   ): DispersionAnalysis['comparisonToBenchmark'] {
     const comparisons: DispersionAnalysis['comparisonToBenchmark'] = [];
 

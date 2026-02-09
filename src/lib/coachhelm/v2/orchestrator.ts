@@ -543,12 +543,12 @@ export class CoachHelmIntelligence {
     }
 
     // Cross-metric correlation insights (pressure, scoring patterns)
-    const correlationInsights = await this.generateCorrelationInsights(playerId, context);
+    const correlationInsights = await this.generateCorrelationInsights(playerId);
     insights.push(...correlationInsights);
 
     // Lie-specific analysis insights (shot category & dispersion)
     if (lieAnalysis) {
-      const lieInsights = this.generateLieAnalysisInsights(lieAnalysis, context);
+      const lieInsights = this.generateLieAnalysisInsights(lieAnalysis);
       insights.push(...lieInsights);
     }
 
@@ -991,8 +991,7 @@ export class CoachHelmIntelligence {
    * Discovers relationships between metrics that reveal deeper patterns
    */
   private async generateCorrelationInsights(
-    playerId: string,
-    context: InsightContext
+    playerId: string
   ): Promise<ComposedInsight[]> {
     const insights: ComposedInsight[] = [];
 
@@ -1002,7 +1001,7 @@ export class CoachHelmIntelligence {
 
       // Take top 3 most significant correlations
       for (const correlation of correlations.slice(0, 3)) {
-        const composedInsight = this.convertCorrelationToComposed(correlation, context);
+        const composedInsight = this.convertCorrelationToComposed(correlation);
         insights.push(composedInsight);
       }
     } catch (error) {
@@ -1016,8 +1015,7 @@ export class CoachHelmIntelligence {
    * Converts a MetricCorrelation to the ComposedInsight format
    */
   private convertCorrelationToComposed(
-    correlation: MetricCorrelation,
-    _context: InsightContext
+    correlation: MetricCorrelation
   ): ComposedInsight {
     // Map significance to tone
     const toneMap: Record<string, ComposedInsight['tone']> = {
@@ -1235,8 +1233,7 @@ export class CoachHelmIntelligence {
    * Converts ShotCategoryInsight[] and DispersionInsight[] to ComposedInsight[]
    */
   private generateLieAnalysisInsights(
-    lieAnalysis: LieMissAnalysis,
-    _context: InsightContext
+    lieAnalysis: LieMissAnalysis
   ): ComposedInsight[] {
     const insights: ComposedInsight[] = [];
 
