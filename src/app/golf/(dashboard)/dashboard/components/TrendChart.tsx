@@ -1,7 +1,7 @@
 'use client';
 
 import { useId } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import dynamic from 'next/dynamic';
 
 const AreaChart = dynamic(() => import('recharts').then((mod) => mod.AreaChart), { ssr: false });
@@ -73,7 +73,7 @@ export function TrendChart({
     const domainMax = maxValue + range * 0.05;
 
     return (
-        <motion.div 
+        <m.div 
             className="w-full"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -85,18 +85,18 @@ export function TrendChart({
             }}
         >
             {title && (
-                <motion.h3 
+                <m.h3 
                     className="text-sm font-medium text-slate-500 mb-4 px-1"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
                 >
                     {title}
-                </motion.h3>
+                </m.h3>
             )}
 
             {/* Chart - responsive height for mobile */}
-            <motion.div
+            <m.div
                 className="h-[160px] sm:h-[180px] md:h-[200px] w-full"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -171,7 +171,7 @@ export function TrendChart({
                         />
                     </AreaChart>
                 </ResponsiveContainer>
-            </motion.div>
-        </motion.div>
+            </m.div>
+        </m.div>
     );
 }

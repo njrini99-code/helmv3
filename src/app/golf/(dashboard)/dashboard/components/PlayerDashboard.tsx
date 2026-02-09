@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import {
     IconUsers,
     IconCalendar,
@@ -70,7 +70,7 @@ export interface PlayerDashboardData {
 
 function JoinTeamBanner() {
     return (
-        <motion.div
+        <m.div
             className="mb-4 md:mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -117,7 +117,7 @@ function JoinTeamBanner() {
                     </div>
                 </div>
             </div>
-        </motion.div>
+        </m.div>
     );
 }
 
@@ -190,7 +190,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
             </div>
 
             {/* Main Content */}
-            <motion.div
+            <m.div
                 className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8"
                 variants={containerVariants}
                 initial="hidden"
@@ -205,7 +205,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                      * Show a welcoming getting-started experience
                      * ============================================================ */
                     <>
-                        <motion.div className="mb-5 md:mb-8" variants={itemVariants}>
+                        <m.div className="mb-5 md:mb-8" variants={itemVariants}>
                             <PremiumGlassCard glow className="!p-0 overflow-hidden">
                                 <div className="relative p-6 md:p-10 text-center">
                                     {/* Ambient glow */}
@@ -253,11 +253,11 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                     </div>
                                 </div>
                             </PremiumGlassCard>
-                        </motion.div>
+                        </m.div>
 
                         {/* Quick Actions + Focus Areas below the empty state */}
                         <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
-                            <motion.div className="space-y-4 md:space-y-6" variants={itemVariants}>
+                            <m.div className="space-y-4 md:space-y-6" variants={itemVariants}>
                                 <div>
                                     <SectionHeader title="Quick Actions" />
                                     <div className="space-y-2">
@@ -294,9 +294,9 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                         />
                                     </div>
                                 </div>
-                            </motion.div>
+                            </m.div>
 
-                            <motion.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
+                            <m.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
                                 <div>
                                     <SectionHeader
                                         title="My Focus Areas"
@@ -307,7 +307,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                         <PlayerFocusAreas playerId={player.id} />
                                     </PremiumGlassCard>
                                 </div>
-                            </motion.div>
+                            </m.div>
                         </div>
                     </>
                 ) : (
@@ -317,7 +317,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                      * ============================================================ */
                     <>
                         {/* Stats Grid */}
-                        <motion.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 mb-5 md:mb-8" variants={itemVariants}>
+                        <m.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 mb-5 md:mb-8" variants={itemVariants}>
                             <PremiumStatCard
                                 icon={<IconGolf size={20} />}
                                 iconColor="text-primary-600"
@@ -356,12 +356,12 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                 value={stats.handicap !== null ? stats.handicap.toFixed(1) : '--'}
                                 href="/golf/dashboard/stats"
                             />
-                        </motion.div>
+                        </m.div>
 
                         {/* Two Column Layout */}
                         <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
                             {/* Left Column - Quick Actions & Focus Areas */}
-                            <motion.div className="space-y-4 md:space-y-6" variants={itemVariants}>
+                            <m.div className="space-y-4 md:space-y-6" variants={itemVariants}>
                                 <div>
                                     <SectionHeader title="Quick Actions" />
                                     <div className="space-y-2">
@@ -416,10 +416,10 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                         <PlayerFocusAreas playerId={player.id} />
                                     </PremiumGlassCard>
                                 </div>
-                            </motion.div>
+                            </m.div>
 
                             {/* Right Column - Recent Rounds & Charts */}
-                            <motion.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
+                            <m.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
                                 {/* Scoring Trend Chart */}
                                 {chartData.length >= 2 && (
                                     <div>
@@ -454,11 +454,11 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                         </div>
                                     </PremiumGlassCard>
                                 </div>
-                            </motion.div>
+                            </m.div>
                         </div>
                     </>
                 )}
-            </motion.div>
+            </m.div>
         </div>
     );
 }

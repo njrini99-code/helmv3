@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { AnimatePresence, motion } from 'framer-motion';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -577,18 +577,18 @@ function SettingsExpandableRow({
             <p className="text-sm text-slate-500 truncate">{description}</p>
           )}
         </div>
-        <motion.div
+        <m.div
           animate={{ rotate: isExpanded ? 180 : 0 }}
           transition={{ duration: 0.2 }}
           className="flex-shrink-0"
         >
           <IconChevronDown size={18} className="text-slate-300" />
-        </motion.div>
+        </m.div>
       </button>
 
       <AnimatePresence initial={false}>
         {isExpanded && (
-          <motion.div
+          <m.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -600,7 +600,7 @@ function SettingsExpandableRow({
                 {children}
               </div>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

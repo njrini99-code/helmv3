@@ -24,7 +24,7 @@
  */
 
 import { ReactNode } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   containerVariants,
@@ -48,14 +48,16 @@ export function AnimatedPage({ children, className }: AnimatedPageProps) {
   }
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className={cn('min-h-full', className)}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className={cn('min-h-full', className)}
+      >
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
@@ -76,9 +78,9 @@ export function AnimatedItem({ children, className }: AnimatedItemProps) {
   }
 
   return (
-    <motion.div variants={itemVariants} className={className}>
+    <m.div variants={itemVariants} className={className}>
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -100,7 +102,7 @@ export function AnimatedList({ children, className, staggerDelay = 0.04 }: Anima
   }
 
   return (
-    <motion.div
+    <m.div
       variants={{
         hidden: { opacity: 0 },
         visible: {
@@ -115,6 +117,6 @@ export function AnimatedList({ children, className, staggerDelay = 0.04 }: Anima
       className={className}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }

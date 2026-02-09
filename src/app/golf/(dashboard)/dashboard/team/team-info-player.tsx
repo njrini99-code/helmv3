@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { IconUsers, IconMail, IconCalendar, IconUser, IconClipboardList } from '@/components/icons';
 import { PremiumGlassCard, SectionHeader } from '@/components/golf/dashboard';
 import { MobileMenuButton } from '@/components/golf/layout/MobileMenuButton';
@@ -62,7 +62,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
   return (
     <div className="p-6 lg:p-8 max-w-4xl mx-auto">
       {/* Header */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
@@ -74,9 +74,9 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
             <p className="text-warm-500 mt-1 text-sm md:text-base">Season: {team.season || 'Current'}</p>
           </div>
         </div>
-      </motion.div>
+      </m.div>
 
-      <motion.div
+      <m.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -84,7 +84,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
       >
         {/* Coach Info */}
         {coach && (
-          <motion.div variants={itemVariants}>
+          <m.div variants={itemVariants}>
             <SectionHeader title="Head Coach" icon={<IconUser size={18} />} />
             <PremiumGlassCard className="mt-3">
               <div className="flex items-center gap-4">
@@ -97,11 +97,11 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
                 </div>
               </div>
             </PremiumGlassCard>
-          </motion.div>
+          </m.div>
         )}
 
         {/* Announcements */}
-        <motion.div variants={itemVariants}>
+        <m.div variants={itemVariants}>
           <SectionHeader
             title="Announcements"
             icon={<IconMail size={18} />}
@@ -124,10 +124,10 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
               ))
             )}
           </div>
-        </motion.div>
+        </m.div>
 
         {/* Tasks */}
-        <motion.div variants={itemVariants}>
+        <m.div variants={itemVariants}>
           <SectionHeader
             title="My Tasks"
             icon={<IconClipboardList size={18} />}
@@ -182,10 +182,10 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
               </p>
             )}
           </div>
-        </motion.div>
+        </m.div>
 
         {/* Roster */}
-        <motion.div variants={itemVariants}>
+        <m.div variants={itemVariants}>
           <SectionHeader
             title="Team Roster"
             icon={<IconUsers size={18} />}
@@ -219,10 +219,10 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
               )}
             </div>
           </PremiumGlassCard>
-        </motion.div>
+        </m.div>
 
         {/* Team Stats */}
-        <motion.div variants={itemVariants}>
+        <m.div variants={itemVariants}>
           <SectionHeader title="Team Info" icon={<IconCalendar size={18} />} />
           <PremiumGlassCard className="mt-3">
             <div className="grid grid-cols-2 gap-4">
@@ -242,8 +242,8 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
               </div>
             </div>
           </PremiumGlassCard>
-        </motion.div>
-      </motion.div>
+        </m.div>
+      </m.div>
     </div>
   );
 }

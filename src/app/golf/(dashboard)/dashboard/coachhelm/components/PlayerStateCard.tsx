@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
@@ -93,7 +93,7 @@ export function PlayerStateCard({ playerState, playerName }: PlayerStateCardProp
 
       <div className="flex items-start gap-4">
         {/* State icon */}
-        <motion.div
+        <m.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3 }}
@@ -103,11 +103,11 @@ export function PlayerStateCard({ playerState, playerName }: PlayerStateCardProp
           )}
         >
           <Icon size={28} className={config.iconColor} />
-        </motion.div>
+        </m.div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
@@ -121,21 +121,21 @@ export function PlayerStateCard({ playerState, playerName }: PlayerStateCardProp
             <p className={cn('text-sm font-medium mb-3', config.iconColor)}>
               {config.subtitle}
             </p>
-          </motion.div>
+          </m.div>
 
-          <motion.p
+          <m.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.2 }}
             className="text-sm text-warm-600 leading-relaxed"
           >
             {config.message}
-          </motion.p>
+          </m.p>
         </div>
       </div>
 
       {/* Personalized greeting (shown on larger screens) */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
@@ -155,7 +155,7 @@ export function PlayerStateCard({ playerState, playerName }: PlayerStateCardProp
             <>Welcome, <span className="font-medium text-warm-700">{firstName}</span>. Log some rounds to get started.</>
           )}
         </p>
-      </motion.div>
+      </m.div>
     </GlassCard>
   );
 }

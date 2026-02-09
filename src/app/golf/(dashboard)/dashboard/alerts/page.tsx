@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
@@ -235,14 +235,14 @@ export default function AlertsPage() {
   }
 
   return (
-    <motion.div
+    <m.div
       className="min-h-full bg-transparent"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className={cn(
+      <m.div variants={itemVariants} className={cn(
         'sticky top-0 z-20',
         'bg-white/60 backdrop-blur-[24px]',
         'border-b border-white/30',
@@ -292,12 +292,12 @@ export default function AlertsPage() {
             >
               {isPending ? (
                 <>
-                  <motion.div
+                  <m.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   >
                     <IconRefresh size={18} />
-                  </motion.div>
+                  </m.div>
                   Scanning...
                 </>
               ) : (
@@ -309,14 +309,14 @@ export default function AlertsPage() {
             </button>
           </div>
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Main Content */}
-      <motion.div variants={itemVariants} className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <m.div variants={itemVariants} className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Error Banner */}
         <AnimatePresence>
           {error && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -326,7 +326,7 @@ export default function AlertsPage() {
               <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
                 <IconX size={18} />
               </button>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
 
@@ -418,14 +418,14 @@ export default function AlertsPage() {
             )}
           </AnimatePresence>
         </GlassCard>
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 }
 
 function EmptyAlertsState({ filter }: { filter: FilterLevel }) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center justify-center py-16 text-center"
@@ -444,6 +444,6 @@ function EmptyAlertsState({ filter }: { filter: FilterLevel }) {
           ? 'No alerts at the moment. Your players are on track.'
           : `There are no ${filter} level alerts right now.`}
       </p>
-    </motion.div>
+    </m.div>
   );
 }

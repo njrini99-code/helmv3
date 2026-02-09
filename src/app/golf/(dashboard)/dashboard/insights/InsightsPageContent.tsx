@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassStatCard } from '@/components/ui/glass-card';
 import { Button } from '@/components/ui/button';
@@ -279,13 +279,13 @@ export function InsightsPageContent({
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <motion.div
+              <m.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20"
               >
                 <IconSparkles size={24} className="text-white" />
-              </motion.div>
+              </m.div>
               <div>
                 <h1 className="text-2xl font-semibold tracking-tight text-warm-900">
                   AI Insights
@@ -338,7 +338,7 @@ export function InsightsPageContent({
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Stats Cards */}
         {stats && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
@@ -368,11 +368,11 @@ export function InsightsPageContent({
               value={stats.resolved}
               icon={<IconCheck size={20} />}
             />
-          </motion.div>
+          </m.div>
         )}
 
         {/* Search & Filters */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -395,10 +395,10 @@ export function InsightsPageContent({
               defaultExpanded={false}
             />
           </div>
-        </motion.div>
+        </m.div>
 
         {/* Insight List */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -419,7 +419,7 @@ export function InsightsPageContent({
             isLoading={isLoading}
             coachId={coachId}
           />
-        </motion.div>
+        </m.div>
       </div>
 
       {/* Bulk Actions Bar */}

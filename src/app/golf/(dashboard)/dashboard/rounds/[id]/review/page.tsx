@@ -9,7 +9,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -308,14 +308,14 @@ export default function RoundReviewPage() {
   const scramblePct = null;
 
   return (
-    <motion.div
+    <m.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
       className="max-w-2xl mx-auto px-4 py-6 pb-24"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between mb-6">
+      <m.div variants={itemVariants} className="flex items-center justify-between mb-6">
         <Link
           href="/golf/dashboard/rounds"
           className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700"
@@ -345,10 +345,10 @@ export default function RoundReviewPage() {
             Refresh
           </button>
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Content */}
-      <motion.div variants={itemVariants} className="space-y-4">
+      <m.div variants={itemVariants} className="space-y-4">
         {/* Primary Review Display - New Component */}
         {storedReview && storedReview.review_content && (
           <RoundReviewDisplay
@@ -410,10 +410,10 @@ export default function RoundReviewPage() {
         ) : (
           v1Review && !storedReview?.review_content && <ReviewSummary review={v1Review} />
         )}
-      </motion.div>
+      </m.div>
 
       {/* Bottom actions */}
-      <motion.div variants={itemVariants} className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-white via-white to-transparent lg:relative lg:bg-none lg:p-0 lg:pb-0 lg:mt-6">
+      <m.div variants={itemVariants} className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-white via-white to-transparent lg:relative lg:bg-none lg:p-0 lg:pb-0 lg:mt-6">
         <div className="max-w-2xl mx-auto flex gap-3">
           <Link
             href={`/golf/dashboard/rounds/${roundId}`}
@@ -428,7 +428,7 @@ export default function RoundReviewPage() {
             View Stats
           </Link>
         </div>
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 }

@@ -82,45 +82,10 @@ const nextConfig = {
   },
 
   // Webpack optimizations
-  webpack: (config, { isServer }) => {
-    // Optimize bundle size
-    if (!isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            default: false,
-            vendors: false,
-            // Vendor chunk for node_modules
-            vendor: {
-              name: 'vendor',
-              chunks: 'all',
-              test: /node_modules/,
-              priority: 20,
-            },
-            // Common chunk for shared code
-            common: {
-              name: 'common',
-              minChunks: 2,
-              chunks: 'all',
-              priority: 10,
-              reuseExistingChunk: true,
-              enforce: true,
-            },
-            // Separate chunk for UI components
-            ui: {
-              name: 'ui',
-              test: /[\\/]src[\\/]components[\\/]ui[\\/]/,
-              chunks: 'all',
-              priority: 30,
-            },
-          },
-        },
-      };
-    }
-    return config;
-  },
+  // Let Next.js handle splitChunks — its default strategy creates granular,
+  // route-specific chunks instead of one monolithic vendor bundle.
+  // The previous custom config forced ALL node_modules into a single ~3MB
+  // "vendor" chunk, causing render-blocking on mobile devices.
 
   // Redirects (if needed)
   async redirects() {

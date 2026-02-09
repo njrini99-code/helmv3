@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
@@ -139,19 +139,19 @@ export function PlayerCoachHelmDashboard({
       <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Empty state */}
         {!hasData && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <EmptyState />
-          </motion.div>
+          </m.div>
         )}
 
         {/* Dashboard content */}
         {hasData && (
           <>
             {/* Section Toggle */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex gap-2 p-1 bg-slate-100/80 backdrop-blur-sm rounded-xl mb-6 w-fit"
@@ -180,12 +180,12 @@ export function PlayerCoachHelmDashboard({
                 <IconChartRadar size={16} />
                 Shot Analytics
               </button>
-            </motion.div>
+            </m.div>
 
             {/* Insights Section */}
             <AnimatePresence mode="wait">
               {activeSection === 'insights' && (
-                <motion.div
+                <m.div
                   key="insights"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -196,7 +196,7 @@ export function PlayerCoachHelmDashboard({
                     {/* Left Column - State, Prediction & Focus Areas */}
                     <div className="lg:col-span-5 space-y-6">
                       {/* Player State Card - Hero card showing current form */}
-                      <motion.div
+                      <m.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4 }}
@@ -205,10 +205,10 @@ export function PlayerCoachHelmDashboard({
                           playerState={dashboardData.playerState}
                           playerName={dashboardData.playerName}
                         />
-                      </motion.div>
+                      </m.div>
 
                       {/* Performance Prediction */}
-                      <motion.div
+                      <m.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.05 }}
@@ -217,22 +217,22 @@ export function PlayerCoachHelmDashboard({
                           prediction={dashboardData.prediction}
                           playerState={dashboardData.playerState}
                         />
-                      </motion.div>
+                      </m.div>
 
                       {/* Focus Areas */}
-                      <motion.div
+                      <m.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.1 }}
                       >
                         <FocusAreasGrid focusAreas={dashboardData.focusAreas} />
-                      </motion.div>
+                      </m.div>
                     </div>
 
                     {/* Right Column - Insights & Recent Rounds */}
                     <div className="lg:col-span-7 space-y-6">
                       {/* AI Insights */}
-                      <motion.div
+                      <m.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.15 }}
@@ -241,24 +241,24 @@ export function PlayerCoachHelmDashboard({
                           insights={dashboardData.insights}
                           maxDisplay={5}
                         />
-                      </motion.div>
+                      </m.div>
 
                       {/* Recent Round Reviews */}
-                      <motion.div
+                      <m.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.2 }}
                       >
                         <RecentRoundReviews rounds={dashboardData.recentRounds} />
-                      </motion.div>
+                      </m.div>
                     </div>
                   </div>
-                </motion.div>
+                </m.div>
               )}
 
               {/* Shot Analytics Section */}
               {activeSection === 'analytics' && (
-                <motion.div
+                <m.div
                   key="analytics"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -271,7 +271,7 @@ export function PlayerCoachHelmDashboard({
                     initialData={shotAnalytics}
                     periodDays={30}
                   />
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </>

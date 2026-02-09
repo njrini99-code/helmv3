@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
@@ -107,13 +107,13 @@ export function CoachHelmHeader({
         <div className="flex items-center justify-between">
           {/* Left side: Icon and title */}
           <div className="flex items-center gap-4">
-            <motion.div
+            <m.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20"
             >
               <IconSparkles size={24} className="text-white" />
-            </motion.div>
+            </m.div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-warm-900">
                 CoachHelm AI
@@ -127,7 +127,7 @@ export function CoachHelmHeader({
           {/* Right side: Badges and actions */}
           <div className="flex items-center gap-3">
             {/* State badge */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               className={cn(
@@ -137,11 +137,11 @@ export function CoachHelmHeader({
               )}
             >
               {stateLabel.text}
-            </motion.div>
+            </m.div>
 
             {/* Alert level badge - only show if not 'none' */}
             {alertLevel !== 'none' && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className={cn(
@@ -157,7 +157,7 @@ export function CoachHelmHeader({
                   'bg-blue-500'
                 )} />
                 {alertConfig.label}
-              </motion.div>
+              </m.div>
             )}
 
             {/* Last updated */}

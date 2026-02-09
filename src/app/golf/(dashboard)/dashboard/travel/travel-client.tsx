@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { cn } from '@/lib/utils';
 import {
@@ -421,7 +421,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                 Trips
               </h2>
               {itineraries.map((itinerary) => (
-                <motion.div
+                <m.div
                   key={itinerary.id}
                   onClick={() => handleSelectItinerary(itinerary)}
                   whileHover={{ scale: 1.01 }}
@@ -460,7 +460,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </m.div>
               ))}
             </div>
 
@@ -529,7 +529,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   <div className="p-6">
                     <AnimatePresence mode="wait">
                       {activeTab === 'details' ? (
-                        <motion.div
+                        <m.div
                           key="details"
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -617,9 +617,9 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                               </div>
                             )}
                           </div>
-                        </motion.div>
+                        </m.div>
                       ) : (
-                        <motion.div
+                        <m.div
                           key="expenses"
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -687,7 +687,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                               </div>
                             </div>
                           )}
-                        </motion.div>
+                        </m.div>
                       )}
                     </AnimatePresence>
                   </div>

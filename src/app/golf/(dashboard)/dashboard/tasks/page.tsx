@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown, IconMenu } from '@/components/icons';
@@ -152,7 +152,7 @@ export default function GolfTasksPage() {
     <div className="min-h-full bg-transparent">
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Header */}
-        <motion.div
+        <m.div
           variants={fadeUp}
           initial="hidden"
           animate="visible"
@@ -187,7 +187,7 @@ export default function GolfTasksPage() {
             </p>
           </div>
           {userRole === 'coach' && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 }}
@@ -196,13 +196,13 @@ export default function GolfTasksPage() {
                 <IconPlus size={18} />
                 Create Task
               </Button>
-            </motion.div>
+            </m.div>
           )}
-        </motion.div>
+        </m.div>
 
         {/* Due Date Alert Banner */}
         {stats.overdue_tasks > 0 && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-100"
@@ -224,17 +224,17 @@ export default function GolfTasksPage() {
             >
               View
             </button>
-          </motion.div>
+          </m.div>
         )}
 
         {/* Filters */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
           className="pills-scroll mb-6"
         >
-          <motion.button
+          <m.button
             onClick={() => setFilter('all')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -246,8 +246,8 @@ export default function GolfTasksPage() {
             )}
           >
             All ({tasks.length})
-          </motion.button>
-          <motion.button
+          </m.button>
+          <m.button
             onClick={() => setFilter('active')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -264,8 +264,8 @@ export default function GolfTasksPage() {
                 {stats.overdue_tasks}
               </span>
             )}
-          </motion.button>
-          <motion.button
+          </m.button>
+          <m.button
             onClick={() => setFilter('completed')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -277,8 +277,8 @@ export default function GolfTasksPage() {
             )}
           >
             Completed ({completedCount})
-          </motion.button>
-        </motion.div>
+          </m.button>
+        </m.div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -290,7 +290,7 @@ export default function GolfTasksPage() {
           {/* Templates Sidebar - Coach Only */}
           {userRole === 'coach' && teamId && (
             <div className="lg:col-span-1">
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
@@ -315,7 +315,7 @@ export default function GolfTasksPage() {
 
                   <AnimatePresence>
                     {showTemplates && (
-                      <motion.div
+                      <m.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
@@ -328,13 +328,13 @@ export default function GolfTasksPage() {
                             onSelectTemplate={(template) => setSelectedTemplate(template)}
                           />
                         </div>
-                      </motion.div>
+                      </m.div>
                     )}
                   </AnimatePresence>
                 </div>
 
                 {/* Quick Stats */}
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
@@ -359,8 +359,8 @@ export default function GolfTasksPage() {
                       <p className="text-xs text-red-500">Overdue</p>
                     </div>
                   )}
-                </motion.div>
-              </motion.div>
+                </m.div>
+              </m.div>
             </div>
           )}
         </div>

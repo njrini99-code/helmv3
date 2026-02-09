@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 function SkeletonPulse({ className }: { className?: string }) {
@@ -194,52 +194,52 @@ export default function CoachHelmLoading() {
       {/* Main Content skeleton */}
       <div className="relative max-w-7xl mx-auto px-6 py-8">
         {/* Section toggle skeleton */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="mb-6"
         >
           <SkeletonPulse className="h-11 w-60 rounded-xl" />
-        </motion.div>
+        </m.div>
 
         {/* Grid layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-5 space-y-6">
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
             >
               <StatCardSkeleton />
-            </motion.div>
+            </m.div>
 
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
             >
               <FocusAreasSkeleton />
-            </motion.div>
+            </m.div>
           </div>
 
           {/* Right Column */}
           <div className="lg:col-span-7 space-y-6">
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.15 }}
             >
               <InsightsPanelSkeleton />
-            </motion.div>
+            </m.div>
 
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
             >
               <RecentRoundsSkeleton />
-            </motion.div>
+            </m.div>
           </div>
         </div>
       </div>

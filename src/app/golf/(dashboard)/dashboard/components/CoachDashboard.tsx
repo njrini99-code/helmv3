@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useRef, memo } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import {
     IconUsers,
     IconCalendar,
@@ -126,7 +126,7 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
     if (!inviteCode) return null;
 
     return (
-        <motion.div
+        <m.div
             className={cn(
                 'relative overflow-hidden rounded-2xl p-4 md:p-6 mb-4 md:mb-6',
                 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900',
@@ -150,7 +150,7 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
                     </h3>
                     <p className="text-white/50 text-xs sm:text-xs">Share this code with players to join</p>
                 </div>
-                <motion.button
+                <m.button
                     onClick={handleCopy}
                     className={cn(
                         'flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg',
@@ -173,9 +173,9 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
                             <IconCopy size={14} className="text-white/50 hidden sm:block" />
                         </>
                     )}
-                </motion.button>
+                </m.button>
             </div>
-        </motion.div>
+        </m.div>
     );
 });
 
@@ -241,7 +241,7 @@ const DateRangeSelector = memo(function DateRangeSelector({
                 {open && (
                     <>
                         <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0, y: -4, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -4, scale: 0.95 }}
@@ -274,7 +274,7 @@ const DateRangeSelector = memo(function DateRangeSelector({
                                     {option.label}
                                 </button>
                             ))}
-                        </motion.div>
+                        </m.div>
                     </>
                 )}
             </AnimatePresence>
@@ -389,7 +389,7 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
             </div>
 
             {/* Main Content */}
-            <motion.div
+            <m.div
                 className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8"
                 variants={containerVariants}
                 initial="hidden"
@@ -409,7 +409,7 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                 )}
 
                 {/* Stats Grid - tighter gap on mobile */}
-                <motion.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 mb-5 md:mb-8" variants={itemVariants}>
+                <m.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 mb-5 md:mb-8" variants={itemVariants}>
                     <PremiumStatCard
                         icon={<IconUsers size={20} />}
                         iconColor="text-primary-600"
@@ -448,11 +448,11 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                             : null}
                         href="/golf/dashboard/stats/team"
                     />
-                </motion.div>
+                </m.div>
 
                 {/* Quick Alerts + Recent Activity - Full Width Hero Section */}
                 {team && coach && (
-                    <motion.div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-5 md:mb-8" variants={itemVariants}>
+                    <m.div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-5 md:mb-8" variants={itemVariants}>
                         {/* Quick Alerts */}
                         <div>
                             <SectionHeader
@@ -476,13 +476,13 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                                 <RecentActivityFeed teamId={team.id} limit={6} />
                             </PremiumGlassCard>
                         </div>
-                    </motion.div>
+                    </m.div>
                 )}
 
                 {/* Two Column Layout */}
                 <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
                     {/* Left Column - Quick Actions, Top Performers, Calendar */}
-                    <motion.div className="space-y-4 md:space-y-6" variants={itemVariants}>
+                    <m.div className="space-y-4 md:space-y-6" variants={itemVariants}>
                         {/* Quick Actions */}
                         <div>
                             <SectionHeader title="Quick Actions" />
@@ -560,10 +560,10 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                                 calendarUrl="/golf/dashboard/calendar"
                             />
                         </div>
-                    </motion.div>
+                    </m.div>
 
                     {/* Right Column - Trend, Rounds */}
-                    <motion.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
+                    <m.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
                         {/* Team Performance Chart */}
                         <div>
                             <SectionHeader title="Team Performance Trend" />
@@ -647,9 +647,9 @@ export function CoachDashboard({ data }: { data: CoachDashboardData }) {
                                 )}
                             </PremiumGlassCard>
                         </div>
-                    </motion.div>
+                    </m.div>
                 </div>
-            </motion.div>
+            </m.div>
         </div>
     );
 }
