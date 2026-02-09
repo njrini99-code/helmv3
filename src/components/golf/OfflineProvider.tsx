@@ -187,8 +187,7 @@ export function OfflineProvider({
 
   // Listen for service worker sync requests
   useEffect(() => {
-    const handleSyncRequest = async (event: Event) => {
-      const customEvent = event as CustomEvent;
+    const handleSyncRequest = async (_event: Event) => {
       try {
         const syncEngine = getSyncEngine();
         await syncEngine.syncAll();

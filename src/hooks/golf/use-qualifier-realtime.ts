@@ -154,14 +154,16 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
       }
 
       // Transform to include player name and scoring aggregates
+      // Cast entry to Record to access columns that may not be in generated types yet
       const transformedEntries: QualifierLeaderboardEntry[] = (entriesData || []).map((entry) => {
+        const raw = entry as Record<string, unknown>;
         const player = entry.player as { id: string; first_name: string | null; last_name: string | null } | null;
         const roundAgg = playerRoundAggregates.get(entry.player_id);
 
         // Prefer DB-persisted values, fall back to computed aggregates from rounds
-        const roundsCompleted = (entry.rounds_completed as number | null) ?? roundAgg?.roundsCompleted ?? 0;
-        const totalScore = (entry.total_score as number | null) ?? (roundAgg ? roundAgg.totalScore : null);
-        const totalToPar = (entry.total_to_par as number | null) ?? (roundAgg ? roundAgg.totalToPar : null);
+        const roundsCompleted = (raw.rounds_completed as number | null) ?? roundAgg?.roundsCompleted ?? 0;
+        const totalScore = (raw.total_score as number | null) ?? (roundAgg ? roundAgg.totalScore : null);
+        const totalToPar = (raw.total_to_par as number | null) ?? (roundAgg ? roundAgg.totalToPar : null);
 
         return {
           id: entry.id,
@@ -175,7 +177,7 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
           total_score: totalScore,
           total_to_par: totalToPar,
           rounds_completed: roundsCompleted,
-          is_tied: (entry.is_tied as boolean | null) ?? false,
+          is_tied: (raw.is_tied as boolean | null) ?? false,
           status: entry.status,
           notes: entry.notes,
           round_id: entry.round_id,

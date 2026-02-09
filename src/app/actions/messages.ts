@@ -835,7 +835,7 @@ export interface MessageSearchResult {
   senderName: string;
   senderAvatar: string | null;
   conversationName: string;
-  createdAt: string;
+  createdAt: string | null;
 }
 
 /**

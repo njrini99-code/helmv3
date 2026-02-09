@@ -63,11 +63,12 @@ export function QualifierLeaderboardRealtime({
         : 0;
 
       // Determine tie status: same total-to-par as adjacent entry
+      const prevEntry = index > 0 ? sorted[index - 1] : undefined;
       const isTied = entry.is_tied || (
-        index > 0 &&
-        sorted[index - 1].rounds_completed > 0 &&
+        prevEntry !== undefined &&
+        prevEntry.rounds_completed > 0 &&
         roundsCompleted > 0 &&
-        sorted[index - 1].total_to_par === entry.total_to_par
+        prevEntry.total_to_par === entry.total_to_par
       );
 
       return {

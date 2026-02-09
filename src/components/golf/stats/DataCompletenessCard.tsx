@@ -462,7 +462,7 @@ export function computeCompleteness(
   let hasClub = 0;
   let hasResult = 0;
   let sgReadyShots = 0;
-  let fallbackEstimated = 0;
+  const fallbackEstimated = 0;
 
   // Group shots by round for per-round quality
   const roundShotMap = new Map<string, RawShotForCompleteness[]>();

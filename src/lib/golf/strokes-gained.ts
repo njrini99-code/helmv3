@@ -17,7 +17,7 @@ import type {
   GolfRound as DbGolfRound,
 } from '@/lib/types/golf';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
-import { getBenchmarkData, type BenchmarkLevel } from './sg-benchmarks';
+import { getBenchmarkData, SG_COMPARISON_BASELINES, type BenchmarkLevel } from './sg-benchmarks';
 
 // ============================================
 // LOCAL TYPE DEFINITIONS
@@ -705,8 +705,7 @@ export function compareToBaseline(
   playerSG: StrokesGainedResult,
   baseline: 'scratch' | 'tour_avg' | 'amateur' | BenchmarkLevel
 ): StrokesGainedResult {
-  // Import comparison baselines from the benchmark config
-  const { SG_COMPARISON_BASELINES } = require('./sg-benchmarks');
+  // Use comparison baselines from the benchmark config
 
   // Map legacy baseline names to BenchmarkLevel
   const benchmarkMap: Record<string, BenchmarkLevel> = {

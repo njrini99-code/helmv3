@@ -450,7 +450,7 @@ function assignAxisGroups(
 
     // Try to find a compatible group
     let assigned = false;
-    for (const [groupId, group] of groups) {
+    for (const [, group] of groups) {
       if (rangesAreCompatible(group.min, group.max, min, max)) {
         group.keys.push(metric.key);
         group.min = Math.min(group.min, min);
@@ -617,7 +617,7 @@ export function MultiTrendLineChart({
   }, [metrics.length]);
 
   // Sort each metric's data and build unified date-keyed dataset
-  const { chartData, sortedMetrics, allDates } = useMemo(() => {
+  const { chartData, sortedMetrics } = useMemo(() => {
     const dateMap = new Map<string, Record<string, number>>();
     const sorted: typeof metrics = [];
 

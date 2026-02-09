@@ -37,42 +37,44 @@ async function verifyPlayerAccess(
   }
 
   // Check if user is the player
-  // Type assertion: team_id exists in DB but not in generated Supabase types
-  const { data: playerRecordData } = await supabase
+  const { data: playerRecord } = await supabase
     .from('golf_players')
-    .select('id, team_id')
+    .select('id')
     .eq('id', playerId)
     .eq('user_id', user.id)
-    .single();
-
-  const playerRecord = playerRecordData as { id: string; team_id: string | null } | null;
+    .maybeSingle();
 
   if (playerRecord) {
     return { authorized: true };
   }
 
-  // Check if user is a coach with access to this player
-  // Type assertion: team_id exists in DB but not in generated Supabase types
-  const { data: coachData } = await supabase
+  // Check if user is a coach with access to this player via organization -> team -> membership
+  const { data: coach } = await supabase
     .from('golf_coaches')
-    .select('id, team_id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
-  const coach = coachData as { id: string; team_id: string | null } | null;
-
-  if (coach?.team_id) {
-    // Verify player is on the coach's team
-    const { data: teamMember } = await supabase
-      .from('golf_team_members')
+  if (coach?.organization_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
       .select('id')
-      .eq('team_id', coach.team_id)
-      .eq('player_id', playerId)
-      .eq('status', 'active')
-      .single();
+      .eq('organization_id', coach.organization_id)
+      .limit(1)
+      .maybeSingle();
 
-    if (teamMember) {
-      return { authorized: true };
+    if (team) {
+      const { data: teamMember } = await supabase
+        .from('golf_team_members')
+        .select('id')
+        .eq('team_id', team.id)
+        .eq('player_id', playerId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (teamMember) {
+        return { authorized: true };
+      }
     }
   }
 

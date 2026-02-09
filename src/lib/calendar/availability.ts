@@ -87,12 +87,12 @@ export async function getUserBusyPeriods(
   const [playerResult, coachResult] = await Promise.all([
     supabase
       .from('golf_players')
-      .select('id, team_id, user_id')
+      .select('id, user_id')
       .eq('user_id', userId)
       .maybeSingle(),
     supabase
       .from('golf_coaches')
-      .select('id, team_id, user_id')
+      .select('id, organization_id, user_id')
       .eq('user_id', userId)
       .maybeSingle(),
   ]);
@@ -100,7 +100,27 @@ export async function getUserBusyPeriods(
   const player = playerResult.data;
   const coach = coachResult.data;
   const isCoach = !!coach;
-  const teamId = coach?.team_id || player?.team_id;
+
+  // Look up team_id via proper relationships (these tables don't have team_id directly)
+  let teamId: string | null = null;
+  if (coach?.organization_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .limit(1)
+      .maybeSingle();
+    teamId = team?.id ?? null;
+  } else if (player) {
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', player.id)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle();
+    teamId = membership?.team_id ?? null;
+  }
 
   // 2. Fetch all busy periods in parallel (major performance improvement)
   const teamEventsPromise = teamId
