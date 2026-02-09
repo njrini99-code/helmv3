@@ -64,17 +64,17 @@ export function RSVPLockIndicator({
       <div
         className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-lg',
-          'bg-slate-100 border border-slate-200',
+          'bg-warm-100 border border-warm-200',
           compact && 'px-2 py-1',
           className
         )}
       >
-        <Lock className={cn('shrink-0', compact ? 'w-3 h-3' : 'w-4 h-4', 'text-slate-500')} />
+        <Lock className={cn('shrink-0', compact ? 'w-3 h-3' : 'w-4 h-4', 'text-warm-500')} />
         <div className="flex-1 min-w-0">
           {!compact && (
-            <p className="text-xs font-medium text-slate-700">RSVP Closed</p>
+            <p className="text-xs font-medium text-warm-700">RSVP Closed</p>
           )}
-          <p className={cn('text-slate-600', compact ? 'text-xs' : 'text-xs')}>
+          <p className={cn('text-warm-600', compact ? 'text-xs' : 'text-xs')}>
             {compact ? 'Locked' : 'RSVP window has closed'}
           </p>
         </div>
@@ -93,7 +93,7 @@ export function RSVPLockIndicator({
         isUrgent && 'bg-rose-50 border-rose-300',
         isUrgent && 'animate-pulse',
         isWarning && 'bg-amber-50 border-amber-300',
-        !isUrgent && !isWarning && 'bg-slate-50 border-slate-200',
+        !isUrgent && !isWarning && 'bg-warm-50 border-warm-200',
         compact && 'px-2 py-1',
         className
       )}
@@ -107,7 +107,7 @@ export function RSVPLockIndicator({
           className={cn(
             'shrink-0',
             compact ? 'w-3 h-3' : 'w-4 h-4',
-            isWarning ? 'text-amber-600' : 'text-slate-500'
+            isWarning ? 'text-amber-600' : 'text-warm-500'
           )}
         />
       )}
@@ -119,7 +119,7 @@ export function RSVPLockIndicator({
               'text-xs font-medium',
               isUrgent && 'text-rose-700',
               isWarning && 'text-amber-700',
-              !isUrgent && !isWarning && 'text-slate-700'
+              !isUrgent && !isWarning && 'text-warm-700'
             )}
           >
             {isUrgent ? 'RSVP Closing Soon!' : 'RSVP Deadline'}
@@ -131,7 +131,7 @@ export function RSVPLockIndicator({
             compact ? 'text-xs' : 'text-sm',
             isUrgent && 'text-rose-900',
             isWarning && 'text-amber-900',
-            !isUrgent && !isWarning && 'text-slate-900'
+            !isUrgent && !isWarning && 'text-warm-900'
           )}
         >
           {countdown.displayText}
@@ -210,7 +210,7 @@ export function InlineRSVPLock({
 
   if (countdown.isLocked) {
     return (
-      <span className={cn('inline-flex items-center gap-1 text-xs text-slate-500', className)}>
+      <span className={cn('inline-flex items-center gap-1 text-xs text-warm-500', className)}>
         <Lock className="w-3 h-3" />
         <span>RSVP closed</span>
       </span>
@@ -223,7 +223,7 @@ export function InlineRSVPLock({
     <span
       className={cn(
         'inline-flex items-center gap-1 text-xs font-medium',
-        isUrgent ? 'text-rose-600' : 'text-slate-600',
+        isUrgent ? 'text-rose-600' : 'text-warm-600',
         className
       )}
     >
@@ -241,7 +241,7 @@ export function RSVPLockBadge({ lockTime }: Pick<RSVPLockIndicatorProps, 'lockTi
 
   if (countdown.isLocked) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warm-100 text-warm-600 text-xs font-medium">
         <Lock className="w-3 h-3" />
         Closed
       </span>
@@ -257,7 +257,7 @@ export function RSVPLockBadge({ lockTime }: Pick<RSVPLockIndicatorProps, 'lockTi
         'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
         isUrgent && 'bg-rose-100 text-rose-700 animate-pulse',
         isWarning && !isUrgent && 'bg-amber-100 text-amber-700',
-        !isUrgent && !isWarning && 'bg-slate-100 text-slate-600'
+        !isUrgent && !isWarning && 'bg-warm-100 text-warm-600'
       )}
     >
       <Clock className="w-3 h-3" />

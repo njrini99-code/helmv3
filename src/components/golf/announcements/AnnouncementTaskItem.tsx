@@ -55,7 +55,7 @@ export function AnnouncementTaskItem({
         'w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all',
         isCompleted
           ? 'bg-green-50/50 border border-green-200/60'
-          : 'bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm cursor-pointer'
+          : 'bg-white border border-warm-200 hover:border-warm-300 hover:shadow-sm cursor-pointer'
       )}
     >
       {/* Checkbox */}
@@ -65,7 +65,7 @@ export function AnnouncementTaskItem({
             'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors',
             isCompleted
               ? 'bg-green-500 border-green-500'
-              : 'border-slate-300 hover:border-green-400'
+              : 'border-warm-300 hover:border-green-400'
           )}
           animate={isCompleted ? { scale: [1, 1.2, 1] } : {}}
           transition={{ duration: 0.3 }}
@@ -86,14 +86,14 @@ export function AnnouncementTaskItem({
       <div className="flex-1 min-w-0">
         <p className={cn(
           'text-sm font-medium transition-colors',
-          isCompleted ? 'text-green-700 line-through' : 'text-slate-900'
+          isCompleted ? 'text-green-700 line-through' : 'text-warm-900'
         )}>
           {title}
         </p>
         {description && (
           <p className={cn(
             'text-xs mt-0.5',
-            isCompleted ? 'text-green-600/60' : 'text-slate-500'
+            isCompleted ? 'text-green-600/60' : 'text-warm-500'
           )}>
             {description}
           </p>
@@ -101,7 +101,7 @@ export function AnnouncementTaskItem({
         {dueDate && (
           <div className={cn(
             'flex items-center gap-1 mt-1',
-            isOverdue ? 'text-red-500' : isCompleted ? 'text-green-500' : 'text-slate-400'
+            isOverdue ? 'text-red-500' : isCompleted ? 'text-green-500' : 'text-warm-400'
           )}>
             <IconCalendar size={10} />
             <span className="text-xs font-medium">

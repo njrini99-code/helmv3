@@ -43,12 +43,12 @@ export function CourseSelector({
           placeholder="Search saved courses..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-3 pl-10 border border-slate-200 rounded-lg
+          className="w-full px-4 py-3 pl-10 border border-warm-200 rounded-lg
                      focus:ring-2 focus:ring-emerald-600 focus:border-transparent
-                     bg-white text-slate-900"
+                     bg-white text-warm-900"
         />
         <svg
-          className="absolute left-3 top-3.5 h-5 w-5 text-slate-400"
+          className="absolute left-3 top-3.5 h-5 w-5 text-warm-400"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -87,30 +87,30 @@ export function CourseSelector({
               className={`p-4 rounded-lg border text-left transition-all
                 ${selectedCourseId === course.id
                   ? 'border-emerald-500 bg-emerald-50 shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-600'
-                  : 'border-slate-200 bg-white hover:border-emerald-300 shadow-sm shadow-slate-950/5 ring-1 ring-slate-100'
+                  : 'border-warm-200 bg-white hover:border-emerald-300 shadow-sm shadow-warm-950/5 ring-1 ring-warm-100'
                 }`}
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-semibold text-slate-900">{course.name}</h3>
+                  <h3 className="font-semibold text-warm-900">{course.name}</h3>
                   {course.city && (
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-warm-500">
                       {course.city}{course.state ? `, ${course.state}` : ''}
                     </p>
                   )}
                 </div>
                 <div className="text-right text-sm">
-                  <div className="font-medium text-slate-900">
+                  <div className="font-medium text-warm-900">
                     Par {course.total_par}
                   </div>
-                  <div className="text-slate-500">
+                  <div className="text-warm-500">
                     {course.total_yardage?.toLocaleString()} yds
                   </div>
                 </div>
               </div>
 
               {(course.course_rating || course.slope_rating) && (
-                <div className="mt-2 pt-2 border-t border-slate-100 flex gap-4 text-xs text-slate-500">
+                <div className="mt-2 pt-2 border-t border-warm-100 flex gap-4 text-xs text-warm-500">
                   {course.course_rating && (
                     <span>Rating: {course.course_rating}</span>
                   )}
@@ -126,7 +126,7 @@ export function CourseSelector({
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 text-slate-500">
+        <div className="text-center py-8 text-warm-500">
           {searchQuery ? 'No courses match your search' : 'No saved courses yet'}
         </div>
       )}

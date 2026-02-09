@@ -107,7 +107,7 @@ export function AlertBadge({ coachId, teamId, className }: AlertBadgeProps) {
             ? 'bg-red-500 text-white'
             : counts.warning > 0
               ? 'bg-amber-500 text-white'
-              : 'bg-slate-200 text-slate-700',
+              : 'bg-warm-200 text-warm-700',
           className
         )}
         role="status"

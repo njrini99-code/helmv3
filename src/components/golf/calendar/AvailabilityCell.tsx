@@ -81,10 +81,10 @@ export function AvailabilityCell({
           // Heat level background
           heatLevel.className,
           // Border overlay for my response
-          isMyResponse && 'ring-2 ring-slate-900 ring-inset',
+          isMyResponse && 'ring-2 ring-warm-900 ring-inset',
           myResponse === 'maybe' && 'ring-dashed',
           // Hover effect
-          isClickable && 'hover:ring-2 hover:ring-slate-400 hover:ring-inset',
+          isClickable && 'hover:ring-2 hover:ring-warm-400 hover:ring-inset',
           // Active state
           isClickable && 'active:scale-95',
           // Disabled state
@@ -108,7 +108,7 @@ export function AvailabilityCell({
 
       {/* Tooltip with participant names */}
       {showTooltip && availableUsers.length > 0 && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg whitespace-nowrap pointer-events-none z-20 shadow-xl">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-warm-900 text-white text-xs rounded-lg whitespace-nowrap pointer-events-none z-20 shadow-xl">
           <div className="max-w-[200px]">
             <p className="font-semibold mb-1">
               {availableCount} available
@@ -116,17 +116,17 @@ export function AvailabilityCell({
             </p>
             <div className="space-y-0.5">
               {availableUsers.slice(0, 5).map((name, i) => (
-                <p key={i} className="text-slate-300 truncate">
+                <p key={i} className="text-warm-300 truncate">
                   {name}
                 </p>
               ))}
               {availableUsers.length > 5 && (
-                <p className="text-slate-400">+{availableUsers.length - 5} more</p>
+                <p className="text-warm-400">+{availableUsers.length - 5} more</p>
               )}
             </div>
           </div>
           {/* Tooltip arrow */}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-warm-900" />
         </div>
       )}
     </div>
@@ -148,13 +148,13 @@ export function AvailabilityCellLegend({ className }: { className?: string }) {
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <span className="text-xs text-slate-500 font-medium">Availability:</span>
+      <span className="text-xs text-warm-500 font-medium">Availability:</span>
       <div className="flex items-center gap-1">
         {levels.map((level) => (
           <div key={level.level} className="flex flex-col items-center gap-1">
             <div className={cn('w-6 h-6 rounded', level.className)} />
             {level.level === 0 || level.level === 5 ? (
-              <span className="text-xs text-slate-500">{level.label}</span>
+              <span className="text-xs text-warm-500">{level.label}</span>
             ) : null}
           </div>
         ))}
@@ -181,10 +181,10 @@ export function CompactAvailabilityIndicator({
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <div className={cn('w-3 h-3 rounded-full', heatLevel.className)} />
-      <span className="text-sm text-slate-700 tabular-nums">
+      <span className="text-sm text-warm-700 tabular-nums">
         {availableCount}/{totalResponses}
       </span>
-      <span className="text-xs text-slate-500">({Math.round(percentage)}%)</span>
+      <span className="text-xs text-warm-500">({Math.round(percentage)}%)</span>
     </div>
   );
 }
@@ -211,7 +211,7 @@ export function AvailabilityBar({
   return (
     <div className={cn('space-y-1', className)}>
       {showLabels && (
-        <div className="flex items-center justify-between text-xs text-slate-600">
+        <div className="flex items-center justify-between text-xs text-warm-600">
           <span>
             {availableCount} available
             {maybeCount > 0 && `, ${maybeCount} maybe`}
@@ -226,7 +226,7 @@ export function AvailabilityBar({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={`${availableCount} of ${totalResponses} available${maybeCount > 0 ? `, ${maybeCount} maybe` : ''}`}
-        className="h-2 bg-slate-100 rounded-full overflow-hidden flex"
+        className="h-2 bg-warm-100 rounded-full overflow-hidden flex"
       >
         {/* Available segment */}
         {availablePercentage > 0 && (

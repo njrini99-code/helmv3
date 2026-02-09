@@ -133,16 +133,16 @@ export function CreateFeedSection({
       <div>
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-5 h-5 text-emerald-600" />
-          <h3 className="text-lg font-semibold text-slate-900">Create Calendar Feed</h3>
+          <h3 className="text-lg font-semibold text-warm-900">Create Calendar Feed</h3>
         </div>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-warm-600">
           Choose what events to include in your calendar feed
         </p>
       </div>
 
       {/* Feed type selection */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-3">
+        <label className="block text-sm font-medium text-warm-700 mb-3">
           Feed Type
         </label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -190,7 +190,7 @@ export function CreateFeedSection({
                   <p
                     className={cn(
                       'text-xs mt-1',
-                      isSelected ? 'text-white/90' : 'text-slate-500'
+                      isSelected ? 'text-white/90' : 'text-warm-500'
                     )}
                   >
                     {option.description}
@@ -205,7 +205,7 @@ export function CreateFeedSection({
       {/* Feed name */}
       {showNameInput && (
         <div>
-          <label htmlFor="feed-name" className="block text-sm font-medium text-slate-700 mb-2">
+          <label htmlFor="feed-name" className="block text-sm font-medium text-warm-700 mb-2">
             Feed Name
           </label>
           <input
@@ -218,12 +218,12 @@ export function CreateFeedSection({
             }}
             placeholder="e.g., My Team Events"
             disabled={loading}
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-200
+            className="w-full px-4 py-2.5 rounded-lg border border-warm-200
                      focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100
-                     text-slate-900 placeholder:text-slate-400 transition-colors
+                     text-warm-900 placeholder:text-warm-400 transition-colors
                      disabled:opacity-50 disabled:cursor-not-allowed"
           />
-          <p className="text-xs text-slate-500 mt-1.5">
+          <p className="text-xs text-warm-500 mt-1.5">
             This name will help you identify the feed in your calendar app
           </p>
         </div>
@@ -231,12 +231,12 @@ export function CreateFeedSection({
 
       {/* Preview URL (when type is selected) */}
       {selectedType && (
-        <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
-          <p className="text-xs font-medium text-slate-700 mb-2">Feed URL Preview</p>
-          <code className="text-xs text-slate-600 font-mono break-all">
+        <div className="p-4 rounded-lg bg-warm-50 border border-warm-200">
+          <p className="text-xs font-medium text-warm-700 mb-2">Feed URL Preview</p>
+          <code className="text-xs text-warm-600 font-mono break-all">
             webcal://helmsportslabs.com/api/calendar/{selectedType}/[token]
           </code>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="text-xs text-warm-500 mt-2">
             The actual URL will be generated when you create the feed
           </p>
         </div>
@@ -250,14 +250,14 @@ export function CreateFeedSection({
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-warm-200">
         <button
           type="button"
           onClick={onCancel}
           disabled={loading}
           className="px-4 py-2.5 rounded-lg font-medium text-sm
-                   bg-white text-slate-700 border border-slate-200
-                   hover:bg-slate-50 hover:border-slate-300
+                   bg-white text-warm-700 border border-warm-200
+                   hover:bg-warm-50 hover:border-warm-300
                    disabled:opacity-50 disabled:cursor-not-allowed
                    transition-colors"
         >

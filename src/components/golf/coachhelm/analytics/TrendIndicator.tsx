@@ -63,13 +63,13 @@ export function TrendIndicator({
           size === 'xs' && 'w-4 h-4',
           size === 'sm' && 'w-5 h-5',
           size === 'md' && 'w-6 h-6',
-          isFlat && 'bg-slate-100',
+          isFlat && 'bg-warm-100',
           isPositive && !isFlat && 'bg-green-100',
           !isPositive && !isFlat && 'bg-red-100'
         )}
       >
         {isFlat ? (
-          <span className="text-slate-400 font-medium" style={{ fontSize: iconSizes[size] - 2 }}>
+          <span className="text-warm-400 font-medium" style={{ fontSize: iconSizes[size] - 2 }}>
             -
           </span>
         ) : trend.direction === 'up' ? (
@@ -103,7 +103,7 @@ export function TrendIndicator({
 
       {/* Label */}
       {showLabel && (
-        <span className={cn('text-slate-500', textSizes[size])}>
+        <span className={cn('text-warm-500', textSizes[size])}>
           {trend.metric}
         </span>
       )}
@@ -118,16 +118,16 @@ export function TrendIndicator({
             transition={{ duration: 0.15 }}
             className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50"
           >
-            <div className="bg-slate-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
+            <div className="bg-warm-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
               <div className="font-medium mb-1">{trend.metric}</div>
-              <div className="flex items-center gap-2 text-slate-300">
+              <div className="flex items-center gap-2 text-warm-300">
                 <span>Now: {trend.currentValue}</span>
-                <span className="text-slate-500">|</span>
+                <span className="text-warm-500">|</span>
                 <span>Was: {trend.previousValue}</span>
               </div>
               {/* Arrow pointer */}
               <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
-                <div className="border-4 border-transparent border-t-slate-900" />
+                <div className="border-4 border-transparent border-t-warm-900" />
               </div>
             </div>
           </motion.div>
@@ -157,7 +157,7 @@ export function TrendBadge({
     <span
       className={cn(
         'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium',
-        isFlat && 'bg-slate-100 text-slate-500',
+        isFlat && 'bg-warm-100 text-warm-500',
         isImprovement && !isFlat && 'bg-green-100 text-green-700',
         !isImprovement && !isFlat && 'bg-red-100 text-red-700',
         className
@@ -200,7 +200,7 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
           <motion.div
             initial={animated ? { opacity: 0, scale: 0.9 } : undefined}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-2"
           >
             <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
               <IconTrendingUp size={12} className="text-green-600" />
@@ -214,7 +214,7 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
             initial={animated ? { opacity: 0, scale: 0.9 } : undefined}
             animate={{ opacity: 1, scale: 1 }}
             transition={animated ? { delay: 0.1 } : undefined}
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-2"
           >
             <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
               <IconTrendingDown size={12} className="text-red-500" />
@@ -227,12 +227,12 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
           <motion.div
             initial={animated ? { opacity: 0, scale: 0.9 } : undefined}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-2"
           >
-            <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center">
-              <span className="text-slate-400 text-xs font-medium">—</span>
+            <div className="w-5 h-5 rounded-full bg-warm-100 flex items-center justify-center">
+              <span className="text-warm-400 text-xs font-medium">—</span>
             </div>
-            <span className="text-sm text-slate-500">{flat} stable</span>
+            <span className="text-sm text-warm-500">{flat} stable</span>
           </motion.div>
         )}
       </div>
@@ -249,15 +249,15 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
               'flex items-center justify-between p-2 rounded-lg',
               trend.isImprovement && trend.direction !== 'flat' && 'bg-green-50',
               !trend.isImprovement && trend.direction !== 'flat' && 'bg-red-50',
-              trend.direction === 'flat' && 'bg-slate-50'
+              trend.direction === 'flat' && 'bg-warm-50'
             )}
           >
             <div className="flex items-center gap-2">
               <TrendIndicator trend={trend} size="xs" showValue={false} animated={false} />
-              <span className="text-sm text-slate-700">{trend.metric}</span>
+              <span className="text-sm text-warm-700">{trend.metric}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-900 tabular-nums">
+              <span className="text-sm font-medium text-warm-900 tabular-nums">
                 {trend.currentValue}
               </span>
               {trend.direction !== 'flat' && (
@@ -278,8 +278,8 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
       {/* Empty state */}
       {trends.length === 0 && (
         <div className="text-center py-4">
-          <p className="text-sm text-slate-400">No trend data available</p>
-          <p className="text-xs text-slate-400 mt-1">Need more rounds to compare</p>
+          <p className="text-sm text-warm-400">No trend data available</p>
+          <p className="text-xs text-warm-400 mt-1">Need more rounds to compare</p>
         </div>
       )}
     </div>

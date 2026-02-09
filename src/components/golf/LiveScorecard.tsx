@@ -88,8 +88,8 @@ export function LiveScorecard({
     if (diff <= -2) return 'bg-yellow-400 text-yellow-900'; // Eagle+
     if (diff === -1) return 'bg-red-500 text-white'; // Birdie
     if (diff === 0) return 'bg-green-500 text-white'; // Par
-    if (diff === 1) return 'bg-slate-300 text-slate-800'; // Bogey
-    return 'bg-slate-500 text-white'; // Double+
+    if (diff === 1) return 'bg-warm-300 text-warm-800'; // Bogey
+    return 'bg-warm-500 text-white'; // Double+
   }
 
   if (compact) {
@@ -105,25 +105,25 @@ export function LiveScorecard({
         {/* Compact Stats Row */}
         <div className="flex items-center justify-between mb-3">
           <div className="text-center">
-            <div className={`text-2xl font-bold ${stats.toPar > 0 ? 'text-red-600' : stats.toPar < 0 ? 'text-green-600' : 'text-slate-900'}`}>
+            <div className={`text-2xl font-bold ${stats.toPar > 0 ? 'text-red-600' : stats.toPar < 0 ? 'text-green-600' : 'text-warm-900'}`}>
               {stats.toPar > 0 ? `+${stats.toPar}` : stats.toPar}
             </div>
-            <div className="text-xs text-slate-500">TO PAR</div>
+            <div className="text-xs text-warm-500">TO PAR</div>
           </div>
-          <div className="h-8 w-px bg-slate-200" />
+          <div className="h-8 w-px bg-warm-200" />
           <div className="text-center">
-            <div className="text-lg font-bold text-slate-900">{stats.totalScore}</div>
-            <div className="text-xs text-slate-500">{stats.holesPlayed} HOLES</div>
+            <div className="text-lg font-bold text-warm-900">{stats.totalScore}</div>
+            <div className="text-xs text-warm-500">{stats.holesPlayed} HOLES</div>
           </div>
-          <div className="h-8 w-px bg-slate-200" />
+          <div className="h-8 w-px bg-warm-200" />
           <div className="text-center">
-            <div className="text-lg font-bold text-slate-900">{stats.putts}</div>
-            <div className="text-xs text-slate-500">PUTTS</div>
+            <div className="text-lg font-bold text-warm-900">{stats.putts}</div>
+            <div className="text-xs text-warm-500">PUTTS</div>
           </div>
-          <div className="h-8 w-px bg-slate-200" />
+          <div className="h-8 w-px bg-warm-200" />
           <div className="text-center">
-            <div className="text-lg font-bold text-slate-900">{stats.gir}</div>
-            <div className="text-xs text-slate-500">GIR</div>
+            <div className="text-lg font-bold text-warm-900">{stats.gir}</div>
+            <div className="text-xs text-warm-500">GIR</div>
           </div>
         </div>
 
@@ -142,7 +142,7 @@ export function LiveScorecard({
                 className={`flex-shrink-0 w-8 h-8 rounded-lg text-xs font-bold
                   flex items-center justify-center transition-all
                   ${isCurrentHole ? 'ring-2 ring-green-500 ring-offset-1' : ''}
-                  ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-slate-100 text-slate-400'}
+                  ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-warm-100 text-warm-400'}
                 `}
               >
                 {score?.score || hole.holeNumber}
@@ -193,33 +193,33 @@ export function LiveScorecard({
       </div>
 
       {/* Score Distribution */}
-      <div className="flex border-b border-slate-200">
-        <div className="flex-1 py-2 text-center border-r border-slate-200">
+      <div className="flex border-b border-warm-200">
+        <div className="flex-1 py-2 text-center border-r border-warm-200">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full
                          bg-red-500 text-white text-xs font-bold mr-1">
             {stats.birdies}
           </span>
-          <span className="text-xs text-slate-500">Birdies</span>
+          <span className="text-xs text-warm-500">Birdies</span>
         </div>
-        <div className="flex-1 py-2 text-center border-r border-slate-200">
+        <div className="flex-1 py-2 text-center border-r border-warm-200">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full
                          bg-green-500 text-white text-xs font-bold mr-1">
             {stats.pars}
           </span>
-          <span className="text-xs text-slate-500">Pars</span>
+          <span className="text-xs text-warm-500">Pars</span>
         </div>
         <div className="flex-1 py-2 text-center">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full
-                         bg-slate-300 text-slate-700 text-xs font-bold mr-1">
+                         bg-warm-300 text-warm-700 text-xs font-bold mr-1">
             {stats.bogeys}
           </span>
-          <span className="text-xs text-slate-500">Bogeys</span>
+          <span className="text-xs text-warm-500">Bogeys</span>
         </div>
       </div>
 
       {/* Front Nine */}
       <div className="p-2">
-        <div className="text-xs font-semibold text-slate-500 uppercase mb-1 px-1">Front 9</div>
+        <div className="text-xs font-semibold text-warm-500 uppercase mb-1 px-1">Front 9</div>
         <div className="grid grid-cols-9 gap-1">
           {frontNine.map(hole => {
             const score = scores.find(s => s.holeNumber === hole.holeNumber);
@@ -234,11 +234,11 @@ export function LiveScorecard({
                 className={`aspect-square rounded-lg flex flex-col items-center justify-center
                   text-xs transition-all
                   ${isCurrentHole ? 'ring-2 ring-green-500' : ''}
-                  ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-slate-50 hover:bg-slate-100'}
+                  ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-warm-50 hover:bg-warm-100'}
                 `}
               >
                 <span className="font-bold">{score?.score || '-'}</span>
-                <span className={`text-xs ${score?.score ? 'opacity-75' : 'text-slate-400'}`}>
+                <span className={`text-xs ${score?.score ? 'opacity-75' : 'text-warm-400'}`}>
                   {hole.holeNumber}
                 </span>
               </button>
@@ -249,8 +249,8 @@ export function LiveScorecard({
 
       {/* Back Nine - only show for 18-hole rounds */}
       {backNine.length > 0 && (
-        <div className="p-2 border-t border-slate-100">
-          <div className="text-xs font-semibold text-slate-500 uppercase mb-1 px-1">Back 9</div>
+        <div className="p-2 border-t border-warm-100">
+          <div className="text-xs font-semibold text-warm-500 uppercase mb-1 px-1">Back 9</div>
           <div className="grid grid-cols-9 gap-1">
             {backNine.map(hole => {
               const score = scores.find(s => s.holeNumber === hole.holeNumber);
@@ -265,11 +265,11 @@ export function LiveScorecard({
                   className={`aspect-square rounded-lg flex flex-col items-center justify-center
                     text-xs transition-all
                     ${isCurrentHole ? 'ring-2 ring-green-500' : ''}
-                    ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-slate-50 hover:bg-slate-100'}
+                    ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-warm-50 hover:bg-warm-100'}
                   `}
                 >
                   <span className="font-bold">{score?.score || '-'}</span>
-                  <span className={`text-xs ${score?.score ? 'opacity-75' : 'text-slate-400'}`}>
+                  <span className={`text-xs ${score?.score ? 'opacity-75' : 'text-warm-400'}`}>
                     {hole.holeNumber}
                   </span>
                 </button>

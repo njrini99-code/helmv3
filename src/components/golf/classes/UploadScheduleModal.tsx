@@ -214,7 +214,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
         onClick={onClose}
       />
       
@@ -228,19 +228,19 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           }}
         />
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
               <IconSparkles size={20} className="text-green-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Import Schedule</h2>
-              <p className="text-sm text-slate-500">Upload or paste your class schedule</p>
+              <h2 className="text-lg font-semibold text-warm-900">Import Schedule</h2>
+              <p className="text-sm text-warm-500">Upload or paste your class schedule</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors"
           >
             <IconX size={20} />
           </button>
@@ -255,7 +255,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                 !pasteMode 
                   ? 'bg-green-600 text-white' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
               }`}
             >
               Upload File
@@ -265,7 +265,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                 pasteMode 
                   ? 'bg-green-600 text-white' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
               }`}
             >
               Paste Text
@@ -284,7 +284,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
                 ${dragActive 
                   ? 'border-green-500 bg-green-50' 
-                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  : 'border-warm-200 hover:border-warm-300 hover:bg-warm-50'
                 }
               `}
             >
@@ -296,22 +296,22 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 className="hidden"
               />
 
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
                 {loading ? (
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
                 ) : (
-                  <IconUpload size={28} className="text-slate-400" />
+                  <IconUpload size={28} className="text-warm-400" />
                 )}
               </div>
 
-              <p className="text-slate-900 font-medium mb-1">
+              <p className="text-warm-900 font-medium mb-1">
                 {loading ? 'Processing...' : 'Drop your PDF or TXT file here'}
               </p>
-              <p className="text-sm text-slate-500 mb-4">
+              <p className="text-sm text-warm-500 mb-4">
                 or click to browse files
               </p>
 
-              <div className="flex items-center justify-center gap-4 text-xs text-slate-400">
+              <div className="flex items-center justify-center gap-4 text-xs text-warm-400">
                 <span className="flex items-center gap-1">
                   <IconFileText size={14} />
                   PDF & TXT supported
@@ -326,7 +326,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 onChange={(e) => setPastedText(e.target.value)}
                 placeholder={`Paste your schedule here...\n\nExample format:\nBUAD 123 - Business Fundamentals\nMWF 9:30AM - 10:45AM\nHAL 101\nProf. Smith\n\nMATH 201 - Calculus II\nTTh 1:00PM - 2:15PM\nSCI 205`}
                 rows={10}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40 resize-none font-mono"
+                className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40 resize-none font-mono"
               />
               
               <Button
@@ -347,9 +347,9 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           )}
 
           {/* Tips */}
-          <div className="mt-6 p-4 bg-slate-50 rounded-xl">
-            <p className="text-sm font-medium text-slate-700 mb-2">Tips for best results:</p>
-            <ul className="text-xs text-slate-500 space-y-1">
+          <div className="mt-6 p-4 bg-warm-50 rounded-xl">
+            <p className="text-sm font-medium text-warm-700 mb-2">Tips for best results:</p>
+            <ul className="text-xs text-warm-500 space-y-1">
               <li>• Export your schedule from your university portal as PDF or TXT</li>
               <li>• Include course codes like "BUAD 123" or "MATH201"</li>
               <li>• Days can be formatted as MWF, TTh, MW, etc.</li>

@@ -91,14 +91,14 @@ export function AnimatedModal({
             >
               {/* Header */}
               {(title || showCloseButton) && (
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
                   {title && (
-                    <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+                    <h2 className="text-lg font-semibold text-warm-900">{title}</h2>
                   )}
                   {showCloseButton && (
                     <motion.button
                       onClick={onClose}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors ml-auto"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-warm-100 hover:bg-warm-200 text-warm-600 transition-colors ml-auto"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >

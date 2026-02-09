@@ -102,11 +102,11 @@ export function OfflineProvider({
   // Service worker - register and handle events
   useServiceWorker({
     immediate: true,
-    onRegistered: (registration) => {
-      console.log('[OfflineProvider] Service worker registered:', registration.scope);
+    onRegistered: () => {
+      // Service worker registered successfully
     },
     onUpdateAvailable: () => {
-      console.log('[OfflineProvider] Service worker update available');
+      // Service worker update available
     },
   });
 
@@ -125,9 +125,8 @@ export function OfflineProvider({
           onSyncStart: () => {
             useOfflineSyncStore.getState().startSync();
           },
-          onSyncProgress: (progress) => {
+          onSyncProgress: (_progress) => {
             // Could update progress in store if needed
-            console.log('[OfflineProvider] Sync progress:', progress);
           },
           onSyncComplete: (result) => {
             const syncedCount = result.syncedRounds + result.syncedHoles + result.syncedShots;
@@ -147,9 +146,9 @@ export function OfflineProvider({
         // Refresh pending counts
         await syncActions.refreshPendingCounts();
 
-        console.log('[OfflineProvider] Sync engine initialized');
-      } catch (error) {
-        console.error('[OfflineProvider] Failed to initialize sync engine:', error);
+        // Sync engine initialized
+      } catch {
+        // Failed to initialize sync engine - component will still render
       }
     };
 
@@ -176,8 +175,8 @@ export function OfflineProvider({
         try {
           const syncEngine = getSyncEngine();
           await syncEngine.syncAll();
-        } catch (error) {
-          console.error('[OfflineProvider] Auto-sync on reconnection failed:', error);
+        } catch {
+          // Auto-sync on reconnection failed - will retry on next connection change
         }
       }, 2000);
 
@@ -190,12 +189,11 @@ export function OfflineProvider({
   useEffect(() => {
     const handleSyncRequest = async (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log('[OfflineProvider] Sync requested by service worker:', customEvent.detail);
       try {
         const syncEngine = getSyncEngine();
         await syncEngine.syncAll();
-      } catch (error) {
-        console.error('[OfflineProvider] Service worker sync failed:', error);
+      } catch {
+        // Service worker sync failed - will retry automatically
       }
     };
 
@@ -211,8 +209,8 @@ export function OfflineProvider({
     try {
       const syncEngine = getSyncEngine();
       await syncEngine.syncAll();
-    } catch (error) {
-      console.error('[OfflineProvider] Manual sync failed:', error);
+    } catch {
+      // Manual sync failed
     }
   }, []);
 
@@ -220,8 +218,8 @@ export function OfflineProvider({
     try {
       const syncEngine = getSyncEngine();
       await syncEngine.retryFailed();
-    } catch (error) {
-      console.error('[OfflineProvider] Retry failed items failed:', error);
+    } catch {
+      // Retry failed items failed
     }
   }, []);
 

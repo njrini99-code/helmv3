@@ -47,8 +47,8 @@ const statuses: Array<{
     value: 'inactive',
     label: 'Inactive',
     description: 'Player is not currently participating',
-    dotColor: 'bg-slate-400',
-    badgeStyle: 'bg-slate-500/10 text-slate-600 ring-slate-500/20',
+    dotColor: 'bg-warm-400',
+    badgeStyle: 'bg-warm-500/10 text-warm-600 ring-warm-500/20',
   },
 ];
 
@@ -135,10 +135,10 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
       {/* Three-dot menu button */}
       <button
         onClick={() => setShowMenu(!showMenu)}
-        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+        className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
         aria-label="Player actions"
       >
-        <IconMoreVertical size={18} className="text-slate-500" />
+        <IconMoreVertical size={18} className="text-warm-500" />
       </button>
 
       {/* Dropdown menu */}
@@ -151,13 +151,13 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
           />
 
           {/* Menu */}
-          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
+          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-warm-200 py-1 z-20">
             <button
               onClick={() => {
                 router.push(`/golf/dashboard/roster/${playerId}`);
                 setShowMenu(false);
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2 text-slate-700"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-warm-50 flex items-center gap-2 text-warm-700"
             >
               <IconChevronRight size={16} />
               View Profile
@@ -165,13 +165,13 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
 
             <button
               onClick={openStatusModal}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2 text-slate-700"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-warm-50 flex items-center gap-2 text-warm-700"
             >
               <IconUser size={16} />
               Change Status
             </button>
 
-            <div className="border-t border-slate-100 my-1" />
+            <div className="border-t border-warm-100 my-1" />
 
             <button
               onClick={() => {
@@ -189,17 +189,17 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
 
       {/* Remove confirmation modal */}
       {showRemoveConfirm && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-slate-900 mb-2">
+            <h2 className="text-xl font-bold text-warm-900 mb-2">
               Remove Player?
             </h2>
-            <p className="text-slate-600 mb-6">
+            <p className="text-warm-600 mb-6">
               Are you sure you want to remove <strong>{playerName}</strong> from your team?
               They can rejoin later using the team invite code.
               <br />
               <br />
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-warm-500">
                 Note: Their account and stats will not be deleted.
               </span>
             </p>
@@ -207,7 +207,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
               <button
                 onClick={() => setShowRemoveConfirm(false)}
                 disabled={removing}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium transition-colors disabled:opacity-50"
+                className="px-4 py-2 rounded-lg border border-warm-200 text-warm-700 hover:bg-warm-50 font-medium transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -232,12 +232,12 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
 
       {/* Change status modal */}
       {showStatusModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-slate-900 mb-2">
+            <h2 className="text-xl font-bold text-warm-900 mb-2">
               Change Player Status
             </h2>
-            <p className="text-slate-600 mb-6">
+            <p className="text-warm-600 mb-6">
               Update the status for <strong>{playerName}</strong>.
             </p>
 
@@ -250,11 +250,11 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                   disabled={updatingStatus}
                   className={cn(
                     'w-full px-4 py-3 rounded-xl border-2 text-left transition-all',
-                    'hover:border-slate-300 hover:bg-slate-50',
+                    'hover:border-warm-300 hover:bg-warm-50',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                     selectedStatus === status.value
                       ? 'border-green-500 bg-green-50/50'
-                      : 'border-slate-200 bg-white'
+                      : 'border-warm-200 bg-white'
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -262,11 +262,11 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                     <div className="flex-1">
                       <span className={cn(
                         'font-medium block',
-                        selectedStatus === status.value ? 'text-slate-900' : 'text-slate-700'
+                        selectedStatus === status.value ? 'text-warm-900' : 'text-warm-700'
                       )}>
                         {status.label}
                       </span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-warm-500">
                         {status.description}
                       </span>
                     </div>
@@ -282,7 +282,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
 
             {/* Current status indicator */}
             {currentStatus && (
-              <p className="text-sm text-slate-500 mb-4">
+              <p className="text-sm text-warm-500 mb-4">
                 Current status: <span className="font-medium capitalize">{currentStatus}</span>
               </p>
             )}
@@ -294,14 +294,14 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                   setSelectedStatus(null);
                 }}
                 disabled={updatingStatus}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium transition-colors disabled:opacity-50"
+                className="px-4 py-2 rounded-lg border border-warm-200 text-warm-700 hover:bg-warm-50 font-medium transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleStatusChange}
                 disabled={updatingStatus || !selectedStatus || selectedStatus === currentStatus}
-                className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-colors disabled:opacity-50 disabled:bg-slate-300 flex items-center gap-2"
+                className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-colors disabled:opacity-50 disabled:bg-warm-300 flex items-center gap-2"
               >
                 {updatingStatus ? (
                   <>

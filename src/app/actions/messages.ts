@@ -823,3 +823,181 @@ export async function getGolfPlayerUserId(playerId: string): Promise<string | nu
 
   return player.user_id;
 }
+
+// ============================================================================
+// Message Search
+// ============================================================================
+
+export interface MessageSearchResult {
+  messageId: string;
+  conversationId: string;
+  content: string;
+  senderName: string;
+  senderAvatar: string | null;
+  conversationName: string;
+  createdAt: string;
+}
+
+/**
+ * Search golf messages across all conversations the user participates in
+ * @param query - The search query string
+ * @param teamId - Optional team ID to scope the search
+ * @returns Array of matching messages with context
+ */
+export async function searchGolfMessages(
+  query: string,
+  teamId?: string
+): Promise<{ results: MessageSearchResult[] } | { error: string }> {
+  try {
+    const supabase = await createClient();
+
+    // Auth check
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
+
+    // Validate query
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery || trimmedQuery.length < 2) {
+      return { results: [] };
+    }
+
+    // Get all conversation IDs the user participates in
+    const { data: participantRows, error: participantError } = await supabase
+      .from('golf_conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', user.id);
+
+    if (participantError || !participantRows || participantRows.length === 0) {
+      return { results: [] };
+    }
+
+    const conversationIds = participantRows.map(r => r.conversation_id);
+
+    // Search messages using ilike for case-insensitive partial matching
+    // Only within conversations the user is a participant of
+    const searchPattern = `%${trimmedQuery}%`;
+
+    let messagesQuery = supabase
+      .from('golf_messages')
+      .select('id, conversation_id, sender_id, content, created_at')
+      .in('conversation_id', conversationIds)
+      .ilike('content', searchPattern)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    // If teamId is provided, further filter by conversations that belong to the team
+    if (teamId) {
+      const { data: teamConversations } = await supabase
+        .from('golf_conversations')
+        .select('id')
+        .eq('team_id', teamId)
+        .in('id', conversationIds);
+
+      if (teamConversations && teamConversations.length > 0) {
+        const teamConvIds = teamConversations.map(c => c.id);
+        messagesQuery = supabase
+          .from('golf_messages')
+          .select('id, conversation_id, sender_id, content, created_at')
+          .in('conversation_id', teamConvIds)
+          .ilike('content', searchPattern)
+          .order('created_at', { ascending: false })
+          .limit(50);
+      } else {
+        return { results: [] };
+      }
+    }
+
+    const { data: matchingMessages, error: messagesError } = await messagesQuery;
+
+    if (messagesError || !matchingMessages || matchingMessages.length === 0) {
+      return { results: [] };
+    }
+
+    // Collect unique sender IDs and conversation IDs for batch lookups
+    const senderIds = [...new Set(matchingMessages.map(m => m.sender_id))];
+    const matchedConvIds = [...new Set(matchingMessages.map(m => m.conversation_id))];
+
+    // Batch fetch sender info (coaches and players)
+    const [{ data: coaches }, { data: players }] = await Promise.all([
+      supabase
+        .from('golf_coaches')
+        .select('user_id, full_name, avatar_url')
+        .in('user_id', senderIds),
+      supabase
+        .from('golf_players')
+        .select('user_id, first_name, last_name, avatar_url')
+        .in('user_id', senderIds),
+    ]);
+
+    // Build sender lookup map
+    const senderMap = new Map<string, { name: string; avatar: string | null }>();
+    (coaches || []).forEach(c => {
+      if (c.user_id) {
+        senderMap.set(c.user_id, {
+          name: c.full_name || 'Coach',
+          avatar: c.avatar_url,
+        });
+      }
+    });
+    (players || []).forEach(p => {
+      if (p.user_id) {
+        senderMap.set(p.user_id, {
+          name: [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Player',
+          avatar: p.avatar_url,
+        });
+      }
+    });
+
+    // Batch fetch conversation details for naming
+    const { data: conversationDetails } = await supabase
+      .from('golf_conversations')
+      .select('id, title, is_team_chat')
+      .in('id', matchedConvIds);
+
+    // Also fetch participant info for 1:1 conversations to build conversation names
+    const { data: allParticipants } = await supabase
+      .from('golf_conversation_participants')
+      .select('conversation_id, user_id')
+      .in('conversation_id', matchedConvIds);
+
+    // Build conversation name lookup
+    const convNameMap = new Map<string, string>();
+    (conversationDetails || []).forEach(conv => {
+      if (conv.is_team_chat && conv.title) {
+        convNameMap.set(conv.id, conv.title);
+      } else {
+        // For 1:1 conversations, find the other participant's name
+        const participants = (allParticipants || []).filter(
+          p => p.conversation_id === conv.id && p.user_id !== user.id
+        );
+        if (participants.length > 0 && participants[0]) {
+          const otherUserId = participants[0].user_id;
+          const senderInfo = senderMap.get(otherUserId);
+          convNameMap.set(conv.id, senderInfo?.name || 'Conversation');
+        } else {
+          convNameMap.set(conv.id, 'Conversation');
+        }
+      }
+    });
+
+    // Build results
+    const results: MessageSearchResult[] = matchingMessages.map(msg => {
+      const sender = senderMap.get(msg.sender_id);
+      return {
+        messageId: msg.id,
+        conversationId: msg.conversation_id,
+        content: msg.content,
+        senderName: msg.sender_id === user.id ? 'You' : (sender?.name || 'Unknown'),
+        senderAvatar: sender?.avatar || null,
+        conversationName: convNameMap.get(msg.conversation_id) || 'Conversation',
+        createdAt: msg.created_at,
+      };
+    });
+
+    return { results };
+  } catch (err) {
+    return formatSafeErrorResponse(err);
+  }
+}

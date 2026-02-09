@@ -103,8 +103,8 @@ export function PredictionAccuracyPanel({
 
         {/* Mini accuracy trend */}
         {hasAccuracyData && (
-          <div className="bg-slate-50 rounded-xl p-3">
-            <p className="text-xs font-medium text-slate-500 mb-2">Accuracy Trend</p>
+          <div className="bg-warm-50 rounded-xl p-3">
+            <p className="text-xs font-medium text-warm-500 mb-2">Accuracy Trend</p>
             <div className="h-20">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={accuracyChartData}>
@@ -177,8 +177,8 @@ export function PredictionAccuracyPanel({
 
       {/* Accuracy Over Time Chart */}
       {hasAccuracyData && (
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <h4 className="text-sm font-medium text-slate-700 mb-4">Accuracy Over Time</h4>
+        <div className="bg-white rounded-xl border border-warm-100 p-4">
+          <h4 className="text-sm font-medium text-warm-700 mb-4">Accuracy Over Time</h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={accuracyChartData} margin={{ left: 10, right: 10 }}>
@@ -209,7 +209,7 @@ export function PredictionAccuracyPanel({
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <p className="text-xs text-slate-400 mt-2 text-center">
+          <p className="text-xs text-warm-400 mt-2 text-center">
             Dashed line indicates 70% accuracy target
           </p>
         </div>
@@ -217,9 +217,9 @@ export function PredictionAccuracyPanel({
 
       {/* Calibration Chart */}
       {hasCalibrationData && (
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <h4 className="text-sm font-medium text-slate-700 mb-1">Calibration Chart</h4>
-          <p className="text-xs text-slate-500 mb-4">
+        <div className="bg-white rounded-xl border border-warm-100 p-4">
+          <h4 className="text-sm font-medium text-warm-700 mb-1">Calibration Chart</h4>
+          <p className="text-xs text-warm-500 mb-4">
             Comparing predicted confidence vs actual accuracy
           </p>
           <div className="h-64">
@@ -271,8 +271,8 @@ export function PredictionAccuracyPanel({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Error Distribution */}
         {hasErrorData && (
-          <div className="bg-white rounded-xl border border-slate-100 p-4">
-            <h4 className="text-sm font-medium text-slate-700 mb-4">Error Distribution</h4>
+          <div className="bg-white rounded-xl border border-warm-100 p-4">
+            <h4 className="text-sm font-medium text-warm-700 mb-4">Error Distribution</h4>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -298,7 +298,7 @@ export function PredictionAccuracyPanel({
               {data.errorDistribution.map((e) => (
                 <span
                   key={e.category}
-                  className="flex items-center gap-1 text-xs text-slate-600"
+                  className="flex items-center gap-1 text-xs text-warm-600"
                 >
                   <span
                     className="w-2 h-2 rounded-full"
@@ -312,8 +312,8 @@ export function PredictionAccuracyPanel({
         )}
 
         {/* Confidence Analysis */}
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <h4 className="text-sm font-medium text-slate-700 mb-4">Confidence Analysis</h4>
+        <div className="bg-white rounded-xl border border-warm-100 p-4">
+          <h4 className="text-sm font-medium text-warm-700 mb-4">Confidence Analysis</h4>
           <div className="space-y-4">
             <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
               <div className="flex items-center justify-between mb-2">
@@ -341,8 +341,8 @@ export function PredictionAccuracyPanel({
               <ProgressBar value={data.summary.underconfidenceRate} color="blue" />
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-lg">
-              <p className="text-xs text-slate-600">
+            <div className="p-3 bg-warm-50 rounded-lg">
+              <p className="text-xs text-warm-600">
                 <strong>Ideal:</strong> Both rates should be low (&lt;15%). High overconfidence
                 suggests the model is too certain; high underconfidence suggests missed
                 opportunities.
@@ -373,16 +373,16 @@ function StatCard({
   const colors = {
     green: 'bg-green-50 border-green-100',
     amber: 'bg-amber-50 border-amber-100',
-    slate: 'bg-slate-50 border-slate-100',
+    slate: 'bg-warm-50 border-warm-100',
   };
 
   return (
     <div className={cn('p-3 rounded-xl border', colors[color])}>
       <div className="flex items-center gap-2 mb-1">
         {icon}
-        <span className="text-xs text-slate-500">{label}</span>
+        <span className="text-xs text-warm-500">{label}</span>
       </div>
-      <span className="text-lg font-bold text-slate-900">{value}</span>
+      <span className="text-lg font-bold text-warm-900">{value}</span>
     </div>
   );
 }
@@ -399,19 +399,19 @@ function StatCardLarge({
   color?: 'green' | 'amber' | 'slate';
 }) {
   return (
-    <div className="p-4 bg-slate-50 rounded-xl">
-      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{label}</p>
+    <div className="p-4 bg-warm-50 rounded-xl">
+      <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">{label}</p>
       <p
         className={cn(
           'text-2xl font-bold tabular-nums',
           color === 'green' && 'text-green-600',
           color === 'amber' && 'text-amber-600',
-          color === 'slate' && 'text-slate-900'
+          color === 'slate' && 'text-warm-900'
         )}
       >
         {value}
       </p>
-      <p className="text-xs text-slate-400 mt-1">{subtext}</p>
+      <p className="text-xs text-warm-400 mt-1">{subtext}</p>
     </div>
   );
 }
@@ -435,7 +435,7 @@ function ConfidenceIndicator({
         type === 'over' ? 'bg-amber-50' : 'bg-blue-50'
       )}
     >
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-warm-500">{label}</p>
       <p
         className={cn(
           'text-sm font-bold',
@@ -473,20 +473,20 @@ function AccuracyTooltip({
   if (active && payload && payload.length && payload[0]) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 px-4 py-3">
-        <p className="text-sm font-semibold text-slate-900 mb-2">{data.date}</p>
+      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
+        <p className="text-sm font-semibold text-warm-900 mb-2">{data.date}</p>
         <div className="space-y-1 text-xs">
           <div className="flex justify-between gap-4">
-            <span className="text-slate-500">Accuracy:</span>
+            <span className="text-warm-500">Accuracy:</span>
             <span className="font-medium text-green-600">{data.accuracyRate}%</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="text-slate-500">Predictions:</span>
-            <span className="text-slate-700">{data.predictionsMade}</span>
+            <span className="text-warm-500">Predictions:</span>
+            <span className="text-warm-700">{data.predictionsMade}</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="text-slate-500">Validated:</span>
-            <span className="text-slate-700">{data.predictionsValidated}</span>
+            <span className="text-warm-500">Validated:</span>
+            <span className="text-warm-700">{data.predictionsValidated}</span>
           </div>
         </div>
       </div>
@@ -506,15 +506,15 @@ function CalibrationTooltip({
     const data = payload[0].payload;
     const diff = data.actual - data.expected;
     return (
-      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 px-4 py-3">
-        <p className="text-sm font-semibold text-slate-900 mb-2">{data.range} Confidence</p>
+      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
+        <p className="text-sm font-semibold text-warm-900 mb-2">{data.range} Confidence</p>
         <div className="space-y-1 text-xs">
           <div className="flex justify-between gap-4">
-            <span className="text-slate-500">Expected Accuracy:</span>
-            <span className="text-slate-700">{data.expected}%</span>
+            <span className="text-warm-500">Expected Accuracy:</span>
+            <span className="text-warm-700">{data.expected}%</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="text-slate-500">Actual Accuracy:</span>
+            <span className="text-warm-500">Actual Accuracy:</span>
             <span
               className={cn(
                 'font-medium',
@@ -524,9 +524,9 @@ function CalibrationTooltip({
               {data.actual}%
             </span>
           </div>
-          <div className="flex justify-between gap-4 pt-1 border-t border-slate-100">
-            <span className="text-slate-500">Predictions:</span>
-            <span className="text-slate-700">{data.count}</span>
+          <div className="flex justify-between gap-4 pt-1 border-t border-warm-100">
+            <span className="text-warm-500">Predictions:</span>
+            <span className="text-warm-700">{data.count}</span>
           </div>
         </div>
       </div>
@@ -545,9 +545,9 @@ function ErrorTooltip({
   if (active && payload && payload.length && payload[0]) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 px-3 py-2">
-        <p className="text-sm font-medium text-slate-900">{data.category}</p>
-        <p className="text-xs text-slate-600">
+      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-3 py-2">
+        <p className="text-sm font-medium text-warm-900">{data.category}</p>
+        <p className="text-xs text-warm-600">
           {data.count} errors ({data.percentage.toFixed(1)}%)
         </p>
       </div>
@@ -559,11 +559,11 @@ function ErrorTooltip({
 function EmptyState() {
   return (
     <div className="text-center py-8">
-      <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 flex items-center justify-center">
-        <IconTarget size={24} className="text-slate-400" />
+      <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-warm-100 flex items-center justify-center">
+        <IconTarget size={24} className="text-warm-400" />
       </div>
-      <h4 className="text-sm font-medium text-slate-700 mb-1">No Prediction Data Yet</h4>
-      <p className="text-xs text-slate-500 max-w-xs mx-auto">
+      <h4 className="text-sm font-medium text-warm-700 mb-1">No Prediction Data Yet</h4>
+      <p className="text-xs text-warm-500 max-w-xs mx-auto">
         As predictions are made and validated, accuracy metrics will appear here.
       </p>
     </div>

@@ -112,7 +112,6 @@ export function ExpenseForm({
       if (receiptFile) {
         // For now, we'll handle receipt upload in a separate flow
         // In production, you'd upload to Supabase Storage here
-        console.log('Receipt file selected:', receiptFile.name);
       }
 
       if (expense) {
@@ -205,7 +204,7 @@ export function ExpenseForm({
 
         {/* Category Selection */}
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-2">Category</label>
+          <label className="text-sm font-medium text-warm-700 block mb-2">Category</label>
           <div className="grid grid-cols-3 gap-2">
             {CATEGORIES.map((cat) => (
               <motion.button
@@ -217,11 +216,11 @@ export function ExpenseForm({
                 className={`p-3 rounded-xl border-2 text-left transition-all ${
                   category === cat.value
                     ? 'border-green-600 bg-green-50 shadow-sm'
-                    : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                    : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
                 }`}
               >
                 <span className="text-xl block mb-1">{cat.icon}</span>
-                <span className="text-sm font-medium text-slate-900">{cat.label}</span>
+                <span className="text-sm font-medium text-warm-900">{cat.label}</span>
               </motion.button>
             ))}
           </div>
@@ -266,7 +265,7 @@ export function ExpenseForm({
 
         {/* Paid By */}
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-2">Paid By</label>
+          <label className="text-sm font-medium text-warm-700 block mb-2">Paid By</label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {PAID_BY_OPTIONS.map((option) => (
               <motion.button
@@ -278,7 +277,7 @@ export function ExpenseForm({
                 className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                   paidBy === option.value
                     ? 'border-green-600 bg-green-50 text-green-700'
-                    : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                    : 'border-warm-200 text-warm-600 hover:border-warm-300'
                 }`}
               >
                 {option.label}
@@ -289,32 +288,32 @@ export function ExpenseForm({
 
         {/* Receipt Upload */}
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-2">Receipt (Optional)</label>
+          <label className="text-sm font-medium text-warm-700 block mb-2">Receipt (Optional)</label>
           <AnimatePresence mode="wait">
             {receiptFile || receiptUrl ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"
+                className="flex items-center gap-3 p-3 bg-warm-50 rounded-lg"
               >
                 <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
                   <span className="text-lg">📎</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">
+                  <p className="text-sm font-medium text-warm-900 truncate">
                     {receiptFile?.name || 'Receipt attached'}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-warm-500">
                     {receiptFile ? `${(receiptFile.size / 1024).toFixed(1)} KB` : 'Uploaded'}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={removeReceipt}
-                  className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-warm-200 rounded-lg transition-colors"
                 >
-                  <IconX size={16} className="text-slate-500" />
+                  <IconX size={16} className="text-warm-500" />
                 </button>
               </motion.div>
             ) : (
@@ -322,11 +321,11 @@ export function ExpenseForm({
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 rounded-xl hover:border-green-300 hover:bg-green-50/50 transition-all cursor-pointer"
+                className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-warm-200 rounded-xl hover:border-green-300 hover:bg-green-50/50 transition-all cursor-pointer"
               >
-                <IconUpload size={24} className="text-slate-400 mb-2" />
-                <span className="text-sm font-medium text-slate-600">Click to upload receipt</span>
-                <span className="text-xs text-slate-400 mt-1">JPG, PNG, WebP or PDF (max 5MB)</span>
+                <IconUpload size={24} className="text-warm-400 mb-2" />
+                <span className="text-sm font-medium text-warm-600">Click to upload receipt</span>
+                <span className="text-xs text-warm-400 mt-1">JPG, PNG, WebP or PDF (max 5MB)</span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -340,20 +339,20 @@ export function ExpenseForm({
 
         {/* Notes */}
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-1">Notes (Optional)</label>
+          <label className="text-sm font-medium text-warm-700 block mb-1">Notes (Optional)</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Additional details about this expense..."
             rows={2}
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-200
+            className="w-full px-4 py-2.5 rounded-lg border border-warm-200
                      focus:border-green-500 focus:ring-2 focus:ring-green-100
-                     text-slate-900 placeholder:text-slate-400 transition-colors resize-none"
+                     text-warm-900 placeholder:text-warm-400 transition-colors resize-none"
           />
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+        <div className="flex justify-end gap-3 pt-4 border-t border-warm-200">
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
           </Button>

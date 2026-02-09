@@ -142,7 +142,7 @@ export function GolfCalendarWrapper({
               <p className="text-sm text-rose-600 mb-4">{feedsError}</p>
             )}
             {feedsLoading ? (
-              <div className="py-10 text-center text-sm text-slate-500">
+              <div className="py-10 text-center text-sm text-warm-500">
                 Loading calendar feeds...
               </div>
             ) : (

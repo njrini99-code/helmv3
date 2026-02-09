@@ -22,7 +22,7 @@ const CATEGORY_CONFIG: Record<ExpenseCategory, { icon: string; label: string; co
   meals: { icon: '🍽️', label: 'Meals', color: 'bg-orange-100 text-orange-700' },
   entry_fees: { icon: '🎟️', label: 'Entry Fees', color: 'bg-green-100 text-green-700' },
   equipment: { icon: '⛳', label: 'Equipment', color: 'bg-teal-100 text-teal-700' },
-  other: { icon: '📦', label: 'Other', color: 'bg-slate-100 text-slate-700' },
+  other: { icon: '📦', label: 'Other', color: 'bg-warm-100 text-warm-700' },
 };
 
 const PAID_BY_LABELS: Record<string, string> = {
@@ -70,11 +70,11 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
   if (expenses.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
           <span className="text-2xl">💸</span>
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">No Expenses Yet</h3>
-        <p className="text-sm text-slate-500 max-w-sm mx-auto">
+        <h3 className="text-lg font-semibold text-warm-900 mb-2">No Expenses Yet</h3>
+        <p className="text-sm text-warm-500 max-w-sm mx-auto">
           {isCoach
             ? 'Add your first expense to start tracking costs for this trip.'
             : 'No expenses have been recorded for this trip yet.'}
@@ -95,7 +95,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
+            className="bg-white rounded-xl border border-warm-200 overflow-hidden hover:shadow-md transition-shadow"
           >
             {/* Main Row */}
             <div
@@ -109,12 +109,12 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
 
               {/* Description */}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900 truncate">{expense.description}</p>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                <p className="font-medium text-warm-900 truncate">{expense.description}</p>
+                <div className="flex items-center gap-2 text-xs text-warm-500 mt-0.5">
                   <span>{config.label}</span>
                   {expense.vendor_name && (
                     <>
-                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+                      <span className="w-1 h-1 rounded-full bg-warm-300" />
                       <span className="truncate">{expense.vendor_name}</span>
                     </>
                   )}
@@ -123,23 +123,23 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
 
               {/* Date */}
               <div className="text-right hidden sm:block">
-                <p className="text-sm text-slate-600">{formatDate(expense.expense_date)}</p>
+                <p className="text-sm text-warm-600">{formatDate(expense.expense_date)}</p>
               </div>
 
               {/* Amount */}
               <div className="text-right">
-                <p className="font-semibold text-slate-900">{formatCurrency(expense.amount)}</p>
+                <p className="font-semibold text-warm-900">{formatCurrency(expense.amount)}</p>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
                   expense.paid_by === 'team' ? 'bg-green-100 text-green-700' :
                   expense.paid_by === 'pending_reimbursement' ? 'bg-amber-100 text-amber-700' :
-                  'bg-slate-100 text-slate-600'
+                  'bg-warm-100 text-warm-600'
                 }`}>
                   {PAID_BY_LABELS[expense.paid_by] || expense.paid_by}
                 </span>
               </div>
 
               {/* Expand Arrow */}
-              <div className="text-slate-400">
+              <div className="text-warm-400">
                 {isExpanded ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
               </div>
             </div>
@@ -154,22 +154,22 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="px-4 pb-4 pt-2 border-t border-slate-100">
+                  <div className="px-4 pb-4 pt-2 border-t border-warm-100">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-4">
                       <div>
-                        <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Date</p>
-                        <p className="text-slate-900">{formatDate(expense.expense_date)}</p>
+                        <p className="text-warm-500 text-xs uppercase tracking-wide mb-1">Date</p>
+                        <p className="text-warm-900">{formatDate(expense.expense_date)}</p>
                       </div>
                       <div>
-                        <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Vendor</p>
-                        <p className="text-slate-900">{expense.vendor_name || '-'}</p>
+                        <p className="text-warm-500 text-xs uppercase tracking-wide mb-1">Vendor</p>
+                        <p className="text-warm-900">{expense.vendor_name || '-'}</p>
                       </div>
                       <div>
-                        <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Paid By</p>
-                        <p className="text-slate-900">{PAID_BY_LABELS[expense.paid_by]}</p>
+                        <p className="text-warm-500 text-xs uppercase tracking-wide mb-1">Paid By</p>
+                        <p className="text-warm-900">{PAID_BY_LABELS[expense.paid_by]}</p>
                       </div>
                       <div>
-                        <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Receipt</p>
+                        <p className="text-warm-500 text-xs uppercase tracking-wide mb-1">Receipt</p>
                         {expense.receipt_url ? (
                           <button
                             onClick={(e) => {
@@ -182,27 +182,27 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                             View
                           </button>
                         ) : (
-                          <p className="text-slate-400">None</p>
+                          <p className="text-warm-400">None</p>
                         )}
                       </div>
                     </div>
 
                     {expense.notes && (
                       <div className="mb-4">
-                        <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Notes</p>
-                        <p className="text-slate-700 text-sm">{expense.notes}</p>
+                        <p className="text-warm-500 text-xs uppercase tracking-wide mb-1">Notes</p>
+                        <p className="text-warm-700 text-sm">{expense.notes}</p>
                       </div>
                     )}
 
                     {/* Actions */}
                     {isCoach && (
-                      <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                      <div className="flex items-center gap-2 pt-2 border-t border-warm-100">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onEdit(expense);
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors"
                         >
                           <IconEdit size={14} />
                           Edit
@@ -213,7 +213,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                             handleDelete(expense.id);
                           }}
                           disabled={deleting === expense.id}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                         >
                           <IconTrash size={14} />
                           {deleting === expense.id ? 'Deleting...' : 'Delete'}
@@ -231,7 +231,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
       {/* Receipt Viewer Modal */}
       {viewingReceipt && (
         <div
-          className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-warm-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setViewingReceipt(null)}
         >
           <motion.div
@@ -240,11 +240,11 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
             className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900">Receipt</h3>
+            <div className="p-4 border-b border-warm-200 flex items-center justify-between">
+              <h3 className="font-semibold text-warm-900">Receipt</h3>
               <button
                 onClick={() => setViewingReceipt(null)}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
               >
                 <IconTrash size={18} />
               </button>

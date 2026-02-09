@@ -64,15 +64,15 @@ export function WeightDistributor({ values, onChange }: WeightDistributorProps) 
       {WEIGHTS.map((weight) => (
         <div key={weight.key} className="space-y-1.5">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">{weight.label}</span>
-            <span className="font-semibold text-slate-900 tabular-nums w-12 text-right">
+            <span className="text-warm-600">{weight.label}</span>
+            <span className="font-semibold text-warm-900 tabular-nums w-12 text-right">
               {values[weight.key]}%
             </span>
           </div>
 
           {/* Slider */}
           <div className="relative h-6">
-            <div className="absolute inset-0 bg-slate-100 rounded-lg overflow-hidden">
+            <div className="absolute inset-0 bg-warm-100 rounded-lg overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-150"
                 style={{ width: `${values[weight.key]}%` }}
@@ -94,7 +94,7 @@ export function WeightDistributor({ values, onChange }: WeightDistributorProps) 
       {/* Total */}
       <div
         className={cn(
-          'flex items-center justify-between pt-3 border-t border-slate-200 text-sm font-medium',
+          'flex items-center justify-between pt-3 border-t border-warm-200 text-sm font-medium',
           isValid ? 'text-green-600' : 'text-red-500'
         )}
       >

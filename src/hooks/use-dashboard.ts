@@ -167,7 +167,7 @@ export function useUpcomingEvents(limit = 5) {
             location,
             organization:organizations (name, logo_url)
           `)
-          .eq('created_by', coach.id)
+          .eq('coach_id', coach.id)
           .gte('start_date', todayDate)
           .order('start_date', { ascending: true })
           .limit(limit);

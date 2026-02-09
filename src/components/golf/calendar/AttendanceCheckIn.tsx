@@ -139,15 +139,15 @@ export function AttendanceCheckIn({
 
   return (
     <>
-      <div className={cn('bg-white rounded-2xl border border-slate-200 shadow-sm', className)}>
+      <div className={cn('bg-white rounded-2xl border border-warm-200 shadow-sm', className)}>
         {/* Sticky header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 rounded-t-2xl">
+        <div className="sticky top-0 z-10 bg-white border-b border-warm-200 rounded-t-2xl">
           <div className="p-5">
             {/* Event title */}
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">{eventTitle}</h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <h3 className="text-lg font-semibold text-warm-900">{eventTitle}</h3>
+                <p className="text-sm text-warm-500 mt-1">
                   Check in {stats.total} player{stats.total !== 1 ? 's' : ''}
                 </p>
               </div>
@@ -166,13 +166,13 @@ export function AttendanceCheckIn({
             {/* Progress bar */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-slate-700">
+                <span className="font-medium text-warm-700">
                   Progress: {stats.present + stats.absent} / {stats.total}
                 </span>
-                <span className="text-slate-500 tabular-nums">{Math.round(stats.percentage)}%</span>
+                <span className="text-warm-500 tabular-nums">{Math.round(stats.percentage)}%</span>
               </div>
 
-              <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-warm-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-green-600 transition-all duration-500 ease-out rounded-full"
                   style={{ width: `${stats.percentage}%` }}
@@ -181,17 +181,17 @@ export function AttendanceCheckIn({
 
               {/* Stats row */}
               <div className="flex items-center gap-4 pt-2">
-                <div className="flex items-center gap-1.5 text-sm">
+                <div className="flex items-center gap-2 text-sm">
                   <CheckCircle className="w-4 h-4 text-emerald-600" />
-                  <span className="font-medium text-slate-700">{stats.present} present</span>
+                  <span className="font-medium text-warm-700">{stats.present} present</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm">
+                <div className="flex items-center gap-2 text-sm">
                   <XCircle className="w-4 h-4 text-rose-500" />
-                  <span className="font-medium text-slate-700">{stats.absent} absent</span>
+                  <span className="font-medium text-warm-700">{stats.absent} absent</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Clock className="w-4 h-4 text-slate-400" />
-                  <span className="font-medium text-slate-600">{stats.remaining} remaining</span>
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="w-4 h-4 text-warm-400" />
+                  <span className="font-medium text-warm-600">{stats.remaining} remaining</span>
                 </div>
               </div>
             </div>
@@ -220,8 +220,8 @@ export function AttendanceCheckIn({
         <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
           {sortedPlayers.length === 0 ? (
             <div className="text-center py-12">
-              <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm text-slate-500">No players to check in</p>
+              <Users className="w-12 h-12 text-warm-300 mx-auto mb-3" />
+              <p className="text-sm text-warm-500">No players to check in</p>
             </div>
           ) : (
             <>
@@ -241,7 +241,7 @@ export function AttendanceCheckIn({
 
         {/* Completion message */}
         {isComplete && (
-          <div className="p-5 border-t border-slate-200 bg-emerald-50">
+          <div className="p-5 border-t border-warm-200 bg-emerald-50">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-white" />
@@ -290,21 +290,21 @@ export function CompactAttendanceSummary({
       <div className="flex items-center gap-3 text-sm">
         <div className="flex items-center gap-1">
           <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-          <span className="font-medium text-slate-700">{present}</span>
+          <span className="font-medium text-warm-700">{present}</span>
         </div>
         <div className="flex items-center gap-1">
           <XCircle className="w-3.5 h-3.5 text-rose-500" />
-          <span className="font-medium text-slate-700">{absent}</span>
+          <span className="font-medium text-warm-700">{absent}</span>
         </div>
         {remaining > 0 && (
           <div className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-slate-600">{remaining}</span>
+            <Clock className="w-3.5 h-3.5 text-warm-400" />
+            <span className="text-warm-600">{remaining}</span>
           </div>
         )}
       </div>
 
-      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden">
         <div
           className="h-full bg-green-600 transition-all duration-300"
           style={{ width: `${percentage}%` }}

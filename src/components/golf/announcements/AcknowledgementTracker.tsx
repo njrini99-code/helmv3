@@ -35,7 +35,7 @@ export function AcknowledgementTracker({
               fill="none"
               stroke="currentColor"
               strokeWidth="2.5"
-              className="text-slate-100"
+              className="text-warm-100"
             />
             <circle
               cx="14" cy="14" r="11"
@@ -53,7 +53,7 @@ export function AcknowledgementTracker({
             </div>
           )}
         </div>
-        <span className="text-xs font-medium text-slate-500">
+        <span className="text-xs font-medium text-warm-500">
           {acknowledgedCount}/{totalRecipients}
         </span>
       </div>
@@ -64,17 +64,17 @@ export function AcknowledgementTracker({
     <div className="space-y-3">
       {/* Progress header */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-700">Acknowledgements</span>
+        <span className="text-sm font-medium text-warm-700">Acknowledgements</span>
         <span className={cn(
           'text-sm font-semibold tabular-nums',
-          isComplete ? 'text-green-600' : 'text-slate-900'
+          isComplete ? 'text-green-600' : 'text-warm-900'
         )}>
           {acknowledgedCount}/{totalRecipients}
         </span>
       </div>
 
       {/* Progress bar */}
-      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
         <div
           className={cn(
             'h-full rounded-full transition-all duration-500 ease-out',
@@ -92,10 +92,10 @@ export function AcknowledgementTracker({
               <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                 <IconCheck size={10} className="text-green-600" />
               </div>
-              <span className="text-sm text-slate-700 flex-1 truncate">
+              <span className="text-sm text-warm-700 flex-1 truncate">
                 {playerNames[ack.player_id] || 'Unknown Player'}
               </span>
-              <span className="text-xs text-slate-400 flex-shrink-0">
+              <span className="text-xs text-warm-400 flex-shrink-0">
                 {new Date(ack.acknowledged_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
             </div>
@@ -114,7 +114,7 @@ export function AcknowledgementPill({ count, total }: { count: number; total: nu
       'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium tabular-nums',
       isComplete
         ? 'bg-green-50 text-green-700'
-        : 'bg-slate-100 text-slate-500'
+        : 'bg-warm-100 text-warm-500'
     )}>
       {isComplete ? <IconCheck size={10} /> : <IconClock size={10} />}
       {count}/{total}

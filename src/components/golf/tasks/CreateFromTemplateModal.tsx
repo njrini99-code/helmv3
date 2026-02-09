@@ -89,16 +89,16 @@ export function CreateFromTemplateModal({
     <Modal isOpen={isOpen} onClose={onClose} title="Create Task from Template">
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Template Info */}
-        <div className="bg-slate-50 rounded-lg p-3 mb-4">
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
+        <div className="bg-warm-50 rounded-lg p-3 mb-4">
+          <p className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-1">
             Template
           </p>
-          <p className="font-medium text-slate-900">{template.title}</p>
+          <p className="font-medium text-warm-900">{template.title}</p>
           {template.description && (
-            <p className="text-sm text-slate-500 mt-1">{template.description}</p>
+            <p className="text-sm text-warm-500 mt-1">{template.description}</p>
           )}
           {template.category && (
-            <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs font-medium bg-slate-200 text-slate-600">
+            <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs font-medium bg-warm-200 text-warm-600">
               {template.category}
             </span>
           )}
@@ -121,7 +121,7 @@ export function CreateFromTemplateModal({
 
         {/* Assignment */}
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-2">
+          <label className="text-sm font-medium text-warm-700 block mb-2">
             Assign To
           </label>
 
@@ -138,14 +138,14 @@ export function CreateFromTemplateModal({
                 'w-full p-3 rounded-lg border-2 text-left transition-all',
                 assignToAll
                   ? 'border-green-600 bg-green-50 shadow-sm'
-                  : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                  : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
               )}
             >
               <div className="flex items-center gap-2">
-                <IconUsers size={16} className={assignToAll ? 'text-green-600' : 'text-slate-400'} />
+                <IconUsers size={16} className={assignToAll ? 'text-green-600' : 'text-warm-400'} />
                 <div>
-                  <p className="font-medium text-slate-900">All Team Members</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{players.length} players</p>
+                  <p className="font-medium text-warm-900">All Team Members</p>
+                  <p className="text-xs text-warm-500 mt-0.5">{players.length} players</p>
                 </div>
               </div>
             </motion.button>
@@ -159,11 +159,11 @@ export function CreateFromTemplateModal({
                 'w-full p-3 rounded-lg border-2 text-left transition-all',
                 !assignToAll
                   ? 'border-green-600 bg-green-50 shadow-sm'
-                  : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                  : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
               )}
             >
-              <p className="font-medium text-slate-900">Specific Players</p>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="font-medium text-warm-900">Specific Players</p>
+              <p className="text-xs text-warm-500 mt-0.5">
                 {selectedPlayers.length > 0
                   ? `${selectedPlayers.length} selected`
                   : 'Select players below'}
@@ -177,7 +177,7 @@ export function CreateFromTemplateModal({
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.22 }}
-              className="mt-3 max-h-48 overflow-y-auto space-y-1 border border-slate-200 rounded-lg p-2"
+              className="mt-3 max-h-48 overflow-y-auto space-y-1 border border-warm-200 rounded-lg p-2"
             >
               {players.map((player, index) => (
                 <motion.button
@@ -193,7 +193,7 @@ export function CreateFromTemplateModal({
                     'w-full px-3 py-2 rounded-md text-left text-sm flex items-center justify-between transition-all',
                     selectedPlayers.includes(player.id)
                       ? 'bg-green-100 text-green-900 shadow-sm'
-                      : 'hover:bg-slate-50 text-slate-700'
+                      : 'hover:bg-warm-50 text-warm-700'
                   )}
                 >
                   <span>
@@ -209,7 +209,7 @@ export function CreateFromTemplateModal({
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+        <div className="flex justify-end gap-3 pt-4 border-t border-warm-200">
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
           </Button>

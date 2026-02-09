@@ -20,8 +20,8 @@ const ComposedChart = dynamic(() => import('recharts').then(mod => mod.ComposedC
 // Chart loading skeleton
 function ChartSkeleton() {
   return (
-    <div className="h-64 bg-slate-100/50 rounded-xl animate-pulse flex items-center justify-center">
-      <span className="text-slate-400 text-sm">Loading chart...</span>
+    <div className="h-64 bg-warm-100/50 rounded-xl animate-pulse flex items-center justify-center">
+      <span className="text-warm-400 text-sm">Loading chart...</span>
     </div>
   );
 }
@@ -50,7 +50,7 @@ function formatDate(dateStr: string, short = false) {
 function getScoreColor(toPar: number) {
   if (toPar <= -5) return 'text-emerald-700 bg-emerald-50';
   if (toPar < 0) return 'text-emerald-600 bg-emerald-50';
-  if (toPar === 0) return 'text-slate-700 bg-slate-50';
+  if (toPar === 0) return 'text-warm-700 bg-warm-50';
   if (toPar <= 5) return 'text-amber-600 bg-amber-50';
   return 'text-red-600 bg-red-50';
 }
@@ -90,8 +90,8 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 p-3">
-      <p className="text-xs font-medium text-slate-500 mb-1">{label}</p>
+    <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 p-3">
+      <p className="text-xs font-medium text-warm-500 mb-1">{label}</p>
       {payload.map((entry, index) => (
         <p key={index} className="text-sm font-semibold" style={{ color: entry.color }}>
           {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(1) : entry.value}
@@ -129,8 +129,8 @@ const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: 
 
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-base font-semibold text-slate-900">Scoring Trend</h3>
-          <p className="text-sm text-slate-500 mt-0.5">Last {rounds.length} rounds</p>
+          <h3 className="text-base font-semibold text-warm-900">Scoring Trend</h3>
+          <p className="text-sm text-warm-500 mt-0.5">Last {rounds.length} rounds</p>
         </div>
         <div className="flex items-center gap-2">
           {trend.direction !== 'stable' && (
@@ -148,7 +148,7 @@ const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: 
           <button
             onClick={() => setShowMovingAvg(!showMovingAvg)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              showMovingAvg ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+              showMovingAvg ? 'bg-green-100 text-green-700' : 'bg-warm-100 text-warm-600'
             }`}
           >
             3-Round Avg
@@ -234,7 +234,7 @@ const ScoreDistributionChart = memo(function ScoreDistributionChart({ stats }: {
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
-      <h3 className="text-base font-semibold text-slate-900 mb-4">Score Distribution</h3>
+      <h3 className="text-base font-semibold text-warm-900 mb-4">Score Distribution</h3>
 
       <Suspense fallback={<ChartSkeleton />}>
         <div className="h-48">
@@ -265,13 +265,13 @@ const ScoreDistributionChart = memo(function ScoreDistributionChart({ stats }: {
       </Suspense>
 
       {/* Legend */}
-      <div className="flex flex-wrap justify-center gap-4 mt-4 pt-4 border-t border-slate-100">
+      <div className="flex flex-wrap justify-center gap-4 mt-4 pt-4 border-t border-warm-100">
         {distribution.map((d, i) => (
           <div key={i} className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: d.color }} />
             <span className="text-sm">
-              <span className="font-semibold text-slate-700">{d.count}</span>
-              <span className="text-slate-500 ml-1">{d.label}</span>
+              <span className="font-semibold text-warm-700">{d.count}</span>
+              <span className="text-warm-500 ml-1">{d.label}</span>
             </span>
           </div>
         ))}
@@ -290,7 +290,7 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-slate-900">Recent Rounds</h3>
+        <h3 className="text-base font-semibold text-warm-900">Recent Rounds</h3>
         {rounds.length > 5 && (
           <button
             onClick={() => setExpanded(!expanded)}
@@ -308,16 +308,16 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
         {displayRounds.map((round, index) => (
           <div
             key={round.id}
-            className="flex items-center justify-between p-3 bg-slate-50/80 rounded-xl hover:bg-slate-100/80 transition-colors"
+            className="flex items-center justify-between p-3 bg-warm-50/80 rounded-xl hover:bg-warm-100/80 transition-colors"
             style={{ animation: `fadeIn 0.3s ease-out forwards`, animationDelay: `${index * 50}ms` }}
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 truncate">{round.course_name}</p>
-              <p className="text-xs text-slate-500">{formatDate(round.round_date)}</p>
+              <p className="text-sm font-medium text-warm-900 truncate">{round.course_name}</p>
+              <p className="text-xs text-warm-500">{formatDate(round.round_date)}</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className="text-lg font-bold text-slate-900">{round.total_score}</p>
+                <p className="text-lg font-bold text-warm-900">{round.total_score}</p>
               </div>
               <div className={`px-2.5 py-1 rounded-lg text-sm font-semibold ${getScoreColor(round.total_to_par)}`}>
                 {round.total_to_par === 0 ? 'E' : round.total_to_par > 0 ? `+${round.total_to_par}` : round.total_to_par}
@@ -361,8 +361,8 @@ const ProgressMetrics = memo(function ProgressMetrics({ stats }: { stats: GolfSt
             style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
           />
           <p className={`text-2xl font-bold ${m.color}`}>{m.value}</p>
-          <p className="text-xs font-medium text-slate-700 mt-1">{m.label}</p>
-          <p className="text-xs text-slate-400">{m.subtext}</p>
+          <p className="text-xs font-medium text-warm-700 mt-1">{m.label}</p>
+          <p className="text-xs text-warm-400">{m.subtext}</p>
         </div>
       ))}
 
@@ -408,16 +408,16 @@ const RoundComparisonTable = memo(function RoundComparisonTable({ rounds }: { ro
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
       <div className="p-6 pb-4">
-        <h3 className="text-base font-semibold text-slate-900">Round Comparison</h3>
-        <p className="text-sm text-slate-500 mt-0.5">Click column headers to sort</p>
+        <h3 className="text-base font-semibold text-warm-900">Round Comparison</h3>
+        <p className="text-sm text-warm-500 mt-0.5">Click column headers to sort</p>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-y border-slate-100 bg-slate-50/50">
+            <tr className="border-y border-warm-100 bg-warm-50/50">
               <th
-                className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700"
+                className="px-6 py-3 text-left text-xs font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
                 onClick={() => handleSort('date')}
               >
                 <div className="flex items-center gap-1">
@@ -425,11 +425,11 @@ const RoundComparisonTable = memo(function RoundComparisonTable({ rounds }: { ro
                   {sortBy === 'date' && (sortAsc ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />)}
                 </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-warm-500 uppercase tracking-wide">
                 Course
               </th>
               <th
-                className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700"
+                className="px-6 py-3 text-center text-xs font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
                 onClick={() => handleSort('score')}
               >
                 <div className="flex items-center justify-center gap-1">
@@ -437,22 +437,22 @@ const RoundComparisonTable = memo(function RoundComparisonTable({ rounds }: { ro
                   {sortBy === 'score' && (sortAsc ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />)}
                 </div>
               </th>
-              <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              <th className="px-6 py-3 text-center text-xs font-semibold text-warm-500 uppercase tracking-wide">
                 To Par
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-warm-100">
             {sortedRounds.slice(0, 10).map((round) => (
-              <tr key={round.id} className="hover:bg-slate-50/50 transition-colors">
-                <td className="px-6 py-3 text-sm text-slate-600">
+              <tr key={round.id} className="hover:bg-warm-50/50 transition-colors">
+                <td className="px-6 py-3 text-sm text-warm-600">
                   {formatDate(round.round_date)}
                 </td>
-                <td className="px-6 py-3 text-sm font-medium text-slate-900">
+                <td className="px-6 py-3 text-sm font-medium text-warm-900">
                   {round.course_name}
                 </td>
                 <td className="px-6 py-3 text-center">
-                  <span className="text-lg font-bold text-slate-900">{round.total_score}</span>
+                  <span className="text-lg font-bold text-warm-900">{round.total_score}</span>
                 </td>
                 <td className="px-6 py-3 text-center">
                   <span className={`inline-flex px-2.5 py-1 rounded-lg text-sm font-semibold ${getScoreColor(round.total_to_par)}`}>
@@ -489,7 +489,7 @@ const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats 
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
-      <h3 className="text-base font-semibold text-slate-900 mb-4">Putt Make % by Distance</h3>
+      <h3 className="text-base font-semibold text-warm-900 mb-4">Putt Make % by Distance</h3>
 
       <Suspense fallback={<ChartSkeleton />}>
         <div className="h-48">
@@ -523,7 +523,7 @@ const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats 
         </div>
       </Suspense>
 
-      <div className="text-xs text-slate-500 text-center mt-3">
+      <div className="text-xs text-warm-500 text-center mt-3">
         Distance buckets show make percentage from first putt
       </div>
     </div>
@@ -545,7 +545,7 @@ const GirByParChart = memo(function GirByParChart({ stats }: { stats: GolfStats 
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
-      <h3 className="text-base font-semibold text-slate-900 mb-4">GIR % by Hole Type</h3>
+      <h3 className="text-base font-semibold text-warm-900 mb-4">GIR % by Hole Type</h3>
 
       <Suspense fallback={<ChartSkeleton />}>
         <div className="h-48">
@@ -579,14 +579,14 @@ const GirByParChart = memo(function GirByParChart({ stats }: { stats: GolfStats 
         </div>
       </Suspense>
 
-      <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-slate-100">
+      <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-warm-100">
         <div className="text-center">
-          <div className="text-lg font-bold text-slate-900">{stats.girPercentage?.toFixed(1) ?? '--'}%</div>
-          <div className="text-xs text-slate-500">Overall GIR</div>
+          <div className="text-lg font-bold text-warm-900">{stats.girPercentage?.toFixed(1) ?? '--'}%</div>
+          <div className="text-xs text-warm-500">Overall GIR</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-bold text-slate-900">{stats.girPerRound?.toFixed(1) ?? '--'}</div>
-          <div className="text-xs text-slate-500">GIR/Round</div>
+          <div className="text-lg font-bold text-warm-900">{stats.girPerRound?.toFixed(1) ?? '--'}</div>
+          <div className="text-xs text-warm-500">GIR/Round</div>
         </div>
       </div>
     </div>
@@ -629,8 +629,8 @@ const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: 
       />
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-base font-semibold text-slate-900">Strokes Gained (per Round)</h3>
-          <p className="text-sm text-slate-500 mt-0.5">vs PGA Tour baseline</p>
+          <h3 className="text-base font-semibold text-warm-900">Strokes Gained (per Round)</h3>
+          <p className="text-sm text-warm-500 mt-0.5">vs PGA Tour baseline</p>
         </div>
         <div className={`px-3 py-1.5 rounded-lg text-sm font-bold ${
           (stats.sgTotalPerRound ?? 0) >= 0
@@ -681,7 +681,7 @@ const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: 
         </div>
       </Suspense>
 
-      <div className="text-xs text-slate-500 text-center mt-3">
+      <div className="text-xs text-warm-500 text-center mt-3">
         Positive = gaining strokes vs tour avg | Negative = losing strokes
       </div>
     </div>
@@ -723,13 +723,13 @@ const KeyStatsSummary = memo(function KeyStatsSummary({ stats }: { stats: GolfSt
   ];
 
   const getColorClasses = (color: string, isAboveTarget: boolean) => {
-    if (!isAboveTarget) return 'bg-slate-100 text-slate-600';
+    if (!isAboveTarget) return 'bg-warm-100 text-warm-600';
     switch (color) {
       case 'green': return 'bg-green-100 text-green-700';
       case 'blue': return 'bg-blue-100 text-blue-700';
       case 'purple': return 'bg-purple-100 text-purple-700';
       case 'amber': return 'bg-amber-100 text-amber-700';
-      default: return 'bg-slate-100 text-slate-600';
+      default: return 'bg-warm-100 text-warm-600';
     }
   };
 
@@ -738,7 +738,7 @@ const KeyStatsSummary = memo(function KeyStatsSummary({ stats }: { stats: GolfSt
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
-      <h3 className="text-base font-semibold text-slate-900 mb-4">Key Performance Indicators</h3>
+      <h3 className="text-base font-semibold text-warm-900 mb-4">Key Performance Indicators</h3>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statCards.map((stat, i) => {
@@ -753,11 +753,11 @@ const KeyStatsSummary = memo(function KeyStatsSummary({ stats }: { stats: GolfSt
               <div className={`inline-flex px-3 py-1 rounded-full text-xs font-medium mb-2 ${getColorClasses(stat.color, isAboveTarget)}`}>
                 {isAboveTarget ? 'On Target' : 'Improving'}
               </div>
-              <div className="text-2xl font-bold text-slate-900">
+              <div className="text-2xl font-bold text-warm-900">
                 {stat.value !== null ? stat.format(stat.value) : '--'}
               </div>
-              <div className="text-sm text-slate-500">{stat.label}</div>
-              <div className="text-xs text-slate-400 mt-1">
+              <div className="text-sm text-warm-500">{stat.label}</div>
+              <div className="text-xs text-warm-400 mt-1">
                 Target: {stat.invertTarget ? '<' : '>'}{stat.target}{stat.label.includes('%') ? '%' : ''}
               </div>
             </div>
@@ -832,8 +832,8 @@ const InsightCard = memo(function InsightCard({ stats }: { stats: GolfStats }) {
   const opportunities = insights.filter(i => i.type === 'opportunity');
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 p-6">
-      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">
+    <div className="bg-white rounded-2xl border border-warm-200/80 p-6">
+      <h3 className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-4">
         Key Takeaways
       </h3>
       <div className="space-y-4">
@@ -845,8 +845,8 @@ const InsightCard = memo(function InsightCard({ stats }: { stats: GolfStats }) {
                 <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-green-50/60 border border-green-100/80">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-slate-800">{insight.label}</span>
-                    <span className="text-sm text-slate-500 ml-1.5">{insight.detail}</span>
+                    <span className="text-sm font-medium text-warm-800">{insight.label}</span>
+                    <span className="text-sm text-warm-500 ml-1.5">{insight.detail}</span>
                   </div>
                 </div>
               ))}
@@ -861,8 +861,8 @@ const InsightCard = memo(function InsightCard({ stats }: { stats: GolfStats }) {
                 <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-amber-50/60 border border-amber-100/80">
                   <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-slate-800">{insight.label}</span>
-                    <span className="text-sm text-slate-500 ml-1.5">{insight.detail}</span>
+                    <span className="text-sm font-medium text-warm-800">{insight.label}</span>
+                    <span className="text-sm text-warm-500 ml-1.5">{insight.detail}</span>
                   </div>
                 </div>
               ))}
@@ -916,11 +916,11 @@ export default memo(function ProgressStats({ stats, rounds }: ProgressStatsProps
           <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
             style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
           />
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">&#128200;</span>
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">More Data Needed</h3>
-          <p className="text-slate-500 max-w-sm mx-auto">
+          <h3 className="text-lg font-semibold text-warm-900 mb-2">More Data Needed</h3>
+          <p className="text-warm-500 max-w-sm mx-auto">
             Play more rounds to unlock detailed trend visualizations and insights
           </p>
         </div>

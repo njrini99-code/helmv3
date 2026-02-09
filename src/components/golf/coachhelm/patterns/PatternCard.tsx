@@ -46,10 +46,10 @@ const severityConfig: Record<PatternSeverity, {
   label: string;
 }> = {
   low: {
-    bg: 'bg-slate-50',
-    border: 'border-slate-200',
-    text: 'text-slate-600',
-    badge: 'bg-slate-100 text-slate-700',
+    bg: 'bg-warm-50',
+    border: 'border-warm-200',
+    text: 'text-warm-600',
+    badge: 'bg-warm-100 text-warm-700',
     label: 'Low',
   },
   medium: {
@@ -109,7 +109,7 @@ export function PatternCard({
       case 'temporal':
         return <IconTarget size={16} className="text-cyan-500" />;
       default:
-        return <IconStar size={16} className="text-slate-500" />;
+        return <IconStar size={16} className="text-warm-500" />;
     }
   };
 
@@ -145,8 +145,8 @@ export function PatternCard({
       detected: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Detected' },
       confirmed: { bg: 'bg-green-100', text: 'text-green-700', label: 'Confirmed' },
       addressed: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'In Progress' },
-      resolved: { bg: 'bg-slate-100', text: 'text-slate-600', label: 'Resolved' },
-      dismissed: { bg: 'bg-slate-100', text: 'text-slate-400', label: 'Dismissed' },
+      resolved: { bg: 'bg-warm-100', text: 'text-warm-600', label: 'Resolved' },
+      dismissed: { bg: 'bg-warm-100', text: 'text-warm-400', label: 'Dismissed' },
     };
 
     const config = badges[pattern.lifecycleState] ?? badges.detected;
@@ -215,7 +215,7 @@ export function PatternCard({
             <div className="flex-1 min-w-0">
               {/* Meta row */}
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                <span className="text-xs font-medium text-warm-400 uppercase tracking-wide">
                   {pattern.patternType}
                 </span>
                 {getLifecycleBadge()}
@@ -227,13 +227,13 @@ export function PatternCard({
 
               {/* Player name (if showing) */}
               {showPlayer && pattern.playerName && (
-                <p className="text-sm font-medium text-slate-800 mb-0.5">
+                <p className="text-sm font-medium text-warm-800 mb-0.5">
                   {pattern.playerName}
                 </p>
               )}
 
               {/* Description */}
-              <p className="text-sm text-slate-700 line-clamp-2">
+              <p className="text-sm text-warm-700 line-clamp-2">
                 {pattern.description || 'Performance pattern detected'}
               </p>
 
@@ -241,14 +241,14 @@ export function PatternCard({
               <div className="mt-3 flex items-center gap-3">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-500">Stroke Impact</span>
+                    <span className="text-xs text-warm-500">Stroke Impact</span>
                     <span className={cn('text-sm font-semibold', impactColor)}>
                       {isNegative ? '+' : '-'}{strokeImpactAbs.toFixed(1)}
                     </span>
                   </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden relative">
+                  <div className="h-2 bg-warm-100 rounded-full overflow-hidden relative">
                     {/* Center line */}
-                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-300" />
+                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-warm-300" />
                     {/* Impact bar */}
                     <motion.div
                       initial={{ width: 0 }}
@@ -278,7 +278,7 @@ export function PatternCard({
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="3"
-                        className="text-slate-100"
+                        className="text-warm-100"
                       />
                       <motion.circle
                         cx="18"
@@ -295,11 +295,11 @@ export function PatternCard({
                         transition={{ duration: 0.5, delay: 0.3 }}
                       />
                     </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-slate-700">
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-warm-700">
                       {confidencePercent}%
                     </span>
                   </div>
-                  <span className="text-xs text-slate-500 mt-0.5 block">Confidence</span>
+                  <span className="text-xs text-warm-500 mt-0.5 block">Confidence</span>
                 </div>
               </div>
             </div>
@@ -307,7 +307,7 @@ export function PatternCard({
             {/* Expand button */}
             <button
               onClick={() => setExpanded(!expanded)}
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
             >
               <motion.div
                 animate={{ rotate: expanded ? 180 : 0 }}
@@ -328,10 +328,10 @@ export function PatternCard({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="pt-4 mt-4 border-t border-slate-100">
+                <div className="pt-4 mt-4 border-t border-warm-100">
                   {/* Conditions - IF */}
                   <div className="mb-4">
-                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                    <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">
                       IF
                     </h4>
                     <div className="flex flex-wrap gap-2">
@@ -352,7 +352,7 @@ export function PatternCard({
 
                   {/* Outcome - THEN */}
                   <div className="mb-4">
-                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                    <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">
                       THEN
                     </h4>
                     <span className={cn(
@@ -370,29 +370,29 @@ export function PatternCard({
 
                   {/* Stats grid */}
                   <div className="grid grid-cols-4 gap-3 mb-4">
-                    <div className="text-center p-2 bg-slate-50 rounded-lg">
-                      <div className="text-lg font-semibold text-slate-800">
+                    <div className="text-center p-2 bg-warm-50 rounded-lg">
+                      <div className="text-lg font-semibold text-warm-800">
                         {Math.round(pattern.support * 100)}%
                       </div>
-                      <div className="text-xs text-slate-500">Frequency</div>
+                      <div className="text-xs text-warm-500">Frequency</div>
                     </div>
-                    <div className="text-center p-2 bg-slate-50 rounded-lg">
-                      <div className="text-lg font-semibold text-slate-800">
+                    <div className="text-center p-2 bg-warm-50 rounded-lg">
+                      <div className="text-lg font-semibold text-warm-800">
                         {pattern.lift.toFixed(1)}x
                       </div>
-                      <div className="text-xs text-slate-500">Lift</div>
+                      <div className="text-xs text-warm-500">Lift</div>
                     </div>
-                    <div className="text-center p-2 bg-slate-50 rounded-lg">
-                      <div className="text-lg font-semibold text-slate-800">
+                    <div className="text-center p-2 bg-warm-50 rounded-lg">
+                      <div className="text-lg font-semibold text-warm-800">
                         {pattern.sampleSize}
                       </div>
-                      <div className="text-xs text-slate-500">Samples</div>
+                      <div className="text-xs text-warm-500">Samples</div>
                     </div>
-                    <div className="text-center p-2 bg-slate-50 rounded-lg">
-                      <div className="text-lg font-semibold text-slate-800">
+                    <div className="text-center p-2 bg-warm-50 rounded-lg">
+                      <div className="text-lg font-semibold text-warm-800">
                         {pattern.occurrenceCount}
                       </div>
-                      <div className="text-xs text-slate-500">Occurrences</div>
+                      <div className="text-xs text-warm-500">Occurrences</div>
                     </div>
                   </div>
 
@@ -428,7 +428,7 @@ export function PatternCard({
                         {onValidate && (
                           <button
                             onClick={() => onValidate(pattern)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-green-600 hover:bg-green-50 transition-colors"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-green-600 hover:bg-green-50 transition-colors"
                           >
                             <IconCheck size={14} />
                             Validate
@@ -437,7 +437,7 @@ export function PatternCard({
                         {onDismiss && (
                           <button
                             onClick={() => onDismiss(pattern)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-100 transition-colors"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-500 hover:bg-warm-100 transition-colors"
                           >
                             <IconX size={14} />
                             Dismiss
@@ -449,7 +449,7 @@ export function PatternCard({
                     {pattern.lifecycleState === 'confirmed' && onMarkAddressed && (
                       <button
                         onClick={() => onMarkAddressed(pattern)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-amber-600 hover:bg-amber-50 transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-amber-600 hover:bg-amber-50 transition-colors"
                       >
                         <IconTarget size={14} />
                         Mark as Working On
@@ -459,7 +459,7 @@ export function PatternCard({
                     {pattern.lifecycleState === 'addressed' && onResolve && (
                       <button
                         onClick={() => onResolve(pattern)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-green-600 hover:bg-green-50 transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-green-600 hover:bg-green-50 transition-colors"
                       >
                         <IconCheck size={14} />
                         Mark Resolved
@@ -469,7 +469,7 @@ export function PatternCard({
                     {onViewEvidence && (
                       <button
                         onClick={() => onViewEvidence(pattern)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-100 transition-colors ml-auto"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-500 hover:bg-warm-100 transition-colors ml-auto"
                       >
                         <IconEye size={14} />
                         View Evidence
@@ -478,7 +478,7 @@ export function PatternCard({
                   </div>
 
                   {/* Timestamps */}
-                  <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-4 text-xs text-slate-400">
+                  <div className="mt-4 pt-4 border-t border-warm-100 flex flex-wrap gap-4 text-xs text-warm-400">
                     <span>First detected: {new Date(pattern.firstDetected).toLocaleDateString()}</span>
                     <span>Last occurrence: {new Date(pattern.lastOccurrence).toLocaleDateString()}</span>
                     {pattern.validatedAt && (

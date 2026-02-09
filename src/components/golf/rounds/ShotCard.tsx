@@ -39,13 +39,13 @@ const CLUB_DISPLAY: Record<string, { label: string; color: string }> = {
   '3_hybrid': { label: '3 Hybrid', color: 'bg-sky-100 text-sky-700' },
   '4_hybrid': { label: '4 Hybrid', color: 'bg-sky-100 text-sky-700' },
   '5_hybrid': { label: '5 Hybrid', color: 'bg-sky-100 text-sky-700' },
-  '3_iron': { label: '3 Iron', color: 'bg-slate-100 text-slate-700' },
-  '4_iron': { label: '4 Iron', color: 'bg-slate-100 text-slate-700' },
-  '5_iron': { label: '5 Iron', color: 'bg-slate-100 text-slate-700' },
-  '6_iron': { label: '6 Iron', color: 'bg-slate-100 text-slate-700' },
-  '7_iron': { label: '7 Iron', color: 'bg-slate-100 text-slate-700' },
-  '8_iron': { label: '8 Iron', color: 'bg-slate-100 text-slate-700' },
-  '9_iron': { label: '9 Iron', color: 'bg-slate-100 text-slate-700' },
+  '3_iron': { label: '3 Iron', color: 'bg-warm-100 text-warm-700' },
+  '4_iron': { label: '4 Iron', color: 'bg-warm-100 text-warm-700' },
+  '5_iron': { label: '5 Iron', color: 'bg-warm-100 text-warm-700' },
+  '6_iron': { label: '6 Iron', color: 'bg-warm-100 text-warm-700' },
+  '7_iron': { label: '7 Iron', color: 'bg-warm-100 text-warm-700' },
+  '8_iron': { label: '8 Iron', color: 'bg-warm-100 text-warm-700' },
+  '9_iron': { label: '9 Iron', color: 'bg-warm-100 text-warm-700' },
   pw: { label: 'PW', color: 'bg-amber-100 text-amber-700' },
   gw: { label: 'GW', color: 'bg-amber-100 text-amber-700' },
   sw: { label: 'SW', color: 'bg-amber-100 text-amber-700' },
@@ -66,7 +66,7 @@ const RESULT_DISPLAY: Record<string, { icon: React.ReactNode; color: string; lab
   penalty: { icon: <IconWarning size={12} />, color: 'text-red-600', label: 'Penalty' },
   ob: { icon: <IconX size={12} />, color: 'text-red-600', label: 'Out of Bounds' },
   water: { icon: <IconWarning size={12} />, color: 'text-red-600', label: 'Water' },
-  fringe: { icon: <IconTarget size={12} />, color: 'text-slate-600', label: 'Fringe' },
+  fringe: { icon: <IconTarget size={12} />, color: 'text-warm-600', label: 'Fringe' },
 };
 
 // Sync status display config
@@ -120,14 +120,14 @@ function getShotTypeLabel(shotType: string): string {
 
 function getClubDisplay(clubType: string) {
   const normalized = clubType.toLowerCase().replace(/-/g, '_');
-  return CLUB_DISPLAY[normalized] || { label: clubType, color: 'bg-slate-100 text-slate-700' };
+  return CLUB_DISPLAY[normalized] || { label: clubType, color: 'bg-warm-100 text-warm-700' };
 }
 
 function getResultDisplay(result: string) {
   const normalized = result.toLowerCase();
   return RESULT_DISPLAY[normalized] || {
     icon: <IconTarget size={12} />,
-    color: 'text-slate-600',
+    color: 'text-warm-600',
     label: result.charAt(0).toUpperCase() + result.slice(1)
   };
 }
@@ -194,7 +194,7 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetr
     >
       {/* Timeline connector */}
       {!isFirst && (
-        <div className="absolute left-4 -top-4 w-0.5 h-4 bg-gradient-to-b from-slate-200 to-slate-300" />
+        <div className="absolute left-4 -top-4 w-0.5 h-4 bg-gradient-to-b from-warm-200 to-warm-300" />
       )}
 
       {/* Shot card */}
@@ -210,18 +210,18 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetr
             'absolute left-0 top-3 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold shadow-sm',
             isPenalty
               ? 'bg-red-100 text-red-700 border border-red-200'
-              : 'bg-white text-slate-700 border border-slate-200'
+              : 'bg-white text-warm-700 border border-warm-200'
           )}
         >
           {shot.shot_number}
         </div>
 
         {/* Shot content */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-warm-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
           {/* Header row */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-900">
+              <span className="text-sm font-medium text-warm-900">
                 {getShotTypeLabel(shot.shot_type || '')}
               </span>
               <span className={cn(
@@ -255,21 +255,21 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetr
           {/* Distance row */}
           <div className="flex items-center gap-4 text-sm">
             {/* Starting distance */}
-            <div className="flex items-center gap-2 text-slate-600">
-              <span className="text-xs text-slate-400">From:</span>
+            <div className="flex items-center gap-2 text-warm-600">
+              <span className="text-xs text-warm-400">From:</span>
               <span className="font-medium">
                 {formatDistance(distanceBefore ?? null, shot.distance_unit_before ?? null)}
               </span>
             </div>
 
             {/* Arrow */}
-            <svg className="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <svg className="w-4 h-4 text-warm-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
 
             {/* Ending distance */}
-            <div className="flex items-center gap-2 text-slate-600">
-              <span className="text-xs text-slate-400">To:</span>
+            <div className="flex items-center gap-2 text-warm-600">
+              <span className="text-xs text-warm-400">To:</span>
               <span className={cn(
                 'font-medium',
                 shot.result === 'holed' || shot.result === 'hole' ? 'text-green-600' : ''
@@ -282,20 +282,20 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetr
 
             {/* Shot distance (if available) */}
             {shotDistance !== null && (
-              <div className="ml-auto flex items-center gap-1 text-slate-500">
+              <div className="ml-auto flex items-center gap-1 text-warm-500">
                 <span className="text-xs">Distance:</span>
-                <span className="font-medium text-slate-700">{shotDistance}y</span>
+                <span className="font-medium text-warm-700">{shotDistance}y</span>
               </div>
             )}
           </div>
 
           {/* Putt-specific details */}
           {isPutt && (shot.putt_break || shot.putt_slope) && (
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-4 text-xs text-slate-500">
+            <div className="mt-3 pt-3 border-t border-warm-100 flex items-center gap-4 text-xs text-warm-500">
               {shot.putt_break && (
                 <div className="flex items-center gap-1">
                   <span>Break:</span>
-                  <span className="font-medium text-slate-700 capitalize">
+                  <span className="font-medium text-warm-700 capitalize">
                     {shot.putt_break.replace(/_/g, ' ')}
                   </span>
                 </div>
@@ -303,7 +303,7 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetr
               {shot.putt_slope && (
                 <div className="flex items-center gap-1">
                   <span>Slope:</span>
-                  <span className="font-medium text-slate-700 capitalize">
+                  <span className="font-medium text-warm-700 capitalize">
                     {shot.putt_slope.replace(/_/g, ' ')}
                   </span>
                 </div>
@@ -313,7 +313,7 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetr
 
           {/* Miss direction */}
           {shot.miss_direction && !isPutt && (
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1 text-xs text-slate-500">
+            <div className="mt-3 pt-3 border-t border-warm-100 flex items-center gap-1 text-xs text-warm-500">
               <span>Miss:</span>
               <span className="font-medium text-amber-600 capitalize">
                 {shot.miss_direction.replace(/_/g, ' ')}
@@ -323,8 +323,8 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetr
 
           {/* Lie before */}
           {shot.lie_before && shot.lie_before !== 'tee' && (
-            <div className="mt-2 text-xs text-slate-400">
-              Lie: <span className="text-slate-600 capitalize">{shot.lie_before.replace(/_/g, ' ')}</span>
+            <div className="mt-2 text-xs text-warm-400">
+              Lie: <span className="text-warm-600 capitalize">{shot.lie_before.replace(/_/g, ' ')}</span>
             </div>
           )}
 
@@ -359,7 +359,7 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetr
 
       {/* Bottom connector (if not last) */}
       {!isLast && (
-        <div className="absolute left-4 bottom-0 w-0.5 h-4 bg-gradient-to-b from-slate-300 to-slate-200" />
+        <div className="absolute left-4 bottom-0 w-0.5 h-4 bg-gradient-to-b from-warm-300 to-warm-200" />
       )}
     </motion.div>
   );

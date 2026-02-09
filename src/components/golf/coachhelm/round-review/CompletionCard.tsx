@@ -15,7 +15,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6"
+      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-warm-900 to-warm-800 text-white p-6"
       style={{ animation: 'fadeInUp 0.5s ease-out' }}
     >
       {/* Background pattern */}
@@ -31,13 +31,13 @@ export function CompletionCard({ review }: CompletionCardProps) {
       <div className="relative">
         {/* Score */}
         <div className="text-center mb-4">
-          <div className="text-sm text-slate-400 mb-1">Round Complete</div>
+          <div className="text-sm text-warm-400 mb-1">Round Complete</div>
           <div className="flex items-center justify-center gap-3">
             <span className="text-5xl font-bold">{review.roundScore}</span>
             <span className={cn(
               'text-2xl font-semibold px-3 py-1 rounded-lg',
               scoreToPar < 0 && 'bg-green-500/20 text-green-400',
-              scoreToPar === 0 && 'bg-slate-500/20 text-slate-300',
+              scoreToPar === 0 && 'bg-warm-500/20 text-warm-300',
               scoreToPar > 0 && 'bg-red-500/20 text-red-400',
             )}>
               {scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar}
@@ -50,8 +50,8 @@ export function CompletionCard({ review }: CompletionCardProps) {
           {/* Scoring average */}
           {review.scoringAvgAfter && (
             <div className="text-center">
-              <div className="text-xs text-slate-400 mb-1">Scoring Avg</div>
-              <div className="flex items-center gap-1.5">
+              <div className="text-xs text-warm-400 mb-1">Scoring Avg</div>
+              <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">{review.scoringAvgAfter.toFixed(1)}</span>
                 {avgChange !== null && avgChange !== 0 && (
                   <span className={cn(
@@ -67,7 +67,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
 
           {/* Front/Back */}
           <div className="text-center">
-            <div className="text-xs text-slate-400 mb-1">Front / Back</div>
+            <div className="text-xs text-warm-400 mb-1">Front / Back</div>
             <div className="text-lg font-semibold">
               {review.roundStats.frontNine} / {review.roundStats.backNine}
             </div>
@@ -75,7 +75,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
 
           {/* Birdies */}
           <div className="text-center">
-            <div className="text-xs text-slate-400 mb-1">Birdies</div>
+            <div className="text-xs text-warm-400 mb-1">Birdies</div>
             <div className="text-lg font-semibold text-green-400">
               {review.roundStats.birdies}
             </div>

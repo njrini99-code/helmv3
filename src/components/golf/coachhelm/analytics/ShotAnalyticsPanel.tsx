@@ -81,10 +81,10 @@ export function ShotAnalyticsPanel({
             <IconChartRadar size={18} className="text-white" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-slate-800">
+            <h3 className="text-base font-semibold text-warm-800">
               Shot Analytics
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-warm-500">
               {playerName || 'Player'} - Last {selectedPeriod} days
             </p>
           </div>
@@ -96,7 +96,7 @@ export function ShotAnalyticsPanel({
             value={selectedPeriod}
             onChange={(e) => handlePeriodChange(Number(e.target.value))}
             disabled={isPending}
-            className="text-xs px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+            className="text-xs px-2 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
           >
             <option value={7}>7 days</option>
             <option value={14}>14 days</option>
@@ -110,9 +110,9 @@ export function ShotAnalyticsPanel({
             onClick={handleRefresh}
             disabled={isPending}
             className={cn(
-              'flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all',
+              'flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg transition-all',
               isPending
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
                 : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'
             )}
           >
@@ -144,16 +144,16 @@ export function ShotAnalyticsPanel({
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
+      <div className="flex gap-1 p-1 bg-warm-100 rounded-xl">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition-all',
+              'flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all',
               activeTab === tab.id
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white text-warm-900 shadow-sm'
+                : 'text-warm-500 hover:text-warm-700'
             )}
           >
             {tab.icon}
@@ -230,7 +230,7 @@ export function ShotAnalyticsPanel({
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <IconSparkles size={14} className="text-purple-500" />
-                    <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">AI Insights</span>
+                    <span className="text-xs font-medium text-warm-600 uppercase tracking-wide">AI Insights</span>
                   </div>
                   <div className="space-y-2">
                     {data.insights.map((insight, i) => (
@@ -277,24 +277,24 @@ export function ShotAnalyticsPanel({
 
                 {/* Distance range patterns */}
                 <div className="space-y-4">
-                  <h4 className="text-sm font-medium text-slate-700">Miss Patterns by Distance</h4>
+                  <h4 className="text-sm font-medium text-warm-700">Miss Patterns by Distance</h4>
                   {data.distanceRanges.length > 0 ? (
                     <div className="space-y-3">
                       {data.distanceRanges.map((range) => (
                         <div
                           key={range.range}
-                          className="p-3 bg-slate-50 rounded-lg space-y-2"
+                          className="p-3 bg-warm-50 rounded-lg space-y-2"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-slate-700">
+                            <span className="text-sm font-medium text-warm-700">
                               {range.rangeLabel}
                             </span>
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-warm-500">
                               {range.totalShots} shots
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-500">GIR:</span>
+                            <span className="text-xs text-warm-500">GIR:</span>
                             <span className={cn(
                               'text-xs font-medium',
                               range.greenHitRate >= 50 ? 'text-green-600' :
@@ -304,9 +304,9 @@ export function ShotAnalyticsPanel({
                             </span>
                             {range.primaryMiss !== 'none' && (
                               <>
-                                <span className="text-slate-300">|</span>
-                                <span className="text-xs text-slate-500">Primary miss:</span>
-                                <span className="text-xs font-medium text-slate-700">
+                                <span className="text-warm-300">|</span>
+                                <span className="text-xs text-warm-500">Primary miss:</span>
+                                <span className="text-xs font-medium text-warm-700">
                                   {range.primaryMiss.replace('_', '-')}
                                 </span>
                               </>
@@ -316,7 +316,7 @@ export function ShotAnalyticsPanel({
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-400 text-center py-4">
+                    <p className="text-sm text-warm-400 text-center py-4">
                       Not enough shot data for distance analysis
                     </p>
                   )}
@@ -378,13 +378,13 @@ export function ShotAnalyticsPanel({
               exit={{ opacity: 0 }}
               className="p-8 text-center"
             >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
-                <IconChartRadar size={32} className="text-slate-400" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-warm-100 flex items-center justify-center">
+                <IconChartRadar size={32} className="text-warm-400" />
               </div>
-              <h4 className="text-lg font-medium text-slate-700 mb-2">
+              <h4 className="text-lg font-medium text-warm-700 mb-2">
                 No Shot Analytics Yet
               </h4>
-              <p className="text-sm text-slate-500 max-w-sm mx-auto mb-4">
+              <p className="text-sm text-warm-500 max-w-sm mx-auto mb-4">
                 Click refresh to analyze this player&apos;s shot data and discover patterns.
               </p>
               <button
@@ -415,8 +415,8 @@ function StatCard({
   color?: 'green' | 'amber' | 'red' | 'slate';
 }) {
   return (
-    <div className="p-4 rounded-xl bg-white border border-slate-100">
-      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+    <div className="p-4 rounded-xl bg-white border border-warm-100">
+      <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">
         {label}
       </p>
       <p className={cn(
@@ -424,12 +424,12 @@ function StatCard({
         color === 'green' && 'text-green-600',
         color === 'amber' && 'text-amber-600',
         color === 'red' && 'text-red-600',
-        (!color || color === 'slate') && 'text-slate-900'
+        (!color || color === 'slate') && 'text-warm-900'
       )}>
         {value}
       </p>
       {subtitle && (
-        <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>
+        <p className="text-xs text-warm-400 mt-0.5">{subtitle}</p>
       )}
     </div>
   );
@@ -441,14 +441,14 @@ function LoadingSkeleton() {
     <div className="space-y-4 animate-pulse">
       <div className="grid grid-cols-4 gap-4">
         {[1, 2, 3, 4].map(i => (
-          <div key={i} className="h-20 bg-slate-100 rounded-xl" />
+          <div key={i} className="h-20 bg-warm-100 rounded-xl" />
         ))}
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="h-32 bg-slate-100 rounded-xl" />
-        <div className="h-32 bg-slate-100 rounded-xl" />
+        <div className="h-32 bg-warm-100 rounded-xl" />
+        <div className="h-32 bg-warm-100 rounded-xl" />
       </div>
-      <div className="h-24 bg-slate-100 rounded-xl" />
+      <div className="h-24 bg-warm-100 rounded-xl" />
     </div>
   );
 }

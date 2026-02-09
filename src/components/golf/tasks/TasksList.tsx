@@ -39,11 +39,11 @@ export function TasksList({ tasks, filter }: TasksListProps) {
   if (filteredTasks.length === 0) {
     return (
       <div className="text-center py-12">
-        <IconClipboardList size={48} className="mx-auto text-slate-300 mb-4" />
-        <h3 className="text-lg font-medium text-slate-900 mb-2">
+        <IconClipboardList size={48} className="mx-auto text-warm-300 mb-4" />
+        <h3 className="text-lg font-medium text-warm-900 mb-2">
           No {filter !== 'all' && filter} tasks
         </h3>
-        <p className="text-slate-500">
+        <p className="text-warm-500">
           {filter === 'all'
             ? "Create your first task to get started"
             : `No ${filter} tasks found`}

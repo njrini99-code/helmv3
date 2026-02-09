@@ -40,7 +40,7 @@ export function PuttMissTagSelector({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-600 font-medium">Miss (optional)</p>
+      <p className="text-sm text-warm-600 font-medium">Miss (optional)</p>
       <div className="grid grid-cols-3 gap-2">
         {tags.map((tag) => {
           const isSelected = selectedTags.includes(tag);
@@ -57,7 +57,7 @@ export function PuttMissTagSelector({
                 'text-sm font-semibold',
                 isSelected
                   ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                  : 'bg-white/70 backdrop-blur-sm border-slate-200 text-slate-700 hover:border-emerald-300 hover:bg-emerald-50',
+                  : 'bg-white/70 backdrop-blur-sm border-warm-200 text-warm-700 hover:border-emerald-300 hover:bg-emerald-50',
                 disabled && 'opacity-50 cursor-not-allowed'
               )}
             >

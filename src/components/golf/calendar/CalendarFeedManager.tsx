@@ -91,13 +91,13 @@ export function CalendarFeedManager({
   }
 
   return (
-    <div className={cn('bg-white rounded-2xl border border-slate-200 shadow-sm', className)}>
+    <div className={cn('bg-white rounded-2xl border border-warm-200 shadow-sm', className)}>
       {/* Header */}
-      <div className="p-6 border-b border-slate-200">
+      <div className="p-6 border-b border-warm-200">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">Calendar Feeds</h2>
-            <p className="text-sm text-slate-500 mt-1">
+            <h2 className="text-xl font-semibold text-warm-900">Calendar Feeds</h2>
+            <p className="text-sm text-warm-500 mt-1">
               Subscribe to your calendar in Apple Calendar, Google Calendar, or Outlook
             </p>
           </div>
@@ -109,7 +109,7 @@ export function CalendarFeedManager({
               'flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm',
               'transition-all duration-200',
               showCreateSection
-                ? 'bg-slate-100 text-slate-700'
+                ? 'bg-warm-100 text-warm-700'
                 : 'bg-emerald-600 text-white hover:bg-emerald-700'
             )}
           >
@@ -123,28 +123,28 @@ export function CalendarFeedManager({
           <div className="flex items-center gap-3">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search feeds..."
-                className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 text-sm
+                className="w-full pl-9 pr-4 py-2 rounded-lg border border-warm-200 text-sm
                          focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100
-                         placeholder:text-slate-400 transition-colors"
+                         placeholder:text-warm-400 transition-colors"
               />
             </div>
 
             {/* Filter dropdown */}
             {allowedTypeList.length > 1 && (
               <div className="relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400 pointer-events-none" />
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as FeedType | 'all')}
-                  className="pl-9 pr-10 py-2 rounded-lg border border-slate-200 text-sm font-medium
-                           bg-white text-slate-700 cursor-pointer
-                           hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-100
+                  className="pl-9 pr-10 py-2 rounded-lg border border-warm-200 text-sm font-medium
+                           bg-white text-warm-700 cursor-pointer
+                           hover:border-warm-300 focus:outline-none focus:ring-2 focus:ring-emerald-100
                            focus:border-emerald-500 appearance-none"
                 >
                   <option value="all">All Types</option>
@@ -161,7 +161,7 @@ export function CalendarFeedManager({
 
       {/* Create feed section (collapsible) */}
       {showCreateSection && (
-        <div className="p-6 border-b border-slate-200 bg-emerald-50/30">
+        <div className="p-6 border-b border-warm-200 bg-emerald-50/30">
           <CreateFeedSection
             onCreate={handleCreateFeed}
             onCancel={() => setShowCreateSection(false)}
@@ -182,10 +182,10 @@ export function CalendarFeedManager({
                 <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
                   <Calendar className="w-8 h-8 text-emerald-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                <h3 className="text-lg font-semibold text-warm-900 mb-2">
                   No calendar feeds yet
                 </h3>
-                <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
+                <p className="text-sm text-warm-500 mb-6 max-w-md mx-auto">
                   Create a calendar feed to subscribe to your events in your favorite calendar app.
                   Your calendar will automatically update when events change.
                 </p>
@@ -203,11 +203,11 @@ export function CalendarFeedManager({
             ) : (
               // Empty state - no matching filters
               <>
-                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                  <Search className="w-6 h-6 text-slate-400" />
+                <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+                  <Search className="w-6 h-6 text-warm-400" />
                 </div>
-                <h3 className="text-base font-medium text-slate-900 mb-2">No matching feeds</h3>
-                <p className="text-sm text-slate-500">
+                <h3 className="text-base font-medium text-warm-900 mb-2">No matching feeds</h3>
+                <p className="text-sm text-warm-500">
                   Try adjusting your search or filter
                 </p>
               </>
@@ -229,8 +229,8 @@ export function CalendarFeedManager({
 
       {/* Footer stats */}
       {feeds.length > 0 && (
-        <div className="px-6 py-4 border-t border-slate-200 bg-slate-50">
-          <p className="text-xs text-slate-500 text-center">
+        <div className="px-6 py-4 border-t border-warm-200 bg-warm-50">
+          <p className="text-xs text-warm-500 text-center">
             {feeds.length} {feeds.length === 1 ? 'feed' : 'feeds'} total
             {filteredFeeds.length !== feeds.length &&
               ` • ${filteredFeeds.length} ${filteredFeeds.length === 1 ? 'match' : 'matches'} current filter`}
@@ -252,19 +252,19 @@ export function CompactFeedManager({
   onManage: () => void;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
+    <div className="bg-white rounded-xl border border-warm-200 p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-slate-400" />
-          <span className="text-sm font-semibold text-slate-900">Calendar Feeds</span>
+          <Calendar className="w-4 h-4 text-warm-400" />
+          <span className="text-sm font-semibold text-warm-900">Calendar Feeds</span>
         </div>
-        <span className="text-xs font-medium text-slate-500">
+        <span className="text-xs font-medium text-warm-500">
           {feeds.length} {feeds.length === 1 ? 'feed' : 'feeds'}
         </span>
       </div>
 
       {feeds.length === 0 ? (
-        <p className="text-xs text-slate-500 mb-3">
+        <p className="text-xs text-warm-500 mb-3">
           No feeds configured yet
         </p>
       ) : (
@@ -272,11 +272,11 @@ export function CompactFeedManager({
           {feeds.slice(0, 3).map((feed) => (
             <div key={feed.id} className="flex items-center gap-2 text-xs">
               <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-              <span className="text-slate-700 truncate">{feed.name}</span>
+              <span className="text-warm-700 truncate">{feed.name}</span>
             </div>
           ))}
           {feeds.length > 3 && (
-            <p className="text-xs text-slate-500 pl-4">
+            <p className="text-xs text-warm-500 pl-4">
               +{feeds.length - 3} more
             </p>
           )}
@@ -287,7 +287,7 @@ export function CompactFeedManager({
         type="button"
         onClick={onManage}
         className="w-full py-2 px-3 rounded-lg text-xs font-medium
-                 bg-slate-100 text-slate-700 hover:bg-slate-200
+                 bg-warm-100 text-warm-700 hover:bg-warm-200
                  transition-colors"
       >
         Manage Feeds

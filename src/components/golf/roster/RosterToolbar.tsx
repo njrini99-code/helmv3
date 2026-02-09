@@ -47,16 +47,16 @@ export const RosterToolbar = memo(function RosterToolbar({
           onClick={() => setShowSortMenu(!showSortMenu)}
           className={cn(
             'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
-            'bg-white border border-slate-200 text-slate-600',
-            'hover:bg-slate-50 hover:border-slate-300',
+            'bg-white border border-warm-200 text-warm-600',
+            'hover:bg-warm-50 hover:border-warm-300',
             'transition-all duration-150 active:scale-95'
           )}
           aria-label="Sort roster"
         >
-          <IconFilter size={14} className="text-slate-400" />
+          <IconFilter size={14} className="text-warm-400" />
           <span>Sort: {selectedSort?.label}</span>
-          <span className="text-slate-400">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
-          <IconChevronDown size={14} className={cn('text-slate-400 transition-transform', showSortMenu && 'rotate-180')} />
+          <span className="text-warm-400">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
+          <IconChevronDown size={14} className={cn('text-warm-400 transition-transform', showSortMenu && 'rotate-180')} />
         </button>
 
         {showSortMenu && (
@@ -64,7 +64,7 @@ export const RosterToolbar = memo(function RosterToolbar({
             <div className="fixed inset-0 z-30" onClick={() => setShowSortMenu(false)} />
             <div className={cn(
               'absolute left-0 top-full mt-1 z-40',
-              'bg-white rounded-xl border border-slate-200 shadow-lg',
+              'bg-white rounded-xl border border-warm-200 shadow-lg',
               'py-1 min-w-[180px]'
             )}>
               {SORT_OPTIONS.map((option) => (
@@ -75,7 +75,7 @@ export const RosterToolbar = memo(function RosterToolbar({
                     'w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between',
                     option.value === sortField
                       ? 'text-primary-700 bg-primary-50 font-medium'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      : 'text-warm-600 hover:bg-warm-50'
                   )}
                 >
                   <span>{option.label}</span>
@@ -95,8 +95,8 @@ export const RosterToolbar = memo(function RosterToolbar({
           onClick={onExport}
           className={cn(
             'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
-            'bg-white border border-slate-200 text-slate-600',
-            'hover:bg-slate-50 hover:border-slate-300',
+            'bg-white border border-warm-200 text-warm-600',
+            'hover:bg-warm-50 hover:border-warm-300',
             'transition-all duration-150 active:scale-95'
           )}
           aria-label={`Export ${playerCount} players as CSV`}

@@ -13,6 +13,7 @@ export interface TeamMember {
 }
 
 // Color palette for multi-player selection
+// These use Tailwind color values but remain as objects for dynamic style computation
 export const PLAYER_COLORS = [
   { bg: '#22c55e', light: 'rgba(34, 197, 94, 0.15)', border: 'rgba(34, 197, 94, 0.4)', name: 'Green' },
   { bg: '#3b82f6', light: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.4)', name: 'Blue' },
@@ -99,9 +100,9 @@ export function CalendarAvatarSidebar({
         <Tooltip content="Expand sidebar" side="right">
           <button
             onClick={() => setIsCollapsed(false)}
-            className="absolute left-0 top-3 z-30 w-6 h-10 bg-white/80 backdrop-blur-sm border border-white/40 rounded-r-xl flex items-center justify-center hover:bg-white hover:scale-105 shadow-sm transition-all duration-200"
+            className="absolute left-0 top-3 z-30 w-6 h-10 bg-glass backdrop-blur-sm border border-white/40 rounded-r-xl flex items-center justify-center hover:bg-white hover:scale-105 shadow-sm transition-all duration-200"
           >
-            <ChevronLeft className="w-3.5 h-3.5 text-stone-500 rotate-180" />
+            <ChevronLeft className="w-3.5 h-3.5 text-warm-500 rotate-180" />
           </button>
         </Tooltip>
       </div>
@@ -114,47 +115,12 @@ export function CalendarAvatarSidebar({
     .filter((m): m is TeamMember => m !== undefined);
 
   return (
-    <aside
-      style={{
-        width: '80px',
-        padding: '16px 12px 12px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '10px',
-        background: 'rgba(255, 255, 255, 0.7)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.4)',
-        borderRadius: '20px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)',
-        flexShrink: 0,
-        position: 'relative',
-        overflow: 'visible',
-        zIndex: 20,
-        minHeight: 0,
-      }}
-    >
+    <aside className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-2.5 bg-glass backdrop-blur-xl border border-white/40 rounded-2xl shadow-glass flex-shrink-0 relative overflow-visible z-20 min-h-0">
       {/* Collapse Handle */}
       <button
         onClick={() => setIsCollapsed(true)}
         title="Collapse sidebar"
-        style={{
-          position: 'absolute',
-          right: '-12px',
-          top: '16px',
-          width: '24px',
-          height: '48px',
-          background: 'rgba(255, 255, 255, 0.9)',
-          border: '1px solid rgba(255, 255, 255, 0.4)',
-          borderRadius: '0 12px 12px 0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#a8a29e',
-          cursor: 'pointer',
-          boxShadow: '2px 0 8px rgba(0,0,0,0.06)',
-        }}
+        className="absolute -right-3 top-4 w-6 h-12 bg-white/90 border border-white/40 rounded-r-xl flex items-center justify-center text-warm-400 cursor-pointer shadow-sm"
       >
         <ChevronLeft className="w-4 h-4" />
       </button>
@@ -163,107 +129,41 @@ export function CalendarAvatarSidebar({
       <Tooltip content="Show all team events" side="right">
         <button
           onClick={handleAllClick}
-          style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 700,
-            fontSize: '11px',
-            letterSpacing: '0.025em',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease-out',
-            border: 'none',
-            flexShrink: 0,
-            ...(isAllSelected
-              ? {
-                  background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                  color: 'white',
-                  boxShadow: '0 4px 14px rgba(22, 163, 74, 0.4)',
-                }
-              : {
-                  background: 'rgba(245, 245, 244, 0.9)',
-                  color: '#78716c',
-                }),
-          }}
+          className={`w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-[11px] tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0 ${
+            isAllSelected
+              ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-[0_4px_14px_rgba(22,163,74,0.4)]'
+              : 'bg-warm-100/90 text-warm-500'
+          }`}
         >
           ALL
         </button>
       </Tooltip>
 
       {/* Divider */}
-      <div
-        style={{
-          width: '32px',
-          height: '1px',
-          background: 'linear-gradient(90deg, transparent, #d6d3d1, transparent)',
-          flexShrink: 0,
-        }}
-      />
+      <div className="w-8 h-px bg-gradient-to-r from-transparent via-warm-300 to-transparent flex-shrink-0" />
 
       {/* Scrollable Avatar List with Gradient Masks */}
-      <div style={{ flex: 1, minHeight: 0, width: '100%', position: 'relative' }}>
+      <div className="flex-1 min-h-0 w-full relative">
         {/* Top scroll fade indicator */}
         {canScrollUp && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '28px',
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, transparent 100%)',
-              zIndex: 2,
-              pointerEvents: 'none',
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'center',
-              paddingTop: '2px',
-              borderRadius: '8px 8px 0 0',
-            }}
-          >
-            <ChevronUp className="w-3 h-3 text-stone-400" style={{ pointerEvents: 'none' }} />
+          <div className="absolute top-0 left-0 right-0 h-7 bg-gradient-to-b from-white/95 to-transparent z-[2] pointer-events-none flex items-start justify-center pt-0.5 rounded-t-lg">
+            <ChevronUp className="w-3 h-3 text-warm-400 pointer-events-none" />
           </div>
         )}
 
         {/* Avatar scroll container */}
         <div
           ref={scrollRef}
-          style={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            width: '100%',
-            alignItems: 'center',
-            padding: '4px 0',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
+          className="h-full flex flex-col gap-3 overflow-y-auto overflow-x-hidden w-full items-center py-1 scrollbar-none"
         >
           {teamMembers.length === 0 ? (
-            <div style={{ padding: '24px 0', textAlign: 'center' }}>
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '14px',
-                  background: 'rgba(245, 245, 244, 0.6)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 8px',
-                }}
-              >
-                <svg className="w-5 h-5 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="py-6 text-center">
+              <div className="w-12 h-12 rounded-[14px] bg-warm-100/60 flex items-center justify-center mx-auto mb-2">
+                <svg className="w-5 h-5 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <p style={{ fontSize: '9px', color: '#78716c', lineHeight: 1.3 }}>
+              <p className="text-[9px] text-warm-500 leading-tight">
                 No team<br />members
               </p>
             </div>
@@ -282,22 +182,9 @@ export function CalendarAvatarSidebar({
                   <button
                     onClick={() => handleMemberClick(member.id)}
                     title={getFullName(member)}
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease-out',
-                      border: 'none',
-                      flexShrink: 0,
-                      position: 'relative',
-                      overflow: 'visible',
-                      ...(selected && playerColor
+                    className="w-12 h-12 rounded-[14px] flex items-center justify-center text-sm font-semibold cursor-pointer transition-all duration-200 border-none flex-shrink-0 relative overflow-visible"
+                    style={
+                      selected && playerColor
                         ? {
                             background: `linear-gradient(135deg, ${playerColor.bg} 0%, ${playerColor.bg}dd 100%)`,
                             color: 'white',
@@ -305,22 +192,17 @@ export function CalendarAvatarSidebar({
                             transform: 'scale(1.08)',
                           }
                         : {
-                            background: 'linear-gradient(135deg, #fafaf9 0%, #e7e5e4 100%)',
+                            background: 'linear-gradient(135deg, var(--tw-gradient-from, #fafaf9) 0%, var(--tw-gradient-to, #e7e5e4) 100%)',
                             color: '#57534e',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-                          }),
-                    }}
+                          }
+                    }
                   >
                     {member.avatar_url ? (
                       <img
                         src={member.avatar_url}
                         alt={getFullName(member)}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          borderRadius: '14px',
-                          objectFit: 'cover',
-                        }}
+                        className="w-full h-full rounded-[14px] object-cover"
                       />
                     ) : (
                       <span>{getInitials(member)}</span>
@@ -329,23 +211,8 @@ export function CalendarAvatarSidebar({
                     {/* Selection indicator with color number */}
                     {selected && playerColor && (
                       <span
-                        style={{
-                          position: 'absolute',
-                          top: '-4px',
-                          right: '-4px',
-                          width: '16px',
-                          height: '16px',
-                          background: playerColor.bg,
-                          borderRadius: '50%',
-                          border: '2px solid white',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontSize: '9px',
-                          fontWeight: 700,
-                        }}
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-white text-[9px] font-bold"
+                        style={{ background: playerColor.bg }}
                       >
                         {selectedPlayerIds.indexOf(member.id) + 1}
                       </span>
@@ -359,82 +226,32 @@ export function CalendarAvatarSidebar({
 
         {/* Bottom scroll fade indicator */}
         {canScrollDown && (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: '28px',
-              background: 'linear-gradient(0deg, rgba(255,255,255,0.95) 0%, transparent 100%)',
-              zIndex: 2,
-              pointerEvents: 'none',
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'center',
-              paddingBottom: '2px',
-              borderRadius: '0 0 8px 8px',
-            }}
-          >
-            <ChevronDown className="w-3 h-3 text-stone-400" style={{ pointerEvents: 'none' }} />
+          <div className="absolute bottom-0 left-0 right-0 h-7 bg-gradient-to-t from-white/95 to-transparent z-[2] pointer-events-none flex items-end justify-center pb-0.5 rounded-b-lg">
+            <ChevronDown className="w-3 h-3 text-warm-400 pointer-events-none" />
           </div>
         )}
       </div>
 
       {/* Color Legend - Inline when players selected */}
       {selectedPlayers.length > 0 && (
-        <div
-          style={{
-            width: '100%',
-            padding: '8px 4px',
-            borderTop: '1px solid rgba(214, 211, 209, 0.4)',
-            flexShrink: 0,
-          }}
-        >
-          <p
-            style={{
-              fontSize: '8px',
-              fontWeight: 600,
-              color: '#a8a29e',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              marginBottom: '6px',
-              textAlign: 'center',
-            }}
-          >
+        <div className="w-full px-1 py-2 border-t border-warm-300/40 flex-shrink-0">
+          <p className="text-[8px] font-semibold text-warm-400 uppercase tracking-wider mb-1.5 text-center">
             Legend
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div className="flex flex-col gap-1">
             {selectedPlayers.map((player, index) => {
               const color = PLAYER_COLORS[index % PLAYER_COLORS.length]!;
               return (
                 <div
                   key={player.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    padding: '0 2px',
-                  }}
+                  className="flex items-center gap-2 px-0.5"
                 >
                   <div
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      borderRadius: '3px',
-                      background: color.bg,
-                      flexShrink: 0,
-                    }}
+                    className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                    style={{ background: color.bg }}
                   />
                   <span
-                    style={{
-                      fontSize: '9px',
-                      color: '#57534e',
-                      fontWeight: 500,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
+                    className="text-[9px] text-warm-600 font-medium overflow-hidden text-ellipsis whitespace-nowrap"
                     title={getFullName(player)}
                   >
                     {player.first_name}
@@ -447,37 +264,12 @@ export function CalendarAvatarSidebar({
       )}
 
       {/* Bottom actions */}
-      <div
-        style={{
-          width: '100%',
-          borderTop: '1px solid rgba(214, 211, 209, 0.4)',
-          paddingTop: '10px',
-          marginTop: 'auto',
-          flexShrink: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '8px',
-        }}
-      >
+      <div className="w-full border-t border-warm-300/40 pt-2.5 mt-auto flex-shrink-0 flex flex-col items-center gap-2">
         <CalendarSyncButton variant="icon" />
         <Tooltip content="Manage feeds" side="right">
           <button
             onClick={() => onSyncSettings?.()}
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(245, 245, 244, 0.6)',
-              color: '#a8a29e',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease-out',
-              border: 'none',
-              flexShrink: 0,
-            }}
+            className="w-12 h-12 rounded-[14px] flex items-center justify-center bg-warm-100/60 text-warm-400 cursor-pointer transition-all duration-200 border-none flex-shrink-0 hover:text-warm-600 hover:bg-warm-100"
           >
             <Settings2 className="w-5 h-5" />
           </button>

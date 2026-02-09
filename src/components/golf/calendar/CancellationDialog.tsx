@@ -103,26 +103,26 @@ export function CancellationDialog({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="bg-white rounded-2xl p-0 max-w-lg">
-        <DialogHeader className="px-6 py-4 border-b border-slate-200">
-          <DialogTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+        <DialogHeader className="px-6 py-4 border-b border-warm-200">
+          <DialogTitle className="text-lg font-semibold text-warm-900 flex items-center gap-2">
             <X className="w-5 h-5 text-rose-600" />
             Cancel Event
           </DialogTitle>
-          <DialogDescription className="text-slate-600 text-sm mt-1">
+          <DialogDescription className="text-warm-600 text-sm mt-1">
             This action cannot be undone. Participants will be notified.
           </DialogDescription>
         </DialogHeader>
 
         <div className="px-6 py-4 space-y-5">
           {/* Event summary */}
-          <div className="bg-slate-50 rounded-lg p-4 space-y-2">
-            <h4 className="font-semibold text-slate-900">{event.title}</h4>
-            <div className="flex items-center gap-4 text-sm text-slate-600">
-              <div className="flex items-center gap-1.5">
+          <div className="bg-warm-50 rounded-lg p-4 space-y-2">
+            <h4 className="font-semibold text-warm-900">{event.title}</h4>
+            <div className="flex items-center gap-4 text-sm text-warm-600">
+              <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <span>{format(eventDate, 'MMM d, yyyy')}</span>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
                 <span>{formatTime(event.start_time)}</span>
               </div>
@@ -187,7 +187,7 @@ export function CancellationDialog({
 
           {/* Quick reason chips */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-warm-700 mb-2">
               Reason for cancellation
             </label>
             <div className="grid grid-cols-3 gap-2 mb-3">
@@ -201,23 +201,23 @@ export function CancellationDialog({
                     type="button"
                     onClick={() => handleQuickReason(quickReason.value)}
                     className={cn(
-                      'flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all',
-                      'hover:border-slate-300 hover:bg-slate-50',
+                      'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all',
+                      'hover:border-warm-300 hover:bg-warm-50',
                       isSelected
                         ? 'border-green-600 bg-green-50'
-                        : 'border-slate-200 bg-white'
+                        : 'border-warm-200 bg-white'
                     )}
                   >
                     <Icon
                       className={cn(
                         'w-5 h-5',
-                        isSelected ? 'text-green-600' : 'text-slate-400'
+                        isSelected ? 'text-green-600' : 'text-warm-400'
                       )}
                     />
                     <span
                       className={cn(
                         'text-xs font-medium',
-                        isSelected ? 'text-green-700' : 'text-slate-600'
+                        isSelected ? 'text-green-700' : 'text-warm-600'
                       )}
                     >
                       {quickReason.label}
@@ -235,22 +235,22 @@ export function CancellationDialog({
               className="min-h-[80px] resize-none"
               maxLength={500}
             />
-            <p className="text-xs text-slate-500 mt-1">{reason.length}/500 characters</p>
+            <p className="text-xs text-warm-500 mt-1">{reason.length}/500 characters</p>
           </div>
 
           {/* Notification toggle */}
-          <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer">
+          <label className="flex items-center gap-3 p-3 bg-warm-50 rounded-lg cursor-pointer">
             <input
               type="checkbox"
               checked={notifyParticipants}
               onChange={(e) => setNotifyParticipants(e.target.checked)}
-              className="w-4 h-4 text-green-600 rounded border-slate-300 focus:ring-2 focus:ring-green-100"
+              className="w-4 h-4 text-green-600 rounded border-warm-300 focus:ring-2 focus:ring-green-100"
             />
             <div className="flex-1">
-              <p className="text-sm font-medium text-slate-900">
+              <p className="text-sm font-medium text-warm-900">
                 Notify all participants
               </p>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-warm-600">
                 Send cancellation notification via email and app
               </p>
             </div>
@@ -258,7 +258,7 @@ export function CancellationDialog({
         </div>
 
         {/* Actions */}
-        <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-warm-200 flex justify-end gap-3">
           <Button
             variant="secondary"
             onClick={onClose}

@@ -22,11 +22,11 @@ export function StrokesGainedSection({ strokesGained }: StrokesGainedSectionProp
 
   return (
     <div
-      className="rounded-xl border border-slate-200 bg-white p-5"
+      className="rounded-xl border border-warm-200 bg-white p-5"
       style={{ animation: 'fadeInUp 0.5s ease-out 0.5s both' }}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-warm-900 flex items-center gap-2">
           <span className="text-lg">📊</span>
           Strokes Gained
         </h3>
@@ -46,12 +46,12 @@ export function StrokesGainedSection({ strokesGained }: StrokesGainedSectionProp
 
           return (
             <div key={category.key} className="flex items-center gap-3">
-              <div className="w-24 text-sm text-slate-600">{category.label}</div>
+              <div className="w-24 text-sm text-warm-600">{category.label}</div>
 
               {/* Bar container */}
               <div className="flex-1 h-6 relative">
                 {/* Center line */}
-                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-200" />
+                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-warm-200" />
 
                 {/* Bar */}
                 <div className="absolute inset-0 flex items-center">

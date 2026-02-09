@@ -111,10 +111,10 @@ export function ExpenseSummary({
     if (active && payload && payload.length && payload[0]) {
       const item = payload[0];
       return (
-        <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 px-3 py-2">
-          <p className="text-sm font-medium text-slate-900">{item.name}</p>
-          <p className="text-sm text-slate-600">{formatCurrency(item.value)}</p>
-          <p className="text-xs text-slate-400">
+        <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-3 py-2">
+          <p className="text-sm font-medium text-warm-900">{item.name}</p>
+          <p className="text-sm text-warm-600">{formatCurrency(item.value)}</p>
+          <p className="text-xs text-warm-400">
             {((item.value / summary.total) * 100).toFixed(1)}% of total
           </p>
         </div>
@@ -152,9 +152,9 @@ export function ExpenseSummary({
             )}
           </div>
           <div className="text-right">
-            <p className="text-sm text-slate-500">{summary.count} expenses</p>
+            <p className="text-sm text-warm-500">{summary.count} expenses</p>
             {totalBudget > 0 && (
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-warm-500 mt-1">
                 Budget: {formatCurrency(totalBudget)}
               </p>
             )}
@@ -176,7 +176,7 @@ export function ExpenseSummary({
                 transition={{ duration: 0.8, ease: 'easeOut' }}
               />
             </div>
-            <p className="text-xs text-slate-500 mt-1 text-right">
+            <p className="text-xs text-warm-500 mt-1 text-right">
               {((summary.total / totalBudget) * 100).toFixed(0)}% of budget used
             </p>
           </div>
@@ -185,8 +185,8 @@ export function ExpenseSummary({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie Chart */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="font-semibold text-slate-900 mb-4">Breakdown by Category</h3>
+        <div className="bg-white rounded-2xl border border-warm-200 p-6">
+          <h3 className="font-semibold text-warm-900 mb-4">Breakdown by Category</h3>
           {pieData.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -207,22 +207,22 @@ export function ExpenseSummary({
                   <Tooltip content={<CustomTooltip />} />
                   <Legend
                     formatter={(value) => (
-                      <span className="text-sm text-slate-600">{value}</span>
+                      <span className="text-sm text-warm-600">{value}</span>
                     )}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-64 flex items-center justify-center text-slate-400">
+            <div className="h-64 flex items-center justify-center text-warm-400">
               No expenses to display
             </div>
           )}
         </div>
 
         {/* Category Breakdown with Budgets */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="font-semibold text-slate-900 mb-4">Budget vs Actual</h3>
+        <div className="bg-white rounded-2xl border border-warm-200 p-6">
+          <h3 className="font-semibold text-warm-900 mb-4">Budget vs Actual</h3>
           <div className="space-y-4">
             {ALL_CATEGORIES.map((category) => {
               const config = CATEGORY_CONFIG[category];
@@ -238,12 +238,12 @@ export function ExpenseSummary({
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: config.color }}
                       />
-                      <span className="text-sm font-medium text-slate-700">
+                      <span className="text-sm font-medium text-warm-700">
                         {config.label}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-900">
+                      <span className="text-sm font-semibold text-warm-900">
                         {formatCurrency(spent)}
                       </span>
                       {editingBudget === category ? (
@@ -252,7 +252,7 @@ export function ExpenseSummary({
                             type="number"
                             value={budgetValue}
                             onChange={(e) => setBudgetValue(e.target.value)}
-                            className="w-20 px-2 py-1 text-sm border border-slate-200 rounded"
+                            className="w-20 px-2 py-1 text-sm border border-warm-200 rounded"
                             placeholder="Budget"
                             autoFocus
                           />
@@ -268,22 +268,22 @@ export function ExpenseSummary({
                               setEditingBudget(null);
                               setBudgetValue('');
                             }}
-                            className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700"
+                            className="px-2 py-1 text-xs text-warm-500 hover:text-warm-700"
                           >
                             Cancel
                           </button>
                         </div>
                       ) : (
                         <>
-                          <span className="text-sm text-slate-400">
+                          <span className="text-sm text-warm-400">
                             / {budget > 0 ? formatCurrency(budget) : '-'}
                           </span>
                           {isCoach && (
                             <button
                               onClick={() => startEditBudget(category)}
-                              className="p-1 hover:bg-slate-100 rounded transition-colors"
+                              className="p-1 hover:bg-warm-100 rounded transition-colors"
                             >
-                              <IconEdit size={12} className="text-slate-400" />
+                              <IconEdit size={12} className="text-warm-400" />
                             </button>
                           )}
                         </>
@@ -292,7 +292,7 @@ export function ExpenseSummary({
                   </div>
 
                   {/* Progress bar */}
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full rounded-full"
                       style={{
@@ -318,8 +318,8 @@ export function ExpenseSummary({
       </div>
 
       {/* Payment Status Summary */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <h3 className="font-semibold text-slate-900 mb-4">Payment Status</h3>
+      <div className="bg-white rounded-2xl border border-warm-200 p-6">
+        <h3 className="font-semibold text-warm-900 mb-4">Payment Status</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-4 bg-green-50 rounded-xl">
             <p className="text-sm text-green-700 mb-1">Team Paid</p>
@@ -339,9 +339,9 @@ export function ExpenseSummary({
               {formatCurrency(summary.byPaidBy.pending_reimbursement)}
             </p>
           </div>
-          <div className="p-4 bg-slate-50 rounded-xl">
-            <p className="text-sm text-slate-700 mb-1">Split</p>
-            <p className="text-xl font-bold text-slate-900">
+          <div className="p-4 bg-warm-50 rounded-xl">
+            <p className="text-sm text-warm-700 mb-1">Split</p>
+            <p className="text-xl font-bold text-warm-900">
               {formatCurrency(summary.byPaidBy.split)}
             </p>
           </div>

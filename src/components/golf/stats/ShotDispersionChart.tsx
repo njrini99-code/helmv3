@@ -84,7 +84,7 @@ function AnimatedProgressBar({
   delay?: number;
 }) {
   return (
-    <div className="h-2 w-20 bg-slate-100 rounded-full overflow-hidden">
+    <div className="h-2 w-20 bg-warm-100 rounded-full overflow-hidden">
       <motion.div
         className={`h-full ${color} rounded-full`}
         initial={{ width: 0 }}
@@ -137,7 +137,7 @@ export function DrivingDispersionVisualLegacy({
 
   return (
     <motion.div
-      className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden group"
+      className="bg-white rounded-2xl border border-warm-200 shadow-sm overflow-hidden group"
       variants={cardVariants}
       initial="hidden"
       animate="visible"
@@ -156,7 +156,7 @@ export function DrivingDispersionVisualLegacy({
       />
 
       {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100 relative overflow-hidden">
+      <div className="px-6 py-5 border-b border-warm-100 relative overflow-hidden">
         {/* Subtle gradient background */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -166,8 +166,8 @@ export function DrivingDispersionVisualLegacy({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Driving Dispersion</h3>
-            <p className="text-sm text-slate-500 mt-0.5">Tee shot accuracy breakdown</p>
+            <h3 className="text-lg font-semibold text-warm-900 tracking-tight">Driving Dispersion</h3>
+            <p className="text-sm text-warm-500 mt-0.5">Tee shot accuracy breakdown</p>
           </motion.div>
           <motion.div
             className="text-right"
@@ -178,13 +178,13 @@ export function DrivingDispersionVisualLegacy({
             <div className="text-3xl font-bold text-green-600 tabular-nums tracking-tight">
               {animatedFairway.toFixed(0)}%
             </div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wide">Fairways</div>
+            <div className="text-xs font-medium text-warm-400 uppercase tracking-wide">Fairways</div>
           </motion.div>
         </div>
       </div>
 
       {/* Visual Spray Chart */}
-      <div className="px-6 py-8 bg-gradient-to-b from-slate-50/50 to-white">
+      <div className="px-6 py-8 bg-gradient-to-b from-warm-50/50 to-white">
         <motion.div
           className="relative max-w-sm mx-auto"
           initial={{ opacity: 0 }}
@@ -377,7 +377,7 @@ export function DrivingDispersionVisualLegacy({
           <AnimatePresence>
             {isHovered && (
               <motion.div
-                className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg"
+                className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-warm-900/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -392,7 +392,7 @@ export function DrivingDispersionVisualLegacy({
       </div>
 
       {/* Stats Grid - Solid surface for data */}
-      <div className="px-6 py-5 bg-white border-t border-slate-100">
+      <div className="px-6 py-5 bg-white border-t border-warm-100">
         <div className="grid grid-cols-3 gap-4">
           {/* Left Miss */}
           <motion.div
@@ -409,8 +409,8 @@ export function DrivingDispersionVisualLegacy({
             onMouseLeave={() => setIsHovered(null)}
           >
             <div className="text-2xl font-bold text-red-600 tabular-nums">{left.toFixed(0)}%</div>
-            <div className="text-xs font-medium text-slate-600 mt-1">Left</div>
-            <div className="text-xs text-slate-400 mt-0.5">{missLeftCount} shots</div>
+            <div className="text-xs font-medium text-warm-600 mt-1">Left</div>
+            <div className="text-xs text-warm-400 mt-0.5">{missLeftCount} shots</div>
           </motion.div>
 
           {/* Fairway */}
@@ -428,8 +428,8 @@ export function DrivingDispersionVisualLegacy({
             onMouseLeave={() => setIsHovered(null)}
           >
             <div className="text-2xl font-bold text-green-600 tabular-nums">{fairway.toFixed(0)}%</div>
-            <div className="text-xs font-medium text-slate-600 mt-1">Fairway</div>
-            <div className="text-xs text-slate-400 mt-0.5">{fairwaysHit}/{fairwayOpportunities}</div>
+            <div className="text-xs font-medium text-warm-600 mt-1">Fairway</div>
+            <div className="text-xs text-warm-400 mt-0.5">{fairwaysHit}/{fairwayOpportunities}</div>
           </motion.div>
 
           {/* Right Miss */}
@@ -447,8 +447,8 @@ export function DrivingDispersionVisualLegacy({
             onMouseLeave={() => setIsHovered(null)}
           >
             <div className="text-2xl font-bold text-orange-600 tabular-nums">{right.toFixed(0)}%</div>
-            <div className="text-xs font-medium text-slate-600 mt-1">Right</div>
-            <div className="text-xs text-slate-400 mt-0.5">{missRightCount} shots</div>
+            <div className="text-xs font-medium text-warm-600 mt-1">Right</div>
+            <div className="text-xs text-warm-400 mt-0.5">{missRightCount} shots</div>
           </motion.div>
         </div>
 
@@ -460,7 +460,7 @@ export function DrivingDispersionVisualLegacy({
                 'mt-4 p-3 rounded-lg flex items-center gap-3',
                 missTendency === 'left' ? 'bg-red-50 border border-red-100' :
                 missTendency === 'right' ? 'bg-orange-50 border border-orange-100' :
-                'bg-slate-50 border border-slate-100'
+                'bg-warm-50 border border-warm-100'
               )}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -471,7 +471,7 @@ export function DrivingDispersionVisualLegacy({
                   'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold',
                   missTendency === 'left' ? 'bg-red-100 text-red-600' :
                   missTendency === 'right' ? 'bg-orange-100 text-orange-600' :
-                  'bg-slate-200 text-slate-600'
+                  'bg-warm-200 text-warm-600'
                 )}
                 animate={missTendency !== 'balanced' ? {
                   x: [0, missTendency === 'left' ? -3 : 3, 0],
@@ -481,12 +481,12 @@ export function DrivingDispersionVisualLegacy({
                 {missTendency === 'left' ? '←' : missTendency === 'right' ? '→' : '↔'}
               </motion.div>
               <div>
-                <div className="text-sm font-medium text-slate-700">
+                <div className="text-sm font-medium text-warm-700">
                   {missTendency === 'balanced'
                     ? 'Balanced miss pattern'
                     : `Tendency to miss ${missTendency}`}
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-warm-500">
                   {missTendency === 'balanced'
                     ? 'Misses are evenly distributed'
                     : `${Math.max(leftPctOfMisses, rightPctOfMisses).toFixed(0)}% of misses go ${missTendency}`}
@@ -499,16 +499,16 @@ export function DrivingDispersionVisualLegacy({
         {/* Driver stats - Animated */}
         {driverFairwayPct !== null && (
           <motion.div
-            className="mt-4 pt-4 border-t border-slate-100"
+            className="mt-4 pt-4 border-t border-warm-100"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600 font-medium">Driver fairway %</span>
+              <span className="text-warm-600 font-medium">Driver fairway %</span>
               <div className="flex items-center gap-3">
                 <AnimatedProgressBar value={driverFairwayPct} color="bg-green-500" delay={0.7} />
-                <span className="font-semibold text-slate-900 tabular-nums w-10 text-right">{driverFairwayPct.toFixed(0)}%</span>
+                <span className="font-semibold text-warm-900 tabular-nums w-10 text-right">{driverFairwayPct.toFixed(0)}%</span>
               </div>
             </div>
           </motion.div>
@@ -598,7 +598,7 @@ export function ApproachDispersionVisualLegacy({
 
   return (
     <motion.div
-      className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden group"
+      className="bg-white rounded-2xl border border-warm-200 shadow-sm overflow-hidden group"
       variants={cardVariants}
       initial="hidden"
       animate="visible"
@@ -617,7 +617,7 @@ export function ApproachDispersionVisualLegacy({
       />
 
       {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100 relative overflow-hidden">
+      <div className="px-6 py-5 border-b border-warm-100 relative overflow-hidden">
         {/* Subtle gradient background */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -627,8 +627,8 @@ export function ApproachDispersionVisualLegacy({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Approach Accuracy</h3>
-            <p className="text-sm text-slate-500 mt-0.5">Greens in regulation</p>
+            <h3 className="text-lg font-semibold text-warm-900 tracking-tight">Approach Accuracy</h3>
+            <p className="text-sm text-warm-500 mt-0.5">Greens in regulation</p>
           </motion.div>
           <motion.div
             className="text-right"
@@ -639,13 +639,13 @@ export function ApproachDispersionVisualLegacy({
             <div className="text-3xl font-bold text-green-600 tabular-nums tracking-tight">
               {animatedGir.toFixed(0)}%
             </div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wide">GIR</div>
+            <div className="text-xs font-medium text-warm-400 uppercase tracking-wide">GIR</div>
           </motion.div>
         </div>
       </div>
 
       {/* Visual Green Target */}
-      <div className="px-6 py-8 bg-gradient-to-b from-slate-50/50 to-white">
+      <div className="px-6 py-8 bg-gradient-to-b from-warm-50/50 to-white">
         <motion.div
           className="relative max-w-sm mx-auto"
           initial={{ opacity: 0 }}
@@ -832,7 +832,7 @@ export function ApproachDispersionVisualLegacy({
           <AnimatePresence>
             {isHovered && (
               <motion.div
-                className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg"
+                className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-warm-900/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -849,7 +849,7 @@ export function ApproachDispersionVisualLegacy({
       </div>
 
       {/* Stats - Solid surface */}
-      <div className="px-6 py-5 bg-white border-t border-slate-100">
+      <div className="px-6 py-5 bg-white border-t border-warm-100">
         <div className="grid grid-cols-2 gap-4 mb-4">
           {/* Hit Green */}
           <motion.div
@@ -866,8 +866,8 @@ export function ApproachDispersionVisualLegacy({
             onMouseLeave={() => setIsHovered(null)}
           >
             <div className="text-2xl font-bold text-green-600 tabular-nums">{gir.toFixed(0)}%</div>
-            <div className="text-xs font-medium text-slate-600 mt-1">Hit Green</div>
-            <div className="text-xs text-slate-400 mt-0.5">{girTotal} of {girOpportunities}</div>
+            <div className="text-xs font-medium text-warm-600 mt-1">Hit Green</div>
+            <div className="text-xs text-warm-400 mt-0.5">{girTotal} of {girOpportunities}</div>
           </motion.div>
 
           {/* Missed Green */}
@@ -885,20 +885,20 @@ export function ApproachDispersionVisualLegacy({
             onMouseLeave={() => setIsHovered(null)}
           >
             <div className="text-2xl font-bold text-orange-600 tabular-nums">{missedPct.toFixed(0)}%</div>
-            <div className="text-xs font-medium text-slate-600 mt-1">Missed</div>
-            <div className="text-xs text-slate-400 mt-0.5">{missedGreen} misses</div>
+            <div className="text-xs font-medium text-warm-600 mt-1">Missed</div>
+            <div className="text-xs text-warm-400 mt-0.5">{missedGreen} misses</div>
           </motion.div>
         </div>
 
         {/* GIR by lie breakdown - animated progress bars */}
         {(girFromFairway !== null || girFromRough !== null || girFromSand !== null) && (
           <motion.div
-            className="space-y-3 pt-4 border-t border-slate-100"
+            className="space-y-3 pt-4 border-t border-warm-100"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">GIR by Lie</div>
+            <div className="text-xs font-semibold text-warm-400 uppercase tracking-wide">GIR by Lie</div>
 
             {girFromFairway !== null && (
               <motion.div
@@ -914,11 +914,11 @@ export function ApproachDispersionVisualLegacy({
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.7, type: 'spring' }}
                   />
-                  <span className="text-sm text-slate-600">From Fairway</span>
+                  <span className="text-sm text-warm-600">From Fairway</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <AnimatedProgressBar value={girFromFairway} color="bg-green-500" delay={0.7} />
-                  <span className="text-sm font-semibold text-slate-900 tabular-nums w-12 text-right">
+                  <span className="text-sm font-semibold text-warm-900 tabular-nums w-12 text-right">
                     {girFromFairway.toFixed(0)}%
                   </span>
                 </div>
@@ -939,11 +939,11 @@ export function ApproachDispersionVisualLegacy({
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.8, type: 'spring' }}
                   />
-                  <span className="text-sm text-slate-600">From Rough</span>
+                  <span className="text-sm text-warm-600">From Rough</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <AnimatedProgressBar value={girFromRough} color="bg-amber-500" delay={0.8} />
-                  <span className="text-sm font-semibold text-slate-900 tabular-nums w-12 text-right">
+                  <span className="text-sm font-semibold text-warm-900 tabular-nums w-12 text-right">
                     {girFromRough.toFixed(0)}%
                   </span>
                 </div>
@@ -964,11 +964,11 @@ export function ApproachDispersionVisualLegacy({
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.9, type: 'spring' }}
                   />
-                  <span className="text-sm text-slate-600">From Sand</span>
+                  <span className="text-sm text-warm-600">From Sand</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <AnimatedProgressBar value={girFromSand} color="bg-yellow-500" delay={0.9} />
-                  <span className="text-sm font-semibold text-slate-900 tabular-nums w-12 text-right">
+                  <span className="text-sm font-semibold text-warm-900 tabular-nums w-12 text-right">
                     {girFromSand.toFixed(0)}%
                   </span>
                 </div>
@@ -1008,12 +1008,12 @@ export function ApproachDispersionVisualLegacy({
         {/* Approach miss direction breakdown - shown when we have miss data */}
         {approachMissTotal > 0 && (
           <motion.div
-            className="space-y-3 pt-4 mt-4 border-t border-slate-100"
+            className="space-y-3 pt-4 mt-4 border-t border-warm-100"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Miss Direction Pattern</div>
+            <div className="text-xs font-semibold text-warm-400 uppercase tracking-wide">Miss Direction Pattern</div>
 
             {/* Cardinal directions (primary) */}
             <div className="grid grid-cols-2 gap-2">
@@ -1024,7 +1024,7 @@ export function ApproachDispersionVisualLegacy({
                     key={dir.type}
                     className={cn(
                       "flex items-center justify-between p-2 rounded-lg transition-all cursor-pointer",
-                      isHovered === dir.type ? 'ring-2 ring-offset-1' : 'bg-slate-50',
+                      isHovered === dir.type ? 'ring-2 ring-offset-1' : 'bg-warm-50',
                       dir.pct >= 35 && 'font-semibold'
                     )}
                     style={{
@@ -1039,9 +1039,9 @@ export function ApproachDispersionVisualLegacy({
                   >
                     <div className="flex items-center gap-2">
                       <span style={{ color: dir.color }}>{arrowMap[dir.type] || '•'}</span>
-                      <span className="text-sm text-slate-600">{dir.label}</span>
+                      <span className="text-sm text-warm-600">{dir.label}</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-900">{dir.pct.toFixed(0)}%</span>
+                    <span className="text-sm font-semibold text-warm-900">{dir.pct.toFixed(0)}%</span>
                   </motion.div>
                 );
               })}
@@ -1050,7 +1050,7 @@ export function ApproachDispersionVisualLegacy({
             {/* Diagonal directions (shown only if significant) */}
             {(missShortLeft > 5 || missShortRight > 5 || missLongLeft > 5 || missLongRight > 5) && (
               <motion.div
-                className="grid grid-cols-4 gap-1.5 mt-2"
+                className="grid grid-cols-4 gap-2 mt-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.9 }}
@@ -1064,7 +1064,7 @@ export function ApproachDispersionVisualLegacy({
                       key={dir.type}
                       className={cn(
                         "flex flex-col items-center p-1.5 rounded-lg transition-all cursor-pointer text-center",
-                        isHovered === dir.type ? 'ring-1 ring-offset-1' : 'bg-slate-50/50'
+                        isHovered === dir.type ? 'ring-1 ring-offset-1' : 'bg-warm-50/50'
                       )}
                       style={{
                         backgroundColor: isHovered === dir.type ? `${dir.color}15` : undefined,
@@ -1076,7 +1076,7 @@ export function ApproachDispersionVisualLegacy({
                       transition={{ delay: 0.95 + idx * 0.05 }}
                     >
                       <span style={{ color: dir.color }} className="text-xs">{arrowMap[dir.type] || '•'}</span>
-                      <span className="text-xs text-slate-500 mt-0.5">{dir.pct.toFixed(0)}%</span>
+                      <span className="text-xs text-warm-500 mt-0.5">{dir.pct.toFixed(0)}%</span>
                     </motion.div>
                   );
                 })}
@@ -1106,7 +1106,7 @@ export function ApproachDispersionVisualLegacy({
                      dominantMiss.type === 'long' ? '↑' :
                      dominantMiss.type === 'left' ? '←' : '→'}
                   </motion.div>
-                  <div className="text-sm text-slate-700">
+                  <div className="text-sm text-warm-700">
                     Tend to miss <span className="font-medium">{dominantMiss.label.toLowerCase()}</span> ({dominantMiss.pct.toFixed(0)}% of misses)
                   </div>
                 </motion.div>
@@ -1146,18 +1146,18 @@ function ApproachProximityChart({ stats }: { stats: GolfStats }) {
 
   return (
     <motion.div
-      className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden"
+      className="bg-white rounded-2xl border border-warm-200/80 shadow-sm overflow-hidden"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       whileHover={{ boxShadow: '0 8px 24px rgba(0,0,0,0.06)', y: -2 }}
     >
       {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100/80">
+      <div className="px-6 py-5 border-b border-warm-100/80">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Approach Proximity</h3>
-            <p className="text-[13px] text-slate-500 mt-0.5">How close approach shots land by distance</p>
+            <h3 className="text-lg font-semibold text-warm-900 tracking-tight">Approach Proximity</h3>
+            <p className="text-[13px] text-warm-500 mt-0.5">How close approach shots land by distance</p>
           </div>
           {avgProx !== null && (
             <motion.div
@@ -1169,7 +1169,7 @@ function ApproachProximityChart({ stats }: { stats: GolfStats }) {
               <div className="text-4xl font-bold text-green-600 tabular-nums tracking-tight leading-none">
                 {Math.round(avgProx)}&apos;
               </div>
-              <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mt-1">Avg</div>
+              <div className="text-xs font-medium text-warm-400 uppercase tracking-wide mt-1">Avg</div>
             </motion.div>
           )}
         </div>
@@ -1187,7 +1187,7 @@ function ApproachProximityChart({ stats }: { stats: GolfStats }) {
                 key={bucket.key}
                 className={cn(
                   "flex items-center gap-4 p-1.5 -mx-1.5 rounded-lg transition-colors",
-                  isHovered && "bg-slate-50/80"
+                  isHovered && "bg-warm-50/80"
                 )}
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -1196,12 +1196,12 @@ function ApproachProximityChart({ stats }: { stats: GolfStats }) {
                 onMouseLeave={() => setHoveredBucket(null)}
               >
                 {/* Label */}
-                <div className="w-16 text-sm font-medium text-slate-500 text-right shrink-0 tabular-nums">
+                <div className="w-16 text-sm font-medium text-warm-500 text-right shrink-0 tabular-nums">
                   {bucket.label}
                 </div>
 
                 {/* Bar container */}
-                <div className="flex-1 h-7 bg-slate-100/80 rounded-md overflow-hidden relative">
+                <div className="flex-1 h-7 bg-warm-100/80 rounded-md overflow-hidden relative">
                   <motion.div
                     className="h-full rounded-md"
                     style={{ backgroundColor: bucket.color }}
@@ -1214,7 +1214,7 @@ function ApproachProximityChart({ stats }: { stats: GolfStats }) {
                 {/* Value */}
                 <div className={cn(
                   "w-10 text-right text-sm font-semibold tabular-nums shrink-0 transition-colors",
-                  isHovered ? "text-slate-900" : "text-slate-600"
+                  isHovered ? "text-warm-900" : "text-warm-600"
                 )}>
                   {Math.round(bucket.value || 0)}&apos;
                 </div>
@@ -1225,25 +1225,25 @@ function ApproachProximityChart({ stats }: { stats: GolfStats }) {
 
         {/* Color legend */}
         <motion.div
-          className="mt-5 pt-4 border-t border-slate-100/80"
+          className="mt-5 pt-4 border-t border-warm-100/80"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          <div className="flex items-center gap-5 text-xs text-slate-400">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-5 text-xs text-warm-400">
+            <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-green-600" />
               <span>Close</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
               <span>Mid</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-red-600" />
               <span>Long</span>
             </div>
-            <span className="ml-auto text-slate-300">Distance to hole in feet</span>
+            <span className="ml-auto text-warm-300">Distance to hole in feet</span>
           </div>
         </motion.div>
       </div>
@@ -1305,7 +1305,7 @@ export function PuttingDispersionVisualLegacy({
 
   return (
     <motion.div
-      className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden group"
+      className="bg-white rounded-2xl border border-warm-200 shadow-sm overflow-hidden group"
       variants={cardVariants}
       initial="hidden"
       animate="visible"
@@ -1324,9 +1324,9 @@ export function PuttingDispersionVisualLegacy({
       />
 
       {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100 relative overflow-hidden">
+      <div className="px-6 py-5 border-b border-warm-100 relative overflow-hidden">
         {/* Subtle gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-warm-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
         <div className="flex items-start justify-between relative">
           <motion.div
@@ -1334,8 +1334,8 @@ export function PuttingDispersionVisualLegacy({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Putting Miss Pattern</h3>
-            <p className="text-sm text-slate-500 mt-0.5">Where missed putts finish</p>
+            <h3 className="text-lg font-semibold text-warm-900 tracking-tight">Putting Miss Pattern</h3>
+            <p className="text-sm text-warm-500 mt-0.5">Where missed putts finish</p>
           </motion.div>
           <motion.div
             className="text-right"
@@ -1343,16 +1343,16 @@ export function PuttingDispersionVisualLegacy({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, type: 'spring' }}
           >
-            <div className="text-3xl font-bold text-slate-900 tabular-nums tracking-tight">
+            <div className="text-3xl font-bold text-warm-900 tabular-nums tracking-tight">
               {Math.round(animatedTotalPutts)}
             </div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wide">Total Putts</div>
+            <div className="text-xs font-medium text-warm-400 uppercase tracking-wide">Total Putts</div>
           </motion.div>
         </div>
       </div>
 
       {/* Visual Hole Target */}
-      <div className="px-6 py-8 bg-gradient-to-b from-slate-50/50 to-white">
+      <div className="px-6 py-8 bg-gradient-to-b from-warm-50/50 to-white">
         <motion.div
           className="relative max-w-xs mx-auto"
           initial={{ opacity: 0 }}
@@ -1587,7 +1587,7 @@ export function PuttingDispersionVisualLegacy({
           <AnimatePresence>
             {hoveredZone && hoveredZone !== 'hole' && (
               <motion.div
-                className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg"
+                className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-warm-900/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -1603,7 +1603,7 @@ export function PuttingDispersionVisualLegacy({
       </div>
 
       {/* Stats - Solid surface */}
-      <div className="px-6 py-5 bg-white border-t border-slate-100">
+      <div className="px-6 py-5 bg-white border-t border-warm-100">
         <div className="grid grid-cols-2 gap-4 mb-4">
           {/* 1-Putts */}
           <motion.div
@@ -1617,7 +1617,7 @@ export function PuttingDispersionVisualLegacy({
             <div className="text-2xl font-bold text-green-600 tabular-nums">
               {Math.round(animatedOnePutts)}
             </div>
-            <div className="text-xs font-medium text-slate-600 mt-1">1-Putts</div>
+            <div className="text-xs font-medium text-warm-600 mt-1">1-Putts</div>
           </motion.div>
 
           {/* 3-Putts */}
@@ -1632,7 +1632,7 @@ export function PuttingDispersionVisualLegacy({
             <div className="text-2xl font-bold text-red-600 tabular-nums">
               {Math.round(animatedThreePutts)}
             </div>
-            <div className="text-xs font-medium text-slate-600 mt-1">3-Putts</div>
+            <div className="text-xs font-medium text-warm-600 mt-1">3-Putts</div>
           </motion.div>
         </div>
 
@@ -1673,10 +1673,10 @@ export function PuttingDispersionVisualLegacy({
                  dominantMiss.type === 'short' ? '↓' : '↑'}
               </motion.div>
               <div>
-                <div className="text-sm font-medium text-slate-700">
+                <div className="text-sm font-medium text-warm-700">
                   Dominant miss: {dominantMiss.label}
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-warm-500">
                   {dominantMiss.pct.toFixed(0)}% of missed putts
                 </div>
               </div>
@@ -1687,19 +1687,19 @@ export function PuttingDispersionVisualLegacy({
         {/* Read Pattern (Low/High) - shown when we have read data */}
         {hasReadData && (
           <motion.div
-            className="space-y-3 pt-4 mt-4 border-t border-slate-100"
+            className="space-y-3 pt-4 mt-4 border-t border-warm-100"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Green Reading Pattern</div>
+            <div className="text-xs font-semibold text-warm-400 uppercase tracking-wide">Green Reading Pattern</div>
 
             <div className="grid grid-cols-2 gap-2">
               {/* Low (Under-read) */}
               <motion.div
                 className={cn(
                   "flex items-center justify-between p-3 rounded-lg transition-all cursor-default",
-                  hoveredZone === 'low' ? 'bg-amber-100 border border-amber-200' : 'bg-slate-50'
+                  hoveredZone === 'low' ? 'bg-amber-100 border border-amber-200' : 'bg-warm-50'
                 )}
                 onMouseEnter={() => setHoveredZone('low')}
                 onMouseLeave={() => setHoveredZone(null)}
@@ -1709,8 +1709,8 @@ export function PuttingDispersionVisualLegacy({
                 transition={{ delay: 0.7 }}
               >
                 <div>
-                  <div className="text-sm font-medium text-slate-700">Low</div>
-                  <div className="text-xs text-slate-500">Under-read break</div>
+                  <div className="text-sm font-medium text-warm-700">Low</div>
+                  <div className="text-xs text-warm-500">Under-read break</div>
                 </div>
                 <div className="text-xl font-bold text-amber-600 tabular-nums">{low.toFixed(0)}%</div>
               </motion.div>
@@ -1719,7 +1719,7 @@ export function PuttingDispersionVisualLegacy({
               <motion.div
                 className={cn(
                   "flex items-center justify-between p-3 rounded-lg transition-all cursor-default",
-                  hoveredZone === 'high' ? 'bg-cyan-100 border border-cyan-200' : 'bg-slate-50'
+                  hoveredZone === 'high' ? 'bg-cyan-100 border border-cyan-200' : 'bg-warm-50'
                 )}
                 onMouseEnter={() => setHoveredZone('high')}
                 onMouseLeave={() => setHoveredZone(null)}
@@ -1729,8 +1729,8 @@ export function PuttingDispersionVisualLegacy({
                 transition={{ delay: 0.75 }}
               >
                 <div>
-                  <div className="text-sm font-medium text-slate-700">High</div>
-                  <div className="text-xs text-slate-500">Over-read break</div>
+                  <div className="text-sm font-medium text-warm-700">High</div>
+                  <div className="text-xs text-warm-500">Over-read break</div>
                 </div>
                 <div className="text-xl font-bold text-cyan-600 tabular-nums">{high.toFixed(0)}%</div>
               </motion.div>
@@ -1759,10 +1759,10 @@ export function PuttingDispersionVisualLegacy({
                     {readTendency === 'under-read' ? '📉' : '📈'}
                   </motion.div>
                   <div>
-                    <div className="text-sm font-medium text-slate-700">
+                    <div className="text-sm font-medium text-warm-700">
                       {readTendency === 'under-read' ? 'Tendency to under-read break' : 'Tendency to over-read break'}
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-warm-500">
                       {readTendency === 'under-read'
                         ? 'Putts often miss low (on the amateur side)'
                         : 'Putts often miss high (on the pro side)'}
@@ -1822,11 +1822,11 @@ export const ShotDispersionChart = memo(function ShotDispersionChart({
         transition={{ duration: 0.5 }}
       >
         <motion.div
-          className="bg-white rounded-2xl border border-slate-200 shadow-sm p-16 text-center"
+          className="bg-white rounded-2xl border border-warm-200 shadow-sm p-16 text-center"
           whileHover={{ boxShadow: '0 10px 30px rgba(0,0,0,0.06)' }}
         >
           <motion.div
-            className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4"
+            className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
@@ -1834,7 +1834,7 @@ export const ShotDispersionChart = memo(function ShotDispersionChart({
             <span className="text-3xl">🎯</span>
           </motion.div>
           <motion.h3
-            className="text-lg font-semibold text-slate-900 mb-2"
+            className="text-lg font-semibold text-warm-900 mb-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
@@ -1842,7 +1842,7 @@ export const ShotDispersionChart = memo(function ShotDispersionChart({
             No Shot Data Yet
           </motion.h3>
           <motion.p
-            className="text-slate-500 max-w-sm mx-auto"
+            className="text-warm-500 max-w-sm mx-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
@@ -1864,7 +1864,7 @@ export const ShotDispersionChart = memo(function ShotDispersionChart({
       {/* Section Header - Animated */}
       <motion.div variants={sectionHeaderVariants}>
         <motion.h2
-          className="text-xl font-semibold text-slate-900 tracking-tight"
+          className="text-xl font-semibold text-warm-900 tracking-tight"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
@@ -1872,7 +1872,7 @@ export const ShotDispersionChart = memo(function ShotDispersionChart({
           Shot Dispersion
         </motion.h2>
         <motion.p
-          className="text-sm text-slate-500 mt-1"
+          className="text-sm text-warm-500 mt-1"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}

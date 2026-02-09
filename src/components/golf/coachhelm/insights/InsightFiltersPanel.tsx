@@ -59,8 +59,8 @@ const PRIORITY_OPTIONS: { value: InsightPriority; label: string; color: string }
 const STATUS_OPTIONS: { value: InsightStatus; label: string; color: string }[] = [
   { value: 'active', label: 'Active', color: 'bg-green-100 text-green-700' },
   { value: 'acknowledged', label: 'Acknowledged', color: 'bg-blue-100 text-blue-700' },
-  { value: 'resolved', label: 'Resolved', color: 'bg-slate-100 text-slate-700' },
-  { value: 'dismissed', label: 'Dismissed', color: 'bg-slate-100 text-slate-500' },
+  { value: 'resolved', label: 'Resolved', color: 'bg-warm-100 text-warm-700' },
+  { value: 'dismissed', label: 'Dismissed', color: 'bg-warm-100 text-warm-500' },
 ];
 
 const DATE_RANGE_OPTIONS = [
@@ -208,7 +208,7 @@ export function InsightFiltersPanel({
         chips.push({
           key: 'date',
           label: option.label,
-          colorClass: 'bg-slate-100 text-slate-700',
+          colorClass: 'bg-warm-100 text-warm-700',
           onRemove: () => {
             updateFilter('dateRange', undefined);
             updateFilter('startDate', undefined);
@@ -233,7 +233,7 @@ export function InsightFiltersPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Player Filter */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          <label className="block text-xs font-medium text-warm-600 mb-1.5">
             Player
           </label>
           <select
@@ -241,8 +241,8 @@ export function InsightFiltersPanel({
             onChange={(e) => updateFilter('playerId', e.target.value || undefined)}
             className={cn(
               'w-full px-3 py-2 text-sm',
-              'bg-white border border-slate-200 rounded-lg',
-              'text-slate-900',
+              'bg-white border border-warm-200 rounded-lg',
+              'text-warm-900',
               'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
               'transition-all duration-200'
             )}
@@ -258,7 +258,7 @@ export function InsightFiltersPanel({
 
         {/* Insight Type Filter */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          <label className="block text-xs font-medium text-warm-600 mb-1.5">
             Insight Type
           </label>
           <select
@@ -266,8 +266,8 @@ export function InsightFiltersPanel({
             onChange={(e) => updateFilter('insightType', e.target.value as InsightType || undefined)}
             className={cn(
               'w-full px-3 py-2 text-sm',
-              'bg-white border border-slate-200 rounded-lg',
-              'text-slate-900',
+              'bg-white border border-warm-200 rounded-lg',
+              'text-warm-900',
               'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
               'transition-all duration-200'
             )}
@@ -286,7 +286,7 @@ export function InsightFiltersPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Priority Filter */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          <label className="block text-xs font-medium text-warm-600 mb-1.5">
             Priority
           </label>
           <select
@@ -294,8 +294,8 @@ export function InsightFiltersPanel({
             onChange={(e) => updateFilter('priority', e.target.value as InsightPriority || undefined)}
             className={cn(
               'w-full px-3 py-2 text-sm',
-              'bg-white border border-slate-200 rounded-lg',
-              'text-slate-900',
+              'bg-white border border-warm-200 rounded-lg',
+              'text-warm-900',
               'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
               'transition-all duration-200'
             )}
@@ -311,7 +311,7 @@ export function InsightFiltersPanel({
 
         {/* Status Filter */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          <label className="block text-xs font-medium text-warm-600 mb-1.5">
             Status
           </label>
           <select
@@ -319,8 +319,8 @@ export function InsightFiltersPanel({
             onChange={(e) => updateFilter('status', e.target.value as InsightStatus || undefined)}
             className={cn(
               'w-full px-3 py-2 text-sm',
-              'bg-white border border-slate-200 rounded-lg',
-              'text-slate-900',
+              'bg-white border border-warm-200 rounded-lg',
+              'text-warm-900',
               'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
               'transition-all duration-200'
             )}
@@ -337,7 +337,7 @@ export function InsightFiltersPanel({
 
       {/* Row 3: Date Range */}
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1.5">
+        <label className="block text-xs font-medium text-warm-600 mb-1.5">
           Date Range
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -353,8 +353,8 @@ export function InsightFiltersPanel({
             }}
             className={cn(
               'w-full px-3 py-2 text-sm',
-              'bg-white border border-slate-200 rounded-lg',
-              'text-slate-900',
+              'bg-white border border-warm-200 rounded-lg',
+              'text-warm-900',
               'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
               'transition-all duration-200'
             )}
@@ -375,8 +375,8 @@ export function InsightFiltersPanel({
                 onChange={(e) => updateFilter('startDate', e.target.value || undefined)}
                 className={cn(
                   'w-full px-3 py-2 text-sm',
-                  'bg-white border border-slate-200 rounded-lg',
-                  'text-slate-900',
+                  'bg-white border border-warm-200 rounded-lg',
+                  'text-warm-900',
                   'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
                   'transition-all duration-200'
                 )}
@@ -387,8 +387,8 @@ export function InsightFiltersPanel({
                 onChange={(e) => updateFilter('endDate', e.target.value || undefined)}
                 className={cn(
                   'w-full px-3 py-2 text-sm',
-                  'bg-white border border-slate-200 rounded-lg',
-                  'text-slate-900',
+                  'bg-white border border-warm-200 rounded-lg',
+                  'text-warm-900',
                   'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
                   'transition-all duration-200'
                 )}
@@ -418,11 +418,11 @@ export function InsightFiltersPanel({
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50/50 transition-colors rounded-t-2xl"
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-warm-50/50 transition-colors rounded-t-2xl"
           >
             <div className="flex items-center gap-2">
-              <IconFilter size={16} className="text-slate-500" />
-              <span className="text-sm font-medium text-slate-700">Filters</span>
+              <IconFilter size={16} className="text-warm-500" />
+              <span className="text-sm font-medium text-warm-700">Filters</span>
               {activeFilterCount > 0 && (
                 <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">
                   {activeFilterCount}
@@ -430,9 +430,9 @@ export function InsightFiltersPanel({
               )}
             </div>
             {isExpanded ? (
-              <IconChevronUp size={16} className="text-slate-400" />
+              <IconChevronUp size={16} className="text-warm-400" />
             ) : (
-              <IconChevronDown size={16} className="text-slate-400" />
+              <IconChevronDown size={16} className="text-warm-400" />
             )}
           </button>
 
@@ -468,7 +468,7 @@ export function InsightFiltersPanel({
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
-                <div className="px-4 pb-4 border-t border-slate-100">
+                <div className="px-4 pb-4 border-t border-warm-100">
                   <div className="pt-4">
                     <FilterFormContent />
                   </div>
@@ -487,9 +487,9 @@ export function InsightFiltersPanel({
           onClick={() => setIsMobileOpen(true)}
           className={cn(
             'flex items-center gap-2 px-4 py-2.5',
-            'bg-white/80 backdrop-blur-sm border border-slate-200 rounded-xl',
-            'text-sm font-medium text-slate-700',
-            'hover:bg-slate-50 transition-colors'
+            'bg-white/80 backdrop-blur-sm border border-warm-200 rounded-xl',
+            'text-sm font-medium text-warm-700',
+            'hover:bg-warm-50 transition-colors'
           )}
         >
           <IconFilter size={16} />
@@ -524,7 +524,7 @@ export function InsightFiltersPanel({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm"
+                className="fixed inset-0 z-40 bg-warm-900/50 backdrop-blur-sm"
                 onClick={() => setIsMobileOpen(false)}
               />
 
@@ -538,13 +538,13 @@ export function InsightFiltersPanel({
               >
                 {/* Handle */}
                 <div className="sticky top-0 bg-white pt-3 pb-2 px-6">
-                  <div className="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4" />
+                  <div className="w-10 h-1 bg-warm-300 rounded-full mx-auto mb-4" />
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-slate-900">Filters</h3>
+                    <h3 className="text-lg font-semibold text-warm-900">Filters</h3>
                     <button
                       type="button"
                       onClick={() => setIsMobileOpen(false)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                      className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100"
                     >
                       <IconX size={20} />
                     </button>

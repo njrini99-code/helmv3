@@ -37,7 +37,7 @@ function MessageStatus({ read, isOwn }: { read?: boolean | null; isOwn: boolean 
         </span>
       ) : (
         // Single check for sent/delivered
-        <IconCheck size={12} className="text-slate-400" />
+        <IconCheck size={12} className="text-warm-400" />
       )}
     </span>
   );
@@ -187,11 +187,11 @@ export function GolfChatWindow({
   return (
     <div className={cn('flex flex-col bg-white', className)}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 bg-white">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200 bg-white">
         {onBack && (
           <button
             onClick={onBack}
-            className="lg:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+            className="lg:hidden p-2 -ml-2 text-warm-500 hover:text-warm-700 hover:bg-warm-100 rounded-lg"
           >
             <IconArrowLeft size={20} />
           </button>
@@ -200,8 +200,8 @@ export function GolfChatWindow({
           <>
             <Avatar name={participant.name} src={participant.avatar} size="md" />
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-slate-900 truncate">{participant.name}</p>
-              <p className="text-sm text-slate-500 truncate">{participant.subtitle}</p>
+              <p className="font-medium text-warm-900 truncate">{participant.name}</p>
+              <p className="text-sm text-warm-500 truncate">{participant.subtitle}</p>
             </div>
           </>
         )}
@@ -215,8 +215,8 @@ export function GolfChatWindow({
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <p className="text-slate-500">No messages yet</p>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-warm-500">No messages yet</p>
+            <p className="text-sm text-warm-400 mt-1">
               Send a message to start the conversation
             </p>
           </div>
@@ -256,7 +256,7 @@ export function GolfChatWindow({
                         'rounded-2xl px-4 py-2',
                         isOwn
                           ? 'bg-green-600 text-white rounded-br-md'
-                          : 'bg-slate-100 text-slate-900 rounded-bl-md'
+                          : 'bg-warm-100 text-warm-900 rounded-bl-md'
                       )}
                     >
                       <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
@@ -267,7 +267,7 @@ export function GolfChatWindow({
                   <p
                     className={cn(
                       'text-xs px-1 flex items-center',
-                      isOwn ? 'justify-end text-slate-400' : 'text-slate-400'
+                      isOwn ? 'justify-end text-warm-400' : 'text-warm-400'
                     )}
                   >
                     {formatTime(message.created_at)}
@@ -288,7 +288,7 @@ export function GolfChatWindow({
       />
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-slate-200 bg-white">
+      <form onSubmit={handleSubmit} className="p-4 border-t border-warm-200 bg-white">
         <div className="flex items-center gap-2">
           <AttachmentButton
             onFilesSelected={handleFilesSelected}
@@ -301,7 +301,7 @@ export function GolfChatWindow({
             placeholder="Type a message..."
             enterKeyHint="send"
             autoComplete="off"
-            className="flex-1 px-4 py-2 border border-slate-200 rounded-full text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40"
+            className="flex-1 px-4 py-2 border border-warm-200 rounded-full text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40"
             disabled={sending}
           />
           <Button

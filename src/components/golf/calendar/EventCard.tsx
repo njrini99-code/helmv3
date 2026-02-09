@@ -104,7 +104,7 @@ const EventCardInner = forwardRef<
       {...dragAttributes}
       {...dragListeners}
     >
-      <div className="flex items-start gap-1.5">
+      <div className="flex items-start gap-2">
         {isDraggable && (
           <GripVertical className="w-3 h-3 opacity-40 flex-shrink-0 mt-0.5" />
         )}

@@ -11,10 +11,10 @@ export function HighlightsSection({ highlights }: HighlightsSectionProps) {
 
   return (
     <div
-      className="rounded-xl border border-slate-200 bg-white p-5"
+      className="rounded-xl border border-warm-200 bg-white p-5"
       style={{ animation: 'fadeInUp 0.5s ease-out 0.3s both' }}
     >
-      <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+      <h3 className="text-sm font-semibold text-warm-900 mb-4 flex items-center gap-2">
         <span className="text-lg">✨</span>
         Highlights
       </h3>
@@ -33,10 +33,10 @@ export function HighlightsSection({ highlights }: HighlightsSectionProps) {
               <span className="text-2xl">{highlight.emoji || config?.emoji}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-slate-900">{highlight.title}</span>
-                  <span className="text-xs text-slate-500">Hole {highlight.holeNumber}</span>
+                  <span className="font-medium text-warm-900">{highlight.title}</span>
+                  <span className="text-xs text-warm-500">Hole {highlight.holeNumber}</span>
                 </div>
-                <p className="text-sm text-slate-600 mt-0.5">{highlight.description}</p>
+                <p className="text-sm text-warm-600 mt-0.5">{highlight.description}</p>
               </div>
               <div className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
                 {highlight.impact}

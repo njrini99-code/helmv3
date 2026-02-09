@@ -149,9 +149,19 @@ export function generateOfflineId(): string {
  * Open or create the IndexedDB database with all stores
  */
 export async function openShotDatabase(): Promise<IDBDatabase> {
-  // Return existing instance if available
-  if (dbInstance && dbInstance.objectStoreNames.length > 0) {
-    return dbInstance;
+  // Return existing instance if available and connection is still open
+  if (dbInstance) {
+    try {
+      // Verify the connection is still usable by checking objectStoreNames
+      // A closed connection will throw when accessed
+      if (dbInstance.objectStoreNames.length > 0) {
+        return dbInstance;
+      }
+    } catch {
+      // Connection is stale/closed, reset and reopen
+      dbInstance = null;
+      dbInitPromise = null;
+    }
   }
 
   // Return pending promise if initialization is in progress
@@ -373,7 +383,18 @@ export async function getPendingShots(): Promise<OfflineShot[]> {
   const db = await openShotDatabase();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(SHOTS_STORE, 'readonly');
+    let transaction: IDBTransaction;
+    try {
+      transaction = db.transaction(SHOTS_STORE, 'readonly');
+    } catch (err) {
+      // Connection may have been closed between openShotDatabase() and here
+      // Reset and reject so caller can retry
+      dbInstance = null;
+      dbInitPromise = null;
+      reject(new Error(`Failed to get pending shots: ${err instanceof Error ? err.message : 'transaction creation failed'}`));
+      return;
+    }
+
     const store = transaction.objectStore(SHOTS_STORE);
     const index = store.index('_sync_status');
     const request = index.getAll('pending');
@@ -386,7 +407,7 @@ export async function getPendingShots(): Promise<OfflineShot[]> {
       resolve(shots);
     };
 
-    request.onerror = () => reject(new Error('Failed to get pending shots'));
+    request.onerror = () => reject(new Error(`Failed to get pending shots: ${request.error?.message || 'unknown error'}`));
   });
 }
 
@@ -538,7 +559,16 @@ export async function getPendingHoles(): Promise<OfflineHole[]> {
   const db = await openShotDatabase();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(HOLES_STORE, 'readonly');
+    let transaction: IDBTransaction;
+    try {
+      transaction = db.transaction(HOLES_STORE, 'readonly');
+    } catch (err) {
+      dbInstance = null;
+      dbInitPromise = null;
+      reject(new Error(`Failed to get pending holes: ${err instanceof Error ? err.message : 'transaction creation failed'}`));
+      return;
+    }
+
     const store = transaction.objectStore(HOLES_STORE);
     const index = store.index('_sync_status');
     const request = index.getAll('pending');
@@ -551,7 +581,7 @@ export async function getPendingHoles(): Promise<OfflineHole[]> {
       resolve(holes);
     };
 
-    request.onerror = () => reject(new Error('Failed to get pending holes'));
+    request.onerror = () => reject(new Error(`Failed to get pending holes: ${request.error?.message || 'unknown error'}`));
   });
 }
 
@@ -705,7 +735,16 @@ export async function getPendingRounds(): Promise<OfflineRound[]> {
   const db = await openShotDatabase();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ROUNDS_STORE, 'readonly');
+    let transaction: IDBTransaction;
+    try {
+      transaction = db.transaction(ROUNDS_STORE, 'readonly');
+    } catch (err) {
+      dbInstance = null;
+      dbInitPromise = null;
+      reject(new Error(`Failed to get pending rounds: ${err instanceof Error ? err.message : 'transaction creation failed'}`));
+      return;
+    }
+
     const store = transaction.objectStore(ROUNDS_STORE);
     const index = store.index('_sync_status');
     const request = index.getAll('pending');
@@ -718,7 +757,7 @@ export async function getPendingRounds(): Promise<OfflineRound[]> {
       resolve(rounds);
     };
 
-    request.onerror = () => reject(new Error('Failed to get pending rounds'));
+    request.onerror = () => reject(new Error(`Failed to get pending rounds: ${request.error?.message || 'unknown error'}`));
   });
 }
 
@@ -873,9 +912,12 @@ export async function getSyncMetadata<T>(key: string): Promise<T | null> {
 export async function getOfflineStats(): Promise<OfflineStats> {
   const db = await openShotDatabase();
 
-  const pendingRounds = await getPendingRounds();
-  const pendingHoles = await getPendingHoles();
-  const pendingShots = await getPendingShots();
+  // Fetch pending items with graceful fallbacks - one failure shouldn't crash stats
+  const [pendingRounds, pendingHoles, pendingShots] = await Promise.all([
+    getPendingRounds().catch(() => [] as OfflineRound[]),
+    getPendingHoles().catch(() => [] as OfflineHole[]),
+    getPendingShots().catch(() => [] as OfflineShot[]),
+  ]);
 
   // Count failed items
   const getFailedCount = (store: string): Promise<number> => {

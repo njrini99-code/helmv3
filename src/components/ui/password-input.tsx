@@ -49,7 +49,7 @@ export function PasswordInput({
   return (
     <div className={cn('space-y-2', className)}>
       {/* Label */}
-      <label className="block text-sm font-medium text-slate-700">
+      <label className="block text-sm font-medium text-warm-700">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
@@ -67,11 +67,11 @@ export function PasswordInput({
           className={cn(
             'w-full px-4 py-2.5 pr-10 rounded-lg border',
             'transition-colors duration-200',
-            'text-slate-900 placeholder:text-slate-400',
+            'text-warm-900 placeholder:text-warm-400',
             'focus:outline-none focus:ring-2',
             showValidation && !validation?.valid
               ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
-              : 'border-slate-200 focus:border-green-500 focus:ring-green-100'
+              : 'border-warm-200 focus:border-green-500 focus:ring-green-100'
           )}
         />
 
@@ -79,7 +79,7 @@ export function PasswordInput({
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600 transition-colors"
           tabIndex={-1}
         >
           {showPassword ? (
@@ -95,7 +95,7 @@ export function PasswordInput({
         <div className="space-y-2">
           {/* Strength Bar */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+            <div className="flex-1 bg-warm-100 rounded-full h-1.5 overflow-hidden">
               <div
                 className={cn(
                   'h-full transition-all duration-300',
@@ -106,7 +106,7 @@ export function PasswordInput({
                 }}
               />
             </div>
-            <span className="text-xs font-medium text-slate-600 min-w-[80px] text-right">
+            <span className="text-xs font-medium text-warm-600 min-w-[80px] text-right">
               {getPasswordStrengthText(validation.strength)}
             </span>
           </div>
@@ -125,9 +125,9 @@ export function PasswordInput({
                 {met ? (
                   <CheckCircle className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
                 ) : (
-                  <XCircle className="h-3.5 w-3.5 text-slate-300 flex-shrink-0" />
+                  <XCircle className="h-3.5 w-3.5 text-warm-300 flex-shrink-0" />
                 )}
-                <span className={met ? 'text-green-700' : 'text-slate-500'}>
+                <span className={met ? 'text-green-700' : 'text-warm-500'}>
                   {requirement}
                 </span>
               </div>

@@ -21,27 +21,27 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, badge, actions, breadcrumb }: PageHeaderProps) {
   const badgeColors = {
-    default: 'bg-slate-100 text-slate-600',
+    default: 'bg-warm-100 text-warm-600',
     success: 'bg-emerald-50 text-emerald-700',
     warning: 'bg-amber-50 text-amber-700',
     info: 'bg-blue-50 text-blue-700',
   };
 
   return (
-    <div className="border-b border-slate-200/60 bg-white/80 backdrop-blur-xl sticky top-0 z-20">
+    <div className="border-b border-warm-200/60 bg-white/80 backdrop-blur-xl sticky top-0 z-20">
       <div className="max-w-7xl mx-auto px-6 py-5">
         {/* Breadcrumb */}
         {breadcrumb && breadcrumb.length > 0 && (
-          <nav className="flex items-center gap-1.5 text-sm mb-2">
+          <nav className="flex items-center gap-2 text-sm mb-2">
             {breadcrumb.map((item, i) => (
-              <span key={i} className="flex items-center gap-1.5">
-                {i > 0 && <span className="text-slate-300">/</span>}
+              <span key={i} className="flex items-center gap-2">
+                {i > 0 && <span className="text-warm-300">/</span>}
                 {item.href ? (
-                  <Link href={item.href} className="text-slate-500 hover:text-slate-900 transition-colors">
+                  <Link href={item.href} className="text-warm-500 hover:text-warm-900 transition-colors">
                     {item.label}
                   </Link>
                 ) : (
-                  <span className="text-slate-900 font-medium">{item.label}</span>
+                  <span className="text-warm-900 font-medium">{item.label}</span>
                 )}
               </span>
             ))}
@@ -52,7 +52,7 @@ export function PageHeader({ title, description, badge, actions, breadcrumb }: P
           <div className="flex items-center gap-3">
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">{title}</h1>
+                <h1 className="text-2xl font-semibold tracking-tight text-warm-900">{title}</h1>
                 {badge && (
                   <span className={cn(
                     'px-2 py-0.5 text-xs font-medium rounded-full',
@@ -63,7 +63,7 @@ export function PageHeader({ title, description, badge, actions, breadcrumb }: P
                 )}
               </div>
               {description && (
-                <p className="text-sm text-slate-500 mt-0.5">{description}</p>
+                <p className="text-sm text-warm-500 mt-0.5">{description}</p>
               )}
             </div>
           </div>
@@ -101,7 +101,7 @@ export function MetricCard({
   label, 
   value, 
   icon, 
-  iconColor = 'bg-slate-100',
+  iconColor = 'bg-warm-100',
   trend, 
   subValue, 
   href, 
@@ -112,8 +112,8 @@ export function MetricCard({
     <div 
       className={cn(
         'group relative bg-white rounded-xl p-4 transition-all duration-200',
-        'border border-slate-200/60 hover:border-slate-300/80',
-        'hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)]',
+        'border border-warm-200/60 hover:border-warm-300/80',
+        'hover:shadow-sm',
         href && 'cursor-pointer',
         className
       )}
@@ -125,9 +125,9 @@ export function MetricCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-slate-500 mb-1 truncate">{label}</p>
+          <p className="text-xs font-medium text-warm-500 mb-1 truncate">{label}</p>
           <div className="flex items-baseline gap-2">
-            <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{value}</p>
+            <p className="text-2xl font-semibold tracking-tight text-warm-900 tabular-nums">{value}</p>
             {trend && (
               <span className={cn(
                 'flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-full',
@@ -149,7 +149,7 @@ export function MetricCard({
             )}
           </div>
           {subValue && (
-            <p className="text-xs text-slate-400 mt-0.5">{subValue}</p>
+            <p className="text-xs text-warm-400 mt-0.5">{subValue}</p>
           )}
         </div>
         {icon && (
@@ -202,14 +202,14 @@ export function DataTable<T extends { id: string }>({
 }: DataTableProps<T>) {
   if (loading) {
     return (
-      <div className={cn('bg-white rounded-xl border border-slate-200/60 overflow-hidden', className)}>
+      <div className={cn('bg-white rounded-xl border border-warm-200/60 overflow-hidden', className)}>
         <div className="animate-pulse">
-          <div className="h-12 bg-slate-50 border-b border-slate-100" />
+          <div className="h-12 bg-warm-50 border-b border-warm-100" />
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 border-b border-slate-50 flex items-center px-4 gap-4">
-              <div className="h-4 bg-slate-100 rounded w-1/4" />
-              <div className="h-4 bg-slate-100 rounded w-1/3" />
-              <div className="h-4 bg-slate-100 rounded w-1/6 ml-auto" />
+            <div key={i} className="h-16 border-b border-warm-50 flex items-center px-4 gap-4">
+              <div className="h-4 bg-warm-100 rounded w-1/4" />
+              <div className="h-4 bg-warm-100 rounded w-1/3" />
+              <div className="h-4 bg-warm-100 rounded w-1/6 ml-auto" />
             </div>
           ))}
         </div>
@@ -219,23 +219,23 @@ export function DataTable<T extends { id: string }>({
 
   if (data.length === 0 && emptyState) {
     return (
-      <div className={cn('bg-white rounded-xl border border-slate-200/60 overflow-hidden', className)}>
+      <div className={cn('bg-white rounded-xl border border-warm-200/60 overflow-hidden', className)}>
         {emptyState}
       </div>
     );
   }
 
   return (
-    <div className={cn('bg-white rounded-xl border border-slate-200/60 overflow-hidden', className)}>
+    <div className={cn('bg-white rounded-xl border border-warm-200/60 overflow-hidden', className)}>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-slate-50/50 border-b border-slate-100">
+            <tr className="bg-warm-50/50 border-b border-warm-100">
               {columns.map((col) => (
                 <th 
                   key={col.key}
                   className={cn(
-                    'px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider',
+                    'px-4 py-3 text-xs font-semibold text-warm-500 uppercase tracking-wider',
                     col.align === 'center' && 'text-center',
                     col.align === 'right' && 'text-right'
                   )}
@@ -246,14 +246,14 @@ export function DataTable<T extends { id: string }>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-warm-50">
             {data.map((item, index) => (
               <tr 
                 key={item.id}
                 onClick={() => onRowClick?.(item)}
                 className={cn(
                   'transition-colors duration-150',
-                  onRowClick && 'cursor-pointer hover:bg-slate-50/80'
+                  onRowClick && 'cursor-pointer hover:bg-warm-50/80'
                 )}
                 style={{
                   animation: 'fadeInUp 0.3s ease-out forwards',
@@ -265,7 +265,7 @@ export function DataTable<T extends { id: string }>({
                   <td 
                     key={col.key}
                     className={cn(
-                      'px-4 py-3.5 text-sm',
+                      'px-4 py-4 text-sm',
                       col.align === 'center' && 'text-center',
                       col.align === 'right' && 'text-right'
                     )}
@@ -305,8 +305,8 @@ export function ActionCard({ icon, label, description, href, variant = 'default'
         className={cn(
           'group flex items-center gap-3.5 p-3.5 rounded-xl transition-all duration-200',
           variant === 'primary' 
-            ? 'bg-slate-900 text-white hover:bg-slate-800' 
-            : 'bg-white border border-slate-200/60 hover:border-slate-300 hover:shadow-sm'
+            ? 'bg-warm-900 text-white hover:bg-warm-800' 
+            : 'bg-white border border-warm-200/60 hover:border-warm-300 hover:shadow-sm'
         )}
         style={{ 
           animationDelay: `${delay}ms`,
@@ -317,21 +317,21 @@ export function ActionCard({ icon, label, description, href, variant = 'default'
         <div className={cn(
           'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
           'transition-transform group-hover:scale-105',
-          variant === 'primary' ? 'bg-white/10' : 'bg-slate-100'
+          variant === 'primary' ? 'bg-white/10' : 'bg-warm-100'
         )}>
           {icon}
         </div>
         <div className="flex-1 min-w-0">
           <p className={cn(
             'font-medium text-sm',
-            variant === 'primary' ? 'text-white' : 'text-slate-900'
+            variant === 'primary' ? 'text-white' : 'text-warm-900'
           )}>
             {label}
           </p>
           {description && (
             <p className={cn(
               'text-xs mt-0.5',
-              variant === 'primary' ? 'text-white/60' : 'text-slate-500'
+              variant === 'primary' ? 'text-white/60' : 'text-warm-500'
             )}>
               {description}
             </p>
@@ -344,7 +344,7 @@ export function ActionCard({ icon, label, description, href, variant = 'default'
           fill="none"
           className={cn(
             'flex-shrink-0 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all',
-            variant === 'primary' ? 'text-white/60' : 'text-slate-400'
+            variant === 'primary' ? 'text-white/60' : 'text-warm-400'
           )}
         >
           <path d="M6 3L11 8L6 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -371,11 +371,11 @@ export function Section({ title, action, children, className }: SectionProps) {
       {(title || action) && (
         <div className="flex items-center justify-between mb-3">
           {title && (
-            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{title}</h2>
+            <h2 className="text-xs font-semibold text-warm-500 uppercase tracking-wider">{title}</h2>
           )}
           {action && (
             <Link href={action.href}>
-              <button className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors">
+              <button className="flex items-center gap-1 text-xs font-medium text-warm-500 hover:text-warm-900 transition-colors">
                 {action.label}
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -411,7 +411,7 @@ export function ListCard({ avatar, title, subtitle, value, valueLabel, badge, on
       onClick={onClick}
       className={cn(
         'group flex items-center gap-3 p-3 rounded-xl transition-all duration-150',
-        onClick && 'cursor-pointer hover:bg-slate-50'
+        onClick && 'cursor-pointer hover:bg-warm-50'
       )}
       style={{ 
         animationDelay: `${delay}ms`,
@@ -424,7 +424,7 @@ export function ListCard({ avatar, title, subtitle, value, valueLabel, badge, on
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="font-medium text-sm text-slate-900 truncate">{title}</p>
+          <p className="font-medium text-sm text-warm-900 truncate">{title}</p>
           {badge && (
             <span className={cn('px-1.5 py-0.5 text-xs font-medium rounded', badge.color)}>
               {badge.label}
@@ -432,16 +432,16 @@ export function ListCard({ avatar, title, subtitle, value, valueLabel, badge, on
           )}
         </div>
         {subtitle && (
-          <p className="text-xs text-slate-500 truncate mt-0.5">{subtitle}</p>
+          <p className="text-xs text-warm-500 truncate mt-0.5">{subtitle}</p>
         )}
       </div>
       {(value !== undefined || valueLabel) && (
         <div className="text-right flex-shrink-0">
           {value !== undefined && (
-            <p className="font-semibold text-sm text-slate-900 tabular-nums">{value}</p>
+            <p className="font-semibold text-sm text-warm-900 tabular-nums">{value}</p>
           )}
           {valueLabel && (
-            <p className="text-xs text-slate-400">{valueLabel}</p>
+            <p className="text-xs text-warm-400">{valueLabel}</p>
           )}
         </div>
       )}
@@ -451,7 +451,7 @@ export function ListCard({ avatar, title, subtitle, value, valueLabel, badge, on
           height="14" 
           viewBox="0 0 14 14" 
           fill="none"
-          className="flex-shrink-0 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="flex-shrink-0 text-warm-300 opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <path d="M5 2.5L9.5 7L5 11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
@@ -483,20 +483,20 @@ export function PremiumEmptyState({ icon, title, description, action, compact }:
       compact ? 'py-8 px-4' : 'py-16 px-6'
     )}>
       <div className={cn(
-        'rounded-2xl bg-slate-100/80 flex items-center justify-center mb-4',
+        'rounded-2xl bg-warm-100/80 flex items-center justify-center mb-4',
         'animate-pulse-subtle',
         compact ? 'w-12 h-12' : 'w-16 h-16'
       )}>
-        <div className="text-slate-400">{icon}</div>
+        <div className="text-warm-400">{icon}</div>
       </div>
       <h3 className={cn(
-        'font-semibold text-slate-900',
+        'font-semibold text-warm-900',
         compact ? 'text-sm' : 'text-lg'
       )}>
         {title}
       </h3>
       <p className={cn(
-        'text-slate-500 mt-1 max-w-sm',
+        'text-warm-500 mt-1 max-w-sm',
         compact ? 'text-xs' : 'text-sm'
       )}>
         {description}
@@ -541,17 +541,17 @@ export function ScoreBadge({ score, toPar, size = 'md' }: ScoreBadgeProps) {
     <div className={cn(
       'rounded-xl flex flex-col items-center justify-center',
       sizes[size],
-      toPar < 0 ? 'bg-emerald-50' : toPar === 0 ? 'bg-slate-100' : 'bg-amber-50'
+      toPar < 0 ? 'bg-emerald-50' : toPar === 0 ? 'bg-warm-100' : 'bg-amber-50'
     )}>
       <span className={cn(
         'font-bold tabular-nums leading-none',
-        toPar < 0 ? 'text-emerald-600' : toPar === 0 ? 'text-slate-700' : 'text-amber-600'
+        toPar < 0 ? 'text-emerald-600' : toPar === 0 ? 'text-warm-700' : 'text-amber-600'
       )}>
         {score}
       </span>
       <span className={cn(
         'text-xs font-medium mt-0.5',
-        toPar < 0 ? 'text-emerald-500' : toPar === 0 ? 'text-slate-500' : 'text-amber-500'
+        toPar < 0 ? 'text-emerald-500' : toPar === 0 ? 'text-warm-500' : 'text-amber-500'
       )}>
         {toPar > 0 ? '+' : ''}{toPar}
       </span>
@@ -584,7 +584,7 @@ export function StatGrid({ stats, columns = 4, className }: StatGridProps) {
   };
 
   const colors = {
-    default: 'text-slate-700',
+    default: 'text-warm-700',
     success: 'text-emerald-600',
     warning: 'text-amber-600',
     danger: 'text-red-600',
@@ -597,7 +597,7 @@ export function StatGrid({ stats, columns = 4, className }: StatGridProps) {
           <div className={cn('text-2xl font-bold tabular-nums', colors[stat.color || 'default'])}>
             {stat.value}
           </div>
-          <div className="text-xs text-slate-500 mt-0.5">{stat.label}</div>
+          <div className="text-xs text-warm-500 mt-0.5">{stat.label}</div>
         </div>
       ))}
     </div>
@@ -619,14 +619,14 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const PremiumButton = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', loading, leftIcon, rightIcon, children, disabled, ...props }, ref) => {
     const variants = {
-      primary: 'bg-slate-900 text-white hover:bg-slate-800 shadow-sm',
-      secondary: 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300',
-      ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+      primary: 'bg-warm-900 text-white hover:bg-warm-800 shadow-sm',
+      secondary: 'bg-white text-warm-700 border border-warm-200 hover:bg-warm-50 hover:border-warm-300',
+      ghost: 'bg-transparent text-warm-600 hover:bg-warm-100 hover:text-warm-900',
       danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
     };
 
     const sizes = {
-      sm: 'px-3 py-1.5 text-xs gap-1.5',
+      sm: 'px-3 py-1.5 text-xs gap-2',
       md: 'px-4 py-2 text-sm gap-2',
       lg: 'px-5 py-2.5 text-base gap-2',
     };

@@ -86,7 +86,7 @@ export function PersonalInfoModal({
       <div className="space-y-6">
         {/* Avatar Upload */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-3">
+          <label className="block text-sm font-medium text-warm-700 mb-3">
             Profile Picture
           </label>
           <AvatarUpload

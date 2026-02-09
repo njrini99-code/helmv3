@@ -288,11 +288,11 @@ function getScoreLabel(score: number | null, par: number): string {
 }
 
 function getScoreStyles(score: number | null, par: number) {
-  if (score === null) return { bg: 'bg-slate-100', text: 'text-slate-500', ring: 'ring-slate-200', dot: 'bg-slate-300' };
+  if (score === null) return { bg: 'bg-warm-100', text: 'text-warm-500', ring: 'ring-warm-200', dot: 'bg-warm-300' };
   const diff = score - par;
   if (diff <= -2) return { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200', dot: 'bg-amber-400' };
   if (diff === -1) return { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200', dot: 'bg-emerald-400' };
-  if (diff === 0) return { bg: 'bg-slate-50', text: 'text-slate-600', ring: 'ring-slate-200', dot: 'bg-slate-300' };
+  if (diff === 0) return { bg: 'bg-warm-50', text: 'text-warm-600', ring: 'ring-warm-200', dot: 'bg-warm-300' };
   if (diff === 1) return { bg: 'bg-red-50', text: 'text-red-600', ring: 'ring-red-200', dot: 'bg-red-400' };
   if (diff === 2) return { bg: 'bg-red-50', text: 'text-red-700', ring: 'ring-red-300', dot: 'bg-red-500' };
   return { bg: 'bg-red-100', text: 'text-red-800', ring: 'ring-red-300', dot: 'bg-red-600' };
@@ -341,9 +341,9 @@ function HoleCard({
         className={cn(
           'group relative rounded-2xl border transition-all duration-200',
           isBogeyPlus
-            ? 'bg-white border-slate-200 shadow-sm hover:shadow-md cursor-pointer'
-            : 'bg-white/60 border-slate-100 hover:bg-white/80',
-          expanded && isBogeyPlus && 'shadow-md ring-1 ring-slate-200/50'
+            ? 'bg-white border-warm-200 shadow-sm hover:shadow-md cursor-pointer'
+            : 'bg-white/60 border-warm-100 hover:bg-white/80',
+          expanded && isBogeyPlus && 'shadow-md ring-1 ring-warm-200/50'
         )}
         onClick={() => isBogeyPlus && setExpanded(!expanded)}
       >
@@ -351,11 +351,11 @@ function HoleCard({
         <div className="flex items-center gap-4 px-5 py-4">
           {/* Hole number + score circle */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="text-xs font-medium text-slate-400 w-4 text-center">
+            <div className="text-xs font-medium text-warm-400 w-4 text-center">
               {hole.hole_number}
             </div>
             <div className={cn(
-              'w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg ring-1',
+              'w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ring-1',
               styles.bg, styles.text, styles.ring
             )}>
               {hole.score ?? '--'}
@@ -365,7 +365,7 @@ function HoleCard({
           {/* Par + label */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-900">Par {hole.par}</span>
+              <span className="text-sm font-medium text-warm-900">Par {hole.par}</span>
               <span className={cn(
                 'px-2 py-0.5 rounded-full text-xs font-semibold',
                 styles.bg, styles.text
@@ -386,7 +386,7 @@ function HoleCard({
             {hole.putts !== null && (
               <div className={cn(
                 'flex items-center gap-1 px-2 py-1 rounded-lg',
-                hole.putts >= 3 ? 'bg-red-50 text-red-600' : hole.putts <= 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-500'
+                hole.putts >= 3 ? 'bg-red-50 text-red-600' : hole.putts <= 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-warm-50 text-warm-500'
               )}>
                 <IconFlag size={12} />
                 <span className="font-medium">{hole.putts}</span>
@@ -423,7 +423,7 @@ function HoleCard({
             <motion.div
               animate={{ rotate: expanded ? 180 : 0 }}
               transition={{ duration: 0.2 }}
-              className="text-slate-300 group-hover:text-slate-400 flex-shrink-0"
+              className="text-warm-300 group-hover:text-warm-400 flex-shrink-0"
             >
               <IconChevronDown size={16} />
             </motion.div>
@@ -510,7 +510,7 @@ function HoleCard({
                     <p className={cn('text-xs font-medium uppercase tracking-wider mb-2', severityColors[insight.severity].detail)}>
                       Shot sequence
                     </p>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {shotData.shots.map((shot, i) => {
                         const isProblematic = shot.is_penalty || shot.result === 'bunker' || shot.result === 'water' || shot.result === 'ob' || shot.result === 'rough';
                         return (
@@ -522,7 +522,7 @@ function HoleCard({
                                 ? 'bg-white/80 text-red-600 ring-1 ring-red-200'
                                 : shot.result === 'hole' || shot.result === 'holed'
                                   ? 'bg-white/80 text-emerald-600 ring-1 ring-emerald-200'
-                                  : 'bg-white/60 text-slate-500 ring-1 ring-slate-200/60'
+                                  : 'bg-white/60 text-warm-500 ring-1 ring-warm-200/60'
                             )}
                           >
                             <span className="opacity-50">{i + 1}.</span>
@@ -560,19 +560,19 @@ function NineSummary({ holes, label }: { holes: HoleData[]; label: string }) {
   const toPar = totalScore - totalPar;
 
   return (
-    <div className="flex items-center justify-between px-5 py-3 bg-slate-50/80 rounded-xl border border-slate-100">
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+    <div className="flex items-center justify-between px-5 py-3 bg-warm-50/80 rounded-xl border border-warm-100">
+      <span className="text-sm font-semibold text-warm-700">{label}</span>
       <div className="flex items-center gap-4 text-xs">
         {birdies > 0 && (
           <span className="text-emerald-600 font-medium">{birdies} birdie{birdies !== 1 ? 's' : ''}</span>
         )}
-        <span className="text-slate-500">{pars} par{pars !== 1 ? 's' : ''}</span>
+        <span className="text-warm-500">{pars} par{pars !== 1 ? 's' : ''}</span>
         {bogeys > 0 && (
           <span className="text-red-500 font-medium">{bogeys} bogey{bogeys !== 1 ? 's' : ''}+</span>
         )}
         <div className={cn(
           'px-2.5 py-1 rounded-lg font-bold text-sm',
-          toPar < 0 ? 'bg-emerald-50 text-emerald-700' : toPar > 0 ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'
+          toPar < 0 ? 'bg-emerald-50 text-emerald-700' : toPar > 0 ? 'bg-red-50 text-red-600' : 'bg-warm-100 text-warm-600'
         )}>
           {totalScore} ({toPar === 0 ? 'E' : toPar > 0 ? `+${toPar}` : toPar})
         </div>
@@ -650,8 +650,8 @@ export function PremiumRoundView({
     : scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : `${scoreToPar}`;
 
   const scoreColor = scoreToPar === null || scoreToPar === undefined
-    ? 'text-slate-600'
-    : scoreToPar < 0 ? 'text-emerald-600' : scoreToPar > 0 ? 'text-red-600' : 'text-slate-600';
+    ? 'text-warm-600'
+    : scoreToPar < 0 ? 'text-emerald-600' : scoreToPar > 0 ? 'text-red-600' : 'text-warm-600';
 
   const totalPenalties = sortedHoles.reduce((sum, h) => sum + (h.penalty_strokes || 0), 0);
   const bogeyPlusCount = sortedHoles.filter(h => h.score !== null && h.score > h.par).length;
@@ -678,28 +678,28 @@ export function PremiumRoundView({
                 size="xl"
               />
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">{playerName}</h2>
-                <p className="text-sm text-slate-500 mt-0.5">{formattedDate}</p>
+                <h2 className="text-xl font-semibold text-warm-900">{playerName}</h2>
+                <p className="text-sm text-warm-500 mt-0.5">{formattedDate}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm font-medium text-slate-700">{courseName}</span>
+                  <span className="text-sm font-medium text-warm-700">{courseName}</span>
                   {courseCity && courseState && (
-                    <span className="text-xs text-slate-400">{courseCity}, {courseState}</span>
+                    <span className="text-xs text-warm-400">{courseCity}, {courseState}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-3 mt-2">
                   {roundType && (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 capitalize">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-warm-100 text-warm-600 capitalize">
                       {roundType.replace(/_/g, ' ')}
                     </span>
                   )}
                   {courseRating && (
-                    <span className="text-xs text-slate-400">Rating: {courseRating}</span>
+                    <span className="text-xs text-warm-400">Rating: {courseRating}</span>
                   )}
                   {courseSlope && (
-                    <span className="text-xs text-slate-400">Slope: {courseSlope}</span>
+                    <span className="text-xs text-warm-400">Slope: {courseSlope}</span>
                   )}
                   {teesPlayed && (
-                    <span className="text-xs text-slate-400">Tees: {teesPlayed}</span>
+                    <span className="text-xs text-warm-400">Tees: {teesPlayed}</span>
                   )}
                 </div>
               </div>
@@ -707,14 +707,14 @@ export function PremiumRoundView({
 
             {/* Score display */}
             <div className="text-right flex-shrink-0">
-              <div className="text-5xl font-bold text-slate-900 tabular-nums">
+              <div className="text-5xl font-bold text-warm-900 tabular-nums">
                 {totalScore ?? '--'}
               </div>
               <div className={cn('text-xl font-semibold', scoreColor)}>
                 {scoreDisplay}
               </div>
               {frontNine !== null && backNine !== null && (
-                <p className="text-xs text-slate-400 mt-1 tabular-nums">
+                <p className="text-xs text-warm-400 mt-1 tabular-nums">
                   {frontNine} / {backNine}
                 </p>
               )}
@@ -722,40 +722,40 @@ export function PremiumRoundView({
           </div>
 
           {/* Stats row */}
-          <div className="mt-6 pt-6 border-t border-slate-200/60 grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <div className="mt-6 pt-6 border-t border-warm-200/60 grid grid-cols-2 sm:grid-cols-5 gap-4">
             <div>
-              <p className="text-xs text-slate-400 font-medium">Putts</p>
-              <p className="text-xl font-semibold text-slate-900 tabular-nums">{totalPutts ?? '--'}</p>
+              <p className="text-xs text-warm-400 font-medium">Putts</p>
+              <p className="text-xl font-semibold text-warm-900 tabular-nums">{totalPutts ?? '--'}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Fairways</p>
-              <p className="text-xl font-semibold text-slate-900 tabular-nums">
+              <p className="text-xs text-warm-400 font-medium">Fairways</p>
+              <p className="text-xl font-semibold text-warm-900 tabular-nums">
                 {totalFairwaysHit !== null && totalFairways
                   ? `${totalFairwaysHit}/${totalFairways}`
                   : '--'}
               </p>
               {totalFairwaysHit !== null && totalFairways && totalFairways > 0 && (
-                <p className="text-xs text-slate-400">{Math.round((totalFairwaysHit / totalFairways) * 100)}%</p>
+                <p className="text-xs text-warm-400">{Math.round((totalFairwaysHit / totalFairways) * 100)}%</p>
               )}
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Greens</p>
-              <p className="text-xl font-semibold text-slate-900 tabular-nums">
+              <p className="text-xs text-warm-400 font-medium">Greens</p>
+              <p className="text-xl font-semibold text-warm-900 tabular-nums">
                 {totalGir !== null && totalGirPossible
                   ? `${totalGir}/${totalGirPossible}`
                   : '--'}
               </p>
               {totalGir !== null && totalGirPossible && totalGirPossible > 0 && (
-                <p className="text-xs text-slate-400">{Math.round((totalGir / totalGirPossible) * 100)}%</p>
+                <p className="text-xs text-warm-400">{Math.round((totalGir / totalGirPossible) * 100)}%</p>
               )}
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Birdies</p>
+              <p className="text-xs text-warm-400 font-medium">Birdies</p>
               <p className="text-xl font-semibold text-emerald-600 tabular-nums">{birdieCount}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Penalties</p>
-              <p className={cn('text-xl font-semibold tabular-nums', totalPenalties > 0 ? 'text-red-600' : 'text-slate-900')}>
+              <p className="text-xs text-warm-400 font-medium">Penalties</p>
+              <p className={cn('text-xl font-semibold tabular-nums', totalPenalties > 0 ? 'text-red-600' : 'text-warm-900')}>
                 {totalPenalties}
               </p>
             </div>
@@ -767,15 +767,15 @@ export function PremiumRoundView({
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-slate-900">Hole-by-Hole</h3>
+            <h3 className="text-lg font-semibold text-warm-900">Hole-by-Hole</h3>
             {bogeyPlusCount > 0 && (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-warm-400">
                 {bogeyPlusCount} hole{bogeyPlusCount !== 1 ? 's' : ''} over par &mdash; tap for insights
               </span>
             )}
           </div>
           {shotDataLoading && (
-            <div className="flex items-center gap-2 text-xs text-slate-400">
+            <div className="flex items-center gap-2 text-xs text-warm-400">
               <div className="w-3 h-3 rounded-full border-2 border-primary-400 border-t-transparent animate-spin" />
               Loading shot data...
             </div>
@@ -814,11 +814,11 @@ export function PremiumRoundView({
 
         {sortedHoles.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-              <IconFlag className="h-6 w-6 text-slate-400" />
+            <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-4">
+              <IconFlag className="h-6 w-6 text-warm-400" />
             </div>
-            <h3 className="text-lg font-medium text-slate-900 mb-2">No Scorecard Data</h3>
-            <p className="text-sm text-slate-500 max-w-sm">
+            <h3 className="text-lg font-medium text-warm-900 mb-2">No Scorecard Data</h3>
+            <p className="text-sm text-warm-500 max-w-sm">
               This round doesn&apos;t have hole-by-hole data yet.
             </p>
           </div>
@@ -829,8 +829,8 @@ export function PremiumRoundView({
       {notes && (
         <Card variant="glass">
           <div className="p-5">
-            <p className="text-sm font-medium text-slate-700 mb-2">Round Notes</p>
-            <p className="text-sm text-slate-600">{notes}</p>
+            <p className="text-sm font-medium text-warm-700 mb-2">Round Notes</p>
+            <p className="text-sm text-warm-600">{notes}</p>
           </div>
         </Card>
       )}

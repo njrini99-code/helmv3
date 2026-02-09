@@ -36,7 +36,7 @@ const RSVP_INDICATOR_COLORS = {
   accepted: 'bg-emerald-500',
   tentative: 'bg-amber-500',
   declined: 'bg-rose-400',
-  pending: 'bg-slate-300',
+  pending: 'bg-warm-300',
 };
 
 const RSVP_LABELS = {
@@ -83,7 +83,7 @@ export function PlayerAttendanceRow({
   return (
     <div
       className={cn(
-        'flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200',
+        'flex items-center gap-3 p-3 bg-white rounded-xl border border-warm-200',
         'transition-all duration-200',
         isPresent && 'bg-emerald-50 border-emerald-200',
         isAbsent && !isExcused && 'bg-rose-50 border-rose-200',
@@ -101,7 +101,7 @@ export function PlayerAttendanceRow({
             className="w-12 h-12 rounded-full object-cover"
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-semibold text-sm">
+          <div className="w-12 h-12 rounded-full bg-warm-200 flex items-center justify-center text-warm-600 font-semibold text-sm">
             {player.name
               .split(' ')
               .map((n) => n[0])
@@ -125,9 +125,9 @@ export function PlayerAttendanceRow({
 
       {/* Name and RSVP status */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-slate-900 truncate">{player.name}</p>
+        <p className="font-semibold text-warm-900 truncate">{player.name}</p>
         {player.rsvp_status && (
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-warm-500 mt-0.5">
             RSVP: {RSVP_LABELS[player.rsvp_status]}
           </p>
         )}
@@ -218,7 +218,7 @@ export function CompactPlayerAttendanceRow({
   const isAbsent = attendance === 'absent' || attendance === 'excused';
 
   return (
-    <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200">
+    <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-warm-200">
       {/* Avatar (smaller) */}
       <div className="relative shrink-0">
         {player.avatar_url ? (
@@ -228,7 +228,7 @@ export function CompactPlayerAttendanceRow({
             className="w-8 h-8 rounded-full object-cover"
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium text-xs">
+          <div className="w-8 h-8 rounded-full bg-warm-200 flex items-center justify-center text-warm-600 font-medium text-xs">
             {player.name
               .split(' ')
               .map((n) => n[0])
@@ -249,7 +249,7 @@ export function CompactPlayerAttendanceRow({
       </div>
 
       {/* Name */}
-      <p className="flex-1 min-w-0 text-sm font-medium text-slate-900 truncate">
+      <p className="flex-1 min-w-0 text-sm font-medium text-warm-900 truncate">
         {player.name}
       </p>
 

@@ -151,19 +151,21 @@ export async function getCoachDashboardData(
     unreadMessagesResult,
     chartWatchlistResult,
   ] = await Promise.all([
-    // Profile views this week
+    // Profile views this week (coach viewing player profiles)
     supabase
-      .from('baseball_profile_views')
+      .from('baseball_player_engagement_events')
       .select('id', { count: 'exact', head: true })
-      .eq('viewer_id', userId)
-      .gte('created_at', weekAgo.toISOString()),
+      .eq('coach_id', coachId)
+      .eq('engagement_type', 'profile_view')
+      .gte('engagement_date', weekAgo.toISOString()),
     // Profile views last week
     supabase
-      .from('baseball_profile_views')
+      .from('baseball_player_engagement_events')
       .select('id', { count: 'exact', head: true })
-      .eq('viewer_id', userId)
-      .gte('created_at', twoWeeksAgo.toISOString())
-      .lt('created_at', weekAgo.toISOString()),
+      .eq('coach_id', coachId)
+      .eq('engagement_type', 'profile_view')
+      .gte('engagement_date', twoWeeksAgo.toISOString())
+      .lt('engagement_date', weekAgo.toISOString()),
     // Unread messages (only if user has conversations)
     convIds.length > 0
       ? supabase
@@ -261,17 +263,21 @@ export async function getPlayerDashboardData(
     videosResult,
     unreadMessagesResult,
   ] = await Promise.all([
+    // Profile views this week (coaches viewing this player's profile)
     supabase
-      .from('baseball_profile_views')
+      .from('baseball_player_engagement_events')
       .select('id', { count: 'exact', head: true })
       .eq('player_id', playerId)
-      .gte('created_at', weekAgo.toISOString()),
+      .eq('engagement_type', 'profile_view')
+      .gte('engagement_date', weekAgo.toISOString()),
+    // Profile views last week
     supabase
-      .from('baseball_profile_views')
+      .from('baseball_player_engagement_events')
       .select('id', { count: 'exact', head: true })
       .eq('player_id', playerId)
-      .gte('created_at', twoWeeksAgo.toISOString())
-      .lt('created_at', weekAgo.toISOString()),
+      .eq('engagement_type', 'profile_view')
+      .gte('engagement_date', twoWeeksAgo.toISOString())
+      .lt('engagement_date', weekAgo.toISOString()),
     supabase
       .from('baseball_watchlists')
       .select('id', { count: 'exact', head: true })

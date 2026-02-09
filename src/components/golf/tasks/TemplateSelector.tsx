@@ -152,11 +152,11 @@ export function TemplateSelector({
       fitness: 'bg-cyan-50 text-cyan-700',
       mental: 'bg-purple-50 text-purple-700',
       administrative: 'bg-orange-50 text-orange-700',
-      other: 'bg-slate-50 text-slate-700',
+      other: 'bg-warm-50 text-warm-700',
     };
     const key = category || 'other';
     const result = colors[key];
-    return result !== undefined ? result : 'bg-slate-50 text-slate-700';
+    return result !== undefined ? result : 'bg-warm-50 text-warm-700';
   };
 
   // Recent/favorite templates (first 3)
@@ -190,7 +190,7 @@ export function TemplateSelector({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search templates..."
-          className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50"
+          className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50"
         />
         {searchQuery && (
           <button
@@ -221,7 +221,7 @@ export function TemplateSelector({
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-80 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <svg className="animate-spin h-5 w-5 text-brand-600" viewBox="0 0 24 24">
+              <svg className="animate-spin h-5 w-5 text-primary-600" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -250,13 +250,13 @@ export function TemplateSelector({
               {!searchQuery && recentTemplates.length > 0 && (
                 <div className="px-3 py-2 border-b border-gray-100">
                   <p className="text-xs font-medium text-gray-500 mb-2">Quick Access</p>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {recentTemplates.map((template) => (
                       <button
                         key={template.id}
                         onClick={() => handleSelectTemplate(template)}
                         disabled={isPending}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors disabled:opacity-50"
                       >
                         {creatingId === template.id ? (
                           <svg
@@ -308,7 +308,7 @@ export function TemplateSelector({
                     className={cn(
                       'w-full px-3 py-2.5 text-left flex items-start gap-3 transition-colors',
                       'disabled:opacity-50',
-                      selectedIndex === index ? 'bg-brand-50' : 'hover:bg-gray-50'
+                      selectedIndex === index ? 'bg-primary-50' : 'hover:bg-gray-50'
                     )}
                   >
                     {/* Icon */}
@@ -355,7 +355,7 @@ export function TemplateSelector({
                           {template.name}
                         </span>
                         {template.is_active && (
-                          <span className="text-xs px-1 py-0.5 rounded bg-brand-50 text-brand-600 flex-shrink-0">
+                          <span className="text-xs px-1 py-0.5 rounded bg-primary-50 text-primary-600 flex-shrink-0">
                             Active
                           </span>
                         )}
@@ -383,7 +383,7 @@ export function TemplateSelector({
                     {/* Create button */}
                     {showQuickCreate && selectedIndex === index && (
                       <div className="flex-shrink-0 self-center">
-                        <span className="text-xs text-brand-600 font-medium">
+                        <span className="text-xs text-primary-600 font-medium">
                           {onSelectTemplate ? 'Select' : 'Create'}
                         </span>
                       </div>

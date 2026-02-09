@@ -87,7 +87,7 @@ interface RoundReviewPlayerViewProps {
 
 function LoadingSkeleton() {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-6 animate-pulse">
+    <div className="bg-glass backdrop-blur-xl border border-white/30 rounded-2xl p-6 animate-pulse">
       <div className="flex items-center gap-3 mb-4">
         <div className="h-10 w-10 bg-warm-200 rounded-xl" />
         <div className="space-y-2">
@@ -113,7 +113,7 @@ function EmptyState({ onGenerate, generating }: {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white/50 backdrop-blur-xl border border-dashed border-warm-300 rounded-2xl p-8"
+      className="bg-glass-subtle backdrop-blur-xl border border-dashed border-warm-300 rounded-2xl p-8"
     >
       <div className="flex flex-col items-center justify-center text-center">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-emerald-600 flex items-center justify-center mb-4 shadow-lg shadow-primary-500/20">

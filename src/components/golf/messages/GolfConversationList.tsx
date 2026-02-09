@@ -41,8 +41,8 @@ export function GolfConversationList({
   return (
     <div className={cn('flex flex-col bg-white', className)}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-        <h2 className="text-lg font-semibold text-slate-900">Messages</h2>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-warm-200">
+        <h2 className="text-lg font-semibold text-warm-900">Messages</h2>
         <Button size="sm" onClick={onNewConversation} className="gap-1">
           <IconPlus size={16} />
           New
@@ -53,25 +53,25 @@ export function GolfConversationList({
       <div className="flex-1 overflow-y-auto" data-scroll-container>
         {conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-              <IconMail size={24} className="text-slate-400" />
+            <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
+              <IconMail size={24} className="text-warm-400" />
             </div>
-            <p className="text-sm text-slate-500">No conversations yet</p>
-            <p className="text-xs text-slate-400 mt-1">Start a new message to get started</p>
+            <p className="text-sm text-warm-500">No conversations yet</p>
+            <p className="text-xs text-warm-400 mt-1">Start a new message to get started</p>
             <Button size="sm" onClick={onNewConversation} className="mt-4 gap-1">
               <IconPlus size={16} />
               New Message
             </Button>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-warm-100">
             {conversations.map((conversation) => (
               <button
                 key={conversation.id}
                 onClick={() => onSelect(conversation.id)}
                 className={cn(
                   'w-full px-4 py-3 flex items-start gap-3 text-left transition-all',
-                  'hover:bg-slate-50 active:scale-[0.98]',
+                  'hover:bg-warm-50 active:scale-[0.98]',
                   selectedId === conversation.id && 'bg-green-50 hover:bg-green-50'
                 )}
               >
@@ -91,12 +91,12 @@ export function GolfConversationList({
                   <div className="flex items-center justify-between mb-0.5">
                     <p className={cn(
                       'font-medium truncate',
-                      conversation.unread_count > 0 ? 'text-slate-900' : 'text-slate-700'
+                      conversation.unread_count > 0 ? 'text-warm-900' : 'text-warm-700'
                     )}>
                       {conversation.other_participant?.name || 'Unknown'}
                     </p>
                     {conversation.last_message && (
-                      <span className="text-xs text-slate-400 flex-shrink-0 ml-2">
+                      <span className="text-xs text-warm-400 flex-shrink-0 ml-2">
                         {formatTime(conversation.last_message.created_at)}
                       </span>
                     )}
@@ -109,7 +109,7 @@ export function GolfConversationList({
                     )}
                     <p className={cn(
                       'text-sm truncate',
-                      conversation.unread_count > 0 ? 'text-slate-700 font-medium' : 'text-slate-500'
+                      conversation.unread_count > 0 ? 'text-warm-700 font-medium' : 'text-warm-500'
                     )}>
                       {conversation.last_message?.content || 'No messages yet'}
                     </p>

@@ -18,9 +18,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
-import { expandRecurringEvent, fromRRULE, type RecurringEvent, type AcademicExclusion, type ExpandedEvent } from '@/lib/calendar/recurrence';
+import { fromRRULE, type ExpandedEvent } from '@/lib/calendar/recurrence';
 import { parseISO, format, addDays, addWeeks, addMonths, isBefore } from 'date-fns';
-import { DEFAULT_TIMEZONE, getValidTimezone, parseInTimezone } from '@/lib/calendar/timezone';
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -41,25 +40,6 @@ async function getCoachTeamId(
     .eq('organization_id', organizationId)
     .maybeSingle();
   return team?.id ?? null;
-}
-
-/**
- * Get the timezone for a team from golf_team_settings
- * Falls back to DEFAULT_TIMEZONE if not set
- */
-async function getTeamTimezone(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  teamId: string | null
-): Promise<string> {
-  if (!teamId) return DEFAULT_TIMEZONE;
-
-  const { data: settings } = await supabase
-    .from('golf_team_settings')
-    .select('timezone')
-    .eq('team_id', teamId)
-    .maybeSingle();
-
-  return getValidTimezone(settings?.timezone);
 }
 
 // ============================================================================
@@ -132,13 +112,13 @@ function generateOccurrenceDates(
     dates.push(format(current, 'yyyy-MM-dd'));
 
     switch (parsed.frequency) {
-      case 'DAILY':
+      case 'daily':
         current = addDays(current, parsed.interval || 1);
         break;
-      case 'WEEKLY':
+      case 'weekly':
         current = addWeeks(current, parsed.interval || 1);
         break;
-      case 'MONTHLY':
+      case 'monthly':
         current = addMonths(current, parsed.interval || 1);
         break;
       default:
@@ -192,26 +172,25 @@ export async function createRecurringEvent(
     }
 
     // Create individual events for each occurrence
-    // golf_events schema: start_date (DATE), end_date (DATE), start_time (TIME), end_time (TIME)
+    // golf_events schema: start_time (required), end_time (nullable), no start_date/end_date
     const teamId = input.teamId || coachTeamId;
     const events = occurrenceDates.map(date => ({
       title: input.title,
       description: input.description || null,
       event_type: input.eventType,
-      start_date: date,
-      end_date: input.endDate ? date : null, // Same day for each occurrence
-      start_time: input.startTime || null,
-      end_time: input.endTime || null,
+      start_time: input.startTime ? `${date}T${input.startTime}` : `${date}T00:00:00`,
+      end_time: input.endTime ? `${date}T${input.endTime}` : null,
       location: input.location || null,
       created_by: coach.id,
       team_id: teamId,
-      status: 'confirmed' as const,
+      status: 'confirmed',
       requires_rsvp: input.requiresRsvp || false,
       rsvp_deadline: input.rsvpDeadline || null,
       max_attendees: input.maxAttendees || null,
     }));
 
-    const { data: createdEvents, error: eventError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: createdEvents, error: eventError } = await (supabase as any)
       .from('golf_events')
       .insert(events)
       .select('id');
@@ -272,13 +251,20 @@ export async function editRecurringEvent(
     }
 
     // Build update object from provided fields
+    // golf_events uses start_time/end_time (ISO timestamps), no start_date/end_date
     const updates: Record<string, unknown> = {};
     if (input.updates.title) updates.title = input.updates.title;
     if (input.updates.description !== undefined) updates.description = input.updates.description;
-    if (input.updates.startDate) updates.start_date = input.updates.startDate;
-    if (input.updates.endDate !== undefined) updates.end_date = input.updates.endDate;
-    if (input.updates.startTime !== undefined) updates.start_time = input.updates.startTime;
-    if (input.updates.endTime !== undefined) updates.end_time = input.updates.endTime;
+    if (input.updates.startDate && input.updates.startTime) {
+      updates.start_time = `${input.updates.startDate}T${input.updates.startTime}`;
+    } else if (input.updates.startDate) {
+      updates.start_time = `${input.updates.startDate}T00:00:00`;
+    }
+    if (input.updates.endDate !== undefined && input.updates.endTime) {
+      updates.end_time = `${input.updates.endDate}T${input.updates.endTime}`;
+    } else if (input.updates.endTime !== undefined) {
+      updates.end_time = input.updates.endTime;
+    }
     if (input.updates.location !== undefined) updates.location = input.updates.location;
 
     switch (input.scope) {
@@ -304,7 +290,7 @@ export async function editRecurringEvent(
           .eq('team_id', targetEvent.team_id)
           .eq('title', targetEvent.title)
           .eq('event_type', targetEvent.event_type)
-          .gte('start_date', input.originalStartDate);
+          .gte('start_time', input.originalStartDate);
 
         if (updateError) {
           console.error('[editRecurringEvent Error]', updateError);
@@ -405,7 +391,7 @@ export async function deleteRecurringEvent(
           .eq('team_id', targetEvent.team_id)
           .eq('title', targetEvent.title)
           .eq('event_type', targetEvent.event_type)
-          .gte('start_date', originalStartDate);
+          .gte('start_time', originalStartDate);
 
         if (deleteError) {
           console.error('[deleteRecurringEvent Error]', deleteError);
@@ -463,18 +449,19 @@ export async function getExpandedEvents(
     }
 
     // Build query for events in date range
+    // golf_events uses start_time (ISO timestamp), not start_date
     let query = supabase
       .from('golf_events')
       .select('*')
-      .gte('start_date', startDate)
-      .lte('start_date', endDate)
+      .gte('start_time', startDate)
+      .lte('start_time', endDate)
       .neq('status', 'cancelled');
 
     if (teamId) {
       query = query.eq('team_id', teamId);
     }
 
-    const { data: events, error: eventsError } = await query.order('start_date', { ascending: true });
+    const { data: events, error: eventsError } = await query.order('start_time', { ascending: true });
 
     if (eventsError) {
       console.error('[getExpandedEvents Error]', eventsError);
@@ -482,18 +469,21 @@ export async function getExpandedEvents(
     }
 
     // Map to ExpandedEvent format
-    const expandedEvents: ExpandedEvent[] = (events || []).map(event => ({
-      id: event.id,
-      title: event.title,
-      eventType: event.event_type,
-      startDate: event.start_date ? parseISO(event.start_date) : new Date(),
-      endDate: event.end_date ? parseISO(event.end_date) : null,
-      startTime: event.start_time || null,
-      endTime: event.end_time || null,
-      isRecurrenceInstance: false,
-      isException: false,
-      originalEventId: event.id,
-    }));
+    const expandedEvents: ExpandedEvent[] = (events || []).map(event => {
+      const eventStartDate = event.start_time ? parseISO(event.start_time) : new Date();
+      return {
+        id: event.id,
+        parentId: event.parent_event_id || null,
+        title: event.title,
+        eventType: event.event_type,
+        startDate: eventStartDate,
+        endDate: event.end_time ? parseISO(event.end_time) : null,
+        startTime: event.start_time || null,
+        endTime: event.end_time || null,
+        isRecurringInstance: false,
+        originalStartDate: eventStartDate,
+      };
+    });
 
     return { success: true, data: expandedEvents };
   } catch (error) {

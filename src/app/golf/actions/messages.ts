@@ -16,8 +16,11 @@ export {
   updateGolfMessage,
   deleteGolfMessage,
   getGolfPlayerUserId,
+  searchGolfMessages,
   // Alias for backward compatibility
   getGolfPlayerUserId as getPlayerUserId,
+  // Type re-exports
+  type MessageSearchResult,
 } from '@/app/actions/messages';
 
 // Attachment actions

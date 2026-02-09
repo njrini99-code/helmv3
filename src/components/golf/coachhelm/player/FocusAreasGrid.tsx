@@ -49,8 +49,8 @@ function getTrendConfig(trend: FocusArea['trend']) {
     default:
       return {
         icon: IconActivity,
-        color: 'text-slate-400',
-        bgColor: 'bg-slate-50',
+        color: 'text-warm-400',
+        bgColor: 'bg-warm-50',
         label: 'Stable',
       };
   }
@@ -61,7 +61,7 @@ function getStrokesColor(value: number) {
   if (value > 0.2) return 'text-green-600';
   if (value < -0.5) return 'text-red-600';
   if (value < -0.2) return 'text-amber-600';
-  return 'text-slate-600';
+  return 'text-warm-600';
 }
 
 function FocusAreaCard({
@@ -96,7 +96,7 @@ function FocusAreaCard({
         'absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
         index === 0 ? 'bg-primary-100 text-primary-700' :
         index === 1 ? 'bg-primary-50 text-primary-600' :
-        'bg-slate-100 text-slate-500'
+        'bg-warm-100 text-warm-500'
       )}>
         {index + 1}
       </div>
@@ -128,7 +128,7 @@ function FocusAreaCard({
       </div>
 
       {/* Visual bar for strokes */}
-      <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
+      <div className="relative h-2 bg-warm-100 rounded-full overflow-hidden mb-3">
         <motion.div
           initial={{ width: 0 }}
           animate={{
@@ -145,7 +145,7 @@ function FocusAreaCard({
           }}
         />
         {/* Center marker */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-slate-300 -translate-x-1/2" />
+        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-warm-300 -translate-x-1/2" />
       </div>
 
       {/* Recommendation snippet */}
@@ -178,8 +178,8 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
         </div>
 
         <div className="text-center py-8">
-          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-            <IconTarget size={24} className="text-slate-400" />
+          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+            <IconTarget size={24} className="text-warm-400" />
           </div>
           <p className="text-sm text-warm-600 mb-1">No focus areas identified yet</p>
           <p className="text-xs text-warm-400">
@@ -224,11 +224,11 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
         transition={{ delay: 0.5 }}
         className="flex items-center justify-center gap-6 mt-5 pt-4 border-t border-white/20"
       >
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-400" />
           <span className="text-xs text-warm-500">Gaining strokes</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-400" />
           <span className="text-xs text-warm-500">Losing strokes</span>
         </div>

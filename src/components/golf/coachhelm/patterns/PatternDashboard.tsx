@@ -205,8 +205,8 @@ export function PatternDashboard({
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
               viewMode === 'all'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-warm-900 shadow-sm'
+                : 'text-warm-600 hover:text-warm-900'
             )}
           >
             <IconList size={16} />
@@ -217,8 +217,8 @@ export function PatternDashboard({
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
               viewMode === 'by-player'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-warm-900 shadow-sm'
+                : 'text-warm-600 hover:text-warm-900'
             )}
           >
             <IconUsers size={16} />
@@ -229,8 +229,8 @@ export function PatternDashboard({
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
               viewMode === 'by-type'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-warm-900 shadow-sm'
+                : 'text-warm-600 hover:text-warm-900'
             )}
           >
             <IconLayoutGrid size={16} />
@@ -241,8 +241,8 @@ export function PatternDashboard({
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
               viewMode === 'timeline'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-warm-900 shadow-sm'
+                : 'text-warm-600 hover:text-warm-900'
             )}
           >
             <IconActivity size={16} />
@@ -257,7 +257,7 @@ export function PatternDashboard({
             'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ml-auto',
             showFilters
               ? 'bg-primary-100 text-primary-700'
-              : 'text-slate-600 hover:bg-slate-100'
+              : 'text-warm-600 hover:bg-warm-100'
           )}
         >
           <IconFilter size={16} />
@@ -281,7 +281,7 @@ export function PatternDashboard({
               <div className="flex flex-wrap gap-6">
                 {/* Lifecycle filter */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                  <label className="block text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">
                     Status
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -293,7 +293,7 @@ export function PatternDashboard({
                           'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                           lifecycleFilter === state
                             ? 'bg-primary-100 text-primary-700'
-                            : 'text-slate-600 hover:bg-slate-100'
+                            : 'text-warm-600 hover:bg-warm-100'
                         )}
                       >
                         {state.charAt(0).toUpperCase() + state.slice(1)}
@@ -304,7 +304,7 @@ export function PatternDashboard({
 
                 {/* Severity filter */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                  <label className="block text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">
                     Severity
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -318,9 +318,9 @@ export function PatternDashboard({
                             ? sev === 'critical' ? 'bg-red-100 text-red-700' :
                               sev === 'high' ? 'bg-orange-100 text-orange-700' :
                               sev === 'medium' ? 'bg-amber-100 text-amber-700' :
-                              sev === 'low' ? 'bg-slate-100 text-slate-700' :
+                              sev === 'low' ? 'bg-warm-100 text-warm-700' :
                               'bg-primary-100 text-primary-700'
-                            : 'text-slate-600 hover:bg-slate-100'
+                            : 'text-warm-600 hover:bg-warm-100'
                         )}
                       >
                         {sev.charAt(0).toUpperCase() + sev.slice(1)}
@@ -336,7 +336,7 @@ export function PatternDashboard({
                       setLifecycleFilter('all');
                       setSeverityFilter('all');
                     }}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors self-end"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors self-end"
                   >
                     <IconX size={14} />
                     Clear Filters
@@ -361,13 +361,13 @@ export function PatternDashboard({
             {filteredPatterns.length === 0 ? (
               <GlassCard padding="lg" hover={false}>
                 <div className="text-center py-8">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                    <IconSparkles size={24} className="text-slate-400" />
+                  <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                    <IconSparkles size={24} className="text-warm-400" />
                   </div>
-                  <h3 className="text-lg font-medium text-slate-900 mb-2">
+                  <h3 className="text-lg font-medium text-warm-900 mb-2">
                     No patterns found
                   </h3>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-warm-500">
                     {patterns.length === 0
                       ? 'AI pattern detection will find patterns as more round data is recorded.'
                       : 'No patterns match your current filters.'}
@@ -417,9 +417,9 @@ export function PatternDashboard({
           >
             {patternsByType.map(([type, typePatterns]) => (
               <div key={type}>
-                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                   {type.charAt(0).toUpperCase() + type.slice(1)} Patterns
-                  <span className="text-xs font-normal text-slate-400">
+                  <span className="text-xs font-normal text-warm-400">
                     ({typePatterns.length})
                   </span>
                 </h3>

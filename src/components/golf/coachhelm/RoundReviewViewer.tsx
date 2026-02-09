@@ -65,14 +65,14 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
   // Loading state
   if (loading) {
     return (
-      <div className={cn('rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl p-6', className)}>
+      <div className={cn('rounded-2xl border border-warm-200 bg-white/70 backdrop-blur-xl p-6', className)}>
         <div className="animate-pulse space-y-4">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 bg-slate-200 rounded-lg" />
-            <div className="h-5 w-32 bg-slate-200 rounded" />
+            <div className="h-8 w-8 bg-warm-200 rounded-lg" />
+            <div className="h-5 w-32 bg-warm-200 rounded" />
           </div>
-          <div className="h-24 bg-slate-100 rounded-lg" />
-          <div className="h-32 bg-slate-100 rounded-lg" />
+          <div className="h-24 bg-warm-100 rounded-lg" />
+          <div className="h-32 bg-warm-100 rounded-lg" />
         </div>
       </div>
     );
@@ -110,7 +110,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          'rounded-2xl border border-dashed border-slate-300 bg-white/50 backdrop-blur-xl p-8',
+          'rounded-2xl border border-dashed border-warm-300 bg-white/50 backdrop-blur-xl p-8',
           className
         )}
       >
@@ -118,10 +118,10 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mb-4 shadow-lg shadow-green-500/20">
             <IconSparkles size={24} className="text-white" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">
+          <h3 className="text-lg font-semibold text-warm-900 mb-2">
             AI Round Review
           </h3>
-          <p className="text-sm text-slate-500 max-w-sm mb-6">
+          <p className="text-sm text-warm-500 max-w-sm mb-6">
             Get intelligent insights about this round including performance patterns,
             areas to improve, and personalized recommendations.
           </p>
@@ -153,7 +153,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
   // Generating state overlay
   if (generating) {
     return (
-      <div className={cn('rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl p-6', className)}>
+      <div className={cn('rounded-2xl border border-warm-200 bg-white/70 backdrop-blur-xl p-6', className)}>
         <div className="flex flex-col items-center justify-center py-8">
           <div className="relative">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/20">
@@ -161,10 +161,10 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             </div>
             <div className="absolute -inset-2 bg-green-500/20 rounded-3xl animate-ping" />
           </div>
-          <h3 className="text-lg font-medium text-slate-900 mt-6 mb-2">
+          <h3 className="text-lg font-medium text-warm-900 mt-6 mb-2">
             Analyzing Round...
           </h3>
-          <p className="text-sm text-slate-500 text-center max-w-xs">
+          <p className="text-sm text-warm-500 text-center max-w-xs">
             Reviewing your performance, identifying patterns,
             and generating personalized insights.
           </p>
@@ -195,8 +195,8 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             <IconSparkles size={18} className="text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">AI Round Review</h2>
-            <p className="text-xs text-slate-500">
+            <h2 className="text-lg font-semibold text-warm-900">AI Round Review</h2>
+            <p className="text-xs text-warm-500">
               {hasV2Data ? 'CoachHelm Intelligence' : 'Performance Analysis'}
             </p>
           </div>
@@ -245,14 +245,14 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             className="space-y-4"
           >
             {/* Grade + Summary Card */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <div className="rounded-xl border border-warm-200 bg-white p-5">
               <div className="flex items-start gap-4">
                 {/* Grade badge */}
                 <div className={cn(
                   'flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center border-2',
-                  gradeColors[ruleBasedContent.overallGrade]?.bg ?? 'bg-slate-50',
-                  gradeColors[ruleBasedContent.overallGrade]?.text ?? 'text-slate-600',
-                  gradeColors[ruleBasedContent.overallGrade]?.border ?? 'border-slate-200',
+                  gradeColors[ruleBasedContent.overallGrade]?.bg ?? 'bg-warm-50',
+                  gradeColors[ruleBasedContent.overallGrade]?.text ?? 'text-warm-600',
+                  gradeColors[ruleBasedContent.overallGrade]?.border ?? 'border-warm-200',
                 )}>
                   <span className="text-2xl font-bold">{ruleBasedContent.overallGrade}</span>
                 </div>
@@ -260,13 +260,13 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                   <div className="flex items-center gap-2 mb-2">
                     <span className={cn(
                       'w-2.5 h-2.5 rounded-full',
-                      sentimentColor[ruleBasedContent.sentiment] ?? 'bg-slate-300',
+                      sentimentColor[ruleBasedContent.sentiment] ?? 'bg-warm-300',
                     )} />
-                    <span className="text-xs font-medium text-slate-500 capitalize">
+                    <span className="text-xs font-medium text-warm-500 capitalize">
                       {ruleBasedContent.sentiment} round
                     </span>
                   </div>
-                  <p className="text-sm text-slate-700 leading-relaxed">
+                  <p className="text-sm text-warm-700 leading-relaxed">
                     {ruleBasedContent.summary}
                   </p>
                 </div>
@@ -276,11 +276,11 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             {/* Key Stats */}
             {ruleBasedContent.keyStats && ruleBasedContent.keyStats.length > 0 && (
               <div
-                className="rounded-xl border border-slate-200 bg-white p-5"
+                className="rounded-xl border border-warm-200 bg-white p-5"
                 style={{ animation: 'fadeInUp 0.5s ease-out 0.2s both' }}
               >
-                <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <IconChartBar size={18} className="text-slate-500" />
+                <h3 className="text-sm font-semibold text-warm-900 mb-4 flex items-center gap-2">
+                  <IconChartBar size={18} className="text-warm-500" />
                   Key Stats
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -291,16 +291,16 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                         'p-3 rounded-lg border',
                         stat.comparison === 'above' && 'bg-green-50 border-green-100',
                         stat.comparison === 'below' && 'bg-red-50 border-red-100',
-                        stat.comparison === 'average' && 'bg-slate-50 border-slate-100',
+                        stat.comparison === 'average' && 'bg-warm-50 border-warm-100',
                       )}
                     >
-                      <p className="text-xs font-medium text-slate-500">{stat.label}</p>
-                      <p className="text-lg font-semibold text-slate-900 mt-0.5">{stat.value}</p>
+                      <p className="text-xs font-medium text-warm-500">{stat.label}</p>
+                      <p className="text-lg font-semibold text-warm-900 mt-0.5">{stat.value}</p>
                       <p className={cn(
                         'text-xs font-medium mt-0.5',
                         stat.comparison === 'above' && 'text-green-600',
                         stat.comparison === 'below' && 'text-red-600',
-                        stat.comparison === 'average' && 'text-slate-400',
+                        stat.comparison === 'average' && 'text-warm-400',
                       )}>
                         {stat.comparison === 'above' ? '↑ Above avg' :
                          stat.comparison === 'below' ? '↓ Below avg' :
@@ -315,10 +315,10 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             {/* Highlights */}
             {ruleBasedContent.highlights && ruleBasedContent.highlights.length > 0 && (
               <div
-                className="rounded-xl border border-slate-200 bg-white p-5"
+                className="rounded-xl border border-warm-200 bg-white p-5"
                 style={{ animation: 'fadeInUp 0.5s ease-out 0.3s both' }}
               >
-                <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-warm-900 mb-4 flex items-center gap-2">
                   <IconTrendingUp size={18} className="text-green-600" />
                   Highlights
                 </h3>
@@ -335,8 +335,8 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                         <IconTrendingUp size={16} className="text-green-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="font-medium text-slate-900">{highlight.title}</span>
-                        <p className="text-sm text-slate-600 mt-0.5">{highlight.description}</p>
+                        <span className="font-medium text-warm-900">{highlight.title}</span>
+                        <p className="text-sm text-warm-600 mt-0.5">{highlight.description}</p>
                       </div>
                     </div>
                   ))}
@@ -347,10 +347,10 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             {/* Areas for Improvement */}
             {ruleBasedContent.areasForImprovement && ruleBasedContent.areasForImprovement.length > 0 && (
               <div
-                className="rounded-xl border border-slate-200 bg-white p-5"
+                className="rounded-xl border border-warm-200 bg-white p-5"
                 style={{ animation: 'fadeInUp 0.5s ease-out 0.4s both' }}
               >
-                <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-warm-900 mb-4 flex items-center gap-2">
                   <IconTarget size={18} className="text-amber-600" />
                   Areas to Work On
                 </h3>
@@ -368,8 +368,8 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                           <IconWarning size={16} className="text-amber-600" />
                         </div>
                         <div className="flex-1">
-                          <span className="font-medium text-slate-900">{area.area}</span>
-                          <p className="text-sm text-slate-600 mt-1">{area.recommendation}</p>
+                          <span className="font-medium text-warm-900">{area.area}</span>
+                          <p className="text-sm text-warm-600 mt-1">{area.recommendation}</p>
                         </div>
                       </div>
                     </div>
@@ -381,10 +381,10 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             {/* Recommendations */}
             {ruleBasedContent.recommendations && ruleBasedContent.recommendations.length > 0 && (
               <div
-                className="rounded-xl border border-slate-200 bg-white p-5"
+                className="rounded-xl border border-warm-200 bg-white p-5"
                 style={{ animation: 'fadeInUp 0.5s ease-out 0.5s both' }}
               >
-                <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-warm-900 mb-4 flex items-center gap-2">
                   <IconSparkles size={18} className="text-green-600" />
                   Recommendations
                 </h3>
@@ -392,7 +392,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                   {ruleBasedContent.recommendations.map((rec, index) => (
                     <div
                       key={index}
-                      className="flex items-start gap-3 p-3 rounded-lg bg-slate-50"
+                      className="flex items-start gap-3 p-3 rounded-lg bg-warm-50"
                       style={{
                         animation: `fadeInUp 0.4s ease-out ${500 + index * 80}ms both`,
                       }}
@@ -400,7 +400,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold">
                         {index + 1}
                       </span>
-                      <p className="text-sm text-slate-700">{rec}</p>
+                      <p className="text-sm text-warm-700">{rec}</p>
                     </div>
                   ))}
                 </div>
@@ -419,9 +419,9 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             className="space-y-4"
           >
             {/* Summary Card */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-slate-900 mb-3">Summary</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">{review.summary}</p>
+            <div className="rounded-xl border border-warm-200 bg-white p-5">
+              <h3 className="text-sm font-semibold text-warm-900 mb-3">Summary</h3>
+              <p className="text-sm text-warm-600 leading-relaxed">{review.summary}</p>
 
               {review.primaryTakeaway && (
                 <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">

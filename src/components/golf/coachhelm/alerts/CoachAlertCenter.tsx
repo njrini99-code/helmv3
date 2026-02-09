@@ -135,7 +135,7 @@ export function CoachAlertCenter({
               ? 'bg-gradient-to-br from-red-500 to-rose-600'
               : warningCount > 0
                 ? 'bg-gradient-to-br from-amber-500 to-orange-500'
-                : 'bg-gradient-to-br from-slate-400 to-slate-500'
+                : 'bg-gradient-to-br from-warm-400 to-warm-500'
           )}>
             <IconBell size={18} className="text-white" aria-hidden="true" />
             {totalNeedAttention > 0 && (
@@ -157,8 +157,8 @@ export function CoachAlertCenter({
             )}
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-slate-800">Player Alerts</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className="text-sm font-semibold text-warm-800">Player Alerts</h3>
+            <p className="text-xs text-warm-500">
               {totalNeedAttention > 0
                 ? `${totalNeedAttention} need${totalNeedAttention === 1 ? 's' : ''} attention`
                 : 'All clear'
@@ -173,9 +173,9 @@ export function CoachAlertCenter({
             disabled={isPending}
             aria-label={isPending ? 'Scanning team for alerts' : 'Scan team for alerts'}
             className={cn(
-              'flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all',
+              'flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg transition-all',
               isPending
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
                 : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
             )}
           >
@@ -200,7 +200,7 @@ export function CoachAlertCenter({
           {alerts.length > 0 && (
             <a
               href="/golf/dashboard/alerts"
-              className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors"
+              className="flex items-center gap-1 text-xs font-medium text-warm-500 hover:text-warm-700 transition-colors"
             >
               View All
               <IconChevronRight size={14} />
@@ -243,8 +243,8 @@ export function CoachAlertCenter({
                   animate={{ opacity: 1 }}
                   className={cn(
                     'flex items-center justify-center gap-2 py-3 rounded-xl',
-                    'text-sm font-medium text-slate-500 hover:text-slate-700',
-                    'bg-slate-50 hover:bg-slate-100 transition-colors'
+                    'text-sm font-medium text-warm-500 hover:text-warm-700',
+                    'bg-warm-50 hover:bg-warm-100 transition-colors'
                   )}
                 >
                   <span>+{hiddenCount} more alert{hiddenCount > 1 ? 's' : ''}</span>
@@ -274,10 +274,10 @@ function EmptyAlertState() {
       )}>
         <IconBell size={24} className="text-green-600" />
       </div>
-      <h4 className="text-sm font-semibold text-slate-700 mb-1">
+      <h4 className="text-sm font-semibold text-warm-700 mb-1">
         All Clear!
       </h4>
-      <p className="text-xs text-slate-400 max-w-[200px]">
+      <p className="text-xs text-warm-400 max-w-[200px]">
         No alerts right now. Your players are on track.
       </p>
     </motion.div>

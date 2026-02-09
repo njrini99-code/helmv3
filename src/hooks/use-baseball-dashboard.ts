@@ -66,8 +66,6 @@ export function useBaseballCoachDashboard() {
     pipelineCounts: data?.pipelineCounts ?? {
       watchlist: 0,
       high_priority: 0,
-      contacted: 0,
-      campus_visit: 0,
       offer_extended: 0,
       committed: 0,
       uninterested: 0,

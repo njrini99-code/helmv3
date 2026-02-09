@@ -48,8 +48,8 @@ interface StatComparisonCardProps {
 
 function ChartSkeleton() {
   return (
-    <div className="h-24 bg-slate-100/50 rounded-xl animate-pulse flex items-center justify-center">
-      <span className="text-slate-400 text-sm">Loading...</span>
+    <div className="h-24 bg-warm-100/50 rounded-xl animate-pulse flex items-center justify-center">
+      <span className="text-warm-400 text-sm">Loading...</span>
     </div>
   );
 }
@@ -77,7 +77,7 @@ function getColorClass(comparison: 'better' | 'worse' | 'same'): string {
     case 'worse':
       return 'text-red-500';
     default:
-      return 'text-slate-600';
+      return 'text-warm-600';
   }
 }
 
@@ -88,7 +88,7 @@ function getBgClass(comparison: 'better' | 'worse' | 'same'): string {
     case 'worse':
       return 'bg-red-50';
     default:
-      return 'bg-slate-50';
+      return 'bg-warm-50';
   }
 }
 
@@ -147,9 +147,9 @@ const StatComparisonCard = memo(function StatComparisonCard({
       <div className="p-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold text-slate-900">{title}</h4>
+          <h4 className="text-sm font-semibold text-warm-900">{title}</h4>
           {showPercentile && percentile !== undefined && (
-            <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+            <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-warm-100 text-warm-600">
               {percentile}th %ile
             </div>
           )}
@@ -157,11 +157,11 @@ const StatComparisonCard = memo(function StatComparisonCard({
 
         {/* Main stat */}
         <div className="flex items-baseline gap-2 mb-4">
-          <span className="text-3xl font-bold text-slate-900 tabular-nums">
+          <span className="text-3xl font-bold text-warm-900 tabular-nums">
             {player.format(player.value)}
           </span>
           {rank && (
-            <span className="text-sm text-slate-500">
+            <span className="text-sm text-warm-500">
               ({rank})
             </span>
           )}
@@ -203,12 +203,12 @@ const StatComparisonCard = memo(function StatComparisonCard({
         )}
 
         {/* Comparison details */}
-        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100">
+        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-warm-100">
           {/* vs Team */}
           {teamAverage?.value !== null && teamAverage?.value !== undefined && teamComparison && (
             <div className={`flex flex-col items-center p-2 rounded-lg ${getBgClass(teamComparison)}`}>
-              <IconUsers size={14} className="text-slate-400 mb-1" />
-              <span className="text-xs text-slate-500 mb-0.5">vs Team</span>
+              <IconUsers size={14} className="text-warm-400 mb-1" />
+              <span className="text-xs text-warm-500 mb-0.5">vs Team</span>
               <span className={`text-xs font-semibold ${getColorClass(teamComparison)}`}>
                 {teamComparison === 'better' && (lowerIsBetter ? '-' : '+')}
                 {teamComparison === 'worse' && (lowerIsBetter ? '+' : '-')}
@@ -220,8 +220,8 @@ const StatComparisonCard = memo(function StatComparisonCard({
           {/* vs Previous */}
           {previousPeriod?.value !== null && previousPeriod?.value !== undefined && prevComparison && (
             <div className={`flex flex-col items-center p-2 rounded-lg ${getBgClass(prevComparison)}`}>
-              <IconClock size={14} className="text-slate-400 mb-1" />
-              <span className="text-xs text-slate-500 mb-0.5">vs Prev</span>
+              <IconClock size={14} className="text-warm-400 mb-1" />
+              <span className="text-xs text-warm-500 mb-0.5">vs Prev</span>
               <span className={`text-xs font-semibold ${getColorClass(prevComparison)}`}>
                 {prevComparison === 'better' && (lowerIsBetter ? '-' : '+')}
                 {prevComparison === 'worse' && (lowerIsBetter ? '+' : '-')}
@@ -233,8 +233,8 @@ const StatComparisonCard = memo(function StatComparisonCard({
           {/* vs Tour */}
           {tourAverage?.value !== null && tourAverage?.value !== undefined && tourComparison && (
             <div className={`flex flex-col items-center p-2 rounded-lg ${getBgClass(tourComparison)}`}>
-              <IconTrendingUp size={14} className="text-slate-400 mb-1" />
-              <span className="text-xs text-slate-500 mb-0.5">vs Tour</span>
+              <IconTrendingUp size={14} className="text-warm-400 mb-1" />
+              <span className="text-xs text-warm-500 mb-0.5">vs Tour</span>
               <span className={`text-xs font-semibold ${getColorClass(tourComparison)}`}>
                 {tourComparison === 'better' && (lowerIsBetter ? '-' : '+')}
                 {tourComparison === 'worse' && (lowerIsBetter ? '+' : '-')}
@@ -393,14 +393,14 @@ export const PeriodComparisonCard = memo(function PeriodComparisonCard({
       <div className="p-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h4 className="text-sm font-semibold text-slate-900">Period Comparison</h4>
-          <div className="flex items-center gap-3 text-xs text-slate-500">
+          <h4 className="text-sm font-semibold text-warm-900">Period Comparison</h4>
+          <div className="flex items-center gap-3 text-xs text-warm-500">
             <span className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-green-500" />
               {current.label} ({current.roundCount})
             </span>
             <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-slate-400" />
+              <div className="w-2 h-2 rounded-full bg-warm-400" />
               {previous.label} ({previous.roundCount})
             </span>
           </div>
@@ -422,11 +422,11 @@ export const PeriodComparisonCard = memo(function PeriodComparisonCard({
             const diff = prevVal !== null ? currentVal - prevVal : null;
 
             return (
-              <div key={stat.key} className="text-center p-3 rounded-xl bg-slate-50">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+              <div key={stat.key} className="text-center p-3 rounded-xl bg-warm-50">
+                <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">
                   {stat.label}
                 </p>
-                <p className="text-lg font-bold text-slate-900 tabular-nums">
+                <p className="text-lg font-bold text-warm-900 tabular-nums">
                   {stat.format(currentVal)}
                 </p>
                 {diff !== null && Math.abs(diff) > 0.1 && (

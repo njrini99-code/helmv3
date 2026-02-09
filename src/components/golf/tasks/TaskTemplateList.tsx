@@ -27,7 +27,7 @@ const categoryColors: Record<string, string> = {
   Travel: 'bg-amber-100 text-amber-700',
   Fitness: 'bg-red-100 text-red-700',
   Training: 'bg-cyan-100 text-cyan-700',
-  default: 'bg-slate-100 text-slate-700',
+  default: 'bg-warm-100 text-warm-700',
 };
 
 export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListProps) {
@@ -165,7 +165,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
     return (
       <div className="space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-slate-100 rounded-lg animate-pulse" />
+          <div key={i} className="h-16 bg-warm-100 rounded-lg animate-pulse" />
         ))}
       </div>
     );
@@ -175,7 +175,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-900">Task Templates</h3>
+        <h3 className="text-lg font-semibold text-warm-900">Task Templates</h3>
         {!showCreateForm && (
           <Button
             size="sm"
@@ -197,18 +197,18 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
             onSubmit={handleSubmit}
-            className="bg-white rounded-xl border border-slate-200 p-4 space-y-3"
+            className="bg-white rounded-xl border border-warm-200 p-4 space-y-3"
           >
             <div className="flex items-center justify-between mb-2">
-              <p className="font-medium text-slate-900">
+              <p className="font-medium text-warm-900">
                 {editingTemplate ? 'Edit Template' : 'Create Template'}
               </p>
               <button
                 type="button"
                 onClick={resetForm}
-                className="p-1 rounded-full hover:bg-slate-100"
+                className="p-1 rounded-full hover:bg-warm-100"
               >
-                <IconX size={16} className="text-slate-400" />
+                <IconX size={16} className="text-warm-400" />
               </button>
             </div>
 
@@ -217,7 +217,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
               placeholder="Template title"
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm
+              className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm
                        focus:border-green-500 focus:ring-2 focus:ring-green-100"
             />
 
@@ -226,13 +226,13 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Description (optional)"
               rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none
+              className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm resize-none
                        focus:border-green-500 focus:ring-2 focus:ring-green-100"
             />
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-slate-500 block mb-1">
+                <label className="text-xs font-medium text-warm-500 block mb-1">
                   Category
                 </label>
                 <input
@@ -241,7 +241,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   onChange={(e) => setFormCategory(e.target.value)}
                   placeholder="e.g., Tournament"
                   list="category-suggestions"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm
+                  className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm
                            focus:border-green-500 focus:ring-2 focus:ring-green-100"
                 />
                 <datalist id="category-suggestions">
@@ -255,7 +255,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-500 block mb-1">
+                <label className="text-xs font-medium text-warm-500 block mb-1">
                   Default Due (days)
                 </label>
                 <input
@@ -264,7 +264,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   onChange={(e) => setFormDueDays(e.target.value ? Number(e.target.value) : '')}
                   min={1}
                   placeholder="e.g., 7"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm
+                  className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm
                            focus:border-green-500 focus:ring-2 focus:ring-green-100"
                 />
               </div>
@@ -272,13 +272,13 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-slate-500 block mb-1">
+                <label className="text-xs font-medium text-warm-500 block mb-1">
                   Priority
                 </label>
                 <select
                   value={formPriority}
                   onChange={(e) => setFormPriority(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white
+                  className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm bg-white
                            focus:border-green-500 focus:ring-2 focus:ring-green-100"
                 >
                   <option value="low">Low</option>
@@ -289,13 +289,13 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-500 block mb-1">
+                <label className="text-xs font-medium text-warm-500 block mb-1">
                   Assign To
                 </label>
                 <select
                   value={formAssigneeType}
                   onChange={(e) => setFormAssigneeType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white
+                  className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm bg-white
                            focus:border-green-500 focus:ring-2 focus:ring-green-100"
                 >
                   <option value="all_players">All Players</option>
@@ -320,8 +320,8 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
       {/* Templates List */}
       {Object.keys(groupedTemplates).length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-slate-500 text-sm">No templates yet</p>
-          <p className="text-slate-400 text-xs mt-1">
+          <p className="text-warm-500 text-sm">No templates yet</p>
+          <p className="text-warm-400 text-xs mt-1">
             Create templates to quickly add common tasks
           </p>
         </div>
@@ -329,7 +329,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
         <div className="space-y-4">
           {Object.entries(groupedTemplates).map(([category, categoryTemplates]) => (
             <div key={category}>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+              <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-2">
                 {category}
               </p>
               <div className="space-y-2">
@@ -339,14 +339,14 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="group relative bg-white rounded-lg border border-slate-200 p-3
+                    className="group relative bg-white rounded-lg border border-warm-200 p-3
                              hover:border-green-200 hover:shadow-sm transition-all cursor-pointer"
                     onClick={() => onSelectTemplate(template)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-slate-900 text-sm">
+                          <h4 className="font-medium text-warm-900 text-sm">
                             {template.title}
                           </h4>
                           {template.category && (
@@ -361,13 +361,13 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                           )}
                         </div>
                         {template.description && (
-                          <p className="text-xs text-slate-500 line-clamp-1">
+                          <p className="text-xs text-warm-500 line-clamp-1">
                             {template.description}
                           </p>
                         )}
                         <div className="flex items-center gap-3 mt-1.5">
                           {template.default_due_days && (
-                            <span className="text-xs text-slate-400">
+                            <span className="text-xs text-warm-400">
                               Due in {template.default_due_days} days
                             </span>
                           )}
@@ -391,9 +391,9 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                             e.stopPropagation();
                             startEditing(template);
                           }}
-                          className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors"
                         >
-                          <IconEdit size={14} className="text-slate-400" />
+                          <IconEdit size={14} className="text-warm-400" />
                         </button>
                         <button
                           type="button"
@@ -403,7 +403,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                           }}
                           className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
                         >
-                          <IconTrash size={14} className="text-slate-400 hover:text-red-500" />
+                          <IconTrash size={14} className="text-warm-400 hover:text-red-500" />
                         </button>
                       </div>
                     </div>

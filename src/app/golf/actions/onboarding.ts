@@ -101,7 +101,9 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       // Continue - record might exist
     }
 
-    // Step 1: Create organization (using 'organizations' table, not 'golf_organizations')
+    // Step 1: Create organization
+    // Note: golf_coaches.organization_id FK to golf_organizations was dropped in production.
+    // All existing data references the shared 'organizations' table.
     const { data: org, error: orgError } = await supabase
       .from('organizations')
       .insert({
@@ -208,7 +210,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
     }
     // Note: coach cleanup happens in individual error handlers above
     if (createdOrgId) {
-      await supabase.from('organizations').delete().eq('id', createdOrgId);
+      await supabase.from('golf_organizations').delete().eq('id', createdOrgId);
     }
 
     console.error('[Onboarding] Unexpected error:', error);

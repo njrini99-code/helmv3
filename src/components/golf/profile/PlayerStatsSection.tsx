@@ -83,8 +83,8 @@ function formatScoreToPar(score: number | null): string {
 
 function ChartSkeleton() {
   return (
-    <div className="h-48 bg-slate-100/50 rounded-xl animate-pulse flex items-center justify-center">
-      <span className="text-slate-400 text-sm">Loading chart...</span>
+    <div className="h-48 bg-warm-100/50 rounded-xl animate-pulse flex items-center justify-center">
+      <span className="text-warm-400 text-sm">Loading chart...</span>
     </div>
   );
 }
@@ -116,8 +116,8 @@ const ScoringTrendMini = memo(function ScoringTrendMini({ rounds }: { rounds: Ro
 
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-slate-900">Scoring Trend</h3>
-          <p className="text-xs text-slate-500">Last {sortedRounds.length} rounds</p>
+          <h3 className="text-sm font-semibold text-warm-900">Scoring Trend</h3>
+          <p className="text-xs text-warm-500">Last {sortedRounds.length} rounds</p>
         </div>
         {scores.length >= 4 && (
           <div className={cn(
@@ -190,8 +190,8 @@ const ScoreDistribution = memo(function ScoreDistribution({ stats }: { stats: Go
       />
 
       <div className="mb-4">
-        <h3 className="text-sm font-semibold text-slate-900">Score Distribution</h3>
-        <p className="text-xs text-slate-500">{total} holes played</p>
+        <h3 className="text-sm font-semibold text-warm-900">Score Distribution</h3>
+        <p className="text-xs text-warm-500">{total} holes played</p>
       </div>
 
       <Suspense fallback={<ChartSkeleton />}>
@@ -238,9 +238,9 @@ const ScoreDistribution = memo(function ScoreDistribution({ stats }: { stats: Go
 
 function StatRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0">
-      <span className="text-sm text-slate-600">{label}</span>
-      <span className={cn('text-sm font-semibold tabular-nums', highlight ? 'text-green-600' : 'text-slate-900')}>
+    <div className="flex justify-between items-center py-2.5 border-b border-warm-100 last:border-0">
+      <span className="text-sm text-warm-600">{label}</span>
+      <span className={cn('text-sm font-semibold tabular-nums', highlight ? 'text-green-600' : 'text-warm-900')}>
         {value}
       </span>
     </div>
@@ -334,16 +334,16 @@ const DetailedStatsTabs = memo(function DetailedStatsTabs({ stats }: { stats: Go
       />
 
       {/* Tab Navigation */}
-      <div className="pills-scroll p-2 border-b border-slate-100">
+      <div className="pills-scroll p-2 border-b border-warm-100">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
+              'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
               activeTab === tab.id
                 ? 'bg-green-600 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100'
+                : 'text-warm-600 hover:bg-warm-100'
             )}
           >
             {tab.icon}
@@ -371,11 +371,11 @@ function NoStatsPlaceholder() {
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
-      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-        <IconTarget size={28} className="text-slate-400" />
+      <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+        <IconTarget size={28} className="text-warm-400" />
       </div>
-      <h3 className="text-lg font-semibold text-slate-900 mb-2">No Stats Available</h3>
-      <p className="text-sm text-slate-500 max-w-sm mx-auto">
+      <h3 className="text-lg font-semibold text-warm-900 mb-2">No Stats Available</h3>
+      <p className="text-sm text-warm-500 max-w-sm mx-auto">
         Complete rounds with shot-by-shot tracking to see detailed statistics and spray charts.
       </p>
     </div>
@@ -450,8 +450,8 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
       {/* Section Header with Round Selector */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Performance Stats</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-warm-900">Performance Stats</h2>
+          <p className="text-sm text-warm-500">
             {selectedRoundId === 'overall'
               ? `Overall statistics from ${rounds.length} rounds`
               : selectedRound
@@ -468,7 +468,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
               onKeyDown={(e) => { if (e.key === 'Escape') setDropdownOpen(false); }}
               aria-haspopup="listbox"
               aria-expanded={dropdownOpen}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-warm-200 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-50 transition-colors"
             >
               {selectedRoundId === 'overall' ? 'Overall' : 'Single Round'}
               <IconChevronDown size={16} className={cn('transition-transform', dropdownOpen && 'rotate-180')} />
@@ -481,20 +481,20 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
                   role="listbox"
                   aria-label="Select round"
                   onKeyDown={(e) => { if (e.key === 'Escape') setDropdownOpen(false); }}
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-slate-200 shadow-lg z-20 py-2 max-h-80 overflow-auto"
+                  className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-warm-200 shadow-lg z-20 py-2 max-h-80 overflow-auto"
                 >
                   <button
                     role="option"
                     aria-selected={selectedRoundId === 'overall'}
                     onClick={() => { setSelectedRoundId('overall'); setDropdownOpen(false); }}
                     className={cn(
-                      'w-full px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors',
+                      'w-full px-4 py-2.5 text-left text-sm hover:bg-warm-50 transition-colors',
                       selectedRoundId === 'overall' && 'bg-green-50 text-green-700 font-medium'
                     )}
                   >
                     Overall (All Rounds)
                   </button>
-                  <div className="border-t border-slate-100 my-1" />
+                  <div className="border-t border-warm-100 my-1" />
                   {rounds.slice(0, 15).map(round => (
                     <button
                       key={round.id}
@@ -502,12 +502,12 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
                       aria-selected={selectedRoundId === round.id}
                       onClick={() => { setSelectedRoundId(round.id); setDropdownOpen(false); }}
                       className={cn(
-                        'w-full px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors',
+                        'w-full px-4 py-2.5 text-left text-sm hover:bg-warm-50 transition-colors',
                         selectedRoundId === round.id && 'bg-green-50 text-green-700 font-medium'
                       )}
                     >
                       <div className="font-medium">{round.course_name || 'Round'}</div>
-                      <div className="text-xs text-slate-500 flex items-center gap-2">
+                      <div className="text-xs text-warm-500 flex items-center gap-2">
                         <span>{new Date(round.round_date).toLocaleDateString()}</span>
                         <span>•</span>
                         <span>{round.total_score} ({formatScoreToPar(round.score_to_par)})</span>
@@ -544,7 +544,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
           {/* Spray Charts Section */}
           {stats.fairwayOpportunities > 0 && (
             <div>
-              <h3 className="text-base font-semibold text-slate-900 mb-3">Shot Dispersion</h3>
+              <h3 className="text-base font-semibold text-warm-900 mb-3">Shot Dispersion</h3>
               <ShotDispersionChart stats={stats} />
             </div>
           )}
@@ -552,7 +552,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
           {/* Trends Section */}
           {rounds.length >= 2 && selectedRoundId === 'overall' && (
             <div>
-              <h3 className="text-base font-semibold text-slate-900 mb-3">Performance Trends</h3>
+              <h3 className="text-base font-semibold text-warm-900 mb-3">Performance Trends</h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <ScoringTrendMini rounds={rounds} />
                 <ScoreDistribution stats={stats} />
@@ -562,7 +562,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
 
           {/* Detailed Stats Tabs */}
           <div>
-            <h3 className="text-base font-semibold text-slate-900 mb-3">Detailed Statistics</h3>
+            <h3 className="text-base font-semibold text-warm-900 mb-3">Detailed Statistics</h3>
             <DetailedStatsTabs stats={stats} />
           </div>
         </>

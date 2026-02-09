@@ -98,7 +98,7 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
 
             {/* Value */}
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-slate-900 tabular-nums">{card.value}</span>
+              <span className="text-2xl font-bold text-warm-900 tabular-nums">{card.value}</span>
               {card.change !== undefined && card.change !== 0 && (
                 <span
                   className={cn(
@@ -117,10 +117,10 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
             </div>
 
             {/* Label */}
-            <p className="text-sm font-medium text-slate-700 mt-1">{card.label}</p>
+            <p className="text-sm font-medium text-warm-700 mt-1">{card.label}</p>
 
             {/* Subtext */}
-            <p className="text-xs text-slate-500 mt-0.5">{card.subtext}</p>
+            <p className="text-xs text-warm-500 mt-0.5">{card.subtext}</p>
 
             {/* Progress bar for percentages */}
             {card.isPercentage && card.percentValue !== undefined && (

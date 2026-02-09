@@ -93,7 +93,7 @@ export function Popover({
             'min-w-[280px]',
             'bg-white',
             'border border-warm-200',
-            'rounded-[16px]',
+            'rounded-xl',
             'shadow-lg',
             'p-4',
             'transition-all duration-150 ease-out',

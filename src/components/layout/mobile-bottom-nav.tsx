@@ -53,7 +53,7 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                'relative flex flex-col items-center justify-center gap-1',
+                'relative flex flex-col items-center justify-center gap-1 min-h-[44px]',
                 'px-3 py-2 rounded-xl',
                 'transition-all duration-200',
                 'active:scale-95',
@@ -64,7 +64,7 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
             >
               {/* Icon with badge */}
               <div className="relative">
-                <Icon className={cn('h-6 w-6', active && 'scale-110')} />
+                <Icon className={cn('h-6 w-6', active && 'scale-110')} aria-hidden="true" />
                 {item.badge && item.badge > 0 && (
                   <span
                     className="

@@ -254,7 +254,7 @@ export function CalendarDayViewSwipeable({
             <div className="flex items-center gap-2">
               <h2 className={cn(
                 'text-xl font-bold tracking-tight',
-                isTodayDate ? 'text-green-600' : 'text-slate-900'
+                isTodayDate ? 'text-green-600' : 'text-warm-900'
               )}>
                 {dateLabel}
               </h2>
@@ -264,7 +264,7 @@ export function CalendarDayViewSwipeable({
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-500 mt-0.5">{fullDateLabel}</p>
+            <p className="text-sm text-warm-500 mt-0.5">{fullDateLabel}</p>
           </div>
 
           {/* Right: Navigation controls */}
@@ -295,8 +295,8 @@ export function CalendarDayViewSwipeable({
               className={cn(
                 'flex items-center justify-center',
                 'w-10 h-10 rounded-xl',
-                'bg-slate-100/80 text-slate-600',
-                'hover:bg-slate-200 active:bg-slate-300 active:scale-95',
+                'bg-warm-100/80 text-warm-600',
+                'hover:bg-warm-200 active:bg-warm-300 active:scale-95',
                 'transition-all duration-200',
                 'touch-manipulation',
                 isTransitioning && 'opacity-50'
@@ -311,8 +311,8 @@ export function CalendarDayViewSwipeable({
               className={cn(
                 'flex items-center justify-center',
                 'w-10 h-10 rounded-xl',
-                'bg-slate-100/80 text-slate-600',
-                'hover:bg-slate-200 active:bg-slate-300 active:scale-95',
+                'bg-warm-100/80 text-warm-600',
+                'hover:bg-warm-200 active:bg-warm-300 active:scale-95',
                 'transition-all duration-200',
                 'touch-manipulation',
                 isTransitioning && 'opacity-50'
@@ -339,14 +339,14 @@ export function CalendarDayViewSwipeable({
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="relative mb-6">
                 <div className="absolute inset-0 bg-green-500/10 rounded-3xl blur-2xl scale-150" />
-                <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/50 flex items-center justify-center shadow-sm">
-                  <Calendar className="w-10 h-10 text-slate-300" />
+                <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-warm-50 to-warm-100 border border-warm-200/50 flex items-center justify-center shadow-sm">
+                  <Calendar className="w-10 h-10 text-warm-300" />
                 </div>
               </div>
-              <h3 className="text-lg font-semibold text-slate-800 mb-1.5">
+              <h3 className="text-lg font-semibold text-warm-800 mb-1.5">
                 Nothing scheduled
               </h3>
-              <p className="text-sm text-slate-500 max-w-[200px] mb-8">
+              <p className="text-sm text-warm-500 max-w-[200px] mb-8">
                 Your {format(currentDate, 'EEEE')} is free
               </p>
               {isCoach && onAddEvent && (
@@ -460,7 +460,7 @@ export function MobileWeekPicker({
       ref={scrollRef}
       className="pills-scroll"
     >
-      <div className="flex gap-1.5 px-3 py-2" style={{ width: 'max-content' }}>
+      <div className="flex gap-2 px-3 py-2" style={{ width: 'max-content' }}>
         {days.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd');
           const eventCount = eventCounts.get(dateKey) || 0;
@@ -494,7 +494,7 @@ export function MobileWeekPicker({
                   ? 'text-green-100'
                   : isTodayDate
                     ? 'text-green-600'
-                    : 'text-slate-400'
+                    : 'text-warm-400'
               )}>
                 {format(day, 'EEE')}
               </span>
@@ -506,7 +506,7 @@ export function MobileWeekPicker({
                   ? 'text-white'
                   : isTodayDate
                     ? 'text-green-700'
-                    : 'text-slate-800'
+                    : 'text-warm-800'
               )}>
                 {format(day, 'd')}
               </span>

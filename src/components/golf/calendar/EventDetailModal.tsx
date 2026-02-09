@@ -182,12 +182,12 @@ const EVENT_TYPE_PILLS: Array<{
     type: 'other',
     label: 'Other',
     icon: MoreHorizontal,
-    activeBg: 'bg-slate-700',
+    activeBg: 'bg-warm-700',
     activeText: 'text-white',
-    activeShadow: 'shadow-slate-700/30',
-    inactiveBg: 'bg-slate-100 hover:bg-slate-200',
-    inactiveText: 'text-slate-600',
-    headerGradient: 'from-slate-50 to-white',
+    activeShadow: 'shadow-warm-700/30',
+    inactiveBg: 'bg-warm-100 hover:bg-warm-200',
+    inactiveText: 'text-warm-600',
+    headerGradient: 'from-warm-50 to-white',
   },
 ];
 
@@ -432,26 +432,26 @@ export function EventDetailModal({
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal - focus trap ref is on the outer dialog container */}
       <div
-        className="relative bg-white rounded-[24px] border border-slate-200/60 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
+        className="relative bg-white rounded-[24px] border border-warm-200/60 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
       >
         {/* Colored Header Band - tinted by event type */}
         <div className={cn('bg-gradient-to-r', activeTypePill.headerGradient, 'px-6 pt-5 pb-4')}>
           <div className="flex items-center justify-between mb-4">
-            <h2 id="event-modal-title" className="text-lg font-semibold text-slate-900">
+            <h2 id="event-modal-title" className="text-lg font-semibold text-warm-900">
               {modalTitle}
             </h2>
             <button
               ref={closeButtonRef}
               onClick={onClose}
               aria-label="Close modal"
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-white/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-white/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             >
               <X className="w-5 h-5" aria-hidden="true" />
             </button>
@@ -470,7 +470,7 @@ export function EventDetailModal({
                     onClick={() => setFormData({ ...formData, eventType: pill.type })}
                     disabled={isSaving}
                     className={cn(
-                      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200',
+                      'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200',
                       isActive
                         ? cn(pill.activeBg, pill.activeText, 'shadow-md', pill.activeShadow)
                         : cn(pill.inactiveBg, pill.inactiveText),
@@ -488,7 +488,7 @@ export function EventDetailModal({
               {(() => {
                 const Icon = activeTypePill.icon;
                 return (
-                  <span className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold', activeTypePill.activeBg, activeTypePill.activeText)}>
+                  <span className={cn('inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold', activeTypePill.activeBg, activeTypePill.activeText)}>
                     <Icon className="w-3.5 h-3.5" />
                     {activeTypePill.label}
                   </span>
@@ -517,15 +517,15 @@ export function EventDetailModal({
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             disabled={isViewMode || isSaving}
             placeholder="Event name..."
-            className="w-full px-0 py-2 text-xl font-semibold text-slate-900 placeholder:text-slate-300 border-none focus:ring-0 focus:outline-none bg-transparent disabled:text-slate-500"
+            className="w-full px-0 py-2 text-xl font-semibold text-warm-900 placeholder:text-warm-300 border-none focus:ring-0 focus:outline-none bg-transparent disabled:text-warm-500"
             required
           />
 
           {/* Date & Time Section - Compact card */}
-          <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+          <div className="bg-warm-50 rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-4">
               <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
-                <Calendar className="w-4.5 h-4.5 text-slate-500" />
+                <Calendar className="w-4.5 h-4.5 text-warm-500" />
               </div>
               <div className="flex-1 grid grid-cols-2 gap-3">
                 <input
@@ -533,7 +533,7 @@ export function EventDetailModal({
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   disabled={isViewMode || isSaving}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 bg-white transition-colors disabled:bg-white disabled:text-slate-500"
+                  className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors disabled:bg-white disabled:text-warm-500"
                   required
                 />
                 <input
@@ -542,7 +542,7 @@ export function EventDetailModal({
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
                   disabled={isViewMode || isSaving}
                   placeholder="End date"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 bg-white transition-colors disabled:bg-white disabled:text-slate-500"
+                  className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors disabled:bg-white disabled:text-warm-500"
                 />
               </div>
             </div>
@@ -550,7 +550,7 @@ export function EventDetailModal({
             {!formData.allDay && (
               <div className="flex items-center gap-4">
                 <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm">
-                  <Clock className="w-4.5 h-4.5 text-slate-500" />
+                  <Clock className="w-4.5 h-4.5 text-warm-500" />
                 </div>
                 <div className="flex-1 grid grid-cols-2 gap-3">
                   <input
@@ -558,14 +558,14 @@ export function EventDetailModal({
                     value={formData.startTime || ''}
                     onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
                     disabled={isViewMode || isSaving}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 bg-white transition-colors disabled:bg-white disabled:text-slate-500"
+                    className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors disabled:bg-white disabled:text-warm-500"
                   />
                   <input
                     type="time"
                     value={formData.endTime || ''}
                     onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
                     disabled={isViewMode || isSaving}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 bg-white transition-colors disabled:bg-white disabled:text-slate-500"
+                    className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors disabled:bg-white disabled:text-warm-500"
                   />
                 </div>
               </div>
@@ -575,7 +575,7 @@ export function EventDetailModal({
             <label className="flex items-center gap-3 pl-[52px] cursor-pointer group">
               <div className={cn(
                 'relative w-10 h-6 rounded-full transition-colors duration-200',
-                formData.allDay ? 'bg-emerald-500' : 'bg-slate-300'
+                formData.allDay ? 'bg-emerald-500' : 'bg-warm-300'
               )}>
                 <input
                   type="checkbox"
@@ -589,32 +589,32 @@ export function EventDetailModal({
                   formData.allDay && 'translate-x-4'
                 )} />
               </div>
-              <span className="text-sm text-slate-600">All day</span>
+              <span className="text-sm text-warm-600">All day</span>
             </label>
           </div>
 
           {/* Location - Icon-prefixed input */}
-          <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3">
-            <MapPin className="w-5 h-5 text-slate-400 flex-shrink-0" />
+          <div className="flex items-center gap-3 bg-warm-50 rounded-2xl px-4 py-3">
+            <MapPin className="w-5 h-5 text-warm-400 flex-shrink-0" />
             <input
               type="text"
               value={formData.location || ''}
               onChange={(e) => setFormData({ ...formData, location: e.target.value || null })}
               disabled={isViewMode || isSaving}
               placeholder="Add location..."
-              className="flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-slate-900 placeholder:text-slate-400 disabled:text-slate-500"
+              className="flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-warm-900 placeholder:text-warm-400 disabled:text-warm-500"
             />
           </div>
 
           {/* Description - Expandable, cleaner */}
-          <div className="bg-slate-50 rounded-2xl px-4 py-3">
+          <div className="bg-warm-50 rounded-2xl px-4 py-3">
             <textarea
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
               disabled={isViewMode || isSaving}
               rows={2}
               placeholder="Add notes or description..."
-              className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-slate-900 placeholder:text-slate-400 resize-none disabled:text-slate-500"
+              className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-warm-900 placeholder:text-warm-400 resize-none disabled:text-warm-500"
             />
           </div>
 
@@ -623,8 +623,8 @@ export function EventDetailModal({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <UserPlus className="w-4 h-4 text-slate-500" />
-                  <span className="text-sm font-semibold text-slate-900">Attendees</span>
+                  <UserPlus className="w-4 h-4 text-warm-500" />
+                  <span className="text-sm font-semibold text-warm-900">Attendees</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {formData.attendeeIds.length > 0 && (
@@ -652,7 +652,7 @@ export function EventDetailModal({
               </div>
 
               {availablePlayers.length === 0 ? (
-                <p className="text-sm text-slate-500 py-2">
+                <p className="text-sm text-warm-500 py-2">
                   No team members available.
                 </p>
               ) : (
@@ -669,7 +669,7 @@ export function EventDetailModal({
                           'group flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150',
                           isSelected
                             ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 scale-[1.02]'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+                            : 'bg-warm-100 text-warm-700 hover:bg-warm-200',
                           'disabled:opacity-50 disabled:cursor-not-allowed'
                         )}
                       >
@@ -678,7 +678,7 @@ export function EventDetailModal({
                         ) : (
                           <div className={cn(
                             'w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold',
-                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-300 text-slate-500'
+                            isSelected ? 'bg-white/20 text-white' : 'bg-warm-300 text-warm-500'
                           )}>
                             {player.first_name[0]}{player.last_name[0]}
                           </div>
@@ -692,8 +692,8 @@ export function EventDetailModal({
 
               {/* Conflict Warning */}
               {checkingConflicts && (
-                <div className="p-3 bg-slate-100 rounded-xl text-sm text-slate-600 flex items-center gap-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full" />
+                <div className="p-3 bg-warm-100 rounded-xl text-sm text-warm-600 flex items-center gap-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-warm-400 border-t-transparent rounded-full" />
                   Checking conflicts...
                 </div>
               )}
@@ -711,11 +711,11 @@ export function EventDetailModal({
           {/* RSVP Toggle */}
           {canEdit && (
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm font-medium text-slate-700">Require RSVP</span>
+              <span className="text-sm font-medium text-warm-700">Require RSVP</span>
               <label className="cursor-pointer">
                 <div className={cn(
                   'relative w-10 h-6 rounded-full transition-colors duration-200',
-                  formData.requiresRsvp ? 'bg-emerald-500' : 'bg-slate-300'
+                  formData.requiresRsvp ? 'bg-emerald-500' : 'bg-warm-300'
                 )}>
                   <input
                     type="checkbox"
@@ -737,17 +737,17 @@ export function EventDetailModal({
           {canEdit && formData.requiresRsvp && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">RSVP Deadline</label>
+                <label className="block text-xs font-medium text-warm-500 mb-1">RSVP Deadline</label>
                 <input
                   type="datetime-local"
                   value={formData.rsvpDeadline || ''}
                   onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value || null })}
                   disabled={isViewMode || isSaving}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 bg-white transition-colors disabled:bg-slate-50"
+                  className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors disabled:bg-warm-50"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Max Attendees</label>
+                <label className="block text-xs font-medium text-warm-500 mb-1">Max Attendees</label>
                 <input
                   type="number"
                   min="1"
@@ -755,7 +755,7 @@ export function EventDetailModal({
                   onChange={(e) => setFormData({ ...formData, maxAttendees: e.target.value ? parseInt(e.target.value) : null })}
                   disabled={isViewMode || isSaving}
                   placeholder="No limit"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-slate-900 placeholder:text-slate-400 bg-white transition-colors disabled:bg-slate-50"
+                  className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 placeholder:text-warm-400 bg-white transition-colors disabled:bg-warm-50"
                 />
               </div>
             </div>
@@ -763,7 +763,7 @@ export function EventDetailModal({
 
           {/* Player RSVP Card */}
           {!isCreating && event && formData.requiresRsvp && !isCoach && (
-            <div className="border-t border-slate-200 -mx-6 px-6 pt-4">
+            <div className="border-t border-warm-200 -mx-6 px-6 pt-4">
               <PlayerRSVPCard
                 event={{
                   id: event.id,
@@ -787,15 +787,15 @@ export function EventDetailModal({
                 }}
               />
               {playerResponseLoading && (
-                <p className="text-xs text-slate-500 mt-2">Loading your RSVP status...</p>
+                <p className="text-xs text-warm-500 mt-2">Loading your RSVP status...</p>
               )}
             </div>
           )}
 
           {/* RSVP Status Section (for coaches) */}
           {!isCreating && event?.id && formData.requiresRsvp && isCoach && (
-            <div className="border-t border-slate-200 -mx-6 px-6 pt-4">
-              <h4 className="text-sm font-semibold text-slate-900 mb-3">RSVP Status</h4>
+            <div className="border-t border-warm-200 -mx-6 px-6 pt-4">
+              <h4 className="text-sm font-semibold text-warm-900 mb-3">RSVP Status</h4>
               {rsvpSummaryError && (
                 <p className="text-sm text-rose-600 mb-3">{rsvpSummaryError}</p>
               )}
@@ -804,13 +804,13 @@ export function EventDetailModal({
                 totalInvited={rsvpSummary?.total || 0}
               />
               {rsvpSummaryLoading && (
-                <p className="text-xs text-slate-500 mt-2">Loading RSVP summary...</p>
+                <p className="text-xs text-warm-500 mt-2">Loading RSVP summary...</p>
               )}
             </div>
           )}
 
           {/* Footer - inside form for proper submit semantics */}
-          <div className="border-t border-slate-100 flex items-center justify-between bg-slate-50/50 -mx-6 px-6 py-4 mt-4">
+          <div className="border-t border-warm-100 flex items-center justify-between bg-warm-50/50 -mx-6 px-6 py-4 mt-4">
             {/* Delete Button (left side) */}
             <div>
               {onDelete && !isCreating && (
@@ -829,7 +829,7 @@ export function EventDetailModal({
                         type="button"
                         onClick={() => setShowDeleteConfirm(false)}
                         disabled={isSaving}
-                        className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                        className="px-3 py-1.5 text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors"
                       >
                         Cancel
                       </button>
@@ -839,7 +839,7 @@ export function EventDetailModal({
                       type="button"
                       onClick={() => setShowDeleteConfirm(true)}
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                     >
                       <Trash2 className="w-4 h-4" />
                       Delete
@@ -855,7 +855,7 @@ export function EventDetailModal({
                 type="button"
                 onClick={onClose}
                 disabled={isSaving}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-warm-600 hover:text-warm-900 rounded-lg transition-colors"
               >
                 {isViewMode ? 'Close' : 'Cancel'}
               </button>

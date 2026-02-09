@@ -81,7 +81,7 @@ export function InsightSearchBar({
     <div className={cn('relative', className)}>
       {/* Search Icon */}
       <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
-        <IconSearch size={18} className="text-slate-400" />
+        <IconSearch size={18} className="text-warm-400" />
       </div>
 
       {/* Input */}
@@ -95,8 +95,8 @@ export function InsightSearchBar({
         className={cn(
           'w-full pl-10 pr-10 py-2.5 text-sm',
           'bg-white/80 backdrop-blur-sm',
-          'border border-slate-200 rounded-xl',
-          'text-slate-900 placeholder:text-slate-400',
+          'border border-warm-200 rounded-xl',
+          'text-warm-900 placeholder:text-warm-400',
           'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
           'transition-all duration-200'
         )}
@@ -110,8 +110,8 @@ export function InsightSearchBar({
           className={cn(
             'absolute right-2 top-1/2 -translate-y-1/2',
             'p-1.5 rounded-lg',
-            'text-slate-400 hover:text-slate-600',
-            'hover:bg-slate-100',
+            'text-warm-400 hover:text-warm-600',
+            'hover:bg-warm-100',
             'transition-all duration-150'
           )}
           aria-label="Clear search"

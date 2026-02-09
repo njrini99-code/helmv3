@@ -64,7 +64,7 @@ export function RecurrenceEditDialog({
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             {/* This event only */}
-            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-warm-50 cursor-pointer border border-transparent hover:border-warm-200 transition-colors">
               <input
                 type="radio"
                 name="scope"
@@ -75,10 +75,10 @@ export function RecurrenceEditDialog({
               />
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <Calendar className="h-4 w-4 text-slate-400" />
+                  <Calendar className="h-4 w-4 text-warm-400" />
                   <span className="font-medium">This event only</span>
                 </div>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-warm-500">
                   {action === 'edit' ? 'Edit' : 'Delete'} only the event on{' '}
                   {formatDate(originalDate)}
                 </p>
@@ -86,7 +86,7 @@ export function RecurrenceEditDialog({
             </label>
 
             {/* This and future events */}
-            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-warm-50 cursor-pointer border border-transparent hover:border-warm-200 transition-colors">
               <input
                 type="radio"
                 name="scope"
@@ -97,17 +97,17 @@ export function RecurrenceEditDialog({
               />
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <CalendarRange className="h-4 w-4 text-slate-400" />
+                  <CalendarRange className="h-4 w-4 text-warm-400" />
                   <span className="font-medium">This and future events</span>
                 </div>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-warm-500">
                   {action === 'edit' ? 'Edit' : 'Delete'} this event and all future occurrences
                 </p>
               </div>
             </label>
 
             {/* All events */}
-            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 transition-colors">
+            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-warm-50 cursor-pointer border border-transparent hover:border-warm-200 transition-colors">
               <input
                 type="radio"
                 name="scope"
@@ -118,10 +118,10 @@ export function RecurrenceEditDialog({
               />
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <CalendarDays className="h-4 w-4 text-slate-400" />
+                  <CalendarDays className="h-4 w-4 text-warm-400" />
                   <span className="font-medium">All events in the series</span>
                 </div>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-warm-500">
                   {action === 'edit' ? 'Edit' : 'Delete'} all occurrences of this recurring event
                 </p>
               </div>

@@ -81,11 +81,11 @@ function PlayerPatternCard({
 
           {/* Player info */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 truncate">
+            <h3 className="font-semibold text-warm-900 truncate">
               {group.playerName}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-1">
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-warm-500">
                 {activePatterns.length} active pattern{activePatterns.length !== 1 ? 's' : ''}
               </span>
 
@@ -116,7 +116,7 @@ function PlayerPatternCard({
               <div className="text-lg font-semibold text-red-600">
                 +{totalStrokeImpact.toFixed(1)}
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-warm-500">
                 total impact
               </div>
             </div>
@@ -126,7 +126,7 @@ function PlayerPatternCard({
           <motion.div
             animate={{ rotate: expanded ? 180 : 0 }}
             transition={{ duration: 0.2 }}
-            className="text-slate-400 flex-shrink-0"
+            className="text-warm-400 flex-shrink-0"
           >
             <IconChevronDown size={20} />
           </motion.div>
@@ -142,9 +142,9 @@ function PlayerPatternCard({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="px-4 pb-4 space-y-3 border-t border-slate-100 pt-4">
+              <div className="px-4 pb-4 space-y-3 border-t border-warm-100 pt-4">
                 {group.patterns.length === 0 ? (
-                  <div className="text-center py-6 text-slate-500">
+                  <div className="text-center py-6 text-warm-500">
                     No patterns found for this player
                   </div>
                 ) : (
@@ -197,13 +197,13 @@ export function PatternByPlayerView({
     return (
       <GlassCard padding="lg" hover={false}>
         <div className="text-center py-8">
-          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <IconSparkles size={24} className="text-slate-400" />
+          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+            <IconSparkles size={24} className="text-warm-400" />
           </div>
-          <h3 className="text-lg font-medium text-slate-900 mb-2">
+          <h3 className="text-lg font-medium text-warm-900 mb-2">
             No patterns to display
           </h3>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-warm-500">
             Patterns will appear here once detected by the AI engine.
           </p>
         </div>
@@ -215,10 +215,10 @@ export function PatternByPlayerView({
     <div className="space-y-4">
       {/* Summary */}
       <div className="flex items-center justify-between px-2">
-        <h3 className="text-sm font-medium text-slate-500">
+        <h3 className="text-sm font-medium text-warm-500">
           {playerGroups.length} player{playerGroups.length !== 1 ? 's' : ''} with patterns
         </h3>
-        <span className="text-sm text-slate-400">
+        <span className="text-sm text-warm-400">
           {playerGroups.reduce((sum, g) => sum + g.patterns.length, 0)} total patterns
         </span>
       </div>

@@ -80,7 +80,7 @@ function StarRating({
             stroke="currentColor"
             strokeWidth="1.5"
             className={cn(
-              value && star <= value ? 'text-amber-400' : 'text-slate-300'
+              value && star <= value ? 'text-amber-400' : 'text-warm-300'
             )}
           >
             <path
@@ -130,7 +130,7 @@ function LoadingSpinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 function ProgressBar({ progress }: { progress: number }) {
   return (
     <div
-      className="w-full bg-slate-200/60 rounded-full h-2"
+      className="w-full bg-warm-200/60 rounded-full h-2"
       role="progressbar"
       aria-valuenow={progress}
       aria-valuemin={0}
@@ -200,13 +200,13 @@ function EditableList({
           key={index}
           className="flex items-start gap-2 p-2 bg-primary-50 rounded-lg"
         >
-          <span className="flex-1 text-sm text-slate-700">{item}</span>
+          <span className="flex-1 text-sm text-warm-700">{item}</span>
           {!disabled && onChange && (
             <button
               type="button"
               onClick={() => removeItem(index)}
               aria-label={`Remove: ${item}`}
-              className="p-1 text-slate-400 hover:text-red-500 rounded"
+              className="p-1 text-warm-400 hover:text-red-500 rounded"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -371,12 +371,12 @@ export function RoundReviewPanel({
           <h3 className="mt-4 text-lg font-semibold text-warm-900">
             Generating Review
           </h3>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-warm-500">
             {review.status_message || 'Analyzing round data...'}
           </p>
           <div className="mt-4 w-full max-w-xs">
             <ProgressBar progress={generationProgress} />
-            <p className="mt-1 text-xs text-slate-400">{generationProgress}% complete</p>
+            <p className="mt-1 text-xs text-warm-400">{generationProgress}% complete</p>
           </div>
         </div>
       </div>
@@ -397,7 +397,7 @@ export function RoundReviewPanel({
           <h3 className="mt-4 text-lg font-semibold text-warm-900">
             Review Generation Failed
           </h3>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-warm-500">
             {review.last_error || 'An error occurred while generating the review.'}
           </p>
           {isCoach && (
@@ -427,15 +427,15 @@ export function RoundReviewPanel({
       <div className="relative overflow-hidden bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-8 shadow-glass-sm">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
         <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full bg-slate-100/70 flex items-center justify-center">
-            <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+          <div className="w-12 h-12 rounded-full bg-warm-100/70 flex items-center justify-center">
+            <svg className="w-6 h-6 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <h3 className="mt-4 text-lg font-semibold text-warm-900">
             Review Pending
           </h3>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-warm-500">
             This review is waiting to be generated.
           </p>
         </div>
@@ -466,7 +466,7 @@ export function RoundReviewPanel({
                 <>
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100/70 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-sm font-medium text-warm-600 hover:bg-warm-100/70 rounded-lg transition-colors"
                   >
                     Cancel
                   </button>
@@ -510,7 +510,7 @@ export function RoundReviewPanel({
       {/* Summary */}
       {review.summary && (
         <SectionCard title="Summary">
-          <p className="text-sm text-slate-600 leading-relaxed">{review.summary}</p>
+          <p className="text-sm text-warm-600 leading-relaxed">{review.summary}</p>
         </SectionCard>
       )}
 
@@ -519,11 +519,11 @@ export function RoundReviewPanel({
         <SectionCard title="Key Statistics">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-xs text-slate-500">Score</p>
+              <p className="text-xs text-warm-500">Score</p>
               <p className={cn('text-2xl font-semibold', round.total_score && round.score_to_par !== null ? getScoreColor(round.total_score, round.total_score - (round.score_to_par ?? 0)) : 'text-warm-900')}>
                 {round.total_score ?? '-'}
                 {review.key_stats.score_vs_par !== null && (
-                  <span className="text-sm font-normal text-slate-500 ml-1">
+                  <span className="text-sm font-normal text-warm-500 ml-1">
                     ({review.key_stats.score_vs_par >= 0 ? '+' : ''}{review.key_stats.score_vs_par})
                   </span>
                 )}
@@ -531,7 +531,7 @@ export function RoundReviewPanel({
             </div>
             {review.key_stats.fairway_pct !== null && (
               <div>
-                <p className="text-xs text-slate-500">Fairways</p>
+                <p className="text-xs text-warm-500">Fairways</p>
                 <p className="text-2xl font-semibold text-warm-900">
                   {review.key_stats.fairway_pct}%
                 </p>
@@ -539,7 +539,7 @@ export function RoundReviewPanel({
             )}
             {review.key_stats.gir_pct !== null && (
               <div>
-                <p className="text-xs text-slate-500">GIR</p>
+                <p className="text-xs text-warm-500">GIR</p>
                 <p className="text-2xl font-semibold text-warm-900">
                   {review.key_stats.gir_pct}%
                 </p>
@@ -547,7 +547,7 @@ export function RoundReviewPanel({
             )}
             {review.key_stats.putts_per_round !== null && (
               <div>
-                <p className="text-xs text-slate-500">Putts</p>
+                <p className="text-xs text-warm-500">Putts</p>
                 <p className="text-2xl font-semibold text-warm-900">
                   {review.key_stats.putts_per_round}
                 </p>
@@ -568,7 +568,7 @@ export function RoundReviewPanel({
                   <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm text-slate-600">{strength}</span>
+                  <span className="text-sm text-warm-600">{strength}</span>
                 </li>
               ))}
             </ul>
@@ -584,7 +584,7 @@ export function RoundReviewPanel({
                   <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                   </svg>
-                  <span className="text-sm text-slate-600">{area}</span>
+                  <span className="text-sm text-warm-600">{area}</span>
                 </li>
               ))}
             </ul>
@@ -601,7 +601,7 @@ export function RoundReviewPanel({
                 <svg className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                 </svg>
-                <span className="text-sm text-slate-600">{rec}</span>
+                <span className="text-sm text-warm-600">{rec}</span>
               </li>
             ))}
           </ul>
@@ -615,7 +615,7 @@ export function RoundReviewPanel({
 
           {/* Coach Rating */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-warm-700 mb-2">
               Overall Rating
             </label>
             <StarRating
@@ -627,7 +627,7 @@ export function RoundReviewPanel({
 
           {/* Coach Notes */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-warm-700 mb-2">
               Notes
             </label>
             {isEditing ? (
@@ -636,10 +636,10 @@ export function RoundReviewPanel({
                 onChange={(e) => setCoachNotes(e.target.value)}
                 rows={4}
                 placeholder="Add your notes and observations..."
-                className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-border rounded-lg placeholder:text-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 resize-none"
+                className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-border rounded-lg placeholder:text-warm-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 resize-none"
               />
             ) : (
-              <p className="text-sm text-slate-600 whitespace-pre-wrap">
+              <p className="text-sm text-warm-600 whitespace-pre-wrap">
                 {review.coach_notes || 'No notes added yet.'}
               </p>
             )}
@@ -647,7 +647,7 @@ export function RoundReviewPanel({
 
           {/* Coach Highlights */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-warm-700 mb-2">
               Highlights
             </label>
             <EditableList
@@ -660,7 +660,7 @@ export function RoundReviewPanel({
 
           {/* Focus Areas */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-warm-700 mb-2">
               Focus Areas for Next Round
             </label>
             <EditableList
@@ -676,14 +676,14 @@ export function RoundReviewPanel({
       {/* Player Feedback Section (for shared reviews) */}
       {review.shared_with_player && review.player_feedback && (
         <SectionCard title="Player Response">
-          <p className="text-sm text-slate-600 whitespace-pre-wrap">
+          <p className="text-sm text-warm-600 whitespace-pre-wrap">
             {review.player_feedback}
           </p>
         </SectionCard>
       )}
 
       {/* Metadata */}
-      <div className="flex items-center justify-between pt-4 border-t border-border-light text-xs text-slate-400">
+      <div className="flex items-center justify-between pt-4 border-t border-border-light text-xs text-warm-400">
         <div className="flex items-center gap-4">
           {review.ai_model_used && (
             <span>Generated by {review.ai_model_used}</span>

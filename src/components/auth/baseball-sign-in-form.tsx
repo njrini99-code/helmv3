@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/baseball/actions/auth';
+import { createClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/input';
 import { AlertCircle } from 'lucide-react';
 
@@ -29,7 +30,59 @@ export function BaseballSignInForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+      setCheckingAuth(false);
+    }
+    checkAuth();
+  }, [supabase.auth]);
+
+  async function handleSignOut() {
+    setIsLoggingOut(true);
+    await supabase.auth.signOut();
+    setIsLoggedIn(false);
+    setIsLoggingOut(false);
+    router.refresh();
+  }
+
+  if (checkingAuth) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (isLoggedIn) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-helm-amber-400/10 border border-helm-amber-400/30 text-helm-amber-600 px-4 py-3 rounded-xl text-sm text-center">
+          You&apos;re already signed in
+        </div>
+        <button
+          onClick={() => router.push('/baseball/dashboard')}
+          className="w-full py-3 bg-primary-600 text-white font-medium text-sm rounded-[10px] shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
+        >
+          Continue to Dashboard
+        </button>
+        <button
+          onClick={handleSignOut}
+          disabled={isLoggingOut}
+          className="w-full py-3 bg-warm-100 text-warm-700 font-medium text-sm rounded-[10px] transition-all duration-200 hover:bg-warm-200 disabled:opacity-50"
+        >
+          {isLoggingOut ? 'Signing out...' : 'Sign out & use a different account'}
+        </button>
+      </div>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

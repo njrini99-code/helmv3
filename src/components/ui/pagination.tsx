@@ -76,8 +76,8 @@ export function Pagination({
             'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20',
             currentPage === 1
-              ? 'text-slate-300 cursor-not-allowed'
-              : 'text-slate-600 hover:bg-slate-100'
+              ? 'text-warm-300 cursor-not-allowed'
+              : 'text-warm-600 hover:bg-warm-100'
           )}
         >
           <span className="flex items-center gap-0.5">
@@ -96,8 +96,8 @@ export function Pagination({
           'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-green-500/20',
           currentPage === 1
-            ? 'text-slate-300 cursor-not-allowed'
-            : 'text-slate-600 hover:bg-slate-100'
+            ? 'text-warm-300 cursor-not-allowed'
+            : 'text-warm-600 hover:bg-warm-100'
         )}
       >
         <IconChevronLeft size={16} />
@@ -107,7 +107,7 @@ export function Pagination({
       {pages.map((page, index) => {
         if (page === 'ellipsis') {
           return (
-            <span key={`ellipsis-${index}`} className="h-11 w-11 flex items-center justify-center text-slate-400">
+            <span key={`ellipsis-${index}`} className="h-11 w-11 flex items-center justify-center text-warm-400">
               ...
             </span>
           );
@@ -125,7 +125,7 @@ export function Pagination({
               'focus:outline-none focus:ring-2 focus:ring-green-500/20',
               isActive
                 ? 'bg-green-600 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100'
+                : 'text-warm-600 hover:bg-warm-100'
             )}
           >
             {page}
@@ -142,8 +142,8 @@ export function Pagination({
           'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-green-500/20',
           currentPage === totalPages
-            ? 'text-slate-300 cursor-not-allowed'
-            : 'text-slate-600 hover:bg-slate-100'
+            ? 'text-warm-300 cursor-not-allowed'
+            : 'text-warm-600 hover:bg-warm-100'
         )}
       >
         <IconChevronRight size={16} />
@@ -159,8 +159,8 @@ export function Pagination({
             'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20',
             currentPage === totalPages
-              ? 'text-slate-300 cursor-not-allowed'
-              : 'text-slate-600 hover:bg-slate-100'
+              ? 'text-warm-300 cursor-not-allowed'
+              : 'text-warm-600 hover:bg-warm-100'
           )}
         >
           <span className="flex items-center gap-0.5">
@@ -196,10 +196,10 @@ export function CompactPagination({
 
   return (
     <div className={cn('flex items-center justify-between', className)}>
-      <p className="text-sm leading-relaxed text-slate-500">
-        Showing <span className="font-medium text-slate-700">{startItem}</span> to{' '}
-        <span className="font-medium text-slate-700">{endItem}</span> of{' '}
-        <span className="font-medium text-slate-700">{totalItems}</span> results
+      <p className="text-sm leading-relaxed text-warm-500">
+        Showing <span className="font-medium text-warm-700">{startItem}</span> to{' '}
+        <span className="font-medium text-warm-700">{endItem}</span> of{' '}
+        <span className="font-medium text-warm-700">{totalItems}</span> results
       </p>
 
       <div className="flex items-center gap-2">
@@ -211,8 +211,8 @@ export function CompactPagination({
             'h-11 lg:h-8 px-3 rounded-lg border text-sm font-medium transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20',
             currentPage === 1
-              ? 'border-slate-200 text-slate-300 cursor-not-allowed'
-              : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+              ? 'border-warm-200 text-warm-300 cursor-not-allowed'
+              : 'border-warm-200 text-warm-600 hover:bg-warm-50 hover:border-warm-300'
           )}
         >
           Previous
@@ -225,8 +225,8 @@ export function CompactPagination({
             'h-11 lg:h-8 px-3 rounded-lg border text-sm font-medium transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20',
             currentPage === totalPages
-              ? 'border-slate-200 text-slate-300 cursor-not-allowed'
-              : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+              ? 'border-warm-200 text-warm-300 cursor-not-allowed'
+              : 'border-warm-200 text-warm-600 hover:bg-warm-50 hover:border-warm-300'
           )}
         >
           Next
@@ -252,12 +252,12 @@ export function PageSizeSelector({
 }: PageSizeSelectorProps) {
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <span className="text-sm leading-relaxed text-slate-500">Show</span>
+      <span className="text-sm leading-relaxed text-warm-500">Show</span>
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className={cn(
-          'h-8 px-2 pr-7 rounded-lg border border-slate-200 bg-white text-sm',
+          'h-8 px-2 pr-7 rounded-lg border border-warm-200 bg-white text-sm',
           'focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500',
           'appearance-none cursor-pointer'
         )}
@@ -274,7 +274,7 @@ export function PageSizeSelector({
           </option>
         ))}
       </select>
-      <span className="text-sm leading-relaxed text-slate-500">per page</span>
+      <span className="text-sm leading-relaxed text-warm-500">per page</span>
     </div>
   );
 }

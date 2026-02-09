@@ -84,7 +84,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
   if (!isOpen) {
     return (
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700">Recurrence</label>
+        <label className="text-sm font-medium text-warm-700">Recurrence</label>
         <Button
           type="button"
           variant="secondary"
@@ -98,9 +98,9 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
   }
 
   return (
-    <div className="space-y-4 p-4 border border-slate-200 rounded-lg bg-white">
+    <div className="space-y-4 p-4 border border-warm-200 rounded-lg bg-white">
       <div className="flex items-center justify-between">
-        <label className="text-base font-semibold text-slate-700">Repeat Pattern</label>
+        <label className="text-base font-semibold text-warm-700">Repeat Pattern</label>
         <Button
           type="button"
           variant="ghost"
@@ -113,7 +113,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
 
       {/* Frequency */}
       <div className="grid grid-cols-[auto_1fr] gap-3 items-center">
-        <label className="text-sm text-slate-700">Repeat every</label>
+        <label className="text-sm text-warm-700">Repeat every</label>
         <div className="flex gap-2">
           <Input
             type="number"
@@ -140,7 +140,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
       {/* Weekday selection (for weekly) */}
       {frequency === 'weekly' && (
         <div className="space-y-2">
-          <label className="text-sm text-slate-700">Repeat on</label>
+          <label className="text-sm text-warm-700">Repeat on</label>
           <div className="flex gap-2">
             {WEEKDAYS.map((day) => (
               <button
@@ -152,7 +152,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
                   text-sm font-medium transition-colors
                   ${byDay.includes(day.value)
                     ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   }
                 `}
                 title={day.fullLabel}
@@ -162,7 +162,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
             ))}
           </div>
           {byDay.length === 0 && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-warm-500">
               Select at least one day of the week
             </p>
           )}
@@ -171,7 +171,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
 
       {/* End condition */}
       <div className="space-y-3">
-        <label className="text-sm text-slate-700">Ends</label>
+        <label className="text-sm text-warm-700">Ends</label>
 
         {/* Never */}
         <div className="flex items-center gap-2">
@@ -180,7 +180,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
             checked={endType === 'never'}
             onChange={() => setEndType('never')}
           />
-          <label htmlFor="end-never" className="font-normal cursor-pointer text-sm text-slate-700">
+          <label htmlFor="end-never" className="font-normal cursor-pointer text-sm text-warm-700">
             Never
           </label>
         </div>
@@ -192,7 +192,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
             checked={endType === 'on'}
             onChange={() => setEndType('on')}
           />
-          <label htmlFor="end-on" className="font-normal cursor-pointer text-sm text-slate-700">
+          <label htmlFor="end-on" className="font-normal cursor-pointer text-sm text-warm-700">
             On
           </label>
           <Input
@@ -215,7 +215,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
             checked={endType === 'after'}
             onChange={() => setEndType('after')}
           />
-          <label htmlFor="end-after" className="font-normal cursor-pointer text-sm text-slate-700">
+          <label htmlFor="end-after" className="font-normal cursor-pointer text-sm text-warm-700">
             After
           </label>
           <Input
@@ -230,13 +230,13 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
             disabled={endType !== 'after'}
             className="w-20"
           />
-          <span className="text-sm text-slate-600">occurrences</span>
+          <span className="text-sm text-warm-600">occurrences</span>
         </div>
       </div>
 
       {/* Preview */}
-      <div className="pt-3 border-t border-slate-200">
-        <p className="text-sm text-slate-600">
+      <div className="pt-3 border-t border-warm-200">
+        <p className="text-sm text-warm-600">
           <span className="font-medium">Preview: </span>
           {describeRecurrence({
             frequency,

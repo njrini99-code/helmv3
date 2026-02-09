@@ -379,7 +379,7 @@ function StatCard({
       case 'declining':
         return { icon: '↓', color: 'text-red-500', bg: 'bg-red-50' };
       case 'stable':
-        return { icon: '→', color: 'text-slate-500', bg: 'bg-slate-50' };
+        return { icon: '→', color: 'text-warm-500', bg: 'bg-warm-50' };
     }
   };
   const trendStyles = getTrendStyles();
@@ -416,7 +416,7 @@ function StatCard({
       )}
 
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+        <span className="text-xs font-medium text-warm-500 uppercase tracking-wide">
           {label}
         </span>
         {trendStyles && (
@@ -431,7 +431,7 @@ function StatCard({
         )}
       </div>
       <motion.div
-        className={`font-bold ${large ? 'text-3xl' : 'text-2xl'} ${highlight ? 'text-green-600' : 'text-slate-900'} tabular-nums`}
+        className={`font-bold ${large ? 'text-3xl' : 'text-2xl'} ${highlight ? 'text-green-600' : 'text-warm-900'} tabular-nums`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: index * 0.05 }}
@@ -440,7 +440,7 @@ function StatCard({
       </motion.div>
       {subValue && (
         <motion.div
-          className="text-xs text-slate-400 mt-0.5"
+          className="text-xs text-warm-400 mt-0.5"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 + index * 0.05 }}
@@ -455,8 +455,8 @@ function StatCard({
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          <span className="text-slate-400">{comparisonLabel || 'vs team'}:</span>
-          <span className={comparisonValue > 0 ? 'text-red-500' : comparisonValue < 0 ? 'text-green-500' : 'text-slate-500'}>
+          <span className="text-warm-400">{comparisonLabel || 'vs team'}:</span>
+          <span className={comparisonValue > 0 ? 'text-red-500' : comparisonValue < 0 ? 'text-green-500' : 'text-warm-500'}>
             {comparisonValue > 0 ? '+' : ''}{comparisonValue.toFixed(1)}
           </span>
         </motion.div>
@@ -485,13 +485,13 @@ function StatCard({
 function StatRow({ label, value, index = 0 }: { label: string; value: string; index?: number }) {
   return (
     <motion.div
-      className="flex justify-between items-center py-2.5 border-b border-slate-100/80 last:border-0 group hover:bg-slate-50/50 transition-colors rounded px-1 -mx-1"
+      className="flex justify-between items-center py-2.5 border-b border-warm-100/80 last:border-0 group hover:bg-warm-50/50 transition-colors rounded px-1 -mx-1"
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.03, type: 'spring', stiffness: 300, damping: 25 }}
     >
-      <span className="text-sm text-slate-600 group-hover:text-slate-800 transition-colors">{label}</span>
-      <span className="text-sm font-semibold text-slate-900 tabular-nums">{value}</span>
+      <span className="text-sm text-warm-600 group-hover:text-warm-800 transition-colors">{label}</span>
+      <span className="text-sm font-semibold text-warm-900 tabular-nums">{value}</span>
     </motion.div>
   );
 }
@@ -534,7 +534,7 @@ function StatSection({
         onClick={() => collapsible && setIsOpen(!isOpen)}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">
+          <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide">
             {title}
           </h3>
           {collapsible && (
@@ -542,7 +542,7 @@ function StatSection({
               animate={{ rotate: isOpen ? 0 : -90 }}
               transition={{ duration: 0.2 }}
             >
-              <IconChevronDown size={16} className="text-slate-400" />
+              <IconChevronDown size={16} className="text-warm-400" />
             </motion.div>
           )}
         </div>
@@ -617,7 +617,7 @@ function ScoringStats({ stats }: { stats: GolfStats }) {
           {[
             { value: stats.eaglesPerRound, label: 'Eagles', bg: 'bg-yellow-50', color: 'text-yellow-600' },
             { value: stats.birdiesPerRound, label: 'Birdies', bg: 'bg-red-50', color: 'text-red-500' },
-            { value: stats.parsPerRound, label: 'Pars', bg: 'bg-slate-50', color: 'text-slate-700' },
+            { value: stats.parsPerRound, label: 'Pars', bg: 'bg-warm-50', color: 'text-warm-700' },
             { value: stats.bogeysPerRound, label: 'Bogeys', bg: 'bg-orange-50', color: 'text-orange-600' },
             { value: stats.doublePlusPerRound, label: 'Double+', bg: 'bg-red-100', color: 'text-red-700' },
           ].map((item, idx) => (
@@ -631,7 +631,7 @@ function ScoringStats({ stats }: { stats: GolfStats }) {
               <div className={`text-2xl font-bold ${item.color} tabular-nums`}>
                 {formatStat(item.value, '', 2)}
               </div>
-              <div className="text-xs text-slate-500">{item.label}</div>
+              <div className="text-xs text-warm-500">{item.label}</div>
             </motion.div>
           ))}
         </div>
@@ -732,10 +732,10 @@ function DrivingStats({ stats }: { stats: GolfStats }) {
             transition={{ delay: 0.25, type: 'spring' }}
           >
             <div className="text-3xl font-bold text-blue-600 tabular-nums">{formatStat(stats.missLeftPct, '%')}</div>
-            <div className="text-sm text-slate-500">← Left</div>
+            <div className="text-sm text-warm-500">← Left</div>
           </motion.div>
           <motion.div
-            className="w-px h-12 bg-slate-200"
+            className="w-px h-12 bg-warm-200"
             initial={{ scaleY: 0 }}
             animate={{ scaleY: 1 }}
             transition={{ delay: 0.3, duration: 0.3 }}
@@ -747,11 +747,11 @@ function DrivingStats({ stats }: { stats: GolfStats }) {
             transition={{ delay: 0.25, type: 'spring' }}
           >
             <div className="text-3xl font-bold text-orange-600 tabular-nums">{formatStat(stats.missRightPct, '%')}</div>
-            <div className="text-sm text-slate-500">Right →</div>
+            <div className="text-sm text-warm-500">Right →</div>
           </motion.div>
         </div>
         <motion.div
-          className="text-center text-xs text-slate-400"
+          className="text-center text-xs text-warm-400"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
@@ -891,8 +891,8 @@ function ApproachStats({ stats }: { stats: GolfStats }) {
             transition={{ delay: 0.5 }}
           >
             <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left py-2 px-2 font-semibold text-slate-700">Distance</th>
+              <tr className="border-b border-warm-200">
+                <th className="text-left py-2 px-2 font-semibold text-warm-700">Distance</th>
                 <th className="text-center py-2 px-2 font-semibold text-green-600">Fairway</th>
                 <th className="text-center py-2 px-2 font-semibold text-amber-600">Rough</th>
                 <th className="text-center py-2 px-2 font-semibold text-orange-600">Sand</th>
@@ -911,15 +911,15 @@ function ApproachStats({ stats }: { stats: GolfStats }) {
               ].map((row, idx) => (
                 <motion.tr
                   key={row.label}
-                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors"
+                  className="border-b border-warm-100 last:border-0 hover:bg-warm-50/50 transition-colors"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.55 + idx * 0.03 }}
                 >
-                  <td className="py-2 px-2 text-slate-600">{row.label}</td>
-                  <td className="py-2 px-2 text-center text-slate-900 tabular-nums">{formatStat(row.data.fairway, '', 2)}</td>
-                  <td className="py-2 px-2 text-center text-slate-900 tabular-nums">{formatStat(row.data.rough, '', 2)}</td>
-                  <td className="py-2 px-2 text-center text-slate-900 tabular-nums">{formatStat(row.data.sand, '', 2)}</td>
+                  <td className="py-2 px-2 text-warm-600">{row.label}</td>
+                  <td className="py-2 px-2 text-center text-warm-900 tabular-nums">{formatStat(row.data.fairway, '', 2)}</td>
+                  <td className="py-2 px-2 text-center text-warm-900 tabular-nums">{formatStat(row.data.rough, '', 2)}</td>
+                  <td className="py-2 px-2 text-center text-warm-900 tabular-nums">{formatStat(row.data.sand, '', 2)}</td>
                 </motion.tr>
               ))}
             </tbody>
@@ -945,14 +945,14 @@ function ApproachStats({ stats }: { stats: GolfStats }) {
                 transition={{ delay: 0.55 + idx * 0.04, type: 'spring', stiffness: 300 }}
               >
                 <div className={`text-xl font-bold ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
-                <div className="text-xs text-slate-500">{item.label}</div>
+                <div className="text-xs text-warm-500">{item.label}</div>
               </motion.div>
             ))}
           </div>
 
           {/* Compound miss directions - more detailed pattern analysis */}
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <div className="text-sm font-medium text-slate-700 mb-3">Compound Miss Patterns</div>
+          <div className="mt-4 pt-4 border-t border-warm-100">
+            <div className="text-sm font-medium text-warm-700 mb-3">Compound Miss Patterns</div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {[
                 { label: 'Short-Left', value: stats.approachMissShortLeftPct, icon: '↙' },
@@ -962,20 +962,20 @@ function ApproachStats({ stats }: { stats: GolfStats }) {
               ].map((item, idx) => (
                 <motion.div
                   key={item.label}
-                  className="text-center p-2 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-default"
+                  className="text-center p-2 bg-warm-50 rounded-lg hover:bg-warm-100 transition-colors cursor-default"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 + idx * 0.04 }}
                 >
-                  <div className="text-lg font-bold text-slate-700 tabular-nums">
-                    <span className="text-slate-400 mr-1">{item.icon}</span>
+                  <div className="text-lg font-bold text-warm-700 tabular-nums">
+                    <span className="text-warm-400 mr-1">{item.icon}</span>
                     {formatStat(item.value, '%', 0)}
                   </div>
-                  <div className="text-xs text-slate-500">{item.label}</div>
+                  <div className="text-xs text-warm-500">{item.label}</div>
                 </motion.div>
               ))}
             </div>
-            <div className="text-xs text-slate-400 mt-2 text-center">
+            <div className="text-xs text-warm-400 mt-2 text-center">
               Based on {stats.approachMissTotal} missed greens
             </div>
           </div>
@@ -1047,7 +1047,7 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
               transition={{ delay: 0.15 + idx * 0.04, type: 'spring', stiffness: 300 }}
             >
               <div className={`text-lg font-bold ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
-              <div className="text-xs text-slate-500">{item.range}</div>
+              <div className="text-xs text-warm-500">{item.range}</div>
             </motion.div>
           ))}
         </div>
@@ -1082,10 +1082,10 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
       <StatSection title="Putt Miss Direction" delay={0.3}>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 py-4">
           {[
-            { label: 'Short', value: stats.puttMissShortPct, bg: 'bg-slate-50', color: 'text-slate-700' },
-            { label: 'Long', value: stats.puttMissLongPct, bg: 'bg-slate-50', color: 'text-slate-700' },
-            { label: 'Left', value: stats.puttMissLeftPct, bg: 'bg-slate-50', color: 'text-slate-700' },
-            { label: 'Right', value: stats.puttMissRightPct, bg: 'bg-slate-50', color: 'text-slate-700' },
+            { label: 'Short', value: stats.puttMissShortPct, bg: 'bg-warm-50', color: 'text-warm-700' },
+            { label: 'Long', value: stats.puttMissLongPct, bg: 'bg-warm-50', color: 'text-warm-700' },
+            { label: 'Left', value: stats.puttMissLeftPct, bg: 'bg-warm-50', color: 'text-warm-700' },
+            { label: 'Right', value: stats.puttMissRightPct, bg: 'bg-warm-50', color: 'text-warm-700' },
             { label: 'Low (amateur)', value: stats.puttMissLowPct, bg: 'bg-blue-50', color: 'text-blue-700' },
             { label: 'High (pro)', value: stats.puttMissHighPct, bg: 'bg-purple-50', color: 'text-purple-700' },
           ].map((item, idx) => (
@@ -1097,7 +1097,7 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
               transition={{ delay: 0.35 + idx * 0.04, type: 'spring', stiffness: 300 }}
             >
               <div className={`text-xl font-bold ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
-              <div className="text-xs text-slate-500">{item.label}</div>
+              <div className="text-xs text-warm-500">{item.label}</div>
             </motion.div>
           ))}
         </div>
@@ -1119,7 +1119,7 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 selectedBreak === key
                   ? 'bg-green-600 text-white shadow-md'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
               }`}
             >
               {label}
@@ -1130,8 +1130,8 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
         {selectedBreak ? (
           <div className="space-y-4">
             {/* Make % by Distance for Selected Break */}
-            <div className="bg-slate-50 rounded-lg p-4">
-              <div className="text-sm font-semibold text-slate-700 mb-3">
+            <div className="bg-warm-50 rounded-lg p-4">
+              <div className="text-sm font-semibold text-warm-700 mb-3">
                 Make % by Distance - {selectedBreak === 'left_to_right' ? 'Left to Right' :
                                       selectedBreak === 'right_to_left' ? 'Right to Left' :
                                       selectedBreak === 'straight' ? 'Straight' : 'Multiple Breaks'}
@@ -1141,31 +1141,31 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
                   <div className="text-lg font-bold text-green-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct0_3, '%', 0)}
                   </div>
-                  <div className="text-xs text-slate-500">0-3 ft</div>
+                  <div className="text-xs text-warm-500">0-3 ft</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-lg font-bold text-green-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct3_5, '%', 0)}
                   </div>
-                  <div className="text-xs text-slate-500">3-5 ft</div>
+                  <div className="text-xs text-warm-500">3-5 ft</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-lg font-bold text-yellow-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct5_10, '%', 0)}
                   </div>
-                  <div className="text-xs text-slate-500">5-10 ft</div>
+                  <div className="text-xs text-warm-500">5-10 ft</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-lg font-bold text-orange-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct10_15, '%', 0)}
                   </div>
-                  <div className="text-xs text-slate-500">10-15 ft</div>
+                  <div className="text-xs text-warm-500">10-15 ft</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-lg font-bold text-red-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct15_20, '%', 0)}
                   </div>
-                  <div className="text-xs text-slate-500">15-20 ft</div>
+                  <div className="text-xs text-warm-500">15-20 ft</div>
                 </div>
               </div>
               <div className="space-y-1 mt-2">
@@ -1178,36 +1178,36 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
             </div>
 
             {/* Miss Direction for Selected Break */}
-            <div className="bg-slate-50 rounded-lg p-4">
-              <div className="text-sm font-semibold text-slate-700 mb-3">Miss Direction</div>
+            <div className="bg-warm-50 rounded-lg p-4">
+              <div className="text-sm font-semibold text-warm-700 mb-3">Miss Direction</div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="text-center p-2 bg-white rounded">
-                  <div className="text-lg font-bold text-slate-700">
+                  <div className="text-lg font-bold text-warm-700">
                     {formatStat(stats.puttingByBreak[selectedBreak].missShortPct, '%', 0)}
                   </div>
-                  <div className="text-xs text-slate-500">Short</div>
+                  <div className="text-xs text-warm-500">Short</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-lg font-bold text-blue-700">
                     {formatStat(stats.puttingByBreak[selectedBreak].missLowPct, '%', 0)}
                   </div>
-                  <div className="text-xs text-slate-500">Low</div>
+                  <div className="text-xs text-warm-500">Low</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-lg font-bold text-purple-700">
                     {formatStat(stats.puttingByBreak[selectedBreak].missHighPct, '%', 0)}
                   </div>
-                  <div className="text-xs text-slate-500">High</div>
+                  <div className="text-xs text-warm-500">High</div>
                 </div>
               </div>
             </div>
 
-            <div className="text-xs text-slate-500 italic">
+            <div className="text-xs text-warm-500 italic">
               Total putts with this break: {stats.puttingByBreak[selectedBreak].totalPutts}
             </div>
           </div>
         ) : (
-          <div className="text-sm text-slate-500 text-center py-4">
+          <div className="text-sm text-warm-500 text-center py-4">
             Select a break type above to view detailed statistics
           </div>
         )}
@@ -1304,8 +1304,8 @@ function ScramblingStats({ stats }: { stats: GolfStats }) {
               transition={{ delay: 0.35 }}
             >
               <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-2 px-2 font-semibold text-slate-700">Distance</th>
+                <tr className="border-b border-warm-200">
+                  <th className="text-left py-2 px-2 font-semibold text-warm-700">Distance</th>
                   <th className="text-center py-2 px-2 font-semibold text-green-600">Fairway</th>
                   <th className="text-center py-2 px-2 font-semibold text-amber-600">Rough</th>
                   <th className="text-center py-2 px-2 font-semibold text-orange-600">Sand</th>
@@ -1322,22 +1322,22 @@ function ScramblingStats({ stats }: { stats: GolfStats }) {
                   return (
                     <motion.tr
                       key={row.key}
-                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors"
+                      className="border-b border-warm-100 last:border-0 hover:bg-warm-50/50 transition-colors"
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.4 + idx * 0.03 }}
                     >
-                      <td className="py-2 px-2 text-slate-600">{row.label}</td>
-                      <td className="py-2 px-2 text-center text-slate-900 tabular-nums">{formatStat(data.fairway, '', 2)}</td>
-                      <td className="py-2 px-2 text-center text-slate-900 tabular-nums">{formatStat(data.rough, '', 2)}</td>
-                      <td className="py-2 px-2 text-center text-slate-900 tabular-nums">{formatStat(data.sand, '', 2)}</td>
+                      <td className="py-2 px-2 text-warm-600">{row.label}</td>
+                      <td className="py-2 px-2 text-center text-warm-900 tabular-nums">{formatStat(data.fairway, '', 2)}</td>
+                      <td className="py-2 px-2 text-center text-warm-900 tabular-nums">{formatStat(data.rough, '', 2)}</td>
+                      <td className="py-2 px-2 text-center text-warm-900 tabular-nums">{formatStat(data.sand, '', 2)}</td>
                     </motion.tr>
                   );
                 })}
               </tbody>
             </motion.table>
           </div>
-          <div className="text-xs text-slate-400 mt-2 text-center">
+          <div className="text-xs text-warm-400 mt-2 text-center">
             Average strokes to hole out from each distance and lie combination
           </div>
         </StatSection>
@@ -1405,7 +1405,7 @@ function StrokesGainedStats({
       {/* Strokes Gained Overview */}
       <StatSection title="Strokes Gained Overview (vs PGA Tour)" delay={0.1}>
         <motion.div
-          className="mb-4 text-sm text-slate-600"
+          className="mb-4 text-sm text-warm-600"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15 }}
@@ -1507,8 +1507,8 @@ function OverviewSWCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-slate-900 truncate">{item.label}</p>
-          <p className="text-xs text-slate-600 mt-0.5">{item.detail}</p>
+          <p className="text-sm font-semibold text-warm-900 truncate">{item.label}</p>
+          <p className="text-xs text-warm-600 mt-0.5">{item.detail}</p>
         </div>
         <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-bold tabular-nums ${
           isStrength
@@ -1519,7 +1519,7 @@ function OverviewSWCard({
         </span>
       </div>
       {!isStrength && item.recommendation && (
-        <p className="text-xs text-slate-500 mt-2 pt-2 border-t border-red-200/40 italic">
+        <p className="text-xs text-warm-500 mt-2 pt-2 border-t border-red-200/40 italic">
           {item.recommendation}
         </p>
       )}
@@ -1565,11 +1565,11 @@ function OverviewStats({
               <img
                 src={playerProfile.avatarUrl}
                 alt={playerName || 'Player'}
-                className="w-20 h-20 rounded-2xl object-cover ring-1 ring-slate-200 shadow-lg"
+                className="w-20 h-20 rounded-2xl object-cover ring-1 ring-warm-200 shadow-lg"
               />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center ring-1 ring-slate-200 shadow-lg">
-                <span className="text-slate-500 font-bold text-2xl">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-warm-100 to-warm-200 flex items-center justify-center ring-1 ring-warm-200 shadow-lg">
+                <span className="text-warm-500 font-bold text-2xl">
                   {playerName?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
                 </span>
               </div>
@@ -1578,12 +1578,12 @@ function OverviewStats({
 
           {/* Player Info */}
           <div className="flex-1 min-w-0">
-            <h2 className="text-2xl font-bold text-slate-900 truncate">
+            <h2 className="text-2xl font-bold text-warm-900 truncate">
               {playerName || 'Player'}
             </h2>
             <div className="flex flex-wrap items-center gap-3 mt-1">
               {playerProfile?.gradYear && (
-                <span className="px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-600 rounded-full">
+                <span className="px-2.5 py-1 text-xs font-medium bg-warm-100 text-warm-600 rounded-full">
                   Class of {playerProfile.gradYear}
                 </span>
               )}
@@ -1597,31 +1597,31 @@ function OverviewStats({
         </div>
 
         {/* Quick Stats Bar */}
-        <div className="grid grid-cols-3 gap-4 mt-6 pt-5 border-t border-slate-200/60">
+        <div className="grid grid-cols-3 gap-4 mt-6 pt-5 border-t border-warm-200/60">
           <div className="text-center">
-            <div className="text-2xl font-bold text-slate-900 tabular-nums">
+            <div className="text-2xl font-bold text-warm-900 tabular-nums">
               {stats.roundsPlayed}
             </div>
-            <div className="text-xs text-slate-500 mt-0.5">Rounds</div>
+            <div className="text-xs text-warm-500 mt-0.5">Rounds</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600 tabular-nums">
               {stats.scoringAverage !== null ? stats.scoringAverage.toFixed(1) : '--'}
             </div>
-            <div className="text-xs text-slate-500 mt-0.5">Scoring Avg</div>
+            <div className="text-xs text-warm-500 mt-0.5">Scoring Avg</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-slate-900 tabular-nums">
+            <div className="text-2xl font-bold text-warm-900 tabular-nums">
               {stats.bestRound || '--'}
             </div>
-            <div className="text-xs text-slate-500 mt-0.5">Best Round</div>
+            <div className="text-xs text-warm-500 mt-0.5">Best Round</div>
           </div>
         </div>
       </motion.div>
 
       {/* Key Performance Metrics */}
       <motion.div variants={sectionVariants}>
-        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+        <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
           Performance Overview
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1659,12 +1659,12 @@ function OverviewStats({
       {/* Strokes Gained Summary */}
       {stats.strokesGainedTotal !== null && (
         <motion.div variants={sectionVariants}>
-          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+          <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
             Strokes Gained
           </h3>
           <div className="glass-standard rounded-xl p-4">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium text-slate-600">Total</span>
+              <span className="text-sm font-medium text-warm-600">Total</span>
               <span className={`text-xl font-bold tabular-nums ${stats.strokesGainedTotal >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                 {stats.strokesGainedTotal >= 0 ? '+' : ''}{stats.strokesGainedTotal.toFixed(2)}
               </span>
@@ -1676,11 +1676,11 @@ function OverviewStats({
                 { label: 'Around Green', value: stats.strokesGainedAroundGreen },
                 { label: 'Putting', value: stats.strokesGainedPutting },
               ].map(sg => (
-                <div key={sg.label} className="text-center p-2 rounded-lg bg-slate-50/80">
+                <div key={sg.label} className="text-center p-2 rounded-lg bg-warm-50/80">
                   <div className={`text-sm font-bold tabular-nums ${sg.value !== null && sg.value >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                     {sg.value !== null ? (sg.value >= 0 ? '+' : '') + sg.value.toFixed(2) : '--'}
                   </div>
-                  <div className="text-xs text-slate-500 mt-0.5">{sg.label}</div>
+                  <div className="text-xs text-warm-500 mt-0.5">{sg.label}</div>
                 </div>
               ))}
             </div>
@@ -1695,7 +1695,7 @@ function OverviewStats({
             {/* Strengths */}
             {statisticalStrengths && statisticalStrengths.length > 0 && (
               <div>
-                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+                <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
                   Top Strengths
                 </h3>
                 <div className="space-y-2">
@@ -1708,7 +1708,7 @@ function OverviewStats({
             {/* Weaknesses */}
             {statisticalWeaknesses && statisticalWeaknesses.length > 0 && (
               <div>
-                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+                <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
                   Areas to Improve
                 </h3>
                 <div className="space-y-2">
@@ -1725,7 +1725,7 @@ function OverviewStats({
       {/* Personal Bests */}
       {trendData?.personalBests && (
         <motion.div variants={sectionVariants}>
-          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+          <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
             Personal Records
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1734,8 +1734,8 @@ function OverviewStats({
                 <div className="text-2xl font-bold text-amber-600 tabular-nums">
                   {trendData.personalBests.bestScore.value}
                 </div>
-                <div className="text-xs text-slate-500 mt-1">Best Score</div>
-                <div className="text-xs text-slate-400 mt-0.5 truncate">
+                <div className="text-xs text-warm-500 mt-1">Best Score</div>
+                <div className="text-xs text-warm-400 mt-0.5 truncate">
                   {trendData.personalBests.bestScore.course}
                 </div>
               </div>
@@ -1745,8 +1745,8 @@ function OverviewStats({
                 <div className="text-2xl font-bold text-amber-600 tabular-nums">
                   {trendData.personalBests.bestToPar.value > 0 ? '+' : ''}{trendData.personalBests.bestToPar.value}
                 </div>
-                <div className="text-xs text-slate-500 mt-1">Best to Par</div>
-                <div className="text-xs text-slate-400 mt-0.5 truncate">
+                <div className="text-xs text-warm-500 mt-1">Best to Par</div>
+                <div className="text-xs text-warm-400 mt-0.5 truncate">
                   {trendData.personalBests.bestToPar.course}
                 </div>
               </div>
@@ -1756,8 +1756,8 @@ function OverviewStats({
                 <div className="text-2xl font-bold text-amber-600 tabular-nums">
                   {trendData.personalBests.bestGir.value}%
                 </div>
-                <div className="text-xs text-slate-500 mt-1">Best GIR</div>
-                <div className="text-xs text-slate-400 mt-0.5 truncate">
+                <div className="text-xs text-warm-500 mt-1">Best GIR</div>
+                <div className="text-xs text-warm-400 mt-0.5 truncate">
                   {trendData.personalBests.bestGir.course}
                 </div>
               </div>
@@ -1767,8 +1767,8 @@ function OverviewStats({
                 <div className="text-2xl font-bold text-amber-600 tabular-nums">
                   {trendData.personalBests.lowestPutts.value}
                 </div>
-                <div className="text-xs text-slate-500 mt-1">Lowest Putts</div>
-                <div className="text-xs text-slate-400 mt-0.5 truncate">
+                <div className="text-xs text-warm-500 mt-1">Lowest Putts</div>
+                <div className="text-xs text-warm-400 mt-0.5 truncate">
                   {trendData.personalBests.lowestPutts.course}
                 </div>
               </div>
@@ -1780,34 +1780,34 @@ function OverviewStats({
       {/* Recent Trend */}
       {trendData?.periodComparison && (
         <motion.div variants={sectionVariants}>
-          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+          <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
             Recent Form (Last 30 Days)
           </h3>
           <div className="glass-standard rounded-xl p-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-lg font-bold text-slate-900 tabular-nums">
+                <div className="text-lg font-bold text-warm-900 tabular-nums">
                   {trendData.periodComparison.last30Days.roundCount}
                 </div>
-                <div className="text-xs text-slate-500">Rounds</div>
+                <div className="text-xs text-warm-500">Rounds</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-slate-900 tabular-nums">
+                <div className="text-lg font-bold text-warm-900 tabular-nums">
                   {trendData.periodComparison.last30Days.scoringAvg?.toFixed(1) || '--'}
                 </div>
-                <div className="text-xs text-slate-500">Avg Score</div>
+                <div className="text-xs text-warm-500">Avg Score</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-slate-900 tabular-nums">
+                <div className="text-lg font-bold text-warm-900 tabular-nums">
                   {trendData.periodComparison.last30Days.girPct?.toFixed(0) || '--'}%
                 </div>
-                <div className="text-xs text-slate-500">GIR</div>
+                <div className="text-xs text-warm-500">GIR</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-slate-900 tabular-nums">
+                <div className="text-lg font-bold text-warm-900 tabular-nums">
                   {trendData.periodComparison.last30Days.puttsPerRound?.toFixed(1) || '--'}
                 </div>
-                <div className="text-xs text-slate-500">Putts/Rnd</div>
+                <div className="text-xs text-warm-500">Putts/Rnd</div>
               </div>
             </div>
           </div>
@@ -1870,10 +1870,10 @@ function AnalysisStats({
               >
                 <div className="text-xs text-amber-600 font-medium mb-1">Best Score</div>
                 <div className="text-2xl font-bold text-amber-700">{trendData.personalBests.bestScore.value}</div>
-                <div className="text-xs text-slate-500 mt-1">
+                <div className="text-xs text-warm-500 mt-1">
                   {formatDate(trendData.personalBests.bestScore.date)}
                 </div>
-                <div className="text-xs text-slate-400 truncate">
+                <div className="text-xs text-warm-400 truncate">
                   {trendData.personalBests.bestScore.course}
                 </div>
               </motion.div>
@@ -1889,10 +1889,10 @@ function AnalysisStats({
                 <div className="text-2xl font-bold text-green-700">
                   {trendData.personalBests.bestToPar.value > 0 ? '+' : ''}{trendData.personalBests.bestToPar.value}
                 </div>
-                <div className="text-xs text-slate-500 mt-1">
+                <div className="text-xs text-warm-500 mt-1">
                   {formatDate(trendData.personalBests.bestToPar.date)}
                 </div>
-                <div className="text-xs text-slate-400 truncate">
+                <div className="text-xs text-warm-400 truncate">
                   {trendData.personalBests.bestToPar.course}
                 </div>
               </motion.div>
@@ -1906,10 +1906,10 @@ function AnalysisStats({
               >
                 <div className="text-xs text-blue-600 font-medium mb-1">Best GIR %</div>
                 <div className="text-2xl font-bold text-blue-700">{trendData.personalBests.bestGir.value}%</div>
-                <div className="text-xs text-slate-500 mt-1">
+                <div className="text-xs text-warm-500 mt-1">
                   {formatDate(trendData.personalBests.bestGir.date)}
                 </div>
-                <div className="text-xs text-slate-400 truncate">
+                <div className="text-xs text-warm-400 truncate">
                   {trendData.personalBests.bestGir.course}
                 </div>
               </motion.div>
@@ -1923,10 +1923,10 @@ function AnalysisStats({
               >
                 <div className="text-xs text-purple-600 font-medium mb-1">Fewest Putts</div>
                 <div className="text-2xl font-bold text-purple-700">{trendData.personalBests.lowestPutts.value}</div>
-                <div className="text-xs text-slate-500 mt-1">
+                <div className="text-xs text-warm-500 mt-1">
                   {formatDate(trendData.personalBests.lowestPutts.date)}
                 </div>
-                <div className="text-xs text-slate-400 truncate">
+                <div className="text-xs text-warm-400 truncate">
                   {trendData.personalBests.lowestPutts.course}
                 </div>
               </motion.div>
@@ -2021,7 +2021,7 @@ function AnalysisStats({
             />
           </motion.div>
           <motion.p
-            className="text-xs text-slate-400 mt-2"
+            className="text-xs text-warm-400 mt-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
@@ -2078,7 +2078,7 @@ function AnalysisStats({
               {worstHoleData.worstHoles.map((hole, idx) => (
                 <motion.div
                   key={hole.holeNumber}
-                  className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0"
+                  className="flex items-center justify-between py-2.5 border-b border-warm-100 last:border-0"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
@@ -2088,15 +2088,15 @@ function AnalysisStats({
                       <span className="text-sm font-bold text-red-600">#{hole.holeNumber}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-800">Par {hole.par}</p>
-                      <p className="text-xs text-slate-500">{hole.timesPlayed} rounds</p>
+                      <p className="text-sm font-medium text-warm-800">Par {hole.par}</p>
+                      <p className="text-xs text-warm-500">{hole.timesPlayed} rounds</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-red-600">
                       +{hole.averageToPar.toFixed(2)}
                     </p>
-                    <p className="text-xs text-slate-400">avg {hole.averageScore.toFixed(1)}</p>
+                    <p className="text-xs text-warm-400">avg {hole.averageScore.toFixed(1)}</p>
                   </div>
                 </motion.div>
               ))}
@@ -2107,7 +2107,7 @@ function AnalysisStats({
               {worstHoleData.bestHoles.map((hole, idx) => (
                 <motion.div
                   key={hole.holeNumber}
-                  className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0"
+                  className="flex items-center justify-between py-2.5 border-b border-warm-100 last:border-0"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
@@ -2117,15 +2117,15 @@ function AnalysisStats({
                       <span className="text-sm font-bold text-green-600">#{hole.holeNumber}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-800">Par {hole.par}</p>
-                      <p className="text-xs text-slate-500">{hole.timesPlayed} rounds</p>
+                      <p className="text-sm font-medium text-warm-800">Par {hole.par}</p>
+                      <p className="text-xs text-warm-500">{hole.timesPlayed} rounds</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-green-600">
                       {hole.averageToPar > 0 ? '+' : ''}{hole.averageToPar.toFixed(2)}
                     </p>
-                    <p className="text-xs text-slate-400">avg {hole.averageScore.toFixed(1)}</p>
+                    <p className="text-xs text-warm-400">avg {hole.averageScore.toFixed(1)}</p>
                   </div>
                 </motion.div>
               ))}
@@ -2141,21 +2141,21 @@ function AnalysisStats({
                   className={`p-3 rounded-lg text-center ${
                     hole.averageToPar <= -0.1 ? 'bg-green-50 border border-green-200' :
                     hole.averageToPar >= 0.3 ? 'bg-red-50 border border-red-200' :
-                    'bg-slate-50 border border-slate-200'
+                    'bg-warm-50 border border-warm-200'
                   }`}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: idx * 0.02 }}
                 >
-                  <div className="text-xs text-slate-500">Hole {hole.holeNumber}</div>
+                  <div className="text-xs text-warm-500">Hole {hole.holeNumber}</div>
                   <div className={`text-sm font-bold ${
                     hole.averageToPar <= -0.1 ? 'text-green-600' :
                     hole.averageToPar >= 0.3 ? 'text-red-600' :
-                    'text-slate-700'
+                    'text-warm-700'
                   }`}>
                     {hole.averageToPar > 0 ? '+' : ''}{hole.averageToPar.toFixed(2)}
                   </div>
-                  <div className="text-xs text-slate-400">Par {hole.par}</div>
+                  <div className="text-xs text-warm-400">Par {hole.par}</div>
                   {hole.trend !== 'stable' && (
                     <span className={`text-xs ${hole.trend === 'improving' ? 'text-green-500' : 'text-red-500'}`}>
                       {hole.trend === 'improving' ? '↑' : '↓'}
@@ -2175,7 +2175,7 @@ function AnalysisStats({
             {courseBreakdown.courses.slice(0, 10).map((course, idx) => (
               <motion.div
                 key={course.courseName}
-                className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-slate-50 transition-colors"
+                className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-warm-50 transition-colors"
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.03 }}
@@ -2184,36 +2184,36 @@ function AnalysisStats({
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                     course.courseName === courseBreakdown.bestCourse ? 'bg-green-100' :
                     course.courseName === courseBreakdown.worstCourse ? 'bg-red-100' :
-                    'bg-slate-100'
+                    'bg-warm-100'
                   }`}>
                     <span className={`text-xs font-bold ${
                       course.courseName === courseBreakdown.bestCourse ? 'text-green-600' :
                       course.courseName === courseBreakdown.worstCourse ? 'text-red-600' :
-                      'text-slate-500'
+                      'text-warm-500'
                     }`}>
                       {idx + 1}
                     </span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-800">{course.courseName}</p>
-                    <p className="text-xs text-slate-500">{course.roundCount} rounds</p>
+                    <p className="text-sm font-medium text-warm-800">{course.courseName}</p>
+                    <p className="text-xs text-warm-500">{course.roundCount} rounds</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="text-center hidden md:block">
-                    <p className="text-xs text-slate-400">Avg Score</p>
-                    <p className="text-sm font-semibold text-slate-700">{course.scoringAverage?.toFixed(1) || '--'}</p>
+                    <p className="text-xs text-warm-400">Avg Score</p>
+                    <p className="text-sm font-semibold text-warm-700">{course.scoringAverage?.toFixed(1) || '--'}</p>
                   </div>
                   <div className="text-center hidden md:block">
-                    <p className="text-xs text-slate-400">Best</p>
+                    <p className="text-xs text-warm-400">Best</p>
                     <p className="text-sm font-semibold text-green-600">{course.bestRound || '--'}</p>
                   </div>
                   <div className="text-center hidden md:block">
-                    <p className="text-xs text-slate-400">GIR%</p>
-                    <p className="text-sm font-semibold text-slate-700">{course.girPct !== null ? `${course.girPct}%` : '--'}</p>
+                    <p className="text-xs text-warm-400">GIR%</p>
+                    <p className="text-sm font-semibold text-warm-700">{course.girPct !== null ? `${course.girPct}%` : '--'}</p>
                   </div>
                   <div className="text-center md:hidden">
-                    <p className="text-sm font-bold text-slate-800">{course.scoringAverage?.toFixed(1) || '--'}</p>
+                    <p className="text-sm font-bold text-warm-800">{course.scoringAverage?.toFixed(1) || '--'}</p>
                   </div>
                 </div>
               </motion.div>
@@ -2229,11 +2229,11 @@ function AnalysisStats({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <IconTarget size={28} className="text-slate-400" />
+          <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+            <IconTarget size={28} className="text-warm-400" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-800 mb-2">Analysis Data Loading</h3>
-          <p className="text-sm text-slate-500">Hole and course breakdown will appear here once data is loaded.</p>
+          <h3 className="text-lg font-semibold text-warm-800 mb-2">Analysis Data Loading</h3>
+          <p className="text-sm text-warm-500">Hole and course breakdown will appear here once data is loaded.</p>
         </motion.div>
       )}
     </motion.div>
@@ -2578,7 +2578,7 @@ export default function GolfStatsDisplay({
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-3">
             <div className="flex-1 min-w-0">
               <motion.h1
-                className="text-xl sm:text-2xl font-bold text-slate-900 truncate"
+                className="text-xl sm:text-2xl font-bold text-warm-900 truncate"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
@@ -2586,7 +2586,7 @@ export default function GolfStatsDisplay({
                 {playerName ? `${playerName}'s Stats` : 'My Stats'}
               </motion.h1>
               <motion.p
-                className="text-slate-500 text-xs sm:text-sm mt-1"
+                className="text-warm-500 text-xs sm:text-sm mt-1"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
@@ -2596,15 +2596,15 @@ export default function GolfStatsDisplay({
             </div>
 
             {/* Round Selector & Filter Controls - Full width on mobile */}
-            <div className="flex items-center gap-1.5 sm:gap-2 print:hidden flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-2 print:hidden flex-shrink-0">
               {/* Export PDF Button */}
               <motion.button
                 onClick={handleExportPDF}
                 disabled={isExporting}
                 className={`p-2.5 rounded-lg border transition-all ${
                   isExporting
-                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                    : 'bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:text-green-600'
+                    ? 'bg-warm-100 border-warm-200 text-warm-400 cursor-not-allowed'
+                    : 'bg-white border-warm-200 text-warm-500 hover:border-green-300 hover:text-green-600'
                 }`}
                 whileHover={isExporting ? {} : { scale: 1.05 }}
                 whileTap={isExporting ? {} : { scale: 0.95 }}
@@ -2612,7 +2612,7 @@ export default function GolfStatsDisplay({
               >
                 {isExporting ? (
                   <motion.div
-                    className="h-[18px] w-[18px] border-2 border-slate-300 border-t-green-500 rounded-full"
+                    className="h-[18px] w-[18px] border-2 border-warm-300 border-t-green-500 rounded-full"
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   />
@@ -2624,7 +2624,7 @@ export default function GolfStatsDisplay({
               {/* Print Button */}
               <motion.button
                 onClick={handlePrint}
-                className="p-2.5 rounded-lg border bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:text-green-600 transition-all"
+                className="p-2.5 rounded-lg border bg-white border-warm-200 text-warm-500 hover:border-green-300 hover:text-green-600 transition-all"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 title="Print stats"
@@ -2638,7 +2638,7 @@ export default function GolfStatsDisplay({
                 className={`p-2.5 rounded-lg border transition-all ${
                   showFilters
                     ? 'bg-green-50 border-green-200 text-green-600'
-                    : 'bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:text-green-600'
+                    : 'bg-white border-warm-200 text-warm-500 hover:border-green-300 hover:text-green-600'
                 }`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -2655,13 +2655,13 @@ export default function GolfStatsDisplay({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.15 }}
                 >
-                  <label className="hidden sm:block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">
+                  <label className="hidden sm:block text-xs font-medium text-warm-500 uppercase tracking-wide mb-1.5">
                     View Stats
                   </label>
                   <select
                     value={selectedRoundId}
                     onChange={(e) => onRoundChange(e.target.value as string | 'overall')}
-                    className="w-full px-2 sm:px-3 py-2 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium text-slate-700 bg-white hover:border-green-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all"
+                    className="w-full px-2 sm:px-3 py-2 rounded-lg border border-warm-200 text-xs sm:text-sm font-medium text-warm-700 bg-white hover:border-green-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all"
                   >
                     <option value="overall">Overall</option>
                     <optgroup label="Individual Rounds">
@@ -2684,13 +2684,13 @@ export default function GolfStatsDisplay({
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <span className="text-xs text-slate-500">Filtered by:</span>
+              <span className="text-xs text-warm-500">Filtered by:</span>
               <span className="px-2.5 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
                 {getActiveFilterLabel()}
               </span>
               <button
                 onClick={clearFilters}
-                className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+                className="text-xs text-warm-400 hover:text-red-500 transition-colors"
               >
                 Clear
               </button>
@@ -2708,10 +2708,10 @@ export default function GolfStatsDisplay({
                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-slate-700">Quick Filters</h3>
+                  <h3 className="text-sm font-semibold text-warm-700">Quick Filters</h3>
                   <button
                     onClick={() => setShowFilters(false)}
-                    className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                    className="text-xs text-warm-400 hover:text-warm-600 transition-colors"
                   >
                     Close
                   </button>
@@ -2726,7 +2726,7 @@ export default function GolfStatsDisplay({
                       className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                         isFilterActive(preset.filter)
                           ? 'bg-green-600 text-white border border-green-600'
-                          : 'bg-white border border-slate-200 text-slate-600 hover:border-green-300 hover:bg-green-50 hover:text-green-700'
+                          : 'bg-white border border-warm-200 text-warm-600 hover:border-green-300 hover:bg-green-50 hover:text-green-700'
                       }`}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -2742,7 +2742,7 @@ export default function GolfStatsDisplay({
                 {/* Course Filter Dropdown */}
                 {filterOptions && filterOptions.courses.length > 0 && (
                   <div className="relative">
-                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
+                    <label className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1.5 block">
                       Filter by Course
                     </label>
                     <button
@@ -2750,7 +2750,7 @@ export default function GolfStatsDisplay({
                       className={`w-full px-3 py-2 rounded-lg border text-sm font-medium text-left flex items-center justify-between transition-all ${
                         activeFilter?.courseName
                           ? 'bg-green-50 border-green-300 text-green-700'
-                          : 'bg-white border-slate-200 text-slate-600 hover:border-green-300'
+                          : 'bg-white border-warm-200 text-warm-600 hover:border-green-300'
                       }`}
                     >
                       <span>{activeFilter?.courseName || 'All Courses'}</span>
@@ -2760,14 +2760,14 @@ export default function GolfStatsDisplay({
                     <AnimatePresence>
                       {showCourseDropdown && (
                         <motion.div
-                          className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-slate-200 shadow-lg z-20 max-h-48 overflow-y-auto"
+                          className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-warm-200 shadow-lg z-20 max-h-48 overflow-y-auto"
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
                         >
                           <button
                             onClick={() => { onFilterChange?.(null); setShowCourseDropdown(false); }}
-                            className="w-full px-3 py-2 text-sm text-left hover:bg-slate-50 text-slate-600"
+                            className="w-full px-3 py-2 text-sm text-left hover:bg-warm-50 text-warm-600"
                           >
                             All Courses
                           </button>
@@ -2778,7 +2778,7 @@ export default function GolfStatsDisplay({
                               className={`w-full px-3 py-2 text-sm text-left transition-colors ${
                                 activeFilter?.courseName === course
                                   ? 'bg-green-50 text-green-700'
-                                  : 'hover:bg-slate-50 text-slate-600'
+                                  : 'hover:bg-warm-50 text-warm-600'
                               }`}
                             >
                               {course}
@@ -2808,7 +2808,7 @@ export default function GolfStatsDisplay({
               className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                 activeCategory === cat.id
                   ? 'bg-green-600 text-white shadow-lg shadow-green-600/25'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:border-green-300 hover:shadow-md'
+                  : 'bg-white text-warm-600 border border-warm-200 hover:border-green-300 hover:shadow-md'
               }`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2836,7 +2836,7 @@ export default function GolfStatsDisplay({
         <AnimatePresence mode="wait">
           <motion.p
             key={activeCategory}
-            className="text-sm text-slate-500 mb-4"
+            className="text-sm text-warm-500 mb-4"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
@@ -2899,7 +2899,7 @@ export default function GolfStatsDisplay({
             transition={{ type: 'spring', stiffness: 200 }}
           >
             <motion.div
-              className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4"
+              className="w-20 h-20 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4"
               animate={{
                 boxShadow: [
                   '0 0 0 0 rgba(22, 163, 74, 0)',
@@ -2909,10 +2909,10 @@ export default function GolfStatsDisplay({
               }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <IconGolf size={40} className="text-slate-300" />
+              <IconGolf size={40} className="text-warm-300" />
             </motion.div>
             <motion.h2
-              className="text-lg font-semibold text-slate-900 mb-2"
+              className="text-lg font-semibold text-warm-900 mb-2"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
@@ -2920,7 +2920,7 @@ export default function GolfStatsDisplay({
               No Stats Yet
             </motion.h2>
             <motion.p
-              className="text-slate-500 max-w-sm mx-auto"
+              className="text-warm-500 max-w-sm mx-auto"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}

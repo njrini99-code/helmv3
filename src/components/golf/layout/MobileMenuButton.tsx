@@ -17,7 +17,7 @@ export function MobileMenuButton() {
       onClick={toggleMobile}
       className={cn(
         'lg:hidden p-2.5 -ml-2 rounded-xl',
-        'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+        'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
         'transition-colors duration-150 active:scale-95',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
       )}

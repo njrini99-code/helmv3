@@ -80,7 +80,7 @@ export function SaveRoundModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm"
         onClick={onClose}
       />
 
@@ -90,24 +90,24 @@ export function SaveRoundModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="save-round-modal-title"
-        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[calc(100vh-4rem)] overflow-y-auto"
         onClick={(e) => {
           // Prevent clicks inside modal from closing it
           e.stopPropagation();
         }}
       >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 id="save-round-modal-title" className="text-lg font-semibold text-slate-900">
+          <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
+            <h2 id="save-round-modal-title" className="text-lg font-semibold text-warm-900">
               Exit Round
             </h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              className="p-1 rounded-lg hover:bg-warm-100 transition-colors"
               disabled={saving}
               aria-label="Close dialog"
             >
-              <IconX size={20} className="text-slate-400" aria-hidden="true" />
+              <IconX size={20} className="text-warm-400" aria-hidden="true" />
             </button>
           </div>
 
@@ -169,21 +169,21 @@ export function SaveRoundModal({
                   'flex items-center gap-4',
                   confirmingDelete
                     ? 'border-rose-300 bg-rose-50 hover:bg-rose-100'
-                    : 'border-slate-200 bg-white hover:bg-slate-50',
+                    : 'border-warm-200 bg-white hover:bg-warm-50',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
                 <div className={cn(
                   'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-                  confirmingDelete ? 'bg-rose-500' : 'bg-slate-100'
+                  confirmingDelete ? 'bg-rose-500' : 'bg-warm-100'
                 )}>
-                  <IconTrash size={20} className={confirmingDelete ? 'text-white' : 'text-slate-600'} />
+                  <IconTrash size={20} className={confirmingDelete ? 'text-white' : 'text-warm-600'} />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className={cn('font-semibold', confirmingDelete ? 'text-rose-900' : 'text-slate-900')}>
+                  <p className={cn('font-semibold', confirmingDelete ? 'text-rose-900' : 'text-warm-900')}>
                     {confirmingDelete ? 'Tap again to confirm' : 'Delete Round'}
                   </p>
-                  <p className={cn('text-xs mt-0.5', confirmingDelete ? 'text-rose-600' : 'text-slate-500')}>
+                  <p className={cn('text-xs mt-0.5', confirmingDelete ? 'text-rose-600' : 'text-warm-500')}>
                     {confirmingDelete ? 'This cannot be undone' : 'Discard this round completely'}
                   </p>
                 </div>
@@ -191,7 +191,7 @@ export function SaveRoundModal({
               {confirmingDelete && (
                 <button
                   onClick={() => setConfirmingDelete(false)}
-                  className="w-full text-sm text-slate-500 hover:text-slate-700 py-1"
+                  className="w-full text-sm text-warm-500 hover:text-warm-700 py-1"
                 >
                   Cancel
                 </button>
@@ -199,17 +199,17 @@ export function SaveRoundModal({
             </div>
 
             {/* Note about stats */}
-            <p className="text-xs text-slate-500 text-center pt-2">
+            <p className="text-xs text-warm-500 text-center pt-2">
               Note: Round stats will only be calculated when you complete the full {totalHoles} holes
             </p>
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
+          <div className="px-6 py-4 bg-warm-50 border-t border-warm-200">
             <button
               onClick={onClose}
               disabled={saving}
-              className="w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors disabled:opacity-50"
+              className="w-full px-4 py-2 text-sm font-medium text-warm-700 hover:text-warm-900 transition-colors disabled:opacity-50"
             >
               Cancel & Continue Playing
             </button>

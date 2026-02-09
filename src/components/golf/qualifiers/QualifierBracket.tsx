@@ -24,7 +24,7 @@ interface QualifierBracketProps {
 
 function getPositionIcon(position: number) {
   if (position === 1) return <IconTrophy size={16} className="text-yellow-500" />;
-  if (position === 2) return <IconAward size={16} className="text-slate-400" />;
+  if (position === 2) return <IconAward size={16} className="text-warm-400" />;
   if (position === 3) return <IconAward size={16} className="text-amber-600" />;
   return null;
 }
@@ -40,10 +40,10 @@ function getPositionStyles(position: number, isAboveCutline: boolean, isOnBubble
   }
   if (position === 2) {
     return {
-      card: 'bg-gradient-to-r from-slate-50 to-slate-100/50 border-slate-200/50',
-      ring: 'ring-2 ring-slate-300/30',
-      name: 'text-slate-700',
-      score: 'text-slate-600',
+      card: 'bg-gradient-to-r from-warm-50 to-warm-100/50 border-warm-200/50',
+      ring: 'ring-2 ring-warm-300/30',
+      name: 'text-warm-700',
+      score: 'text-warm-600',
     };
   }
   if (position === 3) {
@@ -66,15 +66,15 @@ function getPositionStyles(position: number, isAboveCutline: boolean, isOnBubble
     return {
       card: 'bg-white/70 border-green-200/50',
       ring: '',
-      name: 'text-slate-900',
+      name: 'text-warm-900',
       score: 'text-green-600',
     };
   }
   return {
-    card: 'bg-slate-50/50 border-slate-200/50',
+    card: 'bg-warm-50/50 border-warm-200/50',
     ring: '',
-    name: 'text-slate-500',
-    score: 'text-slate-500',
+    name: 'text-warm-500',
+    score: 'text-warm-500',
   };
 }
 
@@ -113,7 +113,7 @@ function PlayerBracketCard({
       {/* Position */}
       <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/80 shadow-sm">
         {getPositionIcon(position) || (
-          <span className={cn('text-sm font-bold', isAboveCutline ? 'text-slate-700' : 'text-slate-400')}>
+          <span className={cn('text-sm font-bold', isAboveCutline ? 'text-warm-700' : 'text-warm-400')}>
             {position}
             {entry.isTied && <span className="text-xs">T</span>}
           </span>
@@ -134,16 +134,16 @@ function PlayerBracketCard({
         </div>
         {/* Progress bar */}
         <div className="flex items-center gap-2 mt-1">
-          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-warm-100 rounded-full overflow-hidden">
             <div
               className={cn(
                 'h-full rounded-full transition-all duration-500',
-                isAboveCutline ? 'bg-green-500' : 'bg-slate-300'
+                isAboveCutline ? 'bg-green-500' : 'bg-warm-300'
               )}
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <span className="text-xs text-slate-400 tabular-nums">
+          <span className="text-xs text-warm-400 tabular-nums">
             {entry.roundsCompleted}/{numRounds}
           </span>
         </div>
@@ -154,7 +154,7 @@ function PlayerBracketCard({
         <p className={cn('text-lg font-bold tabular-nums', styles.score)}>
           {entry.totalScore > 0 ? entry.totalScore : '-'}
         </p>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-warm-400">
           {entry.totalToPar !== 0 ? (
             entry.totalToPar > 0 ? `+${entry.totalToPar}` : entry.totalToPar
           ) : 'E'}
@@ -176,10 +176,10 @@ export function QualifierBracket({
   if (leaderboard.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-          <IconTarget size={28} className="text-slate-400" />
+        <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+          <IconTarget size={28} className="text-warm-400" />
         </div>
-        <p className="text-slate-500">No entries yet</p>
+        <p className="text-warm-500">No entries yet</p>
       </div>
     );
   }
@@ -197,13 +197,13 @@ export function QualifierBracket({
       {/* Header Stats */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4 text-sm">
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-green-500" />
-            <span className="text-slate-600">Qualifying ({effectiveCutline} spots)</span>
+            <span className="text-warm-600">Qualifying ({effectiveCutline} spots)</span>
           </span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-amber-400 border-2 border-dashed border-amber-500" />
-            <span className="text-slate-600">Bubble Zone</span>
+            <span className="text-warm-600">Bubble Zone</span>
           </span>
         </div>
         {leaderboard.length > effectiveCutline + 3 && (
@@ -260,13 +260,13 @@ export function QualifierBracket({
       </div>
 
       {/* Summary */}
-      <div className="mt-6 pt-4 border-t border-slate-100">
+      <div className="mt-6 pt-4 border-t border-warm-100">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="p-3 bg-green-50 rounded-xl">
             <p className="text-2xl font-bold text-green-600">
               {leaderboard.filter((_, i) => i < effectiveCutline).length}
             </p>
-            <p className="text-xs text-slate-500 mt-1">Qualifying</p>
+            <p className="text-xs text-warm-500 mt-1">Qualifying</p>
           </div>
           <div className="p-3 bg-amber-50 rounded-xl">
             <p className="text-2xl font-bold text-amber-600">
@@ -275,13 +275,13 @@ export function QualifierBracket({
                 return cutlineScore > 0 && entry.totalScore > 0 && entry.totalScore - cutlineScore <= 3;
               }).length}
             </p>
-            <p className="text-xs text-slate-500 mt-1">On Bubble</p>
+            <p className="text-xs text-warm-500 mt-1">On Bubble</p>
           </div>
-          <div className="p-3 bg-slate-50 rounded-xl">
-            <p className="text-2xl font-bold text-slate-600">
+          <div className="p-3 bg-warm-50 rounded-xl">
+            <p className="text-2xl font-bold text-warm-600">
               {leaderboard.length}
             </p>
-            <p className="text-xs text-slate-500 mt-1">Total Players</p>
+            <p className="text-xs text-warm-500 mt-1">Total Players</p>
           </div>
         </div>
       </div>

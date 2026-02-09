@@ -561,7 +561,7 @@ export function PremiumCalendarClient({
               <div className="px-4 py-3 border-b border-white/20 flex items-center justify-between">
                 <button
                   onClick={() => setShowPlayerFilter(!showPlayerFilter)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/50 text-slate-700 text-sm font-medium min-h-[44px]"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/50 text-warm-700 text-sm font-medium min-h-[44px]"
                 >
                   <span>
                     {selectedPlayerIds.length > 0
@@ -584,7 +584,7 @@ export function PremiumCalendarClient({
                     className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap min-h-[44px] transition-colors ${
                       selectedPlayerIds.length === 0
                         ? 'bg-emerald-500 text-white'
-                        : 'bg-white/50 text-slate-700'
+                        : 'bg-white/50 text-warm-700'
                     }`}
                   >
                     <span className="text-sm font-medium">All</span>
@@ -616,8 +616,8 @@ export function PremiumCalendarClient({
                             className="w-6 h-6 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="w-6 h-6 rounded-full bg-slate-300 flex items-center justify-center">
-                            <span className="text-xs font-medium text-slate-600">
+                          <div className="w-6 h-6 rounded-full bg-warm-300 flex items-center justify-center">
+                            <span className="text-xs font-medium text-warm-600">
                               {member.first_name[0]}{member.last_name[0]}
                             </span>
                           </div>

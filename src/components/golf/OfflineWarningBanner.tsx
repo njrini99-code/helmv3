@@ -194,7 +194,7 @@ export function OfflineWarningBanner({
                   {description}
                 </p>
                 {pendingCount.total > 0 && (
-                  <p className="text-xs mt-2 text-slate-500">
+                  <p className="text-xs mt-2 text-warm-500">
                     {pendingCount.total} item{pendingCount.total !== 1 ? 's' : ''} waiting to sync
                   </p>
                 )}
@@ -211,15 +211,15 @@ export function OfflineWarningBanner({
 
             {/* Feature list */}
             <div className="mt-3 pt-3 border-t border-current/10 flex flex-wrap gap-3 text-xs">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <CheckIcon className={cn('w-3.5 h-3.5', iconColor)} />
                 <span className={textColor.replace('800', '600')}>Local storage</span>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <CheckIcon className={cn('w-3.5 h-3.5', iconColor)} />
                 <span className={textColor.replace('800', '600')}>Auto-sync</span>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <CloudSaveIcon className={cn('w-3.5 h-3.5', iconColor)} />
                 <span className={textColor.replace('800', '600')}>Data preserved</span>
               </div>
@@ -280,7 +280,7 @@ export function OfflineWarningBanner({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/50 backdrop-blur-sm"
       >
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
@@ -305,28 +305,28 @@ export function OfflineWarningBanner({
 
           {/* Content */}
           <div className="p-6">
-            <p className="text-slate-600 mb-4">{description}</p>
+            <p className="text-warm-600 mb-4">{description}</p>
 
             <div className="space-y-3">
               <div className="flex items-start gap-3 text-sm">
                 <CheckIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-slate-900">Shots saved locally</p>
-                  <p className="text-slate-500">All your shots are stored on this device</p>
+                  <p className="font-medium text-warm-900">Shots saved locally</p>
+                  <p className="text-warm-500">All your shots are stored on this device</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 text-sm">
                 <CheckIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-slate-900">Automatic sync</p>
-                  <p className="text-slate-500">Data syncs within 5 seconds of reconnection</p>
+                  <p className="font-medium text-warm-900">Automatic sync</p>
+                  <p className="text-warm-500">Data syncs within 5 seconds of reconnection</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 text-sm">
                 <CheckIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-slate-900">No data loss</p>
-                  <p className="text-slate-500">Your round persists through app close/reopen</p>
+                  <p className="font-medium text-warm-900">No data loss</p>
+                  <p className="text-warm-500">Your round persists through app close/reopen</p>
                 </div>
               </div>
             </div>

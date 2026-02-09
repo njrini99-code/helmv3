@@ -11,6 +11,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 import type {
   GolfShot,
   ComparisonBaseline,
@@ -1167,6 +1168,8 @@ export async function calculateAndStoreRoundSG(roundId: string): Promise<Strokes
     console.error('Error storing strokes gained:', error);
   }
 
+  revalidatePath('/golf/dashboard/stats');
+
   return sg;
 }
 
@@ -1186,6 +1189,9 @@ export async function recalculateAllStrokesGained(playerId: string): Promise<num
       updated++;
     }
   }
+
+  revalidatePath('/golf/dashboard');
+  revalidatePath('/golf/dashboard/stats');
 
   return updated;
 }

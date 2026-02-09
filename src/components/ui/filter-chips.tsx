@@ -33,15 +33,15 @@ export function FilterChips({
           onClick={() => onRemove(filter.key)}
           className={cn(
             'inline-flex items-center gap-1.5 h-11 px-3 rounded-full',
-            'bg-slate-100 text-slate-700 text-sm',
-            'hover:bg-slate-200 transition-colors group'
+            'bg-warm-100 text-warm-700 text-sm',
+            'hover:bg-warm-200 transition-colors group'
           )}
         >
-          <span className="text-slate-500 font-medium">{filter.label}:</span>
+          <span className="text-warm-500 font-medium">{filter.label}:</span>
           <span className="font-medium">{filter.value}</span>
           <IconX
             size={14}
-            className="text-slate-400 group-hover:text-slate-600 transition-colors"
+            className="text-warm-400 group-hover:text-warm-600 transition-colors"
           />
         </button>
       ))}
@@ -50,7 +50,7 @@ export function FilterChips({
         <button
           type="button"
           onClick={onClearAll}
-          className="text-sm leading-relaxed text-slate-500 hover:text-slate-700 transition-colors underline-offset-2 hover:underline min-h-[44px] px-2 inline-flex items-center"
+          className="text-sm leading-relaxed text-warm-500 hover:text-warm-700 transition-colors underline-offset-2 hover:underline min-h-[44px] px-2 inline-flex items-center"
         >
           Clear all
         </button>
@@ -85,7 +85,7 @@ export function ChipToggle({
         'focus:outline-none focus:ring-2 focus:ring-green-500/20',
         selected
           ? 'bg-green-100 text-green-700 border border-green-200'
-          : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+          : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300 hover:bg-warm-50',
         className
       )}
     >
@@ -95,7 +95,7 @@ export function ChipToggle({
           'min-w-[18px] h-[18px] px-1 rounded-full text-xs flex items-center justify-center',
           selected
             ? 'bg-green-600 text-white'
-            : 'bg-slate-100 text-slate-500'
+            : 'bg-warm-100 text-warm-500'
         )}>
           {count}
         </span>
@@ -165,7 +165,7 @@ export function BadgeChip({
   className,
 }: BadgeChipProps) {
   const variants = {
-    default: 'bg-slate-100 text-slate-700',
+    default: 'bg-warm-100 text-warm-700',
     success: 'bg-green-100 text-green-700',
     warning: 'bg-amber-100 text-amber-700',
     error: 'bg-red-100 text-red-700',

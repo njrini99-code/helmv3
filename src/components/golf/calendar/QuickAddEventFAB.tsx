@@ -188,7 +188,7 @@ export function QuickAddEventFAB({
                 )}>
                   <Icon className={cn('w-5 h-5', action.color)} />
                 </div>
-                <span className="text-sm font-semibold text-slate-900 whitespace-nowrap">
+                <span className="text-sm font-semibold text-warm-900 whitespace-nowrap">
                   {action.label}
                 </span>
               </button>
@@ -210,10 +210,10 @@ export function QuickAddEventFAB({
               transitionDelay: isExpanded ? `${QUICK_ACTIONS.length * 50}ms` : '0ms',
             }}
           >
-            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-slate-700" />
+            <div className="w-10 h-10 rounded-full bg-warm-100 flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-warm-700" />
             </div>
-            <span className="text-sm font-semibold text-slate-900">
+            <span className="text-sm font-semibold text-warm-900">
               Other Event
             </span>
           </button>
@@ -231,7 +231,7 @@ export function QuickAddEventFAB({
             'touch-manipulation',
             'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300',
             isExpanded
-              ? 'bg-slate-900 rotate-0 rounded-xl'
+              ? 'bg-warm-900 rotate-0 rounded-xl'
               : 'bg-emerald-600 hover:bg-emerald-500 hover:scale-105 shadow-lg shadow-emerald-600/40',
             'active:scale-95',
             disabled && 'opacity-50 cursor-not-allowed'

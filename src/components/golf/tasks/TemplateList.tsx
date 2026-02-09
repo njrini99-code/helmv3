@@ -116,17 +116,17 @@ export function TemplateList({
       fitness: 'bg-cyan-50 text-cyan-700 border-cyan-100',
       mental: 'bg-purple-50 text-purple-700 border-purple-100',
       administrative: 'bg-orange-50 text-orange-700 border-orange-100',
-      other: 'bg-slate-50 text-slate-700 border-slate-100',
+      other: 'bg-warm-50 text-warm-700 border-warm-100',
     };
     const key = category || 'other';
     const result = colors[key];
-    return result !== undefined ? result : 'bg-slate-50 text-slate-700 border-slate-100';
+    return result !== undefined ? result : 'bg-warm-50 text-warm-700 border-warm-100';
   };
 
   if (loading) {
     return (
       <div className={cn('flex items-center justify-center py-12', className)}>
-        <svg className="animate-spin h-6 w-6 text-brand-600" viewBox="0 0 24 24">
+        <svg className="animate-spin h-6 w-6 text-primary-600" viewBox="0 0 24 24">
           <circle
             className="opacity-25"
             cx="12"
@@ -167,7 +167,7 @@ export function TemplateList({
         {onCreateTemplate && (
           <button
             onClick={onCreateTemplate}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 shadow-sm transition-colors"
           >
             <svg
               width="16"
@@ -196,7 +196,7 @@ export function TemplateList({
               className={cn(
                 'px-3 py-1.5 text-xs font-medium rounded-full border whitespace-nowrap transition-colors',
                 selectedCategory === category
-                  ? 'bg-brand-50 text-brand-700 border-brand-200'
+                  ? 'bg-primary-50 text-primary-700 border-primary-200'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
               )}
             >
@@ -231,7 +231,7 @@ export function TemplateList({
           {onCreateTemplate && (
             <button
               onClick={onCreateTemplate}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 shadow-sm transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 shadow-sm transition-colors"
             >
               Create First Template
             </button>
@@ -251,7 +251,7 @@ export function TemplateList({
                       {template.name}
                     </h4>
                     {template.is_active && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-brand-50 text-brand-700">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-700">
                         Active
                       </span>
                     )}
@@ -288,7 +288,7 @@ export function TemplateList({
                   <button
                     onClick={() => handleQuickCreate(template)}
                     disabled={isPending && actionInProgress === template.id}
-                    className="p-2 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors disabled:opacity-50"
+                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors disabled:opacity-50"
                     title="Create task from template"
                   >
                     {isPending && actionInProgress === template.id ? (

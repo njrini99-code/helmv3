@@ -29,7 +29,7 @@ export function AttachmentPreview({
   return (
     <div
       className={cn(
-        'p-3 border-t border-slate-200 bg-slate-50',
+        'p-3 border-t border-warm-200 bg-warm-50',
         className
       )}
     >
@@ -62,7 +62,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
     <div
       className={cn(
         'relative group rounded-lg overflow-hidden border',
-        status === 'error' ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white',
+        status === 'error' ? 'border-red-300 bg-red-50' : 'border-warm-200 bg-white',
         isMediaPreviewable ? 'w-20 h-20' : 'w-48'
       )}
     >
@@ -96,10 +96,10 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
             <IconMusic size={20} className="text-purple-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-slate-700 truncate">
+            <p className="text-xs font-medium text-warm-700 truncate">
               {file.name}
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-warm-400">
               {formatFileSize(metadata.fileSize)}
             </p>
           </div>
@@ -109,14 +109,14 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
       {/* Document Preview */}
       {!isMediaPreviewable && !isAudioFile && (
         <div className="flex items-center gap-2 p-2">
-          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center">
             <FileTypeIcon mimeType={metadata.mimeType} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-slate-700 truncate">
+            <p className="text-xs font-medium text-warm-700 truncate">
               {file.name}
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-warm-400">
               {formatFileSize(metadata.fileSize)}
             </p>
           </div>
@@ -129,7 +129,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
           <div className="animate-spin">
             <IconUpload size={18} className="text-green-600" />
           </div>
-          <span className="text-xs text-slate-600 mt-1">{uploadProgress}%</span>
+          <span className="text-xs text-warm-600 mt-1">{uploadProgress}%</span>
         </div>
       )}
 
@@ -145,7 +145,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
 
       {/* Progress Bar for uploading */}
       {status === 'uploading' && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-200">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-warm-200">
           <div
             className="h-full bg-green-500 transition-all duration-200"
             style={{ width: `${uploadProgress}%` }}
@@ -159,7 +159,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
         onClick={onRemove}
         className={cn(
           'absolute -top-1 -right-1 w-5 h-5 rounded-full',
-          'bg-slate-700 text-white shadow-md',
+          'bg-warm-700 text-white shadow-md',
           'flex items-center justify-center',
           'opacity-0 group-hover:opacity-100 transition-opacity duration-200',
           'hover:bg-red-600',
@@ -175,10 +175,10 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
 
 function FileTypeIcon({ mimeType }: { mimeType: string }) {
   if (isImage(mimeType)) {
-    return <IconImage size={20} className="text-slate-500" />;
+    return <IconImage size={20} className="text-warm-500" />;
   }
   if (isVideo(mimeType)) {
-    return <IconVideo size={20} className="text-slate-500" />;
+    return <IconVideo size={20} className="text-warm-500" />;
   }
   if (mimeType.includes('pdf')) {
     return <span className="text-xs font-bold text-red-500">PDF</span>;
@@ -189,5 +189,5 @@ function FileTypeIcon({ mimeType }: { mimeType: string }) {
   if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) {
     return <span className="text-xs font-bold text-green-500">XLS</span>;
   }
-  return <IconFile size={20} className="text-slate-500" />;
+  return <IconFile size={20} className="text-warm-500" />;
 }

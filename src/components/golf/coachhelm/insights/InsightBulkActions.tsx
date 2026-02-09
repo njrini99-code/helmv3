@@ -130,9 +130,9 @@ export function InsightBulkActions({
               className={cn(
                 'flex items-center justify-between gap-4',
                 'px-4 py-3',
-                'bg-slate-900/95 backdrop-blur-xl',
-                'border border-slate-700 rounded-2xl',
-                'shadow-2xl shadow-slate-900/40'
+                'bg-warm-900/95 backdrop-blur-xl',
+                'border border-warm-700 rounded-2xl',
+                'shadow-2xl shadow-warm-900/40'
               )}
             >
               {/* Selection Info */}
@@ -165,7 +165,7 @@ export function InsightBulkActions({
                   onClick={isAllSelected ? onDeselectAll : onSelectAll}
                   className={cn(
                     'text-xs font-medium',
-                    'text-slate-400 hover:text-white',
+                    'text-warm-400 hover:text-white',
                     'underline underline-offset-2',
                     'transition-colors'
                   )}
@@ -183,7 +183,7 @@ export function InsightBulkActions({
                   onClick={() => setConfirmModal({ open: true, action: 'acknowledge' })}
                   disabled={isProcessing}
                   className={cn(
-                    'text-slate-300 hover:text-white hover:bg-slate-700',
+                    'text-warm-300 hover:text-white hover:bg-warm-700',
                     'hidden sm:flex'
                   )}
                 >
@@ -199,7 +199,7 @@ export function InsightBulkActions({
                     onClick={() => setConfirmModal({ open: true, action: 'resolve' })}
                     disabled={isProcessing}
                     className={cn(
-                      'text-slate-300 hover:text-white hover:bg-slate-700',
+                      'text-warm-300 hover:text-white hover:bg-warm-700',
                       'hidden md:flex'
                     )}
                   >
@@ -222,7 +222,7 @@ export function InsightBulkActions({
                 </Button>
 
                 {/* Divider */}
-                <div className="w-px h-6 bg-slate-700 mx-1" />
+                <div className="w-px h-6 bg-warm-700 mx-1" />
 
                 {/* Export */}
                 <Button
@@ -230,7 +230,7 @@ export function InsightBulkActions({
                   size="sm"
                   onClick={onExport}
                   disabled={isProcessing}
-                  className="text-slate-300 hover:text-white hover:bg-slate-700"
+                  className="text-warm-300 hover:text-white hover:bg-warm-700"
                 >
                   <IconDownload size={16} />
                   <span className="hidden sm:inline ml-1.5">Export</span>
@@ -242,7 +242,7 @@ export function InsightBulkActions({
                   onClick={onDeselectAll}
                   className={cn(
                     'p-2 rounded-lg',
-                    'text-slate-400 hover:text-white hover:bg-slate-700',
+                    'text-warm-400 hover:text-white hover:bg-warm-700',
                     'transition-colors'
                   )}
                   aria-label="Close bulk actions"

@@ -27,7 +27,7 @@ const features = [
     title: 'Communication Hub',
     description: 'Stay connected with your team. Messages, updates, and notifications unified.',
     icon: '💬',
-    gradient: 'from-emerald-500 to-green-400',
+    gradient: 'from-helm-green-500 to-green-400',
   },
 ]
 

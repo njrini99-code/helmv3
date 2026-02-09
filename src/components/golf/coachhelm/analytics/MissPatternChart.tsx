@@ -137,9 +137,9 @@ export function MissPatternChart({
     <div className={cn('flex flex-col', className)}>
       {/* Header */}
       <div className="mb-4">
-        <h4 className="text-sm font-medium text-slate-700">{title}</h4>
+        <h4 className="text-sm font-medium text-warm-700">{title}</h4>
         {subtitle && (
-          <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
+          <p className="text-xs text-warm-500 mt-0.5">{subtitle}</p>
         )}
       </div>
 
@@ -234,16 +234,16 @@ export function MissPatternChart({
           />
 
           {/* Direction labels around the chart */}
-          <text x={center} y={center - radius - 8} textAnchor="middle" className="fill-slate-500 text-xs font-medium">
+          <text x={center} y={center - radius - 8} textAnchor="middle" className="fill-warm-500 text-xs font-medium">
             LONG
           </text>
-          <text x={center} y={center + radius + 16} textAnchor="middle" className="fill-slate-500 text-xs font-medium">
+          <text x={center} y={center + radius + 16} textAnchor="middle" className="fill-warm-500 text-xs font-medium">
             SHORT
           </text>
-          <text x={center - radius - 8} y={center + 4} textAnchor="end" className="fill-slate-500 text-xs font-medium">
+          <text x={center - radius - 8} y={center + 4} textAnchor="end" className="fill-warm-500 text-xs font-medium">
             LEFT
           </text>
-          <text x={center + radius + 8} y={center + 4} textAnchor="start" className="fill-slate-500 text-xs font-medium">
+          <text x={center + radius + 8} y={center + 4} textAnchor="start" className="fill-warm-500 text-xs font-medium">
             RIGHT
           </text>
         </svg>
@@ -257,10 +257,10 @@ export function MissPatternChart({
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
             <div className="text-center bg-white/90 backdrop-blur-sm rounded-full p-3 shadow-sm">
-              <div className="text-2xl font-bold text-slate-900">
+              <div className="text-2xl font-bold text-warm-900">
                 {primaryMiss.percentage}%
               </div>
-              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+              <div className="text-xs font-medium text-warm-500 uppercase tracking-wide">
                 {DIRECTION_LABELS[primaryMiss.direction] || primaryMiss.direction}
               </div>
             </div>
@@ -279,16 +279,16 @@ export function MissPatternChart({
           {sortedData.slice(0, 4).map((item) => (
             <div
               key={item.direction}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-50"
+              className="flex items-center gap-2 px-2 py-1 rounded-lg bg-warm-50"
             >
               <div
                 className="w-2.5 h-2.5 rounded-full"
                 style={{ backgroundColor: getSegmentColor(item.percentage) }}
               />
-              <span className="text-xs font-medium text-slate-600">
+              <span className="text-xs font-medium text-warm-600">
                 {DIRECTION_LABELS[item.direction] || item.direction}
               </span>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-warm-400">
                 {item.percentage}%
               </span>
             </div>
@@ -299,15 +299,15 @@ export function MissPatternChart({
       {/* Empty state */}
       {sortedData.length === 0 && (
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-            <svg className="w-6 h-6 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
+            <svg className="w-6 h-6 text-warm-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="12" cy="12" r="10" />
               <circle cx="12" cy="12" r="6" />
               <circle cx="12" cy="12" r="2" />
             </svg>
           </div>
-          <p className="text-sm text-slate-500">No miss pattern data available</p>
-          <p className="text-xs text-slate-400 mt-1">Track more rounds for insights</p>
+          <p className="text-sm text-warm-500">No miss pattern data available</p>
+          <p className="text-xs text-warm-400 mt-1">Track more rounds for insights</p>
         </div>
       )}
     </div>
@@ -331,7 +331,7 @@ export function MissPatternChartMini({
 
   if (sortedData.length === 0) {
     return (
-      <div className={cn('text-xs text-slate-400', className)}>
+      <div className={cn('text-xs text-warm-400', className)}>
         No data
       </div>
     );
@@ -348,10 +348,10 @@ export function MissPatternChartMini({
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: getSegmentColor(item.percentage) }}
           />
-          <span className="text-xs text-slate-600">
+          <span className="text-xs text-warm-600">
             {(DIRECTION_LABELS[item.direction] || item.direction).substring(0, 1).toUpperCase()}
           </span>
-          <span className="text-xs font-medium text-slate-700">
+          <span className="text-xs font-medium text-warm-700">
             {item.percentage}%
           </span>
         </div>

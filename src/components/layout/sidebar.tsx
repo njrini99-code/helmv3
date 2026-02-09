@@ -26,6 +26,13 @@ import {
   IconLayers,
   IconChevronLeft,
   IconChevronRight,
+  IconChartBar,
+  IconClipboardList,
+  IconFileText,
+  IconMessageSquare,
+  IconMap,
+  IconBell,
+  IconAirplane,
 } from '@/components/icons';
 import { TeamSwitcher } from './team-switcher';
 import { useTeams } from '@/hooks/use-teams';
@@ -55,6 +62,10 @@ const hsCoachTeamNav = [
   { name: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconEye },
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+  { name: 'Announcements', href: '/baseball/dashboard/announcements', icon: IconBell },
+  { name: 'Tasks', href: '/baseball/dashboard/tasks', icon: IconClipboardList },
+  { name: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
+  { name: 'Travel', href: '/baseball/dashboard/travel', icon: IconAirplane },
 ];
 
 // JUCO Coach - Team Mode (includes Academics)
@@ -67,6 +78,10 @@ const jucoTeamNav = [
   { name: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconEye },
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+  { name: 'Announcements', href: '/baseball/dashboard/announcements', icon: IconBell },
+  { name: 'Tasks', href: '/baseball/dashboard/tasks', icon: IconClipboardList },
+  { name: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
+  { name: 'Travel', href: '/baseball/dashboard/travel', icon: IconAirplane },
 ];
 
 // Showcase Coach - Organization Mode (manages multiple teams)
@@ -83,6 +98,9 @@ const showcaseTeamNav = [
   { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
   { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
+  { name: 'Announcements', href: '/baseball/dashboard/announcements', icon: IconBell },
+  { name: 'Tasks', href: '/baseball/dashboard/tasks', icon: IconClipboardList },
+  { name: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
 ];
 
 // Player - Recruiting Mode
@@ -104,6 +122,21 @@ const playerTeamNav = [
   { name: 'Dev Plan', href: '/baseball/dashboard/dev-plan', icon: IconNote },
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+  { name: 'Announcements', href: '/baseball/dashboard/announcements', icon: IconBell },
+  { name: 'Tasks', href: '/baseball/dashboard/tasks', icon: IconClipboardList },
+  { name: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
+];
+
+// Golf Coach navigation
+const golfCoachNav = [
+  { name: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
+  { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
+  { name: 'Rounds', href: '/golf/dashboard/rounds', icon: IconClipboardList },
+  { name: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
+  { name: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
+  { name: 'Documents', href: '/golf/dashboard/documents', icon: IconFileText },
+  { name: 'Messages', href: '/golf/dashboard/messages', icon: IconMessageSquare, badge: true },
+  { name: 'Travel', href: '/golf/dashboard/travel', icon: IconMap },
 ];
 
 // Secondary navigation (coach)
@@ -149,6 +182,9 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
 
   // Determine navigation based on role, coach type, and mode
   const getNavigation = () => {
+    if (isGolf) {
+      return golfCoachNav;
+    }
     if (user?.role === 'coach') {
       if (coach?.coach_type === 'college') {
         return coachRecruitingNav;
@@ -235,7 +271,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             'flex items-center justify-center',
             'shadow-lg hover:bg-white/10 hover:border-white/30',
             'transition-all duration-200',
-            'focus:outline-none focus:ring-2 focus:ring-green-500/40'
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/40'
           )}
         >
           {isCollapsed ? (
@@ -260,7 +296,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             {/* Icon version (shown when collapsed) */}
             <div
               className={cn(
-                'w-9 h-9 rounded-[10px] bg-green-600 flex items-center justify-center',
+                'w-9 h-9 rounded-[10px] bg-primary-600 flex items-center justify-center',
                 'shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 absolute'
               )}
@@ -274,7 +310,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                 isCollapsed ? 'opacity-0 scale-75 absolute' : 'opacity-100 scale-100'
               )}
             >
-              <div className="w-9 h-9 rounded-[10px] bg-green-600 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-[10px] bg-primary-600 flex items-center justify-center">
                 <span className="text-white font-bold text-lg">H</span>
               </div>
               <span className="text-white font-bold text-base">BaseballHelm</span>
@@ -303,13 +339,17 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         {/* Section Label */}
         {!isCollapsed && (
           <p className="px-3 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
-            {user?.role === 'coach' ? 'Recruiting' : 'Dashboard'}
+            {user?.role === 'coach'
+              ? (coach?.coach_type === 'showcase' ? 'Organization'
+                 : currentMode === 'recruiting' ? 'Recruiting'
+                 : 'Team')
+              : (currentMode === 'recruiting' ? 'Recruiting' : 'Team')}
           </p>
         )}
 
         <ul className="space-y-0.5">
           {navigation.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/baseball/dashboard' && item.href !== '/baseball/dashboard/team' && pathname.startsWith(item.href));
+            const isActive = pathname === item.href || (item.href !== '/baseball/dashboard' && item.href !== '/baseball/dashboard/team' && item.href !== '/golf/dashboard' && pathname.startsWith(item.href));
             return (
               <li key={item.name}>
                 <Link
@@ -321,16 +361,17 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                     'transition-all duration-150 ease-out will-change-transform',
                     'active:scale-[0.98]',
                     isActive
-                      ? 'bg-white/10 text-green-400 border-l-[3px] border-green-500'
+                      ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
                       : 'text-white/60 hover:bg-white/5 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
                 >
                   <item.icon
                     size={18}
+                    aria-hidden="true"
                     className={cn(
                       'flex-shrink-0 transition-colors duration-150',
-                      isActive ? 'text-green-400' : 'text-white/50'
+                      isActive ? 'text-primary-400' : 'text-white/50'
                     )}
                   />
                   {/* Text - animates out */}
@@ -346,7 +387,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   {item.badge && unreadCount > 0 && (
                     <span
                       className={cn(
-                        'flex items-center justify-center text-[10px] font-semibold bg-green-600 text-white rounded-full transition-all duration-300',
+                        'flex items-center justify-center text-[10px] font-semibold bg-primary-600 text-white rounded-full transition-all duration-300',
                         isCollapsed
                           ? 'absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1'
                           : 'ml-auto px-1.5 py-0.5'
@@ -384,16 +425,17 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                         'flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
                         'transition-all duration-150 ease-out',
                         isActive
-                          ? 'bg-white/10 text-green-400 border-l-[3px] border-green-500'
+                          ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
                           : 'text-white/60 hover:bg-white/5 hover:text-white/90',
                         isCollapsed ? 'justify-center px-2' : 'px-3'
                       )}
                     >
                       <item.icon
                         size={18}
+                        aria-hidden="true"
                         className={cn(
                           'flex-shrink-0 transition-colors',
-                          isActive ? 'text-green-400' : 'text-white/50'
+                          isActive ? 'text-primary-400' : 'text-white/50'
                         )}
                       />
                       <span
@@ -434,12 +476,12 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                     'flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
                     'transition-all duration-150 ease-out',
                     isActive
-                      ? 'bg-white/10 text-green-400'
+                      ? 'bg-white/10 text-primary-400'
                       : 'text-white/60 hover:bg-white/5 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
                 >
-                  <item.icon size={18} className="flex-shrink-0 text-white/50" />
+                  <item.icon size={18} className="flex-shrink-0 text-white/50" aria-hidden="true" />
                   <span
                     className={cn(
                       'whitespace-nowrap transition-all duration-300',
@@ -471,7 +513,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         >
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-medium text-white">Free Plan</span>
-            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-600 text-white rounded">BETA</span>
+            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-primary-600 text-white rounded">BETA</span>
           </div>
           <div className="text-xs text-white/50">Pro plans coming soon</div>
         </div>

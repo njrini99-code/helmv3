@@ -65,8 +65,8 @@ const severityOptions: Array<{
     value: 'low',
     label: 'Low',
     description: 'Minor impact, monitor but not urgent',
-    color: 'text-slate-700',
-    bg: 'bg-slate-50 border-slate-200 hover:border-slate-400',
+    color: 'text-warm-700',
+    bg: 'bg-warm-50 border-warm-200 hover:border-warm-400',
   },
 ];
 
@@ -114,7 +114,7 @@ export function PatternValidationModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50"
             onClick={onClose}
           />
 
@@ -134,23 +134,23 @@ export function PatternValidationModal({
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
                     <IconSparkles size={20} className="text-primary-600" />
                   </div>
                   <div>
-                    <h2 id="pattern-validation-modal-title" className="text-lg font-semibold text-slate-900">
+                    <h2 id="pattern-validation-modal-title" className="text-lg font-semibold text-warm-900">
                       Validate Pattern
                     </h2>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-warm-500">
                       Review and confirm AI-detected pattern
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                 >
                   <IconX size={20} />
                 </button>
@@ -159,20 +159,20 @@ export function PatternValidationModal({
               {/* Content */}
               <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
                 {/* Pattern summary */}
-                <div className="p-4 bg-slate-50 rounded-xl mb-6">
-                  <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">
+                <div className="p-4 bg-warm-50 rounded-xl mb-6">
+                  <h3 className="text-sm font-medium text-warm-500 uppercase tracking-wide mb-2">
                     Pattern Description
                   </h3>
-                  <p className="text-slate-800">
+                  <p className="text-warm-800">
                     {pattern.description || 'Performance pattern detected'}
                   </p>
                   {pattern.playerName && (
-                    <p className="text-sm text-slate-500 mt-2">
-                      Player: <span className="font-medium text-slate-700">{pattern.playerName}</span>
+                    <p className="text-sm text-warm-500 mt-2">
+                      Player: <span className="font-medium text-warm-700">{pattern.playerName}</span>
                     </p>
                   )}
                   <div className="flex items-center gap-4 mt-3 text-sm">
-                    <span className="text-slate-500">
+                    <span className="text-warm-500">
                       Impact:{' '}
                       <span className={cn(
                         'font-semibold',
@@ -181,9 +181,9 @@ export function PatternValidationModal({
                         {pattern.strokeImpact > 0 ? '+' : ''}{pattern.strokeImpact.toFixed(1)} strokes
                       </span>
                     </span>
-                    <span className="text-slate-500">
+                    <span className="text-warm-500">
                       Confidence:{' '}
-                      <span className="font-semibold text-slate-700">
+                      <span className="font-semibold text-warm-700">
                         {Math.round(pattern.confidence * 100)}%
                       </span>
                     </span>
@@ -192,7 +192,7 @@ export function PatternValidationModal({
 
                 {/* Severity selection */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-3">
+                  <label className="block text-sm font-medium text-warm-700 mb-3">
                     Severity Level
                   </label>
                   <div className="space-y-2">
@@ -204,14 +204,14 @@ export function PatternValidationModal({
                           'w-full flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all',
                           selectedSeverity === option.value
                             ? cn(option.bg, 'border-current ring-2 ring-offset-2', option.color.replace('text-', 'ring-'))
-                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                            : 'border-warm-200 hover:border-warm-300 bg-white'
                         )}
                       >
                         <div className={cn(
                           'w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5',
                           selectedSeverity === option.value
                             ? cn('border-current bg-current', option.color)
-                            : 'border-slate-300'
+                            : 'border-warm-300'
                         )}>
                           {selectedSeverity === option.value && (
                             <div className="w-2 h-2 rounded-full bg-white" />
@@ -220,11 +220,11 @@ export function PatternValidationModal({
                         <div>
                           <div className={cn(
                             'font-medium',
-                            selectedSeverity === option.value ? option.color : 'text-slate-700'
+                            selectedSeverity === option.value ? option.color : 'text-warm-700'
                           )}>
                             {option.label}
                           </div>
-                          <div className="text-sm text-slate-500">
+                          <div className="text-sm text-warm-500">
                             {option.description}
                           </div>
                         </div>
@@ -235,7 +235,7 @@ export function PatternValidationModal({
 
                 {/* Notes */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-warm-700 mb-2">
                     Notes (Optional)
                   </label>
                   <textarea
@@ -244,9 +244,9 @@ export function PatternValidationModal({
                     placeholder="Add any observations or context about this pattern..."
                     rows={3}
                     className={cn(
-                      'w-full px-4 py-3 rounded-xl border border-slate-200',
+                      'w-full px-4 py-3 rounded-xl border border-warm-200',
                       'focus:border-primary-500 focus:ring-2 focus:ring-primary-100',
-                      'text-slate-800 placeholder:text-slate-400 resize-none',
+                      'text-warm-800 placeholder:text-warm-400 resize-none',
                       'transition-colors'
                     )}
                   />
@@ -274,7 +274,7 @@ export function PatternValidationModal({
                     onClick={() => setCreateFocusArea(!createFocusArea)}
                     className={cn(
                       'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                      createFocusArea ? 'bg-green-600' : 'bg-slate-300'
+                      createFocusArea ? 'bg-green-600' : 'bg-warm-300'
                     )}
                   >
                     <span
@@ -288,13 +288,13 @@ export function PatternValidationModal({
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
+              <div className="flex items-center justify-between px-6 py-4 border-t border-warm-200 bg-warm-50 rounded-b-2xl">
                 <button
                   onClick={handleReject}
                   disabled={isLoading}
                   className={cn(
                     'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors',
-                    'text-slate-600 hover:text-slate-800 hover:bg-slate-200',
+                    'text-warm-600 hover:text-warm-800 hover:bg-warm-200',
                     isLoading && 'opacity-50 cursor-not-allowed'
                   )}
                 >

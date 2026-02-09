@@ -111,7 +111,7 @@ const comparisonConfig: Record<
   },
   average: {
     icon: <IconTarget size={14} />,
-    color: 'text-slate-500',
+    color: 'text-warm-500',
     label: 'On pace',
   },
 };
@@ -146,7 +146,7 @@ function ExpandableSection({
           <span className="font-semibold text-warm-900">{title}</span>
           {badge}
         </div>
-        <div className="text-slate-400">
+        <div className="text-warm-400">
           {isExpanded ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
         </div>
       </button>
@@ -248,7 +248,7 @@ export function RoundReviewDisplay({
                         ? 'text-green-600'
                         : scoreToPar > 0
                           ? 'text-amber-600'
-                          : 'text-slate-500'
+                          : 'text-warm-500'
                     )}
                   >
                     {formatScoreToPar(scoreToPar)}
@@ -285,7 +285,7 @@ export function RoundReviewDisplay({
               <button
                 onClick={onShare}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium',
+                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
                   'bg-white/60 hover:bg-white/80 text-warm-700',
                   'transition-colors border border-white/30'
                 )}
@@ -294,7 +294,7 @@ export function RoundReviewDisplay({
               </button>
             )}
             {isShared && (
-              <span className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+              <span className="flex items-center gap-2 text-xs text-green-600 font-medium">
                 <IconCheck size={14} />
                 Shared with Coach
               </span>
@@ -303,7 +303,7 @@ export function RoundReviewDisplay({
               <button
                 onClick={onExport}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium',
+                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
                   'bg-white/60 hover:bg-white/80 text-warm-700',
                   'transition-colors border border-white/30'
                 )}

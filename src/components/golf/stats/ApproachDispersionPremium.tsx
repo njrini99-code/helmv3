@@ -242,7 +242,7 @@ function StatPill({
 }) {
   const colorClasses = {
     green: 'bg-green-50/80 border-green-200/60 text-green-700',
-    slate: 'bg-slate-50/80 border-slate-200/60 text-slate-700',
+    slate: 'bg-warm-50/80 border-warm-200/60 text-warm-700',
     red: 'bg-red-50/80 border-red-200/60 text-red-600',
     orange: 'bg-orange-50/80 border-orange-200/60 text-orange-600',
     blue: 'bg-blue-50/80 border-blue-200/60 text-blue-600',
@@ -251,7 +251,7 @@ function StatPill({
 
   const ringClasses = {
     green: 'ring-green-500/40',
-    slate: 'ring-slate-400/40',
+    slate: 'ring-warm-400/40',
     red: 'ring-red-500/40',
     orange: 'ring-orange-500/40',
     blue: 'ring-blue-500/40',
@@ -294,8 +294,8 @@ function LieProgressBar({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm text-slate-600 w-24 shrink-0">{label}</span>
-      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+      <span className="text-sm text-warm-600 w-24 shrink-0">{label}</span>
+      <div className="flex-1 h-2 bg-warm-100 rounded-full overflow-hidden">
         <motion.div
           className="h-full rounded-full"
           style={{ backgroundColor: color }}
@@ -304,7 +304,7 @@ function LieProgressBar({
           transition={{ delay, duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
         />
       </div>
-      <span className="text-sm font-semibold text-slate-900 tabular-nums w-12 text-right">
+      <span className="text-sm font-semibold text-warm-900 tabular-nums w-12 text-right">
         {value.toFixed(0)}%
       </span>
     </div>
@@ -357,7 +357,7 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
   return (
     <motion.div
       className={cn(
-        'bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden',
+        'bg-white rounded-2xl border border-warm-200/80 shadow-sm overflow-hidden',
         className
       )}
       initial={{ opacity: 0, y: 16 }}
@@ -366,13 +366,13 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
       whileHover={{ boxShadow: '0 8px 24px rgba(0,0,0,0.06)', y: -2 }}
     >
       {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100/80">
+      <div className="px-6 py-5 border-b border-warm-100/80">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900 tracking-tight">
+            <h3 className="text-lg font-semibold text-warm-900 tracking-tight">
               Approach Accuracy
             </h3>
-            <p className="text-[13px] text-slate-500 mt-0.5">
+            <p className="text-[13px] text-warm-500 mt-0.5">
               Greens in regulation
             </p>
           </div>
@@ -385,7 +385,7 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
             >
               {gir.toFixed(0)}%
             </motion.div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mt-1 tabular-nums">
+            <div className="text-xs font-medium text-warm-400 uppercase tracking-wide mt-1 tabular-nums">
               {girTotal}/{girOpportunities} GIR
             </div>
           </div>
@@ -393,7 +393,7 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
       </div>
 
       {/* Green Visualization */}
-      <div className="px-6 py-5 bg-slate-50/40">
+      <div className="px-6 py-5 bg-warm-50/40">
         <GreenVisualization
           girPct={gir}
           missShort={missShort}
@@ -414,7 +414,7 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
               exit={{ opacity: 0 }}
             >
               <span
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium"
                 style={{
                   backgroundColor: `${missDirectionConfig[hoveredDirection].color}12`,
                   color: missDirectionConfig[hoveredDirection].color,
@@ -429,11 +429,11 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
       </div>
 
       {/* Stats Grid */}
-      <div className="px-6 py-5 bg-white border-t border-slate-100/80">
+      <div className="px-6 py-5 bg-white border-t border-warm-100/80">
         {/* Miss direction pills */}
         {hasMissData && (
           <div className="mb-5">
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            <div className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-3">
               Miss Pattern
             </div>
             <div className="grid grid-cols-4 gap-2">
@@ -458,13 +458,13 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
         {/* Untracked misses notice */}
         {hasUntrackedMisses && (
           <motion.div
-            className="mb-5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-100"
+            className="mb-5 px-3 py-2 rounded-lg bg-warm-50 border border-warm-100"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="flex items-center gap-2 text-xs text-warm-500">
+              <svg className="w-3.5 h-3.5 text-warm-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>
@@ -476,8 +476,8 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
 
         {/* GIR by lie breakdown */}
         {(girFromFairway !== null || girFromRough !== null || girFromSand !== null) && (
-          <div className="space-y-3 pt-4 border-t border-slate-100">
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+          <div className="space-y-3 pt-4 border-t border-warm-100">
+            <div className="text-xs font-semibold text-warm-400 uppercase tracking-wide">
               GIR by Lie
             </div>
 
@@ -532,10 +532,10 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
                 {missDirectionConfig[dominantMiss.type].icon}
               </div>
               <div>
-                <div className="text-sm font-medium text-slate-800">
+                <div className="text-sm font-medium text-warm-800">
                   Tendency to miss {dominantMiss.type}
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-warm-500">
                   {dominantMiss.pct.toFixed(0)}% of missed greens
                 </div>
               </div>

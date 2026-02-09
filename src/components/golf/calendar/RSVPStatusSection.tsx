@@ -74,9 +74,9 @@ const RESPONSE_CONFIGS = {
   },
   pending: {
     label: 'No Response',
-    color: 'bg-slate-300',
-    textColor: 'text-slate-600',
-    bgColor: 'bg-slate-50',
+    color: 'bg-warm-300',
+    textColor: 'text-warm-600',
+    bgColor: 'bg-warm-50',
   },
 };
 
@@ -143,15 +143,15 @@ export function RSVPStatusSection({
   }
 
   return (
-    <div className={cn('bg-white rounded-2xl border border-slate-200 shadow-sm', className)}>
+    <div className={cn('bg-white rounded-2xl border border-warm-200 shadow-sm', className)}>
       {/* Header */}
-      <div className={cn('p-6 border-b border-slate-200', compact && 'p-4')}>
+      <div className={cn('p-6 border-b border-warm-200', compact && 'p-4')}>
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h3 className={cn('font-semibold text-slate-900', compact ? 'text-base' : 'text-lg')}>
+            <h3 className={cn('font-semibold text-warm-900', compact ? 'text-base' : 'text-lg')}>
               RSVP Status
             </h3>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-sm text-warm-500 mt-1">
               {stats.accepted} of {stats.total} accepted
             </p>
           </div>
@@ -159,7 +159,7 @@ export function RSVPStatusSection({
           {onExport && (
             <button
               onClick={onExport}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-700 bg-warm-50 hover:bg-warm-100 rounded-lg border border-warm-200 transition-colors"
             >
               <Download className="w-4 h-4" />
               Export
@@ -182,16 +182,16 @@ export function RSVPStatusSection({
       </div>
 
       {/* Filters and search */}
-      <div className={cn('p-4 border-b border-slate-200 space-y-3', compact && 'p-3')}>
+      <div className={cn('p-4 border-b border-warm-200 space-y-3', compact && 'p-3')}>
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
           <input
             type="text"
             placeholder="Search players..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-100 focus:border-green-500"
+            className="w-full pl-9 pr-4 py-2 text-sm border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-100 focus:border-green-500"
           />
         </div>
 
@@ -240,11 +240,11 @@ export function RSVPStatusSection({
       </div>
 
       {/* Player list */}
-      <div className="divide-y divide-slate-200 max-h-[400px] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+      <div className="divide-y divide-warm-200 max-h-[400px] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
         {filteredParticipants.length === 0 ? (
           <div className="p-8 text-center">
-            <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm text-slate-500">
+            <Users className="w-8 h-8 text-warm-300 mx-auto mb-2" />
+            <p className="text-sm text-warm-500">
               {searchQuery ? 'No players match your search' : 'No players in this category'}
             </p>
           </div>
@@ -252,10 +252,10 @@ export function RSVPStatusSection({
           <>
             {/* Select all (if reminder function available) */}
             {onSendReminder && filteredParticipants.length > 1 && (
-              <div className="p-3 bg-slate-50 border-b border-slate-200">
+              <div className="p-3 bg-warm-50 border-b border-warm-200">
                 <button
                   onClick={selectAll}
-                  className="text-sm text-slate-700 hover:text-slate-900 font-medium"
+                  className="text-sm text-warm-700 hover:text-warm-900 font-medium"
                 >
                   {selectedIds.size === filteredParticipants.length
                     ? 'Deselect All'
@@ -280,9 +280,9 @@ export function RSVPStatusSection({
 
       {/* Actions footer (if selections made) */}
       {selectedIds.size > 0 && onSendReminder && (
-        <div className="p-4 border-t border-slate-200 bg-slate-50">
+        <div className="p-4 border-t border-warm-200 bg-warm-50">
           <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-slate-600">{selectedIds.size} selected</p>
+            <p className="text-sm text-warm-600">{selectedIds.size} selected</p>
             <button
               onClick={handleSendReminder}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
@@ -316,7 +316,7 @@ function FilterButton({
     emerald: active ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
     amber: active ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100',
     rose: active ? 'bg-rose-500 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100',
-    slate: active ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+    slate: active ? 'bg-warm-600 text-white' : 'bg-warm-100 text-warm-700 hover:bg-warm-200',
   };
 
   return (
@@ -324,7 +324,7 @@ function FilterButton({
       onClick={onClick}
       className={cn(
         'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
-        'flex items-center gap-1.5',
+        'flex items-center gap-2',
         colorClasses[color]
       )}
     >
@@ -357,7 +357,7 @@ function ParticipantRow({
   return (
     <div
       className={cn(
-        'flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors',
+        'flex items-center gap-3 p-3 hover:bg-warm-50 transition-colors',
         selected && 'bg-green-50',
         compact && 'p-2'
       )}
@@ -368,7 +368,7 @@ function ParticipantRow({
           type="checkbox"
           checked={selected}
           onChange={onToggleSelect}
-          className="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-2 focus:ring-green-100"
+          className="w-4 h-4 rounded border-warm-300 text-green-600 focus:ring-2 focus:ring-green-100"
         />
       )}
 
@@ -383,7 +383,7 @@ function ParticipantRow({
         ) : (
           <div
             className={cn(
-              'rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium',
+              'rounded-full bg-warm-200 flex items-center justify-center text-warm-600 font-medium',
               compact ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'
             )}
           >
@@ -399,11 +399,11 @@ function ParticipantRow({
 
       {/* Name and email */}
       <div className="flex-1 min-w-0">
-        <p className={cn('font-medium text-slate-900 truncate', compact ? 'text-sm' : 'text-base')}>
+        <p className={cn('font-medium text-warm-900 truncate', compact ? 'text-sm' : 'text-base')}>
           {participant.name}
         </p>
         {!compact && participant.email && (
-          <p className="text-xs text-slate-500 truncate">{participant.email}</p>
+          <p className="text-xs text-warm-500 truncate">{participant.email}</p>
         )}
       </div>
 
@@ -411,7 +411,7 @@ function ParticipantRow({
       <div className="shrink-0">
         <div
           className={cn(
-            'flex items-center gap-1.5 px-2.5 py-1 rounded-full',
+            'flex items-center gap-2 px-2.5 py-1 rounded-full',
             config.bgColor
           )}
         >
@@ -442,12 +442,12 @@ export function CompactRSVPStatus({
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-        <span className="text-sm font-medium text-slate-700">{accepted} accepted</span>
+        <span className="text-sm font-medium text-warm-700">{accepted} accepted</span>
       </div>
       {pending > 0 && (
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-          <span className="text-sm text-slate-500">{pending} pending</span>
+          <div className="w-2 h-2 rounded-full bg-warm-300"></div>
+          <span className="text-sm text-warm-500">{pending} pending</span>
         </div>
       )}
     </div>

@@ -49,8 +49,8 @@ export function AnimatedTabs({
           aria-label="Content tabs"
           className={cn(
             'relative flex overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-nowrap snap-x snap-mandatory',
-            variant === 'segment' && 'bg-slate-100 p-1 rounded-xl gap-1',
-            variant === 'underline' && 'border-b border-slate-200 gap-1',
+            variant === 'segment' && 'bg-warm-100 p-1 rounded-xl gap-1',
+            variant === 'underline' && 'border-b border-warm-200 gap-1',
             variant === 'pill' && 'gap-2'
           )}
         >
@@ -70,8 +70,8 @@ export function AnimatedTabs({
                 variant === 'underline' && 'pb-3',
                 variant === 'pill' && 'rounded-full',
                 activeTab === tab.id
-                  ? 'text-slate-900'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'text-warm-900'
+                  : 'text-warm-500 hover:text-warm-700'
               )}
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
@@ -87,7 +87,7 @@ export function AnimatedTabs({
                     'absolute inset-0',
                     variant === 'segment' && 'bg-white rounded-lg shadow-sm',
                     variant === 'underline' && 'bottom-0 left-0 right-0 h-0.5 top-auto bg-green-600 rounded-full',
-                    variant === 'pill' && 'bg-slate-900 rounded-full'
+                    variant === 'pill' && 'bg-warm-900 rounded-full'
                   )}
                   transition={{
                     type: 'spring',

@@ -26,7 +26,7 @@ export function YearBadge({ year }: { year: string | number | null }) {
 
   return (
     <span className="px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider
-                     bg-slate-100 text-slate-500 rounded">
+                     bg-warm-100 text-warm-500 rounded">
       {label}
     </span>
   );

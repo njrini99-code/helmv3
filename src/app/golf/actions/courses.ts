@@ -15,8 +15,7 @@ export async function getSavedCourses(): Promise<GolfCourse[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: courses, error } = await (supabase as any)
+  const { data: courses, error } = await supabase
     .from('golf_courses')
     .select('*')
     .order('name');
@@ -59,8 +58,7 @@ export async function getCourseWithHoles(courseId: string): Promise<{
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { course: null, holes: [] };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: courseData } = await (supabase as any)
+    const { data: courseData } = await supabase
       .from('golf_courses')
       .select('*')
       .eq('id', courseId)
@@ -87,8 +85,7 @@ export async function getCourseWithHoles(courseId: string): Promise<{
     updated_at: null,
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: holesData } = await (supabase as any)
+  const { data: holesData } = await supabase
     .from('golf_course_holes')
     .select('*')
     .eq('course_id', courseId)
@@ -129,8 +126,7 @@ export async function createCourse(data: CourseSetupData): Promise<{
   const totalPar = data.holes.reduce((sum, h) => sum + h.par, 0);
 
   // Insert course with only the columns that exist in the database
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: course, error: courseError } = await (supabase as any)
+  const { data: course, error: courseError } = await supabase
     .from('golf_courses')
     .insert({
       name: data.name,
@@ -161,15 +157,13 @@ export async function createCourse(data: CourseSetupData): Promise<{
     yardage: hole.yardage,
   }));
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: holesError } = await (supabase as any)
+  const { error: holesError } = await supabase
     .from('golf_course_holes')
     .insert(holesData);
 
   if (holesError) {
     // Rollback course if holes fail
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('golf_courses').delete().eq('id', course.id);
+    await supabase.from('golf_courses').delete().eq('id', course.id);
     return { success: false, error: 'Failed to save hole configurations' };
   }
 

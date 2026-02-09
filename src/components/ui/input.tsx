@@ -90,6 +90,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             type={inputType}
             value={value}
             onChange={onChange}
+            aria-invalid={!!error}
             onFocus={(e) => {
               setIsFocused(true);
               props.onFocus?.(e);
@@ -222,6 +223,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={textareaId}
           value={value}
           maxLength={maxLength}
+          aria-invalid={!!error}
           onFocus={(e) => {
             setIsFocused(true);
             props.onFocus?.(e);

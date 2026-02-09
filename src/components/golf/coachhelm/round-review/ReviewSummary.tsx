@@ -12,7 +12,7 @@ export function ReviewSummary({ review }: ReviewSummaryProps) {
       className="rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-white p-5"
       style={{ animation: 'fadeInUp 0.5s ease-out 0.6s both' }}
     >
-      <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+      <h3 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
         <span className="text-lg">🧠</span>
         CoachHelm Summary
       </h3>
@@ -20,7 +20,7 @@ export function ReviewSummary({ review }: ReviewSummaryProps) {
       {/* Main summary */}
       <div className="prose prose-sm prose-slate max-w-none mb-4">
         {review.summary.split('\n\n').map((paragraph, index) => (
-          <p key={index} className="text-slate-700 leading-relaxed">
+          <p key={index} className="text-warm-700 leading-relaxed">
             {paragraph}
           </p>
         ))}

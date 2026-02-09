@@ -1,80 +1,148 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
+import { AvatarUpload } from '@/components/ui/avatar-upload';
+import { GlassCard } from '@/components/ui/glass-card';
 import { PageLoading } from '@/components/ui/loading';
-import { IconArrowRight, IconCheck, IconUser, IconUpload } from '@/components/icons';
+import {
+  IconArrowRight,
+  IconArrowLeft,
+  IconCheck,
+  IconUser,
+  IconBuilding,
+  IconCopy,
+} from '@/components/icons';
 import { completeCoachOnboarding } from '@/app/golf/actions/onboarding';
 
-type Step = 'welcome' | 'organization' | 'team' | 'profile' | 'complete';
+// ─── Types & Constants ──────────────────────────────────────────────────────
 
-const divisions = ['D1', 'D2', 'D3', 'NAIA', 'NJCAA', 'Club'];
+type Step = 'program' | 'profile' | 'complete';
 
-const STEPS = ['welcome', 'organization', 'team', 'profile', 'complete'] as const;
+const STEPS_CONFIG = [
+  { id: 'program' as const, label: 'Program', Icon: IconBuilding },
+  { id: 'profile' as const, label: 'Profile', Icon: IconUser },
+  { id: 'complete' as const, label: 'Done', Icon: IconCheck },
+];
 
-const pageVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 },
+const DIVISIONS = ['D1', 'D2', 'D3', 'NAIA', 'NJCAA', 'Club'];
+
+// ─── Animation Variants ─────────────────────────────────────────────────────
+
+const slideVariants = {
+  initial: (direction: number) => ({
+    x: direction > 0 ? 60 : -60,
+    opacity: 0,
+  }),
+  animate: {
+    x: 0,
+    opacity: 1,
+    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const },
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -60 : 60,
+    opacity: 0,
+    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const },
+  }),
 };
 
 const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
+  animate: { transition: { staggerChildren: 0.06 } },
 };
 
 const staggerItem = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } },
 };
+
+// ─── Step Indicator ─────────────────────────────────────────────────────────
+
+function StepIndicator({ currentStep }: { currentStep: Step }) {
+  const currentIndex = STEPS_CONFIG.findIndex((s) => s.id === currentStep);
+
+  return (
+    <div className="flex items-center justify-center gap-0 mb-8 sm:mb-10">
+      {STEPS_CONFIG.map((step, index) => {
+        const isCompleted = index < currentIndex;
+        const isCurrent = index === currentIndex;
+
+        return (
+          <Fragment key={step.id}>
+            {index > 0 && (
+              <div
+                className={cn(
+                  'h-[2px] w-8 sm:w-12 transition-colors duration-500',
+                  isCompleted ? 'bg-primary-500' : 'bg-warm-200'
+                )}
+              />
+            )}
+            <div className="flex flex-col items-center gap-1.5">
+              <div
+                className={cn(
+                  'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 text-sm font-semibold',
+                  isCompleted && 'bg-primary-600 text-white shadow-sm shadow-primary-600/30',
+                  isCurrent && 'bg-white border-2 border-primary-600 text-primary-600 shadow-sm',
+                  !isCompleted && !isCurrent && 'bg-warm-100 text-warm-400'
+                )}
+              >
+                {isCompleted ? <IconCheck size={14} /> : index + 1}
+              </div>
+              <span
+                className={cn(
+                  'text-[11px] font-medium transition-colors duration-500',
+                  isCurrent ? 'text-warm-900' : isCompleted ? 'text-primary-600' : 'text-warm-400'
+                )}
+              >
+                {step.label}
+              </span>
+            </div>
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function GolfCoachOnboarding() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [step, setStep] = useState<Step>('welcome');
+  const [step, setStep] = useState<Step>('program');
+  const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Organization data
+  // Program data
   const [orgName, setOrgName] = useState('');
   const [division, setDivision] = useState('');
   const [conference, setConference] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
-
-  // Team data
   const [teamName, setTeamName] = useState('');
-  const [season, setSeason] = useState(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    // Academic year starts in August
-    if (month >= 7) {
-      return `${year}-${(year + 1).toString().slice(2)}`;
-    }
-    return `${year - 1}-${year.toString().slice(2)}`;
-  });
 
   // Profile data
   const [fullName, setFullName] = useState('');
   const [title, setTitle] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-  // Check auth on mount - handle session propagation delays
+  // Completion data
+  const [joinCode, setJoinCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // ─── Auth Check ─────────────────────────────────────────────────────────
+
   useEffect(() => {
     async function checkAuth() {
-      // Try multiple times to get the session (handles propagation delays after signup)
       let user = null;
       for (let attempt = 0; attempt < 5; attempt++) {
         const { data } = await supabase.auth.getUser();
@@ -82,19 +150,16 @@ export default function GolfCoachOnboarding() {
           user = data.user;
           break;
         }
-        // Wait between attempts
         if (attempt < 4) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
 
       if (!user) {
-        // No session found after retries - redirect to login
         router.push('/golf/login');
         return;
       }
 
-      // Check if coach has already completed onboarding
       const { data: coach } = await supabase
         .from('golf_coaches')
         .select('id, onboarding_completed')
@@ -102,9 +167,14 @@ export default function GolfCoachOnboarding() {
         .maybeSingle();
 
       if (coach?.onboarding_completed) {
-        // Already completed - go to dashboard
         router.push('/golf/dashboard');
         return;
+      }
+
+      // Pre-fill name from auth metadata if available
+      const meta = user.user_metadata;
+      if (meta?.first_name && meta?.last_name) {
+        setFullName(`${meta.first_name} ${meta.last_name}`);
       }
 
       setAuthLoading(false);
@@ -113,19 +183,25 @@ export default function GolfCoachOnboarding() {
     checkAuth();
   }, [router, supabase]);
 
-  const currentStepIndex = STEPS.indexOf(step);
-  const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
+  // ─── Navigation ─────────────────────────────────────────────────────────
 
-  if (authLoading) {
-    return <PageLoading />;
+  function goForward(to: Step) {
+    setDirection(1);
+    setStep(to);
   }
 
-  const handleComplete = async () => {
+  function goBack(to: Step) {
+    setDirection(-1);
+    setStep(to);
+  }
+
+  // ─── Submit Onboarding ──────────────────────────────────────────────────
+
+  async function handleSubmitOnboarding() {
     setLoading(true);
     setError('');
 
     try {
-      // Use server action with validation and cleanup on failure
       const result = await completeCoachOnboarding({
         orgName,
         division: division || undefined,
@@ -133,549 +209,415 @@ export default function GolfCoachOnboarding() {
         city: city || undefined,
         state: state || undefined,
         teamName: teamName || undefined,
-        season: season || undefined,
         fullName,
         title: title || undefined,
-        email: email || undefined,
-        phone: phone || undefined,
       });
 
       if (!result.success) {
-        // Show error to user - don't silently redirect
-        console.error('[Onboarding] Server action failed:', result.error);
-        setError(result.error || 'Failed to complete onboarding. Please try again.');
+        setError(result.error || 'Failed to complete setup. Please try again.');
         setLoading(false);
         return;
       }
 
-      // CRITICAL: Call router.refresh() FIRST to invalidate cache and propagate
-      // the session cookies, THEN navigate. This matches the pattern used in signup.
-      router.refresh();
-
-      // Wait for cache to invalidate and database write to commit
-      await new Promise(resolve => setTimeout(resolve, 150));
-
-      // Now navigate to dashboard
-      router.push('/golf/dashboard');
+      setJoinCode(result.data?.joinCode || null);
+      setLoading(false);
+      goForward('complete');
     } catch (err) {
-      // Show error to user
-      console.error('[Onboarding] Error:', err);
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
       setLoading(false);
     }
-  };
+  }
+
+  function handleGoToDashboard() {
+    router.refresh();
+    setTimeout(() => router.push('/golf/dashboard'), 150);
+  }
+
+  async function handleCopyCode() {
+    if (!joinCode) return;
+    try {
+      await navigator.clipboard.writeText(joinCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  // ─── Loading ────────────────────────────────────────────────────────────
+
+  if (authLoading) return <PageLoading />;
+
+  // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FAF6F1] via-[#F5F1EC] to-[#EAE6E1] relative overflow-hidden">
-      {/* Animated Background Elements */}
+    <div className="min-h-screen bg-auth-golf relative">
+      {/* Floating Orbs (CSS-driven, matches login/signup) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 90, 0],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-green-100/20 to-transparent rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            rotate: [90, 0, 90],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-green-50/20 to-transparent rounded-full blur-3xl"
-        />
+        <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-helm-green-400/40 to-helm-green-500/25" />
+        <div className="auth-orb auth-orb-2 w-[350px] h-[350px] sm:w-[400px] sm:h-[400px] -bottom-20 -left-20 bg-gradient-to-tr from-helm-green-400/25 to-helm-green-400/15" />
+        <div className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-1/3 left-[8%] bg-gradient-to-br from-helm-green-300/20 to-helm-green-400/15" />
       </div>
 
-      {/* Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-slate-200/50 backdrop-blur-sm z-50">
-        <motion.div
-          className="h-full bg-gradient-to-r from-green-500 to-green-600"
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-        />
-      </div>
+      <div className="relative min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        {/* Logo */}
+        <m.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-6 sm:mb-8"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-helm-green-500/25 rounded-full blur-xl scale-150" />
+            <Image
+              src="/helm-golf-logo-transparent.png"
+              alt="GolfHelm"
+              width={48}
+              height={48}
+              className="relative w-10 h-10 sm:w-12 sm:h-12 object-contain"
+              priority
+              unoptimized
+            />
+          </div>
+        </m.div>
 
-      <div className="relative min-h-screen flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        <AnimatePresence mode="wait">
-          {step === 'welcome' && (
-            <motion.div
-              key="welcome"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-2xl"
-            >
-              <motion.div
-                variants={staggerContainer}
+        <LazyMotion features={domAnimation}>
+          {/* Step Indicator */}
+          <m.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <StepIndicator currentStep={step} />
+          </m.div>
+
+          <AnimatePresence mode="wait" custom={direction}>
+            {/* ─── Step 1: Your Program ─────────────────────────────────── */}
+            {step === 'program' && (
+              <m.div
+                key="program"
+                custom={direction}
+                variants={slideVariants}
                 initial="initial"
                 animate="animate"
-                className="space-y-8"
+                exit="exit"
+                className="w-full max-w-[460px]"
               >
-                {/* Logo & Header */}
-                <motion.div variants={staggerItem} className="text-center">
-                  <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                    className="mb-6 inline-block"
-                  >
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
-                      <img
-                        src="/helm-golf-logo.png"
-                        alt="GolfHelm"
-                        className="h-20 w-auto relative z-10"
-                      />
-                    </div>
-                  </motion.div>
-                  <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-3">
-                    Welcome to GolfHelm!
-                  </h1>
-                  <p className="text-slate-600 text-lg max-w-md mx-auto leading-relaxed">
-                    Let's set up your golf program. This will only take a couple of minutes.
-                  </p>
-                </motion.div>
+                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                  {/* Header */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                      Set up your program
+                    </h1>
+                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                      Tell us about your school and team
+                    </p>
+                  </m.div>
 
-                {/* Features List */}
-                <motion.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5 max-w-md mx-auto"
-                >
-                  <h3 className="font-semibold text-slate-900 mb-4 text-center">
-                    What you'll set up:
-                  </h3>
-                  <ul className="space-y-3 text-sm text-slate-600">
-                    {[
-                      { num: 1, text: 'Your school or organization' },
-                      { num: 2, text: 'Your golf team' },
-                      { num: 3, text: 'Your coach profile' },
-                    ].map((item, index) => (
-                      <motion.li
-                        key={item.num}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 + index * 0.1 }}
-                        className="flex items-center gap-3"
-                      >
-                        <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-green-600 font-semibold text-xs">
-                            {item.num}
-                          </span>
+                  {/* Form Card */}
+                  <m.div
+                    variants={staggerItem}
+                    className="auth-glass-card rounded-3xl p-6 sm:p-8"
+                  >
+                    <div className="space-y-5">
+                      {/* Program Details */}
+                      <div className="space-y-4">
+                        <Input
+                          label="School / Organization"
+                          value={orgName}
+                          onChange={(e) => setOrgName(e.target.value)}
+                          placeholder="Texas A&M University"
+                          required
+                          autoFocus
+                        />
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <NativeSelect
+                            label="Division"
+                            value={division}
+                            onChange={(e) => setDivision(e.target.value)}
+                          >
+                            <option value="">Select</option>
+                            {DIVISIONS.map((div) => (
+                              <option key={div} value={div}>{div}</option>
+                            ))}
+                          </NativeSelect>
+                          <Input
+                            label="Conference"
+                            value={conference}
+                            onChange={(e) => setConference(e.target.value)}
+                            placeholder="SEC"
+                          />
                         </div>
-                        {item.text}
-                      </motion.li>
-                    ))}
-                  </ul>
-                </motion.div>
+                      </div>
 
-                {/* Get Started Button */}
-                <motion.div variants={staggerItem} className="text-center">
-                  <Button
-                    size="lg"
-                    onClick={() => setStep('organization')}
-                    className="px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
-                  >
-                    Get Started
-                    <IconArrowRight size={16} className="ml-2" />
-                  </Button>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
+                      {/* Location */}
+                      <div>
+                        <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-wider mb-3">
+                          Location
+                        </p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="col-span-2">
+                            <Input
+                              label="City"
+                              value={city}
+                              onChange={(e) => setCity(e.target.value)}
+                              placeholder="College Station"
+                            />
+                          </div>
+                          <Input
+                            label="State"
+                            value={state}
+                            onChange={(e) => setState(e.target.value)}
+                            placeholder="TX"
+                            maxLength={2}
+                          />
+                        </div>
+                      </div>
 
-          {step === 'organization' && (
-            <motion.div
-              key="organization"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <motion.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 1 of 3
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Organization Information</h2>
-                </motion.div>
+                      {/* Team */}
+                      <div>
+                        <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-wider mb-3">
+                          Team
+                        </p>
+                        <Input
+                          label="Team Name"
+                          value={teamName}
+                          onChange={(e) => setTeamName(e.target.value)}
+                          placeholder="Men's Golf"
+                          hint={orgName ? `Leave blank to default to "${orgName} Golf"` : 'e.g., Men\'s Golf, Women\'s Golf'}
+                        />
+                      </div>
+                    </div>
 
-                <motion.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <div className="space-y-5">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <Input
-                        label="School/Organization Name"
-                        value={orgName}
-                        onChange={(e) => setOrgName(e.target.value)}
-                        placeholder="Texas A&M University"
-                        required
-                        autoFocus
-                      />
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <NativeSelect
-                        label="Division"
-                        value={division}
-                        onChange={(e) => setDivision(e.target.value)}
+                    {/* Actions */}
+                    <div className="mt-8">
+                      <Button
+                        onClick={() => goForward('profile')}
+                        disabled={!orgName.trim()}
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        size="lg"
                       >
-                        <option value="">Select division</option>
-                        {divisions.map((div) => (
-                          <option key={div} value={div}>
-                            {div}
-                          </option>
-                        ))}
-                      </NativeSelect>
-                    </motion.div>
+                        Continue
+                        <IconArrowRight size={16} className="ml-2" />
+                      </Button>
+                    </div>
+                  </m.div>
+                </m.div>
+              </m.div>
+            )}
 
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      <Input
-                        label="Conference (optional)"
-                        value={conference}
-                        onChange={(e) => setConference(e.target.value)}
-                        placeholder="SEC"
-                      />
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 }}
-                      className="grid grid-cols-2 gap-4"
-                    >
-                      <Input
-                        label="City"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        placeholder="College Station"
-                      />
-                      <Input
-                        label="State"
-                        value={state}
-                        onChange={(e) => setState(e.target.value)}
-                        placeholder="TX"
-                        maxLength={2}
-                      />
-                    </motion.div>
-                  </div>
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('welcome')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={() => setStep('team')}
-                      disabled={!orgName}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {step === 'team' && (
-            <motion.div
-              key="team"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <motion.div
-                variants={staggerContainer}
+            {/* ─── Step 2: Your Profile ─────────────────────────────────── */}
+            {step === 'profile' && (
+              <m.div
+                key="profile"
+                custom={direction}
+                variants={slideVariants}
                 initial="initial"
                 animate="animate"
-                className="space-y-6"
+                exit="exit"
+                className="w-full max-w-[460px]"
               >
-                <motion.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 2 of 3
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Team Details</h2>
-                </motion.div>
-
-                <motion.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <div className="space-y-5">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
+                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                  {/* Back Button */}
+                  <m.div variants={staggerItem}>
+                    <button
+                      onClick={() => goBack('program')}
+                      className="flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors"
                     >
-                      <Input
-                        label="Team Name"
-                        value={teamName}
-                        onChange={(e) => setTeamName(e.target.value)}
-                        placeholder="Men's Golf"
-                        hint="e.g., Men's Golf, Women's Golf"
-                      />
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <Input
-                        label="Season"
-                        value={season}
-                        onChange={(e) => setSeason(e.target.value)}
-                        placeholder="2024-25"
-                      />
-                    </motion.div>
-                  </div>
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('organization')}
-                      className="flex-1"
-                    >
+                      <IconArrowLeft size={14} />
                       Back
-                    </Button>
-                    <Button
-                      onClick={() => setStep('profile')}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
+                    </button>
+                  </m.div>
 
-          {step === 'profile' && (
-            <motion.div
-              key="profile"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <motion.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 3 of 3
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Your Profile</h2>
-                </motion.div>
+                  {/* Header */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                      Your profile
+                    </h1>
+                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                      How your players will see you
+                    </p>
+                  </m.div>
 
-                <motion.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <div className="space-y-5">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
+                  {/* Form Card */}
+                  <m.div
+                    variants={staggerItem}
+                    className="auth-glass-card rounded-3xl p-6 sm:p-8"
+                  >
+                    <div className="space-y-6">
+                      {/* Avatar Upload - Centered */}
+                      <div className="flex flex-col items-center pb-2">
+                        <AvatarUpload
+                          currentAvatarUrl={avatarUrl}
+                          name={fullName || 'Coach'}
+                          onUploadComplete={(url) => setAvatarUrl(url)}
+                          onRemove={() => setAvatarUrl(null)}
+                        />
+                      </div>
+
                       <Input
                         label="Full Name"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="John Smith"
                         required
-                        autoFocus
                       />
-                    </motion.div>
 
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
                       <Input
                         label="Title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="Head Coach"
                       />
-                    </motion.div>
+                    </div>
 
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      <Input
-                        label="Email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="coach@school.edu"
-                      />
-                    </motion.div>
+                    {/* Actions */}
+                    <div className="mt-8">
+                      <Button
+                        onClick={handleSubmitOnboarding}
+                        disabled={!fullName.trim()}
+                        isLoading={loading}
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        size="lg"
+                      >
+                        Complete Setup
+                        <IconCheck size={16} className="ml-2" />
+                      </Button>
+                      {error && (
+                        <m.p
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-sm text-red-600 mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
+                        >
+                          {error}
+                        </m.p>
+                      )}
+                    </div>
+                  </m.div>
+                </m.div>
+              </m.div>
+            )}
 
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 }}
-                    >
-                      <Input
-                        label="Phone"
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="(555) 123-4567"
-                      />
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.6 }}
-                    >
-                      <label className="block text-sm font-medium text-slate-700 mb-3">
-                        Photo (optional)
-                      </label>
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shadow-sm">
-                          <IconUser size={28} className="text-slate-400" />
-                        </div>
-                        <Button variant="secondary" size="sm">
-                          <IconUpload size={16} className="mr-2" />
-                          Upload Photo
-                        </Button>
-                      </div>
-                      <p className="text-xs text-slate-500 mt-2">JPG or PNG, max 5MB</p>
-                    </motion.div>
-                  </div>
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('team')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={() => setStep('complete')}
-                      disabled={!fullName}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      Complete Setup
-                    </Button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {step === 'complete' && (
-            <motion.div
-              key="complete"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-lg"
-            >
-              <motion.div
-                variants={staggerContainer}
+            {/* ─── Step 3: Complete ─────────────────────────────────────── */}
+            {step === 'complete' && (
+              <m.div
+                key="complete"
+                custom={direction}
+                variants={slideVariants}
                 initial="initial"
                 animate="animate"
-                className="space-y-8"
+                exit="exit"
+                className="w-full max-w-[480px]"
               >
-                {/* Success Icon */}
-                <motion.div variants={staggerItem} className="text-center">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
-                    className="mb-6 inline-block"
-                  >
+                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-6">
+                  {/* Success Icon with Celebration */}
+                  <m.div variants={staggerItem} className="flex justify-center">
                     <div className="relative">
-                      <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
-                      <div className="relative w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-xl shadow-green-900/20">
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 0.4 }}
+                      {/* Celebration particles */}
+                      {[...Array(8)].map((_, i) => (
+                        <m.div
+                          key={i}
+                          className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full"
+                          style={{
+                            background: i % 2 === 0
+                              ? 'rgb(22, 163, 74)'
+                              : 'rgb(74, 222, 128)',
+                          }}
+                          initial={{ scale: 0, opacity: 1, x: 0, y: 0 }}
+                          animate={{
+                            scale: [0, 1.2, 0],
+                            opacity: [0, 1, 0],
+                            x: Math.cos((i / 8) * Math.PI * 2) * 50,
+                            y: Math.sin((i / 8) * Math.PI * 2) * 50,
+                          }}
+                          transition={{ duration: 0.8, delay: 0.3 + i * 0.04, ease: 'easeOut' }}
+                        />
+                      ))}
+
+                      {/* Glow */}
+                      <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full scale-[2]" />
+
+                      {/* Check Icon */}
+                      <m.div
+                        initial={{ scale: 0, rotate: -20 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 }}
+                        className="relative w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-xl shadow-green-900/20"
+                      >
+                        <m.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
                         >
                           <IconCheck size={40} className="text-white" />
-                        </motion.div>
-                      </div>
+                        </m.div>
+                      </m.div>
                     </div>
-                  </motion.div>
-                  <h1 className="text-3xl font-bold text-slate-900 mb-3">
-                    Your team is ready!
-                  </h1>
-                  <p className="text-slate-600 text-lg max-w-md mx-auto leading-relaxed">
-                    You're all set to start managing your golf program and tracking player performance.
-                  </p>
-                </motion.div>
+                  </m.div>
 
-                {/* CTA Button */}
-                <motion.div variants={staggerItem} className="text-center">
-                  <Button
-                    size="lg"
-                    onClick={handleComplete}
-                    isLoading={loading}
-                    className="px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
-                  >
-                    Go to Dashboard
-                  </Button>
-                  {error && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-sm text-red-600 mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3"
-                    >
-                      {error}
-                    </motion.p>
+                  {/* Personalized Heading */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900 mb-2">
+                      {orgName ? `${orgName} Golf is ready on GolfHelm` : 'Your team is ready!'}
+                    </h1>
+                    <p className="text-warm-500 text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
+                      Share your team code with players to get them on board.
+                    </p>
+                  </m.div>
+
+                  {/* Join Code Card */}
+                  {joinCode && (
+                    <m.div variants={staggerItem}>
+                      <GlassCard glow="green" hover={false} padding="lg" className="rounded-2xl">
+                        <div className="text-center">
+                          <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-wider mb-3">
+                            Team Join Code
+                          </p>
+                          <p className="font-mono text-3xl sm:text-4xl font-bold tracking-[0.25em] text-warm-900 mb-4">
+                            {joinCode}
+                          </p>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleCopyCode}
+                            className="gap-2"
+                          >
+                            {copied ? (
+                              <>
+                                <IconCheck size={14} />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <IconCopy size={14} />
+                                Copy Code
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </GlassCard>
+                    </m.div>
                   )}
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
+                  {/* Dashboard CTA */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <Button
+                      size="lg"
+                      onClick={handleGoToDashboard}
+                      className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                    >
+                      Go to Dashboard
+                      <IconArrowRight size={16} className="ml-2" />
+                    </Button>
+                  </m.div>
+                </m.div>
+              </m.div>
+            )}
+          </AnimatePresence>
+        </LazyMotion>
       </div>
     </div>
   );

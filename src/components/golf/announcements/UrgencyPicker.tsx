@@ -8,12 +8,12 @@ const urgencyOptions = [
     value: 'low' as const,
     label: 'Low',
     description: 'General info',
-    color: 'text-slate-600',
-    bg: 'bg-slate-50',
-    border: 'border-slate-200',
-    activeBg: 'bg-slate-100',
-    activeBorder: 'border-slate-400',
-    dot: 'bg-slate-400',
+    color: 'text-warm-600',
+    bg: 'bg-warm-50',
+    border: 'border-warm-200',
+    activeBg: 'bg-warm-100',
+    activeBorder: 'border-warm-400',
+    dot: 'bg-warm-400',
   },
   {
     value: 'normal' as const,
@@ -58,7 +58,7 @@ interface UrgencyPickerProps {
 export function UrgencyPicker({ value, onChange }: UrgencyPickerProps) {
   return (
     <div>
-      <label className="text-sm font-medium text-slate-700 block mb-2">
+      <label className="text-sm font-medium text-warm-700 block mb-2">
         Urgency Level
       </label>
       <div className="grid grid-cols-4 gap-2">
@@ -78,13 +78,13 @@ export function UrgencyPicker({ value, onChange }: UrgencyPickerProps) {
                   : `${opt.bg} border-transparent hover:${opt.border}`
               )}
             >
-              <div className="flex items-center gap-1.5 mb-0.5">
+              <div className="flex items-center gap-2 mb-0.5">
                 <div className={cn('w-2 h-2 rounded-full', opt.dot)} />
                 <span className={cn('text-sm font-semibold', opt.color)}>
                   {opt.label}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 leading-tight">
+              <p className="text-xs text-warm-500 leading-tight">
                 {opt.description}
               </p>
             </motion.button>

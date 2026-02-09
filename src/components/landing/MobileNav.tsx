@@ -111,7 +111,7 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                    ${isOpen
                      ? 'bg-white shadow-lg'
                      : isProductsPage
-                       ? 'bg-white/95 border border-slate-200/60 shadow-md'
+                       ? 'bg-white/95 border border-warm-200/60 shadow-md'
                        : 'bg-white/15 border border-white/25 shadow-md'
                    }`}
         aria-label={isOpen ? 'Close menu' : 'Open menu'}
@@ -120,17 +120,17 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
           {/* Top line - CSS transition for performance */}
           <span
             className={`absolute h-[2px] rounded-full transition-all duration-200 ease-out
-              ${isOpen ? 'bg-slate-800 rotate-45 w-full' : isProductsPage ? 'bg-slate-800 -translate-y-1.5 w-full' : 'bg-white -translate-y-1.5 w-full'}`}
+              ${isOpen ? 'bg-warm-800 rotate-45 w-full' : isProductsPage ? 'bg-warm-800 -tranwarm-y-1.5 w-full' : 'bg-white -tranwarm-y-1.5 w-full'}`}
           />
           {/* Middle line */}
           <span
             className={`absolute h-[2px] rounded-full transition-all duration-150 ease-out
-              ${isOpen ? 'bg-slate-800 opacity-0 scale-x-0' : isProductsPage ? 'bg-slate-800 opacity-100 w-full' : 'bg-white opacity-100 w-full'}`}
+              ${isOpen ? 'bg-warm-800 opacity-0 scale-x-0' : isProductsPage ? 'bg-warm-800 opacity-100 w-full' : 'bg-white opacity-100 w-full'}`}
           />
           {/* Bottom line */}
           <span
             className={`absolute h-[2px] rounded-full transition-all duration-200 ease-out
-              ${isOpen ? 'bg-slate-800 -rotate-45 w-full' : isProductsPage ? 'bg-slate-800 translate-y-1.5 w-full' : 'bg-white translate-y-1.5 w-full'}`}
+              ${isOpen ? 'bg-warm-800 -rotate-45 w-full' : isProductsPage ? 'bg-warm-800 tranwarm-y-1.5 w-full' : 'bg-white tranwarm-y-1.5 w-full'}`}
           />
         </div>
       </button>
@@ -172,10 +172,10 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                     className="w-12 h-12 object-contain"
                   />
                   <div>
-                    <span className="block text-slate-900 font-semibold text-xl tracking-tight">
+                    <span className="block text-warm-900 font-semibold text-xl tracking-tight">
                       Helm Sports Labs
                     </span>
-                    <span className="block text-slate-500 text-sm font-medium mt-0.5">
+                    <span className="block text-warm-500 text-sm font-medium mt-0.5">
                       Recruiting Intelligence
                     </span>
                   </div>
@@ -197,16 +197,16 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                       }}
                     >
                       <div className="flex-1">
-                        <span className="block text-[1.75rem] font-semibold text-slate-900 tracking-tight
+                        <span className="block text-[1.75rem] font-semibold text-warm-900 tracking-tight
                                        group-hover:text-green-600 transition-colors duration-150">
                           {link.name}
                         </span>
-                        <span className="block text-base text-slate-500 mt-1 font-normal">
+                        <span className="block text-base text-warm-500 mt-1 font-normal">
                           {link.description}
                         </span>
                       </div>
                       <svg
-                        className="w-6 h-6 text-slate-300 group-hover:text-green-500 group-hover:translate-x-1 transition-all duration-150"
+                        className="w-6 h-6 text-warm-300 group-hover:text-green-500 group-hover:tranwarm-x-1 transition-all duration-150"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -220,7 +220,7 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
               </div>
 
               {/* CTA Section */}
-              <div className="pt-8 border-t border-slate-200/60">
+              <div className="pt-8 border-t border-warm-200/60">
                 <AnimatePresence mode="wait">
                   {!showDemoForm && !submitted && (
                     <motion.div
@@ -233,12 +233,12 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                     >
                       <button
                         onClick={() => setShowDemoForm(true)}
-                        className="w-full py-4 rounded-2xl bg-slate-900 text-white text-center
+                        className="w-full py-4 rounded-2xl bg-warm-900 text-white text-center
                                    font-semibold text-lg shadow-lg active:scale-[0.98] transition-transform duration-150"
                       >
                         Book a Demo
                       </button>
-                      <p className="text-center text-base text-slate-500 font-medium">
+                      <p className="text-center text-base text-warm-500 font-medium">
                         Get early access to BaseballHelm or GolfHelm
                       </p>
                     </motion.div>
@@ -255,7 +255,7 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                       className="space-y-5"
                     >
                       <div>
-                        <label htmlFor="mobile-email" className="block text-base font-semibold text-slate-700 mb-2.5">
+                        <label htmlFor="mobile-email" className="block text-base font-semibold text-warm-700 mb-2.5">
                           Enter your email
                         </label>
                         <input
@@ -266,8 +266,8 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                           placeholder="you@example.com"
                           required
                           autoFocus
-                          className="w-full px-5 py-4 rounded-xl border border-slate-200
-                                   bg-white text-slate-900 placeholder:text-slate-400 text-base
+                          className="w-full px-5 py-4 rounded-xl border border-warm-200
+                                   bg-white text-warm-900 placeholder:text-warm-400 text-base
                                    focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500
                                    transition-colors duration-150"
                         />
@@ -279,8 +279,8 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                         <button
                           type="button"
                           onClick={() => setShowDemoForm(false)}
-                          className="flex-1 py-4 rounded-xl border border-slate-200
-                                   text-slate-600 font-semibold text-base
+                          className="flex-1 py-4 rounded-xl border border-warm-200
+                                   text-warm-600 font-semibold text-base
                                    active:scale-[0.98] transition-transform duration-150"
                         >
                           Cancel
@@ -319,14 +319,14 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                         </svg>
                       </div>
                       <div>
-                        <h3 className="text-2xl font-semibold text-slate-900 mb-2">Thanks!</h3>
-                        <p className="text-base text-slate-600 font-medium">
+                        <h3 className="text-2xl font-semibold text-warm-900 mb-2">Thanks!</h3>
+                        <p className="text-base text-warm-600 font-medium">
                           One of our team members will reach out to you shortly.
                         </p>
                       </div>
                       <button
                         onClick={handleBackToHome}
-                        className="w-full py-4 rounded-2xl bg-slate-100 text-slate-900
+                        className="w-full py-4 rounded-2xl bg-warm-100 text-warm-900
                                  font-semibold text-base active:scale-[0.98] transition-transform duration-150"
                       >
                         Back to Home

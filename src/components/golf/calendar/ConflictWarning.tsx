@@ -146,7 +146,7 @@ export function ConflictWarning({
                     className="px-3 py-2 bg-white hover:bg-amber-50 text-left rounded-lg text-sm border border-amber-200 hover:border-amber-400 transition-all shadow-sm hover:shadow group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 group-hover:text-amber-900 font-medium">
+                      <span className="text-warm-700 group-hover:text-amber-900 font-medium">
                         {formatSuggestedTime(time)}
                       </span>
                       <span className="text-xs text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity">

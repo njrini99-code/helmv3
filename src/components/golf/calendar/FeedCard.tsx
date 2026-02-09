@@ -127,8 +127,8 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
   return (
     <div
       className={cn(
-        'bg-white rounded-xl border border-slate-200 overflow-hidden',
-        'hover:border-slate-300 transition-all',
+        'bg-white rounded-xl border border-warm-200 overflow-hidden',
+        'hover:border-warm-300 transition-all',
         className
       )}
     >
@@ -150,7 +150,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
           {/* Feed info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-1">
-              <h3 className="font-semibold text-slate-900">{feed.name}</h3>
+              <h3 className="font-semibold text-warm-900">{feed.name}</h3>
               <span
                 className={cn(
                   'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium',
@@ -164,7 +164,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
 
             {/* Last synced */}
             {feed.last_synced_at && (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-warm-500">
                 Last synced {formatDistanceToNow(new Date(feed.last_synced_at), { addSuffix: true })}
               </p>
             )}
@@ -174,8 +174,8 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
         {/* Feed URL */}
         <div className="mt-3">
           <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
-              <code className="text-xs text-slate-600 truncate block font-mono">
+            <div className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-warm-50 border border-warm-200">
+              <code className="text-xs text-warm-600 truncate block font-mono">
                 {feed.url}
               </code>
             </div>
@@ -188,7 +188,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                 'shrink-0 p-2.5 rounded-lg font-medium text-sm transition-all',
                 copied
                   ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
               )}
               title="Copy URL"
               aria-label={copied ? 'URL copied' : 'Copy feed URL'}
@@ -207,7 +207,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
           type="button"
           onClick={() => setShowInstructions(!showInstructions)}
           className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg
-                   bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-medium
+                   bg-warm-50 hover:bg-warm-100 text-warm-700 text-sm font-medium
                    transition-colors"
         >
           <ExternalLink className="w-4 h-4" />
@@ -222,24 +222,24 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
 
       {/* Subscription instructions (collapsible) */}
       {showInstructions && (
-        <div className="px-4 pb-4 border-t border-slate-100">
+        <div className="px-4 pb-4 border-t border-warm-100">
           <SubscriptionInstructions feedUrl={feed.url} compact />
         </div>
       )}
 
       {/* Actions */}
-      <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
+      <div className="px-4 py-3 border-t border-warm-200 bg-warm-50 flex items-center justify-between gap-2">
         {showDeleteConfirm ? (
           // Delete confirmation
           <>
-            <p className="text-xs text-slate-600">Delete this feed?</p>
+            <p className="text-xs text-warm-600">Delete this feed?</p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium
-                         bg-white text-slate-700 border border-slate-200
-                         hover:bg-slate-50 transition-colors"
+                         bg-white text-warm-700 border border-warm-200
+                         hover:bg-warm-50 transition-colors"
               >
                 Cancel
               </button>
@@ -259,7 +259,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
         ) : (
           // Normal actions
           <>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-warm-500">
               Created {formatDistanceToNow(new Date(feed.created_at), { addSuffix: true })}
             </p>
             <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                 disabled={loading}
                 className={cn(
                   'p-2 rounded-lg transition-all',
-                  'text-slate-600 hover:text-slate-900 hover:bg-slate-100',
+                  'text-warm-600 hover:text-warm-900 hover:bg-warm-100',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                   loading && 'animate-spin'
                 )}
@@ -330,8 +330,8 @@ export function CompactFeedCard({
     <div
       onClick={onClick}
       className={cn(
-        'flex items-center gap-3 p-3 rounded-lg border border-slate-200',
-        'hover:border-slate-300 hover:bg-slate-50 transition-all',
+        'flex items-center gap-3 p-3 rounded-lg border border-warm-200',
+        'hover:border-warm-300 hover:bg-warm-50 transition-all',
         onClick && 'cursor-pointer'
       )}
     >
@@ -340,8 +340,8 @@ export function CompactFeedCard({
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-900 truncate">{feed.name}</p>
-        <p className="text-xs text-slate-500">{config.label}</p>
+        <p className="text-sm font-semibold text-warm-900 truncate">{feed.name}</p>
+        <p className="text-xs text-warm-500">{config.label}</p>
       </div>
 
       <button
@@ -351,7 +351,7 @@ export function CompactFeedCard({
           'shrink-0 p-2 rounded-lg transition-colors',
           copied
             ? 'bg-emerald-100 text-emerald-700'
-            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
         )}
         aria-label={copied ? 'URL copied' : 'Copy feed URL'}
       >

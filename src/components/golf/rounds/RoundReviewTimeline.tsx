@@ -58,7 +58,7 @@ function TimelineItem({
       <div className="flex flex-col items-center">
         <div className={cn(
           'w-3 h-3 rounded-full border-2',
-          review.status === 'shared' ? 'bg-brand-500 border-brand-500' :
+          review.status === 'shared' ? 'bg-primary-500 border-primary-500' :
           review.status === 'approved' ? 'bg-green-500 border-green-500' :
           review.status === 'failed' ? 'bg-red-500 border-red-500' :
           'bg-white border-gray-300'
@@ -100,7 +100,7 @@ function TimelineItem({
           </div>
 
           {/* Hover indicator */}
-          <div className="mt-3 flex items-center gap-1 text-xs text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="mt-3 flex items-center gap-1 text-xs text-primary-600 opacity-0 group-hover:opacity-100 transition-opacity">
             <span>View details</span>
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -263,7 +263,7 @@ export function PlayerReviewTimeline({ history }: PlayerReviewTimelineProps) {
     <div className="space-y-6">
       {/* Player Header */}
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-medium text-lg">
+        <div className="w-12 h-12 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-medium text-lg">
           {playerName.split(' ').map(n => n[0]).join('')}
         </div>
         <div>

@@ -82,7 +82,7 @@ export function SubscriptionInstructions({
       {/* Platform tabs */}
       <div>
         {!compact && (
-          <p className="text-sm font-medium text-slate-700 mb-3">
+          <p className="text-sm font-medium text-warm-700 mb-3">
             Choose your calendar app:
           </p>
         )}
@@ -101,7 +101,7 @@ export function SubscriptionInstructions({
                   'border-2 transition-all duration-200',
                   isSelected
                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                    : 'bg-white text-warm-700 border-warm-200 hover:border-warm-300'
                 )}
               >
                 <Icon className="w-4 h-4" />
@@ -151,7 +151,7 @@ export function SubscriptionInstructions({
       )}
 
       {/* Platform-specific instructions */}
-      <div className={cn('rounded-lg border border-slate-200', compact ? 'p-3' : 'p-4', 'bg-white')}>
+      <div className={cn('rounded-lg border border-warm-200', compact ? 'p-3' : 'p-4', 'bg-white')}>
         {selectedPlatform === 'apple' && <AppleInstructions compact={compact} />}
         {selectedPlatform === 'google' && <GoogleInstructions compact={compact} />}
         {selectedPlatform === 'outlook' && <OutlookInstructions compact={compact} />}
@@ -211,8 +211,8 @@ function AppleInstructions({ compact }: { compact?: boolean }) {
         return (
           <div key={idx}>
             <div className="flex items-center gap-2 mb-2">
-              <Icon className="w-4 h-4 text-slate-500" />
-              <h4 className={cn('font-semibold text-slate-900', compact ? 'text-xs' : 'text-sm')}>
+              <Icon className="w-4 h-4 text-warm-500" />
+              <h4 className={cn('font-semibold text-warm-900', compact ? 'text-xs' : 'text-sm')}>
                 {section.title}
               </h4>
             </div>
@@ -221,7 +221,7 @@ function AppleInstructions({ compact }: { compact?: boolean }) {
                 <li
                   key={stepIdx}
                   className={cn(
-                    'text-slate-600 flex items-baseline gap-2',
+                    'text-warm-600 flex items-baseline gap-2',
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
@@ -273,8 +273,8 @@ function GoogleInstructions({ compact }: { compact?: boolean }) {
         return (
           <div key={idx}>
             <div className="flex items-center gap-2 mb-2">
-              <Icon className="w-4 h-4 text-slate-500" />
-              <h4 className={cn('font-semibold text-slate-900', compact ? 'text-xs' : 'text-sm')}>
+              <Icon className="w-4 h-4 text-warm-500" />
+              <h4 className={cn('font-semibold text-warm-900', compact ? 'text-xs' : 'text-sm')}>
                 {section.title}
               </h4>
             </div>
@@ -283,7 +283,7 @@ function GoogleInstructions({ compact }: { compact?: boolean }) {
                 <li
                   key={stepIdx}
                   className={cn(
-                    'text-slate-600 flex items-baseline gap-2',
+                    'text-warm-600 flex items-baseline gap-2',
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
@@ -341,8 +341,8 @@ function OutlookInstructions({ compact }: { compact?: boolean }) {
         return (
           <div key={idx}>
             <div className="flex items-center gap-2 mb-2">
-              <Icon className="w-4 h-4 text-slate-500" />
-              <h4 className={cn('font-semibold text-slate-900', compact ? 'text-xs' : 'text-sm')}>
+              <Icon className="w-4 h-4 text-warm-500" />
+              <h4 className={cn('font-semibold text-warm-900', compact ? 'text-xs' : 'text-sm')}>
                 {section.title}
               </h4>
             </div>
@@ -351,7 +351,7 @@ function OutlookInstructions({ compact }: { compact?: boolean }) {
                 <li
                   key={stepIdx}
                   className={cn(
-                    'text-slate-600 flex items-baseline gap-2',
+                    'text-warm-600 flex items-baseline gap-2',
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
@@ -384,9 +384,9 @@ export function CompactSubscriptionHelp({ feedUrl }: { feedUrl: string }) {
   }
 
   return (
-    <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-50">
-      <ExternalLink className="w-4 h-4 text-slate-400 shrink-0" />
-      <p className="text-xs text-slate-600 flex-1">
+    <div className="flex items-center gap-2 p-2 rounded-lg bg-warm-50">
+      <ExternalLink className="w-4 h-4 text-warm-400 shrink-0" />
+      <p className="text-xs text-warm-600 flex-1">
         Add to Calendar → From URL → Paste link
       </p>
       <button
@@ -396,7 +396,7 @@ export function CompactSubscriptionHelp({ feedUrl }: { feedUrl: string }) {
           'shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors',
           copied
             ? 'bg-emerald-100 text-emerald-700'
-            : 'bg-white text-slate-600 hover:bg-slate-100'
+            : 'bg-white text-warm-600 hover:bg-warm-100'
         )}
       >
         {copied ? 'Copied!' : 'Copy URL'}

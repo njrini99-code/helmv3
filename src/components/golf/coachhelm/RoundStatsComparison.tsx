@@ -156,9 +156,9 @@ function StatBar({
       icon: <IconTarget size={12} />,
     },
     unknown: {
-      color: 'bg-slate-400',
-      bgColor: 'bg-slate-50',
-      textColor: 'text-slate-500',
+      color: 'bg-warm-400',
+      bgColor: 'bg-warm-50',
+      textColor: 'text-warm-500',
       icon: null,
     },
   };
@@ -187,9 +187,9 @@ function StatBar({
       </div>
 
       {/* Bar container */}
-      <div className="relative h-3 rounded-full bg-slate-100 overflow-hidden">
+      <div className="relative h-3 rounded-full bg-warm-100 overflow-hidden">
         {/* Center line (average marker) */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-slate-300 z-10" />
+        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-warm-300 z-10" />
 
         {/* Player avg marker */}
         {playerAvg !== null && (
@@ -365,15 +365,15 @@ export function RoundStatsComparison({
       {/* Legend */}
       <div className="mt-6 pt-4 border-t border-white/20">
         <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-warm-500">
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-green-500" />
             Above average
           </span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-blue-500" />
             On pace
           </span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-amber-500" />
             Below average
           </span>
@@ -434,20 +434,20 @@ export function RoundStatsComparisonSkeleton() {
   return (
     <GlassCard>
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-slate-200 animate-pulse" />
+        <div className="w-10 h-10 rounded-xl bg-warm-200 animate-pulse" />
         <div className="space-y-2">
-          <div className="h-4 w-32 bg-slate-200 rounded animate-pulse" />
-          <div className="h-3 w-24 bg-slate-200 rounded animate-pulse" />
+          <div className="h-4 w-32 bg-warm-200 rounded animate-pulse" />
+          <div className="h-3 w-24 bg-warm-200 rounded animate-pulse" />
         </div>
       </div>
       <div className="space-y-6">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="space-y-2">
             <div className="flex justify-between">
-              <div className="h-4 w-28 bg-slate-200 rounded animate-pulse" />
-              <div className="h-4 w-12 bg-slate-200 rounded animate-pulse" />
+              <div className="h-4 w-28 bg-warm-200 rounded animate-pulse" />
+              <div className="h-4 w-12 bg-warm-200 rounded animate-pulse" />
             </div>
-            <div className="h-3 w-full bg-slate-200 rounded-full animate-pulse" />
+            <div className="h-3 w-full bg-warm-200 rounded-full animate-pulse" />
           </div>
         ))}
       </div>

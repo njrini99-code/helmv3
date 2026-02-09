@@ -190,7 +190,7 @@ function StatCard({
   valueColor?: string;
 }) {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4">
+    <div className="bg-glass backdrop-blur-xl border border-white/20 rounded-xl p-4">
       <p className="text-sm text-warm-500 mb-1">{label}</p>
       <p className={cn('text-2xl font-semibold', valueColor)}>{value}</p>
       {subValue && (

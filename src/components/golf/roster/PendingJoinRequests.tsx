@@ -201,17 +201,17 @@ export function PendingJoinRequests() {
                         {/* Player Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold text-slate-900 truncate">
+                            <h4 className="font-semibold text-warm-900 truncate">
                               {request.player?.first_name} {request.player?.last_name}
                             </h4>
                             {request.player?.graduation_year && (
-                              <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">
+                              <span className="text-xs px-2 py-0.5 bg-warm-100 text-warm-600 rounded-full">
                                 Class of {request.player.graduation_year}
                               </span>
                             )}
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-warm-500">
                             {request.player?.hometown && request.player?.state && (
                               <span>{request.player.hometown}, {request.player.state}</span>
                             )}
@@ -227,8 +227,8 @@ export function PendingJoinRequests() {
                           </div>
 
                           {request.message && (
-                            <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                              <p className="text-sm text-slate-600 italic">"{request.message}"</p>
+                            <div className="mt-2 p-2 bg-warm-50 rounded-lg border border-warm-100">
+                              <p className="text-sm text-warm-600 italic">"{request.message}"</p>
                             </div>
                           )}
                         </div>

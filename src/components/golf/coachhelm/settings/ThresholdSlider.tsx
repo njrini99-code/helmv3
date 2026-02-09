@@ -39,16 +39,16 @@ export function ThresholdSlider({
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <label htmlFor={id} className="text-sm font-medium text-slate-900">
+                    <label htmlFor={id} className="text-sm font-medium text-warm-900">
                         {label}
                     </label>
-                    <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+                    <p className="text-xs text-warm-500 mt-0.5">{description}</p>
                 </div>
                 <div className="text-right">
-                    <span className="text-lg font-semibold text-slate-900 tabular-nums">
+                    <span className="text-lg font-semibold text-warm-900 tabular-nums">
                         {value.toFixed(1)}
                     </span>
-                    <span className="text-sm text-slate-500 ml-1">{unit}</span>
+                    <span className="text-sm text-warm-500 ml-1">{unit}</span>
                 </div>
             </div>
 
@@ -66,7 +66,7 @@ export function ThresholdSlider({
                 />
 
                 {/* Background Track */}
-                <div className="absolute top-1 left-0 right-0 h-2 bg-slate-100 rounded-full" />
+                <div className="absolute top-1 left-0 right-0 h-2 bg-warm-100 rounded-full" />
 
                 {/* Fill overlay */}
                 <div
@@ -78,7 +78,7 @@ export function ThresholdSlider({
             {/* Marks */}
             <div className="flex justify-between px-1">
                 {marks.map((mark) => (
-                    <span key={mark} className="text-xs text-slate-400">
+                    <span key={mark} className="text-xs text-warm-400">
                         {mark}
                     </span>
                 ))}

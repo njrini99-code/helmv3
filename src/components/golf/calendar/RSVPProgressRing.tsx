@@ -103,7 +103,7 @@ export function RSVPProgressRing({
           cy={config.diameter / 2}
           r={radius}
           fill="none"
-          stroke="rgb(241, 245, 249)" // slate-100
+          stroke="rgb(241, 245, 249)" // warm-100
           strokeWidth={config.strokeWidth}
         />
 
@@ -114,7 +114,7 @@ export function RSVPProgressRing({
             cy={config.diameter / 2}
             r={radius}
             fill="none"
-            stroke="rgb(203, 213, 225)" // slate-300
+            stroke="rgb(203, 213, 225)" // warm-300
             strokeWidth={config.strokeWidth}
             strokeDasharray={`${pendingArc} ${circumference - pendingArc}`}
             strokeDashoffset={-pendingOffset}
@@ -177,7 +177,7 @@ export function RSVPProgressRing({
           y={config.diameter / 2}
           textAnchor="middle"
           dominantBaseline="middle"
-          className={cn('font-bold fill-slate-900', config.fontSize)}
+          className={cn('font-bold fill-warm-900', config.fontSize)}
           transform={`rotate(90 ${config.diameter / 2} ${config.diameter / 2})`}
         >
           {confirmed}
@@ -187,7 +187,7 @@ export function RSVPProgressRing({
           y={config.diameter / 2 + (config.diameter * 0.15)}
           textAnchor="middle"
           dominantBaseline="middle"
-          className="text-xs fill-slate-500"
+          className="text-xs fill-warm-500"
           transform={`rotate(90 ${config.diameter / 2} ${config.diameter / 2 + config.diameter * 0.15})`}
         >
           of {total}
@@ -198,33 +198,33 @@ export function RSVPProgressRing({
       {showLabel && (
         <div className={cn('flex flex-wrap justify-center gap-3', config.labelSize)}>
           {confirmedPct > 0 && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-              <span className="text-slate-700">
+              <span className="text-warm-700">
                 {confirmed} Accepted
               </span>
             </div>
           )}
           {maybePct > 0 && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-              <span className="text-slate-700">
+              <span className="text-warm-700">
                 {maybe} Tentative
               </span>
             </div>
           )}
           {declinedPct > 0 && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-rose-400"></div>
-              <span className="text-slate-700">
+              <span className="text-warm-700">
                 {declined} Declined
               </span>
             </div>
           )}
           {pendingPct > 0 && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-slate-300"></div>
-              <span className="text-slate-700">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-warm-300"></div>
+              <span className="text-warm-700">
                 {pending} Pending
               </span>
             </div>
@@ -284,7 +284,7 @@ export function CompactRSVPRing({
         y={config.diameter / 2}
         textAnchor="middle"
         dominantBaseline="middle"
-        className="text-xs font-semibold fill-slate-900"
+        className="text-xs font-semibold fill-warm-900"
         transform={`rotate(90 ${config.diameter / 2} ${config.diameter / 2})`}
       >
         {confirmed}/{total}

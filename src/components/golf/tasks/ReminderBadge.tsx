@@ -50,12 +50,12 @@ export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBa
     upcoming: 'bg-amber-50 text-amber-700 border-amber-200',
     soon: 'bg-orange-50 text-orange-700 border-orange-200',
     imminent: 'bg-red-50 text-red-700 border-red-200 animate-pulse',
-    past: 'bg-slate-50 text-slate-500 border-slate-200',
+    past: 'bg-warm-50 text-warm-500 border-warm-200',
   };
 
   const sizeStyles = {
     sm: 'px-1.5 py-0.5 text-xs gap-1',
-    md: 'px-2 py-1 text-xs gap-1.5',
+    md: 'px-2 py-1 text-xs gap-2',
   };
 
   const iconSize = size === 'sm' ? 10 : 12;
@@ -103,7 +103,7 @@ export function ReminderIcon({ reminderAt, className }: { reminderAt: string; cl
     upcoming: 'text-amber-500',
     soon: 'text-orange-500',
     imminent: 'text-red-500',
-    past: 'text-slate-400',
+    past: 'text-warm-400',
   };
 
   return (

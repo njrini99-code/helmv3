@@ -166,7 +166,7 @@ export function AvatarUpload({
           <p className="text-sm text-red-600">{error}</p>
         )}
 
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-warm-500">
           JPG, PNG or GIF. Max {maxSizeMB}MB.
         </p>
       </div>

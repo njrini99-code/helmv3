@@ -95,7 +95,7 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 text-left hover:bg-slate-50/50 transition-colors"
+        className="w-full p-4 text-left hover:bg-warm-50/50 transition-colors"
       >
         <div className="flex items-start gap-3">
           {/* Icon & Priority Badge */}
@@ -119,15 +119,15 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-1">
-              <h4 className="font-medium text-slate-900 text-sm leading-tight">
+              <h4 className="font-medium text-warm-900 text-sm leading-tight">
                 {insight.title}
               </h4>
-              <span className="text-xs text-slate-400 flex-shrink-0">
+              <span className="text-xs text-warm-400 flex-shrink-0">
                 {formatInsightAge(insight.created_at)}
               </span>
             </div>
 
-            <p className="text-sm text-slate-600 line-clamp-2">
+            <p className="text-sm text-warm-600 line-clamp-2">
               {insight.description}
             </p>
 
@@ -139,7 +139,7 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
                   name={`${insight.player.first_name} ${insight.player.last_name}`}
                   size="xs"
                 />
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-warm-500">
                   {insight.player.first_name} {insight.player.last_name}
                 </span>
               </div>
@@ -147,7 +147,7 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
           </div>
 
           {/* Expand Icon */}
-          <div className="flex-shrink-0 text-slate-400">
+          <div className="flex-shrink-0 text-warm-400">
             {expanded ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
           </div>
         </div>
@@ -155,10 +155,10 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
 
       {/* Expanded Content */}
       {expanded && (
-        <div className="px-4 pb-4 space-y-3 border-t border-slate-100">
+        <div className="px-4 pb-4 space-y-3 border-t border-warm-100">
           {/* Full Description */}
           <div className="pt-3">
-            <p className="text-sm text-slate-700 leading-relaxed">
+            <p className="text-sm text-warm-700 leading-relaxed">
               {insight.description}
             </p>
           </div>
@@ -185,7 +185,7 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
                 AI Powered
               </span>
               {typeof insight.metadata.confidence === 'number' && (
-                <span className="text-slate-500">
+                <span className="text-warm-500">
                   {Math.round((insight.metadata.confidence as number) * 100)}% confidence
                 </span>
               )}
@@ -202,11 +202,11 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
                 }
                 if (typeof value === 'number' || typeof value === 'string') {
                   return (
-                    <div key={key} className="bg-slate-50 rounded p-2">
-                      <p className="text-xs text-slate-500 capitalize">
+                    <div key={key} className="bg-warm-50 rounded p-2">
+                      <p className="text-xs text-warm-500 capitalize">
                         {key.replace(/_/g, ' ')}
                       </p>
-                      <p className="text-sm font-medium text-slate-900">
+                      <p className="text-sm font-medium text-warm-900">
                         {typeof value === 'number' ? value.toFixed(1) : value}
                       </p>
                     </div>
@@ -219,7 +219,7 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
 
           {/* Create Focus Area - Primary Action for Player-Specific Insights */}
           {canCreateFocusArea && (
-            <div className="pt-2 border-t border-slate-100">
+            <div className="pt-2 border-t border-warm-100">
               <button
                 onClick={handleCreateFocusArea}
                 disabled={loading || creatingFocusArea}
@@ -228,7 +228,7 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
                 <IconTarget size={16} />
                 {creatingFocusArea ? 'Creating...' : 'Create Focus Area'}
               </button>
-              <p className="text-xs text-slate-500 text-center mt-1.5">
+              <p className="text-xs text-warm-500 text-center mt-1.5">
                 Turn this insight into an actionable development plan
               </p>
             </div>
@@ -242,7 +242,7 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
               className={cn(
                 'flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors',
                 canCreateFocusArea
-                  ? 'flex-1 bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  ? 'flex-1 bg-warm-100 text-warm-700 hover:bg-warm-200'
                   : 'flex-1 bg-green-600 text-white hover:bg-green-700'
               )}
             >
@@ -252,14 +252,14 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
             <button
               onClick={handleAcknowledge}
               disabled={loading || creatingFocusArea}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-warm-100 text-warm-700 text-sm font-medium rounded-lg hover:bg-warm-200 disabled:opacity-50 transition-colors"
             >
               Acknowledge
             </button>
             <button
               onClick={handleDismiss}
               disabled={loading || creatingFocusArea}
-              className="px-3 py-2 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors"
+              className="px-3 py-2 bg-warm-100 text-warm-500 rounded-lg hover:bg-warm-200 disabled:opacity-50 transition-colors"
               title="Dismiss"
             >
               <IconX size={16} />

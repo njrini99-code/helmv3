@@ -186,11 +186,11 @@ export function RecentActivityFeed({
       case 'event':
         return 'bg-purple-100 text-purple-600';
       case 'player_join':
-        return 'bg-slate-100 text-slate-600';
+        return 'bg-warm-100 text-warm-600';
       case 'achievement':
         return 'bg-yellow-100 text-yellow-600';
       default:
-        return 'bg-slate-100 text-slate-600';
+        return 'bg-warm-100 text-warm-600';
     }
   };
 
@@ -216,10 +216,10 @@ export function RecentActivityFeed({
       <div className={cn('space-y-3', className)}>
         {[...Array(3)].map((_, i) => (
           <div key={i} className="flex items-center gap-3 animate-pulse">
-            <div className="w-9 h-9 rounded-lg bg-slate-200" />
+            <div className="w-9 h-9 rounded-lg bg-warm-200" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 bg-slate-200 rounded w-1/3" />
-              <div className="h-3 bg-slate-200 rounded w-2/3" />
+              <div className="h-4 bg-warm-200 rounded w-1/3" />
+              <div className="h-3 bg-warm-200 rounded w-2/3" />
             </div>
           </div>
         ))}
@@ -230,10 +230,10 @@ export function RecentActivityFeed({
   if (activities.length === 0) {
     return (
       <div className={cn('text-center py-8', className)}>
-        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-          <IconGolf size={24} className="text-slate-400" />
+        <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+          <IconGolf size={24} className="text-warm-400" />
         </div>
-        <p className="text-slate-500 text-sm">No recent activity</p>
+        <p className="text-warm-500 text-sm">No recent activity</p>
       </div>
     );
   }
@@ -244,7 +244,7 @@ export function RecentActivityFeed({
         <div
           key={activity.id}
           className={cn(
-            'flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer',
+            'flex items-center gap-3 p-2 rounded-lg hover:bg-warm-50 transition-colors cursor-pointer',
             'animate-slide-in-up'
           )}
           style={{ animationDelay: `${index * 50}ms` }}
@@ -256,16 +256,16 @@ export function RecentActivityFeed({
             {getIcon(activity.type)}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-900 truncate">
+            <p className="text-sm font-medium text-warm-900 truncate">
               {activity.title}
             </p>
             {activity.subtitle && (
-              <p className="text-xs text-slate-500 truncate">
+              <p className="text-xs text-warm-500 truncate">
                 {activity.subtitle}
               </p>
             )}
           </div>
-          <span className="text-xs text-slate-400 flex-shrink-0">
+          <span className="text-xs text-warm-400 flex-shrink-0">
             {formatTimestamp(activity.timestamp)}
           </span>
         </div>

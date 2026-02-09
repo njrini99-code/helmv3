@@ -138,7 +138,7 @@ export function InsightExportModal({
       <div className="space-y-6">
         {/* Format Selection */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-3">
+          <label className="block text-sm font-medium text-warm-700 mb-3">
             Choose format
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -152,13 +152,13 @@ export function InsightExportModal({
                   'relative flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all',
                   selectedFormat === option.value
                     ? 'border-primary-500 bg-primary-50'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    : 'border-warm-200 hover:border-warm-300 bg-white'
                 )}
               >
                 {option.icon}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900">{option.label}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{option.description}</p>
+                  <p className="font-medium text-warm-900">{option.label}</p>
+                  <p className="text-xs text-warm-500 mt-0.5">{option.description}</p>
                 </div>
                 {selectedFormat === option.value && (
                   <motion.div
@@ -177,14 +177,14 @@ export function InsightExportModal({
         {/* Preview Info */}
         <GlassCard variant="secondary" padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-slate-100">
-              <IconFile size={20} className="text-slate-500" />
+            <div className="p-2 rounded-lg bg-warm-100">
+              <IconFile size={20} className="text-warm-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-900">
+              <p className="text-sm font-medium text-warm-900">
                 {selectedIds.length} insight{selectedIds.length !== 1 ? 's' : ''} will be exported
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-warm-500">
                 Includes title, description, player, priority, status, and dates
               </p>
             </div>

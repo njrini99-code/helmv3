@@ -35,8 +35,8 @@ const statuses = [
   {
     value: 'inactive',
     label: 'Inactive',
-    dotColor: 'bg-slate-400',
-    badgeStyle: 'bg-slate-500/10 text-slate-600 ring-slate-500/20',
+    dotColor: 'bg-warm-400',
+    badgeStyle: 'bg-warm-500/10 text-warm-600 ring-warm-500/20',
   },
 ];
 
@@ -82,7 +82,7 @@ export function PlayerStatusBadge({
   if (!editable) {
     return (
       <span className={cn(
-        'inline-flex items-center gap-1.5 px-2 py-0.5',
+        'inline-flex items-center gap-2 px-2 py-0.5',
         'text-xs font-medium rounded-full',
         'ring-1 ring-inset',
         currentStatusObj.badgeStyle
@@ -99,7 +99,7 @@ export function PlayerStatusBadge({
         onClick={() => setIsOpen(!isOpen)}
         disabled={loading}
         className={cn(
-          'inline-flex items-center gap-1.5 px-2 py-0.5',
+          'inline-flex items-center gap-2 px-2 py-0.5',
           'text-xs font-medium rounded-full',
           'ring-1 ring-inset',
           'transition-all duration-150',
@@ -110,7 +110,7 @@ export function PlayerStatusBadge({
       >
         <span className={cn(
           'w-1.5 h-1.5 rounded-full transition-colors',
-          loading ? 'animate-pulse bg-slate-400' : currentStatusObj.dotColor
+          loading ? 'animate-pulse bg-warm-400' : currentStatusObj.dotColor
         )} />
         {loading ? 'Updating...' : currentStatusObj.label}
         <IconChevronDown size={12} className={cn(
@@ -128,7 +128,7 @@ export function PlayerStatusBadge({
           <div className={cn(
             'absolute left-0 mt-2 w-40 z-50',
             'bg-white rounded-2xl',
-            'border border-slate-200 shadow-lg shadow-slate-200/50',
+            'border border-warm-200 shadow-lg shadow-warm-200/50',
             'overflow-hidden',
             'animate-in fade-in-0 zoom-in-95 duration-150'
           )}>
@@ -141,14 +141,14 @@ export function PlayerStatusBadge({
                     'w-full px-3 py-2 text-left text-sm',
                     'flex items-center gap-2',
                     'transition-colors duration-150',
-                    'hover:bg-slate-50',
-                    status.value === currentStatus && 'bg-slate-50'
+                    'hover:bg-warm-50',
+                    status.value === currentStatus && 'bg-warm-50'
                   )}
                 >
                   <span className={cn('w-2 h-2 rounded-full', status.dotColor)} />
                   <span className={cn(
                     'flex-1',
-                    status.value === currentStatus ? 'font-medium text-slate-900' : 'text-slate-700'
+                    status.value === currentStatus ? 'font-medium text-warm-900' : 'text-warm-700'
                   )}>
                     {status.label}
                   </span>

@@ -141,7 +141,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-warm-900/60 backdrop-blur-sm z-50"
         onClick={onClose}
       />
 
@@ -195,7 +195,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
             {loading ? (
               <div className="p-8 text-center">
                 <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-slate-500 mt-3">Loading requests...</p>
+                <p className="text-warm-500 mt-3">Loading requests...</p>
               </div>
             ) : (
               <div className="p-4 space-y-3">
@@ -206,7 +206,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10 }}
                     layout
-                    className="bg-slate-50 rounded-xl border border-slate-200 p-4"
+                    className="bg-warm-50 rounded-xl border border-warm-200 p-4"
                   >
                     <div className="flex items-start gap-4">
                       {/* Player Avatar */}
@@ -219,14 +219,14 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                       {/* Player Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-slate-900 truncate text-lg">
+                          <h4 className="font-semibold text-warm-900 truncate text-lg">
                             {request.player?.first_name || 'Unknown'} {request.player?.last_name || 'Player'}
                           </h4>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500 mb-2">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-warm-500 mb-2">
                           {request.player?.graduation_year && (
-                            <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded-full text-xs font-medium">
+                            <span className="px-2 py-0.5 bg-warm-200 text-warm-600 rounded-full text-xs font-medium">
                               Class of {request.player.graduation_year}
                             </span>
                           )}
@@ -246,8 +246,8 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                         </div>
 
                         {request.message && (
-                          <div className="p-3 bg-white rounded-lg border border-slate-200 mb-3">
-                            <p className="text-sm text-slate-600 italic">"{request.message}"</p>
+                          <div className="p-3 bg-white rounded-lg border border-warm-200 mb-3">
+                            <p className="text-sm text-warm-600 italic">"{request.message}"</p>
                           </div>
                         )}
 
@@ -294,10 +294,10 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
           </div>
 
           {/* Footer */}
-          <div className="border-t border-slate-200 px-4 py-3 bg-slate-50">
+          <div className="border-t border-warm-200 px-4 py-3 bg-warm-50">
             <button
               onClick={onClose}
-              className="w-full py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+              className="w-full py-2 text-sm text-warm-500 hover:text-warm-700 transition-colors"
             >
               Review later
             </button>

@@ -42,7 +42,6 @@ import {
   BENCHMARK_METADATA,
   BENCHMARK_LEVELS,
   type BenchmarkLevel,
-  getDefaultBenchmarkForDivision,
 } from '@/lib/golf/sg-benchmarks';
 
 // ============================================================================

@@ -19,12 +19,12 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
       transition={{ delay: 0.5 }}
       className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5"
     >
-      <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+      <h3 className="text-sm font-semibold text-warm-900 mb-4 flex items-center gap-2">
         <div className="p-1.5 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
           <IconSparkles size={14} className="text-white" />
         </div>
         Causal Insights
-        <span className="text-xs text-slate-500 ml-auto">
+        <span className="text-xs text-warm-500 ml-auto">
           Why your performance changed
         </span>
       </h3>
@@ -40,43 +40,43 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
           >
             {/* Cause → Effect */}
             <div className="flex items-center gap-3 mb-3">
-              <div className="flex-1 p-2 bg-slate-50 rounded-lg text-center">
-                <div className="text-xs text-slate-500 mb-0.5">Cause</div>
-                <div className="text-sm font-medium text-slate-900">{insight.cause}</div>
+              <div className="flex-1 p-2 bg-warm-50 rounded-lg text-center">
+                <div className="text-xs text-warm-500 mb-0.5">Cause</div>
+                <div className="text-sm font-medium text-warm-900">{insight.cause}</div>
               </div>
               
               <div className="flex items-center justify-center w-8 h-8 bg-amber-100 rounded-full flex-shrink-0">
                 <IconArrowRight size={16} className="text-amber-600" />
               </div>
               
-              <div className="flex-1 p-2 bg-slate-50 rounded-lg text-center">
-                <div className="text-xs text-slate-500 mb-0.5">Effect</div>
-                <div className="text-sm font-medium text-slate-900">{insight.effect}</div>
+              <div className="flex-1 p-2 bg-warm-50 rounded-lg text-center">
+                <div className="text-xs text-warm-500 mb-0.5">Effect</div>
+                <div className="text-sm font-medium text-warm-900">{insight.effect}</div>
               </div>
             </div>
 
             {/* Mechanism */}
-            <div className="text-sm text-slate-600 mb-3">
+            <div className="text-sm text-warm-600 mb-3">
               <span className="font-medium">How: </span>
               {insight.mechanism}
             </div>
 
             {/* Metrics */}
             <div className="flex items-center gap-4 text-xs">
-              <span className="text-slate-500">
+              <span className="text-warm-500">
                 Strength: 
                 <span className={cn(
                   'ml-1 font-medium',
                   insight.strength >= 0.7 ? 'text-green-600' :
                   insight.strength >= 0.4 ? 'text-amber-600' :
-                  'text-slate-600'
+                  'text-warm-600'
                 )}>
                   {Math.round(insight.strength * 100)}%
                 </span>
               </span>
-              <span className="text-slate-500">
+              <span className="text-warm-500">
                 Confidence: 
-                <span className="ml-1 font-medium text-slate-700">
+                <span className="ml-1 font-medium text-warm-700">
                   {Math.round(insight.confidence * 100)}%
                 </span>
               </span>

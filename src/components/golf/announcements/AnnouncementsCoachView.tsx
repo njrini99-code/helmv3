@@ -23,14 +23,14 @@ const itemVariants = {
 };
 
 const urgencyBorderColors: Record<string, string> = {
-  low: 'border-l-slate-300',
+  low: 'border-l-warm-300',
   normal: 'border-l-blue-400',
   high: 'border-l-amber-400',
   urgent: 'border-l-red-400',
 };
 
 const urgencyBadgeColors: Record<string, { bg: string; text: string }> = {
-  low: { bg: 'bg-slate-100', text: 'text-slate-600' },
+  low: { bg: 'bg-warm-100', text: 'text-warm-600' },
   normal: { bg: 'bg-blue-50', text: 'text-blue-600' },
   high: { bg: 'bg-amber-50', text: 'text-amber-600' },
   urgent: { bg: 'bg-red-50', text: 'text-red-600' },
@@ -122,26 +122,26 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-sm font-semibold text-slate-900 truncate">{ann.title}</h3>
+              <h3 className="text-sm font-semibold text-warm-900 truncate">{ann.title}</h3>
               {isRecent && (
                 <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-600 flex-shrink-0">
                   New
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-500 line-clamp-2">{ann.body}</p>
+            <p className="text-sm text-warm-500 line-clamp-2">{ann.body}</p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
-              <span className="text-xs text-slate-400">{publishedDate}</span>
+              <span className="text-xs text-warm-400">{publishedDate}</span>
               <span className={cn('px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider', urgencyBadge.bg, urgencyBadge.text)}>
                 {ann.urgency}
               </span>
               {ann.recipient_count > 0 ? (
-                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                <span className="inline-flex items-center gap-1 text-xs text-warm-500">
                   <IconUsers size={10} />
                   {ann.recipient_count} players
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                <span className="inline-flex items-center gap-1 text-xs text-warm-500">
                   <IconUsers size={10} />
                   All team
                 </span>
@@ -150,13 +150,13 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                 <AcknowledgementPill count={ann.acknowledged_count} total={ann.total_recipients} />
               )}
               {ann.document_count > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                <span className="inline-flex items-center gap-1 text-xs text-warm-500">
                   <IconFile size={10} />
                   {ann.document_count} doc{ann.document_count !== 1 ? 's' : ''}
                 </span>
               )}
               {ann.task_count > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                <span className="inline-flex items-center gap-1 text-xs text-warm-500">
                   <IconCheck size={10} />
                   {ann.completed_task_count}/{ann.task_count} tasks
                 </span>
@@ -168,7 +168,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
             transition={{ duration: 0.2 }}
             className="flex-shrink-0 mt-1"
           >
-            <IconChevronDown size={16} className="text-slate-400" />
+            <IconChevronDown size={16} className="text-warm-400" />
           </motion.div>
         </button>
 
@@ -182,7 +182,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
               transition={{ duration: 0.25 }}
               className="overflow-hidden"
             >
-              <div className="px-5 pb-4 border-t border-slate-100">
+              <div className="px-5 pb-4 border-t border-warm-100">
                 {loadingDetail ? (
                   <div className="py-6 flex items-center justify-center">
                     <div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" />
@@ -190,12 +190,12 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                 ) : detail ? (
                   <div className="pt-4 space-y-4">
                     {/* Full body */}
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{detail.body}</p>
+                    <p className="text-sm text-warm-700 whitespace-pre-wrap">{detail.body}</p>
 
                     {/* Documents */}
                     {detail.documents && detail.documents.length > 0 && (
                       <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Attachments</p>
+                        <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Attachments</p>
                         <div className="flex flex-wrap gap-2">
                           {detail.documents.map((d) => (
                             <a
@@ -203,10 +203,10 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                               href={d.document?.file_url || '#'}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"
+                              className="flex items-center gap-2 px-3 py-1.5 bg-warm-50 rounded-lg border border-warm-200 hover:bg-warm-100 transition-colors"
                             >
-                              <IconFile size={14} className="text-slate-400" />
-                              <span className="text-xs font-medium text-slate-700">{d.document?.title || 'Document'}</span>
+                              <IconFile size={14} className="text-warm-400" />
+                              <span className="text-xs font-medium text-warm-700">{d.document?.title || 'Document'}</span>
                             </a>
                           ))}
                         </div>
@@ -216,28 +216,28 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                     {/* Tasks with player assignments */}
                     {detail.tasks && detail.tasks.length > 0 && (
                       <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Tasks</p>
+                        <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Tasks</p>
                         <div className="space-y-2">
                           {detail.tasks.map((t) => {
                             const completed = t.assignments?.filter(a => a.status === 'completed').length || 0;
                             const total = t.assignments?.length || 0;
                             return (
-                              <div key={t.task_id} className="p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+                              <div key={t.task_id} className="p-3 bg-warm-50 rounded-lg border border-warm-200/60">
                                 <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium text-slate-900">{t.task?.title || 'Task'}</span>
+                                  <span className="text-sm font-medium text-warm-900">{t.task?.title || 'Task'}</span>
                                   <span className={cn(
                                     'text-xs font-medium tabular-nums',
-                                    completed === total && total > 0 ? 'text-green-600' : 'text-slate-500'
+                                    completed === total && total > 0 ? 'text-green-600' : 'text-warm-500'
                                   )}>
                                     {completed}/{total} done
                                   </span>
                                 </div>
                                 {t.task?.description && (
-                                  <p className="text-xs text-slate-500 mb-2">{t.task.description}</p>
+                                  <p className="text-xs text-warm-500 mb-2">{t.task.description}</p>
                                 )}
                                 {/* Per-player status */}
                                 {t.assignments && t.assignments.length > 0 && (
-                                  <div className="flex flex-wrap gap-1.5 mt-2">
+                                  <div className="flex flex-wrap gap-2 mt-2">
                                     {t.assignments.map((a) => (
                                       <span
                                         key={a.player_id}
@@ -245,7 +245,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                           'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium',
                                           a.status === 'completed'
                                             ? 'bg-green-50 text-green-700'
-                                            : 'bg-slate-100 text-slate-500'
+                                            : 'bg-warm-100 text-warm-500'
                                         )}
                                       >
                                         {a.status === 'completed' ? <IconCheck size={10} /> : <IconClock size={10} />}
@@ -264,10 +264,10 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                     {/* Acknowledgements detail */}
                     {detail.requires_acknowledgement && (
                       <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                        <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">
                           Acknowledgements ({detail.acknowledged_count}/{detail.total_recipients})
                         </p>
-                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
+                        <div className="h-2 bg-warm-100 rounded-full overflow-hidden mb-2">
                           <div
                             className={cn(
                               'h-full rounded-full transition-all',
@@ -286,10 +286,10 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                   <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center">
                                     <IconCheck size={8} className="text-green-600" />
                                   </div>
-                                  <span className="text-xs text-slate-600 flex-1">
+                                  <span className="text-xs text-warm-600 flex-1">
                                     {player ? `${player.first_name || ''} ${player.last_name || ''}` : 'Player'}
                                   </span>
-                                  <span className="text-xs text-slate-400">
+                                  <span className="text-xs text-warm-400">
                                     {new Date(ack.acknowledged_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                   </span>
                                 </div>
@@ -301,7 +301,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                     )}
 
                     {/* Delete action */}
-                    <div className="pt-2 border-t border-slate-100">
+                    <div className="pt-2 border-t border-warm-100">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -314,7 +314,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                     </div>
                   </div>
                 ) : (
-                  <p className="py-4 text-sm text-slate-400 text-center">Failed to load details</p>
+                  <p className="py-4 text-sm text-warm-400 text-center">Failed to load details</p>
                 )}
               </div>
             </motion.div>

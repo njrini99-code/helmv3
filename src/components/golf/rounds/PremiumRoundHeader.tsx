@@ -54,8 +54,8 @@ export function PremiumRoundHeader({
     : scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : `${scoreToPar}`;
 
   const scoreColor = scoreToPar === null || scoreToPar === undefined
-    ? 'text-slate-600'
-    : scoreToPar < 0 ? 'text-emerald-600' : scoreToPar > 0 ? 'text-red-600' : 'text-slate-600';
+    ? 'text-warm-600'
+    : scoreToPar < 0 ? 'text-emerald-600' : scoreToPar > 0 ? 'text-red-600' : 'text-warm-600';
 
   const formattedDate = new Date(roundDate).toLocaleDateString('en-US', {
     weekday: 'long',
@@ -78,28 +78,28 @@ export function PremiumRoundHeader({
                 size="xl"
               />
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">{playerName}</h2>
-                <p className="text-sm text-slate-500 mt-0.5">{formattedDate}</p>
+                <h2 className="text-xl font-semibold text-warm-900">{playerName}</h2>
+                <p className="text-sm text-warm-500 mt-0.5">{formattedDate}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm font-medium text-slate-700">{courseName}</span>
+                  <span className="text-sm font-medium text-warm-700">{courseName}</span>
                   {courseCity && courseState && (
-                    <span className="text-xs text-slate-400">{courseCity}, {courseState}</span>
+                    <span className="text-xs text-warm-400">{courseCity}, {courseState}</span>
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-3 mt-2">
                   {roundType && (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 capitalize">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-warm-100 text-warm-600 capitalize">
                       {roundType.replace(/_/g, ' ')}
                     </span>
                   )}
                   {courseRating && (
-                    <span className="text-xs text-slate-400">Rating: {courseRating}</span>
+                    <span className="text-xs text-warm-400">Rating: {courseRating}</span>
                   )}
                   {courseSlope && (
-                    <span className="text-xs text-slate-400">Slope: {courseSlope}</span>
+                    <span className="text-xs text-warm-400">Slope: {courseSlope}</span>
                   )}
                   {teesPlayed && (
-                    <span className="text-xs text-slate-400">Tees: {teesPlayed}</span>
+                    <span className="text-xs text-warm-400">Tees: {teesPlayed}</span>
                   )}
                 </div>
               </div>
@@ -107,14 +107,14 @@ export function PremiumRoundHeader({
 
             {/* Score display */}
             <div className="text-right flex-shrink-0">
-              <div className="text-5xl font-bold text-slate-900 tabular-nums">
+              <div className="text-5xl font-bold text-warm-900 tabular-nums">
                 {totalScore ?? '--'}
               </div>
               <div className={cn('text-xl font-semibold', scoreColor)}>
                 {scoreDisplay}
               </div>
               {frontNine !== null && backNine !== null && (
-                <p className="text-xs text-slate-400 mt-1 tabular-nums">
+                <p className="text-xs text-warm-400 mt-1 tabular-nums">
                   {frontNine} / {backNine}
                 </p>
               )}
@@ -122,36 +122,36 @@ export function PremiumRoundHeader({
           </div>
 
           {/* Stats row */}
-          <div className="mt-6 pt-6 border-t border-slate-200/60 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="mt-6 pt-6 border-t border-warm-200/60 grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
-              <p className="text-xs text-slate-400 font-medium">Putts</p>
-              <p className="text-xl font-semibold text-slate-900 tabular-nums">{totalPutts ?? '--'}</p>
+              <p className="text-xs text-warm-400 font-medium">Putts</p>
+              <p className="text-xl font-semibold text-warm-900 tabular-nums">{totalPutts ?? '--'}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Fairways</p>
-              <p className="text-xl font-semibold text-slate-900 tabular-nums">
+              <p className="text-xs text-warm-400 font-medium">Fairways</p>
+              <p className="text-xl font-semibold text-warm-900 tabular-nums">
                 {totalFairwaysHit !== null && totalFairways
                   ? `${totalFairwaysHit}/${totalFairways}`
                   : '--'}
               </p>
               {totalFairwaysHit !== null && totalFairways && totalFairways > 0 && (
-                <p className="text-xs text-slate-400">{Math.round((totalFairwaysHit / totalFairways) * 100)}%</p>
+                <p className="text-xs text-warm-400">{Math.round((totalFairwaysHit / totalFairways) * 100)}%</p>
               )}
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Greens</p>
-              <p className="text-xl font-semibold text-slate-900 tabular-nums">
+              <p className="text-xs text-warm-400 font-medium">Greens</p>
+              <p className="text-xl font-semibold text-warm-900 tabular-nums">
                 {totalGir !== null && totalGirPossible
                   ? `${totalGir}/${totalGirPossible}`
                   : '--'}
               </p>
               {totalGir !== null && totalGirPossible && totalGirPossible > 0 && (
-                <p className="text-xs text-slate-400">{Math.round((totalGir / totalGirPossible) * 100)}%</p>
+                <p className="text-xs text-warm-400">{Math.round((totalGir / totalGirPossible) * 100)}%</p>
               )}
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Front / Back</p>
-              <p className="text-xl font-semibold text-slate-900 tabular-nums">
+              <p className="text-xs text-warm-400 font-medium">Front / Back</p>
+              <p className="text-xl font-semibold text-warm-900 tabular-nums">
                 {frontNine ?? '--'} / {backNine ?? '--'}
               </p>
             </div>
@@ -163,8 +163,8 @@ export function PremiumRoundHeader({
       {notes && (
         <Card variant="glass">
           <div className="p-5">
-            <p className="text-sm font-medium text-slate-700 mb-2">Round Notes</p>
-            <p className="text-sm text-slate-600">{notes}</p>
+            <p className="text-sm font-medium text-warm-700 mb-2">Round Notes</p>
+            <p className="text-sm text-warm-600">{notes}</p>
           </div>
         </Card>
       )}

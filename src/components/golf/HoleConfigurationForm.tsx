@@ -70,7 +70,7 @@ export function HoleConfigurationForm({
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-slate-600 hover:text-slate-900"
+          className="flex items-center gap-2 text-warm-600 hover:text-warm-900"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -78,63 +78,63 @@ export function HoleConfigurationForm({
           </svg>
           Back
         </button>
-        <h2 className="text-lg font-semibold text-slate-900">{courseName}</h2>
+        <h2 className="text-lg font-semibold text-warm-900">{courseName}</h2>
         <div className="w-16" /> {/* Spacer */}
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100 text-center">
+        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-emerald-950/5 ring-1 ring-warm-100 text-center">
           <div className="text-2xl font-bold text-emerald-600">{totalPar}</div>
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Par</div>
+          <div className="text-xs font-bold text-warm-500 uppercase tracking-wider">Total Par</div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100 text-center">
-          <div className="text-2xl font-bold text-slate-900">
+        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-emerald-950/5 ring-1 ring-warm-100 text-center">
+          <div className="text-2xl font-bold text-warm-900">
             {totalYards.toLocaleString()}
           </div>
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Yards</div>
+          <div className="text-xs font-bold text-warm-500 uppercase tracking-wider">Total Yards</div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100 text-center">
-          <div className="text-2xl font-bold text-slate-600">18</div>
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Holes</div>
+        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-emerald-950/5 ring-1 ring-warm-100 text-center">
+          <div className="text-2xl font-bold text-warm-600">18</div>
+          <div className="text-xs font-bold text-warm-500 uppercase tracking-wider">Holes</div>
         </div>
       </div>
 
       {/* Front/Back Nine Tabs */}
-      <div className="flex bg-slate-100 rounded-lg p-1">
+      <div className="flex bg-warm-100 rounded-lg p-1">
         <button
           onClick={() => setActiveTab('front')}
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all
             ${activeTab === 'front'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-white text-warm-900 shadow-sm'
+              : 'text-warm-600 hover:text-warm-900'
             }`}
         >
-          Front 9 <span className="text-slate-400">({frontPar} par)</span>
+          Front 9 <span className="text-warm-400">({frontPar} par)</span>
         </button>
         <button
           onClick={() => setActiveTab('back')}
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all
             ${activeTab === 'back'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-white text-warm-900 shadow-sm'
+              : 'text-warm-600 hover:text-warm-900'
             }`}
         >
-          Back 9 <span className="text-slate-400">({backPar} par)</span>
+          Back 9 <span className="text-warm-400">({backPar} par)</span>
         </button>
       </div>
 
       {/* Hole Configuration Grid */}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm shadow-emerald-950/5 ring-1 ring-slate-100">
+      <div className="bg-white rounded-lg border border-warm-200 overflow-hidden shadow-sm shadow-emerald-950/5 ring-1 ring-warm-100">
         {/* Header */}
-        <div className="grid grid-cols-[60px_1fr_1fr] gap-0 bg-slate-50 border-b border-slate-200">
-          <div className="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="grid grid-cols-[60px_1fr_1fr] gap-0 bg-warm-50 border-b border-warm-200">
+          <div className="px-3 py-2 text-xs font-bold text-warm-500 uppercase tracking-wider">
             Hole
           </div>
-          <div className="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider text-center border-l border-slate-200">
+          <div className="px-3 py-2 text-xs font-bold text-warm-500 uppercase tracking-wider text-center border-l border-warm-200">
             Par
           </div>
-          <div className="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider text-center border-l border-slate-200">
+          <div className="px-3 py-2 text-xs font-bold text-warm-500 uppercase tracking-wider text-center border-l border-warm-200">
             Yardage
           </div>
         </div>
@@ -144,15 +144,15 @@ export function HoleConfigurationForm({
           <div
             key={hole.holeNumber}
             className={`grid grid-cols-[60px_1fr_1fr] gap-0
-              ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}
-              ${idx < displayHoles.length - 1 ? 'border-b border-slate-100' : ''}`}
+              ${idx % 2 === 0 ? 'bg-white' : 'bg-warm-50/50'}
+              ${idx < displayHoles.length - 1 ? 'border-b border-warm-100' : ''}`}
           >
             {/* Hole Number */}
             <div className="px-3 py-3 flex items-center">
               <span className={`w-8 h-8 rounded-full flex items-center justify-center
                 text-sm font-bold
                 ${hole.par === 3 ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-200' : ''}
-                ${hole.par === 4 ? 'bg-slate-100 text-slate-700 ring-1 ring-slate-200' : ''}
+                ${hole.par === 4 ? 'bg-warm-100 text-warm-700 ring-1 ring-warm-200' : ''}
                 ${hole.par === 5 ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' : ''}
               `}>
                 {hole.holeNumber}
@@ -160,7 +160,7 @@ export function HoleConfigurationForm({
             </div>
 
             {/* Par Selector */}
-            <div className="px-2 py-2 border-l border-slate-100 flex items-center justify-center">
+            <div className="px-2 py-2 border-l border-warm-100 flex items-center justify-center">
               <div className="flex gap-1">
                 {[3, 4, 5].map(par => (
                   <button
@@ -172,8 +172,8 @@ export function HoleConfigurationForm({
                           ? 'bg-rose-600 text-white shadow-sm shadow-rose-950/10 ring-1 ring-rose-700'
                           : par === 5
                             ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                            : 'bg-slate-700 text-white shadow-sm shadow-slate-950/10 ring-1 ring-slate-800'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 ring-1 ring-slate-200'
+                            : 'bg-warm-700 text-white shadow-sm shadow-warm-950/10 ring-1 ring-warm-800'
+                        : 'bg-warm-100 text-warm-600 hover:bg-warm-200 ring-1 ring-warm-200'
                       }`}
                   >
                     {par}
@@ -183,12 +183,12 @@ export function HoleConfigurationForm({
             </div>
 
             {/* Yardage Input */}
-            <div className="px-2 py-2 border-l border-slate-100 flex items-center justify-center">
+            <div className="px-2 py-2 border-l border-warm-100 flex items-center justify-center">
               <input
                 type="number"
                 value={hole.yardage}
                 onChange={(e) => updateHole(hole.holeNumber, 'yardage', parseInt(e.target.value) || 0)}
-                className="w-20 px-3 py-2 text-center text-sm font-medium border border-slate-200
+                className="w-20 px-3 py-2 text-center text-sm font-medium border border-warm-200
                            rounded-lg focus:ring-2 focus:ring-emerald-600 focus:border-transparent"
                 min="50"
                 max="700"
@@ -198,14 +198,14 @@ export function HoleConfigurationForm({
         ))}
 
         {/* Nine Total */}
-        <div className="grid grid-cols-[60px_1fr_1fr] gap-0 bg-slate-100 border-t border-slate-200">
-          <div className="px-3 py-3 text-sm font-bold text-slate-700">
+        <div className="grid grid-cols-[60px_1fr_1fr] gap-0 bg-warm-100 border-t border-warm-200">
+          <div className="px-3 py-3 text-sm font-bold text-warm-700">
             {activeTab === 'front' ? 'OUT' : 'IN'}
           </div>
-          <div className="px-3 py-3 text-center text-sm font-bold text-slate-900 border-l border-slate-200">
+          <div className="px-3 py-3 text-center text-sm font-bold text-warm-900 border-l border-warm-200">
             {activeTab === 'front' ? frontPar : backPar}
           </div>
-          <div className="px-3 py-3 text-center text-sm font-bold text-slate-900 border-l border-slate-200">
+          <div className="px-3 py-3 text-center text-sm font-bold text-warm-900 border-l border-warm-200">
             {(activeTab === 'front' ? frontYards : backYards).toLocaleString()}
           </div>
         </div>

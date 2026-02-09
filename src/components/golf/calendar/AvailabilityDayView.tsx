@@ -35,8 +35,8 @@ const EVENT_COLORS = {
   practice: { bg: 'bg-emerald-500/20', border: 'border-emerald-500', text: 'text-emerald-700' },
   tournament: { bg: 'bg-amber-500/20', border: 'border-amber-500', text: 'text-amber-700' },
   qualifier: { bg: 'bg-green-500/20', border: 'border-green-500', text: 'text-green-700' },
-  meeting: { bg: 'bg-slate-500/20', border: 'border-slate-500', text: 'text-slate-700' },
-  travel: { bg: 'bg-slate-500/20', border: 'border-slate-500', text: 'text-slate-700' },
+  meeting: { bg: 'bg-warm-500/20', border: 'border-warm-500', text: 'text-warm-700' },
+  travel: { bg: 'bg-warm-500/20', border: 'border-warm-500', text: 'text-warm-700' },
   other: { bg: 'bg-gray-500/20', border: 'border-gray-500', text: 'text-gray-700' },
 
   // Coach-specific
@@ -141,17 +141,17 @@ export function AvailabilityDayView({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-warm-200 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+      <div className="px-6 py-4 border-b border-warm-200 bg-warm-50">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">
+            <h3 className="text-lg font-semibold text-warm-900">
               Availability: {date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </h3>
             {selectedPlayer && (
-              <p className="text-sm text-slate-500 mt-1">
-                Viewing schedule for <span className="font-medium text-slate-700">{selectedPlayer.first_name} {selectedPlayer.last_name}</span>
+              <p className="text-sm text-warm-500 mt-1">
+                Viewing schedule for <span className="font-medium text-warm-700">{selectedPlayer.first_name} {selectedPlayer.last_name}</span>
               </p>
             )}
           </div>
@@ -160,25 +160,25 @@ export function AvailabilityDayView({
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-emerald-500"></div>
-              <span className="text-slate-600">Your Event</span>
+              <span className="text-warm-600">Your Event</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-orange-500"></div>
-              <span className="text-slate-600">Your Class</span>
+              <span className="text-warm-600">Your Class</span>
             </div>
             {selectedPlayer && (
               <>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded bg-rose-400" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(244, 63, 94, 0.2) 2px, rgba(244, 63, 94, 0.2) 4px)' }}></div>
-                  <span className="text-slate-600">{selectedPlayer.first_name}&apos;s Class</span>
+                  <span className="text-warm-600">{selectedPlayer.first_name}&apos;s Class</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded bg-green-500"></div>
-                  <span className="text-slate-600">{selectedPlayer.first_name}&apos;s Event</span>
+                  <span className="text-warm-600">{selectedPlayer.first_name}&apos;s Event</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded bg-green-100 border border-green-300"></div>
-                  <span className="text-slate-600">Both Free</span>
+                  <span className="text-warm-600">Both Free</span>
                 </div>
               </>
             )}
@@ -187,7 +187,7 @@ export function AvailabilityDayView({
       </div>
 
       {/* Time Grid */}
-      <div className="divide-y divide-slate-200">
+      <div className="divide-y divide-warm-200">
         {hours.map(hour => {
           const busyPeriods = getBusyPeriodsForHour(hour);
           const bothFree = selectedPlayer && isBothFree(hour);
@@ -202,10 +202,10 @@ export function AvailabilityDayView({
               onMouseLeave={() => setHoveredHour(null)}
             >
               {/* Hour Label */}
-              <div className="flex items-center justify-center w-24 py-4 px-4 bg-slate-50 border-r border-slate-200">
+              <div className="flex items-center justify-center w-24 py-4 px-4 bg-warm-50 border-r border-warm-200">
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-slate-700">{formatHour(hour)}</p>
-                  <Clock className="w-3 h-3 text-slate-400 mx-auto mt-1" />
+                  <p className="text-sm font-semibold text-warm-700">{formatHour(hour)}</p>
+                  <Clock className="w-3 h-3 text-warm-400 mx-auto mt-1" />
                 </div>
               </div>
 
@@ -266,7 +266,7 @@ export function AvailabilityDayView({
                               {period.title || 'Busy'}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500 mt-1">{formatTimeRange(period)}</p>
+                          <p className="text-xs text-warm-500 mt-1">{formatTimeRange(period)}</p>
                         </div>
                       </div>
                     </div>
@@ -300,7 +300,7 @@ export function AvailabilityDayView({
                               {period.title || 'Busy'}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500 mt-1">{formatTimeRange(period)}</p>
+                          <p className="text-xs text-warm-500 mt-1">{formatTimeRange(period)}</p>
                         </div>
                       </div>
                     </div>
@@ -309,7 +309,7 @@ export function AvailabilityDayView({
 
                 {/* Empty state */}
                 {busyPeriods.coach.length === 0 && busyPeriods.player.length === 0 && !bothFree && (
-                  <div className="flex items-center justify-center h-full text-slate-400">
+                  <div className="flex items-center justify-center h-full text-warm-400">
                     <span className="text-sm">No scheduled events</span>
                   </div>
                 )}

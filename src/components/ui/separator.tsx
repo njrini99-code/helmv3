@@ -6,7 +6,7 @@ const Separator = React.forwardRef<HTMLDivElement, SeparatorProps>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={`shrink-0 bg-slate-200 h-[1px] w-full ${className || ''}`}
+      className={`shrink-0 bg-warm-200 h-[1px] w-full ${className || ''}`}
       {...props}
     />
   )

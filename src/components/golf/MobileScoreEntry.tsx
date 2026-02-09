@@ -276,7 +276,7 @@ export default function MobileScoreEntry({
     const diff = score - par;
     if (diff <= -2) return 'text-yellow-500'; // Eagle+
     if (diff === -1) return 'text-emerald-500'; // Birdie
-    if (diff === 0) return 'text-slate-800'; // Par
+    if (diff === 0) return 'text-warm-800'; // Par
     if (diff === 1) return 'text-amber-500'; // Bogey
     return 'text-red-500'; // Double+
   };
@@ -285,7 +285,7 @@ export default function MobileScoreEntry({
     const diff = score - par;
     if (diff <= -2) return 'bg-yellow-50 border-yellow-200'; // Eagle+
     if (diff === -1) return 'bg-emerald-50 border-emerald-200'; // Birdie
-    if (diff === 0) return 'bg-slate-50 border-slate-200'; // Par
+    if (diff === 0) return 'bg-warm-50 border-warm-200'; // Par
     if (diff === 1) return 'bg-amber-50 border-amber-200'; // Bogey
     return 'bg-red-50 border-red-200'; // Double+
   };
@@ -293,7 +293,7 @@ export default function MobileScoreEntry({
   if (!currentHole) {
     return (
       <div className="min-h-full bg-transparent flex items-center justify-center">
-        <p className="text-lg text-slate-600">No hole data available</p>
+        <p className="text-lg text-warm-600">No hole data available</p>
       </div>
     );
   }
@@ -315,11 +315,11 @@ export default function MobileScoreEntry({
   return (
     <div className="min-h-full bg-transparent flex flex-col select-none">
       {/* Header with progress */}
-      <div className="bg-slate-900 text-white px-4 py-3 safe-area-top">
+      <div className="bg-warm-900 text-white px-4 py-3 safe-area-top">
         <div className="flex items-center justify-between">
           <button
             onClick={onExit}
-            className="flex items-center gap-1.5 text-sm font-medium text-slate-300 hover:text-white active:scale-95 transition-all min-h-[44px] px-2"
+            className="flex items-center gap-2 text-sm font-medium text-warm-300 hover:text-white active:scale-95 transition-all min-h-[44px] px-2"
             aria-label="Save and exit"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -329,7 +329,7 @@ export default function MobileScoreEntry({
           </button>
 
           <div className="text-center">
-            <div className="text-xs text-slate-400 uppercase tracking-wide">Round Progress</div>
+            <div className="text-xs text-warm-400 uppercase tracking-wide">Round Progress</div>
             <div className="text-sm font-semibold">{completedCount} of {holes.length}</div>
           </div>
 
@@ -345,7 +345,7 @@ export default function MobileScoreEntry({
         </div>
 
         {/* Progress bar */}
-        <div className="mt-3 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+        <div className="mt-3 h-1.5 bg-warm-700 rounded-full overflow-hidden">
           <div
             className="h-full bg-emerald-500 transition-all duration-500"
             style={{ width: `${progressPercent}%` }}
@@ -363,11 +363,11 @@ export default function MobileScoreEntry({
         }}
       >
         {/* Hole navigation */}
-        <div className="flex items-center justify-between px-4 py-4 bg-white/50 backdrop-blur-sm border-b border-slate-200/50">
+        <div className="flex items-center justify-between px-4 py-4 bg-white/50 backdrop-blur-sm border-b border-warm-200/50">
           <button
             onClick={goToPrevHole}
             disabled={!canGoBack}
-            className="flex items-center gap-1 text-slate-600 disabled:opacity-30 active:scale-95 transition-all min-h-[48px] min-w-[48px] justify-center"
+            className="flex items-center gap-1 text-warm-600 disabled:opacity-30 active:scale-95 transition-all min-h-[48px] min-w-[48px] justify-center"
             aria-label="Previous hole"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -377,18 +377,18 @@ export default function MobileScoreEntry({
 
           <div className="text-center">
             <div className="flex items-center justify-center gap-2">
-              <span className="text-2xl font-bold text-slate-900">Hole {currentHole.number}</span>
-              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-sm font-semibold text-slate-600">
+              <span className="text-2xl font-bold text-warm-900">Hole {currentHole.number}</span>
+              <span className="px-2 py-0.5 rounded-md bg-warm-100 text-sm font-semibold text-warm-600">
                 Par {currentHole.par}
               </span>
             </div>
-            <div className="text-sm text-slate-500 mt-0.5">{currentHole.yardage} yards</div>
+            <div className="text-sm text-warm-500 mt-0.5">{currentHole.yardage} yards</div>
           </div>
 
           <button
             onClick={goToNextHole}
             disabled={!canGoForward}
-            className="flex items-center gap-1 text-slate-600 disabled:opacity-30 active:scale-95 transition-all min-h-[48px] min-w-[48px] justify-center"
+            className="flex items-center gap-1 text-warm-600 disabled:opacity-30 active:scale-95 transition-all min-h-[48px] min-w-[48px] justify-center"
             aria-label="Next hole"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,7 +410,7 @@ export default function MobileScoreEntry({
             <span className={`text-lg font-semibold mt-1 ${getScoreColor(entry.score, currentHole.par)}`}>
               {scoreLabel}
             </span>
-            <div className="absolute -bottom-2 text-xs text-slate-400 bg-white px-2 py-0.5 rounded">
+            <div className="absolute -bottom-2 text-xs text-warm-400 bg-white px-2 py-0.5 rounded">
               Double-tap for par
             </div>
           </div>
@@ -420,9 +420,9 @@ export default function MobileScoreEntry({
             <button
               onClick={() => adjustScore(-1)}
               disabled={entry.score <= 1}
-              className="w-20 h-20 rounded-full bg-white border-2 border-slate-200 shadow-md
-                         flex items-center justify-center text-4xl font-bold text-slate-700
-                         active:scale-90 active:bg-slate-50 disabled:opacity-30 transition-all"
+              className="w-20 h-20 rounded-full bg-white border-2 border-warm-200 shadow-md
+                         flex items-center justify-center text-4xl font-bold text-warm-700
+                         active:scale-90 active:bg-warm-50 disabled:opacity-30 transition-all"
               aria-label="Decrease score"
             >
               -
@@ -430,9 +430,9 @@ export default function MobileScoreEntry({
             <button
               onClick={() => adjustScore(1)}
               disabled={entry.score >= 15}
-              className="w-20 h-20 rounded-full bg-white border-2 border-slate-200 shadow-md
-                         flex items-center justify-center text-4xl font-bold text-slate-700
-                         active:scale-90 active:bg-slate-50 disabled:opacity-30 transition-all"
+              className="w-20 h-20 rounded-full bg-white border-2 border-warm-200 shadow-md
+                         flex items-center justify-center text-4xl font-bold text-warm-700
+                         active:scale-90 active:bg-warm-50 disabled:opacity-30 transition-all"
               aria-label="Increase score"
             >
               +
@@ -441,30 +441,30 @@ export default function MobileScoreEntry({
         </div>
 
         {/* Quick stats */}
-        <div className="bg-white border-t border-slate-200 px-4 py-5">
+        <div className="bg-white border-t border-warm-200 px-4 py-5">
           {/* Fairway (Par 4 & 5 only) */}
           {currentHole.par >= 4 && (
             <div className="mb-4">
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+              <div className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">
                 Fairway Hit?
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => toggleFairway(true)}
-                  className={`py-3.5 rounded-xl font-semibold text-base transition-all active:scale-95
+                  className={`py-4 rounded-xl font-semibold text-base transition-all active:scale-95
                     ${entry.fairwayHit === true
                       ? 'bg-emerald-500 text-white shadow-md'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                     }`}
                 >
                   Yes
                 </button>
                 <button
                   onClick={() => toggleFairway(false)}
-                  className={`py-3.5 rounded-xl font-semibold text-base transition-all active:scale-95
+                  className={`py-4 rounded-xl font-semibold text-base transition-all active:scale-95
                     ${entry.fairwayHit === false
                       ? 'bg-red-500 text-white shadow-md'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                     }`}
                 >
                   No
@@ -475,26 +475,26 @@ export default function MobileScoreEntry({
 
           {/* GIR */}
           <div className="mb-4">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+            <div className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">
               Green in Regulation?
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => toggleGIR(true)}
-                className={`py-3.5 rounded-xl font-semibold text-base transition-all active:scale-95
+                className={`py-4 rounded-xl font-semibold text-base transition-all active:scale-95
                   ${entry.greenInRegulation === true
                     ? 'bg-emerald-500 text-white shadow-md'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   }`}
               >
                 Yes
               </button>
               <button
                 onClick={() => toggleGIR(false)}
-                className={`py-3.5 rounded-xl font-semibold text-base transition-all active:scale-95
+                className={`py-4 rounded-xl font-semibold text-base transition-all active:scale-95
                   ${entry.greenInRegulation === false
                     ? 'bg-red-500 text-white shadow-md'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   }`}
               >
                 No
@@ -504,7 +504,7 @@ export default function MobileScoreEntry({
 
           {/* Putts */}
           <div className="mb-4">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+            <div className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">
               Putts
             </div>
             <div className="grid grid-cols-4 gap-2">
@@ -519,10 +519,10 @@ export default function MobileScoreEntry({
                       setPutts(p);
                     }
                   }}
-                  className={`py-3.5 rounded-xl font-semibold text-base transition-all active:scale-95
+                  className={`py-4 rounded-xl font-semibold text-base transition-all active:scale-95
                     ${(p === 0 ? entry.putts >= 4 : entry.putts === p)
                       ? 'bg-emerald-500 text-white shadow-md'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                     }`}
                 >
                   {p === 0 ? (entry.putts >= 4 ? `${entry.putts}+` : '4+') : p}
@@ -533,13 +533,13 @@ export default function MobileScoreEntry({
         </div>
 
         {/* Action buttons */}
-        <div className="bg-white border-t border-slate-200 px-4 py-4 safe-area-bottom">
+        <div className="bg-white border-t border-warm-200 px-4 py-4 safe-area-bottom">
           <div className="grid grid-cols-2 gap-3">
             {canGoBack && (
               <button
                 onClick={goToPrevHole}
-                className="py-4 rounded-xl bg-slate-100 text-slate-700 font-semibold text-base
-                           active:scale-95 active:bg-slate-200 transition-all"
+                className="py-4 rounded-xl bg-warm-100 text-warm-700 font-semibold text-base
+                           active:scale-95 active:bg-warm-200 transition-all"
               >
                 Previous
               </button>
@@ -606,16 +606,16 @@ function HoleNavigationDots({
   return (
     <div
       ref={containerRef}
-      className="pills-scroll px-4 py-3 bg-slate-800"
+      className="pills-scroll px-4 py-3 bg-warm-800"
     >
       {holes.map((hole, index) => {
         const isActive = index === currentHoleIndex;
         const stats = completedHoleStats[index];
         const isCompleted = stats?.score != null;
 
-        let dotColor = 'bg-slate-600';
+        let dotColor = 'bg-warm-600';
         if (isActive) {
-          dotColor = 'bg-emerald-500 ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-800';
+          dotColor = 'bg-emerald-500 ring-2 ring-emerald-400 ring-offset-2 ring-offset-warm-800';
         } else if (isCompleted) {
           const diff = (stats?.score ?? 0) - hole.par;
           if (diff <= -2) dotColor = 'bg-yellow-400';
@@ -632,7 +632,7 @@ function HoleNavigationDots({
             onClick={() => handleHoleClick(index)}
             className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center
                         text-xs font-bold transition-all active:scale-90 ${dotColor}
-                        ${isCompleted || isActive ? 'text-slate-900' : 'text-white'}`}
+                        ${isCompleted || isActive ? 'text-warm-900' : 'text-white'}`}
             aria-label={`Hole ${hole.number}${isCompleted ? `, score ${stats?.score}` : ''}`}
             aria-current={isActive ? 'true' : undefined}
           >

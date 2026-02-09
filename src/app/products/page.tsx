@@ -46,6 +46,9 @@ const staggerContainer = {
 export default function ProductsPage() {
   return (
     <main className="min-h-screen bg-background overflow-x-hidden">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:shadow-lg">
+        Skip to main content
+      </a>
       <SmoothScroll />
 
       {/* Navigation */}
@@ -55,6 +58,7 @@ export default function ProductsPage() {
 
       {/* Hero Section */}
       <motion.section
+        id="main-content"
         className="relative pt-24 px-5 sm:px-6 py-16 md:py-24 max-w-6xl mx-auto"
         initial="hidden"
         animate="visible"
@@ -83,8 +87,9 @@ export default function ProductsPage() {
               <Link href="#golfhelm">
                 <button
                   className="w-full sm:w-auto flex items-center gap-4 px-5 py-3.5 rounded-xl
-                           bg-white border border-slate-200 shadow-sm
-                           hover:border-emerald-300 hover:shadow-md active:scale-[0.98] transition-all"
+                           bg-white border border-warm-200 shadow-sm
+                           hover:border-helm-green-300 hover:shadow-md active:scale-[0.98] transition-all
+                           focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-2"
                 >
                   <div className="w-11 h-11 relative flex-shrink-0">
                     <Image
@@ -96,8 +101,8 @@ export default function ProductsPage() {
                     />
                   </div>
                   <div className="text-left">
-                    <span className="font-semibold text-slate-900 block text-sm">GolfHelm</span>
-                    <span className="text-xs text-slate-500">Team Management</span>
+                    <span className="font-semibold text-warm-900 block text-sm">GolfHelm</span>
+                    <span className="text-xs text-warm-500">Team Management</span>
                   </div>
                 </button>
               </Link>
@@ -105,8 +110,9 @@ export default function ProductsPage() {
               <Link href="#baseballhelm">
                 <button
                   className="w-full sm:w-auto flex items-center gap-4 px-5 py-3.5 rounded-xl
-                           bg-white border border-slate-200 shadow-sm
-                           hover:border-blue-300 hover:shadow-md active:scale-[0.98] transition-all"
+                           bg-white border border-warm-200 shadow-sm
+                           hover:border-blue-300 hover:shadow-md active:scale-[0.98] transition-all
+                           focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-2"
                 >
                   <div className="w-11 h-11 relative flex-shrink-0">
                     <Image
@@ -118,8 +124,8 @@ export default function ProductsPage() {
                     />
                   </div>
                   <div className="text-left">
-                    <span className="font-semibold text-slate-900 block text-sm">BaseballHelm</span>
-                    <span className="text-xs text-slate-500">Recruiting Platform</span>
+                    <span className="font-semibold text-warm-900 block text-sm">BaseballHelm</span>
+                    <span className="text-xs text-warm-500">Recruiting Platform</span>
                   </div>
                 </button>
               </Link>
@@ -137,7 +143,7 @@ export default function ProductsPage() {
 
         {/* Features Strip */}
         <motion.div
-          className="mt-16 md:mt-20 pt-10 border-t border-slate-200"
+          className="mt-16 md:mt-20 pt-10 border-t border-warm-200"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -155,10 +161,10 @@ export default function ProductsPage() {
                     {index + 1}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 mb-1">
+                    <h3 className="font-semibold text-warm-900 mb-1">
                       {feature.title}
                     </h3>
-                    <p className="text-slate-600 text-sm leading-relaxed">
+                    <p className="text-warm-600 text-sm leading-relaxed">
                       {feature.description}
                     </p>
                   </div>

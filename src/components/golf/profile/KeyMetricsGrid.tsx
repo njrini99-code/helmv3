@@ -46,17 +46,17 @@ function formatScoreToPar(toPar: number | null): string {
 
 // Get color class for scoring (lower is better)
 function getScoringColor(toPar: number | null): string {
-  if (toPar === null) return 'text-slate-900';
+  if (toPar === null) return 'text-warm-900';
   if (toPar <= -2) return 'text-emerald-600';
   if (toPar < 0) return 'text-green-600';
-  if (toPar === 0) return 'text-slate-900';
+  if (toPar === 0) return 'text-warm-900';
   if (toPar <= 3) return 'text-amber-600';
   return 'text-red-600';
 }
 
 // Get color class for percentage (higher is better)
 function getPercentageColor(pct: number | null, goodThreshold: number = 50): string {
-  if (pct === null) return 'text-slate-900';
+  if (pct === null) return 'text-warm-900';
   if (pct >= goodThreshold + 15) return 'text-emerald-600';
   if (pct >= goodThreshold) return 'text-green-600';
   if (pct >= goodThreshold - 15) return 'text-amber-600';
@@ -64,7 +64,7 @@ function getPercentageColor(pct: number | null, goodThreshold: number = 50): str
 }
 
 // Individual metric card with animation
-function MetricCard({ label, value, subtext, colorClass = 'text-slate-900', index }: MetricCardProps) {
+function MetricCard({ label, value, subtext, colorClass = 'text-warm-900', index }: MetricCardProps) {
   return (
     <div
       className="relative glass-standard rounded-xl overflow-hidden p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
@@ -88,13 +88,13 @@ function MetricCard({ label, value, subtext, colorClass = 'text-slate-900', inde
       </div>
 
       {/* Label */}
-      <div className="text-xs font-medium text-slate-700 mt-1 uppercase tracking-wide">
+      <div className="text-xs font-medium text-warm-700 mt-1 uppercase tracking-wide">
         {label}
       </div>
 
       {/* Optional subtext */}
       {subtext && (
-        <div className="text-xs text-slate-400 mt-0.5">
+        <div className="text-xs text-warm-400 mt-0.5">
           {subtext}
         </div>
       )}
@@ -111,8 +111,8 @@ function MetricCardSkeleton({ index }: { index: number }) {
         animationDelay: `${index * 50}ms`,
       }}
     >
-      <div className="h-7 bg-slate-200 rounded w-16 mx-auto mb-2" />
-      <div className="h-4 bg-slate-200 rounded w-12 mx-auto" />
+      <div className="h-7 bg-warm-200 rounded w-16 mx-auto mb-2" />
+      <div className="h-4 bg-warm-200 rounded w-12 mx-auto" />
     </div>
   );
 }
@@ -139,12 +139,12 @@ export const KeyMetricsGrid = memo(function KeyMetricsGrid({
     {
       label: 'Handicap',
       value: formatHandicap(handicap),
-      colorClass: handicap !== null && handicap <= 5 ? 'text-emerald-600' : 'text-slate-900',
+      colorClass: handicap !== null && handicap <= 5 ? 'text-emerald-600' : 'text-warm-900',
     },
     {
       label: 'Rounds',
       value: stats?.roundsPlayed?.toString() ?? '0',
-      colorClass: 'text-slate-900',
+      colorClass: 'text-warm-900',
     },
     {
       label: 'Avg Score',

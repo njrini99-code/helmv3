@@ -60,7 +60,7 @@ export function DraftIndicator({
               className="text-emerald-600 animate-spin"
             />
             {!compact && (
-              <span className="text-sm text-slate-500">Saving...</span>
+              <span className="text-sm text-warm-500">Saving...</span>
             )}
           </div>
         );
@@ -109,10 +109,10 @@ export function DraftIndicator({
           <div className="flex items-center gap-2">
             <IconGlobe
               size={compact ? 14 : 16}
-              className="text-slate-400"
+              className="text-warm-400"
             />
             {!compact && (
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-warm-500">
                 Offline - saved locally
               </span>
             )}
@@ -127,10 +127,10 @@ export function DraftIndicator({
             <div className="flex items-center gap-2">
               <IconCheck
                 size={compact ? 14 : 16}
-                className="text-slate-400"
+                className="text-warm-400"
               />
               {!compact && (
-                <span className="text-sm text-slate-400">
+                <span className="text-sm text-warm-400">
                   Saved {displayTime}
                 </span>
               )}
@@ -154,10 +154,10 @@ export function DraftIndicator({
         saveStatus.status === 'error'
           ? 'bg-amber-50 border border-amber-200'
           : saveStatus.status === 'offline'
-          ? 'bg-slate-50 border border-slate-200'
+          ? 'bg-warm-50 border border-warm-200'
           : saveStatus.status === 'saved'
           ? 'bg-emerald-50 border border-emerald-200'
-          : 'bg-white/60 border border-slate-200',
+          : 'bg-white/60 border border-warm-200',
         'transition-all duration-300',
         className
       )}

@@ -22,9 +22,9 @@ export function AnnouncementCard({ announcement, isCoach: _isCoach, playerId: _p
       case 'normal':
         return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'low':
-        return 'bg-slate-100 text-slate-600 border-slate-200';
+        return 'bg-warm-100 text-warm-600 border-warm-200';
       default:
-        return 'bg-slate-100 text-slate-600 border-slate-200';
+        return 'bg-warm-100 text-warm-600 border-warm-200';
     }
   };
 
@@ -81,8 +81,8 @@ export function AnnouncementCard({ announcement, isCoach: _isCoach, playerId: _p
         <div className="flex-1">
           <div className="flex items-start justify-between mb-2">
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">{announcement.title}</h3>
-              <p className="text-sm text-slate-500">
+              <h3 className="text-lg font-semibold text-warm-900">{announcement.title}</h3>
+              <p className="text-sm text-warm-500">
                 {announcement.published_at
                   ? formatDate(announcement.published_at)
                   : announcement.created_at
@@ -99,10 +99,10 @@ export function AnnouncementCard({ announcement, isCoach: _isCoach, playerId: _p
             </span>
           </div>
 
-          <p className="text-slate-600 whitespace-pre-wrap">{announcement.body}</p>
+          <p className="text-warm-600 whitespace-pre-wrap">{announcement.body}</p>
 
           {announcement.requires_acknowledgement && (
-            <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="mt-4 pt-4 border-t border-warm-200">
               <div className="flex items-center gap-2 text-sm">
                 <IconAlertCircle size={16} className="text-amber-600" />
                 <span className="text-amber-700 font-medium">

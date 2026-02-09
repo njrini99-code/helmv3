@@ -54,8 +54,8 @@ export function BentoCard({
         'relative rounded-2xl p-6 overflow-hidden',
         glass
           ? 'bg-white/70 backdrop-blur-xl saturate-150 border border-white/20 shadow-card'
-          : 'bg-white border border-slate-100 shadow-sm',
-        hover && 'transition-all duration-300 hover:shadow-card-hover hover:border-slate-200/50',
+          : 'bg-white border border-warm-100 shadow-sm',
+        hover && 'transition-all duration-300 hover:shadow-card-hover hover:border-warm-200/50',
         sizeClasses[size],
         className
       )}
@@ -91,8 +91,8 @@ export function BentoStatCard({
   value,
   change,
   icon,
-  iconBg = 'bg-slate-100',
-  iconColor = 'text-slate-600',
+  iconBg = 'bg-warm-100',
+  iconColor = 'text-warm-600',
   size = 'md',
   className,
 }: BentoStatCardProps) {
@@ -106,11 +106,11 @@ export function BentoStatCard({
     <BentoCard className={cn('group', className)}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm leading-relaxed text-slate-500 font-medium">{label}</p>
-          <p className={cn('font-semibold text-slate-900 mt-1 tabular-nums', valueSize[size])}>
+          <p className="text-sm leading-relaxed text-warm-500 font-medium">{label}</p>
+          <p className={cn('font-semibold text-warm-900 mt-1 tabular-nums', valueSize[size])}>
             {typeof value === 'number' ? value.toLocaleString() : value}
           </p>
-          {change && <p className="text-xs text-slate-400 mt-1.5">{change}</p>}
+          {change && <p className="text-xs text-warm-400 mt-1.5">{change}</p>}
         </div>
         {icon && (
           <div
@@ -152,8 +152,8 @@ export function BentoFeaturedCard({
   return (
     <div
       className={cn(
-        'relative rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900',
-        'border border-slate-700/50 p-6 overflow-hidden',
+        'relative rounded-3xl bg-gradient-to-br from-warm-900 via-warm-800 to-warm-900',
+        'border border-warm-700/50 p-6 overflow-hidden',
         sizeClasses[size],
         className
       )}

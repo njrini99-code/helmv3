@@ -38,7 +38,7 @@ export function ConfirmDialog({
       button: 'bg-amber-600 hover:bg-amber-700 text-white',
     },
     default: {
-      icon: 'bg-slate-100 text-slate-600',
+      icon: 'bg-warm-100 text-warm-600',
       button: 'bg-green-600 hover:bg-green-700 text-white',
     },
   };
@@ -47,7 +47,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onCancel}
     >
       <div
@@ -55,16 +55,16 @@ export function ConfirmDialog({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${styles.icon}`}>
               <IconWarning size={20} />
             </div>
-            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+            <h2 className="text-lg font-semibold text-warm-900">{title}</h2>
           </div>
           <button
             onClick={onCancel}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
             aria-label="Close dialog"
           >
             <IconX size={20} />
@@ -73,11 +73,11 @@ export function ConfirmDialog({
 
         {/* Body */}
         <div className="px-6 py-4">
-          <p className="text-sm leading-relaxed text-slate-600">{message}</p>
+          <p className="text-sm leading-relaxed text-warm-600">{message}</p>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
+        <div className="px-6 py-4 border-t border-warm-200 flex items-center justify-end gap-3">
           <Button variant="secondary" onClick={onCancel} disabled={isLoading}>
             {cancelLabel}
           </Button>

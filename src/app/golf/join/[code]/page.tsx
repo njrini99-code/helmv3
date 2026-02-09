@@ -37,7 +37,7 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
   }
 
   // Find team by join code (case-insensitive - normalize to uppercase)
-  // Note: golf_teams.organization_id references the 'organizations' table, not 'golf_organizations'
+  // Note: golf_teams.organization_id references the shared 'organizations' table in production
   const normalizedCode = code.toUpperCase();
   const { data: team, error: teamError } = await supabase
     .from('golf_teams')

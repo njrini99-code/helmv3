@@ -108,8 +108,8 @@ export function MobileEventCard({
     <div
       className={cn(
         'relative bg-white rounded-2xl overflow-hidden',
-        'shadow-sm shadow-slate-200/50',
-        'border border-slate-100',
+        'shadow-sm shadow-warm-200/50',
+        'border border-warm-100',
         'transition-all duration-200 ease-out',
         'active:scale-[0.98] active:shadow-none',
         isEventPast && 'opacity-50',
@@ -127,7 +127,7 @@ export function MobileEventCard({
         type="button"
         onClick={handleCardClick}
         className={cn(
-          'w-full text-left pl-4 pr-3 py-3.5',
+          'w-full text-left pl-4 pr-3 py-4',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-500'
         )}
       >
@@ -142,13 +142,13 @@ export function MobileEventCard({
                     'text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-md',
                     relativeLabel === 'Today'
                       ? 'bg-green-500/10 text-green-700'
-                      : 'bg-slate-100 text-slate-500'
+                      : 'bg-warm-100 text-warm-500'
                   )}>
                     {relativeLabel}
                   </span>
                 )}
                 {showDate && !relativeLabel && (
-                  <span className="text-xs text-slate-400 font-medium">
+                  <span className="text-xs text-warm-400 font-medium">
                     {formatEventDate(event.start_date)}
                   </span>
                 )}
@@ -156,21 +156,21 @@ export function MobileEventCard({
             )}
 
             {/* Title */}
-            <h3 className="font-semibold text-[15px] text-slate-900 leading-snug truncate">
+            <h3 className="font-semibold text-[15px] text-warm-900 leading-snug truncate">
               {event.title}
             </h3>
 
             {/* Time and location row */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
               {/* Time */}
-              <div className="flex items-center gap-1.5 text-slate-500">
+              <div className="flex items-center gap-2 text-warm-500">
                 <Clock className="w-3.5 h-3.5" />
                 <span className="text-sm">{formatEventTime(event.start_date, event.end_date)}</span>
               </div>
 
               {/* Location */}
               {event.location && (
-                <div className="flex items-center gap-1.5 text-slate-500 min-w-0">
+                <div className="flex items-center gap-2 text-warm-500 min-w-0">
                   <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="text-sm truncate">{event.location}</span>
                 </div>
@@ -198,7 +198,7 @@ export function MobileEventCard({
             {/* Expandable indicator */}
             {(onClick || requiresRsvp) && (
               <ChevronRight className={cn(
-                'w-5 h-5 text-slate-300 transition-transform',
+                'w-5 h-5 text-warm-300 transition-transform',
                 isExpanded && 'rotate-90'
               )} />
             )}
@@ -208,8 +208,8 @@ export function MobileEventCard({
 
       {/* Expanded RSVP section */}
       {isExpanded && requiresRsvp && (
-        <div className="px-4 pb-4 pt-3 border-t border-slate-100 bg-slate-50/50">
-          <p className="text-sm font-medium text-slate-700 mb-3">
+        <div className="px-4 pb-4 pt-3 border-t border-warm-100 bg-warm-50/50">
+          <p className="text-sm font-medium text-warm-700 mb-3">
             Will you attend?
           </p>
           <MobileRSVPButtons
@@ -265,11 +265,11 @@ export function CompactMobileEventCard({
       >
         <div className="flex items-center gap-2">
           <div className={cn('w-2 h-2 rounded-full', eventTypeConfig.bgColor)} />
-          <p className="font-medium text-sm text-slate-900 truncate">
+          <p className="font-medium text-sm text-warm-900 truncate">
             {event.title}
           </p>
         </div>
-        <p className="text-xs text-slate-500 mt-0.5 ml-4">
+        <p className="text-xs text-warm-500 mt-0.5 ml-4">
           {formatEventTime(event.start_date, event.end_date)}
           {event.location && ` - ${event.location}`}
         </p>
@@ -305,14 +305,14 @@ export function MobileEmptyEventsState({
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
       <div className="relative mb-6">
         <div className="absolute inset-0 bg-green-500/10 rounded-3xl blur-2xl scale-150" />
-        <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/50 flex items-center justify-center shadow-sm">
-          <Calendar className="w-10 h-10 text-slate-300" />
+        <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-warm-50 to-warm-100 border border-warm-200/50 flex items-center justify-center shadow-sm">
+          <Calendar className="w-10 h-10 text-warm-300" />
         </div>
       </div>
-      <h3 className="text-lg font-semibold text-slate-800 mb-1.5">
+      <h3 className="text-lg font-semibold text-warm-800 mb-1.5">
         Nothing scheduled
       </h3>
-      <p className="text-sm text-slate-500 max-w-[200px] mb-6">
+      <p className="text-sm text-warm-500 max-w-[200px] mb-6">
         {date
           ? `Your ${format(date, 'EEEE')} is free`
           : 'No upcoming events'}

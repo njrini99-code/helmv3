@@ -73,9 +73,7 @@ export const PremiumGlassCard = memo(function PremiumGlassCard({
 }: PremiumGlassCardProps) {
     const Component = hover ? motion.div : 'div';
     const hoverProps = hover ? {
-        whileHover: {
-            boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 8px 16px rgba(0,0,0,0.03), 0 16px 32px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.7)'
-        },
+        whileHover: { y: -2 },
         transition: { type: 'spring' as const, stiffness: 400, damping: 30 }
     } : {};
 
@@ -88,7 +86,7 @@ export const PremiumGlassCard = memo(function PremiumGlassCard({
                 'border border-white/30',
                 'rounded-2xl', // Standardized: 16px
                 // Premium shadow with inset highlight
-                'shadow-glass-md',
+                'shadow-glass hover:shadow-card-hover transition-shadow duration-200',
                 !noPadding && 'p-5',
                 className
             )}
@@ -151,7 +149,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
                 "border rounded-2xl", // Standardized: 16px
                 "p-5",
                 // Premium multi-layer shadow with inset highlight
-                "shadow-glass-md",
+                "shadow-glass hover:shadow-card-hover transition-shadow duration-200",
                 // Accent border
                 accent
                     ? "border-l-[3px] border-l-primary-600 border-t-white/30 border-r-white/30 border-b-white/30"
@@ -160,7 +158,6 @@ export const PremiumStatCard = memo(function PremiumStatCard({
             whileHover={{
                 y: -4,
                 scale: 1.02,
-                boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 8px 16px rgba(0,0,0,0.03), 0 16px 32px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.7)'
             }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         >
@@ -172,9 +169,9 @@ export const PremiumStatCard = memo(function PremiumStatCard({
 
             <div className="relative flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-500 mb-1">{label}</p>
+                    <p className="text-sm font-medium text-warm-500 mb-1">{label}</p>
                     <div className="flex items-baseline gap-2">
-                        <p className="text-3xl font-bold tracking-tight text-slate-900 tabular-nums">
+                        <p className="text-3xl font-bold tracking-tight text-warm-900 tabular-nums">
                             {isNumeric ? numericValue.toLocaleString(undefined, { maximumFractionDigits: 1 }) : value}
                         </p>
                         {trend && (
@@ -190,11 +187,11 @@ export const PremiumStatCard = memo(function PremiumStatCard({
                         )}
                     </div>
                     {subValue && (
-                        <p className="text-xs text-slate-400 mt-1">{subValue}</p>
+                        <p className="text-xs text-warm-400 mt-1">{subValue}</p>
                     )}
                 </div>
                 <div className={cn(
-                    'w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0', // Standardized: 12px
+                    'w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0', // Standardized: 12px
                     'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
                     'group-hover:scale-105 transition-transform duration-200',
                     iconBg, iconColor
@@ -241,12 +238,12 @@ export const QuickActionCard = memo(function QuickActionCard({
             <motion.div
                 className={cn(
                     'group flex items-center gap-4 p-4 rounded-2xl cursor-pointer', // Standardized: 16px
-                    'transition-all duration-200 touch-manipulation',
+                    'transition-all duration-200 touch-manipulation hover:shadow-card-hover',
                     'min-h-[56px]', // Ensure minimum touch target height
                     variant === 'primary'
                         ? [
-                            'bg-gradient-to-r from-slate-900 to-slate-800',
-                            'border border-slate-700/50',
+                            'bg-gradient-to-r from-warm-900 to-warm-800',
+                            'border border-warm-700/50',
                             'shadow-[0_4px_12px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.1)]'
                         ]
                         : [
@@ -258,9 +255,6 @@ export const QuickActionCard = memo(function QuickActionCard({
                 whileHover={{
                     y: -2,
                     scale: 1.01,
-                    boxShadow: variant === 'primary'
-                        ? '0 8px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15)'
-                        : '0 4px 12px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)'
                 }}
                 whileTap={{ scale: 0.97 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 25 }}
@@ -270,21 +264,21 @@ export const QuickActionCard = memo(function QuickActionCard({
                     'transition-all duration-200 group-hover:scale-105',
                     variant === 'primary'
                         ? 'bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
-                        : 'bg-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]'
+                        : 'bg-warm-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]'
                 )}>
                     {icon}
                 </div>
                 <div className="flex-1 min-w-0">
                     <p className={cn(
                         'font-semibold text-base', // Standardized: 16px
-                        variant === 'primary' ? 'text-white' : 'text-slate-900'
+                        variant === 'primary' ? 'text-white' : 'text-warm-900'
                     )}>
                         {label}
                     </p>
                     {description && (
                         <p className={cn(
                             'text-xs mt-0.5',
-                            variant === 'primary' ? 'text-white/60' : 'text-slate-500'
+                            variant === 'primary' ? 'text-white/60' : 'text-warm-500'
                         )}>
                             {description}
                         </p>
@@ -319,7 +313,7 @@ export function SectionHeader({
         <div className={cn('flex items-center justify-between mb-4', className)}>
             <div className="flex items-center gap-2">
                 {icon && <span className="text-primary-600">{icon}</span>}
-                <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">{title}</h2>
+                <h2 className="text-sm font-semibold text-warm-500 uppercase tracking-wider">{title}</h2>
             </div>
             {action && (
                 <Link href={action.href} prefetch={true}>
@@ -364,40 +358,40 @@ export function RoundRow({
             role="button"
             tabIndex={0}
             aria-label={accessibleLabel}
-            className="group flex items-center gap-4 px-4 py-3.5 hover:bg-white/30 rounded-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            className="group flex items-center gap-4 px-4 py-4 hover:bg-white/30 rounded-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             whileHover={{ x: 4 }}
         >
             <div className={cn(
                 'w-14 h-14 rounded-lg flex flex-col items-center justify-center flex-shrink-0',
                 'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
                 toPar < 0 ? 'bg-gradient-to-br from-primary-50 to-primary-100' :
-                toPar === 0 ? 'bg-gradient-to-br from-slate-50 to-slate-100' :
+                toPar === 0 ? 'bg-gradient-to-br from-warm-50 to-warm-100' :
                 'bg-gradient-to-br from-amber-50 to-amber-100'
             )}>
                 <span className={cn(
                     'text-xl font-bold',
-                    toPar < 0 ? 'text-primary-600' : toPar === 0 ? 'text-slate-700' : 'text-amber-600'
+                    toPar < 0 ? 'text-primary-600' : toPar === 0 ? 'text-warm-700' : 'text-amber-600'
                 )}>
                     {score}
                 </span>
                 <span className={cn(
                     'text-xs font-semibold',
-                    toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-slate-500' : 'text-amber-500'
+                    toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-warm-500' : 'text-amber-500'
                 )}>
                     {toPar > 0 ? '+' : ''}{toPar}
                 </span>
             </div>
             <div className="flex-1 min-w-0">
                 {showPlayer && playerName && (
-                    <p className="font-semibold text-slate-900 truncate">{playerName}</p>
+                    <p className="font-semibold text-warm-900 truncate">{playerName}</p>
                 )}
                 <p className={cn(
                     'truncate',
-                    showPlayer ? 'text-sm text-slate-500' : 'font-semibold text-slate-900'
+                    showPlayer ? 'text-sm text-warm-500' : 'font-semibold text-warm-900'
                 )}>
                     {courseName}
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-warm-400 mt-0.5">
                     {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
             </div>
@@ -508,23 +502,23 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                     <div className="flex-1 min-w-0">
                         {/* Top row: Player name + relative date */}
                         <div className="flex items-center justify-between gap-2 mb-1">
-                            <p className="font-semibold text-sm text-slate-900 truncate">
+                            <p className="font-semibold text-sm text-warm-900 truncate">
                                 {playerName}
                             </p>
-                            <span className="text-xs text-slate-400 flex-shrink-0 tabular-nums">
+                            <span className="text-xs text-warm-400 flex-shrink-0 tabular-nums">
                                 {formatRelativeDate(date)}
                             </span>
                         </div>
 
                         {/* Course name + round type */}
-                        <div className="flex items-center gap-1.5 mb-2.5">
-                            <p className="text-[13px] text-slate-500 truncate">
+                        <div className="flex items-center gap-2 mb-2.5">
+                            <p className="text-[13px] text-warm-500 truncate">
                                 {courseName}
                             </p>
                             {roundType && (
                                 <>
-                                    <span className="text-slate-300 flex-shrink-0">&middot;</span>
-                                    <span className="text-xs text-slate-400 flex-shrink-0">
+                                    <span className="text-warm-300 flex-shrink-0">&middot;</span>
+                                    <span className="text-xs text-warm-400 flex-shrink-0">
                                         {formatRoundType(roundType)}
                                     </span>
                                 </>
@@ -535,21 +529,21 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                         <div className="flex items-center gap-2 flex-wrap">
                             {/* Score badge — primary visual anchor */}
                             <div className={cn(
-                                'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg',
+                                'inline-flex items-center gap-2 px-2.5 py-1 rounded-lg',
                                 'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
                                 toPar < 0 ? 'bg-primary-50/80 border border-primary-200/60' :
-                                toPar === 0 ? 'bg-slate-50/80 border border-slate-200/60' :
+                                toPar === 0 ? 'bg-warm-50/80 border border-warm-200/60' :
                                 'bg-amber-50/80 border border-amber-200/60'
                             )}>
                                 <span className={cn(
                                     'text-base font-bold tabular-nums leading-none',
-                                    toPar < 0 ? 'text-primary-700' : toPar === 0 ? 'text-slate-700' : 'text-amber-700'
+                                    toPar < 0 ? 'text-primary-700' : toPar === 0 ? 'text-warm-700' : 'text-amber-700'
                                 )}>
                                     {score}
                                 </span>
                                 <span className={cn(
                                     'text-xs font-semibold tabular-nums leading-none',
-                                    toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-slate-400' : 'text-amber-500'
+                                    toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-warm-400' : 'text-amber-500'
                                 )}>
                                     {toParLabel}
                                 </span>
@@ -557,20 +551,20 @@ export const RecentRoundCard = memo(function RecentRoundCard({
 
                             {/* Stat pills — subtle inline metrics */}
                             {hasStats && (
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-2">
                                     {totalPutts !== null && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-xs font-medium text-slate-500 tabular-nums">
-                                            <svg className="w-3 h-3 text-slate-400" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg>
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warm-100/70 text-xs font-medium text-warm-500 tabular-nums">
+                                            <svg className="w-3 h-3 text-warm-400" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg>
                                             {totalPutts} putts
                                         </span>
                                     )}
                                     {firPct !== null && (
-                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-xs font-medium text-slate-500 tabular-nums">
+                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warm-100/70 text-xs font-medium text-warm-500 tabular-nums">
                                             FIR {firPct}%
                                         </span>
                                     )}
                                     {girPct !== null && (
-                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/70 text-xs font-medium text-slate-500 tabular-nums">
+                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warm-100/70 text-xs font-medium text-warm-500 tabular-nums">
                                             GIR {girPct}%
                                         </span>
                                     )}
@@ -608,18 +602,18 @@ export function TopPerformerRow({
 }: TopPerformerRowProps) {
     const rankColors: Record<number, { bg: string; text: string; icon?: string }> = {
         1: { bg: 'bg-gradient-to-br from-amber-100 to-amber-200', text: 'text-amber-700', icon: '🥇' },
-        2: { bg: 'bg-gradient-to-br from-slate-100 to-slate-200', text: 'text-slate-600', icon: '🥈' },
+        2: { bg: 'bg-gradient-to-br from-warm-100 to-warm-200', text: 'text-warm-600', icon: '🥈' },
         3: { bg: 'bg-gradient-to-br from-orange-100 to-orange-200', text: 'text-orange-600', icon: '🥉' }
     };
 
-    const colors = rankColors[rank] || { bg: 'bg-slate-100', text: 'text-slate-500' };
+    const colors = rankColors[rank] || { bg: 'bg-warm-100', text: 'text-warm-500' };
     const rankLabel = rank === 1 ? '1st' : rank === 2 ? '2nd' : rank === 3 ? '3rd' : `${rank}th`;
 
     return (
         <motion.div
             role="listitem"
             aria-label={`${rankLabel} place: ${name}, average score ${avgScore.toFixed(1)} over ${rounds} rounds`}
-            className="flex items-center gap-3 px-4 py-3.5 hover:bg-white/30 rounded-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" // Standardized: 12px
+            className="flex items-center gap-3 px-4 py-4 hover:bg-white/30 rounded-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" // Standardized: 12px
             whileHover={{ x: 4 }}
             tabIndex={0}
         >
@@ -631,12 +625,12 @@ export function TopPerformerRow({
                 {colors.icon || rank}
             </div>
             <div className="flex-1 min-w-0">
-                <p className="font-semibold text-slate-900 truncate">{name}</p>
-                <p className="text-xs text-slate-500">{rounds} rounds</p>
+                <p className="font-semibold text-warm-900 truncate">{name}</p>
+                <p className="text-xs text-warm-500">{rounds} rounds</p>
             </div>
             <div className="text-right">
-                <p className="font-bold text-slate-900 tabular-nums">{avgScore.toFixed(1)}</p>
-                <p className="text-xs text-slate-400 uppercase tracking-wide">avg</p>
+                <p className="font-bold text-warm-900 tabular-nums">{avgScore.toFixed(1)}</p>
+                <p className="text-xs text-warm-400 uppercase tracking-wide">avg</p>
             </div>
         </motion.div>
     );

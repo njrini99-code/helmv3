@@ -65,8 +65,8 @@ export function ShotByShot({ roundId, className }: ShotByShopProps) {
         onClick={handleToggle}
         className={cn(
           'w-full flex items-center justify-between p-6 text-left transition-colors',
-          'hover:bg-slate-50/50',
-          isExpanded && 'border-b border-slate-200'
+          'hover:bg-warm-50/50',
+          isExpanded && 'border-b border-warm-200'
         )}
       >
         <div className="flex items-center gap-4">
@@ -74,10 +74,10 @@ export function ShotByShot({ roundId, className }: ShotByShopProps) {
             <IconTarget size={22} className="text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">
+            <h3 className="text-lg font-semibold text-warm-900">
               Shot-by-Shot Review
             </h3>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-warm-500">
               {loadingState === 'loaded' && hasShots
                 ? `${totalShots} shots tracked across ${data?.holes.length || 0} holes`
                 : loadingState === 'loaded' && !hasShots
@@ -96,7 +96,7 @@ export function ShotByShot({ roundId, className }: ShotByShopProps) {
           <motion.div
             animate={{ rotate: isExpanded ? 180 : 0 }}
             transition={{ duration: 0.2 }}
-            className="text-slate-400"
+            className="text-warm-400"
           >
             <IconChevronDown size={20} />
           </motion.div>
@@ -112,7 +112,7 @@ export function ShotByShot({ roundId, className }: ShotByShopProps) {
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
-            <div className="p-6 bg-slate-50/30">
+            <div className="p-6 bg-warm-50/30">
               {/* Loading state */}
               {loadingState === 'loading' && (
                 <div className="space-y-4">
@@ -120,15 +120,15 @@ export function ShotByShot({ roundId, className }: ShotByShopProps) {
                   {[1, 2, 3].map((i) => (
                     <div
                       key={i}
-                      className="animate-pulse bg-white/70 rounded-2xl border border-slate-200 p-5"
+                      className="animate-pulse bg-white/70 rounded-2xl border border-warm-200 p-5"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-slate-200" />
+                        <div className="w-12 h-12 rounded-xl bg-warm-200" />
                         <div className="flex-1">
-                          <div className="h-4 bg-slate-200 rounded w-32 mb-2" />
-                          <div className="h-3 bg-slate-200 rounded w-48" />
+                          <div className="h-4 bg-warm-200 rounded w-32 mb-2" />
+                          <div className="h-3 bg-warm-200 rounded w-48" />
                         </div>
-                        <div className="h-6 bg-slate-200 rounded w-20" />
+                        <div className="h-6 bg-warm-200 rounded w-20" />
                       </div>
                     </div>
                   ))}
@@ -165,13 +165,13 @@ export function ShotByShot({ roundId, className }: ShotByShopProps) {
               {/* Loaded state without shot data */}
               {loadingState === 'loaded' && !hasShots && (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                    <IconTarget size={28} className="text-slate-400" />
+                  <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                    <IconTarget size={28} className="text-warm-400" />
                   </div>
-                  <h4 className="text-lg font-medium text-slate-900 mb-2">
+                  <h4 className="text-lg font-medium text-warm-900 mb-2">
                     No Shot Data Available
                   </h4>
-                  <p className="text-sm text-slate-500 max-w-md mx-auto">
+                  <p className="text-sm text-warm-500 max-w-md mx-auto">
                     Shot-by-shot tracking was not enabled during this round.
                     To see detailed shot data, enable comprehensive tracking
                     when entering a round.

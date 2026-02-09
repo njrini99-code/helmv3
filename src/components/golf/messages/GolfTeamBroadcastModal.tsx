@@ -196,8 +196,8 @@ export function GolfTeamBroadcastModal({
 
           {/* Selection Summary */}
           <div className="flex items-center gap-2 px-1">
-            <IconUsers size={16} className="text-slate-400" />
-            <span className="text-sm text-slate-600">
+            <IconUsers size={16} className="text-warm-400" />
+            <span className="text-sm text-warm-600">
               {selectedPlayerIds.size} of {players.length} players selected
             </span>
           </div>
@@ -209,7 +209,7 @@ export function GolfTeamBroadcastModal({
                 <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
               </div>
             ) : filteredPlayers.length > 0 ? (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-warm-100">
                 {filteredPlayers.map(player => {
                   const isSelected = selectedPlayerIds.has(player.id);
                   return (
@@ -218,7 +218,7 @@ export function GolfTeamBroadcastModal({
                       onClick={() => togglePlayer(player.id)}
                       className={cn(
                         'w-full px-4 py-3 flex items-center gap-3 text-left transition-colors',
-                        'hover:bg-slate-50 rounded-lg -mx-4',
+                        'hover:bg-warm-50 rounded-lg -mx-4',
                         isSelected && 'bg-emerald-50 hover:bg-emerald-50'
                       )}
                     >
@@ -226,15 +226,15 @@ export function GolfTeamBroadcastModal({
                         'w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
                         isSelected
                           ? 'bg-emerald-500 border-emerald-500'
-                          : 'border-slate-300'
+                          : 'border-warm-300'
                       )}>
                         {isSelected && <IconCheck size={12} className="text-white" />}
                       </div>
                       <Avatar name={player.name} src={player.avatarUrl} size="md" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-900 truncate">{player.name}</p>
+                        <p className="font-medium text-warm-900 truncate">{player.name}</p>
                         {player.gradYear && (
-                          <p className="text-sm text-slate-500 truncate">
+                          <p className="text-sm text-warm-500 truncate">
                             Class of {player.gradYear}
                           </p>
                         )}
@@ -245,10 +245,10 @@ export function GolfTeamBroadcastModal({
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-                  <IconUsers size={20} className="text-slate-400" />
+                <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
+                  <IconUsers size={20} className="text-warm-400" />
                 </div>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-warm-500">
                   {searchQuery.trim()
                     ? 'No players match your search'
                     : 'No players on your team yet'}
@@ -269,7 +269,7 @@ export function GolfTeamBroadcastModal({
 
           {/* Group Name Input */}
           <div>
-            <label htmlFor="broadcast-title" className="block text-sm font-medium text-slate-700 mb-1.5">
+            <label htmlFor="broadcast-title" className="block text-sm font-medium text-warm-700 mb-1.5">
               Group Name
             </label>
             <input
@@ -279,22 +279,22 @@ export function GolfTeamBroadcastModal({
               onChange={(e) => setBroadcastTitle(e.target.value)}
               placeholder="e.g., Team Updates, Practice Reminders"
               className={cn(
-                'w-full px-4 py-2.5 rounded-lg border border-slate-200',
+                'w-full px-4 py-2.5 rounded-lg border border-warm-200',
                 'focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20',
-                'text-slate-900 placeholder:text-slate-400 transition-colors'
+                'text-warm-900 placeholder:text-warm-400 transition-colors'
               )}
               autoFocus
             />
-            <p className="text-xs text-slate-500 mt-1.5">
+            <p className="text-xs text-warm-500 mt-1.5">
               Choose a name that describes the purpose of this group
             </p>
           </div>
 
           {/* Selected Players Preview */}
-          <div className="p-4 bg-slate-50 rounded-xl">
+          <div className="p-4 bg-warm-50 rounded-xl">
             <div className="flex items-center gap-2 mb-3">
-              <IconUsers size={16} className="text-slate-500" />
-              <span className="text-sm font-medium text-slate-700">
+              <IconUsers size={16} className="text-warm-500" />
+              <span className="text-sm font-medium text-warm-700">
                 {selectedPlayerIds.size} recipients
               </span>
             </div>
@@ -305,15 +305,15 @@ export function GolfTeamBroadcastModal({
                 .map(player => (
                   <div
                     key={player.id}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white rounded-full border border-slate-200"
+                    className="flex items-center gap-2 px-2.5 py-1.5 bg-white rounded-full border border-warm-200"
                   >
                     <Avatar name={player.name} src={player.avatarUrl} size="xs" />
-                    <span className="text-xs font-medium text-slate-700">{player.name.split(' ')[0]}</span>
+                    <span className="text-xs font-medium text-warm-700">{player.name.split(' ')[0]}</span>
                   </div>
                 ))}
               {selectedPlayerIds.size > 8 && (
-                <div className="flex items-center px-2.5 py-1.5 bg-slate-100 rounded-full">
-                  <span className="text-xs font-medium text-slate-500">
+                <div className="flex items-center px-2.5 py-1.5 bg-warm-100 rounded-full">
+                  <span className="text-xs font-medium text-warm-500">
                     +{selectedPlayerIds.size - 8} more
                   </span>
                 </div>
@@ -323,7 +323,7 @@ export function GolfTeamBroadcastModal({
 
           {/* Quick Title Suggestions */}
           <div>
-            <p className="text-xs font-medium text-slate-500 mb-2">Quick suggestions</p>
+            <p className="text-xs font-medium text-warm-500 mb-2">Quick suggestions</p>
             <div className="flex flex-wrap gap-2">
               {['Team Updates', 'Practice', 'Travel Info', 'Competition'].map(suggestion => (
                 <button
@@ -333,7 +333,7 @@ export function GolfTeamBroadcastModal({
                     'px-3 py-1.5 text-xs font-medium rounded-full transition-colors',
                     broadcastTitle === suggestion
                       ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   )}
                 >
                   {suggestion}

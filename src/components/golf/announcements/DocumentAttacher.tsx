@@ -38,7 +38,7 @@ function getFileColor(fileType: string): { bg: string; text: string } {
   if (fileType.includes('doc') || fileType.includes('word')) return { bg: 'bg-blue-50', text: 'text-blue-600' };
   if (fileType.includes('sheet') || fileType.includes('xls') || fileType.includes('csv')) return { bg: 'bg-green-50', text: 'text-green-600' };
   if (fileType.includes('image') || fileType.includes('png') || fileType.includes('jpg')) return { bg: 'bg-purple-50', text: 'text-purple-600' };
-  return { bg: 'bg-slate-50', text: 'text-slate-600' };
+  return { bg: 'bg-warm-50', text: 'text-warm-600' };
 }
 
 export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onChange }: DocumentAttacherProps) {
@@ -63,7 +63,7 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
 
   return (
     <div>
-      <label className="text-sm font-medium text-slate-700 block mb-2">
+      <label className="text-sm font-medium text-warm-700 block mb-2">
         Attachments
       </label>
 
@@ -85,7 +85,7 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
                   exit={{ opacity: 0, scale: 0.8 }}
                   layout
                   className={cn(
-                    'flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg border border-slate-200',
+                    'flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg border border-warm-200',
                     'bg-white shadow-sm'
                   )}
                 >
@@ -94,16 +94,16 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
                       {getFileIcon(doc.file_type)}
                     </span>
                   </div>
-                  <span className="text-xs font-medium text-slate-700 max-w-[140px] truncate">
+                  <span className="text-xs font-medium text-warm-700 max-w-[140px] truncate">
                     {doc.title}
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-warm-400">
                     {formatFileSize(doc.file_size)}
                   </span>
                   <button
                     type="button"
                     onClick={() => removeDocument(doc.id)}
-                    className="w-5 h-5 rounded flex items-center justify-center hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                    className="w-5 h-5 rounded flex items-center justify-center hover:bg-red-50 text-warm-400 hover:text-red-500 transition-colors"
                   >
                     <IconX size={12} />
                   </button>
@@ -124,13 +124,13 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
               'flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed transition-all text-sm',
               isExpanded
                 ? 'border-green-300 bg-green-50/50 text-green-700'
-                : 'border-slate-300 hover:border-slate-400 text-slate-500 hover:text-slate-700'
+                : 'border-warm-300 hover:border-warm-400 text-warm-500 hover:text-warm-700'
             )}
           >
             <IconPlus size={14} />
             <span>Attach Document</span>
             {availableDocs.length > 0 && (
-              <span className="text-xs text-slate-400">({availableDocs.length} available)</span>
+              <span className="text-xs text-warm-400">({availableDocs.length} available)</span>
             )}
           </button>
 
@@ -143,16 +143,16 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="mt-2 border border-slate-200 rounded-xl overflow-hidden">
+                <div className="mt-2 border border-warm-200 rounded-xl overflow-hidden">
                   {availableDocs.length > 3 && (
-                    <div className="px-3 py-2 border-b border-slate-100 flex items-center gap-2">
-                      <IconSearch size={14} className="text-slate-400" />
+                    <div className="px-3 py-2 border-b border-warm-100 flex items-center gap-2">
+                      <IconSearch size={14} className="text-warm-400" />
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search documents..."
-                        className="w-full text-sm text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
+                        className="w-full text-sm text-warm-900 placeholder:text-warm-400 bg-transparent outline-none"
                       />
                     </div>
                   )}
@@ -167,7 +167,7 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
                             addDocument(doc.id);
                             if (availableDocs.length <= 1) setIsExpanded(false);
                           }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-50 text-left transition-colors"
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-warm-50 text-left transition-colors"
                         >
                           <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', colors.bg)}>
                             <span className={cn('text-xs font-bold', colors.text)}>
@@ -175,15 +175,15 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-700 truncate">{doc.title}</p>
-                            <p className="text-xs text-slate-400">{formatFileSize(doc.file_size)}</p>
+                            <p className="text-sm font-medium text-warm-700 truncate">{doc.title}</p>
+                            <p className="text-xs text-warm-400">{formatFileSize(doc.file_size)}</p>
                           </div>
-                          <IconPlus size={14} className="text-slate-400 flex-shrink-0" />
+                          <IconPlus size={14} className="text-warm-400 flex-shrink-0" />
                         </button>
                       );
                     })}
                     {filteredDocs.length === 0 && (
-                      <p className="text-sm text-slate-400 text-center py-4">
+                      <p className="text-sm text-warm-400 text-center py-4">
                         {searchQuery ? 'No documents match' : 'All documents attached'}
                       </p>
                     )}
@@ -194,7 +194,7 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
           </AnimatePresence>
         </>
       ) : (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-slate-200 text-sm text-slate-400">
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-warm-200 text-sm text-warm-400">
           <IconFile size={14} />
           <span>No team documents available to attach</span>
         </div>

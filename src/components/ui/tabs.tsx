@@ -102,7 +102,7 @@ export function TabsTrigger({ value, children, icon, badge, className }: {
         'relative z-10 px-4 py-2 min-h-[44px] text-sm font-medium rounded-md',
         'transition-colors duration-200 ease-out',
         'flex items-center justify-center gap-2',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2',
         isActive
           ? 'text-warm-900'
           : 'text-warm-500 hover:text-warm-700',

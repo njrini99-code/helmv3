@@ -332,6 +332,8 @@ export async function onRoundCompleteAction(
 ): Promise<void> {
   try {
     await invalidateOnRoundComplete(playerId, roundId);
+    revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/stats');
   } catch (error) {
     console.error('[Stats Action] Error invalidating on round complete:', error);
     // Don't throw - cache invalidation failure shouldn't block round submission
@@ -344,6 +346,8 @@ export async function onRoundCompleteAction(
 export async function markStatsStaleAction(playerId: string): Promise<void> {
   try {
     await markStatsStale(playerId);
+    revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/stats');
   } catch (error) {
     console.error('[Stats Action] Error marking stats stale:', error);
   }

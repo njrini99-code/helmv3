@@ -25,7 +25,7 @@ export function ExpandableCard({
         layoutId={`card-${id}`}
         onClick={() => setIsExpanded(true)}
         className={cn(
-          'cursor-pointer rounded-2xl bg-white border border-slate-200',
+          'cursor-pointer rounded-2xl bg-white border border-warm-200',
           className
         )}
         whileHover={{ scale: 1.02 }}
@@ -53,7 +53,7 @@ export function ExpandableCard({
             >
               <button
                 onClick={() => setIsExpanded(false)}
-                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-xl leading-none"
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-warm-100 hover:bg-warm-200 text-warm-600 text-xl leading-none"
               >
                 ×
               </button>

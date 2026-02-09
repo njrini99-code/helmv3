@@ -108,7 +108,7 @@ export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: 
       {/* Header with Generate Button */}
       {showGenerateButton && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-warm-500">
             {insights.length} active insight{insights.length !== 1 ? 's' : ''}
           </p>
           <button

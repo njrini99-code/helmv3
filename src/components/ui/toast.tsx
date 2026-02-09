@@ -164,7 +164,7 @@ function ToastItem({ toast, onRemove, index }: { toast: Toast; onRemove: () => v
     <div
       role="alert"
       className={cn(
-        'pointer-events-auto w-[380px] bg-white border border-warm-200 border-l-4 rounded-[14px] shadow-lg overflow-hidden',
+        'pointer-events-auto w-full max-w-[380px] bg-white border border-warm-200 border-l-4 rounded-[14px] shadow-lg overflow-hidden',
         'transition-all duration-200 ease-out',
         isExiting
           ? 'opacity-0 translate-x-[120%] scale-95'

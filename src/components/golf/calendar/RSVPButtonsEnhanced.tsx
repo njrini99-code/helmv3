@@ -183,7 +183,7 @@ export function RSVPButtonsEnhanced({
               onClick={() => handleRespond(option.value)}
               disabled={disabled || isLoading}
               className={cn(
-                'flex-1 flex items-center justify-center gap-1.5',
+                'flex-1 flex items-center justify-center gap-2',
                 'min-h-[48px] px-3 py-2 rounded-xl border-2 border-transparent',
                 'transition-all duration-200 ease-out',
                 'touch-manipulation select-none',
@@ -214,7 +214,7 @@ export function RSVPButtonsEnhanced({
 
   // Icon-only variant - just icons for very compact spaces
   return (
-    <div className={cn('flex gap-1.5', className)}>
+    <div className={cn('flex gap-2', className)}>
       {RSVP_OPTIONS.map((option) => {
         const Icon = option.icon;
         const isActive = displayResponse === option.value;
@@ -274,7 +274,7 @@ export function RSVPStatusBadge({
       case 'declined':
         return { label: "Can't Go", icon: XCircle, className: 'bg-rose-100 text-rose-700' };
       default:
-        return { label: 'RSVP', icon: HelpCircle, className: 'bg-slate-100 text-slate-500' };
+        return { label: 'RSVP', icon: HelpCircle, className: 'bg-warm-100 text-warm-500' };
     }
   };
 
@@ -283,7 +283,7 @@ export function RSVPStatusBadge({
 
   const sizeClasses = size === 'sm'
     ? 'px-2 py-1 text-xs gap-1'
-    : 'px-3 py-1.5 text-sm gap-1.5';
+    : 'px-3 py-1.5 text-sm gap-2';
 
   return (
     <button

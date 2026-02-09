@@ -177,7 +177,7 @@ export function SearchAutocomplete({
   return (
     <div className={`relative ${className}`}>
       <div className="relative">
-        <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10" />
+        <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 z-10" />
         <input
           ref={inputRef}
           type="text"
@@ -194,9 +194,9 @@ export function SearchAutocomplete({
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
-          className="w-full pl-9 pr-10 py-2 rounded-lg border border-slate-200
+          className="w-full pl-9 pr-10 py-2 rounded-lg border border-warm-200
                      focus:border-green-500 focus:ring-2 focus:ring-green-100
-                     text-sm text-slate-900 placeholder:text-slate-400
+                     text-sm text-warm-900 placeholder:text-warm-400
                      transition-colors"
         />
         {loading && (
@@ -207,7 +207,7 @@ export function SearchAutocomplete({
         {value && !loading && (
           <button
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600 transition-colors"
           >
             <IconX size={16} />
           </button>
@@ -218,7 +218,7 @@ export function SearchAutocomplete({
       {isOpen && suggestions.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-2 bg-white rounded-lg border border-slate-200 shadow-lg overflow-hidden"
+          className="absolute z-50 w-full mt-2 bg-white rounded-lg border border-warm-200 shadow-lg overflow-hidden"
         >
           <div className="max-h-80 overflow-y-auto">
             {suggestions.map((player, index) => {
@@ -232,9 +232,9 @@ export function SearchAutocomplete({
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors
                     ${index === selectedIndex
                       ? 'bg-green-50'
-                      : 'hover:bg-slate-50'
+                      : 'hover:bg-warm-50'
                     }
-                    ${index !== suggestions.length - 1 ? 'border-b border-slate-100' : ''}
+                    ${index !== suggestions.length - 1 ? 'border-b border-warm-100' : ''}
                   `}
                 >
                   <Avatar
@@ -243,10 +243,10 @@ export function SearchAutocomplete({
                     size="sm"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">
+                    <p className="text-sm font-medium text-warm-900 truncate">
                       {fullName}
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <div className="flex items-center gap-2 text-xs text-warm-500">
                       {player.primary_position && (
                         <span className="font-medium">{player.primary_position}</span>
                       )}
@@ -258,7 +258,7 @@ export function SearchAutocomplete({
                       )}
                     </div>
                     {(player.high_school_name || location) && (
-                      <p className="text-xs text-slate-400 truncate mt-0.5">
+                      <p className="text-xs text-warm-400 truncate mt-0.5">
                         {player.high_school_name || location}
                       </p>
                     )}
@@ -267,9 +267,9 @@ export function SearchAutocomplete({
               );
             })}
           </div>
-          <div className="px-4 py-2 bg-slate-50 border-t border-slate-100">
-            <p className="text-xs text-slate-500">
-              Press <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-medium">Enter</kbd> to search all results
+          <div className="px-4 py-2 bg-warm-50 border-t border-warm-100">
+            <p className="text-xs text-warm-500">
+              Press <kbd className="px-1.5 py-0.5 bg-white border border-warm-200 rounded text-[10px] font-medium">Enter</kbd> to search all results
             </p>
           </div>
         </div>
@@ -279,9 +279,9 @@ export function SearchAutocomplete({
       {isOpen && !loading && suggestions.length === 0 && value.length >= 2 && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-2 bg-white rounded-lg border border-slate-200 shadow-lg p-4"
+          className="absolute z-50 w-full mt-2 bg-white rounded-lg border border-warm-200 shadow-lg p-4"
         >
-          <p className="text-sm leading-relaxed text-slate-500 text-center">
+          <p className="text-sm leading-relaxed text-warm-500 text-center">
             No players found matching &quot;{value}&quot;
           </p>
         </div>

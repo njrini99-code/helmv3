@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 /**
- * Qualifier leaderboard entry with player info
+ * Qualifier leaderboard entry with player info and scoring aggregates
  * Based on golf_qualifier_entries table schema
  */
 export interface QualifierLeaderboardEntry {
@@ -14,6 +14,10 @@ export interface QualifierLeaderboardEntry {
   player_name: string;
   position: number | null;
   score: number | null;
+  total_score: number | null;
+  total_to_par: number | null;
+  rounds_completed: number;
+  is_tied: boolean;
   status: string | null;
   notes: string | null;
   round_id: string | null;
@@ -32,6 +36,8 @@ export interface QualifierDetails {
   description: string | null;
   course_name: string | null;
   course_id: string | null;
+  num_rounds: number;
+  holes_per_round: number;
   start_date: string;
   end_date: string | null;
   entry_deadline: string | null;
@@ -46,6 +52,7 @@ export interface QualifierDetails {
 interface UseQualifierRealtimeResult {
   qualifier: QualifierDetails | null;
   leaderboard: QualifierLeaderboardEntry[];
+  coursePar: number | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -64,6 +71,7 @@ interface UseQualifierRealtimeResult {
 export function useQualifierRealtime(qualifierId: string | null): UseQualifierRealtimeResult {
   const [qualifier, setQualifier] = useState<QualifierDetails | null>(null);
   const [leaderboard, setLeaderboard] = useState<QualifierLeaderboardEntry[]>([]);
+  const [coursePar, setCoursePar] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
@@ -72,6 +80,7 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
     if (!qualifierId) {
       setQualifier(null);
       setLeaderboard([]);
+      setCoursePar(null);
       setLoading(false);
       return;
     }
@@ -80,15 +89,26 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
     setError(null);
 
     try {
-      // Fetch qualifier details
+      // Fetch qualifier details with course par via join
       const { data: qualifierData, error: qualifierError } = await supabase
         .from('golf_qualifiers')
-        .select('*')
+        .select(`
+          *,
+          course:golf_courses(id, par)
+        `)
         .eq('id', qualifierId)
         .single();
 
       if (qualifierError) throw qualifierError;
-      setQualifier(qualifierData as QualifierDetails);
+
+      const qualifierDetails = qualifierData as QualifierDetails & {
+        course: { id: string; par: number | null } | null;
+      };
+      setQualifier(qualifierDetails);
+
+      // Extract course par (from linked course, or null)
+      const fetchedCoursePar = qualifierDetails.course?.par ?? null;
+      setCoursePar(fetchedCoursePar);
 
       // Fetch leaderboard entries with player info
       const { data: entriesData, error: entriesError } = await supabase
@@ -102,9 +122,47 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
 
       if (entriesError) throw entriesError;
 
-      // Transform to include player name
+      // Fetch all qualifier rounds to compute per-player aggregates
+      const { data: roundsData, error: roundsError } = await supabase
+        .from('golf_rounds')
+        .select('player_id, total_score, score_to_par, status')
+        .eq('qualifier_id', qualifierId);
+
+      if (roundsError) throw roundsError;
+
+      // Build per-player round aggregates
+      const playerRoundAggregates = new Map<string, {
+        roundsCompleted: number;
+        totalScore: number;
+        totalToPar: number;
+      }>();
+
+      for (const round of roundsData || []) {
+        const existing = playerRoundAggregates.get(round.player_id) ?? {
+          roundsCompleted: 0,
+          totalScore: 0,
+          totalToPar: 0,
+        };
+
+        if (round.status === 'completed') {
+          existing.roundsCompleted += 1;
+        }
+        existing.totalScore += round.total_score ?? 0;
+        existing.totalToPar += round.score_to_par ?? 0;
+
+        playerRoundAggregates.set(round.player_id, existing);
+      }
+
+      // Transform to include player name and scoring aggregates
       const transformedEntries: QualifierLeaderboardEntry[] = (entriesData || []).map((entry) => {
         const player = entry.player as { id: string; first_name: string | null; last_name: string | null } | null;
+        const roundAgg = playerRoundAggregates.get(entry.player_id);
+
+        // Prefer DB-persisted values, fall back to computed aggregates from rounds
+        const roundsCompleted = (entry.rounds_completed as number | null) ?? roundAgg?.roundsCompleted ?? 0;
+        const totalScore = (entry.total_score as number | null) ?? (roundAgg ? roundAgg.totalScore : null);
+        const totalToPar = (entry.total_to_par as number | null) ?? (roundAgg ? roundAgg.totalToPar : null);
+
         return {
           id: entry.id,
           qualifier_id: entry.qualifier_id,
@@ -114,6 +172,10 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
             : 'Unknown Player',
           position: entry.position,
           score: entry.score,
+          total_score: totalScore,
+          total_to_par: totalToPar,
+          rounds_completed: roundsCompleted,
+          is_tied: (entry.is_tied as boolean | null) ?? false,
           status: entry.status,
           notes: entry.notes,
           round_id: entry.round_id,
@@ -124,7 +186,6 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
 
       setLeaderboard(transformedEntries);
     } catch (err) {
-      console.error('Error fetching qualifier data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load qualifier');
     } finally {
       setLoading(false);
@@ -204,6 +265,7 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
   return {
     qualifier,
     leaderboard,
+    coursePar,
     loading,
     error,
     refetch: fetchQualifierData,

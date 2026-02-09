@@ -49,7 +49,7 @@ export function DraftEventCard({
         // Base card styles
         'relative bg-white rounded-lg cursor-pointer overflow-hidden',
         // Draft-specific: dashed border, reduced opacity
-        'border-2 border-dashed border-slate-300',
+        'border-2 border-dashed border-warm-300',
         'opacity-75 hover:opacity-90',
         // Spacing
         compact ? 'p-3' : 'p-4',
@@ -71,7 +71,7 @@ export function DraftEventCard({
         style={{ zIndex: 0 }}
       >
         <div
-          className="text-slate-200 font-bold uppercase tracking-widest select-none"
+          className="text-warm-200 font-bold uppercase tracking-widest select-none"
           style={{
             fontSize: compact ? '2rem' : '3rem',
             transform: 'rotate(-45deg)',
@@ -88,17 +88,17 @@ export function DraftEventCard({
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <Edit3 className="w-4 h-4 text-slate-400 shrink-0" />
+              <Edit3 className="w-4 h-4 text-warm-400 shrink-0" />
               <h3
                 className={cn(
-                  'font-semibold text-slate-900 truncate',
+                  'font-semibold text-warm-900 truncate',
                   compact ? 'text-sm' : 'text-base'
                 )}
               >
                 {event.title}
               </h3>
             </div>
-            <p className="text-xs text-slate-500 uppercase tracking-wide">
+            <p className="text-xs text-warm-500 uppercase tracking-wide">
               {event.event_type.replace('_', ' ')}
             </p>
           </div>
@@ -110,7 +110,7 @@ export function DraftEventCard({
         <div className="space-y-2">
           {/* Time */}
           {event.start_time && (
-            <div className="flex items-center gap-2 text-slate-600">
+            <div className="flex items-center gap-2 text-warm-600">
               <Clock className="w-3.5 h-3.5 shrink-0" />
               <span className="text-sm">
                 {formatTime(event.start_time)}
@@ -121,7 +121,7 @@ export function DraftEventCard({
 
           {/* Location */}
           {!compact && event.location && (
-            <div className="flex items-center gap-2 text-slate-600">
+            <div className="flex items-center gap-2 text-warm-600">
               <MapPin className="w-3.5 h-3.5 shrink-0" />
               <span className="text-sm truncate">{event.location}</span>
             </div>
@@ -129,7 +129,7 @@ export function DraftEventCard({
 
           {/* Recurring indicator */}
           {event.is_recurring && (
-            <div className="flex items-center gap-2 text-slate-500">
+            <div className="flex items-center gap-2 text-warm-500">
               <Calendar className="w-3.5 h-3.5 shrink-0" />
               <span className="text-xs">Repeating event</span>
             </div>
@@ -137,7 +137,7 @@ export function DraftEventCard({
 
           {/* RSVP count (if applicable) */}
           {hasRSVP && (
-            <div className="flex items-center gap-2 text-slate-600">
+            <div className="flex items-center gap-2 text-warm-600">
               <Users className="w-3.5 h-3.5 shrink-0" />
               <span className="text-sm">{event.rsvp_total_count} invited</span>
             </div>
@@ -146,8 +146,8 @@ export function DraftEventCard({
 
         {/* Call to action (non-compact only) */}
         {!compact && (
-          <div className="mt-4 pt-3 border-t border-slate-200 border-dashed">
-            <p className="text-xs text-slate-500 italic">
+          <div className="mt-4 pt-3 border-t border-warm-200 border-dashed">
+            <p className="text-xs text-warm-500 italic">
               This event is not yet published. Click to edit and publish.
             </p>
           </div>
@@ -167,15 +167,15 @@ export function DraftEventListItem({
   return (
     <div
       onClick={onClick}
-      className="flex items-center gap-3 p-2 rounded-lg border-l-3 border-l-slate-300
-                 border-dashed bg-slate-50/50 hover:bg-slate-100/50 cursor-pointer
+      className="flex items-center gap-3 p-2 rounded-lg border-l-3 border-l-warm-300
+                 border-dashed bg-warm-50/50 hover:bg-warm-100/50 cursor-pointer
                  transition-colors"
     >
-      <Edit3 className="w-4 h-4 text-slate-400 shrink-0" />
+      <Edit3 className="w-4 h-4 text-warm-400 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-700 truncate">{event.title}</p>
+        <p className="text-sm font-medium text-warm-700 truncate">{event.title}</p>
         {event.start_time && (
-          <p className="text-xs text-slate-500">{formatTime(event.start_time)}</p>
+          <p className="text-xs text-warm-500">{formatTime(event.start_time)}</p>
         )}
       </div>
       <StatusBadge status="draft" compact size="sm" />

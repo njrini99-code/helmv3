@@ -23,7 +23,7 @@ export const ValidatedInput = forwardRef<HTMLInputElement, ValidatedInputProps>(
             htmlFor={inputId}
             className={cn(
               'block text-sm font-medium transition-colors duration-fast',
-              error ? 'text-red-600' : isFocused ? 'text-green-600' : 'text-slate-700'
+              error ? 'text-red-600' : isFocused ? 'text-green-600' : 'text-warm-700'
             )}
           >
             {label}
@@ -38,10 +38,10 @@ export const ValidatedInput = forwardRef<HTMLInputElement, ValidatedInputProps>(
             className={cn(
               'w-full px-3 py-2 rounded-lg border bg-white',
               'transition-all duration-fast',
-              'placeholder:text-slate-400',
+              'placeholder:text-warm-400',
               'focus:outline-none focus:ring-2 focus:ring-offset-0',
               // Default state
-              !error && !success && 'border-slate-300 focus:border-green-500 focus:ring-green-500/20',
+              !error && !success && 'border-warm-300 focus:border-green-500 focus:ring-green-500/20',
               // Error state
               error && 'border-red-500 focus:border-red-500 focus:ring-red-500/20 pr-10 animate-shake',
               // Success state

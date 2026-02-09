@@ -133,7 +133,7 @@ function ImageAttachment({ url, fileName, width, height, isOwnMessage: _isOwnMes
         onClick={() => setIsExpanded(true)}
       >
         {isLoading && (
-          <div className="absolute inset-0 bg-slate-100 animate-pulse" />
+          <div className="absolute inset-0 bg-warm-100 animate-pulse" />
         )}
         <img
           src={url}
@@ -214,7 +214,7 @@ function VideoAttachment({
     <div
       className={cn(
         'relative group rounded-lg overflow-hidden cursor-pointer',
-        'max-w-[280px] bg-slate-900',
+        'max-w-[280px] bg-warm-900',
         className
       )}
       onClick={() => setIsPlaying(true)}
@@ -227,7 +227,7 @@ function VideoAttachment({
         />
       ) : (
         <div className="w-full aspect-video flex items-center justify-center">
-          <IconVideo size={32} className="text-slate-400" />
+          <IconVideo size={32} className="text-warm-400" />
         </div>
       )}
 
@@ -239,7 +239,7 @@ function VideoAttachment({
             'group-hover:scale-110 transition-transform shadow-lg'
           )}
         >
-          <IconPlay size={20} className="text-slate-900 ml-1" />
+          <IconPlay size={20} className="text-warm-900 ml-1" />
         </div>
       </div>
 
@@ -339,7 +339,7 @@ function AudioAttachment({
         'flex items-center gap-3 p-3 rounded-lg',
         isOwnMessage
           ? 'bg-green-700/50'
-          : 'bg-slate-200/70',
+          : 'bg-warm-200/70',
         'w-64',
         className
       )}
@@ -368,7 +368,7 @@ function AudioAttachment({
         <p
           className={cn(
             'text-xs font-medium truncate mb-1',
-            isOwnMessage ? 'text-white' : 'text-slate-700'
+            isOwnMessage ? 'text-white' : 'text-warm-700'
           )}
         >
           {fileName}
@@ -384,7 +384,7 @@ function AudioAttachment({
             onChange={handleSeek}
             className={cn(
               'w-full h-1 rounded-full appearance-none cursor-pointer',
-              isOwnMessage ? 'bg-white/20' : 'bg-slate-300',
+              isOwnMessage ? 'bg-white/20' : 'bg-warm-300',
               '[&::-webkit-slider-thumb]:appearance-none',
               '[&::-webkit-slider-thumb]:w-3',
               '[&::-webkit-slider-thumb]:h-3',
@@ -403,7 +403,7 @@ function AudioAttachment({
         <div
           className={cn(
             'flex items-center justify-between text-xs mt-1',
-            isOwnMessage ? 'text-green-200' : 'text-slate-500'
+            isOwnMessage ? 'text-green-200' : 'text-warm-500'
           )}
         >
           <span>{formatTime(currentTime)}</span>
@@ -419,7 +419,7 @@ function AudioAttachment({
           'p-1.5 rounded-full transition-colors flex-shrink-0',
           isOwnMessage
             ? 'text-white/70 hover:text-white hover:bg-white/10'
-            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+            : 'text-warm-400 hover:text-warm-600 hover:bg-warm-100'
         )}
         aria-label={isMuted ? 'Unmute' : 'Mute'}
       >
@@ -457,7 +457,7 @@ function DocumentAttachment({
         'transition-colors duration-200',
         isOwnMessage
           ? 'bg-green-700/50 hover:bg-green-700/60'
-          : 'bg-slate-200/70 hover:bg-slate-200',
+          : 'bg-warm-200/70 hover:bg-warm-200',
         className
       )}
       onClick={handleDownload}
@@ -480,7 +480,7 @@ function DocumentAttachment({
         <p
           className={cn(
             'text-sm font-medium truncate',
-            isOwnMessage ? 'text-white' : 'text-slate-700'
+            isOwnMessage ? 'text-white' : 'text-warm-700'
           )}
         >
           {fileName}
@@ -488,7 +488,7 @@ function DocumentAttachment({
         <p
           className={cn(
             'text-xs',
-            isOwnMessage ? 'text-green-200' : 'text-slate-500'
+            isOwnMessage ? 'text-green-200' : 'text-warm-500'
           )}
         >
           {formatFileSize(fileSize)}
@@ -498,14 +498,14 @@ function DocumentAttachment({
       {/* Download icon */}
       <IconDownload
         size={18}
-        className={cn(isOwnMessage ? 'text-white/70' : 'text-slate-400')}
+        className={cn(isOwnMessage ? 'text-white/70' : 'text-warm-400')}
       />
     </div>
   );
 }
 
 function FileTypeIcon({ mimeType, isOwnMessage }: { mimeType: string; isOwnMessage?: boolean }) {
-  const baseClass = isOwnMessage ? 'text-white' : 'text-slate-500';
+  const baseClass = isOwnMessage ? 'text-white' : 'text-warm-500';
 
   if (mimeType.includes('pdf')) {
     return <span className={cn('text-xs font-bold', isOwnMessage ? 'text-white' : 'text-red-500')}>PDF</span>;
@@ -703,7 +703,7 @@ function ImageLightbox({ url, fileName, onClose }: ImageLightboxProps) {
         className={cn(
           'absolute bottom-4 right-4 z-10',
           'px-4 py-2 rounded-lg bg-white/90 hover:bg-white',
-          'text-sm font-medium text-slate-700',
+          'text-sm font-medium text-warm-700',
           'flex items-center gap-2 transition-colors shadow-lg'
         )}
         onClick={(e) => e.stopPropagation()}

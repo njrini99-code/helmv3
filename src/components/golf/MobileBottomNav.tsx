@@ -46,7 +46,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
       className={cn(
         'fixed bottom-0 left-0 right-0 z-40 lg:hidden',
         'bg-white/95 backdrop-blur-xl',
-        'border-t border-slate-200/60',
+        'border-t border-warm-200/60',
         'shadow-[0_-4px_20px_rgba(0,0,0,0.05)]',
         'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         isVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
@@ -76,20 +76,20 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
                 'active:scale-95',
                 isActive
                   ? 'text-primary-600'
-                  : 'text-slate-400 hover:text-slate-600'
+                  : 'text-warm-400 hover:text-warm-600'
               )}
             >
               <div className={cn(
                 'p-1.5 rounded-xl transition-all duration-200',
                 isActive
                   ? 'bg-primary-100/80 text-primary-600 shadow-sm'
-                  : 'text-slate-400'
+                  : 'text-warm-400'
               )}>
                 {item.icon}
               </div>
               <span className={cn(
                 'text-xs font-medium transition-colors',
-                isActive ? 'text-primary-600' : 'text-slate-500'
+                isActive ? 'text-primary-600' : 'text-warm-500'
               )}>
                 {item.label}
               </span>

@@ -42,27 +42,27 @@ export function ShotTimeline({ holes, className }: ShotTimelineProps) {
       {/* Header with controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* Stats summary */}
-        <div className="flex items-center gap-4 text-sm text-slate-600">
+        <div className="flex items-center gap-4 text-sm text-warm-600">
           <span>
-            <span className="font-medium text-slate-900">{totalShots}</span> shots tracked
+            <span className="font-medium text-warm-900">{totalShots}</span> shots tracked
           </span>
-          <span className="text-slate-300">|</span>
+          <span className="text-warm-300">|</span>
           <span>
-            <span className="font-medium text-slate-900">{holesWithShots}</span> of {holes.length} holes
+            <span className="font-medium text-warm-900">{holesWithShots}</span> of {holes.length} holes
           </span>
         </div>
 
         {/* Controls */}
         <div className="flex items-center gap-2">
           {/* Nine filter */}
-          <div className="flex bg-slate-100 rounded-lg p-0.5">
+          <div className="flex bg-warm-100 rounded-lg p-0.5">
             <button
               onClick={() => setNineFilter('all')}
               className={cn(
                 'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
                 nineFilter === 'all'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-warm-900 shadow-sm'
+                  : 'text-warm-600 hover:text-warm-900'
               )}
             >
               All 18
@@ -72,8 +72,8 @@ export function ShotTimeline({ holes, className }: ShotTimelineProps) {
               className={cn(
                 'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
                 nineFilter === 'front'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-warm-900 shadow-sm'
+                  : 'text-warm-600 hover:text-warm-900'
               )}
             >
               Front ({frontScore || '--'})
@@ -83,8 +83,8 @@ export function ShotTimeline({ holes, className }: ShotTimelineProps) {
               className={cn(
                 'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
                 nineFilter === 'back'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-warm-900 shadow-sm'
+                  : 'text-warm-600 hover:text-warm-900'
               )}
             >
               Back ({backScore || '--'})
@@ -92,14 +92,14 @@ export function ShotTimeline({ holes, className }: ShotTimelineProps) {
           </div>
 
           {/* View mode toggle */}
-          <div className="flex bg-slate-100 rounded-lg p-0.5">
+          <div className="flex bg-warm-100 rounded-lg p-0.5">
             <button
               onClick={() => setViewMode('list')}
               className={cn(
                 'p-1.5 rounded-md transition-colors',
                 viewMode === 'list'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-white text-warm-900 shadow-sm'
+                  : 'text-warm-500 hover:text-warm-900'
               )}
               title="List view"
             >
@@ -110,8 +110,8 @@ export function ShotTimeline({ holes, className }: ShotTimelineProps) {
               className={cn(
                 'p-1.5 rounded-md transition-colors',
                 viewMode === 'overview'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-white text-warm-900 shadow-sm'
+                  : 'text-warm-500 hover:text-warm-900'
               )}
               title="Overview"
             >
@@ -125,7 +125,7 @@ export function ShotTimeline({ holes, className }: ShotTimelineProps) {
               onClick={() => setExpandAll(!expandAll)}
               className={cn(
                 'flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
-                'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                'bg-warm-100 text-warm-600 hover:bg-warm-200 hover:text-warm-900'
               )}
             >
               {expandAll ? (
@@ -178,8 +178,8 @@ function HoleOverviewCard({ hole }: { hole: HoleReviewData }) {
   const par = hole.par;
   const diff = score !== null ? score - par : null;
 
-  let scoreColor = 'text-slate-900';
-  let bgColor = 'bg-slate-50';
+  let scoreColor = 'text-warm-900';
+  let bgColor = 'bg-warm-50';
 
   if (diff !== null) {
     if (diff <= -2) {
@@ -189,8 +189,8 @@ function HoleOverviewCard({ hole }: { hole: HoleReviewData }) {
       scoreColor = 'text-green-600';
       bgColor = 'bg-green-50';
     } else if (diff === 0) {
-      scoreColor = 'text-slate-700';
-      bgColor = 'bg-slate-50';
+      scoreColor = 'text-warm-700';
+      bgColor = 'bg-warm-50';
     } else if (diff >= 1) {
       scoreColor = 'text-red-600';
       bgColor = 'bg-red-50';
@@ -202,16 +202,16 @@ function HoleOverviewCard({ hole }: { hole: HoleReviewData }) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
-        'rounded-xl border border-slate-200 p-4 text-center',
+        'rounded-xl border border-warm-200 p-4 text-center',
         bgColor
       )}
     >
-      <div className="text-xs text-slate-500 mb-1">Hole {hole.hole_number}</div>
+      <div className="text-xs text-warm-500 mb-1">Hole {hole.hole_number}</div>
       <div className={cn('text-2xl font-bold mb-1', scoreColor)}>
         {score ?? '--'}
       </div>
-      <div className="text-xs text-slate-400">Par {par}</div>
-      <div className="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-500">
+      <div className="text-xs text-warm-400">Par {par}</div>
+      <div className="mt-2 pt-2 border-t border-warm-200 text-xs text-warm-500">
         {hole.shots.length} shots
       </div>
     </motion.div>

@@ -29,8 +29,8 @@ export function PuttTendenciesCard({ data }: PuttTendenciesCardProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">Putting Tendencies</h3>
-          <p className="text-sm text-slate-500">
+          <h3 className="text-lg font-semibold text-warm-900">Putting Tendencies</h3>
+          <p className="text-sm text-warm-500">
             Based on {totalMissedPutts} missed putts
           </p>
         </div>
@@ -50,12 +50,12 @@ export function PuttTendenciesCard({ data }: PuttTendenciesCardProps) {
       {/* Green Reading Meter */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-600">Green Reading</span>
-          <span className="text-slate-500">
+          <span className="text-warm-600">Green Reading</span>
+          <span className="text-warm-500">
             {percentages.underReadTendency > 50 ? 'Under-reads' : 'Over-reads'}
           </span>
         </div>
-        <div className="relative h-2 bg-slate-200 rounded-full overflow-hidden">
+        <div className="relative h-2 bg-warm-200 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${percentages.underReadTendency}%` }}
@@ -65,7 +65,7 @@ export function PuttTendenciesCard({ data }: PuttTendenciesCardProps) {
           {/* Center marker */}
           <div className="absolute left-1/2 top-0 w-0.5 h-full bg-white/50" />
         </div>
-        <div className="flex justify-between text-xs text-slate-500">
+        <div className="flex justify-between text-xs text-warm-500">
           <span>Low (Under-read)</span>
           <span>High (Over-read)</span>
         </div>
@@ -74,12 +74,12 @@ export function PuttTendenciesCard({ data }: PuttTendenciesCardProps) {
       {/* Speed Control Meter */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-600">Speed Control</span>
-          <span className="text-slate-500">
+          <span className="text-warm-600">Speed Control</span>
+          <span className="text-warm-500">
             {percentages.leaveShortTendency > 50 ? 'Leaves short' : 'Runs by'}
           </span>
         </div>
-        <div className="relative h-2 bg-slate-200 rounded-full overflow-hidden">
+        <div className="relative h-2 bg-warm-200 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${percentages.leaveShortTendency}%` }}
@@ -88,7 +88,7 @@ export function PuttTendenciesCard({ data }: PuttTendenciesCardProps) {
           />
           <div className="absolute left-1/2 top-0 w-0.5 h-full bg-white/50" />
         </div>
-        <div className="flex justify-between text-xs text-slate-500">
+        <div className="flex justify-between text-xs text-warm-500">
           <span>Short</span>
           <span>Long</span>
         </div>
@@ -106,46 +106,46 @@ export function PuttTendenciesCard({ data }: PuttTendenciesCardProps) {
           return (
             <div 
               key={tag}
-              className="p-3 rounded-xl bg-white/50 backdrop-blur-sm border border-slate-200"
+              className="p-3 rounded-xl bg-white/50 backdrop-blur-sm border border-warm-200"
             >
               <p className={cn('text-sm font-medium', config.color)}>
                 {config.label}
               </p>
-              <p className="text-2xl font-semibold text-slate-900 mt-1">{count}</p>
-              <p className="text-xs text-slate-500">{pct}% of misses</p>
+              <p className="text-2xl font-semibold text-warm-900 mt-1">{count}</p>
+              <p className="text-xs text-warm-500">{pct}% of misses</p>
             </div>
           );
         })}
       </div>
 
       {/* Distance Breakdown */}
-      <div className="pt-4 border-t border-slate-200">
-        <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">By Distance</h4>
+      <div className="pt-4 border-t border-warm-200">
+        <h4 className="text-sm font-semibold text-warm-700 uppercase tracking-wider mb-3">By Distance</h4>
         <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-3 rounded-lg bg-slate-50">
-            <p className="text-xs text-slate-500 mb-1">Inside 5ft</p>
-            <p className="text-xl font-bold text-slate-900">
+          <div className="text-center p-3 rounded-lg bg-warm-50">
+            <p className="text-xs text-warm-500 mb-1">Inside 5ft</p>
+            <p className="text-xl font-bold text-warm-900">
               {data.byDistance.inside5ft.pct}%
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-warm-500">
               {data.byDistance.inside5ft.made} / {data.byDistance.inside5ft.attempts}
             </p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-slate-50">
-            <p className="text-xs text-slate-500 mb-1">5-10ft</p>
-            <p className="text-xl font-bold text-slate-900">
+          <div className="text-center p-3 rounded-lg bg-warm-50">
+            <p className="text-xs text-warm-500 mb-1">5-10ft</p>
+            <p className="text-xl font-bold text-warm-900">
               {data.byDistance.fiveTo10ft.pct}%
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-warm-500">
               {data.byDistance.fiveTo10ft.made} / {data.byDistance.fiveTo10ft.attempts}
             </p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-slate-50">
-            <p className="text-xs text-slate-500 mb-1">Outside 10ft</p>
-            <p className="text-xl font-bold text-slate-900">
+          <div className="text-center p-3 rounded-lg bg-warm-50">
+            <p className="text-xs text-warm-500 mb-1">Outside 10ft</p>
+            <p className="text-xl font-bold text-warm-900">
               {data.byDistance.outside10ft.pct}%
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-warm-500">
               {data.byDistance.outside10ft.made} / {data.byDistance.outside10ft.attempts}
             </p>
           </div>

@@ -49,17 +49,17 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
                 'flex items-center gap-4 p-4 rounded-xl border bg-white transition-all duration-150',
                 isDragging
                     ? 'shadow-xl border-green-300 scale-[1.02] z-10 relative'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-warm-200 hover:border-warm-300'
             )}
         >
             {/* Drag handle */}
             <button
                 {...attributes}
                 {...listeners}
-                className="p-1 rounded hover:bg-slate-100 cursor-grab active:cursor-grabbing touch-none"
+                className="p-1 rounded hover:bg-warm-100 cursor-grab active:cursor-grabbing touch-none"
                 aria-label="Drag to reorder"
             >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-slate-400">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-warm-400">
                     <path d="M4 6h8M4 10h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
             </button>
@@ -70,9 +70,9 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
                     'w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold',
                     rank === 1 && 'bg-green-100 text-green-700',
                     rank === 2 && 'bg-green-50 text-green-600',
-                    rank === 3 && 'bg-slate-100 text-slate-600',
-                    rank === 4 && 'bg-slate-50 text-slate-500',
-                    rank === 5 && 'bg-slate-50 text-slate-400'
+                    rank === 3 && 'bg-warm-100 text-warm-600',
+                    rank === 4 && 'bg-warm-50 text-warm-500',
+                    rank === 5 && 'bg-warm-50 text-warm-400'
                 )}
             >
                 {rank}
@@ -83,12 +83,12 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
 
             {/* Label & description */}
             <div className="flex-1 min-w-0">
-                <div className="font-medium text-slate-900 text-sm">{metric.label}</div>
-                <div className="text-xs text-slate-500 truncate">{metric.description}</div>
+                <div className="font-medium text-warm-900 text-sm">{metric.label}</div>
+                <div className="text-xs text-warm-500 truncate">{metric.description}</div>
             </div>
 
             {/* Priority bar */}
-            <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="w-12 h-1.5 bg-warm-100 rounded-full overflow-hidden">
                 <div
                     className="h-full bg-green-500 rounded-full transition-all duration-300"
                     style={{ width: `${(6 - rank) * 20}%` }}

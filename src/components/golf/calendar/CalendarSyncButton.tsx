@@ -206,24 +206,24 @@ export function CalendarSyncButton({
             'shadow-2xl'
           )}
         >
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-100">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-warm-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
                   <Calendar className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <DialogTitle className="text-lg font-semibold text-slate-900">
+                  <DialogTitle className="text-lg font-semibold text-warm-900">
                     Subscribe to Calendar
                   </DialogTitle>
-                  <p className="text-sm text-slate-500 mt-0.5">
+                  <p className="text-sm text-warm-500 mt-0.5">
                     Add GolfHelm events to your calendar
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                className="p-2 rounded-lg hover:bg-warm-100 text-warm-400 hover:text-warm-600 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -256,12 +256,12 @@ export function CalendarSyncButton({
               <>
                 {/* Copy URL */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-warm-700 mb-2">
                     Calendar Feed URL
                   </label>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 min-w-0 px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                      <code className="text-xs text-slate-600 truncate block font-mono">
+                    <div className="flex-1 min-w-0 px-3 py-2.5 rounded-lg bg-warm-50 border border-warm-200">
+                      <code className="text-xs text-warm-600 truncate block font-mono">
                         {feedUrl.replace(/^https?:\/\//, 'webcal://')}
                       </code>
                     </div>
@@ -271,7 +271,7 @@ export function CalendarSyncButton({
                         'shrink-0 p-2.5 rounded-lg font-medium text-sm transition-all',
                         copied
                           ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
                       )}
                       title="Copy URL"
                     >
@@ -286,7 +286,7 @@ export function CalendarSyncButton({
 
                 {/* Quick Add Buttons */}
                 <div>
-                  <p className="text-sm font-medium text-slate-700 mb-3">
+                  <p className="text-sm font-medium text-warm-700 mb-3">
                     Or add directly to:
                   </p>
                   <div className="grid grid-cols-3 gap-3">
@@ -297,13 +297,13 @@ export function CalendarSyncButton({
                       rel="noopener noreferrer"
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
-                        'border-2 border-slate-200 hover:border-blue-300',
+                        'border-2 border-warm-200 hover:border-blue-300',
                         'bg-white hover:bg-blue-50',
                         'transition-all duration-200 group'
                       )}
                     >
                       <GoogleIcon className="w-6 h-6" />
-                      <span className="text-xs font-medium text-slate-700 group-hover:text-blue-700">
+                      <span className="text-xs font-medium text-warm-700 group-hover:text-blue-700">
                         Google
                       </span>
                     </a>
@@ -313,13 +313,13 @@ export function CalendarSyncButton({
                       href={calendarUrls?.apple}
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
-                        'border-2 border-slate-200 hover:border-slate-400',
-                        'bg-white hover:bg-slate-50',
+                        'border-2 border-warm-200 hover:border-warm-400',
+                        'bg-white hover:bg-warm-50',
                         'transition-all duration-200 group'
                       )}
                     >
-                      <AppleIcon className="w-6 h-6 text-slate-800" />
-                      <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900">
+                      <AppleIcon className="w-6 h-6 text-warm-800" />
+                      <span className="text-xs font-medium text-warm-700 group-hover:text-warm-900">
                         Apple
                       </span>
                     </a>
@@ -331,13 +331,13 @@ export function CalendarSyncButton({
                       rel="noopener noreferrer"
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
-                        'border-2 border-slate-200 hover:border-blue-300',
+                        'border-2 border-warm-200 hover:border-blue-300',
                         'bg-white hover:bg-blue-50',
                         'transition-all duration-200 group'
                       )}
                     >
                       <OutlookIcon className="w-6 h-6" />
-                      <span className="text-xs font-medium text-slate-700 group-hover:text-blue-700">
+                      <span className="text-xs font-medium text-warm-700 group-hover:text-blue-700">
                         Outlook
                       </span>
                     </a>
@@ -358,12 +358,12 @@ export function CalendarSyncButton({
                 </div>
 
                 {/* Regenerate Option */}
-                <div className="pt-2 border-t border-slate-100">
+                <div className="pt-2 border-t border-warm-100">
                   <button
                     onClick={handleRegenerate}
                     disabled={regenerating}
                     className={cn(
-                      'flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900',
+                      'flex items-center gap-2 text-sm text-warm-600 hover:text-warm-900',
                       'disabled:opacity-50 disabled:cursor-not-allowed',
                       'transition-colors'
                     )}
@@ -378,7 +378,7 @@ export function CalendarSyncButton({
                       {regenerating ? 'Regenerating...' : 'Regenerate URL'}
                     </span>
                   </button>
-                  <p className="text-xs text-slate-500 mt-1.5 pl-6">
+                  <p className="text-xs text-warm-500 mt-1.5 pl-6">
                     This will invalidate the old URL and create a new one
                   </p>
                 </div>

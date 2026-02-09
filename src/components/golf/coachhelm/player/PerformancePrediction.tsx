@@ -35,8 +35,8 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
         </div>
 
         <div className="text-center py-8">
-          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-            <IconTarget size={24} className="text-slate-400" />
+          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+            <IconTarget size={24} className="text-warm-400" />
           </div>
           <p className="text-sm text-warm-600 mb-1">Not enough data yet</p>
           <p className="text-xs text-warm-400">Complete more rounds to unlock AI predictions</p>
@@ -63,7 +63,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
   };
 
   const getTrendIcon = () => {
-    if (isNeutral) return <IconTarget size={24} className="text-slate-400" />;
+    if (isNeutral) return <IconTarget size={24} className="text-warm-400" />;
     if (isPositive) return <IconTrendingDown size={24} className="text-green-500" />;
     return <IconTrendingUp size={24} className="text-red-500" />;
   };
@@ -80,7 +80,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
       case 'struggling':
         return { text: 'Focus on fundamentals to get back on track', icon: IconTrendingDown, color: 'text-amber-600' };
       case 'stable':
-        return { text: 'Your game is consistent', icon: IconTarget, color: 'text-slate-600' };
+        return { text: 'Your game is consistent', icon: IconTarget, color: 'text-warm-600' };
       default:
         return null;
     }
@@ -124,7 +124,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
           <div className="flex items-center justify-center gap-3">
             <span className={cn(
               'text-5xl font-bold tracking-tight',
-              isPositive ? 'text-green-600' : isNeutral ? 'text-slate-700' : 'text-red-600'
+              isPositive ? 'text-green-600' : isNeutral ? 'text-warm-700' : 'text-red-600'
             )}>
               {formatScore(predictedValue)}
             </span>
@@ -140,9 +140,9 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
             <span>Likely Range</span>
             <span className="font-medium">{formatScore(rangeLow)} to {formatScore(rangeHigh)}</span>
           </div>
-          <div className="relative h-3 bg-slate-100 rounded-full overflow-hidden">
+          <div className="relative h-3 bg-warm-100 rounded-full overflow-hidden">
             {/* Background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-slate-200 to-red-200 opacity-50" />
+            <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-warm-200 to-red-200 opacity-50" />
 
             {/* Confidence fill */}
             <motion.div

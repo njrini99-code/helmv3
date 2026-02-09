@@ -12,6 +12,12 @@ interface QualifierLeaderboardRealtimeProps {
 /**
  * Real-time leaderboard component that subscribes to qualifier updates.
  * Wraps QualifierViewTabs with live data from Supabase real-time.
+ *
+ * Scoring logic:
+ * - roundsCompleted: Actual count of completed rounds from golf_rounds
+ * - totalScore: Sum of total_score across all qualifier rounds
+ * - totalToPar: Sum of score_to_par across all qualifier rounds
+ * - averageScore: totalScore / roundsCompleted (when rounds exist)
  */
 export function QualifierLeaderboardRealtime({
   qualifierId,
@@ -19,29 +25,58 @@ export function QualifierLeaderboardRealtime({
 }: QualifierLeaderboardRealtimeProps) {
   const { leaderboard: entries, qualifier, loading, error } = useQualifierRealtime(qualifierId);
 
-  // Transform real-time data to leaderboard format
+  // Use qualifier's num_rounds when available, fall back to prop
+  const effectiveNumRounds = qualifier?.num_rounds ?? numRounds;
+
+  // Transform real-time data to leaderboard format with proper scoring
   const leaderboard = useMemo(() => {
     if (!entries || entries.length === 0) return [];
 
-    // Sort by score (lower is better for golf)
+    // Sort by total-to-par (lower is better), then by total score as tiebreaker.
+    // Players with no completed rounds sort to the bottom.
     const sorted = [...entries].sort((a, b) => {
-      if ((a.score ?? Infinity) !== (b.score ?? Infinity)) {
-        return (a.score ?? Infinity) - (b.score ?? Infinity);
-      }
-      return 0;
+      const aCompleted = a.rounds_completed > 0;
+      const bCompleted = b.rounds_completed > 0;
+
+      // Players with rounds sort above those without
+      if (aCompleted && !bCompleted) return -1;
+      if (!aCompleted && bCompleted) return 1;
+      if (!aCompleted && !bCompleted) return 0;
+
+      // Both have rounds: sort by total-to-par ascending
+      const aToPar = a.total_to_par ?? Infinity;
+      const bToPar = b.total_to_par ?? Infinity;
+      if (aToPar !== bToPar) return aToPar - bToPar;
+
+      // Tiebreaker: lower total score
+      const aScore = a.total_score ?? Infinity;
+      const bScore = b.total_score ?? Infinity;
+      return aScore - bScore;
     });
 
-    // Mark ties and transform to expected format
     return sorted.map((entry, index) => {
-      const isTied = index > 0 && (sorted[index]?.score === sorted[index - 1]?.score);
+      const totalScore = entry.total_score ?? 0;
+      const totalToPar = entry.total_to_par ?? 0;
+      const roundsCompleted = entry.rounds_completed;
+      const averageScore = roundsCompleted > 0
+        ? totalScore / roundsCompleted
+        : 0;
+
+      // Determine tie status: same total-to-par as adjacent entry
+      const isTied = entry.is_tied || (
+        index > 0 &&
+        sorted[index - 1].rounds_completed > 0 &&
+        roundsCompleted > 0 &&
+        sorted[index - 1].total_to_par === entry.total_to_par
+      );
 
       return {
         playerId: entry.player_id,
         playerName: entry.player_name,
-        roundsCompleted: entry.round_id ? 1 : 0, // Simplified - would need round data
-        totalScore: entry.score ?? 0,
-        totalToPar: 0, // Would need course par data
-        averageScore: entry.score ?? 0,
+        roundsCompleted,
+        totalScore,
+        totalToPar,
+        averageScore,
         isTied,
       };
     });
@@ -50,7 +85,7 @@ export function QualifierLeaderboardRealtime({
   if (loading) {
     return (
       <div className="py-8 text-center">
-        <div className="inline-flex items-center gap-2 text-slate-500">
+        <div className="inline-flex items-center gap-2 text-warm-500">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
@@ -74,7 +109,7 @@ export function QualifierLeaderboardRealtime({
   return (
     <QualifierViewTabs
       leaderboard={leaderboard}
-      numRounds={numRounds}
+      numRounds={effectiveNumRounds}
       showLiveLeaderboard={isLive}
     />
   );

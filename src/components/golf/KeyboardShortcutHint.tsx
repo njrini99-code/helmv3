@@ -39,16 +39,16 @@ export function KeyboardShortcutHint() {
   return (
     <div className={cn(
       'fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-40',
-      'bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl',
+      'bg-warm-900 text-white px-4 py-3 rounded-xl shadow-2xl',
       'flex items-center gap-3 animate-slide-up'
     )}>
-      <IconSearch size={16} className="text-slate-400" />
+      <IconSearch size={16} className="text-warm-400" />
       <span className="text-sm">
-        Press <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-xs mx-1">⌘K</kbd> for quick actions
+        Press <kbd className="px-1.5 py-0.5 bg-warm-800 rounded text-xs mx-1">⌘K</kbd> for quick actions
       </span>
       <button
         onClick={handleDismiss}
-        className="p-1 hover:bg-slate-800 rounded transition-colors"
+        className="p-1 hover:bg-warm-800 rounded transition-colors"
         aria-label="Dismiss hint"
       >
         <IconX size={14} aria-hidden="true" />

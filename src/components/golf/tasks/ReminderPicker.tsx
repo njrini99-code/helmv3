@@ -147,9 +147,9 @@ export function ReminderPicker({
           disabled={disabled || !dueDate}
           className={cn(
             'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
             'disabled:cursor-not-allowed disabled:opacity-50',
-            isEnabled ? 'bg-brand-600' : 'bg-gray-200'
+            isEnabled ? 'bg-primary-600' : 'bg-gray-200'
           )}
         >
           <span
@@ -167,7 +167,7 @@ export function ReminderPicker({
 
       {/* Reminder options */}
       {isEnabled && dueDate && (
-        <div className="space-y-3 pl-6 border-l-2 border-brand-100">
+        <div className="space-y-3 pl-6 border-l-2 border-primary-100">
           {/* Preset options */}
           <div className="space-y-2">
             <label className="block text-xs font-medium text-gray-600">
@@ -182,10 +182,10 @@ export function ReminderPicker({
                   disabled={disabled}
                   className={cn(
                     'px-3 py-1.5 text-xs font-medium rounded-full border transition-colors',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     selectedPreset === preset.value
-                      ? 'bg-brand-50 text-brand-700 border-brand-200'
+                      ? 'bg-primary-50 text-primary-700 border-primary-200'
                       : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   )}
                 >
@@ -207,7 +207,7 @@ export function ReminderPicker({
                   value={customDate}
                   onChange={(e) => handleCustomChange(e.target.value, customTime)}
                   disabled={disabled}
-                  className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
                 />
               </div>
               <div>
@@ -219,7 +219,7 @@ export function ReminderPicker({
                   value={customTime}
                   onChange={(e) => handleCustomChange(customDate, e.target.value)}
                   disabled={disabled}
-                  className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-50 disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -243,11 +243,11 @@ export function ReminderPicker({
                   onClick={() => handleTypeChange(type.value as ReminderType)}
                   disabled={disabled}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border transition-colors',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                    'flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full border transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     selectedType === type.value
-                      ? 'bg-brand-50 text-brand-700 border-brand-200'
+                      ? 'bg-primary-50 text-primary-700 border-primary-200'
                       : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   )}
                 >
@@ -259,7 +259,7 @@ export function ReminderPicker({
 
           {/* Preview */}
           {value && (
-            <div className="flex items-center gap-2 p-2 bg-brand-50 rounded-lg">
+            <div className="flex items-center gap-2 p-2 bg-primary-50 rounded-lg">
               <svg
                 width="14"
                 height="14"
@@ -269,12 +269,12 @@ export function ReminderPicker({
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-brand-600"
+                className="text-primary-600"
               >
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 6v6l4 2" />
               </svg>
-              <span className="text-xs text-brand-700">{formatReminderPreview()}</span>
+              <span className="text-xs text-primary-700">{formatReminderPreview()}</span>
             </div>
           )}
         </div>

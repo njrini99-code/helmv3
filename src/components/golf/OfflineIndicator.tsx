@@ -108,7 +108,7 @@ export function OfflineIndicator({
         <button
           onClick={() => setShowDetails(!showDetails)}
           className={`
-            flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium
+            flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium
             transition-all duration-200
             ${!isOnline
               ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
@@ -118,7 +118,7 @@ export function OfflineIndicator({
                   ? 'bg-red-500/20 text-red-400 border border-red-500/30'
                   : pendingCount.total > 0
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                    : 'bg-warm-500/20 text-warm-400 border border-warm-500/30'
             }
           `}
         >
@@ -167,10 +167,10 @@ export function OfflineIndicator({
               transition={{ duration: 0.15 }}
               className="absolute top-full right-0 mt-2 w-64 z-50"
             >
-              <div className="bg-slate-800/95 backdrop-blur-xl rounded-lg border border-slate-700 shadow-xl p-3 space-y-3">
+              <div className="bg-warm-800/95 backdrop-blur-xl rounded-lg border border-warm-700 shadow-xl p-3 space-y-3">
                 {/* Connection Status */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Connection</span>
+                  <span className="text-xs text-warm-400">Connection</span>
                   <span className={`text-xs font-medium ${isOnline ? 'text-emerald-400' : 'text-amber-400'}`}>
                     {isOnline ? 'Online' : 'Offline'}
                   </span>
@@ -179,8 +179,8 @@ export function OfflineIndicator({
                 {/* Pending Items */}
                 {pendingCount.total > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-400">Pending</span>
-                    <span className="text-xs font-medium text-slate-200">
+                    <span className="text-xs text-warm-400">Pending</span>
+                    <span className="text-xs font-medium text-warm-200">
                       {pendingCount.rounds > 0 && `${pendingCount.rounds} round${pendingCount.rounds !== 1 ? 's' : ''}`}
                       {pendingCount.rounds > 0 && pendingCount.shots > 0 && ', '}
                       {pendingCount.shots > 0 && `${pendingCount.shots} shot${pendingCount.shots !== 1 ? 's' : ''}`}
@@ -190,8 +190,8 @@ export function OfflineIndicator({
 
                 {/* Last Sync */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Last sync</span>
-                  <span className="text-xs font-medium text-slate-200">{lastSyncText}</span>
+                  <span className="text-xs text-warm-400">Last sync</span>
+                  <span className="text-xs font-medium text-warm-200">{lastSyncText}</span>
                 </div>
 
                 {/* Error Message */}
@@ -210,7 +210,7 @@ export function OfflineIndicator({
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-1 border-t border-slate-700">
+                <div className="flex gap-2 pt-1 border-t border-warm-700">
                   {isOnline && pendingCount.total > 0 && onSyncNow && !isSyncing && (
                     <button
                       onClick={onSyncNow}
@@ -221,7 +221,7 @@ export function OfflineIndicator({
                   )}
                   <button
                     onClick={() => setShowDetails(false)}
-                    className="flex-1 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors"
+                    className="flex-1 px-3 py-1.5 text-xs font-medium text-warm-400 hover:text-warm-300 transition-colors"
                   >
                     Dismiss
                   </button>

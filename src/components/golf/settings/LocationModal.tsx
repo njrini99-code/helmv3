@@ -92,7 +92,7 @@ export function LocationModal({ isOpen, onClose }: LocationModalProps) {
             />
           </div>
 
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-600">
+          <div className="bg-warm-50 border border-warm-200 rounded-lg p-3 text-sm text-warm-600">
             <p className="text-xs">
               These defaults will be pre-filled when creating new rounds or tracking shots.
             </p>

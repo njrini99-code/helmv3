@@ -409,7 +409,7 @@ export function VideoPlayer({
           onClick={togglePlay}
         >
           <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-            <IconPlay size={24} className="text-slate-900 ml-1" />
+            <IconPlay size={24} className="text-warm-900 ml-1" />
           </div>
         </div>
       )}

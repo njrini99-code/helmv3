@@ -175,7 +175,7 @@ export function ConflictResolutionModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/60 backdrop-blur-sm p-4"
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <motion.div
@@ -197,10 +197,10 @@ export function ConflictResolutionModal({
                   <AlertTriangle size={20} className="text-amber-600" />
                 </div>
                 <div>
-                  <h2 id="conflict-resolution-modal-title" className="text-lg font-semibold text-slate-900">
+                  <h2 id="conflict-resolution-modal-title" className="text-lg font-semibold text-warm-900">
                     Sync Conflict Detected
                   </h2>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-warm-600">
                     {totalConflicts > 1
                       ? `Conflict ${currentIndex + 1} of ${totalConflicts}`
                       : 'Review the changes and choose which version to keep'}
@@ -209,7 +209,7 @@ export function ConflictResolutionModal({
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
               >
                 <IconX size={20} />
               </button>
@@ -219,8 +219,8 @@ export function ConflictResolutionModal({
           {/* Content */}
           <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
             {/* Conflict Info */}
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <span className="px-2 py-1 bg-slate-100 rounded-md font-medium">
+            <div className="flex items-center gap-2 text-sm text-warm-600">
+              <span className="px-2 py-1 bg-warm-100 rounded-md font-medium">
                 {getTypeLabel(currentConflict.type)}
               </span>
               <span>ID: {currentConflict.offlineId.slice(0, 8)}...</span>
@@ -235,7 +235,7 @@ export function ConflictResolutionModal({
                   <span className="font-medium text-blue-900">Your Device</span>
                 </div>
                 <div className="px-4 py-3 space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <div className="flex items-center gap-2 text-sm text-warm-500">
                     <IconClock size={14} />
                     <span>{formatTimestamp(currentConflict.localTimestamp)}</span>
                   </div>
@@ -249,7 +249,7 @@ export function ConflictResolutionModal({
                   <span className="font-medium text-green-900">Server</span>
                 </div>
                 <div className="px-4 py-3 space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <div className="flex items-center gap-2 text-sm text-warm-500">
                     <IconClock size={14} />
                     <span>{formatTimestamp(currentConflict.serverTimestamp)}</span>
                   </div>
@@ -259,11 +259,11 @@ export function ConflictResolutionModal({
 
             {/* Field Differences */}
             <div className="space-y-3">
-              <h3 className="font-medium text-slate-900">Differences</h3>
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <h3 className="font-medium text-warm-900">Differences</h3>
+              <div className="border border-warm-200 rounded-xl overflow-hidden">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-50 text-left text-sm text-slate-600">
+                    <tr className="bg-warm-50 text-left text-sm text-warm-600">
                       <th className="px-4 py-2 font-medium">Field</th>
                       <th className="px-4 py-2 font-medium">
                         <span className="flex items-center gap-1">
@@ -280,17 +280,17 @@ export function ConflictResolutionModal({
                       <th className="px-4 py-2 font-medium text-center">Use</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-warm-100">
                     {currentConflict.fieldDifferences.map((diff) => (
                       <tr key={diff.field} className="text-sm">
-                        <td className="px-4 py-3 font-medium text-slate-700">
+                        <td className="px-4 py-3 font-medium text-warm-700">
                           {diff.label}
                         </td>
                         <td
                           className={`px-4 py-3 ${
                             selectedFields[diff.field] === 'local'
                               ? 'bg-blue-50 text-blue-900'
-                              : 'text-slate-600'
+                              : 'text-warm-600'
                           }`}
                         >
                           {formatValue(diff.localValue)}
@@ -299,7 +299,7 @@ export function ConflictResolutionModal({
                           className={`px-4 py-3 ${
                             selectedFields[diff.field] === 'server'
                               ? 'bg-green-50 text-green-900'
-                              : 'text-slate-600'
+                              : 'text-warm-600'
                           }`}
                         >
                           {formatValue(diff.serverValue)}
@@ -322,16 +322,16 @@ export function ConflictResolutionModal({
                   </tbody>
                 </table>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-warm-500">
                 Click the checkmark to toggle between local and server values for merge.
               </p>
             </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="border-t border-slate-200 px-6 py-4 bg-slate-50">
+          <div className="border-t border-warm-200 px-6 py-4 bg-warm-50">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-warm-500">
                 Choose how to resolve this conflict:
               </p>
               <div className="flex items-center gap-3">
@@ -390,7 +390,6 @@ export function useConflictResolution() {
   const handleResolve = async (results: ConflictResolutionResult[]) => {
     // Process each resolution
     for (const result of results) {
-      console.log(`Resolving conflict ${result.offlineId}: ${result.resolution}`);
       // The actual resolution logic would be handled by the sync engine
       // This hook provides the UI layer
     }

@@ -130,20 +130,6 @@ const config: Config = {
           'border-light': 'rgba(0, 0, 0, 0.08)',
           'border-medium': 'rgba(0, 0, 0, 0.12)',
         },
-        // DEPRECATED: Use 'primary' instead. Kept for backward compatibility.
-        // TODO: Migrate 51 usages in 10 files, then remove.
-        brand: {
-          50: '#F0FDF4',
-          100: '#DCFCE7',
-          200: '#BBF7D0',
-          300: '#86EFAC',
-          400: '#4ADE80',
-          500: '#22C55E',
-          600: '#16A34A',
-          700: '#15803D',
-          800: '#166534',
-          900: '#14532D',
-        },
         border: {
           light: '#ECEAE6',
           DEFAULT: '#E0DED9',

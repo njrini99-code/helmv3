@@ -74,7 +74,7 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
       ) : (
         <div className="space-y-6">
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Display Density</h3>
+            <h3 className="text-sm font-semibold text-warm-700 mb-3">Display Density</h3>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setDensity('comfortable')}
@@ -82,11 +82,11 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
                   'p-4 rounded-lg border-2 text-left transition-all',
                   density === 'comfortable'
                     ? 'border-emerald-600 bg-emerald-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-warm-200 hover:border-warm-300'
                 )}
               >
-                <p className="font-medium text-slate-900">Comfortable</p>
-                <p className="text-xs text-slate-500 mt-0.5">More spacing, easier to scan</p>
+                <p className="font-medium text-warm-900">Comfortable</p>
+                <p className="text-xs text-warm-500 mt-0.5">More spacing, easier to scan</p>
               </button>
               <button
                 onClick={() => setDensity('compact')}
@@ -94,17 +94,17 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
                   'p-4 rounded-lg border-2 text-left transition-all',
                   density === 'compact'
                     ? 'border-emerald-600 bg-emerald-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-warm-200 hover:border-warm-300'
                 )}
               >
-                <p className="font-medium text-slate-900">Compact</p>
-                <p className="text-xs text-slate-500 mt-0.5">Less spacing, more content</p>
+                <p className="font-medium text-warm-900">Compact</p>
+                <p className="text-xs text-warm-500 mt-0.5">Less spacing, more content</p>
               </button>
             </div>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Date Format</h3>
+            <h3 className="text-sm font-semibold text-warm-700 mb-3">Date Format</h3>
             <div className="space-y-2">
               {(['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD'] as DateFormat[]).map((format) => (
                 <button
@@ -114,11 +114,11 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
                     'w-full p-3 rounded-lg border-2 text-left transition-all flex items-center justify-between',
                     dateFormat === format
                       ? 'border-emerald-600 bg-emerald-50'
-                      : 'border-slate-200 hover:border-slate-300'
+                      : 'border-warm-200 hover:border-warm-300'
                   )}
                 >
-                  <span className="font-medium text-slate-900">{format}</span>
-                  <span className="text-sm text-slate-500">
+                  <span className="font-medium text-warm-900">{format}</span>
+                  <span className="text-sm text-warm-500">
                     {format === 'MM/DD/YYYY' && '12/28/2024'}
                     {format === 'DD/MM/YYYY' && '28/12/2024'}
                     {format === 'YYYY-MM-DD' && '2024-12-28'}
@@ -131,15 +131,15 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
           <div>
             <button
               onClick={() => setShowAnimations(!showAnimations)}
-              className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors"
+              className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-warm-50 transition-colors"
             >
               <div className="text-left">
-                <p className="text-sm font-medium text-slate-900">Animations</p>
-                <p className="text-xs text-slate-500">Enable smooth transitions and effects</p>
+                <p className="text-sm font-medium text-warm-900">Animations</p>
+                <p className="text-xs text-warm-500">Enable smooth transitions and effects</p>
               </div>
               <div className={cn(
                 'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-                showAnimations ? 'bg-emerald-600' : 'bg-slate-200'
+                showAnimations ? 'bg-emerald-600' : 'bg-warm-200'
               )}>
                 <div className={cn(
                   'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform',
@@ -149,7 +149,7 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
             </button>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-warm-200">
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>

@@ -122,9 +122,9 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
       ) : (
         <div className="space-y-6">
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-2">Invite Code</h3>
+            <h3 className="text-sm font-semibold text-warm-700 mb-2">Invite Code</h3>
             <div className="flex items-center gap-2">
-              <div className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg font-mono text-lg font-semibold text-slate-900">
+              <div className="flex-1 px-4 py-3 bg-warm-50 border border-warm-200 rounded-lg font-mono text-lg font-semibold text-warm-900">
                 {inviteCode || 'Loading...'}
               </div>
               <Button
@@ -136,15 +136,15 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
                 <IconRefresh size={18} />
               </Button>
             </div>
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-warm-500 mt-2">
               Share this code with players to join your team
             </p>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-2">Invite Link</h3>
+            <h3 className="text-sm font-semibold text-warm-700 mb-2">Invite Link</h3>
             <div className="flex items-center gap-2">
-              <div className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600 truncate">
+              <div className="flex-1 px-4 py-3 bg-warm-50 border border-warm-200 rounded-lg text-sm text-warm-600 truncate">
                 {inviteUrl}
               </div>
               <Button
@@ -155,7 +155,7 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
                 {copied ? <IconCheck size={18} /> : <IconCopy size={18} />}
               </Button>
             </div>
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-warm-500 mt-2">
               Players can click this link to automatically join your team
             </p>
           </div>
@@ -170,7 +170,7 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
             </ul>
           </div>
 
-          <div className="flex justify-end pt-4 border-t border-slate-200">
+          <div className="flex justify-end pt-4 border-t border-warm-200">
             <Button onClick={onClose}>
               Done
             </Button>

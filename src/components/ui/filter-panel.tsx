@@ -72,7 +72,7 @@ export function FilterPanel({
         <IconFilter size={16} />
         Filters
         {activeFilterCount > 0 && (
-          <Badge className="ml-2 px-1.5 py-0.5 text-2xs bg-brand-600 text-white border-0">
+          <Badge className="ml-2 px-1.5 py-0.5 text-2xs bg-primary-600 text-white border-0">
             {activeFilterCount}
           </Badge>
         )}
@@ -100,14 +100,14 @@ export function FilterPanel({
       >
         {/* Drag handle - mobile only */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full bg-slate-300" />
+          <div className="w-10 h-1 rounded-full bg-warm-300" />
         </div>
 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border-light">
           <div className="flex items-center gap-2">
-            <IconFilter size={20} className="text-slate-600" />
-            <h3 className="font-semibold text-slate-900">Filters</h3>
+            <IconFilter size={20} className="text-warm-600" />
+            <h3 className="font-semibold text-warm-900">Filters</h3>
             {activeFilterCount > 0 && (
               <Badge variant="primary" className="px-2 py-0.5">
                 {activeFilterCount}
@@ -116,10 +116,10 @@ export function FilterPanel({
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-slate-100 rounded-lg transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-warm-100 rounded-lg transition-colors"
             aria-label="Close filters"
           >
-            <IconX size={20} className="text-slate-500" />
+            <IconX size={20} className="text-warm-500" />
           </button>
         </div>
 
@@ -131,7 +131,7 @@ export function FilterPanel({
                 {/* Group Header */}
                 <button
                   onClick={() => toggleGroup(group.id)}
-                  className="w-full flex items-center justify-between text-sm font-medium text-slate-900 hover:text-brand-600 transition-colors min-h-[44px]"
+                  className="w-full flex items-center justify-between text-sm font-medium text-warm-900 hover:text-primary-600 transition-colors min-h-[44px]"
                 >
                   <span>{group.label}</span>
                   <IconChevronDown
@@ -166,13 +166,13 @@ export function FilterPanel({
                                     : current.filter((v) => v !== option.value);
                                   onFilterChange(group.id, next.length > 0 ? next : undefined);
                                 }}
-                                className="w-4 h-4 text-brand-600 bg-white border-slate-300 rounded focus:ring-2 focus:ring-brand-100 transition-colors cursor-pointer"
+                                className="w-4 h-4 text-primary-600 bg-white border-warm-300 rounded focus:ring-2 focus:ring-primary-100 transition-colors cursor-pointer"
                               />
-                              <span className="text-sm leading-relaxed text-slate-700 group-hover:text-slate-900 flex-1">
+                              <span className="text-sm leading-relaxed text-warm-700 group-hover:text-warm-900 flex-1">
                                 {option.label}
                               </span>
                               {option.count !== undefined && (
-                                <span className="text-xs text-slate-400">{option.count}</span>
+                                <span className="text-xs text-warm-400">{option.count}</span>
                               )}
                             </label>
                           );
@@ -193,13 +193,13 @@ export function FilterPanel({
                                 type="radio"
                                 checked={isChecked}
                                 onChange={() => onFilterChange(group.id, option.value)}
-                                className="w-4 h-4 text-brand-600 bg-white border-slate-300 focus:ring-2 focus:ring-brand-100 transition-colors cursor-pointer"
+                                className="w-4 h-4 text-primary-600 bg-white border-warm-300 focus:ring-2 focus:ring-primary-100 transition-colors cursor-pointer"
                               />
-                              <span className="text-sm leading-relaxed text-slate-700 group-hover:text-slate-900 flex-1">
+                              <span className="text-sm leading-relaxed text-warm-700 group-hover:text-warm-900 flex-1">
                                 {option.label}
                               </span>
                               {option.count !== undefined && (
-                                <span className="text-xs text-slate-400">{option.count}</span>
+                                <span className="text-xs text-warm-400">{option.count}</span>
                               )}
                             </label>
                           );
@@ -216,11 +216,11 @@ export function FilterPanel({
                           step={group.step || 1}
                           value={activeFilters[group.id] || group.min}
                           onChange={(e) => onFilterChange(group.id, parseInt(e.target.value))}
-                          className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600"
+                          className="w-full h-2 bg-warm-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
                         />
-                        <div className="flex items-center justify-between text-xs text-slate-500">
+                        <div className="flex items-center justify-between text-xs text-warm-500">
                           <span>{group.min}</span>
-                          <span className="font-medium text-slate-900">
+                          <span className="font-medium text-warm-900">
                             {activeFilters[group.id] || group.min}
                           </span>
                           <span>{group.max}</span>
@@ -232,7 +232,7 @@ export function FilterPanel({
                       <select
                         value={activeFilters[group.id] || ''}
                         onChange={(e) => onFilterChange(group.id, e.target.value || undefined)}
-                        className="w-full px-3 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                        className="w-full px-3 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                       >
                         <option value="">All</option>
                         {group.options.map(option => (
@@ -280,7 +280,7 @@ export function FilterPanel({
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 animate-fade-in"
+          className="fixed inset-0 bg-warm-900/20 backdrop-blur-sm z-40 animate-fade-in"
         />
       )}
     </>

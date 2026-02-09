@@ -132,18 +132,18 @@ export function PlayerRSVPCard({
   return (
     <div
       className={cn(
-        'bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden',
+        'bg-white rounded-2xl border border-warm-200 shadow-sm overflow-hidden',
         'hover:shadow-md transition-all duration-200',
         className
       )}
     >
       {/* Event header */}
-      <div className={cn('p-5 border-b border-slate-200', compact && 'p-4')}>
+      <div className={cn('p-5 border-b border-warm-200', compact && 'p-4')}>
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
             <h3
               className={cn(
-                'font-semibold text-slate-900 mb-1.5',
+                'font-semibold text-warm-900 mb-1.5',
                 compact ? 'text-base' : 'text-lg'
               )}
             >
@@ -151,7 +151,7 @@ export function PlayerRSVPCard({
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
               <StatusBadge status={event.status as StatusBadgeProps['status']} size="sm" />
-              <span className="text-xs text-slate-500 uppercase tracking-wide font-medium">
+              <span className="text-xs text-warm-500 uppercase tracking-wide font-medium">
                 {event.event_type.replace('_', ' ')}
               </span>
             </div>
@@ -164,13 +164,13 @@ export function PlayerRSVPCard({
 
         {/* Event details */}
         <div className="space-y-2 mt-3">
-          <div className="flex items-center gap-2.5 text-sm text-slate-700">
-            <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+          <div className="flex items-center gap-2.5 text-sm text-warm-700">
+            <Calendar className="w-4 h-4 text-warm-400 shrink-0" />
             <span className="font-medium">{format(eventDate, 'EEEE, MMMM d, yyyy')}</span>
           </div>
           {startTime && (
-            <div className="flex items-center gap-2.5 text-sm text-slate-700">
-              <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+            <div className="flex items-center gap-2.5 text-sm text-warm-700">
+              <Clock className="w-4 h-4 text-warm-400 shrink-0" />
               <span>
                 {formatTime(startTime)}
                 {endTime && ` - ${formatTime(endTime)}`}
@@ -178,8 +178,8 @@ export function PlayerRSVPCard({
             </div>
           )}
           {event.location && (
-            <div className="flex items-center gap-2.5 text-sm text-slate-700">
-              <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+            <div className="flex items-center gap-2.5 text-sm text-warm-700">
+              <MapPin className="w-4 h-4 text-warm-400 shrink-0" />
               <span className="truncate">{event.location}</span>
             </div>
           )}
@@ -187,8 +187,8 @@ export function PlayerRSVPCard({
 
         {/* Description (non-compact only) */}
         {!compact && event.description && (
-          <div className="mt-3 p-3 bg-slate-50 rounded-lg">
-            <p className="text-sm text-slate-600 line-clamp-2">{event.description}</p>
+          <div className="mt-3 p-3 bg-warm-50 rounded-lg">
+            <p className="text-sm text-warm-600 line-clamp-2">{event.description}</p>
           </div>
         )}
       </div>
@@ -197,17 +197,17 @@ export function PlayerRSVPCard({
       <div className={cn('p-5', compact && 'p-4')}>
         {isLocked ? (
           <div className="text-center py-6">
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-              <XCircle className="w-6 h-6 text-slate-400" />
+            <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+              <XCircle className="w-6 h-6 text-warm-400" />
             </div>
-            <p className="text-sm font-semibold text-slate-700 mb-1">RSVP Window Closed</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm font-semibold text-warm-700 mb-1">RSVP Window Closed</p>
+            <p className="text-xs text-warm-500">
               You can no longer change your response
             </p>
           </div>
         ) : (
           <>
-            <p className="text-sm font-semibold text-slate-700 mb-4">
+            <p className="text-sm font-semibold text-warm-700 mb-4">
               Will you attend this event?
             </p>
 
@@ -245,7 +245,7 @@ export function PlayerRSVPCard({
                       'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2',
                       isSelected
                         ? 'focus-visible:ring-white'
-                        : 'focus-visible:ring-slate-300'
+                        : 'focus-visible:ring-warm-300'
                     )}
                   >
                     <Icon
@@ -268,7 +268,7 @@ export function PlayerRSVPCard({
 
                     {/* Current response indicator */}
                     {isCurrentSelection && !isSelected && (
-                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-600 flex items-center justify-center shadow-md">
+                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-warm-600 flex items-center justify-center shadow-md">
                         <CheckCircle2 className="w-3 h-3 text-white" />
                       </div>
                     )}
@@ -323,15 +323,15 @@ export function CompactPlayerRSVPCard({
   }
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
+    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-warm-200 hover:border-warm-300 hover:shadow-sm transition-all">
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-slate-900 truncate">{event.title}</p>
+        <p className="font-semibold text-sm text-warm-900 truncate">{event.title}</p>
         {compactStartTime && (
-          <p className="text-xs text-slate-500 mt-0.5">{formatTime(compactStartTime)}</p>
+          <p className="text-xs text-warm-500 mt-0.5">{formatTime(compactStartTime)}</p>
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
         {RSVP_OPTIONS.map((option) => {
           const Icon = option.icon;
           const isSelected = currentResponse === option.value;

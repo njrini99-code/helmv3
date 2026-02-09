@@ -257,7 +257,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Command palette">
       {/* Enhanced Premium Glass Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-md animate-fade-in"
+        className="absolute inset-0 bg-warm-900/40 backdrop-blur-md animate-fade-in"
         onClick={() => setOpen(false)}
         aria-hidden="true"
       />
@@ -267,13 +267,13 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
         <div className={cn(
           'bg-white/60 backdrop-blur-[24px]', // Enhanced glass effect
           'rounded-2xl', // Standardized: 16px
-          'shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.5)]',
+          'shadow-card-hover',
           'border border-white/30',
           'overflow-hidden'
         )}>
           {/* Search Input */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-white/20 bg-white/30">
-            <IconSearch size={20} className="text-slate-400" aria-hidden="true" />
+            <IconSearch size={20} className="text-warm-400" aria-hidden="true" />
             <input
               ref={inputRef}
               type="text"
@@ -290,9 +290,9 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
               aria-autocomplete="list"
               aria-controls="command-list"
               aria-activedescendant={filteredCommands[selectedIndex]?.id ? `cmd-${filteredCommands[selectedIndex].id}` : undefined}
-              className="flex-1 outline-none text-slate-900 placeholder:text-slate-400 bg-transparent"
+              className="flex-1 outline-none text-warm-900 placeholder:text-warm-400 bg-transparent"
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-400 bg-white/60 backdrop-blur-sm rounded-lg border border-white/30">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs text-warm-400 bg-white/60 backdrop-blur-sm rounded-lg border border-white/30">
               ESC
             </kbd>
           </div>
@@ -305,7 +305,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
             className="max-h-80 overflow-y-auto p-2" data-scroll-container
           >
             {filteredCommands.length === 0 ? (
-              <div className="text-center py-8 text-sm text-slate-500" role="status">
+              <div className="text-center py-8 text-sm text-warm-500" role="status">
                 No commands found
               </div>
             ) : (
@@ -323,7 +323,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors', // Standardized: 12px
                     index === selectedIndex
                       ? 'bg-primary-50/80 backdrop-blur-sm text-primary-900'
-                      : 'hover:bg-white/40 text-slate-700'
+                      : 'hover:bg-white/40 text-warm-700'
                   )}
                 >
                   <div
@@ -338,17 +338,17 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{cmd.label}</p>
                     {cmd.description && (
-                      <p className="text-xs text-slate-500 truncate">{cmd.description}</p>
+                      <p className="text-xs text-warm-500 truncate">{cmd.description}</p>
                     )}
                   </div>
-                  <IconChevronRight size={16} className="text-slate-400" aria-hidden="true" />
+                  <IconChevronRight size={16} className="text-warm-400" aria-hidden="true" />
                 </button>
               ))
             )}
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2 border-t border-white/20 bg-white/30 backdrop-blur-sm flex items-center justify-between text-xs text-slate-500">
+          <div className="px-4 py-2 border-t border-white/20 bg-white/30 backdrop-blur-sm flex items-center justify-between text-xs text-warm-500">
             <div className="flex items-center gap-2">
               <kbd className="px-1.5 py-0.5 bg-white/60 backdrop-blur-sm rounded border border-white/30">↑</kbd>
               <kbd className="px-1.5 py-0.5 bg-white/60 backdrop-blur-sm rounded border border-white/30">↓</kbd>
@@ -386,11 +386,11 @@ export function CommandPaletteTrigger() {
         // Dispatch a keyboard event to open the palette
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
       }}
-      className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+      className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-500 bg-warm-100 hover:bg-warm-200 rounded-lg transition-colors"
     >
       <IconSearch size={14} />
       <span className="hidden sm:inline">Search</span>
-      <kbd className="hidden sm:inline text-xs text-slate-400 ml-2">⌘K</kbd>
+      <kbd className="hidden sm:inline text-xs text-warm-400 ml-2">⌘K</kbd>
     </button>
   );
 }

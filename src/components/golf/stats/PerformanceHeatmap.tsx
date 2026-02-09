@@ -31,7 +31,7 @@ function getScoreColor(toPar: number): string {
   if (toPar <= -5) return 'bg-emerald-600 text-white'; // Great round
   if (toPar <= -2) return 'bg-emerald-500 text-white';
   if (toPar < 0) return 'bg-green-400 text-white';
-  if (toPar === 0) return 'bg-slate-300 text-slate-700'; // Even par
+  if (toPar === 0) return 'bg-warm-300 text-warm-700'; // Even par
   if (toPar <= 3) return 'bg-amber-400 text-amber-900';
   if (toPar <= 6) return 'bg-orange-400 text-orange-900';
   return 'bg-red-500 text-white'; // Bad round
@@ -183,11 +183,11 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-              <IconCalendar size={18} className="text-slate-400" />
+            <h3 className="text-base font-semibold text-warm-900 flex items-center gap-2">
+              <IconCalendar size={18} className="text-warm-400" />
               Performance Calendar
             </h3>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-sm text-warm-500 mt-0.5">
               {stats.totalRounds} rounds played in {year}
             </p>
           </div>
@@ -197,19 +197,19 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
             <button
               onClick={() => setYear((y) => y - 1)}
               disabled={!availableYears.includes(year - 1)}
-              className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg hover:bg-warm-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              <IconChevronLeft size={18} className="text-slate-600" />
+              <IconChevronLeft size={18} className="text-warm-600" />
             </button>
-            <span className="px-3 py-1.5 text-sm font-semibold text-slate-900 min-w-[60px] text-center">
+            <span className="px-3 py-1.5 text-sm font-semibold text-warm-900 min-w-[60px] text-center">
               {year}
             </span>
             <button
               onClick={() => setYear((y) => y + 1)}
               disabled={year >= currentYear}
-              className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg hover:bg-warm-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              <IconChevronRight size={18} className="text-slate-600" />
+              <IconChevronRight size={18} className="text-warm-600" />
             </button>
           </div>
         </div>
@@ -217,26 +217,26 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
         {/* Stats summary */}
         {stats.totalRounds > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div className="text-center p-3 rounded-xl bg-slate-50">
-              <p className="text-xs text-slate-500 mb-1">Avg Score</p>
-              <p className="text-lg font-bold text-slate-900 tabular-nums">
+            <div className="text-center p-3 rounded-xl bg-warm-50">
+              <p className="text-xs text-warm-500 mb-1">Avg Score</p>
+              <p className="text-lg font-bold text-warm-900 tabular-nums">
                 {stats.avgScore?.toFixed(1) ?? '--'}
               </p>
             </div>
-            <div className="text-center p-3 rounded-xl bg-slate-50">
-              <p className="text-xs text-slate-500 mb-1">Best Round</p>
+            <div className="text-center p-3 rounded-xl bg-warm-50">
+              <p className="text-xs text-warm-500 mb-1">Best Round</p>
               <p className="text-lg font-bold text-green-600 tabular-nums">
                 {stats.bestRound ?? '--'}
               </p>
             </div>
             <div className="text-center p-3 rounded-xl bg-green-50">
-              <p className="text-xs text-slate-500 mb-1">Under Par</p>
+              <p className="text-xs text-warm-500 mb-1">Under Par</p>
               <p className="text-lg font-bold text-green-600 tabular-nums">
                 {stats.underParRounds}
               </p>
             </div>
             <div className="text-center p-3 rounded-xl bg-amber-50">
-              <p className="text-xs text-slate-500 mb-1">Over Par</p>
+              <p className="text-xs text-warm-500 mb-1">Over Par</p>
               <p className="text-lg font-bold text-amber-600 tabular-nums">
                 {stats.overParRounds}
               </p>
@@ -255,7 +255,7 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
                 return (
                   <div
                     key={i}
-                    className="text-xs text-slate-400 font-medium"
+                    className="text-xs text-warm-400 font-medium"
                     style={{ marginLeft }}
                   >
                     {pos.month}
@@ -271,7 +271,7 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
                 {DAYS.map((day, i) => (
                   <div
                     key={day}
-                    className="h-[10px] text-[9px] text-slate-400 flex items-center"
+                    className="h-[10px] text-[9px] text-warm-400 flex items-center"
                     style={{ visibility: i % 2 === 1 ? 'visible' : 'hidden' }}
                   >
                     {day[0]}
@@ -299,8 +299,8 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
                           key={dayIndex}
                           className={`w-[10px] h-[10px] rounded-sm cursor-pointer transition-all ${
                             hasRounds && bestRound
-                              ? `${getScoreColor(bestRound.toPar)} hover:ring-2 hover:ring-slate-400 hover:ring-offset-1`
-                              : 'bg-slate-100 hover:bg-slate-200'
+                              ? `${getScoreColor(bestRound.toPar)} hover:ring-2 hover:ring-warm-400 hover:ring-offset-1`
+                              : 'bg-warm-100 hover:bg-warm-200'
                           }`}
                           style={{ opacity: hasRounds && bestRound ? getScoreOpacity(bestRound.toPar) : 0.5 }}
                           onMouseEnter={() => hasRounds && bestRound && setHoveredRound(bestRound)}
@@ -324,25 +324,25 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-slate-100">
-          <span className="text-xs text-slate-500">Less</span>
+        <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-warm-100">
+          <span className="text-xs text-warm-500">Less</span>
           <div className="flex gap-1">
-            <div className="w-[10px] h-[10px] rounded-sm bg-slate-100" />
+            <div className="w-[10px] h-[10px] rounded-sm bg-warm-100" />
             <div className="w-[10px] h-[10px] rounded-sm bg-red-400" />
             <div className="w-[10px] h-[10px] rounded-sm bg-orange-400" />
             <div className="w-[10px] h-[10px] rounded-sm bg-amber-400" />
-            <div className="w-[10px] h-[10px] rounded-sm bg-slate-300" />
+            <div className="w-[10px] h-[10px] rounded-sm bg-warm-300" />
             <div className="w-[10px] h-[10px] rounded-sm bg-green-400" />
             <div className="w-[10px] h-[10px] rounded-sm bg-emerald-500" />
             <div className="w-[10px] h-[10px] rounded-sm bg-emerald-600" />
           </div>
-          <span className="text-xs text-slate-500">Better</span>
+          <span className="text-xs text-warm-500">Better</span>
         </div>
 
         {/* Hover tooltip */}
         {hoveredRound && (
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 p-3 z-20 pointer-events-none">
-            <p className="text-xs font-medium text-slate-500 mb-1">
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 p-3 z-20 pointer-events-none">
+            <p className="text-xs font-medium text-warm-500 mb-1">
               {new Date(hoveredRound.date).toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short',
@@ -351,15 +351,15 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
             </p>
             <div className="flex items-center gap-4">
               <div>
-                <p className="text-lg font-bold text-slate-900 tabular-nums">{hoveredRound.score}</p>
-                <p className="text-xs text-slate-500">Score</p>
+                <p className="text-lg font-bold text-warm-900 tabular-nums">{hoveredRound.score}</p>
+                <p className="text-xs text-warm-500">Score</p>
               </div>
               <div
                 className={`px-2 py-1 rounded-lg text-sm font-bold ${
                   hoveredRound.toPar < 0
                     ? 'bg-green-100 text-green-700'
                     : hoveredRound.toPar === 0
-                    ? 'bg-slate-100 text-slate-700'
+                    ? 'bg-warm-100 text-warm-700'
                     : 'bg-amber-100 text-amber-700'
                 }`}
               >
@@ -367,7 +367,7 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
               </div>
             </div>
             {hoveredRound.courseName && (
-              <p className="text-xs text-slate-500 mt-1 truncate max-w-[200px]">{hoveredRound.courseName}</p>
+              <p className="text-xs text-warm-500 mt-1 truncate max-w-[200px]">{hoveredRound.courseName}</p>
             )}
           </div>
         )}
@@ -375,10 +375,10 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
         {/* Empty state */}
         {stats.totalRounds === 0 && (
           <div className="text-center py-8">
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-              <IconGolf size={24} className="text-slate-400" />
+            <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+              <IconGolf size={24} className="text-warm-400" />
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-warm-500">
               No rounds recorded in {year}.
               <br />
               Play rounds to see your performance calendar.

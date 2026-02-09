@@ -40,10 +40,10 @@ const toneConfig: Record<InsightTone, {
   },
   neutral: {
     icon: IconInfo,
-    bgColor: 'bg-slate-50/80',
-    borderColor: 'border-slate-200',
-    iconColor: 'text-slate-600',
-    accentColor: 'bg-slate-500',
+    bgColor: 'bg-warm-50/80',
+    borderColor: 'border-warm-200',
+    iconColor: 'text-warm-600',
+    accentColor: 'bg-warm-500',
   },
   cautionary: {
     icon: IconWarning,
@@ -199,7 +199,7 @@ function InsightCard({
                         e.stopPropagation();
                         onAcknowledge(index);
                       }}
-                      className="flex items-center gap-1.5 text-xs font-medium text-green-600 hover:text-green-700 px-3 py-1.5 rounded-lg bg-green-100 hover:bg-green-200 transition-colors"
+                      className="flex items-center gap-2 text-xs font-medium text-green-600 hover:text-green-700 px-3 py-1.5 rounded-lg bg-green-100 hover:bg-green-200 transition-colors"
                     >
                       <IconCheck size={14} />
                       Got It
@@ -211,7 +211,7 @@ function InsightCard({
                         e.stopPropagation();
                         onDismiss(index);
                       }}
-                      className="flex items-center gap-1.5 text-xs text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-lg hover:bg-white/50 transition-colors"
+                      className="flex items-center gap-2 text-xs text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-lg hover:bg-white/50 transition-colors"
                     >
                       <IconX size={14} />
                       Dismiss
@@ -251,8 +251,8 @@ export function AIInsightsPanel({
         </div>
 
         <div className="text-center py-8">
-          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-            <IconInfo size={24} className="text-slate-400" />
+          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+            <IconInfo size={24} className="text-warm-400" />
           </div>
           <p className="text-sm text-warm-600 mb-1">No insights available yet</p>
           <p className="text-xs text-warm-400">

@@ -356,31 +356,9 @@ export default function ShotTrackingWithOffline({
     }
   }, [connectionStatus.isOnline, syncStatus.pendingCount.total, onExit]);
 
-  /**
-   * Manual sync handler
-   */
-  const handleSyncNow = useCallback(async () => {
-    if (!connectionStatus.isOnline) return;
-
-    try {
-      const syncEngine = getSyncEngine();
-      await syncEngine.syncAll();
-    } catch (error) {
-      console.error('[ShotTrackingWithOffline] Manual sync failed:', error);
-    }
-  }, [connectionStatus.isOnline]);
-
-  /**
-   * Retry failed sync handler
-   */
-  const handleRetryFailed = useCallback(async () => {
-    try {
-      const syncEngine = getSyncEngine();
-      await syncEngine.retryFailed();
-    } catch (error) {
-      console.error('[ShotTrackingWithOffline] Retry failed:', error);
-    }
-  }, []);
+  // NOTE: handleSyncNow and handleRetryFailed were removed because the
+  // OfflineSyncStatus floating UI that used them was removed to avoid
+  // popping up during normal online use. If re-enabled, restore these handlers.
 
   return (
     <div className="relative">

@@ -102,7 +102,7 @@ export function StrokesGainedDashboard({
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-xl font-semibold text-warm-900">Strokes Gained Analysis</h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-warm-500">
             Performance relative to scratch golfer baseline
           </p>
         </div>
@@ -145,9 +145,9 @@ export function StrokesGainedDashboard({
 
         {/* Overview Tab */}
         <TabsContent value="overview">
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Radar Chart */}
-            <Card className="col-span-2">
+            <Card className="lg:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Performance Radar</CardTitle>
                 <CardDescription>
@@ -189,7 +189,7 @@ export function StrokesGainedDashboard({
                             className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: cat.color }}
                           />
-                          <span className="text-sm font-medium text-slate-700">
+                          <span className="text-sm font-medium text-warm-700">
                             {cat.label}
                           </span>
                         </div>
@@ -220,7 +220,7 @@ export function StrokesGainedDashboard({
                   {insights.map((insight, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
                       <span className="text-green-500 mt-0.5">•</span>
-                      <span className="text-slate-700">{insight}</span>
+                      <span className="text-warm-700">{insight}</span>
                     </li>
                   ))}
                 </ul>
@@ -251,7 +251,7 @@ export function StrokesGainedDashboard({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-warm-500">
                     No standout strengths identified (all categories near scratch level)
                   </p>
                 )}
@@ -279,7 +279,7 @@ export function StrokesGainedDashboard({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-warm-500">
                     No major weaknesses identified - well-rounded game
                   </p>
                 )}
@@ -385,16 +385,16 @@ export function StrokesGainedDashboard({
                     <table className="w-full">
                       <thead className="bg-white/40">
                         <tr>
-                          <th className="text-left px-4 py-2 text-sm font-medium text-slate-700">
+                          <th className="text-left px-4 py-2 text-sm font-medium text-warm-700">
                             Category
                           </th>
-                          <th className="text-right px-4 py-2 text-sm font-medium text-slate-700">
+                          <th className="text-right px-4 py-2 text-sm font-medium text-warm-700">
                             You
                           </th>
-                          <th className="text-right px-4 py-2 text-sm font-medium text-slate-700">
+                          <th className="text-right px-4 py-2 text-sm font-medium text-warm-700">
                             {comparisonData.label}
                           </th>
-                          <th className="text-right px-4 py-2 text-sm font-medium text-slate-700">
+                          <th className="text-right px-4 py-2 text-sm font-medium text-warm-700">
                             Difference
                           </th>
                         </tr>
@@ -424,13 +424,13 @@ export function StrokesGainedDashboard({
                               >
                                 {formatStrokesGained(yours)}
                               </td>
-                              <td className="text-right px-4 py-3 text-slate-600">
+                              <td className="text-right px-4 py-3 text-warm-600">
                                 {formatStrokesGained(theirs)}
                               </td>
                               <td
                                 className={cn(
                                   'text-right px-4 py-3 font-medium',
-                                  diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-slate-500'
+                                  diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-warm-500'
                                 )}
                               >
                                 {diff > 0 ? '+' : ''}{diff.toFixed(2)}
@@ -472,7 +472,7 @@ function StrengthWeaknessCard({
           <p className="text-sm font-medium text-warm-900 truncate">
             {item.label}
           </p>
-          <p className="text-xs text-slate-500 mt-0.5">{item.detail}</p>
+          <p className="text-xs text-warm-500 mt-0.5">{item.detail}</p>
         </div>
         <span
           className={cn(
@@ -485,7 +485,7 @@ function StrengthWeaknessCard({
         </span>
       </div>
       {item.recommendation && (
-        <p className="text-xs text-slate-600 mt-2 pt-2 border-t border-slate-100">
+        <p className="text-xs text-warm-600 mt-2 pt-2 border-t border-warm-100">
           {item.recommendation}
         </p>
       )}
@@ -513,7 +513,7 @@ export function StrokesGainedSummary({
           {primaryStrength && (
             <span className="text-green-600">Strong: {primaryStrength}</span>
           )}
-          {primaryStrength && primaryWeakness && <span className="text-slate-300">|</span>}
+          {primaryStrength && primaryWeakness && <span className="text-warm-300">|</span>}
           {primaryWeakness && (
             <span className="text-red-600">Focus: {primaryWeakness}</span>
           )}

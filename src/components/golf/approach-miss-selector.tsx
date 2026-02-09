@@ -25,7 +25,7 @@ export function ApproachMissSelector({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-600 font-medium">Where did it miss?</p>
+      <p className="text-sm text-warm-600 font-medium">Where did it miss?</p>
       
       <div className="relative max-w-[280px] mx-auto">
         {/* Grid container */}
@@ -65,13 +65,13 @@ export function ApproachMissSelector({
                   'font-medium',
                   isSelected
                     ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                    : 'bg-white/70 backdrop-blur-sm border-slate-200 hover:border-emerald-300 hover:bg-emerald-50',
+                    : 'bg-white/70 backdrop-blur-sm border-warm-200 hover:border-emerald-300 hover:bg-emerald-50',
                   disabled && 'opacity-50 cursor-not-allowed'
                 )}
               >
                 <span className={cn(
                   'text-lg leading-none',
-                  isSelected ? 'text-white' : 'text-slate-600'
+                  isSelected ? 'text-white' : 'text-warm-600'
                 )}>
                   {config.icon}
                 </span>
@@ -102,14 +102,14 @@ export function ApproachMissSelector({
             <motion.p
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-sm text-slate-700 font-medium"
+              className="text-sm text-warm-700 font-medium"
             >
               Missed <span className={APPROACH_MISS_CONFIG[selectedDirection].color}>
                 {APPROACH_MISS_CONFIG[selectedDirection].label}
               </span>
             </motion.p>
           ) : (
-            <div className="flex items-center justify-center gap-1 text-slate-400">
+            <div className="flex items-center justify-center gap-1 text-warm-400">
               <span className="text-xs">You</span>
               <span className="text-sm">⛳</span>
             </div>

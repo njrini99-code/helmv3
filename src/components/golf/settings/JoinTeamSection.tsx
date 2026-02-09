@@ -162,14 +162,14 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6">
+    <div className="bg-white rounded-2xl border border-warm-200 p-6">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
           <IconUsers size={20} className="text-green-600" />
         </div>
         <div>
-          <h3 className="font-semibold text-slate-900">Team Membership</h3>
-          <p className="text-sm text-slate-500">Request to join your team</p>
+          <h3 className="font-semibold text-warm-900">Team Membership</h3>
+          <p className="text-sm text-warm-500">Request to join your team</p>
         </div>
       </div>
 
@@ -225,7 +225,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
           {/* Pending Requests */}
           {!loadingRequests && pendingRequests.length > 0 && (
             <div className="mb-6 space-y-3">
-              <label className="block text-sm font-medium text-slate-700">
+              <label className="block text-sm font-medium text-warm-700">
                 Pending Requests
               </label>
               {pendingRequests.map((request) => (
@@ -271,11 +271,11 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
           {/* Not on a team message */}
           {pendingRequests.length === 0 && (
             <div className="mb-6">
-              <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                <IconAlertCircle size={20} className="text-slate-500 flex-shrink-0" />
+              <div className="flex items-center gap-3 p-4 bg-warm-50 border border-warm-200 rounded-xl">
+                <IconAlertCircle size={20} className="text-warm-500 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-slate-700">Not on a team yet</p>
-                  <p className="text-sm text-slate-500">
+                  <p className="font-medium text-warm-700">Not on a team yet</p>
+                  <p className="text-sm text-warm-500">
                     Enter your team's invite code below to request to join.
                   </p>
                 </div>
@@ -289,7 +289,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
       {!currentTeam && (
         <form onSubmit={handleRequestJoin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-warm-700 mb-2">
               Request to Join a Team
             </label>
             <div className="space-y-3">
@@ -336,8 +336,8 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
       )}
 
       {/* Help text */}
-      <div className="mt-6 pt-4 border-t border-slate-200">
-        <p className="text-xs text-slate-500">
+      <div className="mt-6 pt-4 border-t border-warm-200">
+        <p className="text-xs text-warm-500">
           {currentTeam
             ? 'You can only be on one team at a time. Leave your current team to join a different one.'
             : 'Your coach will review your request and approve you to join the team. You\'ll be notified when your request is approved.'}

@@ -70,7 +70,7 @@ function SortButton({ label, sortKey, currentSort, currentOrder, onClick }: Sort
         'flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
         isActive
           ? 'bg-primary-100 text-primary-700'
-          : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+          : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100'
       )}
     >
       {label}
@@ -134,7 +134,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
         'bg-white/70 backdrop-blur-sm border rounded-xl overflow-hidden transition-all duration-200',
         isSelected
           ? 'border-primary-500 ring-2 ring-primary-500/20'
-          : 'border-slate-200 hover:border-slate-300'
+          : 'border-warm-200 hover:border-warm-300'
       )}
     >
       {/* Row Header (always visible) */}
@@ -151,7 +151,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
               'w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
               isSelected
                 ? 'bg-primary-500 border-primary-500 text-white'
-                : 'border-slate-300 hover:border-slate-400'
+                : 'border-warm-300 hover:border-warm-400'
             )}
           >
             {isSelected && <IconCheck size={12} />}
@@ -182,14 +182,14 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-start justify-between gap-2 mb-0.5">
-            <h4 className="font-medium text-slate-900 text-sm truncate">
+            <h4 className="font-medium text-warm-900 text-sm truncate">
               {insight.title}
             </h4>
-            <span className="text-xs text-slate-400 flex-shrink-0">
+            <span className="text-xs text-warm-400 flex-shrink-0">
               {formatInsightAge(insight.created_at)}
             </span>
           </div>
-          <p className="text-sm text-slate-600 line-clamp-1">{insight.description}</p>
+          <p className="text-sm text-warm-600 line-clamp-1">{insight.description}</p>
         </div>
 
         {/* Player Avatar */}
@@ -207,7 +207,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex-shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
         >
           {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
         </button>
@@ -223,7 +223,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 space-y-3 border-t border-slate-100">
+            <div className="px-4 pb-4 space-y-3 border-t border-warm-100">
               {/* Player Info (visible on mobile) */}
               {insight.player && (
                 <div className="flex items-center gap-2 pt-3 sm:hidden">
@@ -232,7 +232,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
                     name={`${insight.player.first_name} ${insight.player.last_name}`}
                     size="xs"
                   />
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-warm-500">
                     {insight.player.first_name} {insight.player.last_name}
                   </span>
                 </div>
@@ -240,7 +240,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
 
               {/* Full Description */}
               <div className="pt-3 sm:pt-3">
-                <p className="text-sm text-slate-700 leading-relaxed">
+                <p className="text-sm text-warm-700 leading-relaxed">
                   {insight.description}
                 </p>
               </div>
@@ -267,8 +267,8 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
                     'px-2 py-0.5 rounded-full font-medium',
                     insight.status === 'active' && 'bg-green-100 text-green-700',
                     insight.status === 'acknowledged' && 'bg-blue-100 text-blue-700',
-                    insight.status === 'resolved' && 'bg-slate-100 text-slate-700',
-                    insight.status === 'dismissed' && 'bg-slate-100 text-slate-500'
+                    insight.status === 'resolved' && 'bg-warm-100 text-warm-700',
+                    insight.status === 'dismissed' && 'bg-warm-100 text-warm-500'
                   )}
                 >
                   {insight.status.charAt(0).toUpperCase() + insight.status.slice(1)}
@@ -296,7 +296,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
                     type="button"
                     onClick={() => handleAction('acknowledge')}
                     disabled={isLoading}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-warm-100 text-warm-700 text-sm font-medium rounded-lg hover:bg-warm-200 disabled:opacity-50 transition-colors"
                   >
                     Acknowledge
                   </button>
@@ -304,7 +304,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
                     type="button"
                     onClick={() => handleAction('dismiss')}
                     disabled={isLoading}
-                    className="px-3 py-2 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors"
+                    className="px-3 py-2 bg-warm-100 text-warm-500 rounded-lg hover:bg-warm-200 disabled:opacity-50 transition-colors"
                     title="Dismiss"
                   >
                     <IconX size={16} />
@@ -338,8 +338,8 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
   const endItem = Math.min(page * pageSize, totalCount);
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
-      <div className="text-sm text-slate-500">
+    <div className="flex items-center justify-between px-4 py-3 border-t border-warm-200">
+      <div className="text-sm text-warm-500">
         Showing {startItem}-{endItem} of {totalCount}
       </div>
       <div className="flex items-center gap-2">
@@ -350,8 +350,8 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
           className={cn(
             'p-2 rounded-lg transition-colors',
             page <= 1
-              ? 'text-slate-300 cursor-not-allowed'
-              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+              ? 'text-warm-300 cursor-not-allowed'
+              : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100'
           )}
         >
           <IconChevronLeft size={18} />
@@ -380,7 +380,7 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
                   'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
                   pageNum === page
                     ? 'bg-primary-500 text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    : 'text-warm-600 hover:bg-warm-100'
                 )}
               >
                 {pageNum}
@@ -396,8 +396,8 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
           className={cn(
             'p-2 rounded-lg transition-colors',
             page >= totalPages
-              ? 'text-slate-300 cursor-not-allowed'
-              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+              ? 'text-warm-300 cursor-not-allowed'
+              : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100'
           )}
         >
           <IconChevronRight size={18} />
@@ -454,11 +454,11 @@ export function InsightListView({
         <div className="p-6 space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="animate-pulse flex items-center gap-4">
-              <div className="w-5 h-5 bg-slate-200 rounded" />
-              <div className="w-10 h-10 bg-slate-200 rounded-xl" />
+              <div className="w-5 h-5 bg-warm-200 rounded" />
+              <div className="w-10 h-10 bg-warm-200 rounded-xl" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-slate-200 rounded w-2/3" />
-                <div className="h-3 bg-slate-200 rounded w-1/2" />
+                <div className="h-4 bg-warm-200 rounded w-2/3" />
+                <div className="h-3 bg-warm-200 rounded w-1/2" />
               </div>
             </div>
           ))}
@@ -484,12 +484,12 @@ export function InsightListView({
   return (
     <GlassCard padding="none" hover={false}>
       {/* Header with Sort Options */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-        <div className="text-sm text-slate-500">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-warm-200">
+        <div className="text-sm text-warm-500">
           {totalCount} insight{totalCount !== 1 ? 's' : ''}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 mr-1">Sort by:</span>
+          <span className="text-xs text-warm-400 mr-1">Sort by:</span>
           <SortButton
             label="Priority"
             sortKey="priority"

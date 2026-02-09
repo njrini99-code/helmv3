@@ -147,7 +147,7 @@ export function RoundReviewCard({
                 ? 'bg-green-50 border border-green-100'
                 : isOverPar
                   ? 'bg-amber-50 border border-amber-100'
-                  : 'bg-slate-50 border border-slate-100'
+                  : 'bg-warm-50 border border-warm-100'
             )}
           >
             <span
@@ -157,7 +157,7 @@ export function RoundReviewCard({
                   ? 'text-green-600'
                   : isOverPar
                     ? 'text-amber-600'
-                    : 'text-slate-600'
+                    : 'text-warm-600'
               )}
             >
               {score}
@@ -169,7 +169,7 @@ export function RoundReviewCard({
                   ? 'text-green-500'
                   : isOverPar
                     ? 'text-amber-500'
-                    : 'text-slate-400'
+                    : 'text-warm-400'
               )}
             >
               {formatScoreToPar(scoreToPar)}
@@ -247,8 +247,8 @@ export function RoundReviewCardList({
   if (rounds.length === 0) {
     return (
       <div className={cn('text-center py-8', className)}>
-        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-          <IconSparkles size={24} className="text-slate-400" />
+        <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+          <IconSparkles size={24} className="text-warm-400" />
         </div>
         <p className="text-sm text-warm-500">{emptyMessage}</p>
       </div>
@@ -289,13 +289,13 @@ export function RoundReviewCardSkeleton({ count = 3 }: { count?: number }) {
           className="flex items-center gap-4 p-4 rounded-xl bg-white/70 backdrop-blur-sm border border-white/30 animate-pulse"
         >
           {/* Score skeleton */}
-          <div className="w-14 h-14 rounded-xl bg-slate-200" />
+          <div className="w-14 h-14 rounded-xl bg-warm-200" />
 
           {/* Info skeleton */}
           <div className="flex-1 space-y-2">
-            <div className="h-4 bg-slate-200 rounded w-32" />
-            <div className="h-3 bg-slate-200 rounded w-20" />
-            <div className="h-3 bg-slate-200 rounded w-48" />
+            <div className="h-4 bg-warm-200 rounded w-32" />
+            <div className="h-3 bg-warm-200 rounded w-20" />
+            <div className="h-3 bg-warm-200 rounded w-48" />
           </div>
         </div>
       ))}
@@ -348,7 +348,7 @@ export function CompactRoundReviewCard({
             ? 'bg-green-50 text-green-600'
             : isOverPar
               ? 'bg-amber-50 text-amber-600'
-              : 'bg-slate-50 text-slate-600'
+              : 'bg-warm-50 text-warm-600'
         )}
       >
         <span className="text-sm font-bold">{score}</span>

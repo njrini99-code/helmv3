@@ -149,13 +149,13 @@ export function MobileCalendarListView({
                   <h3
                     className={cn(
                       'text-sm font-semibold leading-tight',
-                      group.isToday ? 'text-green-700' : 'text-slate-800'
+                      group.isToday ? 'text-green-700' : 'text-warm-800'
                     )}
                   >
                     {group.label}
                   </h3>
                   {!group.isToday && (
-                    <span className="text-xs text-slate-400 font-medium">
+                    <span className="text-xs text-warm-400 font-medium">
                       {format(group.date, 'MMM d')}
                     </span>
                   )}
@@ -239,7 +239,7 @@ export function MobileWeekListView({
   if (filteredEvents.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-warm-500">
           No events from {format(startDate, 'MMM d')} to {format(endDate, 'MMM d')}
         </p>
       </div>
@@ -255,7 +255,7 @@ export function MobileWeekListView({
             <span
               className={cn(
                 'text-xs font-bold uppercase tracking-wide',
-                group.isToday ? 'text-green-600' : 'text-slate-500'
+                group.isToday ? 'text-green-600' : 'text-warm-500'
               )}
             >
               {format(group.date, 'EEE d')}
@@ -326,8 +326,8 @@ export function MobileDayListView({
     <div className="flex-1 px-4 py-3">
       {/* Day header */}
       <div className="mb-4">
-        <h2 className="text-xl font-bold text-slate-900">{dateLabel}</h2>
-        <p className="text-sm text-slate-500">{format(date, 'MMMM d, yyyy')}</p>
+        <h2 className="text-xl font-bold text-warm-900">{dateLabel}</h2>
+        <p className="text-sm text-warm-500">{format(date, 'MMMM d, yyyy')}</p>
       </div>
 
       {dayEvents.length === 0 ? (

@@ -238,9 +238,9 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
     },
     dismissed: {
       icon: <IconX size={14} />,
-      bg: 'bg-slate-100',
-      border: 'border-slate-300',
-      text: 'text-slate-500',
+      bg: 'bg-warm-100',
+      border: 'border-warm-300',
+      text: 'text-warm-500',
       label: 'Dismissed',
     },
   };
@@ -249,13 +249,13 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
     return (
       <GlassCard padding="lg" hover={false}>
         <div className="text-center py-8">
-          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <IconActivity size={24} className="text-slate-400" />
+          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+            <IconActivity size={24} className="text-warm-400" />
           </div>
-          <h3 className="text-lg font-medium text-slate-900 mb-2">
+          <h3 className="text-lg font-medium text-warm-900 mb-2">
             No timeline data
           </h3>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-warm-500">
             Pattern timeline will appear as patterns are detected and managed.
           </p>
         </div>
@@ -269,20 +269,20 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
       <GlassCard padding="md" hover={false}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-medium text-slate-500 mb-1">Last 7 Days</h3>
+            <h3 className="text-sm font-medium text-warm-500 mb-1">Last 7 Days</h3>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-semibold text-slate-900">
+                <span className="text-2xl font-semibold text-warm-900">
                   {trendSummary.detected}
                 </span>
-                <span className="text-sm text-slate-500">detected</span>
+                <span className="text-sm text-warm-500">detected</span>
               </div>
-              <div className="text-slate-300">|</div>
+              <div className="text-warm-300">|</div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-semibold text-green-600">
                   {trendSummary.resolved}
                 </span>
-                <span className="text-sm text-slate-500">resolved</span>
+                <span className="text-sm text-warm-500">resolved</span>
               </div>
             </div>
           </div>
@@ -291,7 +291,7 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
             'flex items-center gap-2 px-4 py-2 rounded-lg',
             trendSummary.trend === 'increasing' && 'bg-red-50 text-red-700',
             trendSummary.trend === 'decreasing' && 'bg-green-50 text-green-700',
-            trendSummary.trend === 'stable' && 'bg-slate-50 text-slate-600',
+            trendSummary.trend === 'stable' && 'bg-warm-50 text-warm-600',
           )}>
             {trendSummary.trend === 'increasing' && <IconTrendingUp size={20} />}
             {trendSummary.trend === 'decreasing' && <IconTrendingDown size={20} />}
@@ -307,7 +307,7 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
 
       {/* Chart */}
       <GlassCard padding="md" hover={false}>
-        <h3 className="text-sm font-medium text-slate-700 mb-4">Pattern Activity (Last 30 Days)</h3>
+        <h3 className="text-sm font-medium text-warm-700 mb-4">Pattern Activity (Last 30 Days)</h3>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
@@ -358,10 +358,10 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
 
       {/* Timeline events */}
       <GlassCard padding="md" hover={false}>
-        <h3 className="text-sm font-medium text-slate-700 mb-4">Recent Activity</h3>
+        <h3 className="text-sm font-medium text-warm-700 mb-4">Recent Activity</h3>
         <div className="relative">
           {/* Timeline line */}
-          <div className="absolute left-4 top-2 bottom-2 w-px bg-slate-200" />
+          <div className="absolute left-4 top-2 bottom-2 w-px bg-warm-200" />
 
           {/* Events */}
           <div className="space-y-4">
@@ -395,17 +395,17 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
                       )}>
                         {config.label}
                       </span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-warm-400">
                         {event.dateFormatted}
                       </span>
                     </div>
 
-                    <p className="text-sm text-slate-700 line-clamp-1">
+                    <p className="text-sm text-warm-700 line-clamp-1">
                       {event.description}
                     </p>
 
                     {event.playerName && (
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-xs text-warm-500 mt-0.5">
                         {event.playerName}
                         {event.strokeImpact !== 0 && (
                           <span className={cn(
@@ -425,7 +425,7 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
 
           {timelineEvents.length > 20 && (
             <div className="mt-4 text-center">
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-warm-500">
                 And {timelineEvents.length - 20} more events...
               </span>
             </div>

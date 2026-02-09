@@ -30,14 +30,14 @@ const statusRingStyles = {
   online: 'bg-gradient-to-br from-emerald-400 to-emerald-600',
   away: 'bg-gradient-to-br from-amber-400 to-amber-600',
   busy: 'bg-gradient-to-br from-rose-400 to-rose-600',
-  offline: 'bg-slate-200',
+  offline: 'bg-warm-200',
 };
 
 const statusDotColors = {
   online: 'bg-emerald-500',
   away: 'bg-amber-500',
   busy: 'bg-rose-500',
-  offline: 'bg-slate-300',
+  offline: 'bg-warm-300',
 };
 
 function getInitials(name: string): string {
@@ -192,7 +192,7 @@ export function AvatarGroup({ children, max = 3, total, size = 'md' }: AvatarGro
       {remaining > 0 && (
         <div className={cn(
           'rounded-xl flex items-center justify-center',
-          'bg-slate-100 text-slate-600 font-semibold',
+          'bg-warm-100 text-warm-600 font-semibold',
           'ring-2 ring-white',
           sizeConfig.container,
           sizeConfig.text,

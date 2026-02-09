@@ -80,7 +80,7 @@ const sizeClasses = {
     button: 'min-h-[48px] min-w-[48px] px-4 py-2.5',
     icon: 'w-5 h-5',
     text: 'text-sm',
-    gap: 'gap-1.5',
+    gap: 'gap-2',
   },
   lg: {
     button: 'min-h-[56px] min-w-[56px] px-5 py-3',

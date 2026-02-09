@@ -105,7 +105,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
         onClick={onClose}
       />
       
@@ -119,16 +119,16 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
           }}
         />
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Review Classes</h2>
-            <p className="text-sm text-slate-500">
+            <h2 className="text-lg font-semibold text-warm-900">Review Classes</h2>
+            <p className="text-sm text-warm-500">
               {classes.length} class{classes.length !== 1 ? 'es' : ''} found - edit or confirm
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors"
           >
             <IconX size={20} />
           </button>
@@ -138,7 +138,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         <div className="flex-1 overflow-y-auto p-6">
           {classes.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-slate-500">No classes to confirm</p>
+              <p className="text-warm-500">No classes to confirm</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -149,7 +149,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                     'border rounded-xl overflow-hidden transition-all',
                     editingIndex === index 
                       ? 'border-green-500 ring-2 ring-green-500/20' 
-                      : 'border-slate-200'
+                      : 'border-warm-200'
                   )}
                 >
                   {editingIndex === index ? (
@@ -157,7 +157,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                     <div className="p-4 space-y-4">
                       <div className="grid grid-cols-3 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-slate-500 mb-1">Course ID</label>
+                          <label className="block text-xs font-medium text-warm-500 mb-1">Course ID</label>
                           <Input
                             value={cls.course_code}
                             onChange={(e) => handleFieldChange(index, 'course_code', e.target.value.toUpperCase())}
@@ -165,7 +165,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="block text-xs font-medium text-slate-500 mb-1">Course Name</label>
+                          <label className="block text-xs font-medium text-warm-500 mb-1">Course Name</label>
                           <Input
                             value={cls.course_name}
                             onChange={(e) => handleFieldChange(index, 'course_name', e.target.value)}
@@ -175,7 +175,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       </div>
                       
                       <div>
-                        <label className="block text-xs font-medium text-slate-500 mb-2">Days</label>
+                        <label className="block text-xs font-medium text-warm-500 mb-2">Days</label>
                         <div className="flex gap-2">
                           {DAYS.map(day => (
                             <button
@@ -186,7 +186,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                                 'w-9 h-9 rounded-lg text-xs font-medium transition-all',
                                 cls.days.includes(day.abbrev)
                                   ? 'bg-green-600 text-white'
-                                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                  : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
                               )}
                             >
                               {day.label}
@@ -197,7 +197,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       
                       <div className="grid grid-cols-4 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-slate-500 mb-1">Start</label>
+                          <label className="block text-xs font-medium text-warm-500 mb-1">Start</label>
                           <Input
                             type="time"
                             value={cls.start_time}
@@ -206,7 +206,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-slate-500 mb-1">End</label>
+                          <label className="block text-xs font-medium text-warm-500 mb-1">End</label>
                           <Input
                             type="time"
                             value={cls.end_time}
@@ -215,7 +215,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-slate-500 mb-1">Location</label>
+                          <label className="block text-xs font-medium text-warm-500 mb-1">Location</label>
                           <Input
                             value={cls.location}
                             onChange={(e) => handleFieldChange(index, 'location', e.target.value)}
@@ -224,7 +224,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-slate-500 mb-1">Professor</label>
+                          <label className="block text-xs font-medium text-warm-500 mb-1">Professor</label>
                           <Input
                             value={cls.instructor}
                             onChange={(e) => handleFieldChange(index, 'instructor', e.target.value)}
@@ -256,11 +256,11 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           <span className="font-mono text-sm font-semibold text-green-600">
                             {cls.course_code}
                           </span>
-                          <span className="text-slate-900 font-medium truncate">
+                          <span className="text-warm-900 font-medium truncate">
                             {cls.course_name || 'Untitled Class'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-slate-500">
+                        <div className="flex items-center gap-4 text-sm text-warm-500">
                           {cls.days.length > 0 && (
                             <span className="font-medium">
                               {formatDaysDisplay(cls.days)}
@@ -275,7 +275,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                             <span>{cls.location}</span>
                           )}
                           {cls.instructor && (
-                            <span className="text-slate-400">{cls.instructor}</span>
+                            <span className="text-warm-400">{cls.instructor}</span>
                           )}
                         </div>
                       </div>
@@ -284,13 +284,13 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button
                           onClick={() => handleEdit(index)}
-                          className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          className="p-2 text-warm-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                         >
                           <IconPencil size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(index)}
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-warm-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <IconTrash size={18} />
                         </button>
@@ -304,28 +304,28 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 space-y-4">
+        <div className="px-6 py-4 border-t border-warm-100 bg-warm-50 space-y-4">
           <div className="bg-yellow-50 border-2 border-yellow-500 rounded-lg p-4">
-            <label className="block text-sm font-medium text-slate-900 mb-2 text-base">
+            <label className="block text-sm font-medium text-warm-900 mb-2 text-base">
               ⚠️ REQUIRED: When does the semester start?
             </label>
             <Input
               type="date"
               value={semesterStartDate}
               onChange={(e) => setSemesterStartDate(e.target.value)}
-              className="max-w-xs bg-white border-2 border-slate-300 text-base h-12"
+              className="max-w-xs bg-white border-2 border-warm-300 text-base h-12"
               required
               placeholder="Select semester start date"
             />
-            <p className="text-sm text-slate-700 mt-2 font-medium">
+            <p className="text-sm text-warm-700 mt-2 font-medium">
               👉 Your classes will appear on the calendar starting from this date
             </p>
-            <p className="text-xs text-slate-600 mt-1">
+            <p className="text-xs text-warm-600 mt-1">
               Default: {semesterStartDate || 'Not set'}
             </p>
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-warm-500">
               {classes.length} class{classes.length !== 1 ? 'es' : ''} will sync to your calendar
             </p>
             <div className="flex items-center gap-3">

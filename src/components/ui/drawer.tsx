@@ -74,12 +74,12 @@ export function ResponsiveDrawer({
           >
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-2">
-              <div className="h-1.5 w-10 rounded-full bg-slate-300" />
+              <div className="h-1.5 w-10 rounded-full bg-warm-300" />
             </div>
 
             {/* Header */}
             {(title || description) && (
-              <div className="px-5 pb-3 border-b border-slate-100">
+              <div className="px-5 pb-3 border-b border-warm-100">
                 {title && (
                   <VaulDrawer.Title className="text-lg font-semibold text-warm-900">
                     {title}
@@ -132,7 +132,7 @@ export function ResponsiveDrawer({
       >
         {/* Header */}
         {(title || description) && (
-          <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-slate-100">
+          <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-warm-100">
             <div>
               {title && (
                 <h2 className="text-lg font-semibold text-warm-900">{title}</h2>
@@ -143,7 +143,7 @@ export function ResponsiveDrawer({
             </div>
             <button
               onClick={onClose}
-              className="p-2 -mr-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="p-2 -mr-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>

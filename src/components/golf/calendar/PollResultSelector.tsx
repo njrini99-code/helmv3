@@ -105,13 +105,13 @@ export function PollResultSelector({
   const hasMoreResults = results.length > maxResults;
 
   return (
-    <div className={cn('bg-white rounded-2xl border border-slate-200 shadow-sm', className)}>
+    <div className={cn('bg-white rounded-2xl border border-warm-200 shadow-sm', className)}>
       {/* Header */}
-      <div className="p-5 border-b border-slate-200">
+      <div className="p-5 border-b border-warm-200">
         <div className="flex items-start justify-between gap-4 mb-3">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">{pollTitle}</h3>
-            <p className="text-sm text-slate-500 mt-1">
+            <h3 className="text-lg font-semibold text-warm-900">{pollTitle}</h3>
+            <p className="text-sm text-warm-500 mt-1">
               Top time slots based on team availability
             </p>
           </div>
@@ -121,7 +121,7 @@ export function PollResultSelector({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortMode)}
-              className="pl-3 pr-8 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 font-medium cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-100 focus:border-green-500"
+              className="pl-3 pr-8 py-2 text-sm border border-warm-200 rounded-lg bg-white text-warm-700 font-medium cursor-pointer hover:border-warm-300 focus:outline-none focus:ring-2 focus:ring-green-100 focus:border-green-500"
             >
               <option value="availability">Best Availability</option>
               <option value="date">Earliest Date</option>
@@ -131,25 +131,25 @@ export function PollResultSelector({
 
         {/* Stats */}
         <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-1.5">
-            <Users className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-600">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-warm-400" />
+            <span className="text-warm-600">
               {results[0]?.totalResponses || 0} responses
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-600">{results.length} time slots</span>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-warm-400" />
+            <span className="text-warm-600">{results.length} time slots</span>
           </div>
         </div>
       </div>
 
       {/* Results list */}
-      <div className="divide-y divide-slate-200">
+      <div className="divide-y divide-warm-200">
         {sortedResults.length === 0 ? (
           <div className="p-12 text-center">
-            <TrendingUp className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-sm text-slate-500">No poll results available</p>
+            <TrendingUp className="w-12 h-12 text-warm-300 mx-auto mb-3" />
+            <p className="text-sm text-warm-500">No poll results available</p>
           </div>
         ) : (
           <>
@@ -179,7 +179,7 @@ export function PollResultSelector({
                         'shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold',
                         isTopChoice
                           ? 'bg-emerald-600 text-white'
-                          : 'bg-slate-100 text-slate-600'
+                          : 'bg-warm-100 text-warm-600'
                       )}
                     >
                       {index + 1}
@@ -190,14 +190,14 @@ export function PollResultSelector({
                       {/* Date and time */}
                       <div className="flex items-center gap-3 mb-2">
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-slate-400" />
-                          <span className="font-semibold text-slate-900">
+                          <Calendar className="w-4 h-4 text-warm-400" />
+                          <span className="font-semibold text-warm-900">
                             {format(dateObj, 'EEEE, MMMM d')}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-slate-400" />
-                          <span className="text-sm text-slate-600">
+                          <Clock className="w-4 h-4 text-warm-400" />
+                          <span className="text-sm text-warm-600">
                             {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
                           </span>
                         </div>
@@ -220,7 +220,7 @@ export function PollResultSelector({
 
                       {/* Top choice badge */}
                       {isTopChoice && (
-                        <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">
+                        <div className="mt-2 inline-flex items-center gap-2 px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">
                           <TrendingUp className="w-3 h-3" />
                           Best Option
                         </div>
@@ -236,11 +236,11 @@ export function PollResultSelector({
                           'transition-all duration-200',
                           isSelected
                             ? 'bg-green-600 text-white shadow-md'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
                         )}
                       >
                         {isSelected ? (
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-2">
                             <Check className="w-4 h-4" />
                             Selected
                           </span>
@@ -259,7 +259,7 @@ export function PollResultSelector({
               <div className="p-4">
                 <button
                   onClick={() => setShowAll(true)}
-                  className="w-full py-2 text-sm font-medium text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2 hover:bg-slate-50 rounded-lg transition-colors"
+                  className="w-full py-2 text-sm font-medium text-warm-600 hover:text-warm-900 flex items-center justify-center gap-2 hover:bg-warm-50 rounded-lg transition-colors"
                 >
                   <span>Show {results.length - maxResults} more options</span>
                   <ChevronDown className="w-4 h-4" />
@@ -272,11 +272,11 @@ export function PollResultSelector({
 
       {/* Create event footer */}
       {selectedSlot && onCreateEvent && (
-        <div className="p-5 border-t border-slate-200 bg-slate-50">
+        <div className="p-5 border-t border-warm-200 bg-warm-50">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-slate-900">Ready to schedule?</p>
-              <p className="text-xs text-slate-600 mt-0.5">
+              <p className="text-sm font-semibold text-warm-900">Ready to schedule?</p>
+              <p className="text-xs text-warm-600 mt-0.5">
                 {selectedSlot.availableCount} players available for this time
               </p>
             </div>
@@ -333,13 +333,13 @@ export function CompactPollResults({
 
         return (
           <div key={`${slot.date}-${slot.startTime}`} className="flex items-center gap-2 text-sm">
-            <span className="w-5 h-5 rounded bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center">
+            <span className="w-5 h-5 rounded bg-warm-100 text-warm-600 text-xs font-semibold flex items-center justify-center">
               {index + 1}
             </span>
-            <span className="text-slate-700 flex-1 truncate">
+            <span className="text-warm-700 flex-1 truncate">
               {format(dateObj, 'MMM d')} at {formatTime(slot.startTime)}
             </span>
-            <span className="text-slate-500 tabular-nums">{Math.round(percentage)}%</span>
+            <span className="text-warm-500 tabular-nums">{Math.round(percentage)}%</span>
           </div>
         );
       })}

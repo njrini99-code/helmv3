@@ -85,7 +85,7 @@ function AccuracyButtons({ currentAccuracy, onSelect, disabled }: AccuracyButton
             onClick={() => onSelect(option.value)}
             disabled={disabled}
             className={cn(
-              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
+              'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
               isSelected
                 ? `${config.bgColor} ${config.color}`
                 : 'bg-warm-100 text-warm-500 hover:bg-warm-200',

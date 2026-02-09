@@ -324,17 +324,22 @@ export async function createDraftEvent(eventData: {
     }
 
     // Create event in draft state
-    // golf_events schema: start_date (DATE), end_date (DATE), start_time (TIME), end_time (TIME)
+    // golf_events schema: start_time (required ISO timestamp), end_time (nullable)
+    const startTime = eventData.startTime
+      ? `${eventData.startDate}T${eventData.startTime}`
+      : `${eventData.startDate}T00:00:00`;
+    const endTime = eventData.endDate && eventData.endTime
+      ? `${eventData.endDate}T${eventData.endTime}`
+      : eventData.endTime || null;
+
     const { data: event, error: createError } = await supabase
       .from('golf_events')
       .insert({
         title: eventData.title,
         description: eventData.description,
         event_type: eventData.eventType as GolfEventType,
-        start_date: eventData.startDate,
-        end_date: eventData.endDate || null,
-        start_time: eventData.startTime || null,
-        end_time: eventData.endTime || null,
+        start_time: startTime,
+        end_time: endTime,
         location: eventData.location,
         created_by: coach.id,
         team_id: teamId,

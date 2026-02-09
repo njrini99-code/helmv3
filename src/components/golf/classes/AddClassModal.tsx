@@ -253,7 +253,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
         onClick={onClose}
       />
       
@@ -267,13 +267,13 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           }}
         />
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-semibold text-slate-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
+          <h2 className="text-lg font-semibold text-warm-900">
             {editingClass ? 'Edit Class' : 'Add Class'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors"
           >
             <IconX size={20} />
           </button>
@@ -284,7 +284,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Course Code & Name */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 Course ID <span className="text-red-500">*</span>
               </label>
               <Input
@@ -295,7 +295,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 Course Name <span className="text-red-500">*</span>
               </label>
               <Input
@@ -309,7 +309,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
 
           {/* Days */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-warm-700 mb-2">
               Days
             </label>
             <div className="flex items-center gap-2 mb-2">
@@ -322,7 +322,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                     'w-10 h-10 rounded-lg text-sm font-medium transition-all',
                     formData.days.includes(day.abbrev)
                       ? 'bg-green-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   )}
                 >
                   {day.label}
@@ -339,7 +339,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                     'px-3 py-1 text-xs font-medium rounded-full transition-all',
                     JSON.stringify(formData.days) === JSON.stringify(pattern.days)
                       ? 'bg-green-100 text-green-700'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
                   )}
                 >
                   {pattern.label}
@@ -351,7 +351,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Time */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 Start Time
               </label>
               <Input
@@ -361,7 +361,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 End Time
               </label>
               <Input
@@ -375,7 +375,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Location */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 Building
               </label>
               <Input
@@ -385,7 +385,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 Room
               </label>
               <Input
@@ -399,7 +399,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Instructor & Credits */}
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 Professor
               </label>
               <Input
@@ -409,7 +409,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 Credits
               </label>
               <Input
@@ -430,13 +430,13 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Semester & Color */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 Semester
               </label>
               <select
                 value={formData.semester}
                 onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40"
+                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40"
               >
                 <option value="Spring 2025">Spring 2025</option>
                 <option value="Summer 2025">Summer 2025</option>
@@ -445,7 +445,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 Color
               </label>
               <div className="flex items-center gap-2">
@@ -453,16 +453,16 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   type="color"
                   value={formData.color}
                   onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer"
+                  className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
                 />
-                <span className="text-sm text-slate-500">Calendar color</span>
+                <span className="text-sm text-warm-500">Calendar color</span>
               </div>
             </div>
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            <label className="block text-sm font-medium text-warm-700 mb-1.5">
               Notes
             </label>
             <textarea
@@ -470,7 +470,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               placeholder="Any additional notes... (optional)"
               rows={2}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40 resize-none"
+              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40 resize-none"
             />
           </div>
         </form>
@@ -540,7 +540,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>

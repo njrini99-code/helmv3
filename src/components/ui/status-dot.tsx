@@ -15,7 +15,7 @@ const variantColors: Record<StatusDotVariant, string> = {
   warning: 'bg-amber-500',
   error: 'bg-red-500',
   info: 'bg-blue-500',
-  neutral: 'bg-slate-400',
+  neutral: 'bg-warm-400',
   active: 'bg-green-500',
 };
 
@@ -40,7 +40,7 @@ export function StatusDot({
         )}
       />
       {label && (
-        <span className="text-sm leading-relaxed text-slate-600">{label}</span>
+        <span className="text-sm leading-relaxed text-warm-600">{label}</span>
       )}
     </div>
   );
@@ -57,22 +57,22 @@ export function PipelineStatusDot({
   showLabel?: boolean;
 }) {
   const stageConfig: Record<string, { color: string; label: string }> = {
-    watchlist: { color: 'bg-slate-400', label: 'Prospects' },
+    watchlist: { color: 'bg-warm-400', label: 'Prospects' },
     high_priority: { color: 'bg-amber-500', label: 'High Priority' },
     offer_extended: { color: 'bg-blue-500', label: 'Offer Extended' },
     committed: { color: 'bg-green-500', label: 'Committed' },
-    uninterested: { color: 'bg-slate-300', label: 'Not Interested' },
+    uninterested: { color: 'bg-warm-300', label: 'Not Interested' },
   };
 
   const config = stageConfig[stage] ?? stageConfig.watchlist;
-  const colorClass = config?.color ?? 'bg-slate-400';
+  const colorClass = config?.color ?? 'bg-warm-400';
   const labelText = label ?? config?.label ?? 'Unknown';
 
   return (
     <div className="flex items-center gap-2">
       <span className={cn('w-2 h-2 rounded-full flex-shrink-0', colorClass)} />
       {showLabel && (
-        <span className="text-sm leading-relaxed text-slate-600">{labelText}</span>
+        <span className="text-sm leading-relaxed text-warm-600">{labelText}</span>
       )}
     </div>
   );

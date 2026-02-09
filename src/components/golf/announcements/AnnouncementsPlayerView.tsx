@@ -23,14 +23,14 @@ const itemVariants = {
 };
 
 const urgencyBorderColors: Record<string, string> = {
-  low: 'border-l-slate-300',
+  low: 'border-l-warm-300',
   normal: 'border-l-blue-400',
   high: 'border-l-amber-400',
   urgent: 'border-l-red-400',
 };
 
 const urgencyBadgeColors: Record<string, { bg: string; text: string }> = {
-  low: { bg: 'bg-slate-100', text: 'text-slate-600' },
+  low: { bg: 'bg-warm-100', text: 'text-warm-600' },
   normal: { bg: 'bg-blue-50', text: 'text-blue-600' },
   high: { bg: 'bg-amber-50', text: 'text-amber-600' },
   urgent: { bg: 'bg-red-50', text: 'text-red-600' },
@@ -131,7 +131,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-sm font-semibold text-slate-900 truncate">{ann.title}</h3>
+            <h3 className="text-sm font-semibold text-warm-900 truncate">{ann.title}</h3>
             {isRecent && (
               <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-600 flex-shrink-0">
                 New
@@ -143,20 +143,20 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-500 line-clamp-2">{ann.body}</p>
+          <p className="text-sm text-warm-500 line-clamp-2">{ann.body}</p>
           <div className="flex items-center gap-3 mt-2 flex-wrap">
-            <span className="text-xs text-slate-400">{publishedDate}</span>
+            <span className="text-xs text-warm-400">{publishedDate}</span>
             <span className={cn('px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider', urgencyBadge.bg, urgencyBadge.text)}>
               {ann.urgency}
             </span>
             {ann.document_count > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+              <span className="inline-flex items-center gap-1 text-xs text-warm-500">
                 <IconFile size={10} />
                 {ann.document_count} doc{ann.document_count !== 1 ? 's' : ''}
               </span>
             )}
             {ann.task_count > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+              <span className="inline-flex items-center gap-1 text-xs text-warm-500">
                 <IconCheck size={10} />
                 Tasks
               </span>
@@ -174,7 +174,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
           transition={{ duration: 0.2 }}
           className="flex-shrink-0 mt-1"
         >
-          <IconChevronDown size={16} className="text-slate-400" />
+          <IconChevronDown size={16} className="text-warm-400" />
         </motion.div>
       </button>
 
@@ -188,7 +188,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
             transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-4 border-t border-slate-100">
+            <div className="px-5 pb-4 border-t border-warm-100">
               {loadingDetail ? (
                 <div className="py-6 flex items-center justify-center">
                   <div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" />
@@ -196,12 +196,12 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
               ) : detail ? (
                 <div className="pt-4 space-y-4">
                   {/* Full body */}
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{detail.body}</p>
+                  <p className="text-sm text-warm-700 whitespace-pre-wrap">{detail.body}</p>
 
                   {/* Documents - downloadable */}
                   {detail.documents && detail.documents.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Attachments</p>
+                      <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Attachments</p>
                       <div className="space-y-1.5">
                         {detail.documents.map((d) => (
                           <a
@@ -209,19 +209,19 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                             href={d.document?.file_url || '#'}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-3 px-3 py-2.5 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 hover:border-slate-300 transition-all group"
+                            className="flex items-center gap-3 px-3 py-2.5 bg-warm-50 rounded-xl border border-warm-200 hover:bg-warm-100 hover:border-warm-300 transition-all group"
                           >
-                            <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0">
-                              <IconFile size={16} className="text-slate-400" />
+                            <div className="w-9 h-9 rounded-lg bg-white border border-warm-200 flex items-center justify-center flex-shrink-0">
+                              <IconFile size={16} className="text-warm-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-slate-700 truncate">{d.document?.title || 'Document'}</p>
-                              <p className="text-xs text-slate-400">
+                              <p className="text-sm font-medium text-warm-700 truncate">{d.document?.title || 'Document'}</p>
+                              <p className="text-xs text-warm-400">
                                 {d.document?.file_type || 'File'}
                                 {d.document?.file_size ? ` - ${(d.document.file_size / 1024).toFixed(1)} KB` : ''}
                               </p>
                             </div>
-                            <IconDownload size={14} className="text-slate-400 group-hover:text-green-600 transition-colors flex-shrink-0" />
+                            <IconDownload size={14} className="text-warm-400 group-hover:text-green-600 transition-colors flex-shrink-0" />
                           </a>
                         ))}
                       </div>
@@ -232,11 +232,11 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                   {detail.tasks && detail.tasks.length > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tasks</p>
+                        <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider">Tasks</p>
                         {myTotalTasks > 0 && (
                           <span className={cn(
                             'text-xs font-medium tabular-nums',
-                            myCompletedTasks === myTotalTasks ? 'text-green-600' : 'text-slate-500'
+                            myCompletedTasks === myTotalTasks ? 'text-green-600' : 'text-warm-500'
                           )}>
                             {myCompletedTasks}/{myTotalTasks} complete
                           </span>
@@ -263,7 +263,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
 
                   {/* Acknowledge button */}
                   {ann.requires_acknowledgement && !hasAcknowledged && (
-                    <div className="pt-2 border-t border-slate-100">
+                    <div className="pt-2 border-t border-warm-100">
                       <Button
                         variant="primary"
                         size="sm"
@@ -277,14 +277,14 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                   )}
 
                   {ann.requires_acknowledgement && hasAcknowledged && (
-                    <div className="pt-2 border-t border-slate-100 flex items-center gap-2 text-green-600">
+                    <div className="pt-2 border-t border-warm-100 flex items-center gap-2 text-green-600">
                       <IconCheck size={16} />
                       <span className="text-sm font-medium">You acknowledged this announcement</span>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="py-4 text-sm text-slate-400 text-center">Failed to load details</p>
+                <p className="py-4 text-sm text-warm-400 text-center">Failed to load details</p>
               )}
             </div>
           </motion.div>

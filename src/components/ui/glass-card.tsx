@@ -132,10 +132,10 @@ export function GlassStatCard({ label, value, icon, suffix, trend }: GlassStatCa
     <GlassCard className="group" variant="primary">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-slate-500">{label}</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900 tabular-nums tracking-tight">
+          <p className="text-sm font-medium text-warm-500">{label}</p>
+          <p className="mt-2 text-3xl font-semibold text-warm-900 tabular-nums tracking-tight">
             {typeof value === 'number' ? value.toLocaleString() : value}
-            {suffix && <span className="text-lg font-normal text-slate-400 ml-1">{suffix}</span>}
+            {suffix && <span className="text-lg font-normal text-warm-400 ml-1">{suffix}</span>}
           </p>
           {trend && (
             <p
@@ -143,7 +143,7 @@ export function GlassStatCard({ label, value, icon, suffix, trend }: GlassStatCa
                 'text-sm mt-1',
                 trend.direction === 'up' && 'text-green-600',
                 trend.direction === 'down' && 'text-red-500',
-                trend.direction === 'neutral' && 'text-slate-400'
+                trend.direction === 'neutral' && 'text-warm-400'
               )}
             >
               {trend.direction === 'up' && '↑'}
@@ -154,7 +154,7 @@ export function GlassStatCard({ label, value, icon, suffix, trend }: GlassStatCa
           )}
         </div>
         {icon && (
-          <div className="p-2.5 bg-white/50 rounded-lg text-slate-600 group-hover:scale-105 transition-transform duration-200">
+          <div className="p-2.5 bg-white/50 rounded-lg text-warm-600 group-hover:scale-105 transition-transform duration-200">
             {icon}
           </div>
         )}

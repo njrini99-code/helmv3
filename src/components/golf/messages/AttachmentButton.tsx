@@ -119,10 +119,10 @@ export function AttachmentButton({
         onClick={handleButtonClick}
         disabled={disabled}
         className={cn(
-          'p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100',
+          'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
           'transition-colors duration-200',
           'focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:ring-offset-1',
-          isOpen && 'bg-slate-100 text-slate-600',
+          isOpen && 'bg-warm-100 text-warm-600',
           disabled && 'opacity-50 cursor-not-allowed',
           className
         )}
@@ -139,12 +139,12 @@ export function AttachmentButton({
         <div
           className={cn(
             'absolute bottom-full left-0 mb-2 w-56',
-            'bg-white rounded-xl border border-slate-200 shadow-lg',
+            'bg-white rounded-xl border border-warm-200 shadow-lg',
             'py-2 z-50'
           )}
         >
-          <div className="px-3 py-1.5 mb-1 border-b border-slate-100">
-            <p className="text-xs font-medium text-slate-500">Attach</p>
+          <div className="px-3 py-1.5 mb-1 border-b border-warm-100">
+            <p className="text-xs font-medium text-warm-500">Attach</p>
           </div>
 
           <AttachmentTypeOption
@@ -173,7 +173,7 @@ export function AttachmentButton({
           />
 
           {/* Camera option - mobile only */}
-          <div className="lg:hidden border-t border-slate-100 mt-1 pt-1">
+          <div className="lg:hidden border-t border-warm-100 mt-1 pt-1">
             <AttachmentTypeOption
               icon={<IconCamera size={18} />}
               label="Take Photo"
@@ -182,7 +182,7 @@ export function AttachmentButton({
             />
           </div>
 
-          <div className="border-t border-slate-100 mt-1 pt-1">
+          <div className="border-t border-warm-100 mt-1 pt-1">
             <AttachmentTypeOption
               icon={<IconPaperclip size={18} />}
               label="Browse All"
@@ -235,15 +235,15 @@ function AttachmentTypeOption({
       onClick={onClick}
       className={cn(
         'w-full flex items-center gap-3 px-3 py-2',
-        'text-left hover:bg-slate-50 transition-colors duration-150'
+        'text-left hover:bg-warm-50 transition-colors duration-150'
       )}
     >
-      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-warm-100 flex items-center justify-center text-warm-500">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-700">{label}</p>
-        <p className="text-xs text-slate-400">{description}</p>
+        <p className="text-sm font-medium text-warm-700">{label}</p>
+        <p className="text-xs text-warm-400">{description}</p>
       </div>
     </button>
   );

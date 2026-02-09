@@ -54,8 +54,8 @@ export function GolfStatCard({
 
     return {
       icon: trend === 'improving' ? '↑' : trend === 'declining' ? '↓' : '→',
-      color: trend === 'stable' ? 'text-slate-500' : isPositive ? 'text-green-500' : 'text-red-500',
-      bgColor: trend === 'stable' ? 'bg-slate-50/70' : isPositive ? 'bg-green-50/70' : 'bg-red-50/70',
+      color: trend === 'stable' ? 'text-warm-500' : isPositive ? 'text-green-500' : 'text-red-500',
+      bgColor: trend === 'stable' ? 'bg-warm-50/70' : isPositive ? 'bg-green-50/70' : 'bg-red-50/70',
     };
   };
 
@@ -109,7 +109,7 @@ export function GolfStatCard({
       )}
     >
       {/* Label */}
-      <div className={cn('text-slate-500 mb-1', styles.label)}>{label}</div>
+      <div className={cn('text-warm-500 mb-1', styles.label)}>{label}</div>
 
       {/* Value and Trend */}
       <div className="flex items-center gap-2">
@@ -263,7 +263,7 @@ export function ScoringDistribution({
   const data = [
     { label: 'Eagles', value: eagles, color: 'bg-purple-500', pct: (eagles / total) * 100 },
     { label: 'Birdies', value: birdies, color: 'bg-green-500', pct: (birdies / total) * 100 },
-    { label: 'Pars', value: pars, color: 'bg-slate-400', pct: (pars / total) * 100 },
+    { label: 'Pars', value: pars, color: 'bg-warm-400', pct: (pars / total) * 100 },
     { label: 'Bogeys', value: bogeys, color: 'bg-orange-400', pct: (bogeys / total) * 100 },
     { label: '2+ Over', value: doublePlus, color: 'bg-red-500', pct: (doublePlus / total) * 100 },
   ];
@@ -294,7 +294,7 @@ export function ScoringDistribution({
         {data.map((d, i) => (
           <div key={i} className="flex items-center gap-1">
             <div className={cn('w-2.5 h-2.5 rounded', d.color)} aria-hidden="true" />
-            <span className="text-slate-600">
+            <span className="text-warm-600">
               {d.label}: {d.value}
             </span>
           </div>

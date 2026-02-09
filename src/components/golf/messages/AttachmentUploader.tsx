@@ -173,7 +173,7 @@ export function AttachmentUploader({
           onClick={() => handleClick('image')}
           disabled={disabled}
           className={cn(
-            'p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100',
+            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
             'transition-colors duration-200',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
@@ -187,7 +187,7 @@ export function AttachmentUploader({
           onClick={() => handleClick('video')}
           disabled={disabled}
           className={cn(
-            'p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100',
+            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
             'transition-colors duration-200',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
@@ -201,7 +201,7 @@ export function AttachmentUploader({
           onClick={() => handleClick('document')}
           disabled={disabled}
           className={cn(
-            'p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100',
+            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
             'transition-colors duration-200',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
@@ -216,7 +216,7 @@ export function AttachmentUploader({
           onClick={() => handleClick('camera')}
           disabled={disabled}
           className={cn(
-            'p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100',
+            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
             'transition-colors duration-200 lg:hidden',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
@@ -256,7 +256,7 @@ export function AttachmentUploader({
         'relative rounded-2xl border-2 border-dashed transition-all duration-200',
         isDragging
           ? 'border-green-500 bg-green-50'
-          : 'border-slate-200 hover:border-slate-300 bg-white',
+          : 'border-warm-200 hover:border-warm-300 bg-white',
         disabled && 'opacity-50 cursor-not-allowed',
         overlay ? 'p-12' : 'p-8',
         className
@@ -279,7 +279,7 @@ export function AttachmentUploader({
             e.stopPropagation();
             onClose();
           }}
-          className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
           aria-label="Close"
         >
           <IconX size={20} />
@@ -291,20 +291,20 @@ export function AttachmentUploader({
         <div
           className={cn(
             'w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors',
-            isDragging ? 'bg-green-100' : 'bg-slate-100'
+            isDragging ? 'bg-green-100' : 'bg-warm-100'
           )}
         >
           <IconUpload
             size={28}
-            className={cn(isDragging ? 'text-green-600' : 'text-slate-400')}
+            className={cn(isDragging ? 'text-green-600' : 'text-warm-400')}
           />
         </div>
 
         {/* Main text */}
-        <h3 className="text-lg font-medium text-slate-900 mb-1">
+        <h3 className="text-lg font-medium text-warm-900 mb-1">
           {isDragging ? 'Drop files here' : 'Upload files'}
         </h3>
-        <p className="text-sm text-slate-500 mb-4">
+        <p className="text-sm text-warm-500 mb-4">
           Drag and drop or{' '}
           <span className="text-green-600 font-medium">browse</span>
         </p>
@@ -373,7 +373,7 @@ export function AttachmentUploader({
         </button>
 
         {/* Size limits info */}
-        <p className="text-xs text-slate-400 mt-4">
+        <p className="text-xs text-warm-400 mt-4">
           Max {maxFiles} files. {getFileSizeLimitsDescription()}
         </p>
 
@@ -448,14 +448,14 @@ function FileTypeButton({
       disabled={disabled}
       className={cn(
         'flex items-center gap-2 px-3 py-2 rounded-lg',
-        'bg-slate-100 text-slate-600 hover:bg-slate-200',
+        'bg-warm-100 text-warm-600 hover:bg-warm-200',
         'transition-colors duration-200',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
     >
       {icon}
       <span className="text-sm font-medium">{label}</span>
-      <span className="text-xs text-slate-400">{limit}</span>
+      <span className="text-xs text-warm-400">{limit}</span>
     </button>
   );
 }

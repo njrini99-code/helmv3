@@ -215,7 +215,7 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
         <div className="space-y-6 max-h-[70vh] overflow-y-auto">
           {/* Team Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-slate-700 border-b pb-2">Team Information</h3>
+            <h3 className="text-sm font-semibold text-warm-700 border-b pb-2">Team Information</h3>
 
             <Input
               label="Team Name"
@@ -232,8 +232,8 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
               placeholder="2024-2025"
             />
 
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-              <p className="text-xs text-slate-600">
+            <div className="bg-warm-50 border border-warm-200 rounded-lg p-3">
+              <p className="text-xs text-warm-600">
                 Team name is visible to all members and on shared scorecards.
               </p>
             </div>
@@ -242,21 +242,21 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
           {/* Organization Section */}
           {organizationId && (
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-slate-700 border-b pb-2">Organization Details</h3>
+              <h3 className="text-sm font-semibold text-warm-700 border-b pb-2">Organization Details</h3>
 
               {/* Logo Upload */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Team Logo</label>
+                <label className="block text-sm font-medium text-warm-700 mb-2">Team Logo</label>
                 <div className="flex items-center gap-4">
                   {logoUrl ? (
                     <img
                       src={logoUrl}
                       alt="Team logo"
-                      className="w-16 h-16 rounded-lg object-cover border border-slate-200"
+                      className="w-16 h-16 rounded-lg object-cover border border-warm-200"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center">
-                      <IconUpload size={24} className="text-slate-400" />
+                    <div className="w-16 h-16 rounded-lg bg-warm-100 border border-warm-200 flex items-center justify-center">
+                      <IconUpload size={24} className="text-warm-400" />
                     </div>
                   )}
                   <div className="flex-1">
@@ -265,10 +265,10 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
                       accept="image/*"
                       onChange={handleLogoUpload}
                       disabled={uploadingLogo}
-                      className="text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
+                      className="text-sm text-warm-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
                       id="logo-upload"
                     />
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-warm-500 mt-1">
                       PNG, JPG up to 2MB
                     </p>
                   </div>

@@ -55,10 +55,10 @@ export function EmailModal({ isOpen, onClose, currentEmail, onUpdate }: EmailMod
     <Modal isOpen={isOpen} onClose={onClose} title="Change Email Address">
       <div className="space-y-4">
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-1">
+          <label className="text-sm font-medium text-warm-700 block mb-1">
             Current Email
           </label>
-          <div className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-600">
+          <div className="px-4 py-2.5 bg-warm-50 border border-warm-200 rounded-lg text-warm-600">
             {currentEmail}
           </div>
         </div>

@@ -239,7 +239,7 @@ function MissStatPill({
       type="button"
       className={cn(
         'flex items-center justify-between p-3 rounded-xl border transition-all w-full',
-        isActive ? 'ring-2 ring-offset-1' : 'bg-slate-50 border-slate-200',
+        isActive ? 'ring-2 ring-offset-1' : 'bg-warm-50 border-warm-200',
         onClick && 'cursor-pointer hover:shadow-sm',
       )}
       style={{
@@ -254,7 +254,7 @@ function MissStatPill({
     >
       <div className="flex items-center gap-2">
         <span style={{ color }} className="text-sm">{icon}</span>
-        <span className="text-sm text-slate-600">{label}</span>
+        <span className="text-sm text-warm-600">{label}</span>
       </div>
       <span className="text-lg font-bold tabular-nums" style={{ color }}>
         {percentage.toFixed(0)}%
@@ -305,7 +305,7 @@ export const PuttingDispersionPremium = memo(function PuttingDispersionPremium({
   return (
     <motion.div
       className={cn(
-        'bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden',
+        'bg-white rounded-2xl border border-warm-200 shadow-sm overflow-hidden',
         className
       )}
       initial={{ opacity: 0, y: 16 }}
@@ -314,13 +314,13 @@ export const PuttingDispersionPremium = memo(function PuttingDispersionPremium({
       whileHover={{ boxShadow: '0 8px 24px rgba(0,0,0,0.06)', y: -2 }}
     >
       {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100">
+      <div className="px-6 py-5 border-b border-warm-100">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900 tracking-tight">
+            <h3 className="text-lg font-semibold text-warm-900 tracking-tight">
               Putting Miss Pattern
             </h3>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-sm text-warm-500 mt-0.5">
               Where missed putts finish
             </p>
           </div>
@@ -328,14 +328,14 @@ export const PuttingDispersionPremium = memo(function PuttingDispersionPremium({
           {/* Dominant stat */}
           <div className="text-right">
             <motion.div
-              className="text-4xl font-bold text-slate-900 tabular-nums tracking-tight"
+              className="text-4xl font-bold text-warm-900 tabular-nums tracking-tight"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
             >
               {totalPutts}
             </motion.div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mt-0.5">
+            <div className="text-xs font-medium text-warm-400 uppercase tracking-wide mt-0.5">
               Total Putts
             </div>
           </div>
@@ -343,7 +343,7 @@ export const PuttingDispersionPremium = memo(function PuttingDispersionPremium({
       </div>
 
       {/* Putting visualization */}
-      <div className="px-6 py-6 bg-slate-50/50">
+      <div className="px-6 py-6 bg-warm-50/50">
         <PuttingGreenVisualization
           left={left}
           right={right}
@@ -363,7 +363,7 @@ export const PuttingDispersionPremium = memo(function PuttingDispersionPremium({
               exit={{ opacity: 0 }}
             >
               <span
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium"
                 style={{
                   backgroundColor: `${missConfig[hoveredZone].color}15`,
                   color: missConfig[hoveredZone].color,
@@ -378,26 +378,26 @@ export const PuttingDispersionPremium = memo(function PuttingDispersionPremium({
       </div>
 
       {/* Stats */}
-      <div className="px-6 py-5 bg-white border-t border-slate-100">
+      <div className="px-6 py-5 bg-white border-t border-warm-100">
         {/* Quick stats row */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           <div className="text-center p-3 rounded-xl bg-green-50 border border-green-200">
             <div className="text-2xl font-bold text-green-700 tabular-nums">{onePuttsTotal}</div>
-            <div className="text-xs font-medium text-slate-600">1-Putts</div>
+            <div className="text-xs font-medium text-warm-600">1-Putts</div>
           </div>
-          <div className="text-center p-3 rounded-xl bg-slate-50 border border-slate-200">
-            <div className="text-2xl font-bold text-slate-700 tabular-nums">{totalPutts - onePuttsTotal - threePuttsTotal}</div>
-            <div className="text-xs font-medium text-slate-600">2-Putts</div>
+          <div className="text-center p-3 rounded-xl bg-warm-50 border border-warm-200">
+            <div className="text-2xl font-bold text-warm-700 tabular-nums">{totalPutts - onePuttsTotal - threePuttsTotal}</div>
+            <div className="text-xs font-medium text-warm-600">2-Putts</div>
           </div>
           <div className="text-center p-3 rounded-xl bg-red-50 border border-red-200">
             <div className="text-2xl font-bold text-red-600 tabular-nums">{threePuttsTotal}</div>
-            <div className="text-xs font-medium text-slate-600">3-Putts</div>
+            <div className="text-xs font-medium text-warm-600">3-Putts</div>
           </div>
         </div>
 
         {/* Miss direction breakdown */}
         <div className="space-y-2">
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+          <div className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-3">
             Miss Direction
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -418,35 +418,35 @@ export const PuttingDispersionPremium = memo(function PuttingDispersionPremium({
         {/* Read pattern (if available) */}
         {hasReadData && (
           <motion.div
-            className="mt-5 pt-4 border-t border-slate-100"
+            className="mt-5 pt-4 border-t border-warm-100"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            <div className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-3">
               Green Reading
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className={cn(
                 'p-3 rounded-xl border',
-                readTendency === 'under-read' ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'
+                readTendency === 'under-read' ? 'bg-amber-50 border-amber-200' : 'bg-warm-50 border-warm-200'
               )}>
-                <div className="text-xs text-slate-500 mb-1">Under-read (Low)</div>
+                <div className="text-xs text-warm-500 mb-1">Under-read (Low)</div>
                 <div className={cn(
                   'text-xl font-bold tabular-nums',
-                  readTendency === 'under-read' ? 'text-amber-600' : 'text-slate-600'
+                  readTendency === 'under-read' ? 'text-amber-600' : 'text-warm-600'
                 )}>
                   {low.toFixed(0)}%
                 </div>
               </div>
               <div className={cn(
                 'p-3 rounded-xl border',
-                readTendency === 'over-read' ? 'bg-cyan-50 border-cyan-200' : 'bg-slate-50 border-slate-200'
+                readTendency === 'over-read' ? 'bg-cyan-50 border-cyan-200' : 'bg-warm-50 border-warm-200'
               )}>
-                <div className="text-xs text-slate-500 mb-1">Over-read (High)</div>
+                <div className="text-xs text-warm-500 mb-1">Over-read (High)</div>
                 <div className={cn(
                   'text-xl font-bold tabular-nums',
-                  readTendency === 'over-read' ? 'text-cyan-600' : 'text-slate-600'
+                  readTendency === 'over-read' ? 'text-cyan-600' : 'text-warm-600'
                 )}>
                   {high.toFixed(0)}%
                 </div>
@@ -479,10 +479,10 @@ export const PuttingDispersionPremium = memo(function PuttingDispersionPremium({
                 {missConfig[dominantMiss.zone].icon}
               </div>
               <div>
-                <div className="text-sm font-medium text-slate-800">
+                <div className="text-sm font-medium text-warm-800">
                   Dominant miss: {missConfig[dominantMiss.zone].label}
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-warm-500">
                   {dominantMiss.pct.toFixed(0)}% of missed putts
                 </div>
               </div>

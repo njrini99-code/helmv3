@@ -94,7 +94,7 @@ function BarItem({
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-slate-700">{label}</span>
+          <span className="text-sm font-medium text-warm-700">{label}</span>
           {performanceLabel && (
             <span
               className={cn(
@@ -110,12 +110,12 @@ function BarItem({
           )}
         </div>
         <div className="flex items-baseline gap-1">
-          <span className="text-lg font-semibold text-slate-900">{value}</span>
-          <span className="text-xs text-slate-500">{suffix}</span>
+          <span className="text-lg font-semibold text-warm-900">{value}</span>
+          <span className="text-xs text-warm-500">{suffix}</span>
         </div>
       </div>
 
-      <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-3 bg-warm-100 rounded-full overflow-hidden">
         <motion.div
           className="h-full rounded-full"
           style={{ backgroundColor: color }}
@@ -126,7 +126,7 @@ function BarItem({
       </div>
 
       {subLabel && (
-        <p className="text-xs text-slate-500">{subLabel}</p>
+        <p className="text-xs text-warm-500">{subLabel}</p>
       )}
     </div>
   );
@@ -152,10 +152,10 @@ export function ShotTypeBreakdown({
         >
           <div className="flex items-center gap-2">
             <div className="w-1 h-4 bg-blue-500 rounded-full" />
-            <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">
+            <h4 className="text-sm font-semibold text-warm-800 uppercase tracking-wide">
               Tee Shots
             </h4>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-warm-400">
               {teeStats.totalDrives} drives
             </span>
           </div>
@@ -174,10 +174,10 @@ export function ShotTypeBreakdown({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500">Miss Left</span>
-                    <span className="text-sm font-medium text-slate-700">{teeStats.leftMissPct}%</span>
+                    <span className="text-xs text-warm-500">Miss Left</span>
+                    <span className="text-sm font-medium text-warm-700">{teeStats.leftMissPct}%</span>
                   </div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-blue-400 rounded-full"
                       initial={animated ? { width: 0 } : undefined}
@@ -188,10 +188,10 @@ export function ShotTypeBreakdown({
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500">Miss Right</span>
-                    <span className="text-sm font-medium text-slate-700">{teeStats.rightMissPct}%</span>
+                    <span className="text-xs text-warm-500">Miss Right</span>
+                    <span className="text-sm font-medium text-warm-700">{teeStats.rightMissPct}%</span>
                   </div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-purple-400 rounded-full"
                       initial={animated ? { width: 0 } : undefined}
@@ -205,8 +205,8 @@ export function ShotTypeBreakdown({
 
             {teeStats.avgDrivingDistance && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Avg. Distance</span>
-                <span className="font-medium text-slate-700">{teeStats.avgDrivingDistance} yards</span>
+                <span className="text-warm-500">Avg. Distance</span>
+                <span className="font-medium text-warm-700">{teeStats.avgDrivingDistance} yards</span>
               </div>
             )}
           </div>
@@ -223,10 +223,10 @@ export function ShotTypeBreakdown({
         >
           <div className="flex items-center gap-2">
             <div className="w-1 h-4 bg-green-500 rounded-full" />
-            <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">
+            <h4 className="text-sm font-semibold text-warm-800 uppercase tracking-wide">
               Approach Shots
             </h4>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-warm-400">
               {approachStats.totalApproaches} shots
             </span>
           </div>
@@ -243,15 +243,15 @@ export function ShotTypeBreakdown({
 
             {approachStats.avgProximity && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Avg. Proximity</span>
-                <span className="font-medium text-slate-700">{approachStats.avgProximity} ft</span>
+                <span className="text-warm-500">Avg. Proximity</span>
+                <span className="font-medium text-warm-700">{approachStats.avgProximity} ft</span>
               </div>
             )}
 
             {/* Miss direction breakdown - compact */}
             <div className="space-y-1.5">
-              <span className="text-xs text-slate-500">Miss Patterns</span>
-              <div className="flex flex-wrap gap-1.5">
+              <span className="text-xs text-warm-500">Miss Patterns</span>
+              <div className="flex flex-wrap gap-2">
                 {Object.entries(approachStats.missBreakdown)
                   .filter(([, pct]) => pct > 5)
                   .sort((a, b) => b[1] - a[1])
@@ -263,7 +263,7 @@ export function ShotTypeBreakdown({
                         'text-xs px-2 py-0.5 rounded-full',
                         pct >= 40 ? 'bg-red-100 text-red-700' :
                         pct >= 25 ? 'bg-amber-100 text-amber-700' :
-                        'bg-slate-100 text-slate-600'
+                        'bg-warm-100 text-warm-600'
                       )}
                     >
                       {dir.replace('_', '-')}: {pct}%
@@ -285,10 +285,10 @@ export function ShotTypeBreakdown({
         >
           <div className="flex items-center gap-2">
             <div className="w-1 h-4 bg-amber-500 rounded-full" />
-            <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">
+            <h4 className="text-sm font-semibold text-warm-800 uppercase tracking-wide">
               Around the Green
             </h4>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-warm-400">
               {aroundGreenStats.totalShots} shots
             </span>
           </div>
@@ -327,10 +327,10 @@ export function ShotTypeBreakdown({
         >
           <div className="flex items-center gap-2">
             <div className="w-1 h-4 bg-purple-500 rounded-full" />
-            <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">
+            <h4 className="text-sm font-semibold text-warm-800 uppercase tracking-wide">
               Putting
             </h4>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-warm-400">
               {puttingStats.avgPuttsPerRound} per round
             </span>
           </div>
@@ -339,18 +339,18 @@ export function ShotTypeBreakdown({
             {/* Putt distribution */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">1-Putt</span>
+                <span className="text-warm-500">1-Putt</span>
                 <span className="font-medium text-green-600">{puttingStats.onePuttRate}%</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">2-Putt</span>
-                <span className="font-medium text-slate-600">{puttingStats.twoPuttRate}%</span>
+                <span className="text-warm-500">2-Putt</span>
+                <span className="font-medium text-warm-600">{puttingStats.twoPuttRate}%</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">3+ Putt</span>
+                <span className="text-warm-500">3+ Putt</span>
                 <span className={cn(
                   'font-medium',
-                  puttingStats.threePuttRate > 10 ? 'text-red-600' : 'text-slate-600'
+                  puttingStats.threePuttRate > 10 ? 'text-red-600' : 'text-warm-600'
                 )}>
                   {puttingStats.threePuttRate}%
                 </span>
@@ -358,8 +358,8 @@ export function ShotTypeBreakdown({
             </div>
 
             {/* Distance breakdown */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <span className="text-xs text-slate-500 uppercase tracking-wide">Make Rate by Distance</span>
+            <div className="space-y-2 pt-2 border-t border-warm-100">
+              <span className="text-xs text-warm-500 uppercase tracking-wide">Make Rate by Distance</span>
 
               {puttingStats.inside5ft.attempts > 0 && (
                 <BarItem
@@ -375,18 +375,18 @@ export function ShotTypeBreakdown({
               {puttingStats.fiveTo10ft.attempts > 0 && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">5-10 ft</span>
-                    <span className="text-sm font-medium text-slate-700">{puttingStats.fiveTo10ft.pct}%</span>
+                    <span className="text-sm text-warm-600">5-10 ft</span>
+                    <span className="text-sm font-medium text-warm-700">{puttingStats.fiveTo10ft.pct}%</span>
                   </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
                     <motion.div
-                      className="h-full bg-slate-400 rounded-full"
+                      className="h-full bg-warm-400 rounded-full"
                       initial={animated ? { width: 0 } : undefined}
                       animate={{ width: `${puttingStats.fiveTo10ft.pct}%` }}
                       transition={animated ? { duration: 0.4, delay: 0.4 } : undefined}
                     />
                   </div>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-warm-400">
                     {puttingStats.fiveTo10ft.made}/{puttingStats.fiveTo10ft.attempts} made
                   </span>
                 </div>
@@ -395,18 +395,18 @@ export function ShotTypeBreakdown({
               {puttingStats.outside10ft.attempts > 0 && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">Outside 10 ft</span>
-                    <span className="text-sm font-medium text-slate-700">{puttingStats.outside10ft.pct}%</span>
+                    <span className="text-sm text-warm-600">Outside 10 ft</span>
+                    <span className="text-sm font-medium text-warm-700">{puttingStats.outside10ft.pct}%</span>
                   </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
                     <motion.div
-                      className="h-full bg-slate-300 rounded-full"
+                      className="h-full bg-warm-300 rounded-full"
                       initial={animated ? { width: 0 } : undefined}
                       animate={{ width: `${puttingStats.outside10ft.pct}%` }}
                       transition={animated ? { duration: 0.4, delay: 0.45 } : undefined}
                     />
                   </div>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-warm-400">
                     {puttingStats.outside10ft.made}/{puttingStats.outside10ft.attempts} made
                   </span>
                 </div>
@@ -419,13 +419,13 @@ export function ShotTypeBreakdown({
       {/* Empty state */}
       {!teeStats && !approachStats && !aroundGreenStats && !puttingStats && (
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-            <svg className="w-6 h-6 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
+            <svg className="w-6 h-6 text-warm-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M3 20h18M6 16V8M10 16V4M14 16v-6M18 16V9" />
             </svg>
           </div>
-          <p className="text-sm text-slate-500">No shot data available</p>
-          <p className="text-xs text-slate-400 mt-1">Track rounds to see your performance breakdown</p>
+          <p className="text-sm text-warm-500">No shot data available</p>
+          <p className="text-xs text-warm-400 mt-1">Track rounds to see your performance breakdown</p>
         </div>
       )}
     </div>

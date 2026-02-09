@@ -84,8 +84,8 @@ export function SearchBar({
       <div className="relative flex-1 group">
         <IconSearch
           size={18}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400
-                     transition-colors group-focus-within:text-slate-600 pointer-events-none"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400
+                     transition-colors group-focus-within:text-warm-600 pointer-events-none"
         />
         <input
           ref={inputRef}
@@ -99,11 +99,11 @@ export function SearchBar({
           autoCapitalize="off"
           spellCheck={false}
           className={cn(
-            'w-full h-11 pl-10 pr-10 rounded-xl border bg-white text-slate-900 text-sm',
-            'placeholder:text-slate-400',
+            'w-full h-11 pl-10 pr-10 rounded-xl border bg-white text-warm-900 text-sm',
+            'placeholder:text-warm-400',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500',
-            'border-slate-200 hover:border-slate-300'
+            'border-warm-200 hover:border-warm-300'
           )}
         />
         {internalValue && (
@@ -112,7 +112,7 @@ export function SearchBar({
             onClick={handleClear}
             className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] p-2
                        flex items-center justify-center rounded-full
-                       text-slate-400 hover:text-slate-600 hover:bg-slate-100
+                       text-warm-400 hover:text-warm-600 hover:bg-warm-100
                        transition-colors"
           >
             <IconX size={14} />
@@ -130,7 +130,7 @@ export function SearchBar({
             'focus:outline-none focus:ring-2 focus:ring-green-500/20',
             filterCount > 0
               ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
-              : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+              : 'bg-white border-warm-200 text-warm-600 hover:border-warm-300 hover:bg-warm-50'
           )}
         >
           <IconFilter size={16} />
@@ -165,7 +165,7 @@ export function CompactSearch({
     <div className={cn('relative', className)}>
       <IconSearch
         size={16}
-        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none"
       />
       <input
         type="text"
@@ -177,11 +177,11 @@ export function CompactSearch({
         autoCapitalize="off"
         spellCheck={false}
         className={cn(
-          'w-full h-11 lg:h-8 pl-8 pr-3 rounded-lg border bg-white text-slate-900 text-sm',
-          'placeholder:text-slate-400',
+          'w-full h-11 lg:h-8 pl-8 pr-3 rounded-lg border bg-white text-warm-900 text-sm',
+          'placeholder:text-warm-400',
           'transition-all duration-200',
           'focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500',
-          'border-slate-200 hover:border-slate-300'
+          'border-warm-200 hover:border-warm-300'
         )}
       />
     </div>

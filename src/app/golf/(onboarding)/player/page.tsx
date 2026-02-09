@@ -1,84 +1,145 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
-import { ensurePlayerRecord, completePlayerOnboarding } from '@/app/golf/actions/onboarding';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
+import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { PageLoading } from '@/components/ui/loading';
-import { IconArrowRight, IconCheck, IconUser, IconUpload } from '@/components/icons';
+import {
+  IconArrowRight,
+  IconArrowLeft,
+  IconCheck,
+  IconUser,
+  IconFlag,
+} from '@/components/icons';
+import { ensurePlayerRecord, completePlayerOnboarding } from '@/app/golf/actions/onboarding';
 
-// Player year is not stored in DB - just used for UI display
-type GolfPlayerYear = 'freshman' | 'sophomore' | 'junior' | 'senior' | 'fifth_year' | 'graduate';
+// ─── Types & Constants ──────────────────────────────────────────────────────
 
-type Step = 'welcome' | 'basic' | 'golf' | 'academic' | 'photo' | 'complete';
+type Step = 'about' | 'profile' | 'complete';
 
-const years: { value: GolfPlayerYear; label: string }[] = [
-  { value: 'freshman', label: 'Freshman' },
-  { value: 'sophomore', label: 'Sophomore' },
-  { value: 'junior', label: 'Junior' },
-  { value: 'senior', label: 'Senior' },
-  { value: 'fifth_year', label: 'Fifth Year' },
-  { value: 'graduate', label: 'Graduate' },
+const STEPS_CONFIG = [
+  { id: 'about' as const, label: 'About You', Icon: IconFlag },
+  { id: 'profile' as const, label: 'Profile', Icon: IconUser },
+  { id: 'complete' as const, label: 'Done', Icon: IconCheck },
 ];
 
 const graduationYears = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() + i);
 
-const STEPS = ['welcome', 'basic', 'golf', 'academic', 'photo', 'complete'] as const;
+// ─── Animation Variants ─────────────────────────────────────────────────────
 
-const pageVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 },
+const slideVariants = {
+  initial: (direction: number) => ({
+    x: direction > 0 ? 60 : -60,
+    opacity: 0,
+  }),
+  animate: {
+    x: 0,
+    opacity: 1,
+    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const },
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -60 : 60,
+    opacity: 0,
+    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const },
+  }),
 };
 
 const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
+  animate: { transition: { staggerChildren: 0.06 } },
 };
 
 const staggerItem = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } },
 };
+
+// ─── Step Indicator ─────────────────────────────────────────────────────────
+
+function StepIndicator({ currentStep }: { currentStep: Step }) {
+  const currentIndex = STEPS_CONFIG.findIndex((s) => s.id === currentStep);
+
+  return (
+    <div className="flex items-center justify-center gap-0 mb-8 sm:mb-10">
+      {STEPS_CONFIG.map((step, index) => {
+        const isCompleted = index < currentIndex;
+        const isCurrent = index === currentIndex;
+
+        return (
+          <Fragment key={step.id}>
+            {index > 0 && (
+              <div
+                className={cn(
+                  'h-[2px] w-8 sm:w-12 transition-colors duration-500',
+                  isCompleted ? 'bg-primary-500' : 'bg-warm-200'
+                )}
+              />
+            )}
+            <div className="flex flex-col items-center gap-1.5">
+              <div
+                className={cn(
+                  'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 text-sm font-semibold',
+                  isCompleted && 'bg-primary-600 text-white shadow-sm shadow-primary-600/30',
+                  isCurrent && 'bg-white border-2 border-primary-600 text-primary-600 shadow-sm',
+                  !isCompleted && !isCurrent && 'bg-warm-100 text-warm-400'
+                )}
+              >
+                {isCompleted ? <IconCheck size={14} /> : index + 1}
+              </div>
+              <span
+                className={cn(
+                  'text-[11px] font-medium transition-colors duration-500',
+                  isCurrent ? 'text-warm-900' : isCompleted ? 'text-primary-600' : 'text-warm-400'
+                )}
+              >
+                {step.label}
+              </span>
+            </div>
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function GolfPlayerOnboarding() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const [step, setStep] = useState<Step>('welcome');
+  const [step, setStep] = useState<Step>('about');
+  const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
-  // Form data
+
+  // About You data
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [graduationYear, setGraduationYear] = useState<number>(
+    graduationYears[3] || new Date().getFullYear() + 3
+  );
+  const [handicap, setHandicap] = useState('');
   const [hometown, setHometown] = useState('');
   const [state, setState] = useState('');
 
-  // Golf info
-  const [year, setYear] = useState<GolfPlayerYear>('freshman');
-  const [graduationYear, setGraduationYear] = useState<number>(graduationYears[3] || new Date().getFullYear() + 3);
-  const [handicap, setHandicap] = useState<string>('');
+  // Profile data
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [gpa, setGpa] = useState('');
 
-  // Academic info
-  const [major, setMajor] = useState('');
-  const [gpa, setGpa] = useState<string>('');
+  // ─── Auth Check ─────────────────────────────────────────────────────────
 
-  // Check auth and player data on mount
   useEffect(() => {
     async function checkAuth() {
-      // Try multiple times to get the session (handles propagation delays after signup)
       let user = null;
       for (let attempt = 0; attempt < 5; attempt++) {
         const { data } = await supabase.auth.getUser();
@@ -86,9 +147,8 @@ export default function GolfPlayerOnboarding() {
           user = data.user;
           break;
         }
-        // Wait between attempts
         if (attempt < 4) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
 
@@ -98,13 +158,11 @@ export default function GolfPlayerOnboarding() {
       }
 
       setUserId(user.id);
-      setEmail(user.email || '');
 
-      // Ensure a golf_players record exists early (server-side, handles RLS correctly).
-      // This prevents the "stuck with no record" bug if the user abandons onboarding.
+      // Ensure a golf_players record exists early
       await ensurePlayerRecord();
 
-      // Check for existing player record (use maybeSingle since record may not exist yet)
+      // Check for existing player record
       const { data: player } = await supabase
         .from('golf_players')
         .select('*')
@@ -113,20 +171,18 @@ export default function GolfPlayerOnboarding() {
 
       if (player) {
         if (player.onboarding_completed) {
-          // Player already completed onboarding, redirect to dashboard
           router.push('/golf/dashboard');
           return;
         }
-        // Pre-fill existing data (use correct column names from golf_players schema)
+        // Pre-fill existing data
         setFirstName(player.first_name || '');
         setLastName(player.last_name || '');
-        setPhone(player.phone || '');
-        setHometown(player.hometown || '');  // Column is 'hometown', not 'city'
-        setState(player.state || '');
-        setYear('freshman'); // Year is not stored in DB, use default
-        setGraduationYear(player.graduation_year || graduationYears[3] || new Date().getFullYear() + 3);  // Column is 'graduation_year', not 'grad_year'
+        setGraduationYear(
+          player.graduation_year || graduationYears[3] || new Date().getFullYear() + 3
+        );
         setHandicap(player.handicap?.toString() || '');
-        setMajor(''); // Major is not stored in golf_players
+        setHometown(player.hometown || '');
+        setState(player.state || '');
         setGpa(player.gpa?.toString() || '');
       }
 
@@ -136,12 +192,21 @@ export default function GolfPlayerOnboarding() {
     checkAuth();
   }, [router, supabase, searchParams]);
 
-  if (authLoading) return <PageLoading />;
+  // ─── Navigation ─────────────────────────────────────────────────────────
 
-  const currentStepIndex = STEPS.indexOf(step);
-  const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
+  function goForward(to: Step) {
+    setDirection(1);
+    setStep(to);
+  }
 
-  const handleComplete = async () => {
+  function goBack(to: Step) {
+    setDirection(-1);
+    setStep(to);
+  }
+
+  // ─── Submit Onboarding ──────────────────────────────────────────────────
+
+  async function handleSubmitOnboarding() {
     if (!userId) {
       setError('No user session found. Please log in again.');
       return;
@@ -151,15 +216,11 @@ export default function GolfPlayerOnboarding() {
     setError('');
 
     try {
-      // Get the joinCode from URL params if present (from invite link flow)
       const joinCode = searchParams.get('joinCode') || undefined;
 
-      // Use server action for all DB operations (proper RLS, validation, atomicity)
       const result = await completePlayerOnboarding({
         firstName,
         lastName,
-        email: email || undefined,
-        phone: phone || undefined,
         gradYear: graduationYear,
         handicap: handicap ? parseFloat(handicap) : undefined,
         hometown: hometown || undefined,
@@ -169,378 +230,235 @@ export default function GolfPlayerOnboarding() {
       });
 
       if (!result.success) {
-        setError(result.error || 'Failed to complete onboarding. Please try again.');
+        setError(result.error || 'Failed to complete setup. Please try again.');
         setLoading(false);
         return;
       }
 
-      // CRITICAL: Call router.refresh() FIRST to invalidate cache and propagate
-      // the session cookies, THEN navigate.
-      router.refresh();
-
-      // Wait for cache to invalidate and database write to commit
-      await new Promise(resolve => setTimeout(resolve, 150));
-
-      // Navigate to dashboard
-      router.push('/golf/dashboard');
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
-      setError(errorMessage);
+      setLoading(false);
+      goForward('complete');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
       setLoading(false);
     }
-  };
+  }
+
+  function handleGoToDashboard() {
+    router.refresh();
+    setTimeout(() => router.push('/golf/dashboard'), 150);
+  }
+
+  // ─── Loading ────────────────────────────────────────────────────────────
+
+  if (authLoading) return <PageLoading />;
+
+  // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FAF6F1] via-[#F5F1EC] to-[#EAE6E1] relative overflow-hidden">
-      {/* Animated Background Elements — pure CSS for zero JS cost */}
+    <div className="min-h-screen bg-auth-golf relative">
+      {/* Floating Orbs (CSS-driven, matches login/signup) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-green-100/20 to-transparent rounded-full blur-3xl animate-[blob-a_20s_linear_infinite]"
-        />
-        <div
-          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-green-50/20 to-transparent rounded-full blur-3xl animate-[blob-b_25s_linear_infinite]"
-        />
+        <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-helm-green-400/40 to-helm-green-500/25" />
+        <div className="auth-orb auth-orb-2 w-[350px] h-[350px] sm:w-[400px] sm:h-[400px] -bottom-20 -left-20 bg-gradient-to-tr from-helm-green-400/25 to-helm-green-400/15" />
+        <div className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-1/3 left-[8%] bg-gradient-to-br from-helm-green-300/20 to-helm-green-400/15" />
       </div>
 
-      {/* Progress Bar — CSS transition, no JS animation needed */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-slate-200/50 backdrop-blur-sm z-50">
-        <div
-          className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-[width] duration-500 ease-in-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
+      <div className="relative min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        {/* Logo */}
+        <m.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-6 sm:mb-8"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-helm-green-500/25 rounded-full blur-xl scale-150" />
+            <Image
+              src="/helm-golf-logo-transparent.png"
+              alt="GolfHelm"
+              width={48}
+              height={48}
+              className="relative w-10 h-10 sm:w-12 sm:h-12 object-contain"
+              priority
+              unoptimized
+            />
+          </div>
+        </m.div>
 
-      <div className="relative min-h-screen flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <LazyMotion features={domAnimation}>
-        <AnimatePresence mode="wait">
-          {step === 'welcome' && (
-            <m.div
-              key="welcome"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-lg"
-            >
+          {/* Step Indicator */}
+          <m.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <StepIndicator currentStep={step} />
+          </m.div>
+
+          <AnimatePresence mode="wait" custom={direction}>
+            {/* ─── Step 1: About You ───────────────────────────────────── */}
+            {step === 'about' && (
               <m.div
-                variants={staggerContainer}
+                key="about"
+                custom={direction}
+                variants={slideVariants}
                 initial="initial"
                 animate="animate"
-                className="space-y-8"
+                exit="exit"
+                className="w-full max-w-[460px]"
               >
-                {/* Logo & Header */}
-                <m.div variants={staggerItem} className="text-center">
+                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                  {/* Header */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                      About you
+                    </h1>
+                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                      Help your coach get to know you
+                    </p>
+                  </m.div>
+
+                  {/* Form Card */}
                   <m.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                    className="mb-6 inline-block"
+                    variants={staggerItem}
+                    className="auth-glass-card rounded-3xl p-6 sm:p-8"
                   >
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-xl scale-150" />
-                      <div className="relative w-20 h-20 flex items-center justify-center">
-                        <img
-                          src="/helm-golf-logo-transparent.png"
-                          alt="GolfHelm"
-                          className="w-20 h-20 object-contain"
+                    <div className="space-y-5">
+                      {/* Name */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input
+                          label="First Name"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="John"
+                          required
+                          autoFocus
+                        />
+                        <Input
+                          label="Last Name"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Smith"
+                          required
                         />
                       </div>
+
+                      {/* Golf Details */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <NativeSelect
+                          label="Graduation Year"
+                          value={graduationYear.toString()}
+                          onChange={(e) => setGraduationYear(parseInt(e.target.value))}
+                        >
+                          {graduationYears.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </NativeSelect>
+                        <Input
+                          label="Handicap Index"
+                          type="number"
+                          step="0.1"
+                          value={handicap}
+                          onChange={(e) => setHandicap(e.target.value)}
+                          placeholder="+2.4"
+                          hint="USGA Handicap"
+                        />
+                      </div>
+
+                      {/* Hometown */}
+                      <div>
+                        <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-wider mb-3">
+                          Hometown
+                        </p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="col-span-2">
+                            <Input
+                              label="City"
+                              value={hometown}
+                              onChange={(e) => setHometown(e.target.value)}
+                              placeholder="Austin"
+                            />
+                          </div>
+                          <Input
+                            label="State"
+                            value={state}
+                            onChange={(e) => setState(e.target.value)}
+                            placeholder="TX"
+                            maxLength={2}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="mt-8">
+                      <Button
+                        onClick={() => goForward('profile')}
+                        disabled={!firstName.trim() || !lastName.trim()}
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        size="lg"
+                      >
+                        Continue
+                        <IconArrowRight size={16} className="ml-2" />
+                      </Button>
                     </div>
                   </m.div>
-                  <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-3">
-                    Welcome to GolfHelm!
-                  </h1>
-                  <p className="text-slate-600 text-lg max-w-md mx-auto leading-relaxed">
-                    Let's set up your player profile. This will help your coach track your progress and manage the team.
-                  </p>
                 </m.div>
+              </m.div>
+            )}
 
-                {/* Get Started Button */}
-                <m.div variants={staggerItem} className="text-center">
-                  <Button
-                    size="lg"
-                    onClick={() => setStep('basic')}
-                    className="px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
+            {/* ─── Step 2: Your Profile ─────────────────────────────────── */}
+            {step === 'profile' && (
+              <m.div
+                key="profile"
+                custom={direction}
+                variants={slideVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="w-full max-w-[460px]"
+              >
+                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                  {/* Back Button */}
+                  <m.div variants={staggerItem}>
+                    <button
+                      onClick={() => goBack('about')}
+                      className="flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors"
+                    >
+                      <IconArrowLeft size={14} />
+                      Back
+                    </button>
+                  </m.div>
+
+                  {/* Header */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                      Your profile
+                    </h1>
+                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                      Add a photo so your coach and teammates can recognize you
+                    </p>
+                  </m.div>
+
+                  {/* Form Card */}
+                  <m.div
+                    variants={staggerItem}
+                    className="auth-glass-card rounded-3xl p-6 sm:p-8"
                   >
-                    Get Started
-                    <IconArrowRight size={16} className="ml-2" />
-                  </Button>
-                </m.div>
-              </m.div>
-            </m.div>
-          )}
+                    <div className="space-y-6">
+                      {/* Avatar Upload - Centered */}
+                      <div className="flex flex-col items-center pb-2">
+                        <AvatarUpload
+                          currentAvatarUrl={avatarUrl}
+                          name={`${firstName} ${lastName}`.trim() || 'Player'}
+                          onUploadComplete={(url) => setAvatarUrl(url)}
+                          onRemove={() => setAvatarUrl(null)}
+                        />
+                      </div>
 
-          {step === 'basic' && (
-            <m.div
-              key="basic"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <m.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <m.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 1 of 4
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Basic Information</h2>
-                </m.div>
-
-                <m.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <div className="space-y-5">
-                    <m.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="grid grid-cols-2 gap-4"
-                    >
+                      {/* GPA */}
                       <Input
-                        label="First Name"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="John"
-                        required
-                        autoFocus
-                      />
-                      <Input
-                        label="Last Name"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Smith"
-                        required
-                      />
-                    </m.div>
-
-                    <m.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <Input
-                        label="Email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                      />
-                    </m.div>
-
-                    <m.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      <Input
-                        label="Phone"
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="(555) 123-4567"
-                      />
-                    </m.div>
-
-                    <m.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 }}
-                      className="grid grid-cols-2 gap-4"
-                    >
-                      <Input
-                        label="Hometown"
-                        value={hometown}
-                        onChange={(e) => setHometown(e.target.value)}
-                        placeholder="Austin"
-                      />
-                      <Input
-                        label="State"
-                        value={state}
-                        onChange={(e) => setState(e.target.value)}
-                        placeholder="TX"
-                        maxLength={2}
-                      />
-                    </m.div>
-                  </div>
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('welcome')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={() => setStep('golf')}
-                      disabled={!firstName || !lastName}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </m.div>
-              </m.div>
-            </m.div>
-          )}
-
-          {step === 'golf' && (
-            <m.div
-              key="golf"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <m.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <m.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 2 of 4
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Golf Information</h2>
-                </m.div>
-
-                <m.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <div className="space-y-5">
-                    <m.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <NativeSelect
-                        label="Year"
-                        value={year}
-                        onChange={(e) => setYear(e.target.value as GolfPlayerYear)}
-                      >
-                        {years.map((y) => (
-                          <option key={y.value} value={y.value}>{y.label}</option>
-                        ))}
-                      </NativeSelect>
-                    </m.div>
-
-                    <m.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <NativeSelect
-                        label="Graduation Year"
-                        value={graduationYear.toString()}
-                        onChange={(e) => setGraduationYear(parseInt(e.target.value))}
-                      >
-                        {graduationYears.map((y) => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </NativeSelect>
-                    </m.div>
-
-                    <m.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      <Input
-                        label="Handicap Index"
-                        type="number"
-                        step="0.1"
-                        value={handicap}
-                        onChange={(e) => setHandicap(e.target.value)}
-                        placeholder="5.2"
-                        hint="Your official USGA Handicap Index"
-                      />
-                    </m.div>
-                  </div>
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('basic')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={() => setStep('academic')}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </m.div>
-              </m.div>
-            </m.div>
-          )}
-
-          {step === 'academic' && (
-            <m.div
-              key="academic"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <m.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <m.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 3 of 4
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Academic Information</h2>
-                  <p className="text-sm text-slate-600 mt-2">
-                    Optional, but helps your coach with scheduling and eligibility.
-                  </p>
-                </m.div>
-
-                <m.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <div className="space-y-5">
-                    <m.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <Input
-                        label="Major"
-                        value={major}
-                        onChange={(e) => setMajor(e.target.value)}
-                        placeholder="Business Administration"
-                      />
-                    </m.div>
-
-                    <m.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <Input
-                        label="GPA"
+                        label="GPA (optional)"
                         type="number"
                         step="0.01"
                         min="0"
@@ -548,172 +466,118 @@ export default function GolfPlayerOnboarding() {
                         value={gpa}
                         onChange={(e) => setGpa(e.target.value)}
                         placeholder="3.50"
+                        hint="Helps your coach with eligibility tracking"
                       />
-                    </m.div>
-                  </div>
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('golf')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={() => setStep('photo')}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </m.div>
-              </m.div>
-            </m.div>
-          )}
-
-          {step === 'photo' && (
-            <m.div
-              key="photo"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <m.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <m.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 4 of 4
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Profile Photo</h2>
-                  <p className="text-sm text-slate-600 mt-2">
-                    Add a profile photo so your coach and teammates can recognize you.
-                  </p>
-                </m.div>
-
-                <m.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <m.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="flex flex-col items-center mb-6"
-                  >
-                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center mb-4 shadow-sm">
-                      <IconUser size={48} className="text-slate-400" />
                     </div>
-                    <Button variant="secondary" size="sm">
-                      <IconUpload size={16} className="mr-2" />
-                      Upload Photo
-                    </Button>
-                    <p className="text-xs text-slate-500 mt-2">JPG or PNG, max 5MB</p>
-                  </m.div>
 
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('academic')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => setStep('complete')}
-                      className="flex-1"
-                    >
-                      Skip
-                    </Button>
-                    <Button
-                      onClick={() => setStep('complete')}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      Next
-                    </Button>
-                  </div>
+                    {/* Actions */}
+                    <div className="mt-8">
+                      <Button
+                        onClick={handleSubmitOnboarding}
+                        isLoading={loading}
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        size="lg"
+                      >
+                        Complete Setup
+                        <IconCheck size={16} className="ml-2" />
+                      </Button>
+                      {error && (
+                        <m.p
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-sm text-red-600 mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
+                        >
+                          {error}
+                        </m.p>
+                      )}
+                    </div>
+                  </m.div>
                 </m.div>
               </m.div>
-            </m.div>
-          )}
+            )}
 
-          {step === 'complete' && (
-            <m.div
-              key="complete"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-lg"
-            >
+            {/* ─── Step 3: Complete ─────────────────────────────────────── */}
+            {step === 'complete' && (
               <m.div
-                variants={staggerContainer}
+                key="complete"
+                custom={direction}
+                variants={slideVariants}
                 initial="initial"
                 animate="animate"
-                className="space-y-8"
+                exit="exit"
+                className="w-full max-w-[480px]"
               >
-                {/* Success Icon */}
-                <m.div variants={staggerItem} className="text-center">
-                  <m.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
-                    className="mb-6 inline-block"
-                  >
+                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-6">
+                  {/* Success Icon with Celebration */}
+                  <m.div variants={staggerItem} className="flex justify-center">
                     <div className="relative">
-                      <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
-                      <div className="relative w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-xl shadow-green-900/20">
+                      {/* Celebration particles */}
+                      {[...Array(8)].map((_, i) => (
                         <m.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 0.4 }}
+                          key={i}
+                          className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full"
+                          style={{
+                            background: i % 2 === 0
+                              ? 'rgb(22, 163, 74)'
+                              : 'rgb(74, 222, 128)',
+                          }}
+                          initial={{ scale: 0, opacity: 1, x: 0, y: 0 }}
+                          animate={{
+                            scale: [0, 1.2, 0],
+                            opacity: [0, 1, 0],
+                            x: Math.cos((i / 8) * Math.PI * 2) * 50,
+                            y: Math.sin((i / 8) * Math.PI * 2) * 50,
+                          }}
+                          transition={{ duration: 0.8, delay: 0.3 + i * 0.04, ease: 'easeOut' }}
+                        />
+                      ))}
+
+                      {/* Glow */}
+                      <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full scale-[2]" />
+
+                      {/* Check Icon */}
+                      <m.div
+                        initial={{ scale: 0, rotate: -20 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 }}
+                        className="relative w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-xl shadow-green-900/20"
+                      >
+                        <m.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
                         >
                           <IconCheck size={40} className="text-white" />
                         </m.div>
-                      </div>
+                      </m.div>
                     </div>
                   </m.div>
-                  <h1 className="text-3xl font-bold text-slate-900 mb-3">
-                    You're all set!
-                  </h1>
-                  <p className="text-slate-600 text-lg max-w-md mx-auto leading-relaxed">
-                    Your profile is ready. You can now access your team dashboard and start tracking your rounds.
-                  </p>
-                </m.div>
 
-                {/* CTA Button */}
-                <m.div variants={staggerItem} className="text-center">
-                  <Button
-                    size="lg"
-                    onClick={handleComplete}
-                    isLoading={loading}
-                    className="px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
-                  >
-                    Go to Dashboard
-                  </Button>
-                  {error && (
-                    <m.p
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-sm text-red-600 mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3"
+                  {/* Personalized Heading */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900 mb-2">
+                      Welcome, {firstName || 'Player'}!
+                    </h1>
+                    <p className="text-warm-500 text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
+                      Your profile is ready. Head to your dashboard to see your team, track rounds, and connect with your coach.
+                    </p>
+                  </m.div>
+
+                  {/* Dashboard CTA */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <Button
+                      size="lg"
+                      onClick={handleGoToDashboard}
+                      className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                     >
-                      {error}
-                    </m.p>
-                  )}
+                      Go to Dashboard
+                      <IconArrowRight size={16} className="ml-2" />
+                    </Button>
+                  </m.div>
                 </m.div>
               </m.div>
-            </m.div>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>
         </LazyMotion>
       </div>
     </div>

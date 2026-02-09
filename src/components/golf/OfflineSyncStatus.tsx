@@ -386,14 +386,14 @@ export function OfflineSyncStatus({
                 transition={{ duration: 0.15 }}
                 className="absolute bottom-full right-0 mb-2 w-72"
               >
-                <div className="bg-white rounded-xl border border-slate-200 shadow-xl p-4 space-y-3">
+                <div className="bg-white rounded-xl border border-warm-200 shadow-xl p-4 space-y-3">
                   {/* Header */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-900">Sync Status</span>
+                    <span className="text-sm font-semibold text-warm-900">Sync Status</span>
                     <button
                       onClick={handleDismiss}
                       aria-label="Dismiss sync status"
-                      className="p-1 text-slate-400 hover:text-slate-600 rounded transition-colors"
+                      className="p-1 text-warm-400 hover:text-warm-600 rounded transition-colors"
                     >
                       <XIcon className="w-4 h-4" />
                     </button>
@@ -401,7 +401,7 @@ export function OfflineSyncStatus({
 
                   {/* Connection status */}
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500">Connection</span>
+                    <span className="text-warm-500">Connection</span>
                     <span className={cn('font-medium', isOnline ? 'text-green-600' : 'text-amber-600')}>
                       {isOnline ? (
                         <span className="flex items-center gap-1">
@@ -420,8 +420,8 @@ export function OfflineSyncStatus({
                   {/* Pending items */}
                   {pendingCount.total > 0 && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">Pending</span>
-                      <span className="text-slate-900 font-medium">
+                      <span className="text-warm-500">Pending</span>
+                      <span className="text-warm-900 font-medium">
                         {pendingCount.rounds > 0 && `${pendingCount.rounds} round${pendingCount.rounds !== 1 ? 's' : ''}`}
                         {pendingCount.rounds > 0 && pendingCount.shots > 0 && ', '}
                         {pendingCount.shots > 0 && `${pendingCount.shots} shot${pendingCount.shots !== 1 ? 's' : ''}`}
@@ -432,21 +432,21 @@ export function OfflineSyncStatus({
 
                   {/* Last sync */}
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500">Last sync</span>
-                    <span className="text-slate-700">{lastSyncText}</span>
+                    <span className="text-warm-500">Last sync</span>
+                    <span className="text-warm-700">{lastSyncText}</span>
                   </div>
 
                   {/* Sync progress */}
                   {isSyncing && syncProgress && (
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500 capitalize">{syncProgress.phase}</span>
-                        <span className="text-slate-700">
+                        <span className="text-warm-500 capitalize">{syncProgress.phase}</span>
+                        <span className="text-warm-700">
                           {syncProgress.current}/{syncProgress.total}
                         </span>
                       </div>
                       <div
-                        className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"
+                        className="w-full h-1.5 bg-warm-100 rounded-full overflow-hidden"
                         role="progressbar"
                         aria-valuenow={syncProgress.percentComplete}
                         aria-valuemin={0}
@@ -469,7 +469,7 @@ export function OfflineSyncStatus({
                   )}
 
                   {/* Actions */}
-                  <div className="flex gap-2 pt-2 border-t border-slate-100">
+                  <div className="flex gap-2 pt-2 border-t border-warm-100">
                     {isOnline && pendingCount.total > 0 && !isSyncing && (
                       <button
                         onClick={handleSyncNow}
@@ -489,7 +489,7 @@ export function OfflineSyncStatus({
                     {!syncError && pendingCount.total === 0 && isOnline && (
                       <button
                         onClick={handleDismiss}
-                        className="flex-1 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                        className="flex-1 px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-900 transition-colors"
                       >
                         Dismiss
                       </button>
@@ -526,7 +526,7 @@ export function OfflineSyncStatus({
             ? 'bg-amber-50/95 border-amber-200'
             : syncError
               ? 'bg-red-50/95 border-red-200'
-              : 'bg-white/95 border-slate-200'
+              : 'bg-white/95 border-warm-200'
         )}
       >
         <div className="flex items-start gap-3">
@@ -567,7 +567,7 @@ export function OfflineSyncStatus({
                   ? 'text-amber-900'
                   : syncError
                     ? 'text-red-900'
-                    : 'text-slate-900'
+                    : 'text-warm-900'
               )}
             >
               {!isOnline
@@ -587,7 +587,7 @@ export function OfflineSyncStatus({
                   ? 'text-amber-700'
                   : syncError
                     ? 'text-red-700'
-                    : 'text-slate-500'
+                    : 'text-warm-500'
               )}
             >
               {!isOnline
@@ -604,7 +604,7 @@ export function OfflineSyncStatus({
             {/* Progress bar */}
             {isSyncing && syncProgress && (
               <div
-                className="mt-2 w-full h-1.5 bg-slate-200 rounded-full overflow-hidden"
+                className="mt-2 w-full h-1.5 bg-warm-200 rounded-full overflow-hidden"
                 role="progressbar"
                 aria-valuenow={syncProgress.percentComplete}
                 aria-valuemin={0}
@@ -640,7 +640,7 @@ export function OfflineSyncStatus({
             <button
               onClick={handleDismiss}
               aria-label="Dismiss sync status"
-              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
+              className="p-1.5 text-warm-400 hover:text-warm-600 rounded-lg transition-colors"
             >
               <XIcon className="w-4 h-4" />
             </button>

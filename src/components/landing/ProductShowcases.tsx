@@ -150,7 +150,7 @@ function ProductShowcase({
           <div className={`
             absolute inset-0 opacity-20
             ${isEmerald
-              ? 'bg-gradient-to-br from-emerald-900/50 to-transparent'
+              ? 'bg-gradient-to-br from-helm-green-900/50 to-transparent'
               : 'bg-gradient-to-br from-amber-900/50 to-transparent'
             }
           `} />
@@ -183,7 +183,7 @@ function ProductShowcase({
                       <div className={`
                         absolute -inset-4 rounded-2xl blur-xl opacity-60
                         ${isEmerald
-                          ? 'bg-gradient-to-br from-emerald-400/40 to-teal-400/40'
+                          ? 'bg-gradient-to-br from-helm-green-400/40 to-teal-400/40'
                           : 'bg-gradient-to-br from-amber-400/40 to-orange-400/40'
                         }
                       `} />
@@ -211,7 +211,7 @@ function ProductShowcase({
                   {/* Tagline */}
                   <p className={`
                     text-lg sm:text-xl md:text-2xl font-medium mb-4
-                    ${isEmerald ? 'text-emerald-400' : 'text-amber-400'}
+                    ${isEmerald ? 'text-helm-green-400' : 'text-amber-400'}
                   `}>
                     {product.tagline}
                   </p>
@@ -234,7 +234,7 @@ function ProductShowcase({
                         <div className={`
                           flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center
                           ${isEmerald
-                            ? 'bg-emerald-500/20 text-emerald-400'
+                            ? 'bg-helm-green-500/20 text-helm-green-400'
                             : 'bg-amber-500/20 text-amber-400'
                           }
                         `}>
@@ -257,7 +257,7 @@ function ProductShowcase({
                         inline-flex w-full sm:w-auto justify-center items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white
                         transition-all duration-300 shadow-lg
                         ${isEmerald
-                          ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/25'
+                          ? 'bg-helm-green-600 hover:bg-helm-green-500 shadow-helm-green-500/25'
                           : 'bg-amber-600 hover:bg-amber-500 shadow-amber-500/25'
                         }
                       `}
@@ -301,7 +301,7 @@ function ProductShowcase({
                         <div className={`
                           absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
                           w-48 h-48 rounded-full blur-[60px] opacity-30
-                          ${isEmerald ? 'bg-emerald-500' : 'bg-amber-500'}
+                          ${isEmerald ? 'bg-helm-green-500' : 'bg-amber-500'}
                         `} />
 
                         {/* Mock dashboard elements */}
@@ -309,7 +309,7 @@ function ProductShowcase({
                           {/* Header bar */}
                           <div className="flex items-center justify-between">
                             <div className="h-4 w-24 bg-white/10 rounded" />
-                            <div className={`h-6 w-20 rounded-lg ${isEmerald ? 'bg-emerald-500/30' : 'bg-amber-500/30'}`} />
+                            <div className={`h-6 w-20 rounded-lg ${isEmerald ? 'bg-helm-green-500/30' : 'bg-amber-500/30'}`} />
                           </div>
 
                           {/* Stats row */}
@@ -317,7 +317,7 @@ function ProductShowcase({
                             {[1, 2, 3].map((i) => (
                               <div key={i} className="bg-white/5 rounded-lg p-3 border border-white/5">
                                 <div className="h-3 w-12 bg-white/10 rounded mb-2" />
-                                <div className={`h-5 w-8 rounded ${isEmerald ? 'bg-emerald-500/40' : 'bg-amber-500/40'}`} />
+                                <div className={`h-5 w-8 rounded ${isEmerald ? 'bg-helm-green-500/40' : 'bg-amber-500/40'}`} />
                               </div>
                             ))}
                           </div>
@@ -328,7 +328,7 @@ function ProductShowcase({
                               {[40, 65, 45, 80, 55, 70, 85, 60].map((h, i) => (
                                 <div
                                   key={i}
-                                  className={`flex-1 rounded-t ${isEmerald ? 'bg-emerald-500/60' : 'bg-amber-500/60'}`}
+                                  className={`flex-1 rounded-t ${isEmerald ? 'bg-helm-green-500/60' : 'bg-amber-500/60'}`}
                                   style={{ height: `${h}%` }}
                                 />
                               ))}
@@ -341,7 +341,7 @@ function ProductShowcase({
                               <div key={i} className="flex items-center gap-2 bg-white/5 rounded p-2">
                                 <div className="w-6 h-6 rounded-full bg-white/10" />
                                 <div className="flex-1 h-2 bg-white/10 rounded" />
-                                <div className={`h-4 w-12 rounded ${isEmerald ? 'bg-emerald-500/30' : 'bg-amber-500/30'}`} />
+                                <div className={`h-4 w-12 rounded ${isEmerald ? 'bg-helm-green-500/30' : 'bg-amber-500/30'}`} />
                               </div>
                             ))}
                           </div>
@@ -359,10 +359,10 @@ function ProductShowcase({
                       <div className="text-xs text-stone-500 mb-1">
                         {isEmerald ? 'Pipeline Growth' : 'Avg Score Improvement'}
                       </div>
-                      <div className={`text-2xl font-bold ${isEmerald ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      <div className={`text-2xl font-bold ${isEmerald ? 'text-helm-green-600' : 'text-amber-600'}`}>
                         {isEmerald ? '+24%' : '-3.2'}
                       </div>
-                      <div className={`text-xs ${isEmerald ? 'text-emerald-500' : 'text-amber-500'}`}>
+                      <div className={`text-xs ${isEmerald ? 'text-helm-green-500' : 'text-amber-500'}`}>
                         ↑ this month
                       </div>
                     </motion.div>

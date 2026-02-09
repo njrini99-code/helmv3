@@ -68,13 +68,13 @@ function RoundReviewCard({
           'w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0',
           isUnderPar ? 'bg-green-50 border border-green-100' :
           isOverPar ? 'bg-amber-50 border border-amber-100' :
-          'bg-slate-50 border border-slate-100'
+          'bg-warm-50 border border-warm-100'
         )}>
           <span className={cn(
             'text-xl font-bold',
             isUnderPar ? 'text-green-600' :
             isOverPar ? 'text-amber-600' :
-            'text-slate-600'
+            'text-warm-600'
           )}>
             {round.score}
           </span>
@@ -82,7 +82,7 @@ function RoundReviewCard({
             'text-xs font-medium',
             isUnderPar ? 'text-green-500' :
             isOverPar ? 'text-amber-500' :
-            'text-slate-400'
+            'text-warm-400'
           )}>
             {formatScoreToPar(scoreToPar)}
           </span>
@@ -133,8 +133,8 @@ export function RecentRoundReviews({ rounds }: RecentRoundReviewsProps) {
         </div>
 
         <div className="text-center py-8">
-          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-            <IconGolf size={24} className="text-slate-400" />
+          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+            <IconGolf size={24} className="text-warm-400" />
           </div>
           <p className="text-sm text-warm-600 mb-1">No rounds to review yet</p>
           <p className="text-xs text-warm-400 mb-4">

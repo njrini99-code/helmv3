@@ -106,11 +106,11 @@ export function AvailabilityPollGrid({
   }
 
   return (
-    <div className={cn('bg-white rounded-2xl border border-slate-200 shadow-sm', className)}>
+    <div className={cn('bg-white rounded-2xl border border-warm-200 shadow-sm', className)}>
       {/* Header */}
-      <div className="p-5 border-b border-slate-200">
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">{title}</h3>
-        <p className="text-sm text-slate-500 mb-4">
+      <div className="p-5 border-b border-warm-200">
+        <h3 className="text-lg font-semibold text-warm-900 mb-2">{title}</h3>
+        <p className="text-sm text-warm-500 mb-4">
           Click or drag to mark your availability. Darker green = more people available.
         </p>
 
@@ -133,10 +133,10 @@ export function AvailabilityPollGrid({
               const dateObj = parseISO(date);
               return (
                 <div key={date} className="h-12 flex flex-col items-center justify-center">
-                  <span className="text-xs font-semibold text-slate-900">
+                  <span className="text-xs font-semibold text-warm-900">
                     {format(dateObj, 'EEE')}
                   </span>
-                  <span className="text-xs text-slate-500">{format(dateObj, 'MMM d')}</span>
+                  <span className="text-xs text-warm-500">{format(dateObj, 'MMM d')}</span>
                 </div>
               );
             })}
@@ -152,7 +152,7 @@ export function AvailabilityPollGrid({
               >
                 {/* Time label */}
                 <div className="h-12 flex items-center justify-end pr-3">
-                  <span className="text-xs font-medium text-slate-600">{formatTimeLabel(time)}</span>
+                  <span className="text-xs font-medium text-warm-600">{formatTimeLabel(time)}</span>
                 </div>
 
                 {/* Cells for each date */}
@@ -163,7 +163,7 @@ export function AvailabilityPollGrid({
                     return (
                       <div
                         key={`${date}-${time}`}
-                        className="h-12 bg-slate-50 rounded-md border border-slate-100"
+                        className="h-12 bg-warm-50 rounded-md border border-warm-100"
                       />
                     );
                   }
@@ -199,8 +199,8 @@ export function AvailabilityPollGrid({
       </div>
 
       {/* Footer instructions */}
-      <div className="px-5 py-4 border-t border-slate-200 bg-slate-50">
-        <div className="flex items-start gap-2 text-xs text-slate-600">
+      <div className="px-5 py-4 border-t border-warm-200 bg-warm-50">
+        <div className="flex items-start gap-2 text-xs text-warm-600">
           <span className="shrink-0">💡</span>
           <p>
             <strong>Tip:</strong> Click individual cells or click and drag to quickly mark multiple
@@ -247,11 +247,11 @@ export function CompactAvailabilityGrid({
     <div className={cn('space-y-1', className)}>
       {uniqueTimes.map((time) => (
         <div key={time} className="flex items-center gap-1">
-          <span className="text-xs text-slate-500 w-12 text-right">{formatTimeLabel(time)}</span>
+          <span className="text-xs text-warm-500 w-12 text-right">{formatTimeLabel(time)}</span>
           <div className="flex gap-1">
             {previewDates.map((date) => {
               const slot = timeSlots.find((s) => s.date === date && s.startTime === time);
-              if (!slot) return <div key={date} className="w-8 h-6 bg-slate-100 rounded" />;
+              if (!slot) return <div key={date} className="w-8 h-6 bg-warm-100 rounded" />;
 
               return (
                 <div key={date} className="w-8 h-6">

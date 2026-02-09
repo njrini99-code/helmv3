@@ -68,7 +68,7 @@ export function PatternImpactPanel({
           <StatCard
             label="Detected"
             value={data.patternsDetected}
-            icon={<IconChartRadar size={14} className="text-slate-500" />}
+            icon={<IconChartRadar size={14} className="text-warm-500" />}
             color="slate"
           />
           <StatCard
@@ -86,9 +86,9 @@ export function PatternImpactPanel({
         </div>
 
         {/* Conversion Rate */}
-        <div className="p-3 bg-slate-50 rounded-xl">
+        <div className="p-3 bg-warm-50 rounded-xl">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-slate-500">Resolution Rate</span>
+            <span className="text-xs font-medium text-warm-500">Resolution Rate</span>
             <span
               className={cn(
                 'text-sm font-bold',
@@ -114,7 +114,7 @@ export function PatternImpactPanel({
         {/* Top Patterns */}
         {data.topPatterns.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+            <p className="text-xs font-medium text-warm-500 uppercase tracking-wide">
               Top Impactful Patterns
             </p>
             {data.topPatterns.slice(0, 2).map((pattern, i) => (
@@ -161,12 +161,12 @@ export function PatternImpactPanel({
       {/* Lifecycle Funnel and Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Lifecycle Funnel */}
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <h4 className="text-sm font-medium text-slate-700 mb-4">Pattern Lifecycle Funnel</h4>
+        <div className="bg-white rounded-xl border border-warm-100 p-4">
+          <h4 className="text-sm font-medium text-warm-700 mb-4">Pattern Lifecycle Funnel</h4>
           <LifecycleFunnel data={data.lifecycle} />
-          <div className="mt-4 p-3 bg-slate-50 rounded-lg">
+          <div className="mt-4 p-3 bg-warm-50 rounded-lg">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-slate-700">Conversion Rate</span>
+              <span className="text-sm font-medium text-warm-700">Conversion Rate</span>
               <span
                 className={cn(
                   'text-lg font-bold',
@@ -176,7 +176,7 @@ export function PatternImpactPanel({
                 {Math.round(data.conversionRate * 100)}%
               </span>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-warm-500">
               Percentage of detected patterns that are fully resolved
             </p>
           </div>
@@ -184,8 +184,8 @@ export function PatternImpactPanel({
 
         {/* Lifecycle Distribution Chart */}
         {lifecycleChartData.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-100 p-4">
-            <h4 className="text-sm font-medium text-slate-700 mb-4">Current Distribution</h4>
+          <div className="bg-white rounded-xl border border-warm-100 p-4">
+            <h4 className="text-sm font-medium text-warm-700 mb-4">Current Distribution</h4>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -208,7 +208,7 @@ export function PatternImpactPanel({
             </div>
             <div className="flex flex-wrap justify-center gap-3 mt-2">
               {lifecycleChartData.map((d) => (
-                <span key={d.name} className="flex items-center gap-1 text-xs text-slate-600">
+                <span key={d.name} className="flex items-center gap-1 text-xs text-warm-600">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
                   {d.name} ({d.value})
                 </span>
@@ -220,11 +220,11 @@ export function PatternImpactPanel({
 
       {/* Top Impactful Patterns */}
       {data.topPatterns.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100">
-            <h4 className="text-sm font-medium text-slate-700">Most Impactful Patterns</h4>
+        <div className="bg-white rounded-xl border border-warm-100 overflow-hidden">
+          <div className="px-4 py-3 border-b border-warm-100">
+            <h4 className="text-sm font-medium text-warm-700">Most Impactful Patterns</h4>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-warm-100">
             {data.topPatterns.map((pattern, index) => (
               <PatternRow key={pattern.id} pattern={pattern} index={index} />
             ))}
@@ -251,7 +251,7 @@ function StatCard({
   color: 'slate' | 'green' | 'emerald';
 }) {
   const colors = {
-    slate: 'bg-slate-50 border-slate-100',
+    slate: 'bg-warm-50 border-warm-100',
     green: 'bg-green-50 border-green-100',
     emerald: 'bg-emerald-50 border-emerald-100',
   };
@@ -260,9 +260,9 @@ function StatCard({
     <div className={cn('p-3 rounded-xl border', colors[color])}>
       <div className="flex items-center gap-2 mb-1">
         {icon}
-        <span className="text-xs text-slate-500">{label}</span>
+        <span className="text-xs text-warm-500">{label}</span>
       </div>
-      <span className="text-lg font-bold text-slate-900">{value}</span>
+      <span className="text-lg font-bold text-warm-900">{value}</span>
     </div>
   );
 }
@@ -279,19 +279,19 @@ function StatCardLarge({
   color?: 'green' | 'amber' | 'slate';
 }) {
   return (
-    <div className="p-4 bg-slate-50 rounded-xl">
-      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{label}</p>
+    <div className="p-4 bg-warm-50 rounded-xl">
+      <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">{label}</p>
       <p
         className={cn(
           'text-2xl font-bold tabular-nums',
           color === 'green' && 'text-green-600',
           color === 'amber' && 'text-amber-600',
-          color === 'slate' && 'text-slate-900'
+          color === 'slate' && 'text-warm-900'
         )}
       >
         {value}
       </p>
-      <p className="text-xs text-slate-400 mt-1">{subtext}</p>
+      <p className="text-xs text-warm-400 mt-1">{subtext}</p>
     </div>
   );
 }
@@ -319,11 +319,11 @@ function LifecycleFunnel({ data }: { data: PatternImpactData['lifecycle'] }) {
         return (
           <div key={stage.key}>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-slate-600">{stage.label}</span>
-              <span className="text-xs text-slate-500">{stage.value}</span>
+              <span className="text-xs font-medium text-warm-600">{stage.label}</span>
+              <span className="text-xs text-warm-500">{stage.value}</span>
             </div>
             <motion.div
-              className="h-6 rounded-lg overflow-hidden bg-slate-100"
+              className="h-6 rounded-lg overflow-hidden bg-warm-100"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: index * 0.1 }}
@@ -342,7 +342,7 @@ function LifecycleFunnel({ data }: { data: PatternImpactData['lifecycle'] }) {
             </motion.div>
             {conversionToNext !== null && nextStage && (
               <div className="flex items-center gap-1 mt-1 ml-2">
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-warm-400">
                   {conversionToNext}% to {nextStage.label.toLowerCase()}
                 </span>
               </div>
@@ -353,10 +353,10 @@ function LifecycleFunnel({ data }: { data: PatternImpactData['lifecycle'] }) {
 
       {/* Dismissed row (separate) */}
       {data.dismissed > 0 && (
-        <div className="pt-2 mt-2 border-t border-slate-100">
+        <div className="pt-2 mt-2 border-t border-warm-100">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Dismissed</span>
-            <span className="text-xs text-slate-400">{data.dismissed}</span>
+            <span className="text-xs font-medium text-warm-500">Dismissed</span>
+            <span className="text-xs text-warm-400">{data.dismissed}</span>
           </div>
         </div>
       )}
@@ -374,11 +374,11 @@ function PatternRow({
   compact?: boolean;
 }) {
   const stateColors: Record<string, { bg: string; text: string }> = {
-    detected: { bg: 'bg-slate-100', text: 'text-slate-600' },
+    detected: { bg: 'bg-warm-100', text: 'text-warm-600' },
     confirmed: { bg: 'bg-blue-100', text: 'text-blue-700' },
     addressed: { bg: 'bg-amber-100', text: 'text-amber-700' },
     resolved: { bg: 'bg-green-100', text: 'text-green-700' },
-    dismissed: { bg: 'bg-slate-100', text: 'text-slate-500' },
+    dismissed: { bg: 'bg-warm-100', text: 'text-warm-500' },
   };
 
   const stateStyle = stateColors[pattern.lifecycleState] || stateColors.detected;
@@ -389,11 +389,11 @@ function PatternRow({
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: index * 0.1 }}
-        className="flex items-center justify-between p-2 bg-slate-50 rounded-lg"
+        className="flex items-center justify-between p-2 bg-warm-50 rounded-lg"
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-slate-700 truncate">{pattern.description}</p>
-          <p className="text-xs text-slate-400">{pattern.playerName}</p>
+          <p className="text-sm text-warm-700 truncate">{pattern.description}</p>
+          <p className="text-xs text-warm-400">{pattern.playerName}</p>
         </div>
         <div className="flex items-center gap-2 ml-2">
           <span
@@ -415,15 +415,15 @@ function PatternRow({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="px-4 py-3 hover:bg-slate-50 transition-colors"
+      className="px-4 py-3 hover:bg-warm-50 transition-colors"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-900">{pattern.description}</p>
+          <p className="text-sm font-medium text-warm-900">{pattern.description}</p>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-slate-500">{pattern.playerName}</span>
-            <span className="text-slate-300">|</span>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-warm-500">{pattern.playerName}</span>
+            <span className="text-warm-300">|</span>
+            <span className="text-xs text-warm-400">
               {Math.round(pattern.confidence * 100)}% confidence
             </span>
           </div>
@@ -448,15 +448,15 @@ function PatternRow({
                 {pattern.strokesImpact.toFixed(1)}
               </span>
             </div>
-            <span className="text-xs text-slate-400">strokes/round</span>
+            <span className="text-xs text-warm-400">strokes/round</span>
           </div>
 
           {/* State Badge */}
           <span
             className={cn(
               'px-2 py-0.5 text-xs font-medium rounded-full',
-              stateStyle?.bg ?? 'bg-slate-100',
-              stateStyle?.text ?? 'text-slate-600'
+              stateStyle?.bg ?? 'bg-warm-100',
+              stateStyle?.text ?? 'text-warm-600'
             )}
           >
             {LIFECYCLE_LABELS[pattern.lifecycleState as keyof typeof LIFECYCLE_LABELS] ||
@@ -466,7 +466,7 @@ function PatternRow({
       </div>
 
       {/* Dates */}
-      <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
+      <div className="flex items-center gap-4 mt-2 text-xs text-warm-400">
         <span>Detected: {formatDate(pattern.detectedAt)}</span>
         {pattern.resolvedAt && <span>Resolved: {formatDate(pattern.resolvedAt)}</span>}
       </div>
@@ -484,9 +484,9 @@ function LifecycleTooltip({
   if (active && payload && payload.length && payload[0]) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 px-3 py-2">
-        <p className="text-sm font-medium text-slate-900">{data.name}</p>
-        <p className="text-xs text-slate-600">{data.value} patterns</p>
+      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-3 py-2">
+        <p className="text-sm font-medium text-warm-900">{data.name}</p>
+        <p className="text-xs text-warm-600">{data.value} patterns</p>
       </div>
     );
   }
@@ -498,16 +498,16 @@ function EmptyState({ compact = false }: { compact?: boolean }) {
     <div className={cn('text-center', compact ? 'py-4' : 'py-8')}>
       <div
         className={cn(
-          'mx-auto mb-3 rounded-xl bg-slate-100 flex items-center justify-center',
+          'mx-auto mb-3 rounded-xl bg-warm-100 flex items-center justify-center',
           compact ? 'w-10 h-10' : 'w-12 h-12'
         )}
       >
-        <IconChartRadar size={compact ? 20 : 24} className="text-slate-400" />
+        <IconChartRadar size={compact ? 20 : 24} className="text-warm-400" />
       </div>
-      <h4 className={cn('font-medium text-slate-700 mb-1', compact ? 'text-xs' : 'text-sm')}>
+      <h4 className={cn('font-medium text-warm-700 mb-1', compact ? 'text-xs' : 'text-sm')}>
         No Patterns Detected
       </h4>
-      <p className={cn('text-slate-500 max-w-xs mx-auto', compact ? 'text-xs' : 'text-xs')}>
+      <p className={cn('text-warm-500 max-w-xs mx-auto', compact ? 'text-xs' : 'text-xs')}>
         Pattern detection requires round data. As players log more rounds, patterns will emerge.
       </p>
     </div>

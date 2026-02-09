@@ -7,9 +7,6 @@ export { Skeleton, TableSkeleton, CardSkeleton } from './skeleton';
 export { Progress } from './progress';
 export { useToast, toast, ToastProvider, ToastContainer } from './toast';
 
-// Navigation
-export { NavItem } from '../navigation/nav-item';
-
 // Glass Effects
 export { ShineEffect } from './shine-effect';
 

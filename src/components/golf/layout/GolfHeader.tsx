@@ -48,7 +48,7 @@ export function GolfHeader({ title, subtitle, children, backHref }: GolfHeaderPr
           <button
             onClick={handleMenuToggle}
             className={cn(
-              'p-2.5 -ml-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100',
+              'p-2.5 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100',
               'transition-colors duration-150 active:scale-95',
               'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40'
             )}
@@ -61,7 +61,7 @@ export function GolfHeader({ title, subtitle, children, backHref }: GolfHeaderPr
           {backHref && (
             <Link
               href={backHref}
-              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-all duration-200 active:scale-95"
+              className="p-1.5 text-warm-400 hover:text-warm-600 rounded-lg hover:bg-warm-100 transition-all duration-200 active:scale-95"
             >
               <IconChevronLeft size={20} />
             </Link>
@@ -70,8 +70,8 @@ export function GolfHeader({ title, subtitle, children, backHref }: GolfHeaderPr
           {/* Title */}
           {title && (
             <div className="min-w-0">
-              <h1 className="text-lg font-semibold text-slate-900 tracking-tight truncate">{title}</h1>
-              {subtitle && <p className="text-sm text-slate-500 truncate">{subtitle}</p>}
+              <h1 className="text-lg font-semibold text-warm-900 tracking-tight truncate">{title}</h1>
+              {subtitle && <p className="text-sm text-warm-500 truncate">{subtitle}</p>}
             </div>
           )}
         </div>

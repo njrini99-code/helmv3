@@ -93,7 +93,7 @@ const MOBILE_EVENT_TYPE_PILLS: Array<{
   { type: 'qualifier', label: 'Qualifier', icon: ClipboardList, activeBg: 'bg-amber-500', activeText: 'text-white', inactiveBg: 'bg-amber-50', inactiveText: 'text-amber-700' },
   { type: 'meeting', label: 'Meeting', icon: Users, activeBg: 'bg-sky-600', activeText: 'text-white', inactiveBg: 'bg-sky-50', inactiveText: 'text-sky-700' },
   { type: 'travel', label: 'Travel', icon: Plane, activeBg: 'bg-purple-600', activeText: 'text-white', inactiveBg: 'bg-purple-50', inactiveText: 'text-purple-700' },
-  { type: 'other', label: 'Other', icon: MoreHorizontal, activeBg: 'bg-slate-700', activeText: 'text-white', inactiveBg: 'bg-slate-100', inactiveText: 'text-slate-600' },
+  { type: 'other', label: 'Other', icon: MoreHorizontal, activeBg: 'bg-warm-700', activeText: 'text-white', inactiveBg: 'bg-warm-100', inactiveText: 'text-warm-600' },
 ];
 
 export function MobileEventSheet({
@@ -269,20 +269,20 @@ export function MobileEventSheet({
       >
         {/* Drag handle */}
         <div className="flex justify-center py-3">
-          <div className="w-10 h-1.5 bg-slate-300 rounded-full" />
+          <div className="w-10 h-1.5 bg-warm-300 rounded-full" />
         </div>
 
         {/* Header with close */}
         <div className="flex items-center justify-between px-5 pb-3">
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-warm-900">
             {isCreating ? 'New Event' : isViewMode ? 'Event Details' : 'Edit Event'}
           </h2>
           <button
             type="button"
             onClick={handleClose}
-            className="p-2 -mr-2 rounded-full hover:bg-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 -mr-2 rounded-full hover:bg-warm-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
-            <X className="w-5 h-5 text-slate-500" />
+            <X className="w-5 h-5 text-warm-500" />
           </button>
         </div>
 
@@ -313,7 +313,7 @@ export function MobileEventSheet({
                       }}
                       disabled={isSaving}
                       className={cn(
-                        'flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-medium',
+                        'flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-medium',
                         'whitespace-nowrap transition-all duration-200 active:scale-95',
                         'min-h-[40px] touch-manipulation',
                         isActive
@@ -334,7 +334,7 @@ export function MobileEventSheet({
           {isViewMode && (
             <div className="px-5 pb-4">
               <span className={cn(
-                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium',
+                'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium',
                 activePill.activeBg, activePill.activeText
               )}>
                 {(() => { const Icon = activePill.icon; return <Icon className="w-4 h-4" />; })()}
@@ -352,9 +352,9 @@ export function MobileEventSheet({
               disabled={isViewMode || isSaving}
               placeholder="Event title..."
               className={cn(
-                'w-full text-xl font-semibold text-slate-900 placeholder:text-slate-300',
+                'w-full text-xl font-semibold text-warm-900 placeholder:text-warm-300',
                 'bg-transparent border-0 outline-none p-0',
-                'disabled:text-slate-700',
+                'disabled:text-warm-700',
                 'min-h-[40px]'
               )}
             />
@@ -362,11 +362,11 @@ export function MobileEventSheet({
 
           {/* Date & Time Card */}
           <div className="px-5 pb-4">
-            <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+            <div className="bg-warm-50 rounded-2xl p-4 space-y-3">
               {/* Date Row */}
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-4.5 h-4.5 text-slate-500" />
+                  <Calendar className="w-4.5 h-4.5 text-warm-500" />
                 </div>
                 <input
                   type="date"
@@ -374,15 +374,15 @@ export function MobileEventSheet({
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   disabled={isViewMode || isSaving}
                   className={cn(
-                    'flex-1 bg-transparent text-base text-slate-900 border-0 outline-none',
-                    'disabled:text-slate-600 min-h-[40px]'
+                    'flex-1 bg-transparent text-base text-warm-900 border-0 outline-none',
+                    'disabled:text-warm-600 min-h-[40px]'
                   )}
                 />
               </div>
 
               {/* All Day Toggle */}
               <div className="flex items-center justify-between pl-12">
-                <span className="text-sm text-slate-600">All day</span>
+                <span className="text-sm text-warm-600">All day</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -393,7 +393,7 @@ export function MobileEventSheet({
                   }}
                   className={cn(
                     'relative w-11 h-6 rounded-full transition-colors duration-200',
-                    formData.allDay ? 'bg-green-500' : 'bg-slate-300',
+                    formData.allDay ? 'bg-green-500' : 'bg-warm-300',
                     (isViewMode || isSaving) && 'opacity-50'
                   )}
                 >
@@ -408,7 +408,7 @@ export function MobileEventSheet({
               {!formData.allDay && (
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-4.5 h-4.5 text-slate-500" />
+                    <Clock className="w-4.5 h-4.5 text-warm-500" />
                   </div>
                   <div className="flex-1 flex items-center gap-2">
                     <input
@@ -417,21 +417,21 @@ export function MobileEventSheet({
                       onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
                       disabled={isViewMode || isSaving}
                       className={cn(
-                        'flex-1 bg-white rounded-xl px-3 py-2 text-base text-slate-900',
-                        'border border-slate-200 outline-none min-h-[40px]',
-                        'disabled:text-slate-600 disabled:bg-slate-50'
+                        'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
+                        'border border-warm-200 outline-none min-h-[40px]',
+                        'disabled:text-warm-600 disabled:bg-warm-50'
                       )}
                     />
-                    <span className="text-slate-400 text-sm">to</span>
+                    <span className="text-warm-400 text-sm">to</span>
                     <input
                       type="time"
                       value={formData.endTime || ''}
                       onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
                       disabled={isViewMode || isSaving}
                       className={cn(
-                        'flex-1 bg-white rounded-xl px-3 py-2 text-base text-slate-900',
-                        'border border-slate-200 outline-none min-h-[40px]',
-                        'disabled:text-slate-600 disabled:bg-slate-50'
+                        'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
+                        'border border-warm-200 outline-none min-h-[40px]',
+                        'disabled:text-warm-600 disabled:bg-warm-50'
                       )}
                     />
                   </div>
@@ -442,8 +442,8 @@ export function MobileEventSheet({
 
           {/* Location - inline icon input */}
           <div className="px-5 pb-4">
-            <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3">
-              <MapPin className="w-5 h-5 text-slate-400 flex-shrink-0" />
+            <div className="flex items-center gap-3 bg-warm-50 rounded-2xl px-4 py-3">
+              <MapPin className="w-5 h-5 text-warm-400 flex-shrink-0" />
               <input
                 type="text"
                 value={formData.location || ''}
@@ -451,9 +451,9 @@ export function MobileEventSheet({
                 disabled={isViewMode || isSaving}
                 placeholder="Add location..."
                 className={cn(
-                  'flex-1 bg-transparent text-base text-slate-900 placeholder:text-slate-400',
+                  'flex-1 bg-transparent text-base text-warm-900 placeholder:text-warm-400',
                   'border-0 outline-none min-h-[40px]',
-                  'disabled:text-slate-600'
+                  'disabled:text-warm-600'
                 )}
               />
             </div>
@@ -468,9 +468,9 @@ export function MobileEventSheet({
               rows={2}
               placeholder="Add notes..."
               className={cn(
-                'w-full bg-slate-50 rounded-2xl px-4 py-3 text-base text-slate-900',
-                'placeholder:text-slate-400 border-0 outline-none resize-none',
-                'disabled:text-slate-600'
+                'w-full bg-warm-50 rounded-2xl px-4 py-3 text-base text-warm-900',
+                'placeholder:text-warm-400 border-0 outline-none resize-none',
+                'disabled:text-warm-600'
               )}
             />
           </div>
@@ -478,8 +478,8 @@ export function MobileEventSheet({
           {/* RSVP Section for Players */}
           {!isCreating && event && event.requires_rsvp && !isCoach && onRsvp && (
             <div className="px-5 pb-4">
-              <div className="bg-slate-50 rounded-2xl p-4">
-                <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <div className="bg-warm-50 rounded-2xl p-4">
+                <h4 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   Your Response
                 </h4>
@@ -504,8 +504,8 @@ export function MobileEventSheet({
           {/* RSVP Summary for Coaches */}
           {!isCreating && isCoach && rsvpSummary && rsvpSummary.total > 0 && (
             <div className="px-5 pb-4">
-              <div className="bg-slate-50 rounded-2xl p-4">
-                <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <div className="bg-warm-50 rounded-2xl p-4">
+                <h4 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   Attendance ({rsvpSummary.accepted + rsvpSummary.tentative}/{rsvpSummary.total})
                 </h4>
@@ -526,9 +526,9 @@ export function MobileEventSheet({
                     <p className="text-xs text-rose-600 font-medium">No</p>
                   </div>
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
-                    <Clock className="w-4 h-4 text-slate-500 mx-auto mb-0.5" />
-                    <p className="text-lg font-bold text-slate-700">{rsvpSummary.pending}</p>
-                    <p className="text-xs text-slate-500 font-medium">Pending</p>
+                    <Clock className="w-4 h-4 text-warm-500 mx-auto mb-0.5" />
+                    <p className="text-lg font-bold text-warm-700">{rsvpSummary.pending}</p>
+                    <p className="text-xs text-warm-500 font-medium">Pending</p>
                   </div>
                 </div>
               </div>
@@ -544,9 +544,9 @@ export function MobileEventSheet({
                   onClick={onSendReminder}
                   className={cn(
                     'w-full flex items-center justify-center gap-2',
-                    'px-4 py-3 rounded-2xl bg-slate-50',
-                    'text-slate-700 font-medium text-sm',
-                    'active:scale-[0.98] active:bg-slate-100',
+                    'px-4 py-3 rounded-2xl bg-warm-50',
+                    'text-warm-700 font-medium text-sm',
+                    'active:scale-[0.98] active:bg-warm-100',
                     'transition-all min-h-[48px]'
                   )}
                 >
@@ -584,7 +584,7 @@ export function MobileEventSheet({
                       disabled={isDeleting}
                       className={cn(
                         'flex-1 px-4 py-2.5 rounded-xl bg-white',
-                        'text-slate-700 font-medium',
+                        'text-warm-700 font-medium',
                         'active:scale-[0.98] min-h-[44px] shadow-sm'
                       )}
                     >
@@ -612,7 +612,7 @@ export function MobileEventSheet({
 
         {/* Footer Actions */}
         <div
-          className="px-5 py-4 border-t border-slate-100 bg-white"
+          className="px-5 py-4 border-t border-warm-100 bg-white"
           style={{ paddingBottom: Math.max(safeAreaBottom, 16) }}
         >
           {canEdit ? (
@@ -621,7 +621,7 @@ export function MobileEventSheet({
               onClick={handleSubmit}
               disabled={isSaving}
               className={cn(
-                'w-full py-3.5 rounded-2xl font-semibold text-base',
+                'w-full py-4 rounded-2xl font-semibold text-base',
                 'bg-gradient-to-r from-green-600 to-green-500 text-white',
                 'shadow-lg shadow-green-600/25',
                 'active:scale-[0.98] transition-all min-h-[52px]',
@@ -635,8 +635,8 @@ export function MobileEventSheet({
               type="button"
               onClick={handleClose}
               className={cn(
-                'w-full py-3.5 rounded-2xl font-semibold text-base',
-                'bg-slate-100 text-slate-700',
+                'w-full py-4 rounded-2xl font-semibold text-base',
+                'bg-warm-100 text-warm-700',
                 'active:scale-[0.98] transition-all min-h-[52px]'
               )}
             >

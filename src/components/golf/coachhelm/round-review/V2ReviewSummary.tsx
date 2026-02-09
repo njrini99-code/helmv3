@@ -21,7 +21,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
       className="rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-white p-5"
     >
       {/* Header with V2 badge */}
-      <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+      <h3 className="text-sm font-semibold text-warm-900 mb-4 flex items-center gap-2">
         <div className="p-1.5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg">
           <IconSparkles size={14} className="text-white" />
         </div>
@@ -33,17 +33,17 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
 
       {/* Headline */}
       <div className="p-4 bg-white rounded-lg border border-green-100 mb-4">
-        <div className="text-lg font-semibold text-slate-900 mb-2">
+        <div className="text-lg font-semibold text-warm-900 mb-2">
           {composedReview.headline}
         </div>
-        <div className="text-sm text-slate-600 leading-relaxed">
+        <div className="text-sm text-warm-600 leading-relaxed">
           {composedReview.body}
         </div>
         
         {/* Confidence indicator */}
         <div className="mt-3 flex items-center gap-2">
-          <div className="text-xs text-slate-500">AI Confidence:</div>
-          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div className="text-xs text-warm-500">AI Confidence:</div>
+          <div className="flex-1 h-2 bg-warm-100 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${calibratedConfidence * 100}%` }}
@@ -52,11 +52,11 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
                 'h-full rounded-full',
                 calibratedConfidence >= 0.75 ? 'bg-green-500' :
                 calibratedConfidence >= 0.5 ? 'bg-amber-500' :
-                'bg-slate-400'
+                'bg-warm-400'
               )}
             />
           </div>
-          <div className="text-xs font-medium text-slate-700">
+          <div className="text-xs font-medium text-warm-700">
             {Math.round(calibratedConfidence * 100)}%
           </div>
         </div>
@@ -64,7 +64,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
 
       {/* Primary Takeaway */}
       <div className="p-3 bg-green-100/50 rounded-lg border border-green-200 mb-4">
-        <div className="text-xs font-medium text-green-700 mb-1 flex items-center gap-1.5">
+        <div className="text-xs font-medium text-green-700 mb-1 flex items-center gap-2">
           <IconTarget size={12} />
           Key Takeaway
         </div>
@@ -74,7 +74,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
       {/* Focus Areas */}
       {focusAreas.length > 0 && (
         <div className="mb-4">
-          <div className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-1.5">
+          <div className="text-xs font-medium text-warm-600 mb-2 flex items-center gap-2">
             <IconChartBar size={12} />
             Focus Areas
           </div>
@@ -82,7 +82,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
             {focusAreas.map((area, i) => (
               <span
                 key={i}
-                className="text-xs px-3 py-1.5 bg-slate-100 text-slate-700 rounded-full"
+                className="text-xs px-3 py-1.5 bg-warm-100 text-warm-700 rounded-full"
               >
                 {area}
               </span>
@@ -102,12 +102,12 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
       {/* Reasoning breakdown */}
       {reasoning.evidence && reasoning.evidence.length > 0 && (
         <details className="mt-4 group">
-          <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-700 transition-colors">
+          <summary className="text-xs text-warm-500 cursor-pointer hover:text-warm-700 transition-colors">
             View reasoning ({reasoning.evidence.length} supporting facts)
           </summary>
-          <div className="mt-2 pl-3 border-l-2 border-slate-200 space-y-1">
+          <div className="mt-2 pl-3 border-l-2 border-warm-200 space-y-1">
             {reasoning.evidence.slice(0, 5).map((item: string, i: number) => (
-              <div key={i} className="text-xs text-slate-600">
+              <div key={i} className="text-xs text-warm-600">
                 • {item}
               </div>
             ))}

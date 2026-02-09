@@ -124,7 +124,7 @@ export function CoachHelmAnalyticsDashboard({
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -153,7 +153,7 @@ export function CoachHelmAnalyticsDashboard({
                   value={selectedRange}
                   onChange={(e) => handleDateRangeChange(e.target.value as DateRangeType)}
                   disabled={isPending}
-                  className="text-base md:text-sm px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+                  className="text-base md:text-sm px-3 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
                 >
                   {dateRanges.map((range) => (
                     <option key={range.id} value={range.id}>
@@ -170,7 +170,7 @@ export function CoachHelmAnalyticsDashboard({
                 className={cn(
                   'flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition-all',
                   isPending
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
                     : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'
                 )}
               >
@@ -214,7 +214,7 @@ export function CoachHelmAnalyticsDashboard({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex gap-1 p-1 bg-slate-100/80 backdrop-blur-sm rounded-xl mb-6 w-fit"
+          className="flex gap-1 p-1 bg-warm-100/80 backdrop-blur-sm rounded-xl mb-6 w-fit"
         >
           {tabs.map((tab) => (
             <button
@@ -223,8 +223,8 @@ export function CoachHelmAnalyticsDashboard({
               className={cn(
                 'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all',
                 activeTab === tab.id
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'bg-white text-warm-900 shadow-sm'
+                  : 'text-warm-500 hover:text-warm-700'
               )}
             >
               {tab.icon}
@@ -247,9 +247,9 @@ export function CoachHelmAnalyticsDashboard({
               {/* Insight Effectiveness Summary */}
               {effectiveness && (
                 <GlassCard className="p-0" padding="none">
-                  <div className="px-6 py-4 border-b border-slate-100">
-                    <h3 className="text-lg font-semibold text-slate-900">Insight Effectiveness</h3>
-                    <p className="text-sm text-slate-500">How well insights translate to action</p>
+                  <div className="px-6 py-4 border-b border-warm-100">
+                    <h3 className="text-lg font-semibold text-warm-900">Insight Effectiveness</h3>
+                    <p className="text-sm text-warm-500">How well insights translate to action</p>
                   </div>
                   <div className="p-6">
                     <InsightEffectivenessPanel data={effectiveness} compact />
@@ -260,9 +260,9 @@ export function CoachHelmAnalyticsDashboard({
               {/* Prediction Accuracy Summary */}
               {performance && (
                 <GlassCard className="p-0" padding="none">
-                  <div className="px-6 py-4 border-b border-slate-100">
-                    <h3 className="text-lg font-semibold text-slate-900">Prediction Accuracy</h3>
-                    <p className="text-sm text-slate-500">Model performance over time</p>
+                  <div className="px-6 py-4 border-b border-warm-100">
+                    <h3 className="text-lg font-semibold text-warm-900">Prediction Accuracy</h3>
+                    <p className="text-sm text-warm-500">Model performance over time</p>
                   </div>
                   <div className="p-6">
                     <PredictionAccuracyPanel data={performance} compact />
@@ -273,9 +273,9 @@ export function CoachHelmAnalyticsDashboard({
               {/* Pattern Impact Summary */}
               {patternImpact && (
                 <GlassCard className="p-0 lg:col-span-2" padding="none">
-                  <div className="px-6 py-4 border-b border-slate-100">
-                    <h3 className="text-lg font-semibold text-slate-900">Pattern Impact</h3>
-                    <p className="text-sm text-slate-500">Detected patterns and their resolution</p>
+                  <div className="px-6 py-4 border-b border-warm-100">
+                    <h3 className="text-lg font-semibold text-warm-900">Pattern Impact</h3>
+                    <p className="text-sm text-warm-500">Detected patterns and their resolution</p>
                   </div>
                   <div className="p-6">
                     <PatternImpactPanel data={patternImpact} compact />
@@ -294,9 +294,9 @@ export function CoachHelmAnalyticsDashboard({
               transition={{ duration: 0.3 }}
             >
               <GlassCard className="p-0" padding="none">
-                <div className="px-6 py-4 border-b border-slate-100">
-                  <h3 className="text-lg font-semibold text-slate-900">Insight Effectiveness</h3>
-                  <p className="text-sm text-slate-500">
+                <div className="px-6 py-4 border-b border-warm-100">
+                  <h3 className="text-lg font-semibold text-warm-900">Insight Effectiveness</h3>
+                  <p className="text-sm text-warm-500">
                     Detailed breakdown of insight types and their outcomes
                   </p>
                 </div>
@@ -316,9 +316,9 @@ export function CoachHelmAnalyticsDashboard({
               transition={{ duration: 0.3 }}
             >
               <GlassCard className="p-0" padding="none">
-                <div className="px-6 py-4 border-b border-slate-100">
-                  <h3 className="text-lg font-semibold text-slate-900">Prediction Performance</h3>
-                  <p className="text-sm text-slate-500">
+                <div className="px-6 py-4 border-b border-warm-100">
+                  <h3 className="text-lg font-semibold text-warm-900">Prediction Performance</h3>
+                  <p className="text-sm text-warm-500">
                     Accuracy, calibration, and error analysis
                   </p>
                 </div>
@@ -338,9 +338,9 @@ export function CoachHelmAnalyticsDashboard({
               transition={{ duration: 0.3 }}
             >
               <GlassCard className="p-0" padding="none">
-                <div className="px-6 py-4 border-b border-slate-100">
-                  <h3 className="text-lg font-semibold text-slate-900">Pattern Impact Analysis</h3>
-                  <p className="text-sm text-slate-500">
+                <div className="px-6 py-4 border-b border-warm-100">
+                  <h3 className="text-lg font-semibold text-warm-900">Pattern Impact Analysis</h3>
+                  <p className="text-sm text-warm-500">
                     Pattern lifecycle and strokes saved
                   </p>
                 </div>
@@ -355,11 +355,11 @@ export function CoachHelmAnalyticsDashboard({
         {/* Empty State */}
         {!overview && !effectiveness && !performance && !patternImpact && (
           <GlassCard className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
-              <IconChartBar size={32} className="text-slate-400" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-warm-100 flex items-center justify-center">
+              <IconChartBar size={32} className="text-warm-400" />
             </div>
-            <h4 className="text-lg font-medium text-slate-700 mb-2">No Analytics Data Yet</h4>
-            <p className="text-sm text-slate-500 max-w-sm mx-auto mb-4">
+            <h4 className="text-lg font-medium text-warm-700 mb-2">No Analytics Data Yet</h4>
+            <p className="text-sm text-warm-500 max-w-sm mx-auto mb-4">
               Start using CoachHelm to generate insights and track their effectiveness over time.
             </p>
             <button

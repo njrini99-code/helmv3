@@ -106,7 +106,7 @@ export default function RoundEntryModeToggle({
         <button
           onClick={switchToQuick}
           className="flex items-center gap-2 px-4 py-3 rounded-full bg-white/95 backdrop-blur-sm
-                     shadow-lg border border-slate-200 text-slate-700 font-medium text-sm
+                     shadow-lg border border-warm-200 text-warm-700 font-medium text-sm
                      active:scale-95 transition-all"
           aria-label="Switch to quick entry mode"
         >
@@ -152,7 +152,7 @@ export function EntryModeSelector({
 }: EntryModeSelectorProps) {
   return (
     <div className={`flex flex-col gap-3 ${className}`}>
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+      <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide">
         Entry Mode
       </p>
       <div className="grid grid-cols-2 gap-2">
@@ -161,19 +161,19 @@ export function EntryModeSelector({
           className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
             ${currentMode === 'quick'
               ? 'border-emerald-500 bg-emerald-50'
-              : 'border-slate-200 bg-white hover:border-slate-300'
+              : 'border-warm-200 bg-white hover:border-warm-300'
             }`}
         >
-          <svg className={`w-8 h-8 ${currentMode === 'quick' ? 'text-emerald-600' : 'text-slate-400'}`}
+          <svg className={`w-8 h-8 ${currentMode === 'quick' ? 'text-emerald-600' : 'text-warm-400'}`}
                fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
           <div className="text-center">
-            <p className={`font-semibold ${currentMode === 'quick' ? 'text-emerald-700' : 'text-slate-700'}`}>
+            <p className={`font-semibold ${currentMode === 'quick' ? 'text-emerald-700' : 'text-warm-700'}`}>
               Quick
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-warm-500 mt-0.5">
               Score, FW, GIR, Putts
             </p>
           </div>
@@ -184,25 +184,25 @@ export function EntryModeSelector({
           className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
             ${currentMode === 'detailed'
               ? 'border-emerald-500 bg-emerald-50'
-              : 'border-slate-200 bg-white hover:border-slate-300'
+              : 'border-warm-200 bg-white hover:border-warm-300'
             }`}
         >
-          <svg className={`w-8 h-8 ${currentMode === 'detailed' ? 'text-emerald-600' : 'text-slate-400'}`}
+          <svg className={`w-8 h-8 ${currentMode === 'detailed' ? 'text-emerald-600' : 'text-warm-400'}`}
                fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
           </svg>
           <div className="text-center">
-            <p className={`font-semibold ${currentMode === 'detailed' ? 'text-emerald-700' : 'text-slate-700'}`}>
+            <p className={`font-semibold ${currentMode === 'detailed' ? 'text-emerald-700' : 'text-warm-700'}`}>
               Detailed
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-warm-500 mt-0.5">
               Shot-by-shot tracking
             </p>
           </div>
         </button>
       </div>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-warm-500">
         {currentMode === 'quick'
           ? 'Perfect for on-course entry. Capture essential stats quickly.'
           : 'Full shot tracking for comprehensive analysis and insights.'}

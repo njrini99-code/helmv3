@@ -23,7 +23,7 @@ function getNotificationIcon(type: Notification['type']) {
     case 'rsvp_reminder':
       return <Clock className="w-5 h-5 text-purple-500" />;
     default:
-      return <Bell className="w-5 h-5 text-slate-500" />;
+      return <Bell className="w-5 h-5 text-warm-500" />;
   }
 }
 
@@ -85,7 +85,7 @@ export function NotificationCenter() {
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+        className="relative p-2 rounded-lg text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors"
         aria-label="Notifications"
       >
         <Bell className="w-5 h-5" />
@@ -108,10 +108,10 @@ export function NotificationCenter() {
           />
 
           {/* Popover */}
-          <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 overflow-hidden">
+          <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 bg-white rounded-2xl border border-warm-200 shadow-xl z-50 overflow-hidden">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
+            <div className="px-4 py-3 border-b border-warm-200 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-warm-900">Notifications</h3>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
@@ -129,29 +129,29 @@ export function NotificationCenter() {
                 <div className="p-4 space-y-3">
                   {[1, 2, 3].map(i => (
                     <div key={i} className="animate-pulse flex gap-3">
-                      <div className="w-10 h-10 bg-slate-200 rounded-full"></div>
+                      <div className="w-10 h-10 bg-warm-200 rounded-full"></div>
                       <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                        <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                        <div className="h-4 bg-warm-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-warm-200 rounded w-1/2"></div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-                    <Bell className="w-6 h-6 text-slate-400" />
+                  <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
+                    <Bell className="w-6 h-6 text-warm-400" />
                   </div>
-                  <p className="text-sm font-medium text-slate-900">All caught up!</p>
-                  <p className="text-xs text-slate-500 mt-1">No new notifications</p>
+                  <p className="text-sm font-medium text-warm-900">All caught up!</p>
+                  <p className="text-xs text-warm-500 mt-1">No new notifications</p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-warm-100">
                   {notifications.map(notification => (
                     <button
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
-                      className={`w-full px-4 py-3 flex gap-3 hover:bg-slate-50 transition-colors text-left ${
+                      className={`w-full px-4 py-3 flex gap-3 hover:bg-warm-50 transition-colors text-left ${
                         !notification.read ? 'bg-green-50/30' : ''
                       }`}
                     >
@@ -163,16 +163,16 @@ export function NotificationCenter() {
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <p className={`text-sm font-medium ${
-                          !notification.read ? 'text-slate-900' : 'text-slate-700'
+                          !notification.read ? 'text-warm-900' : 'text-warm-700'
                         }`}>
                           {notification.title}
                         </p>
                         {notification.message && (
-                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                          <p className="text-xs text-warm-500 mt-0.5 line-clamp-2">
                             {notification.message}
                           </p>
                         )}
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="text-xs text-warm-400 mt-1">
                           {formatTimeAgo(notification.created_at)}
                         </p>
                       </div>

@@ -166,20 +166,20 @@ export function MobileCalendarWrapper({
   return (
     <div className={cn('flex flex-col h-full', className)}>
       {/* Premium Header with Month/Year */}
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/30">
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-warm-200/30">
         {/* Top bar with title and controls */}
         <div className="flex items-center justify-between px-4 py-3">
           {/* Month/Year Title */}
           <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-xl font-bold text-warm-900 tracking-tight">
               {format(currentDate, 'MMMM yyyy')}
             </h1>
           </div>
 
           {/* Right controls */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {/* View toggle - compact pill style */}
-            <div className="flex items-center p-0.5 bg-slate-100/80 rounded-xl">
+            <div className="flex items-center p-0.5 bg-warm-100/80 rounded-xl">
               <button
                 type="button"
                 onClick={() => setCurrentView('day')}
@@ -189,7 +189,7 @@ export function MobileCalendarWrapper({
                   'transition-all duration-200',
                   currentView === 'day'
                     ? 'bg-white text-green-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                    : 'text-warm-500 hover:text-warm-700'
                 )}
               >
                 <Calendar className="w-[18px] h-[18px]" />
@@ -203,7 +203,7 @@ export function MobileCalendarWrapper({
                   'transition-all duration-200',
                   currentView === 'list'
                     ? 'bg-white text-green-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                    : 'text-warm-500 hover:text-warm-700'
                 )}
               >
                 <List className="w-[18px] h-[18px]" />
@@ -218,7 +218,7 @@ export function MobileCalendarWrapper({
                 className={cn(
                   'flex items-center justify-center',
                   'w-9 h-9 rounded-xl',
-                  'text-slate-400 hover:text-slate-600 hover:bg-slate-100/80',
+                  'text-warm-400 hover:text-warm-600 hover:bg-warm-100/80',
                   'transition-all duration-200'
                 )}
               >

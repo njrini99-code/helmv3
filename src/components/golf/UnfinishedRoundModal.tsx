@@ -71,7 +71,7 @@ export function UnfinishedRoundModal({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50"
         onClick={onClose}
       />
 
@@ -85,17 +85,17 @@ export function UnfinishedRoundModal({
           className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 id="unfinished-round-modal-title" className="text-lg font-semibold text-slate-900">
+          <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
+            <h2 id="unfinished-round-modal-title" className="text-lg font-semibold text-warm-900">
               Unfinished Round
             </h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              className="p-1 rounded-lg hover:bg-warm-100 transition-colors"
               disabled={deleting}
               aria-label="Close dialog"
             >
-              <IconX size={20} className="text-slate-400" aria-hidden="true" />
+              <IconX size={20} className="text-warm-400" aria-hidden="true" />
             </button>
           </div>
 
@@ -103,10 +103,10 @@ export function UnfinishedRoundModal({
           <div className="px-6 py-6 space-y-4">
             {/* Round Info */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-slate-900 text-lg">
+              <h3 className="font-semibold text-warm-900 text-lg">
                 {round.course_name || 'Unknown Course'}
               </h3>
-              <div className="flex items-center gap-4 text-sm text-slate-500">
+              <div className="flex items-center gap-4 text-sm text-warm-500">
                 <span>{new Date(round.round_date).toLocaleDateString()}</span>
                 {round.course_city && round.course_state && (
                   <>
@@ -115,12 +115,12 @@ export function UnfinishedRoundModal({
                   </>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-600">
+              <div className="flex items-center gap-2 text-sm text-warm-600">
                 <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
                   On hole {round.current_hole || 1} of {round.holes_played || 18}
                 </span>
-                <span className="text-slate-400">•</span>
-                <span className="text-slate-500">Last updated {timeAgo}</span>
+                <span className="text-warm-400">•</span>
+                <span className="text-warm-500">Last updated {timeAgo}</span>
               </div>
             </div>
 
@@ -177,18 +177,18 @@ export function UnfinishedRoundModal({
                 className={cn(
                   'w-full p-4 rounded-xl border-2 transition-all duration-200',
                   'flex items-center gap-4',
-                  'border-slate-200 bg-white hover:bg-slate-50',
+                  'border-warm-200 bg-white hover:bg-warm-50',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-                  <IconTrash size={20} className="text-slate-600" />
+                <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
+                  <IconTrash size={20} className="text-warm-600" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-semibold text-slate-900">
+                  <p className="font-semibold text-warm-900">
                     {deleting ? 'Deleting...' : 'Delete Round'}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-warm-500 mt-0.5">
                     Permanently remove this unfinished round
                   </p>
                 </div>

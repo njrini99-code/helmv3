@@ -112,7 +112,7 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
       ) : (
         <div className="space-y-6">
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Email Notifications</h3>
+            <h3 className="text-sm font-semibold text-warm-700 mb-3">Email Notifications</h3>
             <div className="space-y-2">
               <ToggleRow
                 label="Messages"
@@ -141,8 +141,8 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
             </div>
           </div>
 
-          <div className="border-t border-slate-200 pt-6">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Push Notifications</h3>
+          <div className="border-t border-warm-200 pt-6">
+            <h3 className="text-sm font-semibold text-warm-700 mb-3">Push Notifications</h3>
             <div className="space-y-2">
               <ToggleRow
                 label="Messages"
@@ -165,7 +165,7 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-warm-200">
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
@@ -196,17 +196,17 @@ function ToggleRow({
       role="switch"
       aria-checked={checked}
       aria-label={`${label}: ${checked ? 'enabled' : 'disabled'}`}
-      className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors"
+      className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-warm-50 transition-colors"
     >
       <div className="text-left flex-1">
-        <p className="text-sm font-medium text-slate-900">{label}</p>
-        <p className="text-xs text-slate-500">{description}</p>
+        <p className="text-sm font-medium text-warm-900">{label}</p>
+        <p className="text-xs text-warm-500">{description}</p>
       </div>
       <div
         aria-hidden="true"
         className={cn(
           'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-          checked ? 'bg-emerald-600' : 'bg-slate-200'
+          checked ? 'bg-emerald-600' : 'bg-warm-200'
         )}
       >
         <div className={cn(

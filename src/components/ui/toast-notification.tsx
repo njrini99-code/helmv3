@@ -29,14 +29,14 @@ const toastIcons = {
 const toastStyles = {
   success: 'border-green-200/50',
   error: 'border-red-200/50',
-  info: 'border-slate-200/50',
+  info: 'border-warm-200/50',
   warning: 'border-amber-200/50',
 };
 
 const iconStyles = {
   success: 'bg-green-500 text-white shadow-sm',
   error: 'bg-red-500 text-white shadow-sm',
-  info: 'bg-slate-500 text-white shadow-sm',
+  info: 'bg-warm-500 text-white shadow-sm',
   warning: 'bg-amber-500 text-white shadow-sm',
 };
 
@@ -87,16 +87,16 @@ export function ToastNotification({ toast, onClose }: ToastNotificationProps) {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <h4 className="font-semibold text-sm text-slate-900">{toast.title}</h4>
+        <h4 className="font-semibold text-sm text-warm-900">{toast.title}</h4>
         {toast.message && (
-          <p className="text-sm leading-relaxed text-slate-600 mt-0.5">{toast.message}</p>
+          <p className="text-sm leading-relaxed text-warm-600 mt-0.5">{toast.message}</p>
         )}
       </div>
 
       {/* Close Button */}
       <button
         onClick={handleClose}
-        className="flex-shrink-0 p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100/50 transition-all duration-200"
+        className="flex-shrink-0 p-1.5 rounded-md text-warm-400 hover:text-warm-600 hover:bg-warm-100/50 transition-all duration-200"
       >
         <IconX size={14} />
       </button>

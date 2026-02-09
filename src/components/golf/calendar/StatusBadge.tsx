@@ -40,9 +40,9 @@ const STATUS_CONFIGS: Record<StatusBadgeProps['status'], StatusConfig> = {
   draft: {
     icon: Edit3,
     label: 'Draft',
-    colorClass: 'text-slate-600',
-    bgClass: 'bg-slate-100',
-    borderClass: 'border-slate-200',
+    colorClass: 'text-warm-600',
+    bgClass: 'bg-warm-100',
+    borderClass: 'border-warm-200',
   },
   confirmed: {
     icon: CheckCircle,
@@ -61,9 +61,9 @@ const STATUS_CONFIGS: Record<StatusBadgeProps['status'], StatusConfig> = {
   completed: {
     icon: CheckCircle,
     label: 'Completed',
-    colorClass: 'text-slate-600',
-    bgClass: 'bg-slate-100',
-    borderClass: 'border-slate-200',
+    colorClass: 'text-warm-600',
+    bgClass: 'bg-warm-100',
+    borderClass: 'border-warm-200',
   },
   pending: {
     icon: Clock,
@@ -84,7 +84,7 @@ const SIZE_CONFIGS = {
     icon: 'w-3 h-3',
   },
   lg: {
-    container: 'px-2.5 py-1.5 text-sm gap-1.5',
+    container: 'px-2.5 py-1.5 text-sm gap-2',
     icon: 'w-3.5 h-3.5',
   },
 };
@@ -138,12 +138,12 @@ export function StatusBadgeWithTooltip({
 
       {/* Tooltip */}
       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1
-                      bg-slate-900 text-white text-xs rounded whitespace-nowrap
+                      bg-warm-900 text-white text-xs rounded whitespace-nowrap
                       opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none
                       z-10">
         {config.label}
         <div className="absolute top-full left-1/2 -translate-x-1/2
-                        border-4 border-transparent border-t-slate-900"></div>
+                        border-4 border-transparent border-t-warm-900"></div>
       </div>
     </div>
   );

@@ -12,10 +12,10 @@ export function AreasToReviewSection({ areas }: AreasToReviewSectionProps) {
 
   return (
     <div
-      className="rounded-xl border border-slate-200 bg-white p-5"
+      className="rounded-xl border border-warm-200 bg-white p-5"
       style={{ animation: 'fadeInUp 0.5s ease-out 0.4s both' }}
     >
-      <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+      <h3 className="text-sm font-semibold text-warm-900 mb-4 flex items-center gap-2">
         <span className="text-lg">🔍</span>
         Areas to Review
       </h3>
@@ -30,7 +30,7 @@ export function AreasToReviewSection({ areas }: AreasToReviewSectionProps) {
                 'p-4 rounded-xl border-l-4',
                 area.severity === 'high' && 'bg-red-50 border-l-red-500',
                 area.severity === 'medium' && 'bg-amber-50 border-l-amber-500',
-                area.severity === 'low' && 'bg-slate-50 border-l-slate-400',
+                area.severity === 'low' && 'bg-warm-50 border-l-warm-400',
               )}
               style={{
                 animation: `fadeInUp 0.4s ease-out ${400 + index * 80}ms both`,
@@ -40,14 +40,14 @@ export function AreasToReviewSection({ areas }: AreasToReviewSectionProps) {
                 <span className="text-xl">{config?.emoji || '⚠️'}</span>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-slate-900">{area.title}</span>
+                    <span className="font-medium text-warm-900">{area.title}</span>
                   </div>
-                  <p className="text-sm text-slate-600">{area.description}</p>
+                  <p className="text-sm text-warm-600">{area.description}</p>
 
                   {/* Root cause */}
-                  <div className="mt-2 pt-2 border-t border-slate-200/60">
-                    <div className="text-xs font-medium text-slate-500 mb-1">Root Cause</div>
-                    <p className="text-sm text-slate-700">{area.rootCause}</p>
+                  <div className="mt-2 pt-2 border-t border-warm-200/60">
+                    <div className="text-xs font-medium text-warm-500 mb-1">Root Cause</div>
+                    <p className="text-sm text-warm-700">{area.rootCause}</p>
                   </div>
 
                   {/* Linked focus area */}

@@ -12,10 +12,10 @@ export function GoalImpactCard({ impacts }: GoalImpactCardProps) {
 
   return (
     <div
-      className="rounded-xl border border-slate-200 bg-white p-5"
+      className="rounded-xl border border-warm-200 bg-white p-5"
       style={{ animation: 'fadeInUp 0.5s ease-out 0.1s both' }}
     >
-      <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+      <h3 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
         <span className="text-lg">🎯</span>
         Goal Impact
       </h3>
@@ -28,7 +28,7 @@ export function GoalImpactCard({ impacts }: GoalImpactCardProps) {
               'flex items-center gap-3 p-3 rounded-lg',
               impact.direction === 'positive' && 'bg-green-50',
               impact.direction === 'negative' && 'bg-red-50',
-              impact.direction === 'neutral' && 'bg-slate-50',
+              impact.direction === 'neutral' && 'bg-warm-50',
             )}
           >
             {/* Direction indicator */}
@@ -36,15 +36,15 @@ export function GoalImpactCard({ impacts }: GoalImpactCardProps) {
               'w-8 h-8 rounded-full flex items-center justify-center text-sm',
               impact.direction === 'positive' && 'bg-green-100 text-green-600',
               impact.direction === 'negative' && 'bg-red-100 text-red-600',
-              impact.direction === 'neutral' && 'bg-slate-100 text-slate-600',
+              impact.direction === 'neutral' && 'bg-warm-100 text-warm-600',
             )}>
               {impact.direction === 'positive' ? '↑' : impact.direction === 'negative' ? '↓' : '→'}
             </div>
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-slate-900">{impact.goalLabel}</div>
-              <div className="text-xs text-slate-500">{impact.message}</div>
+              <div className="text-sm font-medium text-warm-900">{impact.goalLabel}</div>
+              <div className="text-xs text-warm-500">{impact.message}</div>
             </div>
 
             {/* Change value */}

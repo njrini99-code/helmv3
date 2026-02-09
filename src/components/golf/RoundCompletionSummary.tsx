@@ -61,7 +61,7 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
   const getToParColor = (toPar: number) => {
     if (toPar <= -5) return 'text-emerald-700';
     if (toPar < 0) return 'text-emerald-600';
-    if (toPar === 0) return 'text-slate-700';
+    if (toPar === 0) return 'text-warm-700';
     if (toPar <= 5) return 'text-amber-600';
     return 'text-red-600';
   };
@@ -75,7 +75,7 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
     : 0;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="relative glass-standard rounded-2xl overflow-hidden shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transition-all duration-300">
         {/* Shine effect */}
         <div
@@ -98,21 +98,21 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
         </div>
 
         {/* Course & Date */}
-        <div className="px-8 py-6 border-b border-slate-200">
-          <h3 className="text-xl font-semibold text-slate-900 mb-1">{summary.courseName}</h3>
-          <p className="text-sm text-slate-500">{formatDate(summary.roundDate)}</p>
+        <div className="px-8 py-6 border-b border-warm-200">
+          <h3 className="text-xl font-semibold text-warm-900 mb-1">{summary.courseName}</h3>
+          <p className="text-sm text-warm-500">{formatDate(summary.roundDate)}</p>
         </div>
 
         {/* Score */}
-        <div className="px-8 py-6 bg-gradient-to-br from-slate-50 to-white border-b border-slate-200">
+        <div className="px-8 py-6 bg-gradient-to-br from-warm-50 to-white border-b border-warm-200">
           <div className="flex items-center justify-center gap-8">
             <div className="text-center">
-              <p className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">Total Score</p>
-              <p className="text-5xl font-bold text-slate-900">{summary.totalScore}</p>
+              <p className="text-sm font-medium text-warm-500 uppercase tracking-wide mb-2">Total Score</p>
+              <p className="text-5xl font-bold text-warm-900">{summary.totalScore}</p>
             </div>
-            <div className="h-16 w-px bg-slate-200"></div>
+            <div className="h-16 w-px bg-warm-200"></div>
             <div className="text-center">
-              <p className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">To Par</p>
+              <p className="text-sm font-medium text-warm-500 uppercase tracking-wide mb-2">To Par</p>
               <p className={`text-5xl font-bold ${getToParColor(summary.totalToPar)}`}>
                 {getToParDisplay(summary.totalToPar)}
               </p>
@@ -121,8 +121,8 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
         </div>
 
         {/* Quick Stats Grid */}
-        <div className="px-8 py-6 border-b border-slate-200">
-          <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">Round Stats</h4>
+        <div className="px-8 py-6 border-b border-warm-200">
+          <h4 className="text-sm font-semibold text-warm-700 uppercase tracking-wider mb-4">Round Stats</h4>
           <div className="grid grid-cols-2 gap-4">
             <div className="relative glass-standard rounded-xl overflow-hidden p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
               {/* Shine effect */}
@@ -132,9 +132,9 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
                   background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
                 }}
               />
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Total Putts</p>
-              <p className="text-2xl font-bold text-slate-900">{summary.totalPutts}</p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">Total Putts</p>
+              <p className="text-2xl font-bold text-warm-900">{summary.totalPutts}</p>
+              <p className="text-xs text-warm-400 mt-1">
                 {summary.greensTotal > 0
                   ? `${(summary.totalPutts / summary.greensTotal).toFixed(1)} per hole`
                   : '--'}
@@ -148,11 +148,11 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
                   background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
                 }}
               />
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Fairways Hit</p>
-              <p className="text-2xl font-bold text-slate-900">
+              <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">Fairways Hit</p>
+              <p className="text-2xl font-bold text-warm-900">
                 {summary.fairwaysHit}/{summary.fairwaysTotal}
               </p>
-              <p className="text-xs text-slate-400 mt-1">{fairwayPercentage}% accuracy</p>
+              <p className="text-xs text-warm-400 mt-1">{fairwayPercentage}% accuracy</p>
             </div>
             <div className="relative glass-standard rounded-xl overflow-hidden p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
               {/* Shine effect */}
@@ -162,11 +162,11 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
                   background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
                 }}
               />
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Greens in Regulation</p>
-              <p className="text-2xl font-bold text-slate-900">
+              <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">Greens in Regulation</p>
+              <p className="text-2xl font-bold text-warm-900">
                 {summary.greensInReg}/{summary.greensTotal}
               </p>
-              <p className="text-xs text-slate-400 mt-1">{girPercentage}%</p>
+              <p className="text-xs text-warm-400 mt-1">{girPercentage}%</p>
             </div>
             <div className="relative glass-standard rounded-xl overflow-hidden p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
               {/* Shine effect */}
@@ -176,20 +176,20 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
                   background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
                 }}
               />
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Putts per GIR</p>
-              <p className="text-2xl font-bold text-slate-900">
+              <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">Putts per GIR</p>
+              <p className="text-2xl font-bold text-warm-900">
                 {summary.greensInReg > 0
                   ? (summary.totalPutts / summary.greensInReg).toFixed(2)
                   : '--'}
               </p>
-              <p className="text-xs text-slate-400 mt-1">when on green</p>
+              <p className="text-xs text-warm-400 mt-1">when on green</p>
             </div>
           </div>
         </div>
 
         {/* Score Distribution */}
-        <div className="px-8 py-6 border-b border-slate-200">
-          <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">Score Distribution</h4>
+        <div className="px-8 py-6 border-b border-warm-200">
+          <h4 className="text-sm font-semibold text-warm-700 uppercase tracking-wider mb-4">Score Distribution</h4>
           <div className="flex items-center justify-between gap-3">
             {summary.eagles > 0 && (
               <div className="relative flex-1 text-center glass-standard rounded-xl overflow-hidden p-3 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
@@ -223,8 +223,8 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
                   background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
                 }}
               />
-              <p className="text-2xl font-bold text-slate-700">{summary.pars}</p>
-              <p className="text-xs font-medium text-slate-600 uppercase tracking-wide mt-1">Pars</p>
+              <p className="text-2xl font-bold text-warm-700">{summary.pars}</p>
+              <p className="text-xs font-medium text-warm-600 uppercase tracking-wide mt-1">Pars</p>
             </div>
             <div className="relative flex-1 text-center glass-standard rounded-xl overflow-hidden p-3 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
               {/* Shine effect */}
@@ -252,11 +252,11 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
         </div>
 
         {/* Action Buttons */}
-        <div className="px-8 py-6 bg-slate-50 rounded-b-2xl">
+        <div className="px-8 py-6 bg-warm-50 rounded-b-2xl">
           {/* Primary CTA — AI Review */}
           <button
             onClick={handleViewReview}
-            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold py-3.5 px-6 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
@@ -268,18 +268,18 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
           <div className="flex flex-col sm:flex-row gap-3 mt-3">
             <button
               onClick={handleBackToDashboard}
-              className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-6 rounded-xl border-2 border-slate-200 hover:border-slate-300 transition-colors"
+              className="flex-1 bg-white hover:bg-warm-50 text-warm-700 font-semibold py-3 px-6 rounded-xl border-2 border-warm-200 hover:border-warm-300 transition-colors"
             >
               Back to Dashboard
             </button>
             <button
               onClick={handleViewStats}
-              className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-6 rounded-xl border-2 border-slate-200 hover:border-slate-300 transition-colors"
+              className="flex-1 bg-white hover:bg-warm-50 text-warm-700 font-semibold py-3 px-6 rounded-xl border-2 border-warm-200 hover:border-warm-300 transition-colors"
             >
               View Full Stats
             </button>
           </div>
-          <p className="text-center text-xs text-slate-400 mt-4">
+          <p className="text-center text-xs text-warm-400 mt-4">
             Your round has been saved — AI review is being generated
           </p>
         </div>

@@ -38,7 +38,7 @@ function LoginContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative p-4 bg-auth-golf">
+    <div className="min-h-screen flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#login-form"
@@ -51,7 +51,7 @@ function LoginContent() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Large primary orb - top right */}
         <motion.div
-          className="auth-orb auth-orb-1 w-[500px] h-[500px] -top-32 -right-32 bg-gradient-to-br from-emerald-400/40 to-green-500/30"
+          className="auth-orb auth-orb-1 w-[500px] h-[500px] -top-32 -right-32 bg-gradient-to-br from-helm-green-400/40 to-helm-green-500/30 motion-reduce:animate-none"
           animate={{
             x: [0, 30, 0],
             y: [0, -20, 0],
@@ -65,7 +65,7 @@ function LoginContent() {
         />
         {/* Medium orb - bottom left */}
         <motion.div
-          className="auth-orb auth-orb-2 w-[400px] h-[400px] -bottom-24 -left-24 bg-gradient-to-tr from-teal-400/30 to-emerald-400/25"
+          className="auth-orb auth-orb-2 w-[400px] h-[400px] -bottom-24 -left-24 bg-gradient-to-tr from-helm-green-400/30 to-helm-green-400/25 motion-reduce:animate-none"
           animate={{
             x: [0, -25, 0],
             y: [0, 25, 0],
@@ -80,7 +80,7 @@ function LoginContent() {
         />
         {/* Small accent orb - top left */}
         <motion.div
-          className="auth-orb auth-orb-3 w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-green-300/25 to-emerald-400/20"
+          className="auth-orb auth-orb-3 w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-helm-green-300/25 to-helm-green-400/20 motion-reduce:animate-none"
           animate={{
             x: [0, 20, 0],
             y: [0, -15, 0],
@@ -94,7 +94,7 @@ function LoginContent() {
         />
         {/* Tiny floating dot */}
         <motion.div
-          className="absolute w-3 h-3 rounded-full bg-emerald-500/40 top-[30%] right-[20%]"
+          className="absolute w-3 h-3 rounded-full bg-helm-green-500/40 top-[30%] right-[20%] motion-reduce:animate-none"
           animate={{
             y: [0, -10, 0],
             opacity: [0.4, 0.8, 0.4],
@@ -133,7 +133,7 @@ function LoginContent() {
             transition={{ delay: 0.2, duration: 0.5 }}
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-xl scale-150" />
+              <div className="absolute inset-0 bg-helm-green-500/30 rounded-full blur-xl scale-150" />
               <div className="relative w-14 h-14 flex items-center justify-center mb-4">
                 <Image
                   src="/helm-golf-logo-transparent.png"
@@ -169,7 +169,7 @@ function LoginContent() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm mb-6"
+              className="bg-helm-green-400/10 border border-helm-green-400/30 text-helm-green-600 px-4 py-3 rounded-xl text-sm mb-6"
             >
               {successMessage}
             </motion.div>
@@ -183,11 +183,11 @@ function LoginContent() {
           >
             {checkingAuth ? (
               <div className="flex justify-center py-8">
-                <div className="animate-spin h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full" />
+                <div className="animate-spin h-6 w-6 border-2 border-helm-green-600 border-t-transparent rounded-full" />
               </div>
             ) : isLoggedIn ? (
               <div className="space-y-4">
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm text-center">
+                <div className="bg-helm-green-400/10 border border-helm-green-400/30 text-helm-green-600 px-4 py-3 rounded-xl text-sm text-center">
                   You&apos;re already signed in
                 </div>
                 <button
@@ -221,7 +221,7 @@ function LoginContent() {
               Don&apos;t have an account?{' '}
               <Link
                 href={signupHref}
-                className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
+                className="text-helm-green-600 font-semibold hover:text-helm-green-500 transition-colors"
               >
                 Sign up
               </Link>

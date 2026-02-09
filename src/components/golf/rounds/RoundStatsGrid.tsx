@@ -51,13 +51,13 @@ function StatCard({ label, value, suffix = '', trend, trendValue, highlight }: S
   return (
     <div className={cn(
       'bg-white border rounded-xl p-4',
-      highlight ? 'border-brand-200 bg-brand-50/30' : 'border-border-light'
+      highlight ? 'border-primary-200 bg-primary-50/30' : 'border-border-light'
     )}>
       <p className="text-xs text-gray-500 mb-1">{label}</p>
       <div className="flex items-baseline gap-1">
         <p className={cn(
           'text-2xl font-semibold',
-          highlight ? 'text-brand-700' : 'text-gray-900'
+          highlight ? 'text-primary-700' : 'text-gray-900'
         )}>
           {value}
         </p>

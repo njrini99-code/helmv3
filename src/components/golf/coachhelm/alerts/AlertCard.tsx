@@ -185,7 +185,7 @@ export function AlertCard({
           <div className="flex-1 min-w-0">
             {/* Header Row */}
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="font-semibold text-sm text-slate-900 truncate">
+              <span className="font-semibold text-sm text-warm-900 truncate">
                 {alert.playerName}
               </span>
               <div className={cn(
@@ -195,14 +195,14 @@ export function AlertCard({
                 {config.icon}
                 <span className="sr-only">{config.label} alert</span>
               </div>
-              <span className="text-xs text-slate-400 ml-auto whitespace-nowrap">
+              <span className="text-xs text-warm-400 ml-auto whitespace-nowrap">
                 {formatRelativeTime(alert.createdAt)}
               </span>
             </div>
 
             {/* Message */}
             <p className={cn(
-              'text-sm text-slate-700',
+              'text-sm text-warm-700',
               compact && !isExpanded && 'line-clamp-1'
             )}>
               {alert.message}
@@ -217,10 +217,10 @@ export function AlertCard({
                   exit={{ opacity: 0, height: 0 }}
                   className="mt-2 pt-2 border-t border-white/50"
                 >
-                  <p className="text-xs text-slate-500 mb-2">
+                  <p className="text-xs text-warm-500 mb-2">
                     Suggested action:
                   </p>
-                  <p className="text-sm text-slate-700 font-medium">
+                  <p className="text-sm text-warm-700 font-medium">
                     {alert.callToAction}
                   </p>
                 </motion.div>
@@ -234,7 +234,7 @@ export function AlertCard({
                   href={`/golf/dashboard/roster/${alert.playerId}`}
                   className={cn(
                     'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg',
-                    'text-slate-600 hover:text-slate-800 hover:bg-white/50',
+                    'text-warm-600 hover:text-warm-800 hover:bg-white/50',
                     'transition-colors'
                   )}
                   onClick={(e) => e.stopPropagation()}
@@ -246,7 +246,7 @@ export function AlertCard({
                   href={`/golf/dashboard/messages?player=${alert.playerId}`}
                   className={cn(
                     'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg',
-                    'text-slate-600 hover:text-slate-800 hover:bg-white/50',
+                    'text-warm-600 hover:text-warm-800 hover:bg-white/50',
                     'transition-colors'
                   )}
                   onClick={(e) => e.stopPropagation()}
@@ -280,7 +280,7 @@ export function AlertCard({
                     }}
                     aria-label="Dismiss alert"
                     className={cn(
-                      'p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/50',
+                      'p-1 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white/50',
                       'transition-colors',
                       !onAcknowledge || alert.acknowledgedAt ? 'ml-auto' : ''
                     )}
@@ -298,7 +298,7 @@ export function AlertCard({
               onClick={() => setIsExpanded(!isExpanded)}
               aria-label={isExpanded ? 'Collapse alert details' : 'Expand alert details'}
               aria-expanded={isExpanded}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/50 transition-colors"
+              className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white/50 transition-colors"
             >
               <motion.div
                 animate={{ rotate: isExpanded ? 90 : 0 }}
