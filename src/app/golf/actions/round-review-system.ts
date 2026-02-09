@@ -95,75 +95,181 @@ interface RoundData {
   status?: string;
 }
 
+// Shot row from golf_shots table
+interface ShotRow {
+  hole_number: number;
+  shot_number: number;
+  shot_type: string;
+  club_used: string | null;
+  distance_to_hole_before: string | null;
+  distance_unit_before: string | null;
+  result: string | null;
+  lie_before: string | null;
+  lie_after: string | null;
+  miss_direction: string | null;
+  putt_distance_feet: string | null;
+  shot_distance: string | null;
+  is_penalty: boolean;
+  putt_made: boolean | null;
+}
+
+// Per-hole analysis computed from shots
+interface HoleBreakdown {
+  hole: number;
+  par: number;
+  score: number;
+  scoreToPar: number;
+  putts: number;
+  fairwayHit: boolean | null; // null for par 3
+  gir: boolean;
+  threePutt: boolean;
+  onePutt: boolean;
+  penalties: number;
+  scrambleAttempt: boolean;
+  scrambleSuccess: boolean;
+  sandSaveAttempt: boolean;
+  sandSaveSuccess: boolean;
+  driveClub: string | null;
+  driveDist: number | null;
+  driveMiss: string | null;
+  firstPuttFeet: number | null;
+  approachClub: string | null;
+  approachDist: number | null;
+  approachMiss: string | null;
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
 /**
+ * Build per-hole breakdowns from shot-level data
+ */
+function buildHoleBreakdowns(shots: ShotRow[], _round: RoundData): HoleBreakdown[] {
+  // Group shots by hole
+  const byHole = new Map<number, ShotRow[]>();
+  for (const s of shots) {
+    const arr = byHole.get(s.hole_number) ?? [];
+    arr.push(s);
+    byHole.set(s.hole_number, arr);
+  }
+
+  const holes: HoleBreakdown[] = [];
+  for (let h = 1; h <= 18; h++) {
+    const holeShots = (byHole.get(h) ?? []).sort((a, b) => a.shot_number - b.shot_number);
+    if (holeShots.length === 0) continue;
+
+    const teeShot = holeShots.find(s => s.shot_type === 'tee');
+    const putts = holeShots.filter(s => s.shot_type === 'putting');
+    const penalties = holeShots.filter(s => s.is_penalty).length;
+
+    // Infer par: 165y tee = par 3, 530y = par 5, else par 4
+    const teeDistYards = teeShot ? parseFloat(teeShot.distance_to_hole_before ?? '0') : 400;
+    const par = teeDistYards <= 250 ? 3 : teeDistYards >= 470 ? 5 : 4;
+
+    const score = holeShots.length; // total shots = score
+    const scoreToPar = score - par;
+
+    // Fairway: only par 4/5, check if tee shot result is 'fairway'
+    const fairwayHit = par >= 4 && teeShot ? (teeShot.lie_after === 'fairway') : null;
+
+    // GIR: reached green in (par - 2) shots or fewer
+    const girShotLimit = par - 2;
+    const greenReachedAt = holeShots.findIndex(s => s.lie_after === 'green') + 1;
+    const gir = greenReachedAt > 0 && greenReachedAt <= girShotLimit;
+
+    // Scramble: missed GIR but made par or better
+    const scrambleAttempt = !gir;
+    const scrambleSuccess = scrambleAttempt && scoreToPar <= 0;
+
+    // Sand save: had a bunker shot around the green and made par or better
+    const hadBunkerShot = holeShots.some(s =>
+      (s.shot_type === 'around_green' || s.shot_type === 'approach') && s.lie_before === 'sand'
+    );
+    const sandSaveAttempt = hadBunkerShot && !gir;
+    const sandSaveSuccess = sandSaveAttempt && scoreToPar <= 0;
+
+    // Drive details
+    const driveDist = teeShot?.shot_distance ? parseFloat(teeShot.shot_distance) : null;
+    const driveMiss = teeShot?.miss_direction ?? null;
+    const driveClub = teeShot?.club_used ?? null;
+
+    // First putt distance
+    const firstPutt = putts[0];
+    const firstPuttFeet = firstPutt?.putt_distance_feet ? parseFloat(firstPutt.putt_distance_feet) : null;
+
+    // Approach shot (first non-tee, non-putting shot that targets the green)
+    const approachShot = holeShots.find(s =>
+      s.shot_type === 'approach' || (s.shot_type === 'around_green' && !gir)
+    );
+    const approachClub = approachShot?.club_used ?? null;
+    const approachDist = approachShot?.distance_to_hole_before ? parseFloat(approachShot.distance_to_hole_before) : null;
+    const approachMiss = approachShot?.miss_direction ?? null;
+
+    holes.push({
+      hole: h,
+      par,
+      score,
+      scoreToPar,
+      putts: putts.length,
+      fairwayHit,
+      gir,
+      threePutt: putts.length >= 3,
+      onePutt: putts.length === 1,
+      penalties,
+      scrambleAttempt,
+      scrambleSuccess,
+      sandSaveAttempt,
+      sandSaveSuccess,
+      driveClub,
+      driveDist: driveDist ? Math.round(driveDist) : null,
+      driveMiss,
+      firstPuttFeet,
+      approachClub,
+      approachDist: approachDist ? Math.round(approachDist) : null,
+      approachMiss,
+    });
+  }
+  return holes;
+}
+
+/**
  * Determine sentiment based on score to par
  */
-function determineSentiment(scoreToPar: number | null): ReviewSentiment {
-  if (scoreToPar === null) return 'neutral';
+function determineSentiment(scoreToPar: number): ReviewSentiment {
   if (scoreToPar <= -1) return 'positive';
   if (scoreToPar <= 3) return 'neutral';
   return 'challenging';
 }
 
 /**
- * Determine overall grade based on performance
+ * Determine overall grade
  */
-function determineGrade(
-  scoreToPar: number | null,
-  girPct: number | null,
-  fairwayPct: number | null,
-  putts: number | null
-): OverallGrade {
+function determineGrade(scoreToPar: number, girPct: number, fairwayPct: number | null, putts: number): OverallGrade {
   let score = 0;
   let factors = 0;
 
-  // Score to par (most important)
-  if (scoreToPar !== null) {
-    if (scoreToPar <= -3) score += 5;
-    else if (scoreToPar <= -1) score += 4;
-    else if (scoreToPar <= 1) score += 3.5;
-    else if (scoreToPar <= 3) score += 3;
-    else if (scoreToPar <= 5) score += 2;
-    else if (scoreToPar <= 8) score += 1;
-    factors += 2; // Weight score to par more heavily
-    score *= 2;
-  }
+  // Score to par (weighted 2x)
+  const scoreVal = scoreToPar <= -3 ? 5 : scoreToPar <= -1 ? 4 : scoreToPar <= 1 ? 3.5 : scoreToPar <= 3 ? 3 : scoreToPar <= 5 ? 2 : 1;
+  score += scoreVal * 2;
+  factors += 2;
 
-  // GIR percentage
-  if (girPct !== null) {
-    if (girPct >= 70) score += 5;
-    else if (girPct >= 60) score += 4;
-    else if (girPct >= 50) score += 3;
-    else if (girPct >= 40) score += 2;
-    else score += 1;
-    factors++;
-  }
+  // GIR
+  const girVal = girPct >= 70 ? 5 : girPct >= 60 ? 4 : girPct >= 50 ? 3 : girPct >= 40 ? 2 : 1;
+  score += girVal;
+  factors++;
 
-  // Fairway percentage
+  // Fairways
   if (fairwayPct !== null) {
-    if (fairwayPct >= 70) score += 5;
-    else if (fairwayPct >= 60) score += 4;
-    else if (fairwayPct >= 50) score += 3;
-    else if (fairwayPct >= 40) score += 2;
-    else score += 1;
+    const fwVal = fairwayPct >= 70 ? 5 : fairwayPct >= 60 ? 4 : fairwayPct >= 50 ? 3 : fairwayPct >= 40 ? 2 : 1;
+    score += fwVal;
     factors++;
   }
 
-  // Putts per round
-  if (putts !== null) {
-    if (putts <= 28) score += 5;
-    else if (putts <= 30) score += 4;
-    else if (putts <= 32) score += 3;
-    else if (putts <= 34) score += 2;
-    else score += 1;
-    factors++;
-  }
-
-  if (factors === 0) return 'C';
+  // Putts
+  const puttVal = putts <= 28 ? 5 : putts <= 30 ? 4 : putts <= 32 ? 3 : putts <= 34 ? 2 : 1;
+  score += puttVal;
+  factors++;
 
   const avg = score / factors;
   if (avg >= 4.2) return 'A';
@@ -174,16 +280,12 @@ function determineGrade(
 }
 
 /**
- * Generate review content from round data
+ * Generate review content from round data + actual shot data
  */
 function generateReviewContent(
   round: RoundData,
-  playerAvgs: {
-    avgScore: number;
-    avgPutts: number;
-    avgGirPct: number;
-    avgFairwayPct: number;
-  } | null
+  holes: HoleBreakdown[],
+  playerAvgs: { avgScore: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number } | null
 ): RoundReviewContent {
   const highlights: RoundReviewHighlight[] = [];
   const areasForImprovement: RoundReviewImprovementArea[] = [];
@@ -192,211 +294,245 @@ function generateReviewContent(
 
   const scoreToPar = round.score_to_par ?? 0;
   const totalScore = round.total_score ?? 72;
-  const putts = round.total_putts;
-  const fairwaysHit = round.total_fairways_hit;
-  const fairwaysPossible = round.total_fairways ?? 14;
-  const girHit = round.total_gir;
-  const girPossible = round.total_gir_possible ?? 18;
 
-  const fairwayPct = fairwaysHit !== null && fairwaysPossible > 0
-    ? Math.round((fairwaysHit / fairwaysPossible) * 100)
-    : null;
+  // --- Compute real stats from hole breakdowns ---
+  const totalPutts = holes.reduce((s, h) => s + h.putts, 0);
+  const threePutts = holes.filter(h => h.threePutt);
+  const onePutts = holes.filter(h => h.onePutt);
+  const birdies = holes.filter(h => h.scoreToPar === -1);
+  const pars = holes.filter(h => h.scoreToPar === 0);
+  const bogeys = holes.filter(h => h.scoreToPar === 1);
+  const doublePlus = holes.filter(h => h.scoreToPar >= 2);
+  const eagles = holes.filter(h => h.scoreToPar <= -2);
 
-  const girPct = girHit !== null && girPossible > 0
-    ? Math.round((girHit / girPossible) * 100)
-    : null;
+  const fairwayHoles = holes.filter(h => h.fairwayHit !== null);
+  const fairwaysHit = fairwayHoles.filter(h => h.fairwayHit).length;
+  const fairwayPct = fairwayHoles.length > 0 ? Math.round((fairwaysHit / fairwayHoles.length) * 100) : null;
 
-  // Determine sentiment and grade
+  const girHoles = holes.filter(h => h.gir);
+  const girPct = holes.length > 0 ? Math.round((girHoles.length / holes.length) * 100) : 0;
+
+  const scrambleAttempts = holes.filter(h => h.scrambleAttempt);
+  const scrambleSuccesses = holes.filter(h => h.scrambleSuccess);
+  const scramblePct = scrambleAttempts.length > 0 ? Math.round((scrambleSuccesses.length / scrambleAttempts.length) * 100) : null;
+
+  const sandAttempts = holes.filter(h => h.sandSaveAttempt);
+  const sandSuccesses = holes.filter(h => h.sandSaveSuccess);
+
+  // Driving miss pattern
+  const driveMisses = holes.filter(h => h.driveMiss && h.fairwayHit === false);
+  const leftMisses = driveMisses.filter(h => h.driveMiss?.includes('left')).length;
+  const rightMisses = driveMisses.filter(h => h.driveMiss?.includes('right')).length;
+  const dominantMiss = leftMisses > rightMisses ? 'left' : rightMisses > leftMisses ? 'right' : null;
+
+  // Approach miss pattern
+  const approachMisses = holes.filter(h => !h.gir && h.approachMiss);
+  const approachShort = approachMisses.filter(h => h.approachMiss?.includes('short')).length;
+  const approachLong = approachMisses.filter(h => h.approachMiss?.includes('long')).length;
+
+  // First putt distance analysis
+  const firstPuttDists = holes.filter(h => h.firstPuttFeet !== null).map(h => h.firstPuttFeet!);
+  const avgFirstPuttDist = firstPuttDists.length > 0 ? Math.round(firstPuttDists.reduce((a, b) => a + b, 0) / firstPuttDists.length) : null;
+
+  // Driving distance
+  const driveDists = holes.filter(h => h.driveDist !== null && h.par >= 4).map(h => h.driveDist!);
+  const avgDriveDist = driveDists.length > 0 ? Math.round(driveDists.reduce((a, b) => a + b, 0) / driveDists.length) : null;
+
+  // Worst holes (biggest blow-ups)
+  const worstHoles = [...holes].sort((a, b) => b.scoreToPar - a.scoreToPar).filter(h => h.scoreToPar >= 2);
+
+  // Best holes
+  const bestHoles = [...holes].sort((a, b) => a.scoreToPar - b.scoreToPar).filter(h => h.scoreToPar <= -1);
+
+  // --- Sentiment & grade ---
   const sentiment = determineSentiment(scoreToPar);
-  const overallGrade = determineGrade(scoreToPar, girPct, fairwayPct, putts);
+  const overallGrade = determineGrade(scoreToPar, girPct, fairwayPct, totalPutts);
 
-  // Generate summary based on performance
+  // --- SUMMARY: reference specific holes ---
   let summary = '';
   if (scoreToPar <= -3) {
-    summary = `Outstanding round of ${totalScore}! This was an exceptional performance that showcases your potential at the highest level. `;
+    summary = `Outstanding ${totalScore} at ${round.course_name || 'the course'}. `;
   } else if (scoreToPar <= -1) {
-    summary = `Solid under-par round of ${totalScore}. This performance demonstrates strong fundamentals and good scoring ability. `;
+    summary = `Solid under-par ${totalScore} at ${round.course_name || 'the course'}. `;
   } else if (scoreToPar === 0) {
-    summary = `Even-par round of ${totalScore}. A steady, consistent performance that shows good course management. `;
+    summary = `Even-par ${totalScore} at ${round.course_name || 'the course'}. `;
   } else if (scoreToPar <= 3) {
-    summary = `Round of ${totalScore} (+${scoreToPar}). A respectable effort with room for improvement in key areas. `;
-  } else if (scoreToPar <= 6) {
-    summary = `Challenging round of ${totalScore} (+${scoreToPar}). Let's identify the patterns that led to dropped shots and create a plan for improvement. `;
+    summary = `Shot ${totalScore} (+${scoreToPar}) at ${round.course_name || 'the course'}. `;
   } else {
-    summary = `Tough day on the course with a ${totalScore} (+${scoreToPar}). Every round is a learning opportunity - let's analyze what happened and build from it. `;
+    summary = `Tough ${totalScore} (+${scoreToPar}) at ${round.course_name || 'the course'}. `;
   }
 
-  // Analyze putting
-  if (putts !== null) {
-    const comparison: StatComparison =
-      playerAvgs && putts < playerAvgs.avgPutts - 1 ? 'above' :
-      playerAvgs && putts > playerAvgs.avgPutts + 1 ? 'below' : 'average';
+  // Scoring distribution summary
+  const scoreParts: string[] = [];
+  if (eagles.length > 0) scoreParts.push(`${eagles.length} eagle${eagles.length > 1 ? 's' : ''}`);
+  if (birdies.length > 0) scoreParts.push(`${birdies.length} birdie${birdies.length > 1 ? 's' : ''}`);
+  scoreParts.push(`${pars.length} par${pars.length !== 1 ? 's' : ''}`);
+  if (bogeys.length > 0) scoreParts.push(`${bogeys.length} bogey${bogeys.length > 1 ? 's' : ''}`);
+  if (doublePlus.length > 0) scoreParts.push(`${doublePlus.length} double+`);
+  summary += scoreParts.join(', ') + '. ';
 
-    keyStats.push({
-      label: 'Total Putts',
-      value: putts.toString(),
-      comparison,
-    });
-
-    if (putts <= 28) {
-      highlights.push({
-        title: 'Excellent Putting',
-        description: `${putts} putts demonstrates exceptional touch on the greens. Your lag putting and short putt conversion were both strong.`,
-      });
-      summary += `Your putting was the star of this round. `;
-    } else if (putts <= 30) {
-      highlights.push({
-        title: 'Solid Putting',
-        description: `${putts} putts is a good day on the greens. Consistent green reading and pace control.`,
-      });
-    } else if (putts >= 34) {
-      areasForImprovement.push({
-        area: 'Putting',
-        recommendation: 'Focus on lag putting to reduce three-putts, and work on 4-6 foot putts to improve conversion rate.',
-      });
-      recommendations.push('Schedule a putting session focusing on distance control from 20+ feet');
-    } else if (putts >= 32) {
-      areasForImprovement.push({
-        area: 'Putting',
-        recommendation: `${putts} putts left some shots on the green. Work on reading speed and breaking putts in the 6-12 foot range.`,
-      });
-      recommendations.push('Spend time on lag putting from 25+ feet to tighten up two-putt conversions');
-    }
+  // Mention where strokes were lost
+  if (worstHoles.length > 0) {
+    const blowupHoles = worstHoles.slice(0, 2).map(h => `#${h.hole} (+${h.scoreToPar})`).join(' and ');
+    summary += `Biggest damage came on hole${worstHoles.length > 1 ? 's' : ''} ${blowupHoles}. `;
+  }
+  if (bestHoles.length > 0 && bestHoles.length <= 3) {
+    const birdieHoles = bestHoles.map(h => `#${h.hole}`).join(', ');
+    summary += `Picked up strokes on ${birdieHoles}. `;
   }
 
-  // Analyze GIR
-  if (girPct !== null) {
-    const comparison: StatComparison =
-      playerAvgs && girPct > playerAvgs.avgGirPct + 5 ? 'above' :
-      playerAvgs && girPct < playerAvgs.avgGirPct - 5 ? 'below' : 'average';
+  // --- KEY STATS with real data ---
+  const cmp = (val: number, avg: number | undefined, better: 'lower' | 'higher'): StatComparison => {
+    if (!avg) return 'average';
+    const diff = val - avg;
+    if (better === 'lower') return diff < -1 ? 'above' : diff > 1 ? 'below' : 'average';
+    return diff > 1 ? 'above' : diff < -1 ? 'below' : 'average';
+  };
 
-    keyStats.push({
-      label: 'Greens in Regulation',
-      value: `${girPct}%`,
-      comparison,
-    });
-
-    if (girPct >= 65) {
-      highlights.push({
-        title: 'Strong Ball Striking',
-        description: `Hitting ${girPct}% of greens shows excellent approach play and iron precision.`,
-      });
-    } else if (girPct >= 55) {
-      highlights.push({
-        title: 'Decent Approach Play',
-        description: `${girPct}% GIR is solid — tightening up approach distance control could push this higher.`,
-      });
-    } else if (girPct < 45) {
-      areasForImprovement.push({
-        area: 'Approach Shots',
-        recommendation: 'Work on distance control with your irons, particularly from 125-175 yards.',
-      });
-      recommendations.push('Practice approach shots from your most common yardages');
-    } else {
-      // 45-54% range — moderate area for improvement
-      areasForImprovement.push({
-        area: 'Approach Shots',
-        recommendation: `${girPct}% GIR means missed greens led to extra scrambling. Focus on picking the right club and committing to your target.`,
-      });
-      recommendations.push('Dial in your carry distances for each iron to improve green-hit consistency');
-    }
-  }
-
-  // Analyze fairways
+  keyStats.push({ label: 'Total Putts', value: `${totalPutts}`, comparison: cmp(totalPutts, playerAvgs?.avgPutts, 'lower') });
+  keyStats.push({ label: 'Greens in Reg', value: `${girHoles.length}/${holes.length} (${girPct}%)`, comparison: cmp(girPct, playerAvgs?.avgGirPct, 'higher') });
   if (fairwayPct !== null) {
-    const comparison: StatComparison =
-      playerAvgs && fairwayPct > playerAvgs.avgFairwayPct + 5 ? 'above' :
-      playerAvgs && fairwayPct < playerAvgs.avgFairwayPct - 5 ? 'below' : 'average';
+    keyStats.push({ label: 'Fairways', value: `${fairwaysHit}/${fairwayHoles.length} (${fairwayPct}%)`, comparison: cmp(fairwayPct, playerAvgs?.avgFairwayPct, 'higher') });
+  }
+  if (scramblePct !== null) {
+    keyStats.push({ label: 'Scrambling', value: `${scrambleSuccesses.length}/${scrambleAttempts.length} (${scramblePct}%)`, comparison: scramblePct >= 50 ? 'above' : scramblePct >= 33 ? 'average' : 'below' });
+  }
+  if (avgDriveDist !== null) {
+    keyStats.push({ label: 'Avg Drive', value: `${avgDriveDist}y`, comparison: avgDriveDist >= 260 ? 'above' : avgDriveDist >= 240 ? 'average' : 'below' });
+  }
+  if (avgFirstPuttDist !== null) {
+    keyStats.push({ label: 'Avg 1st Putt', value: `${avgFirstPuttDist}ft`, comparison: avgFirstPuttDist <= 15 ? 'above' : avgFirstPuttDist <= 25 ? 'average' : 'below' });
+  }
 
-    keyStats.push({
-      label: 'Fairways Hit',
-      value: `${fairwayPct}%`,
-      comparison,
+  // --- HIGHLIGHTS: reference specific holes/clubs ---
+  if (bestHoles.length > 0) {
+    const birdieDesc = bestHoles.slice(0, 3).map(h => {
+      const parts: string[] = [`Hole ${h.hole} (par ${h.par})`];
+      if (h.firstPuttFeet && h.onePutt) parts.push(`sank a ${h.firstPuttFeet}ft putt`);
+      else if (h.gir && h.putts === 2) parts.push(`solid GIR and 2-putt`);
+      return parts.join(' — ');
     });
+    highlights.push({
+      title: `${bestHoles.length} Birdie${bestHoles.length > 1 ? 's' : ''} or Better`,
+      description: birdieDesc.join('. ') + '.',
+    });
+  }
 
-    if (fairwayPct >= 70) {
-      highlights.push({
-        title: 'Accurate Driving',
-        description: `${fairwayPct}% fairways hit shows excellent control off the tee.`,
-      });
-    } else if (fairwayPct >= 57) {
-      highlights.push({
-        title: 'Steady Off the Tee',
-        description: `${fairwayPct}% fairways is a solid base. A tighter miss pattern could unlock lower scores.`,
-      });
-    } else if (fairwayPct < 45) {
+  if (onePutts.length >= 4) {
+    highlights.push({
+      title: `${onePutts.length} One-Putts`,
+      description: `Strong short-range putting — converted on holes ${onePutts.slice(0, 4).map(h => `#${h.hole}`).join(', ')}.`,
+    });
+  }
+
+  if (scramblePct !== null && scramblePct >= 50) {
+    highlights.push({
+      title: `${scramblePct}% Scrambling`,
+      description: `Saved par ${scrambleSuccesses.length} of ${scrambleAttempts.length} times when missing the green. Effective short game.`,
+    });
+  }
+
+  if (fairwayPct !== null && fairwayPct >= 65) {
+    highlights.push({
+      title: 'Accurate Driving',
+      description: `Hit ${fairwaysHit}/${fairwayHoles.length} fairways (${fairwayPct}%). Consistently found the short grass.`,
+    });
+  }
+
+  if (sandSuccesses.length > 0) {
+    highlights.push({
+      title: `Sand Save${sandSuccesses.length > 1 ? 's' : ''}`,
+      description: `Saved par from the bunker ${sandSuccesses.length} of ${sandAttempts.length} time${sandAttempts.length > 1 ? 's' : ''}.`,
+    });
+  }
+
+  // --- AREAS FOR IMPROVEMENT: reference specific patterns ---
+  if (threePutts.length > 0) {
+    const tpHoles = threePutts.map(h => `#${h.hole} (from ${h.firstPuttFeet ?? '?'}ft)`).join(', ');
+    areasForImprovement.push({
+      area: `${threePutts.length} Three-Putt${threePutts.length > 1 ? 's' : ''}`,
+      recommendation: `Three-putted on ${tpHoles}. ${
+        threePutts.some(h => (h.firstPuttFeet ?? 0) >= 25)
+          ? 'Work on lag putting from 25+ feet to leave tap-in second putts.'
+          : 'Focus on speed control and reading break inside 15 feet.'
+      }`,
+    });
+    recommendations.push(`Lag putting drill: hit 10 putts from 30ft, all must stop within 3ft of the hole`);
+  }
+
+  if (doublePlus.length > 0) {
+    const dbHoles = doublePlus.map(h => {
+      const parts = [`#${h.hole} (+${h.scoreToPar})`];
+      if (h.penalties > 0) parts.push('penalty');
+      else if (h.threePutt) parts.push('3-putt');
+      else if (!h.gir && !h.scrambleSuccess) parts.push('missed green, no save');
+      return parts.join(' — ');
+    });
+    areasForImprovement.push({
+      area: 'Big Numbers',
+      recommendation: `Double bogey or worse on: ${dbHoles.join('; ')}. Limiting blow-up holes is the fastest way to lower scores.`,
+    });
+  }
+
+  if (dominantMiss && driveMisses.length >= 3) {
+    const count = dominantMiss === 'left' ? leftMisses : rightMisses;
+    areasForImprovement.push({
+      area: `Tee Shot Miss Pattern: ${dominantMiss}`,
+      recommendation: `Missed ${count}/${driveMisses.length} fairways to the ${dominantMiss}. Work on alignment or adjust aim to account for your natural shot shape.`,
+    });
+    recommendations.push(`On the range, aim ${dominantMiss === 'left' ? 'slightly right' : 'slightly left'} of target and focus on a consistent release pattern`);
+  }
+
+  if (approachMisses.length >= 4) {
+    const shortPct = approachMisses.length > 0 ? Math.round((approachShort / approachMisses.length) * 100) : 0;
+    if (approachShort > approachLong && shortPct >= 50) {
       areasForImprovement.push({
-        area: 'Driving Accuracy',
-        recommendation: 'Consider using a more controlled swing or different club on tight holes.',
+        area: 'Approach Shots Landing Short',
+        recommendation: `${shortPct}% of missed greens were short. Consider taking one extra club on approach shots to carry pin-high.`,
       });
-      recommendations.push('Identify your miss pattern (left/right) and adjust your aim accordingly');
-    } else {
-      // 45-56% range — moderate area for improvement
+      recommendations.push('On the range, note your carry distance vs total distance for each iron');
+    } else if (approachLong > approachShort) {
       areasForImprovement.push({
-        area: 'Driving Accuracy',
-        recommendation: `${fairwayPct}% fairways means too many tee shots put you in trouble. Focus on a consistent aim point and shot shape off the tee.`,
+        area: 'Approach Shots Going Long',
+        recommendation: `Most missed greens were long. Dial back club selection and trust your swing.`,
       });
-      recommendations.push('Work on a go-to tee shot shape you can trust under pressure');
     }
   }
 
-  // Build a more specific summary based on what was analyzed
-  const specificInsights: string[] = [];
-  if (putts !== null) {
-    if (putts <= 30) specificInsights.push(`putting was a strength (${putts} putts)`);
-    else if (putts >= 32) specificInsights.push(`putting was a factor (${putts} putts)`);
-  }
-  if (girPct !== null) {
-    if (girPct >= 55) specificInsights.push(`solid iron play (${girPct}% GIR)`);
-    else if (girPct < 55) specificInsights.push(`approach shots need work (${girPct}% GIR)`);
-  }
-  if (fairwayPct !== null) {
-    if (fairwayPct >= 57) specificInsights.push(`accurate driving (${fairwayPct}% fairways)`);
-    else if (fairwayPct < 57) specificInsights.push(`driving accuracy was a challenge (${fairwayPct}% fairways)`);
+  if (girPct < 40) {
+    areasForImprovement.push({
+      area: `Low GIR (${girPct}%)`,
+      recommendation: `Only hit ${girHoles.length} of ${holes.length} greens. This put constant pressure on your short game.`,
+    });
+    recommendations.push('Practice approach shots from your 3 most common approach yardages');
   }
 
-  if (specificInsights.length > 0) {
-    summary += specificInsights.length === 1
-      ? `Key takeaway: ${specificInsights[0]}.`
-      : `Key takeaways: ${specificInsights.join(', ')}.`;
-  }
-
-  // Add default recommendations if needed
+  // Add default recommendations if still empty
   if (recommendations.length === 0) {
     if (sentiment === 'positive') {
-      recommendations.push('Keep up the great work and maintain your current practice routine');
-      recommendations.push('Consider scheduling a playing lesson to fine-tune your course management');
+      recommendations.push('Maintain this form — focus on consistency in your next round');
     } else if (sentiment === 'neutral') {
-      recommendations.push('Review your pre-shot routine for consistency');
-      recommendations.push('Track your stats over the next few rounds to identify patterns');
+      recommendations.push('Review your pre-shot routine to tighten up decision-making');
     } else {
-      recommendations.push('Focus on the fundamentals in your next practice session');
-      recommendations.push('Consider a short game focused practice session');
+      recommendations.push('Simplify your game plan next round — fairways and greens, avoid hero shots');
     }
   }
 
-  // Add score-based recommendation if not already covered
   if (scoreToPar > 0 && scoreToPar <= 5) {
-    recommendations.push(`A +${scoreToPar} round is within striking distance of par — shaving ${Math.min(scoreToPar, 3)} strokes from your weakest area gets you there`);
+    const easiestSaves = threePutts.length > 0 ? `Eliminating ${threePutts.length} three-putt${threePutts.length > 1 ? 's' : ''}` : 'Tighter approach shots';
+    recommendations.push(`${easiestSaves} alone would have saved ${Math.min(threePutts.length, scoreToPar)} stroke${threePutts.length > 1 ? 's' : ''}`);
   }
 
-  // Add highlights if we have none
-  if (highlights.length === 0 && sentiment !== 'challenging') {
-    highlights.push({
-      title: 'Completed Round',
-      description: 'Finishing strong and logging your stats is the first step to improvement.',
-    });
+  // Ensure at least one highlight
+  if (highlights.length === 0) {
+    if (pars.length >= 10) {
+      highlights.push({ title: `${pars.length} Pars`, description: 'Solid consistency — the foundation for lower scores.' });
+    } else {
+      highlights.push({ title: 'Round Logged', description: 'Tracking your rounds is the first step to improvement.' });
+    }
   }
 
-  return {
-    summary,
-    sentiment,
-    highlights,
-    areasForImprovement,
-    keyStats,
-    recommendations,
-    overallGrade,
-  };
+  return { summary, sentiment, highlights, areasForImprovement, keyStats, recommendations, overallGrade };
 }
 
 // ============================================================================
@@ -452,6 +588,7 @@ export async function getRoundReview(roundId: string): Promise<{
       round_id: existingReview.round_id,
       review_content: (existingReview.round_stats as unknown as RoundReviewContent) || generateReviewContent(
         roundData,
+        [],
         null
       ),
       generated_at: existingReview.created_at ?? new Date().toISOString(),
@@ -522,7 +659,20 @@ export async function generateAndStoreRoundReview(
       return { success: false, error: 'Round must be completed before generating a review' };
     }
 
-    // 3. Get player averages for comparison
+    // 3. Fetch actual shot data for this round
+    const { data: shots } = await supabase
+      .from('golf_shots')
+      .select('hole_number, shot_number, shot_type, club_used, distance_to_hole_before, distance_unit_before, result, lie_before, lie_after, miss_direction, putt_distance_feet, shot_distance, is_penalty, putt_made')
+      .eq('round_id', roundId)
+      .order('hole_number', { ascending: true })
+      .order('shot_number', { ascending: true });
+
+    const shotRows = (shots ?? []) as unknown as ShotRow[];
+
+    // 4. Build hole-by-hole analysis from shot data
+    const holeBreakdowns = shotRows.length > 0 ? buildHoleBreakdowns(shotRows, roundData) : [];
+
+    // 5. Get player averages for comparison
     const { data: playerRounds } = await supabase
       .from('golf_rounds')
       .select('total_score, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways')
@@ -559,8 +709,8 @@ export async function generateAndStoreRoundReview(
       playerAvgs = { avgScore, avgPutts, avgGirPct, avgFairwayPct };
     }
 
-    // 4. Generate review content
-    const reviewContent = generateReviewContent(roundData, playerAvgs);
+    // 6. Generate review content from actual shot data
+    const reviewContent = generateReviewContent(roundData, holeBreakdowns, playerAvgs);
 
     // 5. Try to get enhanced AI review from CoachHelm
     let aiEnhanced = false;
