@@ -16,11 +16,13 @@ export function LastSeenUpdater() {
     hasFired.current = true;
 
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-      (supabase.rpc as unknown as (fn: string, params: Record<string, string>) => Promise<unknown>)('update_user_last_seen', { target_user_id: user.id }).catch(() => {
-        // Silently fail
-      });
+      try {
+        await (supabase.rpc as Function)('update_user_last_seen', { target_user_id: user.id });
+      } catch {
+        // Silently fail — presence is non-critical
+      }
     });
   }, []);
 

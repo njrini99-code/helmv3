@@ -13,6 +13,7 @@ import { MobileNavProvider } from '@/contexts/mobile-nav-context';
 import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-context';
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
+import { LazyMotion, domAnimation } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 // PERF: Lazy-load CommandPalette — only shown on Cmd+K
@@ -169,12 +170,14 @@ export function GolfDashboardShell({
         <ToastProvider>
           <SessionActivityProvider>
             <GolfUserProvider userData={userData}>
-              <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
-                <LastSeenUpdater />
-                <GolfDashboardContent userData={userData}>
-                  {children}
-                </GolfDashboardContent>
-              </OfflineProvider>
+              <LazyMotion features={domAnimation} strict>
+                <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
+                  <LastSeenUpdater />
+                  <GolfDashboardContent userData={userData}>
+                    {children}
+                  </GolfDashboardContent>
+                </OfflineProvider>
+              </LazyMotion>
             </GolfUserProvider>
           </SessionActivityProvider>
         </ToastProvider>
