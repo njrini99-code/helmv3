@@ -138,6 +138,42 @@ export interface AdminDashboardData {
       created_at: string | null;
     }[];
   };
+  // New: Full user directory with team + activity
+  userDirectory: {
+    id: string;
+    email: string;
+    role: string | null;
+    createdAt: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    teamName: string | null;
+    teamId: string | null;
+    lastRoundDate: string | null;
+    totalRounds: number;
+    onboardingCompleted: boolean;
+  }[];
+  // New: Full team roster detail
+  teamRosters: {
+    id: string;
+    name: string;
+    orgName: string | null;
+    coaches: { id: string; firstName: string; lastName: string; email: string }[];
+    players: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string | null;
+      gradYear: number | null;
+      lastRoundDate: string | null;
+      totalRounds: number;
+      scoringAvg: number | null;
+      onboardingCompleted: boolean;
+    }[];
+  }[];
+  // New: Daily signups (last 30 days)
+  signupsByDay: { date: string; count: number }[];
+  // New: Daily visits/active users (last 30 days, based on rounds submitted)
+  visitsByDay: { date: string; count: number }[];
 }
 
 // ============================================
@@ -784,6 +820,206 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     ? (Date.now() - new Date(lastRoundTimestamp).getTime()) < 86400000 ? 'live' : 'stale'
     : 'error';
 
+  // ============================================
+  // BATCH 3: User directory, team rosters, daily charts
+  // ============================================
+  const [
+    allUsersRes,
+    allPlayersDetailRes,
+    allCoachesDetailRes,
+    playerRoundCountsRes,
+    playerLastRoundsRes,
+    signupsDaily30dRes,
+    visitsDaily30dRes,
+  ] = await Promise.all([
+    // All users for directory
+    supabase.from('users').select('id, email, role, created_at').order('created_at', { ascending: false }),
+    // All players with user_id, names, onboarding, grad year
+    supabase.from('golf_players').select('id, user_id, first_name, last_name, graduation_year, onboarding_completed'),
+    // All coaches with user_id, names, org
+    supabase.from('golf_coaches').select('id, user_id, full_name, email, organization_id, onboarding_completed'),
+    // Round counts per player
+    supabase.from('golf_rounds').select('player_id'),
+    // Latest round date per player (get all rounds, process in JS)
+    supabase.from('golf_rounds').select('player_id, created_at').order('created_at', { ascending: false }),
+    // Signups by day (last 30d)
+    supabase.from('users').select('created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
+    // Active users by day (last 30d, based on round submissions)
+    supabase.from('golf_rounds').select('player_id, created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
+  ]);
+
+  // --- Build player maps ---
+  const allPlayersMap = new Map<string, { id: string; userId: string | null; firstName: string; lastName: string; gradYear: number | null; onboardingCompleted: boolean }>();
+  for (const p of (allPlayersDetailRes.data ?? [])) {
+    allPlayersMap.set(p.id, {
+      id: p.id,
+      userId: p.user_id,
+      firstName: p.first_name ?? '',
+      lastName: p.last_name ?? '',
+      gradYear: p.graduation_year,
+      onboardingCompleted: p.onboarding_completed ?? false,
+    });
+  }
+
+  // Build userId -> player map
+  const userIdToPlayerDetail = new Map<string, typeof allPlayersMap extends Map<string, infer V> ? V : never>();
+  for (const [, p] of allPlayersMap) {
+    if (p.userId) userIdToPlayerDetail.set(p.userId, p);
+  }
+
+  // --- Build coach maps ---
+  const allCoachesMap = new Map<string, { id: string; userId: string | null; firstName: string; lastName: string; orgId: string | null; onboardingCompleted: boolean }>();
+  for (const c of (allCoachesDetailRes.data ?? [])) {
+    const nameParts = (c.full_name ?? '').split(' ');
+    const coachFirstName = nameParts[0] ?? '';
+    const coachLastName = nameParts.slice(1).join(' ') ?? '';
+    allCoachesMap.set(c.id, {
+      id: c.id,
+      userId: c.user_id,
+      firstName: coachFirstName,
+      lastName: coachLastName,
+      orgId: c.organization_id,
+      onboardingCompleted: c.onboarding_completed ?? false,
+    });
+  }
+  const userIdToCoachDetail = new Map<string, typeof allCoachesMap extends Map<string, infer V> ? V : never>();
+  for (const [, c] of allCoachesMap) {
+    if (c.userId) userIdToCoachDetail.set(c.userId, c);
+  }
+
+  // --- Round counts + last round per player ---
+  const playerRoundCounts = new Map<string, number>();
+  for (const r of (playerRoundCountsRes.data ?? [])) {
+    playerRoundCounts.set(r.player_id, (playerRoundCounts.get(r.player_id) ?? 0) + 1);
+  }
+  const playerLastRound = new Map<string, string>();
+  for (const r of (playerLastRoundsRes.data ?? [])) {
+    if (r.created_at && !playerLastRound.has(r.player_id)) {
+      playerLastRound.set(r.player_id, r.created_at);
+    }
+  }
+
+  // --- Player to team map (already have teamMembersRes from batch 2) ---
+  const playerToTeamInfo = new Map<string, { teamId: string; teamName: string }>();
+  for (const m of (teamMembersRes.data ?? [])) {
+    // teamMembersRes has team_id + player_id
+    const teamInfo = teamsMap.get(m.team_id);
+    if (teamInfo) {
+      playerToTeamInfo.set(m.player_id, { teamId: m.team_id, teamName: teamInfo.name });
+    }
+  }
+
+  // --- Build user directory ---
+  const userDirectory = (allUsersRes.data ?? []).map((u) => {
+    const player = userIdToPlayerDetail.get(u.id);
+    const coach = userIdToCoachDetail.get(u.id);
+    const playerId = player?.id;
+    const teamInfo = playerId ? playerToTeamInfo.get(playerId) : null;
+    // For coaches, find their team via org
+    let coachTeamName: string | null = null;
+    let coachTeamId: string | null = null;
+    if (coach?.orgId) {
+      for (const [tId, tInfo] of teamsMap) {
+        // Match by checking teamsDataRes for org match
+        const teamData = (teamsDataRes.data ?? []).find(t => t.id === tId && t.organization_id === coach.orgId);
+        if (teamData) {
+          coachTeamName = tInfo.name;
+          coachTeamId = tId;
+          break;
+        }
+      }
+    }
+
+    return {
+      id: u.id,
+      email: u.email,
+      role: u.role,
+      createdAt: u.created_at,
+      firstName: player?.firstName ?? coach?.firstName ?? null,
+      lastName: player?.lastName ?? coach?.lastName ?? null,
+      teamName: teamInfo?.teamName ?? coachTeamName ?? null,
+      teamId: teamInfo?.teamId ?? coachTeamId ?? null,
+      lastRoundDate: playerId ? (playerLastRound.get(playerId) ?? null) : null,
+      totalRounds: playerId ? (playerRoundCounts.get(playerId) ?? 0) : 0,
+      onboardingCompleted: player?.onboardingCompleted ?? coach?.onboardingCompleted ?? false,
+    };
+  });
+
+  // --- Build team rosters ---
+  // Build org -> coaches map
+  const orgCoaches = new Map<string, { id: string; firstName: string; lastName: string; email: string }[]>();
+  for (const [, c] of allCoachesMap) {
+    if (c.orgId) {
+      const list = orgCoaches.get(c.orgId) ?? [];
+      // Find email from users
+      const userEntry = (allUsersRes.data ?? []).find(u => u.id === c.userId);
+      list.push({
+        id: c.id,
+        firstName: c.firstName,
+        lastName: c.lastName,
+        email: userEntry?.email ?? '',
+      });
+      orgCoaches.set(c.orgId, list);
+    }
+  }
+
+  const teamRosters = (teamsDataRes.data ?? []).map((t) => {
+    const org = t.organizations as { name: string } | null;
+    // Get players on this team
+    const teamMembers = (teamMembersRes.data ?? []).filter(m => m.team_id === t.id);
+    const players = teamMembers.map((m) => {
+      const p = allPlayersMap.get(m.player_id);
+      const userEntry = p?.userId ? (allUsersRes.data ?? []).find(u => u.id === p.userId) : null;
+      const statsEntry = statsRows.find(s => s.player_id === m.player_id);
+      return {
+        id: m.player_id,
+        firstName: p?.firstName ?? '',
+        lastName: p?.lastName ?? '',
+        email: userEntry?.email ?? null,
+        gradYear: p?.gradYear ?? null,
+        lastRoundDate: playerLastRound.get(m.player_id) ?? null,
+        totalRounds: playerRoundCounts.get(m.player_id) ?? 0,
+        scoringAvg: statsEntry?.scoring_average != null ? Number(statsEntry.scoring_average) : null,
+        onboardingCompleted: p?.onboardingCompleted ?? false,
+      };
+    }).sort((a, b) => (a.scoringAvg ?? 999) - (b.scoringAvg ?? 999));
+
+    // Get coaches for this team's org
+    const coaches = t.organization_id ? (orgCoaches.get(t.organization_id) ?? []) : [];
+
+    return {
+      id: t.id,
+      name: t.name,
+      orgName: org?.name ?? null,
+      coaches,
+      players,
+    };
+  }).sort((a, b) => b.players.length - a.players.length);
+
+  // --- Daily signups (last 30d) ---
+  const signupDailyDates = (signupsDaily30dRes.data ?? []).map(u => u.created_at).filter(Boolean) as string[];
+  const signupsByDayResult = groupByDay(signupDailyDates, 30);
+
+  // --- Daily visits (last 30d, unique players per day) ---
+  const visitsByDayMap: Record<string, Set<string>> = {};
+  // Initialize all days
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    visitsByDayMap[d.toISOString().slice(0, 10)] = new Set();
+  }
+  for (const r of (visitsDaily30dRes.data ?? [])) {
+    if (r.created_at) {
+      const key = new Date(r.created_at).toISOString().slice(0, 10);
+      if (key in visitsByDayMap) {
+        visitsByDayMap[key]!.add(r.player_id);
+      }
+    }
+  }
+  const visitsByDayResult = Object.entries(visitsByDayMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, players]) => ({ date, count: players.size }));
+
   return {
     health: {
       activeUsers24h: new Set((activeUsers24hRes.data ?? []).map(r => r.player_id)).size,
@@ -897,5 +1133,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         created_at: i.created_at,
       })),
     },
+    userDirectory,
+    teamRosters,
+    signupsByDay: signupsByDayResult,
+    visitsByDay: visitsByDayResult,
   };
 }

@@ -18,6 +18,9 @@ import { ScoringIntelligenceCard } from './components/ScoringIntelligenceCard';
 import { EngagementCard } from './components/EngagementCard';
 import { ActivityFeed } from './components/ActivityFeed';
 import { GrowthCard } from './components/GrowthCard';
+import { UserActivityTable } from './components/UserActivityTable';
+import { TeamRosterCard } from './components/TeamRosterCard';
+import { DailyCharts } from './components/DailyCharts';
 import {
   IconUsers,
   IconTarget,
@@ -28,6 +31,7 @@ import {
   IconActivity,
   IconTrendingUp,
   IconChart,
+  IconEye,
 } from '@/components/icons';
 
 // ============================================
@@ -35,6 +39,7 @@ import {
 // ============================================
 const TABS = [
   { id: 'business', label: 'Business', icon: IconChart },
+  { id: 'visibility', label: 'Users & Teams', icon: IconEye },
   { id: 'overview', label: 'Overview', icon: IconActivity },
   { id: 'teams', label: 'Teams & Scoring', icon: IconTarget },
   { id: 'users', label: 'Users & Usage', icon: IconUsers },
@@ -383,6 +388,25 @@ export default function AdminDashboardPage() {
                       <ActivityFeed activity={data.activity} />
                     </div>
                   </div>
+                </>
+              )}
+
+              {/* ============================================ */}
+              {/* USERS & TEAMS VISIBILITY TAB */}
+              {/* ============================================ */}
+              {activeTab === 'visibility' && (
+                <>
+                  {/* Daily charts: signups + active users */}
+                  <DailyCharts
+                    signupsByDay={data.signupsByDay}
+                    visitsByDay={data.visitsByDay}
+                  />
+
+                  {/* Team Rosters - full visibility */}
+                  <TeamRosterCard teamRosters={data.teamRosters} />
+
+                  {/* Full User Directory */}
+                  <UserActivityTable users={data.userDirectory} />
                 </>
               )}
 
